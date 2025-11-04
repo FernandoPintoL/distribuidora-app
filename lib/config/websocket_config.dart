@@ -21,10 +21,11 @@ class WebSocketConfig {
   static const String eventAuthenticationError = 'authentication_error';
 
   // Eventos de Proformas
-  static const String eventProformaCreated = 'proforma_created_confirmation';
-  static const String eventProformaApproved = 'proforma_approved';
-  static const String eventProformaRejected = 'proforma_rejected';
-  static const String eventProformaConverted = 'proforma_converted_to_sale';
+  // ✅ Sincronizados con Node.js WebSocket Server
+  static const String eventProformaCreated = 'proforma.creada';
+  static const String eventProformaApproved = 'proforma.aprobada';
+  static const String eventProformaRejected = 'proforma.rechazada';
+  static const String eventProformaConverted = 'proforma.convertida';
 
   // Eventos de Stock
   static const String eventStockReserved = 'stock_reserved';

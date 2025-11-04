@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:provider/provider.dart';
 import '../../models/models.dart';
 import '../../providers/providers.dart';
@@ -18,7 +19,10 @@ class _PedidoDetalleScreenState extends State<PedidoDetalleScreen> {
   @override
   void initState() {
     super.initState();
-    _cargarPedido();
+    // Usar SchedulerBinding para posponer la carga después de que termine la construcción
+    SchedulerBinding.instance.addPostFrameCallback((_) {
+      _cargarPedido();
+    });
   }
 
   Future<void> _cargarPedido() async {

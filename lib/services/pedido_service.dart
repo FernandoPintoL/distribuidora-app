@@ -11,14 +11,16 @@ class PedidoService {
   /// Parámetros:
   /// - clienteId: ID del cliente
   /// - items: Lista de items del carrito con formato {producto_id, cantidad, precio_unitario}
-  /// - fechaProgramada: Fecha programada de entrega (opcional)
+  /// - fechaProgramada: Fecha programada de entrega (REQUERIDO)
+  /// - direccionId: ID de la dirección de entrega (REQUERIDO - debe venir del cliente)
   /// - horaInicio: Hora de inicio preferida (opcional)
   /// - horaFin: Hora de fin preferida (opcional)
   /// - observaciones: Observaciones adicionales (opcional)
   Future<ApiResponse<Pedido>> crearPedido({
     required int clienteId,
     required List<Map<String, dynamic>> items,
-    DateTime? fechaProgramada,
+    required DateTime fechaProgramada,
+    required int direccionId,
     TimeOfDay? horaInicio,
     TimeOfDay? horaFin,
     String? observaciones,
@@ -28,13 +30,11 @@ class PedidoService {
       final Map<String, dynamic> requestBody = {
         'cliente_id': clienteId,
         'productos': items,
+        'fecha_programada': fechaProgramada.toIso8601String(),
+        'direccion_entrega_solicitada_id': direccionId,
       };
 
       // Agregar campos opcionales si están presentes
-      if (fechaProgramada != null) {
-        requestBody['fecha_programada'] = fechaProgramada.toIso8601String();
-      }
-
       if (horaInicio != null) {
         requestBody['hora_inicio_preferida'] =
             '${horaInicio.hour.toString().padLeft(2, '0')}:${horaInicio.minute.toString().padLeft(2, '0')}';
@@ -63,7 +63,7 @@ class PedidoService {
       debugPrint('   Cuerpo de la petición: ${requestBody.toString()}');
 
       final response = await _apiService.post(
-        '/proformas',
+        '/app/proformas',
         data: requestBody,
       );
 

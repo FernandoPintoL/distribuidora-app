@@ -55,11 +55,29 @@ class _ResumenPedidoScreenState extends State<ResumenPedidoScreen> {
         throw Exception('Cliente no autenticado');
       }
 
-      // Crear proforma
+      // Validar que la dirección tenga ID
+      if (widget.direccion.id == null) {
+        throw Exception('La dirección no tiene ID válido');
+      }
+
+      // Validar que el cliente esté asociado al usuario
+      // IMPORTANTE: Solo clientes pueden crear proformas
+      // Choferes, preventistas y otros roles no tienen cliente_id
+      final clienteId = authProvider.user!.clienteId;
+      if (clienteId == null) {
+        throw Exception(
+          'No tienes permisos para crear pedidos. Solo clientes pueden crear pedidos. '
+          'Si eres un cliente, asegúrate de estar correctamente autenticado.'
+        );
+      }
+
+      // Crear proforma con dirección
+      // IMPORTANTE: Usar clienteId, NO userId (que es el user.id)
       final response = await _pedidoService.crearPedido(
-        clienteId: authProvider.user!.id,
+        clienteId: clienteId,
         items: items,
-        fechaProgramada: widget.fechaProgramada,
+        fechaProgramada: widget.fechaProgramada ?? DateTime.now(),
+        direccionId: widget.direccion.id!,
         horaInicio: widget.horaInicio,
         horaFin: widget.horaFin,
         observaciones: widget.observaciones,
@@ -420,20 +438,6 @@ class _ResumenPedidoScreenState extends State<ResumenPedidoScreen> {
                                   ),
                                   Text(
                                     'Bs. ${carrito.subtotal.toStringAsFixed(2)}',
-                                    style: const TextStyle(fontSize: 16),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 8),
-                              Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                children: [
-                                  const Text(
-                                    'Impuesto (13%)',
-                                    style: TextStyle(fontSize: 16),
-                                  ),
-                                  Text(
-                                    'Bs. ${carrito.impuesto.toStringAsFixed(2)}',
                                     style: const TextStyle(fontSize: 16),
                                   ),
                                 ],

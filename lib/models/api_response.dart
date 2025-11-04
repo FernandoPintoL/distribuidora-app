@@ -168,6 +168,18 @@ class ApiResponse<T> {
     dynamic Function(Map<String, dynamic>)? fromJson,
   ]) {
     try {
+      final success = json['success'] ?? false;
+      final message = json['message'] ?? '';
+
+      // Si la respuesta no fue exitosa, retornar sin intentar parsear data
+      if (!success) {
+        return ApiResponse<T>(
+          success: false,
+          message: message,
+          data: null,
+        );
+      }
+
       if (json.containsKey('data')) {
         // Wrapped format: {success: true, message: ..., data: ...}
         dynamic rawData = json['data'];
@@ -223,8 +235,8 @@ class ApiResponse<T> {
 
         // Assign processedData directly without casting
         return ApiResponse<T>(
-          success: json['success'] ?? false,
-          message: json['message'] ?? '',
+          success: success,
+          message: message,
           data: processedData,
         );
       } else {
