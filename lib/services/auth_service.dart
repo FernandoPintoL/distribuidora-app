@@ -80,13 +80,14 @@ class AuthService {
     try {
       final response = await _apiService.get('/user');
 
-      // 401 Unauthorized - Token inválido o expirado
+      // 401 Unauthorized - El interceptor ya intentará refresh automáticamente
+      // Si llegamos aquí con 401, significa que el refresh también falló
       if (response.statusCode == 401) {
-        debugPrint('🔐 Token inválido o expirado (401) - Limpiando credenciales');
+        debugPrint('🔐 Token inválido/expirado después de refresh - Session terminada');
         await _apiService.clearToken();
         return ApiResponse<User>(
           success: false,
-          message: 'Token inválido o expirado. Por favor inicia sesión nuevamente.',
+          message: 'Sesión expirada. Por favor inicia sesión nuevamente.',
           data: null,
         );
       }
@@ -118,6 +119,16 @@ class AuthService {
         data: null,
       );
     } on DioException catch (e) {
+      // Si es un 401 en la excepción, el interceptor ya lo manejó
+      if (e.response?.statusCode == 401) {
+        await _apiService.clearToken();
+        return ApiResponse<User>(
+          success: false,
+          message: 'Sesión expirada. Por favor inicia sesión nuevamente.',
+          data: null,
+        );
+      }
+
       return ApiResponse<User>(
         success: false,
         message: _getErrorMessage(e),

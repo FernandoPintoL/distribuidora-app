@@ -69,8 +69,20 @@ class _DireccionEntregaSeleccionScreenState
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Dirección de Entrega'),
+        title: const Text('Dirección de Entregas'),
         elevation: 0,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.settings),
+            tooltip: 'Gestionar direcciones',
+            onPressed: () {
+              Navigator.pushNamed(context, '/mis-direcciones').then((_) {
+                // Recargar direcciones al volver
+                _cargarDirecciones();
+              });
+            },
+          ),
+        ],
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
@@ -98,14 +110,26 @@ class _DireccionEntregaSeleccionScreenState
                           'No tienes direcciones registradas',
                           style: TextStyle(fontSize: 16),
                         ),
+                        const SizedBox(height: 8),
+                        const Text(
+                          'Agrega una dirección para continuar',
+                          style: TextStyle(fontSize: 14, color: Colors.grey),
+                        ),
                         const SizedBox(height: 24),
                         ElevatedButton.icon(
                           onPressed: () {
-                            // TODO: Navegar a pantalla de agregar dirección
-                            Navigator.pushNamed(context, '/add-address');
+                            Navigator.pushNamed(context, '/direccion-form').then((_) {
+                              _cargarDirecciones();
+                            });
                           },
-                          icon: const Icon(Icons.add),
+                          icon: const Icon(Icons.add_location),
                           label: const Text('Agregar Dirección'),
+                          style: ElevatedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 32,
+                              vertical: 16,
+                            ),
+                          ),
                         ),
                       ],
                     ),
@@ -207,10 +231,14 @@ class _DireccionEntregaSeleccionScreenState
                                         children: [
                                           Row(
                                             children: [
-                                              const Icon(
-                                                Icons.location_on,
+                                              Icon(
+                                                direccion.esPrincipal
+                                                    ? Icons.home
+                                                    : Icons.location_on,
                                                 size: 20,
-                                                color: Colors.red,
+                                                color: direccion.esPrincipal
+                                                    ? Colors.blue
+                                                    : Colors.red,
                                               ),
                                               const SizedBox(width: 8),
                                               Expanded(
@@ -222,28 +250,48 @@ class _DireccionEntregaSeleccionScreenState
                                                   ),
                                                 ),
                                               ),
+                                              if (direccion.esPrincipal)
+                                                Container(
+                                                  padding: const EdgeInsets.symmetric(
+                                                    horizontal: 8,
+                                                    vertical: 4,
+                                                  ),
+                                                  decoration: BoxDecoration(
+                                                    color: Colors.blue.shade100,
+                                                    borderRadius: BorderRadius.circular(12),
+                                                  ),
+                                                  child: const Text(
+                                                    'Principal',
+                                                    style: TextStyle(
+                                                      fontSize: 11,
+                                                      fontWeight: FontWeight.w600,
+                                                      color: Colors.blue,
+                                                    ),
+                                                  ),
+                                                ),
                                             ],
                                           ),
 
-                                          if (direccion.ciudad != null) ...[
+                                          // Mostrar coordenadas GPS si están disponibles
+                                          if (direccion.latitud != null &&
+                                              direccion.longitud != null) ...[
                                             const SizedBox(height: 4),
-                                            Text(
-                                              'Ciudad: ${direccion.ciudad}',
-                                              style: const TextStyle(
-                                                color: Colors.grey,
-                                                fontSize: 14,
-                                              ),
-                                            ),
-                                          ],
-
-                                          if (direccion.departamento != null) ...[
-                                            const SizedBox(height: 2),
-                                            Text(
-                                              direccion.departamento!,
-                                              style: const TextStyle(
-                                                color: Colors.grey,
-                                                fontSize: 14,
-                                              ),
+                                            Row(
+                                              children: [
+                                                const Icon(
+                                                  Icons.gps_fixed,
+                                                  size: 14,
+                                                  color: Colors.grey,
+                                                ),
+                                                const SizedBox(width: 4),
+                                                Text(
+                                                  'Ubicación GPS registrada',
+                                                  style: const TextStyle(
+                                                    color: Colors.grey,
+                                                    fontSize: 12,
+                                                  ),
+                                                ),
+                                              ],
                                             ),
                                           ],
 

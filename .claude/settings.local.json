@@ -3,7 +3,19 @@
     "allow": [
       "mcp__ide__getDiagnostics",
       "Bash(flutter pub get:*)",
-      "Bash(flutter analyze:*)"
+      "Bash(flutter analyze:*)",
+      "Bash(pod install)",
+      "Bash(pod install:*)",
+      "Bash(flutter clean:*)",
+      "Bash(pod deintegrate:*)",
+      "Bash(flutter build:*)",
+      "Bash(flutter run:*)",
+      "Bash(plutil:*)",
+      "Bash(xcrun simctl shutdown:*)",
+      "Bash(xcrun simctl:*)",
+      "Bash(nc:*)",
+      "Bash(pkill:*)",
+      "Bash(tee:*)"
     ],
     "deny": [],
     "ask": []

@@ -5,15 +5,18 @@ import '../services/services.dart';
 class AuthProvider with ChangeNotifier {
   final AuthService _authService = AuthService();
   final WebSocketService _wsService = WebSocketService();
+  final BiometricAuthService _biometricService = BiometricAuthService();
 
   User? _user;
   bool _isLoading = false;
   String? _errorMessage;
+  bool _biometricAvailable = false;
 
   User? get user => _user;
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
   bool get isLoggedIn => _user != null;
+  bool get biometricAvailable => _biometricAvailable;
 
   Future<bool> login(String login, String password) async {
     _isLoading = true;
@@ -347,4 +350,73 @@ class AuthProvider with ChangeNotifier {
       hasPermission('compras.create') ||
       hasPermission('compras.store') ||
       hasRole('admin');
+
+  // ========== MÉTODOS DE AUTENTICACIÓN BIOMÉTRICA ==========
+
+  /// Verifica si la autenticación biométrica está disponible en el dispositivo
+  Future<void> checkBiometricAvailability() async {
+    final canCheck = await _biometricService.canCheckBiometrics();
+    final isSupported = await _biometricService.isDeviceSupported();
+    _biometricAvailable = canCheck && isSupported;
+    notifyListeners();
+  }
+
+  /// Verifica si el login biométrico está habilitado
+  Future<bool> isBiometricLoginEnabled() async {
+    return await _biometricService.isBiometricEnabled();
+  }
+
+  /// Obtiene el nombre de usuario guardado para mostrar en UI
+  Future<String?> getSavedUsername() async {
+    return await _biometricService.getSavedUsername();
+  }
+
+  /// Habilita el login biométrico guardando las credenciales
+  Future<bool> enableBiometricLogin(String username, String password) async {
+    return await _biometricService.saveCredentials(
+      username: username,
+      password: password,
+    );
+  }
+
+  /// Deshabilita el login biométrico
+  Future<bool> disableBiometricLogin() async {
+    return await _biometricService.disableBiometric();
+  }
+
+  /// Login usando autenticación biométrica
+  Future<bool> loginWithBiometrics() async {
+    try {
+      // Primero verificar si hay credenciales guardadas
+      final credentials = await _biometricService.getCredentials();
+      if (credentials == null) {
+        _errorMessage = 'No hay credenciales guardadas';
+        notifyListeners();
+        return false;
+      }
+
+      // Autenticar con biometría
+      final authenticated = await _biometricService.authenticate(
+        localizedReason: 'Inicia sesión con tu biometría',
+      );
+
+      if (!authenticated) {
+        _errorMessage = 'Autenticación biométrica fallida';
+        notifyListeners();
+        return false;
+      }
+
+      // Si la autenticación fue exitosa, hacer login normal
+      return await login(credentials['username']!, credentials['password']!);
+    } catch (e) {
+      _errorMessage = 'Error en autenticación biométrica: ${e.toString()}';
+      notifyListeners();
+      return false;
+    }
+  }
+
+  /// Obtiene el mensaje descriptivo del tipo de biometría
+  Future<String> getBiometricTypeMessage() async {
+    return await _biometricService.getBiometricTypeMessage();
+  }
 }

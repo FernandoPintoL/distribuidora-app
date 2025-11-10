@@ -46,6 +46,8 @@ class ApiService {
     _dio.interceptors.addAll([_authInterceptor(), _loggingInterceptor()]);
   }
 
+  bool _isRefreshing = false;
+
   Interceptor _authInterceptor() {
     return InterceptorsWrapper(
       onRequest: (options, handler) async {
@@ -58,15 +60,31 @@ class ApiService {
         return handler.next(options);
       },
       onError: (error, handler) async {
-        if (error.response?.statusCode == 401) {
-          // Token expirado, intentar refresh
-          await _handleTokenExpiration();
-          // Reintentar la petición
-          final options = error.requestOptions;
-          options.headers['Authorization'] = 'Bearer $_token';
-          final response = await _dio.fetch(options);
-          return handler.resolve(response);
+        // Si es un 401 y NO es la ruta de refresh (para evitar loop infinito)
+        if (error.response?.statusCode == 401 &&
+            !error.requestOptions.path.contains('/refresh') &&
+            !_isRefreshing) {
+          _isRefreshing = true;
+
+          try {
+            debugPrint('🔄 401 Unauthorized - Attempting token refresh...');
+            await _handleTokenExpiration();
+
+            // Si después del refresh tenemos token, reintentar la petición original
+            if (_token != null) {
+              final options = error.requestOptions;
+              options.headers['Authorization'] = 'Bearer $_token';
+              final response = await _dio.fetch(options);
+              _isRefreshing = false;
+              return handler.resolve(response);
+            }
+          } catch (e) {
+            debugPrint('❌ Error during token refresh: $e');
+          } finally {
+            _isRefreshing = false;
+          }
         }
+
         return handler.next(error);
       },
     );
@@ -107,8 +125,31 @@ class ApiService {
   }
 
   Future<void> _handleTokenExpiration() async {
-    // Aquí podrías implementar lógica para refresh token
-    // Por ahora, solo limpiamos el token
+    debugPrint('🔄 Token expired, attempting to refresh...');
+
+    try {
+      // Intentar renovar el token
+      final response = await _dio.post('/refresh');
+
+      if (response.statusCode == 200) {
+        // Laravel Sanctum refresh retorna: { "token": "nuevo_token" }
+        final newToken = response.data['token'];
+        if (newToken != null) {
+          await _saveToken(newToken);
+          debugPrint('✅ Token refreshed successfully');
+          return;
+        } else {
+          debugPrint('⚠️ Token refresh response missing token field');
+        }
+      } else {
+        debugPrint('⚠️ Token refresh failed with status: ${response.statusCode}');
+      }
+    } catch (e) {
+      debugPrint('❌ Token refresh failed: $e');
+    }
+
+    // Si el refresh falla, limpiar el token
+    debugPrint('🚫 Clearing token - user will need to login again');
     await _clearToken();
   }
 

@@ -7,6 +7,8 @@ import 'models/models.dart';
 import 'providers/providers.dart';
 import 'screens/screens.dart';
 import 'screens/carrito/carrito_abandonado_list_screen.dart';
+import 'screens/cliente/mis_direcciones_screen.dart';
+import 'screens/cliente/direccion_form_screen.dart';
 import 'widgets/realtime_notifications_listener.dart';
 
 void main() async {
@@ -89,10 +91,23 @@ class MyApp extends StatelessWidget {
         '/carrito-abandonados': (context) => const CarritoAbandonadoListScreen(),
         '/direccion-entrega-seleccion': (context) => const DireccionEntregaSeleccionScreen(),
         '/mis-pedidos': (context) => const PedidosHistorialScreen(),
+        '/mis-direcciones': (context) => const MisDireccionesScreen(),
       },
       onGenerateRoute: (settings) {
         // Handle routes with arguments
         switch (settings.name) {
+          case '/client-form':
+            final client = settings.arguments as Client?;
+            return MaterialPageRoute(
+              builder: (context) => ClientFormScreen(client: client),
+            );
+
+          case '/direccion-form':
+            final direccion = settings.arguments as ClientAddress?;
+            return MaterialPageRoute(
+              builder: (context) => DireccionFormScreen(direccion: direccion),
+            );
+
           case '/fecha-hora-entrega':
             final direccion = settings.arguments as ClientAddress?;
             if (direccion == null) {

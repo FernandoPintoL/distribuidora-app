@@ -18,16 +18,22 @@ class ClientListScreen extends StatefulWidget {
 
 class _ClientListScreenState extends State<ClientListScreen> {
   final _searchController = TextEditingController();
+  final _scrollController = ScrollController();
   String _searchQuery = '';
   String _statusFilter = 'all'; // all | active | inactive
   late ClientProvider _clientProvider;
   bool _isLoadingClients = false; // Flag para prevenir llamadas simultáneas
+  bool _isLoadingMore = false; // Flag para carga de más clientes
 
   @override
   void initState() {
     super.initState();
     // Obtener referencia segura al provider
     _clientProvider = context.read<ClientProvider>();
+
+    // Configurar listener para scroll infinito
+    _scrollController.addListener(_onScroll);
+
     // Cargar automáticamente al iniciar la pantalla
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _safeLoadClients();
@@ -37,7 +43,17 @@ class _ClientListScreenState extends State<ClientListScreen> {
   @override
   void dispose() {
     _searchController.dispose();
+    _scrollController.dispose();
     super.dispose();
+  }
+
+  void _onScroll() {
+    if (_scrollController.position.pixels >= _scrollController.position.maxScrollExtent - 200) {
+      // Cuando está a 200px del final, cargar más
+      if (!_isLoadingMore && _clientProvider.hasMorePages) {
+        _loadMoreClients();
+      }
+    }
   }
 
   bool? _activeFilterValue() {
@@ -69,12 +85,13 @@ class _ClientListScreenState extends State<ClientListScreen> {
 
     try {
       await _clientProvider.loadClients(
+        perPage: 5, // Cargar solo 5 clientes por página
         search: _searchQuery.isNotEmpty ? _searchQuery : null,
         active: _activeFilterValue(),
       );
-      debugPrint(' Clientes cargados exitosamente');
+      debugPrint('✅ Clientes cargados: ${_clientProvider.clients.length} de ${_clientProvider.totalItems}');
     } catch (e) {
-      debugPrint(' Error al cargar clientes: ');
+      debugPrint('❌ Error al cargar clientes: $e');
       // El error será manejado por el provider y mostrado en la UI
     } finally {
       if (mounted) {
@@ -111,38 +128,43 @@ class _ClientListScreenState extends State<ClientListScreen> {
 
   Future<void> _loadMoreClients() async {
     if (!mounted) {
-      debugPrint(' _loadMoreClients: Widget no está montado, cancelando');
+      debugPrint('⚠️ _loadMoreClients: Widget no está montado, cancelando');
       return;
     }
 
-    if (_isLoadingClients) {
-      debugPrint(' _loadMoreClients: Ya hay una carga en progreso, cancelando');
+    if (_isLoadingMore || _isLoadingClients) {
+      debugPrint('⚠️ _loadMoreClients: Ya hay una carga en progreso, cancelando');
+      return;
+    }
+
+    if (!_clientProvider.hasMorePages) {
+      debugPrint('ℹ️ No hay más páginas para cargar');
       return;
     }
 
     setState(() {
-      _isLoadingClients = true;
+      _isLoadingMore = true;
     });
-    debugPrint(' Iniciando carga de más clientes...');
+    debugPrint('📋 Cargando más clientes (página ${_clientProvider.currentPage + 1})...');
 
     try {
       await _clientProvider.loadClients(
         page: _clientProvider.currentPage + 1,
+        perPage: 5, // Cargar solo 5 clientes por página
         append: true,
         search: _searchQuery.isNotEmpty ? _searchQuery : null,
         active: _activeFilterValue(),
       );
-      debugPrint(' Más clientes cargados exitosamente');
+      debugPrint('✅ Más clientes cargados: ${_clientProvider.clients.length} de ${_clientProvider.totalItems}');
     } catch (e) {
-      debugPrint(' Error al cargar más clientes: ');
+      debugPrint('❌ Error al cargar más clientes: $e');
       // El error será manejado por el provider y mostrado en la UI
     } finally {
       if (mounted) {
         setState(() {
-          _isLoadingClients = false;
+          _isLoadingMore = false;
         });
       }
-      debugPrint(' Finalizada carga de más clientes');
     }
   }
 
@@ -160,13 +182,23 @@ class _ClientListScreenState extends State<ClientListScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Clientes'),
+        title: const Text('Clientes', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
+        elevation: 0,
+        flexibleSpace: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [Colors.blue.shade700, Colors.blue.shade900],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+          ),
+        ),
         actions: [
-          IconButton(
+          /*IconButton(
             icon: const Icon(Icons.logout),
             onPressed: _logout,
             tooltip: 'Cerrar sesión',
-          ),
+          ),*/
           // Mostrar indicador de carga en el AppBar si está cargando
           if (_isLoadingClients)
             const Padding(
@@ -182,88 +214,127 @@ class _ClientListScreenState extends State<ClientListScreen> {
             )
           else
             IconButton(
-              icon: const Icon(Icons.refresh),
+              icon: const Icon(Icons.refresh, color: Colors.white,),
               onPressed: _safeLoadClients,
               tooltip: 'Recargar lista',
             ),
-          /*Consumer<AuthProvider>(
-            builder: (context, authProvider, child) {
-              if (authProvider.canCreateClients) {
-                return IconButton(
-                  icon: const Icon(Icons.add),
-                  onPressed: _isLoadingClients
-                      ? null
-                      : () => _navigateToCreateClient(),
-                  tooltip: _isLoadingClients ? 'Cargando...' : 'Nuevo cliente',
-                );
-              }
-              return const SizedBox.shrink();
-            },
-          ),*/
         ],
       ),
-      body: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: TextField(
-              controller: _searchController,
-              decoration: InputDecoration(
-                hintText:
-                    'Buscar por nombre, localidad, teléfono, NIT, código cliente...',
-                prefixIcon: IconButton(
-                  icon: const Icon(Icons.search),
-                  onPressed: _isLoadingClients ? null : _performSearch,
-                  tooltip: 'Buscar',
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              Colors.blue.shade50,
+              Colors.white,
+            ],
+          ),
+        ),
+        child: Column(
+          children: [
+            // Barra de búsqueda modernizada
+            Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Container(
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.08),
+                      blurRadius: 10,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
                 ),
-                suffixIcon: _searchQuery.isNotEmpty
-                    ? IconButton(
-                        icon: const Icon(Icons.clear),
-                        onPressed: _isLoadingClients ? null : _clearSearch,
-                      )
-                    : null,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
+                child: TextField(
+                  controller: _searchController,
+                  decoration: InputDecoration(
+                    hintText: 'Buscar clientes...',
+                    hintStyle: TextStyle(color: Colors.grey.shade400),
+                    prefixIcon: Icon(Icons.search, color: Colors.blue.shade700),
+                    suffixIcon: _searchQuery.isNotEmpty
+                        ? IconButton(
+                            icon: Icon(Icons.clear, color: Colors.grey.shade600),
+                            onPressed: _isLoadingClients ? null : _clearSearch,
+                          )
+                        : null,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(16),
+                      borderSide: BorderSide.none,
+                    ),
+                    filled: true,
+                    fillColor: Colors.white,
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                  ),
+                  onChanged: _onSearchChanged,
+                  textInputAction: TextInputAction.search,
+                  onSubmitted: (_) => _performSearch(),
+                  enabled: !_isLoadingClients,
                 ),
               ),
-              onChanged: _onSearchChanged,
-              textInputAction: TextInputAction.search,
-              onSubmitted: (_) => _performSearch(),
-              enabled: !_isLoadingClients, // Deshabilitar durante carga
             ),
-          ),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16.0),
-            child: Wrap(
-              spacing: 8,
-              children: [
-                FilterChip(
-                  label: const Text('Todos'),
-                  selected: _statusFilter == 'all',
-                  onSelected: (val) {
-                    setState(() => _statusFilter = 'all');
-                    _safeLoadClients();
-                  },
-                ),
-                FilterChip(
-                  label: const Text('Activos'),
-                  selected: _statusFilter == 'active',
-                  onSelected: (val) {
-                    setState(() => _statusFilter = 'active');
-                    _safeLoadClients();
-                  },
-                ),
-                FilterChip(
-                  label: const Text('Inactivos'),
-                  selected: _statusFilter == 'inactive',
-                  onSelected: (val) {
-                    setState(() => _statusFilter = 'inactive');
-                    _safeLoadClients();
-                  },
-                ),
-              ],
+
+            // Filtros modernizados
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16.0),
+              child: Row(
+                children: [
+                  Icon(Icons.filter_list, color: Colors.grey.shade600, size: 20),
+                  const SizedBox(width: 8),
+                  Text(
+                    'Filtros:',
+                    style: TextStyle(
+                      fontWeight: FontWeight.w600,
+                      color: Colors.grey.shade700,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: Row(
+                        children: [
+                          _buildModernFilterChip(
+                            label: 'Todos',
+                            isSelected: _statusFilter == 'all',
+                            onTap: () {
+                              setState(() => _statusFilter = 'all');
+                              _safeLoadClients();
+                            },
+                            icon: Icons.people,
+                          ),
+                          const SizedBox(width: 8),
+                          _buildModernFilterChip(
+                            label: 'Activos',
+                            isSelected: _statusFilter == 'active',
+                            onTap: () {
+                              setState(() => _statusFilter = 'active');
+                              _safeLoadClients();
+                            },
+                            icon: Icons.check_circle,
+                            color: Colors.green,
+                          ),
+                          const SizedBox(width: 8),
+                          _buildModernFilterChip(
+                            label: 'Inactivos',
+                            isSelected: _statusFilter == 'inactive',
+                            onTap: () {
+                              setState(() => _statusFilter = 'inactive');
+                              _safeLoadClients();
+                            },
+                            icon: Icons.cancel,
+                            color: Colors.red,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
-          ),
+            const SizedBox(height: 12),
 
           // Mostrar mensaje de carga si está cargando inicialmente
           if (_isLoadingClients && _clientProvider.clients.isEmpty)
@@ -352,72 +423,158 @@ class _ClientListScreenState extends State<ClientListScreen> {
                     onRefresh: _isLoadingClients
                         ? () async {}
                         : _safeRefreshClients,
-                    child: Column(
-                      children: [
-                        Expanded(
-                          child: NotificationListener<ScrollNotification>(
-                            onNotification: (ScrollNotification scrollInfo) {
-                              if (scrollInfo.metrics.pixels ==
-                                      scrollInfo.metrics.maxScrollExtent &&
-                                  !clientProvider.isLoading &&
-                                  clientProvider.hasMorePages &&
-                                  !_isLoadingClients) {
-                                _loadMoreClients();
-                              }
-                              return false;
-                            },
-                            child: ListView.builder(
-                              itemCount: clientProvider.clients.length,
-                              itemBuilder: (context, index) {
-                                final client = clientProvider.clients[index];
-                                return ClientListItem(
-                                  client: client,
-                                  onTap: () => _onClientTap(client),
-                                  onCall:
-                                      client.telefono != null &&
-                                          client.telefono!.isNotEmpty
-                                      ? () => _makePhoneCall(client.telefono!)
-                                      : null,
-                                  onWhatsApp:
-                                      client.telefono != null &&
-                                          client.telefono!.isNotEmpty
-                                      ? () => _sendWhatsAppMessage(
-                                          client.telefono!,
-                                        )
-                                      : null,
-                                );
-                              },
+                    child: ListView.builder(
+                      controller: _scrollController,
+                      itemCount: clientProvider.clients.length + (_isLoadingMore ? 1 : 0),
+                      itemBuilder: (context, index) {
+                        // Mostrar indicador de carga al final
+                        if (index == clientProvider.clients.length) {
+                          return Container(
+                            padding: const EdgeInsets.symmetric(vertical: 20),
+                            child: Center(
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  SizedBox(
+                                    width: 24,
+                                    height: 24,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2.5,
+                                      valueColor: AlwaysStoppedAnimation<Color>(
+                                        Colors.blue.shade600,
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(height: 12),
+                                  Text(
+                                    'Cargando más clientes...',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: Colors.grey.shade600,
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
-                          ),
-                        ),
-                        if (clientProvider.isLoading &&
-                            clientProvider.clients.isNotEmpty)
-                          const Padding(
-                            padding: EdgeInsets.all(16.0),
-                            child: Center(child: CircularProgressIndicator()),
-                          ),
-                      ],
+                          );
+                        }
+
+                        final client = clientProvider.clients[index];
+                        return ClientListItem(
+                          client: client,
+                          onTap: () => _onClientTap(client),
+                          onCall: client.telefono != null && client.telefono!.isNotEmpty
+                              ? () => _makePhoneCall(client.telefono!)
+                              : null,
+                          onWhatsApp: client.telefono != null && client.telefono!.isNotEmpty
+                              ? () => _sendWhatsAppMessage(client.telefono!)
+                              : null,
+                          onEdit: () => _navigateToEditClient(client),
+                        );
+                      },
                     ),
                   );
                 },
               ),
             ),
-        ],
+          ],
+        ),
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _isLoadingClients ? null : () => _navigateToCreateClient(),
-        backgroundColor: _isLoadingClients ? Colors.grey : null,
-        tooltip: _isLoadingClients ? 'Cargando...' : 'Nuevo cliente',
-        child: _isLoadingClients
-            ? const SizedBox(
-                width: 20,
-                height: 20,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                ),
-              )
-            : const Icon(Icons.add),
+      floatingActionButton: Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(16),
+          gradient: LinearGradient(
+            colors: [Colors.blue.shade600, Colors.blue.shade800],
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.blue.withOpacity(0.4),
+              blurRadius: 12,
+              offset: const Offset(0, 6),
+            ),
+          ],
+        ),
+        child: FloatingActionButton.extended(
+          onPressed: _isLoadingClients ? null : () => _navigateToCreateClient(),
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          tooltip: _isLoadingClients ? 'Cargando...' : 'Nuevo cliente',
+          icon: _isLoadingClients
+              ? const SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                  ),
+                )
+              : const Icon(Icons.add, size: 24),
+          label: const Text(
+            'Nuevo Cliente',
+            style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildModernFilterChip({
+    required String label,
+    required bool isSelected,
+    required VoidCallback onTap,
+    required IconData icon,
+    Color? color,
+  }) {
+    final Color chipColor = color ?? Colors.blue;
+    final Color lightColor = Color.lerp(chipColor, Colors.white, 0.3) ?? chipColor;
+    final Color darkColor = Color.lerp(chipColor, Colors.black, 0.2) ?? chipColor;
+
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        decoration: BoxDecoration(
+          gradient: isSelected
+              ? LinearGradient(
+                  colors: [lightColor, darkColor],
+                )
+              : null,
+          color: isSelected ? null : Colors.grey.shade100,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: isSelected ? chipColor : Colors.grey.shade300,
+            width: isSelected ? 2 : 1,
+          ),
+          boxShadow: isSelected
+              ? [
+                  BoxShadow(
+                    color: chipColor.withOpacity(0.3),
+                    blurRadius: 8,
+                    offset: const Offset(0, 3),
+                  ),
+                ]
+              : null,
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              icon,
+              size: 16,
+              color: isSelected ? Colors.white : Colors.grey.shade600,
+            ),
+            const SizedBox(width: 6),
+            Text(
+              label,
+              style: TextStyle(
+                color: isSelected ? Colors.white : Colors.grey.shade700,
+                fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                fontSize: 14,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -438,6 +595,7 @@ class _ClientListScreenState extends State<ClientListScreen> {
     // - Código de cliente
     if (mounted) {
       _clientProvider.loadClients(
+        perPage: 5, // Cargar solo 5 clientes por página
         search: _searchQuery.isNotEmpty ? _searchQuery : null,
         active: _activeFilterValue(),
       );
@@ -451,6 +609,22 @@ class _ClientListScreenState extends State<ClientListScreen> {
         builder: (context) => ClientDetailScreen(client: client),
       ),
     );
+  }
+
+  /// Navegar directamente al formulario de edición (edición rápida)
+  Future<void> _navigateToEditClient(Client client) async {
+    if (!mounted) return;
+
+    final result = await Navigator.pushNamed(
+      context,
+      '/client-form',
+      arguments: client,
+    );
+
+    // Si se editó exitosamente, recargar la lista
+    if (result == true && mounted) {
+      _loadClients();
+    }
   }
 
   Future<void> _makePhoneCall(String phoneNumber) async {
@@ -503,6 +677,7 @@ class ClientListItem extends StatelessWidget {
   final VoidCallback onTap;
   final VoidCallback? onCall;
   final VoidCallback? onWhatsApp;
+  final VoidCallback? onEdit;
 
   const ClientListItem({
     super.key,
@@ -510,124 +685,327 @@ class ClientListItem extends StatelessWidget {
     required this.onTap,
     this.onCall,
     this.onWhatsApp,
+    this.onEdit,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-      child: ListTile(
-        leading: Container(
-          width: 50,
-          height: 50,
-          decoration: BoxDecoration(
-            color: Colors.green.shade100,
-            borderRadius: BorderRadius.circular(8),
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(16),
+        gradient: LinearGradient(
+          colors: [Colors.white, Colors.grey.shade50],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.06),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
           ),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(6),
-            child: client.fotoPerfil != null && client.fotoPerfil!.isNotEmpty
-                ? _buildProfileImage(client.fotoPerfil!)
-                : const Icon(Icons.person, color: Colors.green),
-          ),
-        ),
-        title: Text(
-          client.nombre,
-          style: const TextStyle(fontWeight: FontWeight.bold),
-        ),
-        subtitle: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            if (client.razonSocial != null && client.razonSocial!.isNotEmpty)
-              Text('Razón Social: ${client.razonSocial}'),
-            if (client.email != null && client.email!.isNotEmpty)
-              Text(client.email!),
-            if (client.telefono != null && client.telefono!.isNotEmpty)
-              Text('Tel: ${client.telefono}'),
-            if (client.nit != null && client.nit!.isNotEmpty)
-              Text('CI/NIT: ${client.nit}'),
-            if (client.localidad != null)
-              Text('Localidad: ${_getLocalidadName(client.localidad)}'),
-            if (client.codigoCliente != null &&
-                client.codigoCliente!.isNotEmpty)
-              Text('Código: ${client.codigoCliente}'),
-            if (client.categorias != null && client.categorias!.isNotEmpty)
-              Padding(
-                padding: const EdgeInsets.only(top: 4.0),
-                child: Wrap(
-                  spacing: 6,
-                  runSpacing: 6,
-                  children: client.categorias!
-                      .map((c) => Chip(
-                            label: Text(c.nombre ?? c.clave ?? 'Cat'),
-                            materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                            visualDensity: VisualDensity.compact,
-                            padding: const EdgeInsets.symmetric(horizontal: 4),
-                          ))
-                      .toList(),
-                ),
-              ),
-          ],
-        ),
-        trailing: client.telefono != null && client.telefono!.isNotEmpty
-            ? Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  if (onCall != null)
-                    IconButton(
-                      icon: const Icon(Icons.call, color: Colors.green),
-                      onPressed: onCall,
-                      tooltip: 'Llamar',
-                      iconSize: 20,
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(16),
+          onTap: onTap,
+          child: Padding(
+            padding: const EdgeInsets.all(12),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Avatar con gradiente
+                Container(
+                  width: 60,
+                  height: 60,
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [Colors.green.shade400, Colors.teal.shade600],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
                     ),
-                  if (onWhatsApp != null)
-                    IconButton(
-                      icon: const Icon(Icons.message, color: Colors.green),
-                      onPressed: onWhatsApp,
-                      tooltip: 'WhatsApp',
-                      iconSize: 20,
-                    ),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 6,
-                      vertical: 2,
-                    ),
-                    decoration: BoxDecoration(
-                      color: client.activo
-                          ? Colors.green.shade100
-                          : Colors.red.shade100,
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Text(
-                      client.activo ? 'Activo' : 'Inactivo',
-                      style: TextStyle(
-                        color: client.activo ? Colors.green : Colors.red,
-                        fontSize: 10,
-                        fontWeight: FontWeight.w500,
+                    borderRadius: BorderRadius.circular(12),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.green.withOpacity(0.3),
+                        blurRadius: 8,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.all(2),
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(10),
+                        child: client.fotoPerfil != null && client.fotoPerfil!.isNotEmpty
+                            ? _buildProfileImage(client.fotoPerfil!)
+                            : Container(
+                                color: Colors.green.shade50,
+                                child: const Icon(Icons.person, color: Colors.green, size: 32),
+                              ),
                       ),
                     ),
                   ),
-                ],
-              )
-            : Container(
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                decoration: BoxDecoration(
-                  color: client.activo
-                      ? Colors.green.shade100
-                      : Colors.red.shade100,
-                  borderRadius: BorderRadius.circular(8),
                 ),
-                child: Text(
-                  client.activo ? 'Activo' : 'Inactivo',
-                  style: TextStyle(
-                    color: client.activo ? Colors.green : Colors.red,
-                    fontSize: 10,
-                    fontWeight: FontWeight.w500,
+                const SizedBox(width: 12),
+
+                // Información del cliente
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _buildClientInfo(),
+                    ],
                   ),
                 ),
-              ),
-        onTap: onTap,
+
+                // Acciones y estado
+                _buildActionsAndStatus(),
+              ],
+            ),
+          ),
+        ),
       ),
+    );
+  }
+
+  Widget _buildClientInfo() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Nombre
+        Text(
+          client.nombre,
+          style: const TextStyle(
+            fontWeight: FontWeight.bold,
+            fontSize: 16,
+            color: Colors.black87,
+          ),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        ),
+        const SizedBox(height: 4),
+
+        // Razón Social
+        if (client.razonSocial != null && client.razonSocial!.isNotEmpty)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 4),
+            child: Text(
+              client.razonSocial!,
+              style: TextStyle(
+                fontSize: 13,
+                color: Colors.grey.shade700,
+                fontStyle: FontStyle.italic,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+
+        // Teléfono y Email
+        Row(
+          children: [
+            if (client.telefono != null && client.telefono!.isNotEmpty) ...[
+              Icon(Icons.phone, size: 14, color: Colors.grey.shade600),
+              const SizedBox(width: 4),
+              Text(
+                client.telefono!,
+                style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+              ),
+              const SizedBox(width: 12),
+            ],
+          ],
+        ),
+
+        if (client.email != null && client.email!.isNotEmpty)
+          Padding(
+            padding: const EdgeInsets.only(top: 4),
+            child: Row(
+              children: [
+                Icon(Icons.email, size: 14, color: Colors.grey.shade600),
+                const SizedBox(width: 4),
+                Expanded(
+                  child: Text(
+                    client.email!,
+                    style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+        // Localidad y Código
+        if (client.localidad != null || (client.codigoCliente != null && client.codigoCliente!.isNotEmpty))
+          Padding(
+            padding: const EdgeInsets.only(top: 4),
+            child: Row(
+              children: [
+                if (client.localidad != null) ...[
+                  Icon(Icons.location_on, size: 14, color: Colors.grey.shade600),
+                  const SizedBox(width: 4),
+                  Flexible(
+                    child: Text(
+                      _getLocalidadName(client.localidad),
+                      style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  if (client.codigoCliente != null && client.codigoCliente!.isNotEmpty)
+                    const SizedBox(width: 8),
+                ],
+                if (client.codigoCliente != null && client.codigoCliente!.isNotEmpty)
+                  Text(
+                    'Cód: ${client.codigoCliente}',
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: Colors.grey.shade600,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+              ],
+            ),
+          ),
+
+        // Categorías
+        if (client.categorias != null && client.categorias!.isNotEmpty)
+          Padding(
+            padding: const EdgeInsets.only(top: 6),
+            child: Wrap(
+              spacing: 4,
+              runSpacing: 4,
+              children: client.categorias!.take(2).map((c) => Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [Colors.blue.shade400, Colors.blue.shade600],
+                  ),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Text(
+                  c.nombre ?? c.clave ?? 'Cat',
+                  style: const TextStyle(
+                    fontSize: 10,
+                    color: Colors.white,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              )).toList(),
+            ),
+          ),
+      ],
+    );
+  }
+
+  Widget _buildActionsAndStatus() {
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.end,
+      children: [
+        // Estado
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: client.activo
+                  ? [Colors.green.shade400, Colors.green.shade600]
+                  : [Colors.red.shade400, Colors.red.shade600],
+            ),
+            borderRadius: BorderRadius.circular(12),
+            boxShadow: [
+              BoxShadow(
+                color: (client.activo ? Colors.green : Colors.red).withOpacity(0.3),
+                blurRadius: 6,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          child: Text(
+            client.activo ? 'Activo' : 'Inactivo',
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 11,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ),
+
+        const SizedBox(height: 8),
+
+        // Botón de edición rápida
+        Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [Colors.orange.shade400, Colors.orange.shade600],
+            ),
+            shape: BoxShape.circle,
+            boxShadow: [
+              BoxShadow(
+                color: Colors.orange.withOpacity(0.3),
+                blurRadius: 6,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          child: IconButton(
+            icon: const Icon(Icons.edit, color: Colors.white, size: 18),
+            onPressed: onEdit,
+            tooltip: 'Editar',
+            padding: const EdgeInsets.all(8),
+            constraints: const BoxConstraints(),
+          ),
+        ),
+
+        // Acciones (llamar y WhatsApp)
+        if (client.telefono != null && client.telefono!.isNotEmpty) ...[
+          const SizedBox(height: 8),
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (onCall != null)
+                Container(
+                  decoration: BoxDecoration(
+                    color: Colors.green.shade50,
+                    shape: BoxShape.circle,
+                  ),
+                  child: IconButton(
+                    icon: Icon(Icons.call, color: Colors.green.shade700, size: 18),
+                    onPressed: onCall,
+                    tooltip: 'Llamar',
+                    padding: const EdgeInsets.all(6),
+                    constraints: const BoxConstraints(),
+                  ),
+                ),
+              if (onWhatsApp != null) ...[
+                const SizedBox(width: 6),
+                Container(
+                  decoration: BoxDecoration(
+                    color: Colors.green.shade50,
+                    shape: BoxShape.circle,
+                  ),
+                  child: IconButton(
+                    icon: Icon(Icons.message, color: Colors.green.shade700, size: 18),
+                    onPressed: onWhatsApp,
+                    tooltip: 'WhatsApp',
+                    padding: const EdgeInsets.all(6),
+                    constraints: const BoxConstraints(),
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ],
+      ],
     );
   }
 
@@ -769,7 +1147,7 @@ class _ImageWithFallbackState extends State<_ImageWithFallback> {
         if (_currentUrlIndex >= widget.urls.length - 1) {
           return widget.fallbackWidget;
         }
-        
+
         // Retornar loading widget mientras se intenta la siguiente URL
         return widget.loadingWidget;
       },

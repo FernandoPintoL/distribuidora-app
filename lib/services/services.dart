@@ -6,3 +6,4 @@ export 'pedido_service.dart';
 export 'proforma_service.dart';
 export 'tracking_service.dart';
 export 'websocket_service.dart';
+export 'biometric_auth_service.dart';

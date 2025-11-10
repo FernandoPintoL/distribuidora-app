@@ -8,80 +8,403 @@ import '../../services/role_based_router.dart';
 /// - Chofer
 /// - Preventista
 /// - Admin
-class PerfilScreen extends StatelessWidget {
+///
+/// Versión moderna con diseño adaptable según el rol del usuario
+class PerfilScreen extends StatefulWidget {
   const PerfilScreen({super.key});
+
+  @override
+  State<PerfilScreen> createState() => _PerfilScreenState();
+}
+
+class _PerfilScreenState extends State<PerfilScreen> with SingleTickerProviderStateMixin {
+  late AnimationController _animationController;
+  late Animation<double> _fadeAnimation;
+  late Animation<Offset> _slideAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _animationController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 800),
+    );
+
+    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: _animationController, curve: Curves.easeOut),
+    );
+
+    _slideAnimation = Tween<Offset>(
+      begin: const Offset(0, 0.1),
+      end: Offset.zero,
+    ).animate(CurvedAnimation(parent: _animationController, curve: Curves.easeOut));
+
+    _animationController.forward();
+  }
+
+  @override
+  void dispose() {
+    _animationController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     final authProvider = context.watch<AuthProvider>();
     final user = authProvider.user;
+    final primaryRole = _getPrimaryRole(user);
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Mi Perfil'),
-        elevation: 0,
-      ),
-      body: SingleChildScrollView(
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Header del perfil
-              _buildProfileHeader(context, user),
-              const SizedBox(height: 32),
-
-              // Información personal
-              _buildSectionTitle('Información Personal'),
-              const SizedBox(height: 12),
-              _buildInfoCard(
-                icon: Icons.person,
-                title: 'Nombre',
-                value: user?.name ?? 'No disponible',
-              ),
-              const SizedBox(height: 8),
-              _buildInfoCard(
-                icon: Icons.email,
-                title: 'Correo Electrónico',
-                value: user?.email ?? 'No disponible',
-              ),
-              const SizedBox(height: 8),
-              if (user?.usernick != null)
-                Column(
-                  children: [
-                    _buildInfoCard(
-                      icon: Icons.account_circle,
-                      title: 'Usuario',
-                      value: '@${user?.usernick}',
-                    ),
-                    const SizedBox(height: 8),
-                  ],
+      body: CustomScrollView(
+        slivers: [
+          // AppBar con gradiente moderno
+          SliverAppBar(
+            expandedHeight: 280,
+            floating: false,
+            pinned: true,
+            flexibleSpace: FlexibleSpaceBar(
+              background: Container(
+                decoration: BoxDecoration(
+                  gradient: _getRoleGradient(primaryRole),
                 ),
-
-              // Roles y permisos
-              _buildSectionTitle('Roles y Permisos'),
-              const SizedBox(height: 12),
-              _buildRolesCard(user),
-              const SizedBox(height: 24),
-
-              // Estado del usuario
-              _buildSectionTitle('Estado'),
-              const SizedBox(height: 12),
-              _buildStatusCard(user),
-              const SizedBox(height: 32),
-
-              // Botón de cerrar sesión
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton.icon(
-                  onPressed: () => _showLogoutDialog(context),
-                  icon: const Icon(Icons.logout),
-                  label: const Text('Cerrar Sesión'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.red,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 12),
+                child: SafeArea(
+                  child: FadeTransition(
+                    opacity: _fadeAnimation,
+                    child: _buildProfileHeader(context, user, primaryRole),
                   ),
+                ),
+              ),
+            ),
+            backgroundColor: _getRoleColor(primaryRole),
+          ),
+
+          // Contenido principal
+          SliverToBoxAdapter(
+            child: FadeTransition(
+              opacity: _fadeAnimation,
+              child: SlideTransition(
+                position: _slideAnimation,
+                child: Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Estadísticas específicas por rol
+                      _buildRoleSpecificStats(context, user, primaryRole),
+                      const SizedBox(height: 24),
+
+                      // Información personal
+                      _buildModernSectionTitle('Información Personal', Icons.person_outline),
+                      const SizedBox(height: 12),
+                      _buildModernInfoCard(
+                        context: context,
+                        icon: Icons.person_outline,
+                        title: 'Nombre Completo',
+                        value: user?.name ?? 'No disponible',
+                        gradient: LinearGradient(
+                          colors: [Colors.blue.shade400, Colors.blue.shade600],
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      _buildModernInfoCard(
+                        context: context,
+                        icon: Icons.email_outlined,
+                        title: 'Correo Electrónico',
+                        value: user?.email ?? 'No disponible',
+                        gradient: LinearGradient(
+                          colors: [Colors.purple.shade400, Colors.purple.shade600],
+                        ),
+                      ),
+                      if (user?.usernick != null) ...[
+                        const SizedBox(height: 12),
+                        _buildModernInfoCard(
+                          context: context,
+                          icon: Icons.account_circle_outlined,
+                          title: 'Usuario',
+                          value: '@${user?.usernick}',
+                          gradient: LinearGradient(
+                            colors: [Colors.orange.shade400, Colors.orange.shade600],
+                          ),
+                        ),
+                      ],
+                      const SizedBox(height: 24),
+
+                      // Roles y permisos
+                      _buildModernSectionTitle('Roles y Permisos', Icons.admin_panel_settings_outlined),
+                      const SizedBox(height: 12),
+                      _buildModernRolesCard(user),
+                      const SizedBox(height: 24),
+
+                      // Estado del usuario
+                      _buildModernSectionTitle('Estado de Cuenta', Icons.verified_user_outlined),
+                      const SizedBox(height: 12),
+                      _buildModernStatusCard(user),
+                      const SizedBox(height: 24),
+
+                      // Seguridad y Autenticación
+                      _buildModernSectionTitle('Seguridad', Icons.security_outlined),
+                      const SizedBox(height: 12),
+                      _buildSecurityCard(context, authProvider),
+                      const SizedBox(height: 24),
+
+                      // Opciones específicas por rol
+                      _buildRoleSpecificOptions(context, user, primaryRole),
+
+                      // Botón de cerrar sesión moderno
+                      const SizedBox(height: 8),
+                      _buildModernLogoutButton(context),
+                      const SizedBox(height: 32),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Obtener rol principal del usuario
+  String _getPrimaryRole(dynamic user) {
+    final roles = user?.roles ?? [];
+    if (roles.isEmpty) return 'Usuario';
+
+    // Prioridad: Admin > Preventista > Chofer > Cliente
+    if (roles.contains('Admin')) return 'Admin';
+    if (roles.contains('Preventista')) return 'Preventista';
+    if (roles.contains('Chofer')) return 'Chofer';
+    if (roles.contains('Cliente')) return 'Cliente';
+
+    return roles.first.toString();
+  }
+
+  // Gradiente específico por rol
+  LinearGradient _getRoleGradient(String role) {
+    switch (role.toLowerCase()) {
+      case 'admin':
+        return LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Colors.red.shade700, Colors.red.shade900],
+        );
+      case 'preventista':
+        return LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Colors.orange.shade600, Colors.deepOrange.shade800],
+        );
+      case 'cliente':
+        return LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Colors.blue.shade600, Colors.blue.shade900],
+        );
+      case 'chofer':
+        return LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Colors.green.shade600, Colors.green.shade900],
+        );
+      default:
+        return LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Colors.grey.shade700, Colors.grey.shade900],
+        );
+    }
+  }
+
+  Widget _buildProfileHeader(BuildContext context, dynamic user, String primaryRole) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.only(top: 30, bottom: 10),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Avatar moderno con borde y sombra
+            Container(
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.3),
+                    blurRadius: 20,
+                    offset: const Offset(0, 10),
+                  ),
+                ],
+              ),
+              child: CircleAvatar(
+                radius: 50,
+                backgroundColor: Colors.white,
+                child: CircleAvatar(
+                  radius: 46,
+                  backgroundColor: Colors.white.withOpacity(0.9),
+                  child: Text(
+                    (user?.name ?? 'U')[0].toUpperCase(),
+                    style: TextStyle(
+                      fontSize: 36,
+                      color: _getRoleColor(primaryRole),
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            // Nombre del usuario
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Text(
+                user?.name ?? 'Usuario',
+                style: const TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                  letterSpacing: 0.5,
+                ),
+                textAlign: TextAlign.center,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+            const SizedBox(height: 8),
+            // Descripción del rol con badge
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.2),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(
+                  color: Colors.white.withOpacity(0.3),
+                  width: 1,
+                ),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    _getRolePrimaryIcon(primaryRole),
+                    color: Colors.white,
+                    size: 16,
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    RoleBasedRouter.getRoleDescription(user),
+                    style: const TextStyle(
+                      fontSize: 14,
+                      color: Colors.white,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  IconData _getRolePrimaryIcon(String role) {
+    switch (role.toLowerCase()) {
+      case 'admin':
+        return Icons.security;
+      case 'preventista':
+        return Icons.business_center;
+      case 'cliente':
+        return Icons.shopping_bag;
+      case 'chofer':
+        return Icons.local_shipping;
+      default:
+        return Icons.person;
+    }
+  }
+
+  // Título de sección moderno
+  Widget _buildModernSectionTitle(String title, IconData icon) {
+    return Row(
+      children: [
+        Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: Colors.blue.shade50,
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Icon(icon, size: 20, color: Colors.blue.shade700),
+        ),
+        const SizedBox(width: 12),
+        Text(
+          title,
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            color: Colors.grey.shade800,
+          ),
+        ),
+      ],
+    );
+  }
+
+  // Tarjeta de información moderna con gradiente
+  Widget _buildModernInfoCard({
+    required BuildContext context,
+    required IconData icon,
+    required String title,
+    required String value,
+    required Gradient gradient,
+  }) {
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Card(
+        elevation: 0,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  gradient: gradient,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(icon, color: Colors.white, size: 24),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.grey.shade600,
+                        fontWeight: FontWeight.w500,
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      value,
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.black87,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
                 ),
               ),
             ],
@@ -91,37 +414,176 @@ class PerfilScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildProfileHeader(BuildContext context, dynamic user) {
-    return Center(
-      child: Column(
-        children: [
-          CircleAvatar(
-            radius: 50,
-            backgroundColor: Theme.of(context).primaryColor,
-            child: Text(
-              (user?.name ?? 'U')[0].toUpperCase(),
-              style: const TextStyle(
-                fontSize: 32,
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
+  // Tarjeta de roles moderna
+  Widget _buildModernRolesCard(dynamic user) {
+    final roles = user?.roles ?? [];
+
+    if (roles.isEmpty) {
+      return Container(
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: Colors.grey.shade50,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: Colors.grey.shade200),
+        ),
+        child: Row(
+          children: [
+            Icon(Icons.info_outline, color: Colors.grey.shade400),
+            const SizedBox(width: 12),
+            Text(
+              'Sin roles asignados',
+              style: TextStyle(color: Colors.grey.shade600),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(16),
+        gradient: LinearGradient(
+          colors: [Colors.blue.shade50, Colors.purple.shade50],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Wrap(
+        spacing: 10,
+        runSpacing: 10,
+        children: (roles as List<dynamic>).map((role) {
+          return Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  _getRoleColor(role.toString()),
+                  _getRoleColor(role.toString()).withOpacity(0.8),
+                ],
               ),
+              borderRadius: BorderRadius.circular(12),
+              boxShadow: [
+                BoxShadow(
+                  color: _getRoleColor(role.toString()).withOpacity(0.3),
+                  blurRadius: 8,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  _getRolePrimaryIcon(role.toString()),
+                  size: 18,
+                  color: Colors.white,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  _getRoleLabel(role.toString()),
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w600,
+                    color: Colors.white,
+                    fontSize: 14,
+                  ),
+                ),
+              ],
+            ),
+          );
+        }).toList(),
+      ),
+    );
+  }
+
+  // Tarjeta de estado moderna
+  Widget _buildModernStatusCard(dynamic user) {
+    final isActive = user?.activo ?? false;
+
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(16),
+        gradient: LinearGradient(
+          colors: isActive
+              ? [Colors.green.shade50, Colors.green.shade100]
+              : [Colors.red.shade50, Colors.red.shade100],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: isActive ? Colors.green : Colors.red,
+              shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(
+                  color: (isActive ? Colors.green : Colors.red).withOpacity(0.3),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: Icon(
+              isActive ? Icons.check_circle : Icons.cancel,
+              color: Colors.white,
+              size: 24,
             ),
           ),
-          const SizedBox(height: 16),
-          Text(
-            user?.name ?? 'Usuario',
-            style: const TextStyle(
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            RoleBasedRouter.getRoleDescription(user),
-            style: TextStyle(
-              fontSize: 14,
-              color: Colors.grey[600],
-              fontStyle: FontStyle.italic,
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Estado de Cuenta',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Colors.grey.shade600,
+                    fontWeight: FontWeight.w500,
+                    letterSpacing: 0.5,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Row(
+                  children: [
+                    Container(
+                      width: 8,
+                      height: 8,
+                      decoration: BoxDecoration(
+                        color: isActive ? Colors.green : Colors.red,
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      isActive ? 'Activo' : 'Inactivo',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: isActive ? Colors.green.shade700 : Colors.red.shade700,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
             ),
           ),
         ],
@@ -129,140 +591,189 @@ class PerfilScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildSectionTitle(String title) {
-    return Text(
-      title,
-      style: const TextStyle(
-        fontSize: 18,
-        fontWeight: FontWeight.bold,
-      ),
-    );
-  }
+  Widget _buildSecurityCard(BuildContext context, AuthProvider authProvider) {
+    return FutureBuilder<bool>(
+      future: authProvider.isBiometricLoginEnabled(),
+      builder: (context, snapshot) {
+        final biometricEnabled = snapshot.data ?? false;
 
-  Widget _buildInfoCard({
-    required IconData icon,
-    required String title,
-    required String value,
-  }) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(12),
-        child: Row(
-          children: [
-            Icon(icon, color: Colors.blue, size: 24),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: const TextStyle(
-                      fontSize: 12,
-                      color: Colors.grey,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    value,
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                    ),
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ],
+        return Card(
+          elevation: 2,
+          child: Column(
+            children: [
+              // Autenticación Biométrica
+              FutureBuilder<bool>(
+                future: authProvider.checkBiometricAvailability().then((_) => authProvider.biometricAvailable),
+                builder: (context, availSnapshot) {
+                  final biometricAvailable = availSnapshot.data ?? false;
+
+                  if (!biometricAvailable) {
+                    return ListTile(
+                      leading: Icon(Icons.fingerprint, color: Colors.grey.shade400),
+                      title: const Text('Autenticación Biométrica'),
+                      subtitle: const Text('No disponible en este dispositivo'),
+                      enabled: false,
+                    );
+                  }
+
+                  return FutureBuilder<String>(
+                    future: authProvider.getBiometricTypeMessage(),
+                    builder: (context, typeSnapshot) {
+                      final biometricType = typeSnapshot.data ?? 'Biometría';
+
+                      return SwitchListTile(
+                        secondary: Icon(
+                          biometricType.contains('Face') ? Icons.face : Icons.fingerprint,
+                          color: biometricEnabled ? Theme.of(context).primaryColor : Colors.grey,
+                        ),
+                        title: Text('Usar $biometricType'),
+                        subtitle: Text(
+                          biometricEnabled
+                              ? 'Habilitado para inicio rápido'
+                              : 'Habilitar para inicio rápido',
+                        ),
+                        value: biometricEnabled,
+                        onChanged: (bool value) async {
+                          if (value) {
+                            // Mostrar diálogo para habilitar
+                            _showEnableBiometricDialog(context, authProvider);
+                          } else {
+                            // Deshabilitar directamente
+                            final success = await authProvider.disableBiometricLogin();
+                            if (success && context.mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text('$biometricType deshabilitado'),
+                                  backgroundColor: Colors.orange,
+                                ),
+                              );
+                              // Forzar reconstrucción del widget
+                              (context as Element).markNeedsBuild();
+                            }
+                          }
+                        },
+                      );
+                    },
+                  );
+                },
               ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildRolesCard(dynamic user) {
-    final roles = user?.roles ?? [];
-
-    if (roles.isEmpty) {
-      return Card(
-        child: Padding(
-          padding: const EdgeInsets.all(12),
-          child: Text(
-            'Sin roles asignados',
-            style: TextStyle(color: Colors.grey[600]),
+              const Divider(height: 1),
+              ListTile(
+                leading: const Icon(Icons.lock, color: Colors.blue),
+                title: const Text('Cambiar Contraseña'),
+                subtitle: const Text('Actualizar contraseña de acceso'),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () {
+                  // TODO: Implementar cambio de contraseña
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Funcionalidad en desarrollo'),
+                      backgroundColor: Colors.orange,
+                    ),
+                  );
+                },
+              ),
+            ],
           ),
-        ),
-      );
-    }
-
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(12),
-        child: Wrap(
-          spacing: 8,
-          runSpacing: 8,
-          children: (roles as List<dynamic>).map((role) {
-            return Chip(
-              label: Text(
-                _getRoleLabel(role.toString()),
-                style: const TextStyle(
-                  fontWeight: FontWeight.w600,
-                  color: Colors.white,
-                ),
-              ),
-              backgroundColor: _getRoleColor(role.toString()),
-              avatar: CircleAvatar(
-                backgroundColor: Colors.white.withOpacity(0.3),
-                child: _getRoleIcon(role.toString()),
-              ),
-            );
-          }).toList() as List<Widget>,
-        ),
-      ),
+        );
+      },
     );
   }
 
-  Widget _buildStatusCard(dynamic user) {
-    final isActive = user?.activo ?? false;
+  void _showEnableBiometricDialog(BuildContext context, AuthProvider authProvider) {
+    final usernameController = TextEditingController();
+    final passwordController = TextEditingController();
+    final formKey = GlobalKey<FormState>();
 
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(12),
-        child: Row(
-          children: [
-            CircleAvatar(
-              radius: 8,
-              backgroundColor: isActive ? Colors.green : Colors.red,
+    showDialog(
+      context: context,
+      builder: (BuildContext dialogContext) {
+        return AlertDialog(
+          title: const Text('Habilitar Autenticación Biométrica'),
+          content: Form(
+            key: formKey,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Text(
+                  'Ingresa tus credenciales para habilitar el acceso biométrico.',
+                  style: TextStyle(fontSize: 14),
+                ),
+                const SizedBox(height: 20),
+                TextFormField(
+                  controller: usernameController,
+                  decoration: const InputDecoration(
+                    labelText: 'Usuario o Email',
+                    border: OutlineInputBorder(),
+                    prefixIcon: Icon(Icons.person),
+                  ),
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Por favor ingrese su usuario';
+                    }
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 16),
+                TextFormField(
+                  controller: passwordController,
+                  obscureText: true,
+                  decoration: const InputDecoration(
+                    labelText: 'Contraseña',
+                    border: OutlineInputBorder(),
+                    prefixIcon: Icon(Icons.lock),
+                  ),
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Por favor ingrese su contraseña';
+                    }
+                    return null;
+                  },
+                ),
+              ],
             ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    'Estado de Cuenta',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.grey,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    isActive ? 'Activo' : 'Inactivo',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                      color: isActive ? Colors.green : Colors.red,
-                    ),
-                  ),
-                ],
-              ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(),
+              child: const Text('Cancelar'),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                if (formKey.currentState?.validate() ?? false) {
+                  final success = await authProvider.enableBiometricLogin(
+                    usernameController.text.trim(),
+                    passwordController.text,
+                  );
+
+                  if (dialogContext.mounted) {
+                    Navigator.of(dialogContext).pop();
+                  }
+
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(
+                          success
+                              ? 'Autenticación biométrica habilitada'
+                              : 'Error al habilitar autenticación biométrica',
+                        ),
+                        backgroundColor: success ? Colors.green : Colors.red,
+                      ),
+                    );
+
+                    if (success) {
+                      // Forzar reconstrucción del widget
+                      (context as Element).markNeedsBuild();
+                    }
+                  }
+                }
+              },
+              child: const Text('Habilitar'),
             ),
           ],
-        ),
-      ),
+        );
+      },
     );
   }
 
@@ -296,27 +807,6 @@ class PerfilScreen extends StatelessWidget {
     }
   }
 
-  Widget _getRoleIcon(String role) {
-    IconData icon;
-    switch (role.toLowerCase()) {
-      case 'admin':
-        icon = Icons.security;
-        break;
-      case 'preventista':
-        icon = Icons.business_center;
-        break;
-      case 'cliente':
-        icon = Icons.shopping_bag;
-        break;
-      case 'chofer':
-        icon = Icons.local_shipping;
-        break;
-      default:
-        icon = Icons.person;
-    }
-    return Icon(icon, size: 12, color: Colors.white);
-  }
-
   void _showLogoutDialog(BuildContext context) {
     showDialog(
       context: context,
@@ -343,6 +833,398 @@ class PerfilScreen extends StatelessWidget {
           ],
         );
       },
+    );
+  }
+
+  // Estadísticas específicas por rol
+  Widget _buildRoleSpecificStats(BuildContext context, dynamic user, String primaryRole) {
+    switch (primaryRole.toLowerCase()) {
+      case 'cliente':
+        return _buildClientStats(context);
+      case 'preventista':
+        return _buildPreventistaStats(context);
+      case 'chofer':
+        return _buildChoferStats(context);
+      case 'admin':
+        return _buildAdminStats(context);
+      default:
+        return const SizedBox.shrink();
+    }
+  }
+
+  Widget _buildClientStats(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(16),
+        gradient: LinearGradient(
+          colors: [Colors.blue.shade400, Colors.blue.shade600],
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.blue.withOpacity(0.3),
+            blurRadius: 15,
+            offset: const Offset(0, 5),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Row(
+            children: [
+              Icon(Icons.shopping_cart, color: Colors.white, size: 24),
+              SizedBox(width: 12),
+              Text(
+                'Resumen de Compras',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
+          Row(
+            children: [
+              Expanded(
+                child: _buildStatItem('Pedidos', '0', Icons.receipt_long),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: _buildStatItem('Direcciones', '0', Icons.location_on),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPreventistaStats(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(16),
+        gradient: LinearGradient(
+          colors: [Colors.orange.shade400, Colors.orange.shade700],
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.orange.withOpacity(0.3),
+            blurRadius: 15,
+            offset: const Offset(0, 5),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Row(
+            children: [
+              Icon(Icons.business_center, color: Colors.white, size: 24),
+              SizedBox(width: 12),
+              Text(
+                'Panel de Ventas',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
+          Row(
+            children: [
+              Expanded(
+                child: _buildStatItem('Clientes', '0', Icons.people),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: _buildStatItem('Ventas', '0', Icons.trending_up),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildChoferStats(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(16),
+        gradient: LinearGradient(
+          colors: [Colors.green.shade400, Colors.green.shade700],
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.green.withOpacity(0.3),
+            blurRadius: 15,
+            offset: const Offset(0, 5),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Row(
+            children: [
+              Icon(Icons.local_shipping, color: Colors.white, size: 24),
+              SizedBox(width: 12),
+              Text(
+                'Panel de Entregas',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
+          Row(
+            children: [
+              Expanded(
+                child: _buildStatItem('Entregas', '0', Icons.inventory),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: _buildStatItem('Rutas', '0', Icons.map),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAdminStats(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(16),
+        gradient: LinearGradient(
+          colors: [Colors.red.shade400, Colors.red.shade700],
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.red.withOpacity(0.3),
+            blurRadius: 15,
+            offset: const Offset(0, 5),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Row(
+            children: [
+              Icon(Icons.dashboard, color: Colors.white, size: 24),
+              SizedBox(width: 12),
+              Text(
+                'Panel de Administración',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
+          Row(
+            children: [
+              Expanded(
+                child: _buildStatItem('Usuarios', '0', Icons.people),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: _buildStatItem('Sistema', 'OK', Icons.settings),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStatItem(String label, String value, IconData icon) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.2),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Column(
+        children: [
+          Icon(icon, color: Colors.white, size: 28),
+          const SizedBox(height: 8),
+          Text(
+            value,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 24,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            label,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 12,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Opciones específicas por rol
+  Widget _buildRoleSpecificOptions(BuildContext context, dynamic user, String primaryRole) {
+    switch (primaryRole.toLowerCase()) {
+      case 'cliente':
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildModernSectionTitle('Mis Opciones', Icons.tune),
+            const SizedBox(height: 12),
+            _buildClientOptionsCard(context),
+            const SizedBox(height: 24),
+          ],
+        );
+      case 'preventista':
+      case 'chofer':
+      case 'admin':
+        return const SizedBox.shrink();
+      default:
+        return const SizedBox.shrink();
+    }
+  }
+
+  Widget _buildClientOptionsCard(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Card(
+        elevation: 0,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        child: Column(
+          children: [
+            _buildModernOptionTile(
+              context: context,
+              icon: Icons.location_on_outlined,
+              title: 'Mis Direcciones',
+              subtitle: 'Gestionar direcciones de entrega',
+              gradient: LinearGradient(
+                colors: [Colors.blue.shade400, Colors.blue.shade600],
+              ),
+              onTap: () => Navigator.pushNamed(context, '/mis-direcciones'),
+            ),
+            const Divider(height: 1, indent: 72),
+            _buildModernOptionTile(
+              context: context,
+              icon: Icons.shopping_bag_outlined,
+              title: 'Mis Pedidos',
+              subtitle: 'Ver historial de pedidos',
+              gradient: LinearGradient(
+                colors: [Colors.green.shade400, Colors.green.shade600],
+              ),
+              onTap: () {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Funcionalidad en desarrollo'),
+                    backgroundColor: Colors.orange,
+                  ),
+                );
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildModernOptionTile({
+    required BuildContext context,
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required Gradient gradient,
+    required VoidCallback onTap,
+  }) {
+    return ListTile(
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      leading: Container(
+        padding: const EdgeInsets.all(10),
+        decoration: BoxDecoration(
+          gradient: gradient,
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Icon(icon, color: Colors.white, size: 24),
+      ),
+      title: Text(
+        title,
+        style: const TextStyle(
+          fontWeight: FontWeight.w600,
+          fontSize: 16,
+        ),
+      ),
+      subtitle: Text(
+        subtitle,
+        style: TextStyle(
+          color: Colors.grey.shade600,
+          fontSize: 13,
+        ),
+      ),
+      trailing: Icon(Icons.chevron_right, color: Colors.grey.shade400),
+      onTap: onTap,
+    );
+  }
+
+  // Botón de cerrar sesión moderno
+  Widget _buildModernLogoutButton(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.red.withOpacity(0.3),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: ElevatedButton.icon(
+        onPressed: () => _showLogoutDialog(context),
+        icon: const Icon(Icons.logout, size: 22),
+        label: const Text(
+          'Cerrar Sesión',
+          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+        ),
+        style: ElevatedButton.styleFrom(
+          backgroundColor: Colors.red.shade600,
+          foregroundColor: Colors.white,
+          padding: const EdgeInsets.symmetric(vertical: 16),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          elevation: 0,
+        ),
+      ),
     );
   }
 }

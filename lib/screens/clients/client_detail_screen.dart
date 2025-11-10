@@ -6,6 +6,7 @@ import '../../models/models.dart';
 import '../../providers/providers.dart';
 import '../../utils.dart';
 import 'client_form_screen.dart';
+import 'direccion_form_screen_for_client.dart';
 
 class ClientDetailScreen extends StatefulWidget {
   final Client client;
@@ -28,13 +29,49 @@ class _ClientDetailScreenState extends State<ClientDetailScreen>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 1, vsync: this);
-    _client = widget.client;
-    // Obtener referencia segura al provider
-    _clientProvider = context.read<ClientProvider>();
-    Future.delayed(Duration.zero, () {
-      _loadClientData();
-    });
+
+    try {
+      debugPrint('📱 Initializing ClientDetailScreen state...');
+      debugPrint('📋 Client ID: ${widget.client.id}, Name: ${widget.client.nombre}');
+
+      _tabController = TabController(length: 2, vsync: this);
+      _client = widget.client;
+
+      // Agregar listener al TabController para detectar cambios de tab
+      _tabController.addListener(() {
+        if (!mounted) return;
+
+        debugPrint('📑 Tab cambiado a índice: ${_tabController.index}');
+        // Usar addPostFrameCallback para evitar setState durante build
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) {
+            setState(() {}); // Forzar rebuild para actualizar el FAB
+          }
+        });
+      });
+
+      // Cargar datos después de que el widget esté completamente construido
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) {
+          debugPrint('⚠️ Widget no montado en addPostFrameCallback');
+          return;
+        }
+
+        try {
+          // Obtener referencia segura al provider DESPUÉS del build
+          _clientProvider = context.read<ClientProvider>();
+          debugPrint('✅ Provider obtenido, cargando datos del cliente...');
+          //_loadClientData();
+        } catch (e, stackTrace) {
+          debugPrint('❌ Error en addPostFrameCallback: $e');
+          debugPrint('Stack trace: $stackTrace');
+        }
+      });
+    } catch (e, stackTrace) {
+      debugPrint('❌ Error crítico en initState: $e');
+      debugPrint('Stack trace: $stackTrace');
+      rethrow;
+    }
   }
 
   @override
@@ -44,37 +81,62 @@ class _ClientDetailScreenState extends State<ClientDetailScreen>
   }
 
   Future<void> _loadClientData() async {
-    if (!mounted) return;
+    if (!mounted) {
+      debugPrint('⚠️ Widget no montado, cancelando carga de datos');
+      return;
+    }
 
     setState(() => _isLoading = true);
 
     try {
+      debugPrint('🔄 Cargando datos del cliente ID: ${_client!.id}');
+
       // Cargar cliente actualizado
-      final updatedClient = await _clientProvider.getClient(_client!.id);
+      /*final updatedClient = await _clientProvider.getClient(_client!.id);
       if (updatedClient != null && mounted) {
         setState(() => _client = updatedClient);
-      }
+        debugPrint('✅ Cliente actualizado: ${updatedClient.nombre}');
+      } else {
+        debugPrint('⚠️ No se pudo cargar el cliente actualizado');
+      }*/
 
       // Cargar direcciones
-      _addresses = await _clientProvider.getClientAddresses(_client!.id);
+      try {
+        _addresses = await _clientProvider.getClientAddresses(_client!.id);
+        debugPrint('📍 Direcciones cargadas: ${_addresses?.length ?? 0}');
+      } catch (addressError) {
+        debugPrint('❌ Error cargando direcciones: $addressError');
+        _addresses = [];
+      }
 
       // Cargar historial de ventas
-      try {
-        _salesHistory = await _clientProvider.getClientSalesHistory(
-          _client!.id,
-        );
-        // Si _salesHistory es null, asignar una lista vacía
+      /*try {
+        _salesHistory = await _clientProvider.getClientSalesHistory(_client!.id);
         _salesHistory ??= [];
+        debugPrint('📊 Historial de ventas cargado: ${_salesHistory!.length} registros');
       } catch (historyError) {
-        debugPrint('Error cargando historial de ventas: $historyError');
+        debugPrint('❌ Error cargando historial de ventas: $historyError');
         _salesHistory = [];
+      }*/
+
+      debugPrint('✅ Datos del cliente cargados completamente');
+    } catch (e, stackTrace) {
+      debugPrint('❌ Error crítico loading client data: $e');
+      debugPrint('Stack trace: $stackTrace');
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error al cargar datos del cliente: ${e.toString()}'),
+            backgroundColor: Colors.red.shade700,
+            duration: const Duration(seconds: 4),
+          ),
+        );
       }
-    } catch (e) {
-      // Manejar errores si es necesario
-      debugPrint('Error loading client data: $e');
     } finally {
       if (mounted) {
         setState(() => _isLoading = false);
+        debugPrint('🏁 Carga de datos finalizada');
       }
     }
   }
@@ -104,31 +166,105 @@ class _ClientDetailScreenState extends State<ClientDetailScreen>
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(_client!.nombre),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.edit),
-            onPressed: () => _navigateToEditClient(),
+        title: Text(_client!.nombre, style: const TextStyle(fontWeight: FontWeight.bold)),
+        elevation: 0,
+        flexibleSpace: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [Colors.green.shade700, Colors.teal.shade800],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
           ),
-          IconButton(
-            icon: const Icon(Icons.delete),
-            onPressed: _showDeleteDialog,
+        ),
+        actions: [
+          Container(
+            margin: const EdgeInsets.only(right: 4),
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.2),
+              shape: BoxShape.circle,
+            ),
+            child: IconButton(
+              icon: const Icon(Icons.edit),
+              onPressed: () => _navigateToEditClient(),
+              tooltip: 'Editar cliente',
+            ),
+          ),
+          Container(
+            margin: const EdgeInsets.only(right: 8),
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.2),
+              shape: BoxShape.circle,
+            ),
+            child: IconButton(
+              icon: const Icon(Icons.delete),
+              onPressed: _showDeleteDialog,
+              tooltip: 'Eliminar cliente',
+            ),
           ),
         ],
-        bottom: TabBar(
-          controller: _tabController,
-          tabs: const [Tab(text: 'Información')],
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(48),
+          child: Container(
+            color: Colors.white,
+            child: TabBar(
+              controller: _tabController,
+              labelColor: Colors.green.shade700,
+              unselectedLabelColor: Colors.grey.shade600,
+              indicatorColor: Colors.green.shade700,
+              indicatorWeight: 3,
+              labelStyle: const TextStyle(fontWeight: FontWeight.w600),
+              tabs: const [
+                Tab(text: 'Información', icon: Icon(Icons.info_outline, size: 20)),
+                Tab(text: 'Direcciones', icon: Icon(Icons.location_on_outlined, size: 20)),
+              ],
+            ),
+          ),
         ),
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
-          : TabBarView(controller: _tabController, children: [_buildInfoTab()]),
-      /* floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          // TODO: Add new address
-        },
-        child: const Icon(Icons.add),
-      ), */
+          : TabBarView(
+              controller: _tabController,
+              children: [
+                _buildInfoTab(),
+                _buildDireccionesTab(),
+              ],
+            ),
+      floatingActionButton: _buildFloatingActionButton(),
+    );
+  }
+
+  Widget? _buildFloatingActionButton() {
+    // Solo mostrar el FAB si estamos en la tab de direcciones
+    if (_tabController.index != 1) {
+      return null;
+    }
+
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(16),
+        gradient: LinearGradient(
+          colors: [Colors.green.shade600, Colors.teal.shade700],
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.green.withOpacity(0.4),
+            blurRadius: 12,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
+      child: FloatingActionButton.extended(
+        onPressed: _agregarDireccion,
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        icon: const Icon(Icons.add_location, size: 24),
+        label: const Text(
+          'Agregar Dirección',
+          style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16),
+        ),
+      ),
     );
   }
 
@@ -302,31 +438,23 @@ class _ClientDetailScreenState extends State<ClientDetailScreen>
     // Si no hay coordenadas en el cliente, buscar en direcciones
     if (_addresses != null && _addresses!.isNotEmpty) {
       // Buscar dirección principal con coordenadas
-      ClientAddress? principalAddress;
-      try {
-        principalAddress = _addresses!.firstWhere(
-          (address) =>
-              address.esPrincipal == true &&
-              address.latitud != null &&
-              address.longitud != null,
-        );
-      } catch (e) {
-        principalAddress = null;
-      }
+      final principalAddress = _addresses!.cast<ClientAddress?>().firstWhere(
+        (address) =>
+            address?.esPrincipal == true &&
+            address?.latitud != null &&
+            address?.longitud != null,
+        orElse: () => null,
+      );
 
       if (principalAddress != null) {
         return LatLng(principalAddress.latitud!, principalAddress.longitud!);
       }
 
       // Si no hay dirección principal, usar la primera con coordenadas
-      ClientAddress? addressWithCoords;
-      try {
-        addressWithCoords = _addresses!.firstWhere(
-          (address) => address.latitud != null && address.longitud != null,
-        );
-      } catch (e) {
-        addressWithCoords = null;
-      }
+      final addressWithCoords = _addresses!.cast<ClientAddress?>().firstWhere(
+        (address) => address?.latitud != null && address?.longitud != null,
+        orElse: () => null,
+      );
 
       if (addressWithCoords != null) {
         return LatLng(addressWithCoords.latitud!, addressWithCoords.longitud!);
@@ -487,14 +615,10 @@ class _ClientDetailScreenState extends State<ClientDetailScreen>
   String _getClientAddressString() {
     // Primero intentar usar dirección del cliente principal
     if (_client!.direcciones != null && _client!.direcciones!.isNotEmpty) {
-      ClientAddress? principalAddress;
-      try {
-        principalAddress = _client!.direcciones!.firstWhere(
-          (address) => address.esPrincipal == true,
-        );
-      } catch (e) {
-        principalAddress = null;
-      }
+      final principalAddress = _client!.direcciones!.cast<ClientAddress?>().firstWhere(
+        (address) => address?.esPrincipal == true,
+        orElse: () => null,
+      );
 
       if (principalAddress != null) {
         return principalAddress.direccion;
@@ -506,14 +630,10 @@ class _ClientDetailScreenState extends State<ClientDetailScreen>
 
     // Si no hay direcciones en el cliente, usar las direcciones cargadas
     if (_addresses != null && _addresses!.isNotEmpty) {
-      ClientAddress? principalAddress;
-      try {
-        principalAddress = _addresses!.firstWhere(
-          (address) => address.esPrincipal == true,
-        );
-      } catch (e) {
-        principalAddress = null;
-      }
+      final principalAddress = _addresses!.cast<ClientAddress?>().firstWhere(
+        (address) => address?.esPrincipal == true,
+        orElse: () => null,
+      );
 
       if (principalAddress != null) {
         return principalAddress.direccion;
@@ -538,20 +658,67 @@ class _ClientDetailScreenState extends State<ClientDetailScreen>
   }
 
   Widget _buildInfoCard(String title, List<Widget> children) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              title,
-              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 8),
-            ...children,
-          ],
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(16),
+        gradient: LinearGradient(
+          colors: [Colors.white, Colors.grey.shade50],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
         ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.06),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [Colors.green.shade50, Colors.teal.shade50],
+              ),
+              borderRadius: const BorderRadius.only(
+                topLeft: Radius.circular(16),
+                topRight: Radius.circular(16),
+              ),
+            ),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Colors.green.shade100,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Icon(Icons.info_outline, color: Colors.green.shade700, size: 20),
+                ),
+                const SizedBox(width: 12),
+                Text(
+                  title,
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.grey.shade800,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: children,
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -872,6 +1039,490 @@ class _ClientDetailScreenState extends State<ClientDetailScreen>
       },
     );
   }
+
+  Widget _buildDireccionesTab() {
+    if (_addresses == null) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    if (_addresses!.isEmpty) {
+      return _buildEmptyDireccionesState();
+    }
+
+    return RefreshIndicator(
+      onRefresh: _loadClientData,
+      child: ListView.builder(
+        padding: const EdgeInsets.all(16),
+        itemCount: _addresses!.length,
+        itemBuilder: (context, index) {
+          final direccion = _addresses![index];
+          return _buildDireccionCard(direccion);
+        },
+      ),
+    );
+  }
+
+  Widget _buildEmptyDireccionesState() {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24.0),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.location_off,
+              size: 80,
+              color: Colors.grey.shade300,
+            ),
+            const SizedBox(height: 24),
+            const Text(
+              'No hay direcciones registradas',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Agrega la primera dirección para este cliente',
+              style: TextStyle(
+                fontSize: 14,
+                color: Colors.grey.shade600,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 32),
+            ElevatedButton.icon(
+              onPressed: _agregarDireccion,
+              icon: const Icon(Icons.add_location),
+              label: const Text('Agregar Primera Dirección'),
+              style: ElevatedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 32,
+                  vertical: 16,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDireccionCard(ClientAddress direccion) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(16),
+        gradient: LinearGradient(
+          colors: [Colors.white, Colors.grey.shade50],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.08),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
+        border: direccion.esPrincipal
+            ? Border.all(
+                color: Colors.green.shade300,
+                width: 2,
+              )
+            : null,
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () => _editarDireccion(direccion),
+          borderRadius: BorderRadius.circular(16),
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Header con título y badge principal
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        gradient: direccion.esPrincipal
+                            ? LinearGradient(
+                                colors: [Colors.green.shade400, Colors.green.shade600],
+                              )
+                            : LinearGradient(
+                                colors: [Colors.grey.shade300, Colors.grey.shade400],
+                              ),
+                        borderRadius: BorderRadius.circular(12),
+                        boxShadow: [
+                          BoxShadow(
+                            color: (direccion.esPrincipal ? Colors.green : Colors.grey)
+                                .withOpacity(0.3),
+                            blurRadius: 6,
+                            offset: const Offset(0, 3),
+                          ),
+                        ],
+                      ),
+                      child: Icon(
+                        direccion.esPrincipal ? Icons.home : Icons.location_on,
+                        color: Colors.white,
+                        size: 22,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        direccion.direccion,
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.black87,
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    if (direccion.esPrincipal)
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 6,
+                        ),
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [Colors.green.shade400, Colors.green.shade600],
+                          ),
+                          borderRadius: BorderRadius.circular(12),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.green.withOpacity(0.3),
+                              blurRadius: 6,
+                              offset: const Offset(0, 3),
+                            ),
+                          ],
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.star, size: 12, color: Colors.white),
+                            const SizedBox(width: 4),
+                            Text(
+                              'Principal',
+                              style: TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+
+                // Detalles de ubicación
+                if (direccion.ciudad != null || direccion.departamento != null)
+                  Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: Row(
+                    children: [
+                      Icon(Icons.map, size: 16, color: Colors.grey.shade600),
+                      const SizedBox(width: 8),
+                      Text(
+                        [
+                          if (direccion.ciudad != null) direccion.ciudad,
+                          if (direccion.departamento != null)
+                            direccion.departamento,
+                        ].join(', '),
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Colors.grey.shade700,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+                // Coordenadas GPS
+                if (direccion.latitud != null && direccion.longitud != null)
+                  Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: Row(
+                    children: [
+                      Icon(Icons.gps_fixed,
+                          size: 16, color: Colors.grey.shade600),
+                      const SizedBox(width: 8),
+                      Text(
+                        'GPS: ${direccion.latitud!.toStringAsFixed(6)}, ${direccion.longitud!.toStringAsFixed(6)}',
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: Colors.grey.shade600,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      InkWell(
+                        onTap: () => _abrirEnMaps(
+                            direccion.latitud!, direccion.longitud!),
+                        child: Icon(
+                          Icons.open_in_new,
+                          size: 16,
+                          color: Colors.blue.shade600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+                // Observaciones
+                if (direccion.observaciones != null &&
+                    direccion.observaciones!.isNotEmpty)
+                  Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Icon(Icons.notes, size: 16, color: Colors.grey.shade600),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          direccion.observaciones!,
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: Colors.grey.shade600,
+                            fontStyle: FontStyle.italic,
+                          ),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+                const Divider(height: 24),
+
+                // Acciones
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    if (!direccion.esPrincipal)
+                      TextButton.icon(
+                        onPressed: () => _marcarComoPrincipal(direccion),
+                        icon: const Icon(Icons.star_border, size: 18),
+                        label: const Text('Marcar como principal'),
+                        style: TextButton.styleFrom(
+                          foregroundColor: Theme.of(context).primaryColor,
+                        ),
+                      ),
+                    const SizedBox(width: 8),
+                    TextButton.icon(
+                      onPressed: () => _editarDireccion(direccion),
+                      icon: const Icon(Icons.edit, size: 18),
+                      label: const Text('Editar'),
+                    ),
+                    const SizedBox(width: 8),
+                    TextButton.icon(
+                      onPressed: () => _eliminarDireccion(direccion),
+                      icon: const Icon(Icons.delete_outline, size: 18),
+                      label: const Text('Eliminar'),
+                      style: TextButton.styleFrom(
+                        foregroundColor: Colors.red,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _agregarDireccion() async {
+    if (_client == null) return;
+
+    final result = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => DireccionFormScreenForClient(
+          clientId: _client!.id,
+        ),
+      ),
+    );
+
+    if (result == true) {
+      _loadClientData();
+    }
+  }
+
+  Future<void> _editarDireccion(ClientAddress direccion) async {
+    if (_client == null) return;
+
+    final result = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => DireccionFormScreenForClient(
+          clientId: _client!.id,
+          direccion: direccion,
+        ),
+      ),
+    );
+
+    if (result == true) {
+      _loadClientData();
+    }
+  }
+
+  Future<void> _marcarComoPrincipal(ClientAddress direccion) async {
+    if (_client == null || direccion.id == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('No se puede marcar como principal esta dirección'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
+    }
+
+    final confirmar = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Marcar como Principal'),
+        content: Text(
+          '¿Deseas marcar esta dirección como principal?\n\n${direccion.direccion}',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancelar'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Confirmar'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmar == true) {
+      final success = await _clientProvider.setPrincipalAddress(
+        _client!.id,
+        direccion.id!,
+      );
+
+      if (mounted) {
+        if (success) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Dirección marcada como principal'),
+              backgroundColor: Colors.green,
+            ),
+          );
+          _loadClientData();
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                _clientProvider.errorMessage ??
+                    'Error al marcar como principal',
+              ),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
+    }
+  }
+
+  Future<void> _eliminarDireccion(ClientAddress direccion) async {
+    if (_client == null || direccion.id == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('No se puede eliminar esta dirección'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
+    }
+
+    if (direccion.esPrincipal) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'No se puede eliminar la dirección principal. Marca otra como principal primero.',
+          ),
+          backgroundColor: Colors.orange,
+          duration: Duration(seconds: 4),
+        ),
+      );
+      return;
+    }
+
+    final confirmar = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Eliminar Dirección'),
+        content: Text(
+          '¿Estás seguro de eliminar esta dirección?\n\n${direccion.direccion}',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancelar'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: const Text('Eliminar'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmar == true) {
+      final success = await _clientProvider.deleteClientAddress(
+        _client!.id,
+        direccion.id!,
+      );
+
+      if (mounted) {
+        if (success) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Dirección eliminada correctamente'),
+              backgroundColor: Colors.green,
+            ),
+          );
+          _loadClientData();
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                _clientProvider.errorMessage ?? 'Error al eliminar dirección',
+              ),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
+    }
+  }
+
+  Future<void> _abrirEnMaps(double lat, double lng) async {
+    final url =
+        'https://www.google.com/maps/search/?api=1&query=$lat,$lng';
+    if (await canLaunchUrl(Uri.parse(url))) {
+      await launchUrl(
+        Uri.parse(url),
+        mode: LaunchMode.externalApplication,
+      );
+    }
+  }
 }
 
 /// Widget auxiliar que intenta cargar una imagen desde múltiples URLs
@@ -932,9 +1583,11 @@ class _ImageWithFallbackState extends State<_ImageWithFallback> {
               loadingBuilder: (context, child, loadingProgress) {
                 if (loadingProgress == null) {
                   // Imagen cargada exitosamente
-                  if (mounted) {
-                    Future.microtask(() => setState(() => _isLoading = false));
-                  }
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    if (mounted && _isLoading) {
+                      setState(() => _isLoading = false);
+                    }
+                  });
                   return child;
                 }
                 return widget.loadingWidget;
@@ -945,28 +1598,29 @@ class _ImageWithFallbackState extends State<_ImageWithFallback> {
                 );
                 debugPrint('❌ Error details: $error');
 
-                // Usar Future.microtask para evitar llamar setState durante build
-                Future.microtask(() {
-                  if (mounted && _currentUrlIndex < widget.urls.length - 1) {
+                // Si es la última URL, mostrar fallback inmediatamente
+                if (_currentUrlIndex >= widget.urls.length - 1) {
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    if (mounted && !_hasError) {
+                      setState(() {
+                        _hasError = true;
+                      });
+                      debugPrint('⚠️ No hay más URLs disponibles, mostrando fallback');
+                    }
+                  });
+                  return widget.fallbackWidget;
+                }
+
+                // Intentar siguiente URL DESPUÉS del build
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  if (mounted && _currentUrlIndex < widget.urls.length - 1 && !_hasError) {
                     setState(() {
                       _currentUrlIndex++;
                       _hasError = false;
                     });
-                    debugPrint('🔄 Intentando siguiente URL...');
-                  } else if (mounted) {
-                    setState(() {
-                      _hasError = true;
-                    });
-                    debugPrint(
-                      '⚠️ No hay más URLs disponibles, mostrando fallback',
-                    );
+                    debugPrint('🔄 Intentando siguiente URL: ${_currentUrlIndex + 1}/${widget.urls.length}');
                   }
                 });
-
-                // Si es la última URL, mostrar fallback inmediatamente
-                if (_currentUrlIndex >= widget.urls.length - 1) {
-                  return widget.fallbackWidget;
-                }
 
                 // Retornar loading widget mientras se intenta la siguiente URL
                 return widget.loadingWidget;

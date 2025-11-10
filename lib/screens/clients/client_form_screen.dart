@@ -70,42 +70,79 @@ class _ClientFormScreenState extends State<ClientFormScreen> {
   }
 
   void _loadClientData() {
-    final client = widget.client!;
-    _nameController.text = client.nombre;
-    _businessNameController.text = client.razonSocial ?? '';
-    _nitController.text = client.nit ?? '';
-    _emailController.text = client.email ?? '';
-    _phoneController.text = client.telefono ?? '';
-    _selectedLocationId = client.localidadId;
-    _isActive = client.activo;
-    _createUser =
-        client.userId != null; // Verificar si ya tiene acceso al sistema
-    _observationsController.text = client.observaciones ?? '';
-    _addresses = client.direcciones ?? [];
+    try {
+      final client = widget.client!;
 
-    // Inicializar categorías seleccionadas y ventanas de entrega al editar
-    if (client.categorias != null) {
-      _selectedCategoriasIds
-        ..clear()
-        ..addAll(client.categorias!.map((c) => c.id));
-    }
-    if (client.ventanasEntrega != null) {
-      _ventanasEntrega = List.from(client.ventanasEntrega!);
-    }
+      debugPrint('📝 Cargando datos del cliente: ${client.id}');
 
-    if (_addresses.isNotEmpty) {
-      _addressController.text = _addresses.first.direccion;
-      _latitude = _addresses.first.latitud;
-      _longitude = _addresses.first.longitud;
-      final dirObs = _addresses.first.observaciones;
-      if (dirObs != null && dirObs.isNotEmpty) {
-        _locationObservationsController.text = dirObs;
-        if (_observationsController.text.isNotEmpty) {
-          _observationsController.text =
-              '${_observationsController.text}\n\nObservaciones de dirección: $dirObs';
-        } else {
-          _observationsController.text = dirObs;
+      _nameController.text = client.nombre;
+      _businessNameController.text = client.razonSocial ?? '';
+      _nitController.text = client.nit ?? '';
+      _emailController.text = client.email ?? '';
+      _phoneController.text = client.telefono ?? '';
+      _selectedLocationId = client.localidadId;
+      _isActive = client.activo;
+      _createUser =
+          client.userId != null; // Verificar si ya tiene acceso al sistema
+      _observationsController.text = client.observaciones ?? '';
+
+      // Cargar direcciones de forma segura
+      if (client.direcciones != null) {
+        _addresses = List<ClientAddress>.from(client.direcciones!);
+        debugPrint('📍 Direcciones cargadas: ${_addresses.length}');
+      } else {
+        _addresses = [];
+        debugPrint('📍 No hay direcciones para este cliente');
+      }
+
+      // Inicializar categorías seleccionadas y ventanas de entrega al editar
+      if (client.categorias != null && client.categorias!.isNotEmpty) {
+        _selectedCategoriasIds
+          ..clear()
+          ..addAll(client.categorias!.map((c) => c.id));
+        debugPrint('🏷️ Categorías cargadas: ${_selectedCategoriasIds.length}');
+      }
+
+      if (client.ventanasEntrega != null && client.ventanasEntrega!.isNotEmpty) {
+        _ventanasEntrega = List.from(client.ventanasEntrega!);
+        debugPrint('⏰ Ventanas de entrega cargadas: ${_ventanasEntrega.length}');
+      }
+
+      // Cargar primera dirección si existe
+      if (_addresses.isNotEmpty) {
+        final firstAddress = _addresses.first;
+        _addressController.text = firstAddress.direccion;
+        _latitude = firstAddress.latitud;
+        _longitude = firstAddress.longitud;
+
+        final dirObs = firstAddress.observaciones;
+        if (dirObs != null && dirObs.isNotEmpty) {
+          _locationObservationsController.text = dirObs;
+          if (_observationsController.text.isNotEmpty) {
+            _observationsController.text =
+                '${_observationsController.text}\n\nObservaciones de dirección: $dirObs';
+          } else {
+            _observationsController.text = dirObs;
+          }
         }
+
+        debugPrint('📍 Primera dirección cargada: ${firstAddress.direccion}');
+      }
+
+      debugPrint('✅ Datos del cliente cargados exitosamente');
+    } catch (e, stackTrace) {
+      debugPrint('❌ Error al cargar datos del cliente: $e');
+      debugPrint('Stack trace: $stackTrace');
+
+      // Mostrar error al usuario
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error al cargar datos del cliente: $e'),
+            backgroundColor: Colors.red.shade700,
+            duration: const Duration(seconds: 5),
+          ),
+        );
       }
     }
   }
@@ -118,47 +155,82 @@ class _ClientFormScreenState extends State<ClientFormScreen> {
     });
 
     try {
+      debugPrint('🌍 Cargando localidades...');
       await _clientProvider.loadLocalidades();
+
       if (mounted) {
         setState(() {
           _localidades = _clientProvider.localidades;
           _isLoadingLocalidades = false;
           _isInitialized = true;
         });
+        debugPrint('✅ Localidades cargadas: ${_localidades.length}');
       }
-    } catch (e) {
-      debugPrint('Error al cargar localidades: ');
+    } catch (e, stackTrace) {
+      debugPrint('❌ Error al cargar localidades: $e');
+      debugPrint('Stack trace: $stackTrace');
+
       if (mounted) {
         setState(() {
           _isLoadingLocalidades = false;
           _isInitialized = true;
         });
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error al cargar localidades: ${e.toString()}'),
+            backgroundColor: Colors.orange.shade700,
+            duration: const Duration(seconds: 4),
+          ),
+        );
       }
     }
   }
 
   Future<void> _loadCategorias() async {
     try {
+      debugPrint('🏷️ Cargando categorías...');
       await _clientProvider.loadCategoriasCliente();
+
       if (!mounted) return;
+
       setState(() {
         _categoriasCatalogo = _clientProvider.categoriasCliente;
+        debugPrint('✅ Categorías cargadas: ${_categoriasCatalogo.length}');
+
         // Seleccionar por defecto la categoría APP al crear (no editar)
         if (!_isEditing && _selectedCategoriasIds.isEmpty) {
           try {
-            final appCat = _categoriasCatalogo.firstWhere(
+            final appCat = _categoriasCatalogo.cast<CategoriaCliente?>().firstWhere(
               (c) =>
-                  (c.clave?.toUpperCase() == 'APP') ||
-                  (c.nombre?.toUpperCase() == 'APP'),
+                  (c?.clave?.toUpperCase() == 'APP') ||
+                  (c?.nombre?.toUpperCase() == 'APP'),
+              orElse: () => null,
             );
-            _selectedCategoriasIds.add(appCat.id);
-          } catch (_) {
-            // Si no existe APP en el catálogo, no seleccionar nada
+            if (appCat != null) {
+              _selectedCategoriasIds.add(appCat.id);
+              debugPrint('✅ Categoría APP seleccionada por defecto');
+            } else {
+              debugPrint('⚠️ No se encontró categoría APP');
+            }
+          } catch (e) {
+            debugPrint('⚠️ Error al seleccionar categoría APP: $e');
           }
         }
       });
-    } catch (e) {
-      debugPrint('Error al cargar categorías: $e');
+    } catch (e, stackTrace) {
+      debugPrint('❌ Error al cargar categorías: $e');
+      debugPrint('Stack trace: $stackTrace');
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error al cargar categorías: ${e.toString()}'),
+            backgroundColor: Colors.orange.shade700,
+            duration: const Duration(seconds: 4),
+          ),
+        );
+      }
     }
   }
 
@@ -177,13 +249,40 @@ class _ClientFormScreenState extends State<ClientFormScreen> {
       },
       child: Scaffold(
         appBar: AppBar(
-          title: Text(_isEditing ? 'Editar Cliente' : 'Nuevo Cliente'),
+          title: Text(
+            _isEditing ? 'Editar Cliente' : 'Nuevo Cliente',
+            style: const TextStyle(fontWeight: FontWeight.bold),
+          ),
           elevation: 0,
-          backgroundColor: Theme.of(context).colorScheme.primaryContainer,
-          foregroundColor: Theme.of(context).colorScheme.onPrimaryContainer,
+          flexibleSpace: Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: _isEditing
+                    ? [Colors.orange.shade700, Colors.orange.shade900]
+                    : [Colors.green.shade700, Colors.teal.shade800],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+            ),
+          ),
           actions: [
             Container(
               margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(12),
+                gradient: LinearGradient(
+                  colors: _isSavingClient
+                      ? [Colors.grey.shade400, Colors.grey.shade600]
+                      : [Colors.white, Colors.grey.shade100],
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.2),
+                    blurRadius: 8,
+                    offset: const Offset(0, 3),
+                  ),
+                ],
+              ),
               child: ElevatedButton.icon(
                 onPressed: _isSavingClient ? null : _saveClient,
                 icon: _isSavingClient
@@ -197,15 +296,18 @@ class _ClientFormScreenState extends State<ClientFormScreen> {
                           ),
                         ),
                       )
-                    : const Icon(Icons.save),
-                label: Text(_isSavingClient ? 'Guardando...' : 'Guardar'),
+                    : Icon(Icons.save, color: _isEditing ? Colors.orange.shade700 : Colors.green.shade700),
+                label: Text(
+                  _isSavingClient ? 'Guardando...' : 'Guardar',
+                  style: TextStyle(
+                    fontWeight: FontWeight.w600,
+                    color: _isSavingClient ? Colors.white : (_isEditing ? Colors.orange.shade700 : Colors.green.shade700),
+                  ),
+                ),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: _isSavingClient
-                      ? Colors.grey
-                      : Theme.of(context).colorScheme.primary,
-                  foregroundColor: Theme.of(context).colorScheme.onPrimary,
-                  elevation: 2,
-                  shadowColor: Theme.of(context).colorScheme.shadow,
+                  backgroundColor: Colors.transparent,
+                  elevation: 0,
+                  shadowColor: Colors.transparent,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
                   ),
@@ -219,10 +321,15 @@ class _ClientFormScreenState extends State<ClientFormScreen> {
             gradient: LinearGradient(
               begin: Alignment.topCenter,
               end: Alignment.bottomCenter,
-              colors: [
-                Theme.of(context).colorScheme.primaryContainer.withOpacity(0.1),
-                Theme.of(context).colorScheme.surface,
-              ],
+              colors: _isEditing
+                  ? [
+                      Colors.orange.shade50,
+                      Colors.white,
+                    ]
+                  : [
+                      Colors.green.shade50,
+                      Colors.white,
+                    ],
             ),
           ),
           child: _isInitialized
@@ -255,10 +362,10 @@ class _ClientFormScreenState extends State<ClientFormScreen> {
                           children: [
                             TextFormField(
                               controller: _nameController,
-                              decoration: const InputDecoration(
+                              decoration: _buildInputDecoration(
                                 labelText: 'Nombre *',
                                 hintText: 'Ingrese el nombre completo',
-                                prefixIcon: Icon(Icons.person_outline),
+                                prefixIcon: Icons.person_outline,
                               ),
                               validator: (value) {
                                 if (value == null || value.isEmpty) {
@@ -270,10 +377,10 @@ class _ClientFormScreenState extends State<ClientFormScreen> {
                             const SizedBox(height: 16),
                             TextFormField(
                               controller: _businessNameController,
-                              decoration: const InputDecoration(
+                              decoration: _buildInputDecoration(
                                 labelText: 'Razón Social',
                                 hintText: 'Ingrese la razón social (opcional)',
-                                prefixIcon: Icon(Icons.business),
+                                prefixIcon: Icons.business,
                               ),
                             ),
                           ],
@@ -288,20 +395,20 @@ class _ClientFormScreenState extends State<ClientFormScreen> {
                           children: [
                             TextFormField(
                               controller: _emailController,
-                              decoration: const InputDecoration(
+                              decoration: _buildInputDecoration(
                                 labelText: 'Correo Electrónico',
                                 hintText: 'correo@ejemplo.com',
-                                prefixIcon: Icon(Icons.email),
+                                prefixIcon: Icons.email,
                               ),
                               keyboardType: TextInputType.emailAddress,
                             ),
                             const SizedBox(height: 16),
                             TextFormField(
                               controller: _phoneController,
-                              decoration: const InputDecoration(
+                              decoration: _buildInputDecoration(
                                 labelText: 'Teléfono',
                                 hintText: '+1234567890',
-                                prefixIcon: Icon(Icons.phone),
+                                prefixIcon: Icons.phone,
                               ),
                               keyboardType: TextInputType.phone,
                               inputFormatters: [
@@ -353,9 +460,10 @@ class _ClientFormScreenState extends State<ClientFormScreen> {
                                 label: 'Localidad',
                                 items: _localidades,
                                 value: _selectedLocationId != null
-                                    ? _localidades.firstWhere(
+                                    ? _localidades.cast<Localidad?>().firstWhere(
                                         (localidad) =>
-                                            localidad.id == _selectedLocationId,
+                                            localidad?.id == _selectedLocationId,
+                                        orElse: () => null,
                                       )
                                     : null,
                                 displayString: (localidad) => localidad.nombre,
@@ -371,10 +479,10 @@ class _ClientFormScreenState extends State<ClientFormScreen> {
                             const SizedBox(height: 16),
                             TextFormField(
                               controller: _addressController,
-                              decoration: const InputDecoration(
+                              decoration: _buildInputDecoration(
                                 labelText: 'Dirección',
                                 hintText: 'Ingrese la dirección completa',
-                                prefixIcon: Icon(Icons.home),
+                                prefixIcon: Icons.home,
                               ),
                               maxLines: 3,
                             ),
@@ -382,11 +490,10 @@ class _ClientFormScreenState extends State<ClientFormScreen> {
                             // Campo para observaciones del lugar
                             TextFormField(
                               controller: _locationObservationsController,
-                              decoration: const InputDecoration(
+                              decoration: _buildInputDecoration(
                                 labelText: 'Observaciones del lugar',
-                                hintText:
-                                    'Ingrese observaciones sobre la ubicación del cliente',
-                                prefixIcon: Icon(Icons.note),
+                                hintText: 'Ingrese observaciones sobre la ubicación del cliente',
+                                prefixIcon: Icons.note,
                               ),
                               maxLines: 3,
                             ),
@@ -523,31 +630,136 @@ class _ClientFormScreenState extends State<ClientFormScreen> {
                           title: 'Configuración',
                           icon: Icons.settings,
                           children: [
-                            Row(
-                              children: [
-                                Expanded(
-                                  child: Text(
-                                    'Cliente Activo',
-                                    style: TextStyle(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.w500,
-                                      color: Theme.of(
-                                        context,
-                                      ).colorScheme.onSurface,
-                                    ),
+                            // Solo mostrar el switch de estado al editar
+                            if (_isEditing) ...[
+                              Container(
+                                padding: const EdgeInsets.all(16),
+                                decoration: BoxDecoration(
+                                  color: _isActive ? Colors.green.shade50 : Colors.red.shade50,
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(
+                                    color: _isActive ? Colors.green.shade200 : Colors.red.shade200,
+                                    width: 1.5,
                                   ),
                                 ),
-                                Switch(
-                                  value: _isActive,
-                                  onChanged: (value) =>
-                                      setState(() => _isActive = value),
-                                  activeThumbColor: Theme.of(
-                                    context,
-                                  ).colorScheme.primary,
+                                child: Row(
+                                  children: [
+                                    Container(
+                                      padding: const EdgeInsets.all(8),
+                                      decoration: BoxDecoration(
+                                        gradient: LinearGradient(
+                                          colors: _isActive
+                                              ? [Colors.green.shade400, Colors.green.shade600]
+                                              : [Colors.red.shade400, Colors.red.shade600],
+                                        ),
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                      child: Icon(
+                                        _isActive ? Icons.check_circle : Icons.cancel,
+                                        color: Colors.white,
+                                        size: 20,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 12),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            'Estado del Cliente',
+                                            style: TextStyle(
+                                              fontSize: 14,
+                                              color: Colors.grey.shade700,
+                                              fontWeight: FontWeight.w500,
+                                            ),
+                                          ),
+                                          const SizedBox(height: 4),
+                                          Text(
+                                            _isActive ? 'Activo' : 'Inactivo',
+                                            style: TextStyle(
+                                              fontSize: 16,
+                                              fontWeight: FontWeight.bold,
+                                              color: _isActive ? Colors.green.shade700 : Colors.red.shade700,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    Switch(
+                                      value: _isActive,
+                                      onChanged: (value) => setState(() => _isActive = value),
+                                      activeColor: Colors.green.shade600,
+                                      inactiveThumbColor: Colors.red.shade400,
+                                    ),
+                                  ],
                                 ),
-                              ],
-                            ),
-                            const SizedBox(height: 16),
+                              ),
+                              const SizedBox(height: 16),
+                            ] else ...[
+                              // Al crear, mostrar que será activo por defecto (sin opción a cambiar)
+                              Container(
+                                padding: const EdgeInsets.all(16),
+                                decoration: BoxDecoration(
+                                  gradient: LinearGradient(
+                                    colors: [Colors.green.shade50, Colors.green.shade100],
+                                  ),
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(
+                                    color: Colors.green.shade300,
+                                    width: 1.5,
+                                  ),
+                                ),
+                                child: Row(
+                                  children: [
+                                    Container(
+                                      padding: const EdgeInsets.all(8),
+                                      decoration: BoxDecoration(
+                                        gradient: LinearGradient(
+                                          colors: [Colors.green.shade400, Colors.green.shade600],
+                                        ),
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                      child: const Icon(
+                                        Icons.check_circle,
+                                        color: Colors.white,
+                                        size: 20,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 12),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            'Estado del Cliente',
+                                            style: TextStyle(
+                                              fontSize: 14,
+                                              color: Colors.grey.shade700,
+                                              fontWeight: FontWeight.w500,
+                                            ),
+                                          ),
+                                          const SizedBox(height: 4),
+                                          Text(
+                                            'Activo por defecto',
+                                            style: TextStyle(
+                                              fontSize: 16,
+                                              fontWeight: FontWeight.bold,
+                                              color: Colors.green.shade700,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    Icon(
+                                      Icons.info_outline,
+                                      color: Colors.green.shade600,
+                                      size: 20,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(height: 16),
+                            ],
                             Row(
                               children: [
                                 Expanded(
@@ -621,26 +833,76 @@ class _ClientFormScreenState extends State<ClientFormScreen> {
     );
   }
 
+  InputDecoration _buildInputDecoration({
+    required String labelText,
+    String? hintText,
+    IconData? prefixIcon,
+    Widget? suffixIcon,
+  }) {
+    return InputDecoration(
+      labelText: labelText,
+      hintText: hintText,
+      prefixIcon: prefixIcon != null
+          ? Icon(
+              prefixIcon,
+              color: _isEditing ? Colors.orange.shade600 : Colors.green.shade600,
+            )
+          : null,
+      suffixIcon: suffixIcon,
+      filled: true,
+      fillColor: Colors.grey.shade50,
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: BorderSide(color: Colors.grey.shade300),
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: BorderSide(color: Colors.grey.shade300),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: BorderSide(
+          color: _isEditing ? Colors.orange.shade600 : Colors.green.shade600,
+          width: 2,
+        ),
+      ),
+      errorBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: BorderSide(color: Colors.red.shade400),
+      ),
+      focusedErrorBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: BorderSide(color: Colors.red.shade600, width: 2),
+      ),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+      labelStyle: TextStyle(
+        color: _isEditing ? Colors.orange.shade700 : Colors.green.shade700,
+        fontWeight: FontWeight.w500,
+      ),
+    );
+  }
+
   Widget _buildSection({
     required String title,
     required IconData icon,
     required List<Widget> children,
   }) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 8),
+      margin: const EdgeInsets.only(bottom: 20),
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(20),
+        gradient: LinearGradient(
+          colors: [Colors.white, Colors.grey.shade50],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
         boxShadow: [
           BoxShadow(
-            color: Theme.of(context).colorScheme.shadow.withOpacity(0.1),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
+            color: Colors.black.withOpacity(0.08),
+            blurRadius: 15,
+            offset: const Offset(0, 5),
           ),
         ],
-        border: Border.all(
-          color: Theme.of(context).colorScheme.outline.withOpacity(0.1),
-        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -648,28 +910,50 @@ class _ClientFormScreenState extends State<ClientFormScreen> {
           Container(
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
-              color: Theme.of(
-                context,
-              ).colorScheme.primaryContainer.withOpacity(0.3),
+              gradient: LinearGradient(
+                colors: _isEditing
+                    ? [Colors.orange.shade50, Colors.orange.shade100]
+                    : [Colors.green.shade50, Colors.teal.shade50],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
               borderRadius: const BorderRadius.only(
-                topLeft: Radius.circular(16),
-                topRight: Radius.circular(16),
+                topLeft: Radius.circular(20),
+                topRight: Radius.circular(20),
               ),
             ),
             child: Row(
               children: [
-                Icon(
-                  icon,
-                  color: Theme.of(context).colorScheme.primary,
-                  size: 24,
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: _isEditing
+                          ? [Colors.orange.shade400, Colors.orange.shade600]
+                          : [Colors.green.shade400, Colors.teal.shade600],
+                    ),
+                    borderRadius: BorderRadius.circular(12),
+                    boxShadow: [
+                      BoxShadow(
+                        color: (_isEditing ? Colors.orange : Colors.green).withOpacity(0.3),
+                        blurRadius: 8,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: Icon(
+                    icon,
+                    color: Colors.white,
+                    size: 24,
+                  ),
                 ),
-                const SizedBox(width: 12),
+                const SizedBox(width: 16),
                 Text(
                   title,
                   style: TextStyle(
                     fontSize: 18,
-                    fontWeight: FontWeight.w600,
-                    color: Theme.of(context).colorScheme.onSurface,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.grey.shade800,
                   ),
                 ),
               ],
