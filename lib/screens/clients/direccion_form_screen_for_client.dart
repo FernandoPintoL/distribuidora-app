@@ -42,6 +42,12 @@ class _DireccionFormScreenForClientState
     _esPrincipal = widget.direccion?.esPrincipal ?? false;
     _latitude = widget.direccion?.latitud;
     _longitude = widget.direccion?.longitud;
+    _selectedLocalidadId = widget.direccion?.localidadId;
+
+    debugPrint('📍 Inicializando DireccionFormScreenForClient');
+    debugPrint('   - Dirección: ${widget.direccion?.direccion}');
+    debugPrint('   - Localidad ID: $_selectedLocalidadId');
+    debugPrint('   - Es Principal: $_esPrincipal');
   }
 
   @override
@@ -63,6 +69,7 @@ class _DireccionFormScreenForClientState
     bool success;
     if (widget.direccion == null) {
       // Crear nueva dirección
+      debugPrint('📍 Creando nueva dirección con localidad_id: $_selectedLocalidadId');
       success = await clientProvider.createClientAddress(
         widget.clientId,
         direccion: _direccionController.text.trim(),
@@ -76,9 +83,11 @@ class _DireccionFormScreenForClientState
         activa: true,
         latitud: _latitude,
         longitud: _longitude,
+        localidadId: _selectedLocalidadId,
       );
     } else {
       // Actualizar dirección existente
+      debugPrint('📍 Actualizando dirección con localidad_id: $_selectedLocalidadId');
       success = await clientProvider.updateClientAddress(
         widget.clientId,
         widget.direccion!.id!,
@@ -93,6 +102,7 @@ class _DireccionFormScreenForClientState
         activa: true,
         latitud: _latitude,
         longitud: _longitude,
+        localidadId: _selectedLocalidadId,
       );
     }
 

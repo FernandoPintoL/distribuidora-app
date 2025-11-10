@@ -149,6 +149,8 @@ class ClientAddress {
   final String? codigoPostal;
   final double? latitud;
   final double? longitud;
+  final int? localidadId;
+  final Localidad? localidad;
   final bool esPrincipal;
   final bool? activa;
   final String? createdAt;
@@ -164,6 +166,8 @@ class ClientAddress {
     this.codigoPostal,
     this.latitud,
     this.longitud,
+    this.localidadId,
+    this.localidad,
     required this.esPrincipal,
     this.activa = true, // ✅ Valor por defecto
     this.createdAt,
@@ -185,6 +189,10 @@ class ClientAddress {
       longitud: json['longitud'] != null
           ? double.tryParse(json['longitud'].toString())
           : null,
+      localidadId: json['localidad_id'],
+      localidad: json['localidad'] != null
+          ? Localidad.fromJson(json['localidad'])
+          : null,
       esPrincipal: json['es_principal'] ?? false,
       activa: json['activa'],
       createdAt: json['created_at'],
@@ -203,6 +211,8 @@ class ClientAddress {
       'codigo_postal': codigoPostal,
       'latitud': latitud,
       'longitud': longitud,
+      'localidad_id': localidadId,
+      'localidad': localidad?.toJson(),
       'es_principal': esPrincipal,
       'activa': activa ?? true, // ✅ Valor por defecto si es null
       'created_at': createdAt,

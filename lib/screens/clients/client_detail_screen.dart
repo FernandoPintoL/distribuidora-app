@@ -22,7 +22,6 @@ class _ClientDetailScreenState extends State<ClientDetailScreen>
   late TabController _tabController;
   Client? _client;
   List<ClientAddress>? _addresses;
-  List<Map<String, dynamic>>? _salesHistory;
   bool _isLoading = false;
   late ClientProvider _clientProvider;
 
@@ -42,6 +41,13 @@ class _ClientDetailScreenState extends State<ClientDetailScreen>
         if (!mounted) return;
 
         debugPrint('📑 Tab cambiado a índice: ${_tabController.index}');
+
+        // Si cambiamos al tab de direcciones (índice 1) y aún no hemos cargado direcciones
+        if (_tabController.index == 1 && _addresses == null) {
+          debugPrint('🔄 Cargando direcciones por primera vez...');
+          _loadDirecciones();
+        }
+
         // Usar addPostFrameCallback para evitar setState durante build
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (mounted) {
@@ -50,7 +56,7 @@ class _ClientDetailScreenState extends State<ClientDetailScreen>
         });
       });
 
-      // Cargar datos después de que el widget esté completamente construido
+      // Obtener referencia al provider después del build
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!mounted) {
           debugPrint('⚠️ Widget no montado en addPostFrameCallback');
@@ -58,12 +64,10 @@ class _ClientDetailScreenState extends State<ClientDetailScreen>
         }
 
         try {
-          // Obtener referencia segura al provider DESPUÉS del build
           _clientProvider = context.read<ClientProvider>();
-          debugPrint('✅ Provider obtenido, cargando datos del cliente...');
-          //_loadClientData();
+          debugPrint('✅ Provider obtenido y listo');
         } catch (e, stackTrace) {
-          debugPrint('❌ Error en addPostFrameCallback: $e');
+          debugPrint('❌ Error obteniendo provider: $e');
           debugPrint('Stack trace: $stackTrace');
         }
       });
@@ -80,65 +84,69 @@ class _ClientDetailScreenState extends State<ClientDetailScreen>
     super.dispose();
   }
 
-  Future<void> _loadClientData() async {
+  /// Carga las direcciones del cliente de forma lazy (solo cuando se necesitan)
+  Future<void> _loadDirecciones() async {
     if (!mounted) {
-      debugPrint('⚠️ Widget no montado, cancelando carga de datos');
+      debugPrint('⚠️ Widget no montado, cancelando carga de direcciones');
+      return;
+    }
+
+    // Si ya estamos cargando, no hacer nada (evitar llamadas concurrentes)
+    if (_isLoading) {
+      debugPrint('⚠️ Ya se está cargando direcciones, omitiendo...');
+      return;
+    }
+
+    // Si ya tenemos direcciones cargadas, solo continuar si _addresses es null
+    // (esto permite recargas cuando _addresses se establece a null explícitamente)
+    if (_addresses != null) {
+      debugPrint('✅ Direcciones ya cargadas, omitiendo...');
       return;
     }
 
     setState(() => _isLoading = true);
 
     try {
-      debugPrint('🔄 Cargando datos del cliente ID: ${_client!.id}');
+      debugPrint('🔄 Cargando direcciones del cliente ID: ${_client!.id}');
 
-      // Cargar cliente actualizado
-      /*final updatedClient = await _clientProvider.getClient(_client!.id);
-      if (updatedClient != null && mounted) {
-        setState(() => _client = updatedClient);
-        debugPrint('✅ Cliente actualizado: ${updatedClient.nombre}');
-      } else {
-        debugPrint('⚠️ No se pudo cargar el cliente actualizado');
-      }*/
-
-      // Cargar direcciones
-      try {
-        _addresses = await _clientProvider.getClientAddresses(_client!.id);
-        debugPrint('📍 Direcciones cargadas: ${_addresses?.length ?? 0}');
-      } catch (addressError) {
-        debugPrint('❌ Error cargando direcciones: $addressError');
-        _addresses = [];
-      }
-
-      // Cargar historial de ventas
-      /*try {
-        _salesHistory = await _clientProvider.getClientSalesHistory(_client!.id);
-        _salesHistory ??= [];
-        debugPrint('📊 Historial de ventas cargado: ${_salesHistory!.length} registros');
-      } catch (historyError) {
-        debugPrint('❌ Error cargando historial de ventas: $historyError');
-        _salesHistory = [];
-      }*/
-
-      debugPrint('✅ Datos del cliente cargados completamente');
-    } catch (e, stackTrace) {
-      debugPrint('❌ Error crítico loading client data: $e');
-      debugPrint('Stack trace: $stackTrace');
+      _addresses = await _clientProvider.getClientAddresses(_client!.id);
+      debugPrint('📍 Direcciones cargadas: ${_addresses?.length ?? 0}');
+    } catch (addressError) {
+      debugPrint('❌ Error cargando direcciones: $addressError');
+      _addresses = [];
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error al cargar datos del cliente: ${e.toString()}'),
-            backgroundColor: Colors.red.shade700,
-            duration: const Duration(seconds: 4),
+            content: Text('Error al cargar direcciones: ${addressError.toString()}'),
+            backgroundColor: Colors.orange.shade700,
+            duration: const Duration(seconds: 3),
           ),
         );
       }
     } finally {
       if (mounted) {
         setState(() => _isLoading = false);
-        debugPrint('🏁 Carga de datos finalizada');
+        debugPrint('✅ Carga de direcciones finalizada');
       }
     }
+  }
+
+  /// Recarga todos los datos del cliente (usado después de editar)
+  Future<void> _reloadClientData() async {
+    if (!mounted) {
+      debugPrint('⚠️ Widget no montado, cancelando recarga');
+      return;
+    }
+
+    // Solo restablecer _addresses a null, NO establecer _isLoading aquí
+    // porque _loadDirecciones() lo maneja internamente
+    setState(() {
+      _addresses = null; // Forzar recarga
+    });
+
+    debugPrint('🔄 Recargando datos del cliente...');
+    await _loadDirecciones();
   }
 
   Future<void> _navigateToEditClient() async {
@@ -154,7 +162,7 @@ class _ClientDetailScreenState extends State<ClientDetailScreen>
 
     // Si se editó exitosamente el cliente, recargar los datos
     if (result == true) {
-      _loadClientData();
+      _reloadClientData();
     }
   }
 
@@ -324,15 +332,7 @@ class _ClientDetailScreenState extends State<ClientDetailScreen>
                           child: CircleAvatar(
                             radius: 58,
                             backgroundColor: Colors.green.shade50,
-                            child:
-                                _client!.fotoPerfil != null &&
-                                    _client!.fotoPerfil!.isNotEmpty
-                                ? _buildProfileImage(_client!.fotoPerfil!)
-                                : const Icon(
-                                    Icons.person,
-                                    size: 58,
-                                    color: Colors.green,
-                                  ),
+                            child: _buildSafeProfileImage(),
                           ),
                         ),
                       ),
@@ -896,6 +896,29 @@ class _ClientDetailScreenState extends State<ClientDetailScreen>
     }
   }
 
+  /// Construye de forma segura la imagen de perfil o muestra fallback
+  Widget _buildSafeProfileImage() {
+    try {
+      if (_client?.fotoPerfil == null || _client!.fotoPerfil!.isEmpty) {
+        return const Icon(
+          Icons.person,
+          size: 58,
+          color: Colors.green,
+        );
+      }
+      return _buildProfileImage(_client!.fotoPerfil!);
+    } catch (e, stackTrace) {
+      debugPrint('❌ Error crítico al construir imagen de perfil: $e');
+      debugPrint('Stack trace: $stackTrace');
+      // En caso de cualquier error, mostrar el ícono por defecto
+      return const Icon(
+        Icons.person,
+        size: 58,
+        color: Colors.green,
+      );
+    }
+  }
+
   Widget _buildProfileImage(String imagePath) {
     // Validar que el imagePath no esté vacío
     if (imagePath.isEmpty) {
@@ -914,49 +937,36 @@ class _ClientDetailScreenState extends State<ClientDetailScreen>
     debugPrint('🔍 Intentando cargar imagen de perfil desde URLs: $urls');
 
     return GestureDetector(
-      onTap: () => _showFullScreenImage(urls.first),
-      child: Stack(
-        alignment: Alignment.center,
-        children: [
-          _ImageWithFallback(
-            urls: urls,
-            width: 112,
-            height: 112,
-            fit: BoxFit.cover,
-            fallbackWidget: _buildFallbackAvatar(),
-            loadingWidget: Container(
-              width: 112,
-              height: 112,
-              decoration: BoxDecoration(
-                color: Colors.green.shade50,
-                borderRadius: BorderRadius.circular(56),
-              ),
-              child: const Center(
-                child: SizedBox(
-                  width: 32,
-                  height: 32,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 3,
-                    valueColor: AlwaysStoppedAnimation<Color>(Colors.green),
-                  ),
-                ),
+      onTap: () {
+        // Solo mostrar imagen en pantalla completa si hay una URL válida
+        if (urls.isNotEmpty) {
+          _showFullScreenImage(urls.first);
+        }
+      },
+      child: _ImageWithFallback(
+        urls: urls,
+        width: 112,
+        height: 112,
+        fit: BoxFit.cover,
+        fallbackWidget: _buildFallbackAvatar(),
+        loadingWidget: Container(
+          width: 112,
+          height: 112,
+          decoration: BoxDecoration(
+            color: Colors.green.shade50,
+            borderRadius: BorderRadius.circular(56),
+          ),
+          child: const Center(
+            child: SizedBox(
+              width: 32,
+              height: 32,
+              child: CircularProgressIndicator(
+                strokeWidth: 3,
+                valueColor: AlwaysStoppedAnimation<Color>(Colors.green),
               ),
             ),
           ),
-          // Indicador sutil de que es interactivo
-          Positioned(
-            bottom: 4,
-            right: 4,
-            child: Container(
-              padding: const EdgeInsets.all(4),
-              decoration: BoxDecoration(
-                color: Colors.black.withOpacity(0.6),
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(Icons.zoom_in, color: Colors.white, size: 12),
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }
@@ -1041,8 +1051,24 @@ class _ClientDetailScreenState extends State<ClientDetailScreen>
   }
 
   Widget _buildDireccionesTab() {
+    // Si aún no hemos intentado cargar las direcciones
     if (_addresses == null) {
-      return const Center(child: CircularProgressIndicator());
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const CircularProgressIndicator(),
+            const SizedBox(height: 16),
+            Text(
+              'Cargando direcciones...',
+              style: TextStyle(
+                color: Colors.grey.shade600,
+                fontSize: 14,
+              ),
+            ),
+          ],
+        ),
+      );
     }
 
     if (_addresses!.isEmpty) {
@@ -1050,7 +1076,7 @@ class _ClientDetailScreenState extends State<ClientDetailScreen>
     }
 
     return RefreshIndicator(
-      onRefresh: _loadClientData,
+      onRefresh: _reloadClientData,
       child: ListView.builder(
         padding: const EdgeInsets.all(16),
         itemCount: _addresses!.length,
@@ -1356,7 +1382,7 @@ class _ClientDetailScreenState extends State<ClientDetailScreen>
     );
 
     if (result == true) {
-      _loadClientData();
+      _reloadClientData();
     }
   }
 
@@ -1374,7 +1400,7 @@ class _ClientDetailScreenState extends State<ClientDetailScreen>
     );
 
     if (result == true) {
-      _loadClientData();
+      _reloadClientData();
     }
   }
 
@@ -1423,7 +1449,7 @@ class _ClientDetailScreenState extends State<ClientDetailScreen>
               backgroundColor: Colors.green,
             ),
           );
-          _loadClientData();
+          _reloadClientData();
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
@@ -1498,7 +1524,7 @@ class _ClientDetailScreenState extends State<ClientDetailScreen>
               backgroundColor: Colors.green,
             ),
           );
-          _loadClientData();
+          _reloadClientData();
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
@@ -1526,6 +1552,7 @@ class _ClientDetailScreenState extends State<ClientDetailScreen>
 }
 
 /// Widget auxiliar que intenta cargar una imagen desde múltiples URLs
+/// Si falla, muestra inmediatamente un ícono de perfil
 class _ImageWithFallback extends StatefulWidget {
   final List<String> urls;
   final double width;
@@ -1549,17 +1576,35 @@ class _ImageWithFallback extends StatefulWidget {
 
 class _ImageWithFallbackState extends State<_ImageWithFallback> {
   int _currentUrlIndex = 0;
-  bool _isLoading = true;
   bool _hasError = false;
+  bool _imageLoaded = false;
+
+  @override
+  void initState() {
+    super.initState();
+    debugPrint('🖼️ Inicializando _ImageWithFallback con ${widget.urls.length} URLs');
+  }
+
+  void _tryNextUrl() {
+    if (!mounted) return;
+
+    if (_currentUrlIndex < widget.urls.length - 1) {
+      setState(() {
+        _currentUrlIndex++;
+        debugPrint('🔄 Intentando URL ${_currentUrlIndex + 1}/${widget.urls.length}: ${widget.urls[_currentUrlIndex]}');
+      });
+    } else {
+      setState(() {
+        _hasError = true;
+        debugPrint('❌ Todas las URLs fallaron, mostrando fallback');
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    if (_currentUrlIndex >= widget.urls.length) {
-      // Todas las URLs fallaron, mostrar fallback
-      return widget.fallbackWidget;
-    }
-
-    if (_hasError) {
+    // Si ya agotamos todas las URLs, mostrar fallback
+    if (_hasError || _currentUrlIndex >= widget.urls.length) {
       return widget.fallbackWidget;
     }
 
@@ -1572,68 +1617,39 @@ class _ImageWithFallbackState extends State<_ImageWithFallback> {
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(widget.width / 2),
-        child: Stack(
-          fit: StackFit.expand,
-          children: [
-            Image.network(
-              widget.urls[_currentUrlIndex],
-              width: widget.width,
-              height: widget.height,
-              fit: widget.fit,
-              loadingBuilder: (context, child, loadingProgress) {
-                if (loadingProgress == null) {
-                  // Imagen cargada exitosamente
-                  WidgetsBinding.instance.addPostFrameCallback((_) {
-                    if (mounted && _isLoading) {
-                      setState(() => _isLoading = false);
-                    }
-                  });
-                  return child;
-                }
-                return widget.loadingWidget;
-              },
-              errorBuilder: (context, error, stackTrace) {
-                debugPrint(
-                  '❌ Error al cargar imagen desde: ${widget.urls[_currentUrlIndex]}',
-                );
-                debugPrint('❌ Error details: $error');
-
-                // Si es la última URL, mostrar fallback inmediatamente
-                if (_currentUrlIndex >= widget.urls.length - 1) {
-                  WidgetsBinding.instance.addPostFrameCallback((_) {
-                    if (mounted && !_hasError) {
-                      setState(() {
-                        _hasError = true;
-                      });
-                      debugPrint('⚠️ No hay más URLs disponibles, mostrando fallback');
-                    }
-                  });
-                  return widget.fallbackWidget;
-                }
-
-                // Intentar siguiente URL DESPUÉS del build
+        child: Image.network(
+          widget.urls[_currentUrlIndex],
+          width: widget.width,
+          height: widget.height,
+          fit: widget.fit,
+          loadingBuilder: (context, child, loadingProgress) {
+            if (loadingProgress == null) {
+              // Imagen cargada exitosamente
+              if (!_imageLoaded) {
                 WidgetsBinding.instance.addPostFrameCallback((_) {
-                  if (mounted && _currentUrlIndex < widget.urls.length - 1 && !_hasError) {
-                    setState(() {
-                      _currentUrlIndex++;
-                      _hasError = false;
-                    });
-                    debugPrint('🔄 Intentando siguiente URL: ${_currentUrlIndex + 1}/${widget.urls.length}');
+                  if (mounted) {
+                    setState(() => _imageLoaded = true);
+                    debugPrint('✅ Imagen cargada exitosamente desde: ${widget.urls[_currentUrlIndex]}');
                   }
                 });
+              }
+              return child;
+            }
+            // Mostrar indicador de carga
+            return widget.loadingWidget;
+          },
+          errorBuilder: (context, error, stackTrace) {
+            debugPrint('❌ Error cargando imagen desde: ${widget.urls[_currentUrlIndex]}');
+            debugPrint('❌ Error: $error');
 
-                // Retornar loading widget mientras se intenta la siguiente URL
-                return widget.loadingWidget;
-              },
-            ),
-            if (_isLoading)
-              Positioned.fill(
-                child: Container(
-                  color: Colors.white.withOpacity(0.8),
-                  child: widget.loadingWidget,
-                ),
-              ),
-          ],
+            // Intentar siguiente URL en el siguiente frame
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              _tryNextUrl();
+            });
+
+            // Mientras tanto, mostrar fallback para evitar pantalla en blanco
+            return widget.fallbackWidget;
+          },
         ),
       ),
     );

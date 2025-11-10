@@ -403,6 +403,7 @@ class ClientProvider with ChangeNotifier {
     String? codigoPostal,
     double? latitud,
     double? longitud,
+    int? localidadId,
     bool esPrincipal = false,
     bool activa = true,
   }) async {
@@ -421,6 +422,7 @@ class ClientProvider with ChangeNotifier {
         codigoPostal: codigoPostal,
         latitud: latitud,
         longitud: longitud,
+        localidadId: localidadId,
         esPrincipal: esPrincipal,
         activa: activa,
       );
@@ -455,6 +457,7 @@ class ClientProvider with ChangeNotifier {
     String? codigoPostal,
     double? latitud,
     double? longitud,
+    int? localidadId,
     bool? esPrincipal,
     bool? activa,
   }) async {
@@ -474,6 +477,7 @@ class ClientProvider with ChangeNotifier {
         codigoPostal: codigoPostal,
         latitud: latitud,
         longitud: longitud,
+        localidadId: localidadId,
         esPrincipal: esPrincipal,
         activa: activa,
       );

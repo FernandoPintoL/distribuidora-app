@@ -761,6 +761,7 @@ class ClientService {
     String? codigoPostal,
     double? latitud,
     double? longitud,
+    int? localidadId,
     bool esPrincipal = false,
     bool activa = true,
   }) async {
@@ -773,6 +774,7 @@ class ClientService {
         'codigo_postal': codigoPostal,
         'latitud': latitud,
         'longitud': longitud,
+        'localidad_id': localidadId,
         'es_principal': esPrincipal,
         'activa': activa,
       };
@@ -811,6 +813,7 @@ class ClientService {
     String? codigoPostal,
     double? latitud,
     double? longitud,
+    int? localidadId,
     bool? esPrincipal,
     bool? activa,
   }) async {
@@ -824,6 +827,7 @@ class ClientService {
       if (codigoPostal != null) data['codigo_postal'] = codigoPostal;
       if (latitud != null) data['latitud'] = latitud;
       if (longitud != null) data['longitud'] = longitud;
+      if (localidadId != null) data['localidad_id'] = localidadId;
       if (esPrincipal != null) data['es_principal'] = esPrincipal;
       if (activa != null) data['activa'] = activa;
 

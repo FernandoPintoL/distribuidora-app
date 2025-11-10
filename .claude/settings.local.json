@@ -15,7 +15,8 @@
       "Bash(xcrun simctl:*)",
       "Bash(nc:*)",
       "Bash(pkill:*)",
-      "Bash(tee:*)"
+      "Bash(tee:*)",
+      "Bash(flutter logs:*)"
     ],
     "deny": [],
     "ask": []

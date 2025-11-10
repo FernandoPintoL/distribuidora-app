@@ -72,6 +72,37 @@ class _DireccionFormWidgetState extends State<DireccionFormWidget> {
     }
   }
 
+  /// Obtiene la localidad inicial de forma segura
+  Localidad? _getInitialLocalidad() {
+    // Si no hay ID inicial, retornar null
+    if (widget.initialLocalidadId == null) {
+      return null;
+    }
+
+    // Si la lista está vacía, retornar null
+    if (_localidades.isEmpty) {
+      debugPrint('⚠️ Lista de localidades vacía, no se puede preseleccionar');
+      return null;
+    }
+
+    // Buscar la localidad por ID
+    try {
+      final localidad = _localidades.firstWhere(
+        (loc) => loc.id == widget.initialLocalidadId,
+        orElse: () {
+          debugPrint('⚠️ No se encontró localidad con ID: ${widget.initialLocalidadId}');
+          debugPrint('📋 Localidades disponibles: ${_localidades.map((l) => '${l.id}: ${l.nombre}').join(', ')}');
+          throw StateError('Localidad no encontrada');
+        },
+      );
+      debugPrint('✅ Localidad preseleccionada: ${localidad.nombre} (ID: ${localidad.id})');
+      return localidad;
+    } catch (e) {
+      debugPrint('❌ Error al obtener localidad inicial: $e');
+      return null;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Column(
@@ -110,12 +141,7 @@ class _DireccionFormWidgetState extends State<DireccionFormWidget> {
             child: SelectSearch<Localidad>(
               label: 'Localidad',
               items: _localidades,
-              value: widget.initialLocalidadId != null
-                  ? _localidades.firstWhere(
-                      (localidad) => localidad.id == widget.initialLocalidadId,
-                      orElse: () => _localidades.first,
-                    )
-                  : null,
+              value: _getInitialLocalidad(),
               displayString: (localidad) => localidad.nombre,
               onChanged: (localidad) {
                 widget.onLocalidadChanged(localidad?.id);
