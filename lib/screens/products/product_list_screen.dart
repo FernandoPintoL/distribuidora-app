@@ -22,7 +22,7 @@ class _ProductListScreenState extends State<ProductListScreen> {
   void initState() {
     super.initState();
     Future.delayed(Duration.zero, () {
-      _loadProducts();
+      _loadProductsIfNeeded();
     });
   }
 
@@ -30,6 +30,14 @@ class _ProductListScreenState extends State<ProductListScreen> {
   void dispose() {
     _searchController.dispose();
     super.dispose();
+  }
+
+  Future<void> _loadProductsIfNeeded() async {
+    final productProvider = context.read<ProductProvider>();
+    // Solo cargar si no hay productos ya cargados
+    if (productProvider.products.isEmpty && !productProvider.isLoading) {
+      await productProvider.loadProducts();
+    }
   }
 
   Future<void> _loadProducts() async {

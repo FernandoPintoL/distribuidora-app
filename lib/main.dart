@@ -28,6 +28,7 @@ void main() async {
         ChangeNotifierProvider(create: (_) => PedidoProvider()),
         ChangeNotifierProvider(create: (_) => TrackingProvider()),
         ChangeNotifierProvider(create: (_) => EntregaProvider()),
+        ChangeNotifierProvider(create: (_) => NotificationProvider()),
       ],
       child: const MyApp(),
     ),
@@ -92,6 +93,7 @@ class MyApp extends StatelessWidget {
         '/direccion-entrega-seleccion': (context) => const DireccionEntregaSeleccionScreen(),
         '/mis-pedidos': (context) => const PedidosHistorialScreen(),
         '/mis-direcciones': (context) => const MisDireccionesScreen(),
+        '/notifications': (context) => const NotificationsScreen(),
       },
       onGenerateRoute: (settings) {
         // Handle routes with arguments

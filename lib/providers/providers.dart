@@ -5,3 +5,4 @@ export 'carrito_provider.dart';
 export 'pedido_provider.dart';
 export 'tracking_provider.dart';
 export 'entrega_provider.dart';
+export 'notification_provider.dart';

@@ -14,3 +14,4 @@ export 'pedidos/pedido_creado_screen.dart';
 export 'pedidos/pedidos_historial_screen.dart';
 export 'pedidos/pedido_detalle_screen.dart';
 export 'pedidos/pedido_tracking_screen.dart';
+export 'notifications_screen.dart';

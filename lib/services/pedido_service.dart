@@ -63,7 +63,7 @@ class PedidoService {
       debugPrint('   Cuerpo de la petición: ${requestBody.toString()}');
 
       final response = await _apiService.post(
-        '/app/proformas',
+        '/proformas',
         data: requestBody,
       );
 
@@ -126,7 +126,7 @@ class PedidoService {
       }
 
       final response = await _apiService.get(
-        '/app/cliente/proformas',
+        '/proformas',
         queryParameters: queryParams,
       );
 
@@ -154,7 +154,7 @@ class PedidoService {
   /// Incluye: cliente, dirección, items, historial de estados, reservas
   Future<ApiResponse<Pedido>> getPedido(int id) async {
     try {
-      final response = await _apiService.get('/app/pedidos/$id');
+      final response = await _apiService.get('/proformas/$id');
 
       final apiResponse = ApiResponse<Pedido>.fromJson(
         response.data,
@@ -182,7 +182,7 @@ class PedidoService {
   /// Útil para polling o actualizaciones rápidas sin cargar toda la data
   Future<ApiResponse<Map<String, dynamic>>> getEstadoPedido(int id) async {
     try {
-      final response = await _apiService.get('/app/pedidos/$id/estado');
+      final response = await _apiService.get('/proformas/$id/estado');
 
       return ApiResponse<Map<String, dynamic>>.fromJson(
         response.data,
@@ -209,7 +209,7 @@ class PedidoService {
   Future<ApiResponse<void>> extenderReservas(int pedidoId) async {
     try {
       final response = await _apiService.post(
-        '/app/pedidos/$pedidoId/extender-reservas',
+        '/proformas/$pedidoId/extender-reservas',
       );
 
       return ApiResponse<void>.fromJson(response.data, (data) => null);
@@ -234,7 +234,7 @@ class PedidoService {
   ) async {
     try {
       final response = await _apiService.post(
-        '/app/verificar-stock',
+        '/proformas/verificar-stock',
         data: {'items': items},
       );
 

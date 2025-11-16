@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
+import 'package:provider/provider.dart';
 import '../services/services.dart';
+import '../providers/providers.dart';
 
 /// Widget que escucha eventos WebSocket y muestra notificaciones en tiempo real
 ///
@@ -94,6 +96,9 @@ class _RealtimeNotificationsListenerState
 
     if (!mounted) return;
 
+    // ✅ Recargar solo las estadísticas (contador) sin cargar todas las notificaciones
+    context.read<NotificationProvider>().loadStats();
+
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Row(
@@ -139,6 +144,9 @@ class _RealtimeNotificationsListenerState
 
     if (!mounted) return;
 
+    // ✅ Recargar solo las estadísticas (contador) sin cargar todas las notificaciones
+    context.read<NotificationProvider>().loadStats();
+
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Row(
@@ -181,6 +189,9 @@ class _RealtimeNotificationsListenerState
     final ventaNumero = data['venta_numero'] as String?;
 
     if (!mounted) return;
+
+    // ✅ Recargar solo las estadísticas (contador) sin cargar todas las notificaciones
+    context.read<NotificationProvider>().loadStats();
 
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(

@@ -32,7 +32,7 @@ class ProformaService {
       debugPrint('📝 Confirmando proforma #$proformaId');
 
       final response = await _apiService.post(
-        '/app/proformas/$proformaId/confirmar',
+        '/proformas/$proformaId/confirmar',
         data: {
           'politica_pago': politicaPago,
         },
@@ -74,7 +74,7 @@ class ProformaService {
   /// Obtener una proforma por ID
   Future<ApiResponse<Pedido>> getProforma(int proformaId) async {
     try {
-      final response = await _apiService.get('/app/proformas/$proformaId');
+      final response = await _apiService.get('/proformas/$proformaId');
 
       final apiResponse = ApiResponse<Pedido>.fromJson(
         response.data,
@@ -116,7 +116,7 @@ class ProformaService {
       }
 
       final response = await _apiService.get(
-        '/app/cliente/proformas',
+        '/proformas',
         queryParameters: queryParams,
       );
 
@@ -207,6 +207,66 @@ class ProformaService {
       return ApiResponse<Map<String, dynamic>>(
         success: false,
         message: 'Error inesperado al obtener estado de pago: ${e.toString()}',
+        data: null,
+      );
+    }
+  }
+
+  /// Obtener estadísticas de proformas
+  ///
+  /// Retorna contadores y métricas agregadas sin cargar todas las proformas.
+  /// Ideal para mostrar en dashboards y pantallas de inicio.
+  ///
+  /// Incluye:
+  /// - Total de proformas
+  /// - Cantidades por estado (pendiente, aprobada, rechazada, convertida, vencida)
+  /// - Montos por estado
+  /// - Distribución por canal
+  /// - Alertas (vencidas y por vencer)
+  /// - Monto total
+  ///
+  /// Este endpoint es mucho más rápido que cargar todas las proformas
+  /// (~2KB vs ~500KB-2MB)
+  Future<ApiResponse<ProformaStats>> getStats() async {
+    try {
+      debugPrint('📊 Obteniendo estadísticas de proformas');
+
+      final response = await _apiService.get('/proformas/estadisticas');
+
+      final Map<String, dynamic> responseData = response.data as Map<String, dynamic>;
+
+      if (responseData['success'] == true && responseData['data'] != null) {
+        final stats = ProformaStats.fromJson(responseData['data'] as Map<String, dynamic>);
+
+        debugPrint('✅ Estadísticas obtenidas: ${stats.total} proformas totales');
+        debugPrint('   Pendientes: ${stats.porEstado.pendiente}');
+        debugPrint('   Aprobadas: ${stats.porEstado.aprobada}');
+        debugPrint('   Vencidas: ${stats.alertas.vencidas}');
+
+        return ApiResponse<ProformaStats>(
+          success: true,
+          message: 'Estadísticas obtenidas exitosamente',
+          data: stats,
+        );
+      } else {
+        return ApiResponse<ProformaStats>(
+          success: false,
+          message: responseData['message'] as String? ?? 'Error al obtener estadísticas',
+          data: null,
+        );
+      }
+    } on DioException catch (e) {
+      debugPrint('❌ Error obteniendo estadísticas: ${_getErrorMessage(e)}');
+      return ApiResponse<ProformaStats>(
+        success: false,
+        message: _getErrorMessage(e),
+        data: null,
+      );
+    } catch (e) {
+      debugPrint('❌ Error inesperado: $e');
+      return ApiResponse<ProformaStats>(
+        success: false,
+        message: 'Error inesperado al obtener estadísticas: ${e.toString()}',
         data: null,
       );
     }

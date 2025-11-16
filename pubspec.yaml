@@ -109,6 +109,7 @@ dependencies:
   flutter_libphonenumber: ^2.5.1
   dart_mcp: ^0.3.3
   flutter_launcher_icons: ^0.14.4
+  timeago: ^3.7.1
 
 dev_dependencies:
   flutter_test:
