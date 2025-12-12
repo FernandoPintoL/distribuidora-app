@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 import '../models/api_response.dart';
 import '../models/entrega.dart';
+import '../models/ubicacion_tracking.dart';
 import 'api_service.dart';
 
 class EntregaService {

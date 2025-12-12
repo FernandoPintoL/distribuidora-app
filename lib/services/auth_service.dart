@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import '../models/models.dart';
+import '../models/permissions_response.dart';
 import 'api_service.dart';
 
 class AuthService {
@@ -208,6 +209,28 @@ class AuthService {
 
   Future<String?> getToken() async {
     return await _apiService.getToken();
+  }
+
+  /// ✅ NUEVO: Refrescar permisos sin logout
+  /// Útil para app móvil que quiere actualizar permisos sin volver a login
+  Future<PermissionsResponse> refreshPermissions() async {
+    try {
+      final response = await _apiService.get('/auth/refresh-permissions');
+
+      if (response.statusCode == 200) {
+        final permResponse = PermissionsResponse.fromJson(response.data);
+        debugPrint('✅ Permisos refrescados correctamente');
+        return permResponse;
+      } else {
+        throw Exception('Error al refrescar permisos: ${response.statusCode}');
+      }
+    } on DioException catch (e) {
+      debugPrint('❌ Error refrescando permisos: ${_getErrorMessage(e)}');
+      rethrow;
+    } catch (e) {
+      debugPrint('❌ Error inesperado refrescando permisos: $e');
+      rethrow;
+    }
   }
 
   String _getErrorMessage(DioException e) {

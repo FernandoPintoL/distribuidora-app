@@ -240,12 +240,22 @@ class _AuthWrapperState extends State<AuthWrapper> with WidgetsBindingObserver {
     final authProvider = context.read<AuthProvider>();
 
     try {
-      // Try to load user if token exists, but never block UI indefinitely
+      // Try to load user if token exists
       debugPrint('🔍 Checking auth status...');
-      await Future.any([
-        authProvider.loadUser(),
-        Future.delayed(const Duration(seconds: 5)),
-      ]);
+
+      // Use timeout instead of Future.any - this ensures loadUser actually completes
+      try {
+        await authProvider.loadUser().timeout(
+          const Duration(seconds: 10),
+          onTimeout: () {
+            debugPrint('⏱️ Auth load timed out after 10 seconds');
+            return false;
+          },
+        );
+      } catch (e) {
+        debugPrint('❌ Error during auth load: $e');
+      }
+
       debugPrint('✅ Auth check completed');
 
       // Después de auth exitosa, intentar recuperar carrito

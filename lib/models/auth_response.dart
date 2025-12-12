@@ -42,12 +42,16 @@ class AuthData {
   final String token;
   final List<String>? roles;
   final List<String>? permissions;
+  final int? cacheTtl; // En segundos
+  final int? permissionsUpdatedAt; // Unix timestamp
 
   AuthData({
     required this.user,
     required this.token,
     this.roles,
     this.permissions,
+    this.cacheTtl,
+    this.permissionsUpdatedAt,
   });
 
   factory AuthData.fromJson(Map<String, dynamic> json) {
@@ -66,6 +70,8 @@ class AuthData {
         permissions: json['permissions'] != null
             ? List<String>.from(json['permissions'])
             : null,
+        cacheTtl: json['cache_ttl'],
+        permissionsUpdatedAt: json['permissions_updated_at'],
       );
     } catch (e) {
       debugPrint('❌ Error parsing AuthData: $e, json: $json');
@@ -79,6 +85,8 @@ class AuthData {
       'token': token,
       'roles': roles,
       'permissions': permissions,
+      'cache_ttl': cacheTtl,
+      'permissions_updated_at': permissionsUpdatedAt,
     };
   }
 }

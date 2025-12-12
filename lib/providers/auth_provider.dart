@@ -1,5 +1,6 @@
 import 'package:flutter/widgets.dart';
 import '../models/models.dart';
+import '../models/permissions_response.dart';
 import '../services/services.dart';
 
 class AuthProvider with ChangeNotifier {
@@ -12,11 +13,31 @@ class AuthProvider with ChangeNotifier {
   String? _errorMessage;
   bool _biometricAvailable = false;
 
+  // ✅ NUEVO: Caché de permisos con TTL
+  DateTime? _permissionsUpdatedAt;
+  int? _cacheTTL;
+
   User? get user => _user;
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
   bool get isLoggedIn => _user != null;
   bool get biometricAvailable => _biometricAvailable;
+
+  // ✅ NUEVO: Getters para caché de permisos
+  bool get _isPermissionsCacheValid {
+    if (_permissionsUpdatedAt == null || _cacheTTL == null) return false;
+    final now = DateTime.now();
+    final expiry = _permissionsUpdatedAt!.add(Duration(seconds: _cacheTTL!));
+    return now.isBefore(expiry);
+  }
+
+  int get minutosRestantesCache {
+    if (!_isPermissionsCacheValid) return 0;
+    final now = DateTime.now();
+    final expiry = _permissionsUpdatedAt!.add(Duration(seconds: _cacheTTL!));
+    final diferencia = expiry.difference(now);
+    return (diferencia.inSeconds / 60).ceil();
+  }
 
   Future<bool> login(String login, String password) async {
     _isLoading = true;
@@ -38,6 +59,11 @@ class AuthProvider with ChangeNotifier {
         debugPrint('✅ User assigned in login: $_user');
         debugPrint('isLoggedIn: $isLoggedIn');
         _errorMessage = null;
+
+        // ✅ NUEVO: Guardar cache TTL desde la respuesta
+        _cacheTTL = response.data!.cacheTtl;
+        _permissionsUpdatedAt = DateTime.now();
+        debugPrint('✅ Cache TTL guardado: ${_cacheTTL} segundos (${minutosRestantesCache} minutos)');
 
         // Conectar al WebSocket después de login exitoso
         _connectWebSocket(response.data!.token);
@@ -100,6 +126,11 @@ class AuthProvider with ChangeNotifier {
         _user = response.data!.user;
         _errorMessage = null;
 
+        // ✅ NUEVO: Guardar cache TTL desde la respuesta
+        _cacheTTL = response.data!.cacheTtl;
+        _permissionsUpdatedAt = DateTime.now();
+        debugPrint('✅ Cache TTL guardado en registro: ${_cacheTTL} segundos (${minutosRestantesCache} minutos)');
+
         // Conectar al WebSocket después de registro exitoso
         _connectWebSocket(response.data!.token);
 
@@ -160,6 +191,9 @@ class AuthProvider with ChangeNotifier {
         if (token != null) {
           _connectWebSocket(token);
         }
+
+        // ✅ NUEVO: Refrescar permisos si es necesario
+        await refreshPermissionsIfNeeded();
 
         // Retrasar notifyListeners hasta después del build
         WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -231,6 +265,9 @@ class AuthProvider with ChangeNotifier {
       _user = null;
       _errorMessage = null;
       _isLoading = false;
+      // ✅ NUEVO: Limpiar cache TTL al logout
+      _permissionsUpdatedAt = null;
+      _cacheTTL = null;
       // Retrasar notifyListeners hasta después del build
       WidgetsBinding.instance.addPostFrameCallback((_) {
         notifyListeners();
@@ -244,6 +281,48 @@ class AuthProvider with ChangeNotifier {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       notifyListeners();
     });
+  }
+
+  /// ✅ NUEVO: Refrescar permisos si el caché ha expirado
+  /// Útil para mantener permisos actualizados sin hacer logout
+  Future<void> refreshPermissionsIfNeeded() async {
+    // Si el caché aún es válido, no hacer nada
+    if (_isPermissionsCacheValid) {
+      debugPrint(
+        '✅ Permisos en caché aún válidos (${minutosRestantesCache} minutos restantes)',
+      );
+      return;
+    }
+
+    try {
+      debugPrint('🔄 Refrescando permisos desde servidor...');
+      final response = await _authService.refreshPermissions();
+
+      if (response.success) {
+        // Actualizar permisos del usuario
+        if (_user != null) {
+          _user!.permissions = response.permissions;
+          _user!.roles = response.roles;
+          _cacheTTL = response.cacheTtl;
+          _permissionsUpdatedAt = DateTime.now();
+
+          debugPrint('✅ Permisos refrescados correctamente');
+          debugPrint('   - Permisos: ${response.permissions.length}');
+          debugPrint('   - Roles: ${response.roles.length}');
+          debugPrint('   - TTL: ${_cacheTTL} segundos');
+
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            notifyListeners();
+          });
+        }
+      } else {
+        debugPrint('⚠️ Error refrescando permisos: ${response}');
+      }
+    } catch (e) {
+      debugPrint('⚠️ Excepción refrescando permisos: $e');
+      // No lanzar excepción, solo registrar el error
+      // El usuario seguirá siendo válido pero con permisos potencialmente desactualizados
+    }
   }
 
   /// Conectar al WebSocket después de autenticación exitosa

@@ -1,5 +1,6 @@
 import 'package:flutter/widgets.dart';
 import '../models/entrega.dart';
+import '../models/ubicacion_tracking.dart';
 import '../services/entrega_service.dart';
 
 class EntregaProvider with ChangeNotifier {

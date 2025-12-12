@@ -135,24 +135,62 @@ class CarritoScreen extends StatelessWidget {
               }
             },
             onConvertirProforma: () async {
-              final proforma = await carritoProvider.convertirAProforma();
+              // Mostrar loading dialog
               if (context.mounted) {
-                if (proforma != null) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text('Proforma creada: ${proforma['numero']}'),
-                      backgroundColor: Colors.green,
-                      duration: const Duration(seconds: 3),
-                    ),
-                  );
-                } else {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(
-                        carritoProvider.errorMessage ?? 'Error al crear proforma',
+                showDialog(
+                  context: context,
+                  barrierDismissible: false,
+                  builder: (context) => const Dialog(
+                    child: Padding(
+                      padding: EdgeInsets.all(20.0),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          CircularProgressIndicator(),
+                          SizedBox(height: 16),
+                          Text('Creando proforma...'),
+                        ],
                       ),
-                      backgroundColor: Colors.orange,
-                      duration: const Duration(seconds: 2),
+                    ),
+                  ),
+                );
+              }
+
+              try {
+                final proforma = await carritoProvider.convertirAProforma();
+
+                if (context.mounted) {
+                  // Cerrar loading dialog
+                  Navigator.of(context).pop();
+
+                  if (proforma != null) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('✅ Proforma creada: ${proforma['numero']}'),
+                        backgroundColor: Colors.green,
+                        duration: const Duration(seconds: 3),
+                      ),
+                    );
+                  } else {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(
+                          carritoProvider.errorMessage ?? 'Error al crear proforma',
+                        ),
+                        backgroundColor: Colors.red,
+                        duration: const Duration(seconds: 3),
+                      ),
+                    );
+                  }
+                }
+              } catch (e) {
+                if (context.mounted) {
+                  Navigator.of(context).pop();
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('❌ Error: $e'),
+                      backgroundColor: Colors.red,
+                      duration: const Duration(seconds: 3),
                     ),
                   );
                 }

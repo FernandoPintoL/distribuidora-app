@@ -18,3 +18,6 @@ export 'camion.dart';
 export 'ubicacion_tracking.dart';
 export 'notification.dart';
 export 'proforma_stats.dart';
+export 'ruta.dart';
+export 'ruta_detalle.dart';
+export 'entrega.dart';

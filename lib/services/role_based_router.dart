@@ -7,6 +7,14 @@ import '../screens/clients/client_list_screen.dart';
 
 /// Servicio para determinar qué home screen mostrar basado en el rol del usuario
 /// Centraliza toda la lógica de routing por rol
+///
+/// ✅ NOTA: Los permisos son ahora dinámicos y se obtienen desde:
+/// - user.permissions (lista de permisos específicos)
+/// - AuthProvider.refreshPermissionsIfNeeded() (para mantener cache actualizado)
+///
+/// Para verificar si un usuario tiene un permiso específico, usa:
+/// - authProvider.hasPermission('permission.name')
+/// - RoleBasedRouter.hasPermission(user, 'permission.name')
 class RoleBasedRouter {
   /// Obtiene el home screen apropiado según los roles del usuario
   ///
@@ -72,54 +80,22 @@ class RoleBasedRouter {
     return roleNames.join(', ');
   }
 
-  /// Obtiene todos los permisos asociados a los roles del usuario
-  /// Útil para validar acceso a características
-  static List<String> getPermissionsForRoles(List<String> roles) {
-    final permissions = <String>[];
+  /// Verifica si el usuario tiene un permiso específico
+  /// Los permisos provienen de la BD y se sincronizan dinámicamente
+  static bool hasPermission(User? user, String permission) {
+    if (user == null || user.permissions == null) return false;
+    return user.permissions!.contains(permission);
+  }
 
-    for (final role in roles) {
-      switch (role.toLowerCase()) {
-        case 'admin':
-          permissions.addAll([
-            'view_dashboard',
-            'manage_users',
-            'manage_products',
-            'manage_orders',
-            'manage_deliveries',
-            'view_analytics',
-            'manage_roles',
-          ]);
-          break;
-        case 'preventista':
-          permissions.addAll([
-            'view_dashboard',
-            'manage_products',
-            'manage_orders',
-            'manage_clients',
-            'view_analytics',
-          ]);
-          break;
-        case 'cliente':
-          permissions.addAll([
-            'view_orders',
-            'create_orders',
-            'view_products',
-            'manage_addresses',
-            'manage_profile',
-          ]);
-          break;
-        case 'chofer':
-          permissions.addAll([
-            'view_deliveries',
-            'manage_deliveries',
-            'view_routes',
-            'update_status',
-          ]);
-          break;
-      }
-    }
+  /// Verifica si el usuario tiene alguno de los permisos especificados
+  static bool hasAnyPermission(User? user, List<String> permissions) {
+    if (user == null || user.permissions == null) return false;
+    return user.permissions!.any((userPerm) => permissions.contains(userPerm));
+  }
 
-    // Remover duplicados
-    return permissions.toSet().toList();
+  /// Verifica si el usuario tiene todos los permisos especificados
+  static bool hasAllPermissions(User? user, List<String> permissions) {
+    if (user == null || user.permissions == null) return false;
+    return permissions.every((perm) => user.permissions!.contains(perm));
   }
 }

@@ -20,7 +20,7 @@ class WebSocketConfig {
   static const String eventAuthenticated = 'authenticated';
   static const String eventAuthenticationError = 'authentication_error';
 
-  // Eventos de Proformas
+  // Eventos de proformas
   // ✅ Sincronizados con Node.js WebSocket Server
   static const String eventProformaCreated = 'proforma.creada';
   static const String eventProformaApproved = 'proforma.aprobada';
@@ -43,6 +43,12 @@ class WebSocketConfig {
   static const String eventEnvioProximo = 'envio_proximo';
   static const String eventEnvioEntregado = 'envio_entregado';
   static const String eventEntregaRechazada = 'entrega_rechazada';
+
+  // Eventos de Rutas (nuevos para planificación de entregas)
+  // ✅ Sincronizados con Laravel Broadcast (RutaPlanificada, RutaModificada, RutaDetalleActualizado)
+  static const String eventRutaPlanificada = 'ruta.planificada';
+  static const String eventRutaModificada = 'ruta.modificada';
+  static const String eventRutaDetalleActualizado = 'ruta.detalle.actualizado';
 
   // Eventos del Sistema
   static const String eventConnect = 'connect';

@@ -20,6 +20,7 @@ class WebSocketService {
   final _stockController = StreamController<Map<String, dynamic>>.broadcast();
   final _envioController = StreamController<Map<String, dynamic>>.broadcast();
   final _ubicacionController = StreamController<Map<String, dynamic>>.broadcast();
+  final _rutaController = StreamController<Map<String, dynamic>>.broadcast();
   final _connectionController = StreamController<bool>.broadcast();
 
   // Getters de streams
@@ -27,6 +28,7 @@ class WebSocketService {
   Stream<Map<String, dynamic>> get stockStream => _stockController.stream;
   Stream<Map<String, dynamic>> get envioStream => _envioController.stream;
   Stream<Map<String, dynamic>> get ubicacionStream => _ubicacionController.stream;
+  Stream<Map<String, dynamic>> get rutaStream => _rutaController.stream;
   Stream<bool> get connectionStream => _connectionController.stream;
 
   bool get isConnected => _isConnected;
@@ -203,7 +205,7 @@ class WebSocketService {
 
   /// Configurar listeners de eventos de negocio
   void _setupEventListeners() {
-    // Eventos de Proformas
+    // Eventos de proformas
     _socket!.on(WebSocketConfig.eventProformaCreated, (data) {
       debugPrint('📦 Proforma creada: $data');
       _proformaController.add({
@@ -337,6 +339,34 @@ class WebSocketService {
       });
       _handleEvent(WebSocketConfig.eventEntregaRechazada, data);
     });
+
+    // Eventos de Rutas (nuevos)
+    _socket!.on(WebSocketConfig.eventRutaPlanificada, (data) {
+      debugPrint('📍 Ruta planificada: ${data['codigo']} (${data['cantidad_paradas']} paradas)');
+      _rutaController.add({
+        'type': 'planificada',
+        'data': data,
+      });
+      _handleEvent(WebSocketConfig.eventRutaPlanificada, data);
+    });
+
+    _socket!.on(WebSocketConfig.eventRutaModificada, (data) {
+      debugPrint('📝 Ruta modificada: ${data['codigo']} - ${data['tipo_cambio']}');
+      _rutaController.add({
+        'type': 'modificada',
+        'data': data,
+      });
+      _handleEvent(WebSocketConfig.eventRutaModificada, data);
+    });
+
+    _socket!.on(WebSocketConfig.eventRutaDetalleActualizado, (data) {
+      debugPrint('📦 Parada actualizada: ${data['cliente_nombre']} - ${data['estado_actual']}');
+      _rutaController.add({
+        'type': 'detalle_actualizado',
+        'data': data,
+      });
+      _handleEvent(WebSocketConfig.eventRutaDetalleActualizado, data);
+    });
   }
 
   /// Registrar callback para evento específico
@@ -374,6 +404,7 @@ class WebSocketService {
     _stockController.close();
     _envioController.close();
     _ubicacionController.close();
+    _rutaController.close();
     _connectionController.close();
     _eventHandlers.clear();
   }
