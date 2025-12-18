@@ -3,6 +3,8 @@ import 'package:provider/provider.dart';
 import '../../models/ruta.dart';
 import '../../providers/ruta_provider.dart';
 import '../../services/websocket_service.dart';
+import '../../widgets/widgets.dart';
+import '../../config/config.dart';
 
 class MisRutasScreen extends StatefulWidget {
   const MisRutasScreen({Key? key}) : super(key: key);
@@ -92,13 +94,12 @@ class _MisRutasScreenState extends State<MisRutasScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Mis Rutas'),
-        elevation: 0,
+      appBar: CustomGradientAppBar(
+        title: 'Mis Rutas',
+        customGradient: AppGradients.green,
         actions: [
-          // Indicador de conexión WebSocket
           Padding(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(8.0),
             child: Consumer<RutaProvider>(
               builder: (context, rutaProvider, _) {
                 final wsService = WebSocketService();

@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../models/models.dart';
 import '../../providers/providers.dart';
+import '../../widgets/widgets.dart';
+import '../../config/config.dart';
 
 /// Pantalla de detalle de producto
 /// Muestra información completa del producto y permite agregar al carrito
@@ -143,9 +145,9 @@ class _ProductoDetalleScreenState extends State<ProductoDetalleScreen> {
     final cantidadMinima = (widget.producto.cantidadMinima ?? 1).toDouble();
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text(widget.producto.nombre),
-        elevation: 0,
+      appBar: CustomGradientAppBar(
+        title: widget.producto.nombre,
+        customGradient: AppGradients.blue,
       ),
       body: Padding(
         padding: const EdgeInsets.all(8.0),

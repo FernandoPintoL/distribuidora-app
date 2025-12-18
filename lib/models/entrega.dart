@@ -15,6 +15,24 @@ class Entrega {
   final String? firmaDigitalUrl;
   final String? fotoEntregaUrl;
 
+  // Campos adicionales del nuevo endpoint /api/chofer/trabajos
+  final String? trabajoType; // 'entrega' | 'envio' (opcional, para compatibilidad)
+  final String? numero; // Número de proforma o envío (opcional)
+  final String? cliente; // Nombre del cliente (opcional)
+  final String? direccion; // Dirección de entrega (opcional)
+
+  // Coordenadas del destino para navegación
+  final double? latitudeDestino;
+  final double? longitudeDestino;
+
+  // Campos de coordinación mejorada (NUEVOS)
+  final int? numeroIntentosContacto;
+  final String? resultadoUltimoIntento; // 'Aceptado', 'No contactado', 'Rechazado', 'Reagendar'
+  final DateTime? entregadoEn;
+  final String? entregadoA;
+  final String? observacionesEntrega;
+  final DateTime? coordinacionActualizadaEn;
+
   Entrega({
     required this.id,
     required this.proformaId,
@@ -29,12 +47,40 @@ class Entrega {
     this.motivoNovedad,
     this.firmaDigitalUrl,
     this.fotoEntregaUrl,
+    this.trabajoType,
+    this.numero,
+    this.cliente,
+    this.direccion,
+    this.latitudeDestino,
+    this.longitudeDestino,
+    // Coordinación mejorada
+    this.numeroIntentosContacto,
+    this.resultadoUltimoIntento,
+    this.entregadoEn,
+    this.entregadoA,
+    this.observacionesEntrega,
+    this.coordinacionActualizadaEn,
   });
 
   factory Entrega.fromJson(Map<String, dynamic> json) {
+    // Intentar obtener coordenadas del destino de diferentes fuentes
+    double? latDestino;
+    double? lngDestino;
+
+    // Buscar en direccionCliente
+    if (json['direccionCliente'] is Map<String, dynamic>) {
+      final dirCliente = json['direccionCliente'] as Map<String, dynamic>;
+      latDestino = (dirCliente['latitud'] as num?)?.toDouble();
+      lngDestino = (dirCliente['longitud'] as num?)?.toDouble();
+    }
+
+    // O buscar en campos raíz
+    latDestino = (json['latitud_destino'] as num?)?.toDouble() ?? latDestino;
+    lngDestino = (json['longitud_destino'] as num?)?.toDouble() ?? lngDestino;
+
     return Entrega(
       id: json['id'] as int,
-      proformaId: json['proforma_id'] as int,
+      proformaId: json['proforma_id'] as int? ?? json['id'] as int,
       choferId: json['chofer_id'] as int?,
       vehiculoId: json['vehiculo_id'] as int?,
       direccionClienteId: json['direccion_cliente_id'] as int?,
@@ -52,6 +98,25 @@ class Entrega {
       motivoNovedad: json['motivo_novedad'] as String?,
       firmaDigitalUrl: json['firma_digital_url'] as String?,
       fotoEntregaUrl: json['foto_entrega_url'] as String?,
+      // Nuevos campos del endpoint /api/chofer/trabajos
+      trabajoType: json['trabajoType'] as String? ?? json['type'] as String?,
+      numero: json['numero'] as String?,
+      cliente: json['cliente'] as String?,
+      direccion: json['direccion'] as String?,
+      // Coordenadas del destino
+      latitudeDestino: latDestino,
+      longitudeDestino: lngDestino,
+      // Coordinación mejorada (NUEVOS)
+      numeroIntentosContacto: json['numero_intentos_contacto'] as int?,
+      resultadoUltimoIntento: json['resultado_ultimo_intento'] as String?,
+      entregadoEn: json['entregado_en'] != null
+          ? DateTime.parse(json['entregado_en'] as String)
+          : null,
+      entregadoA: json['entregado_a'] as String?,
+      observacionesEntrega: json['observaciones_entrega'] as String?,
+      coordinacionActualizadaEn: json['coordinacion_actualizada_en'] != null
+          ? DateTime.parse(json['coordinacion_actualizada_en'] as String)
+          : null,
     );
   }
 
@@ -70,43 +135,82 @@ class Entrega {
       'motivo_novedad': motivoNovedad,
       'firma_digital_url': firmaDigitalUrl,
       'foto_entrega_url': fotoEntregaUrl,
+      'trabajo_type': trabajoType,
+      'numero': numero,
+      'cliente': cliente,
+      'direccion': direccion,
+      'latitud_destino': latitudeDestino,
+      'longitud_destino': longitudeDestino,
+      // Coordinación mejorada
+      'numero_intentos_contacto': numeroIntentosContacto,
+      'resultado_ultimo_intento': resultadoUltimoIntento,
+      'entregado_en': entregadoEn?.toIso8601String(),
+      'entregado_a': entregadoA,
+      'observaciones_entrega': observacionesEntrega,
+      'coordinacion_actualizada_en': coordinacionActualizadaEn?.toIso8601String(),
     };
   }
 
   String get estadoLabel {
+    // Soporta tanto estados de entregas como de envios
     const estadoLabels = {
+      // Estados de entregas (proformas)
       'ASIGNADA': 'Asignada',
       'EN_CAMINO': 'En Camino',
       'LLEGO': 'Llegó',
       'ENTREGADO': 'Entregado',
       'NOVEDAD': 'Novedad',
       'CANCELADA': 'Cancelada',
+      // Estados de envios (ventas)
+      'PROGRAMADO': 'Programado',
+      'EN_PREPARACION': 'En Preparación',
+      'EN_RUTA': 'En Ruta',
     };
     return estadoLabels[estado] ?? estado;
   }
 
   String get estadoColor {
     const colors = {
+      // Estados de entregas (proformas)
       'ASIGNADA': '#3b82f6', // blue
       'EN_CAMINO': '#f97316', // orange
       'LLEGO': '#eab308', // yellow
       'ENTREGADO': '#22c55e', // green
       'NOVEDAD': '#ef4444', // red
       'CANCELADA': '#6b7280', // gray
+      // Estados de envios (ventas)
+      'PROGRAMADO': '#3b82f6', // blue
+      'EN_PREPARACION': '#f97316', // orange
+      'EN_RUTA': '#eab308', // yellow
     };
     return colors[estado] ?? '#000000';
   }
 
   String get estadoIcon {
     const icons = {
+      // Estados de entregas (proformas)
       'ASIGNADA': '📋',
       'EN_CAMINO': '🚚',
       'LLEGO': '🏁',
       'ENTREGADO': '✅',
       'NOVEDAD': '⚠️',
       'CANCELADA': '❌',
+      // Estados de envios (ventas)
+      'PROGRAMADO': '📅',
+      'EN_PREPARACION': '📦',
+      'EN_RUTA': '🚚',
     };
     return icons[estado] ?? '❓';
+  }
+
+  /// Retorna ícono adicional basado en el tipo de trabajo
+  String get tipoWorkIcon {
+    if (trabajoType == 'entrega') {
+      return '🚐'; // Entrega directa
+    } else if (trabajoType == 'envio') {
+      return '📦'; // Envío desde almacén
+    }
+    return '📋'; // Por defecto
   }
 
   bool get puedeIniciarRuta => estado == 'ASIGNADA';
@@ -134,6 +238,14 @@ class Entrega {
     String? motivoNovedad,
     String? firmaDigitalUrl,
     String? fotoEntregaUrl,
+    double? latitudeDestino,
+    double? longitudeDestino,
+    int? numeroIntentosContacto,
+    String? resultadoUltimoIntento,
+    DateTime? entregadoEn,
+    String? entregadoA,
+    String? observacionesEntrega,
+    DateTime? coordinacionActualizadaEn,
   }) {
     return Entrega(
       id: id ?? this.id,
@@ -149,6 +261,15 @@ class Entrega {
       motivoNovedad: motivoNovedad ?? this.motivoNovedad,
       firmaDigitalUrl: firmaDigitalUrl ?? this.firmaDigitalUrl,
       fotoEntregaUrl: fotoEntregaUrl ?? this.fotoEntregaUrl,
+      latitudeDestino: latitudeDestino ?? this.latitudeDestino,
+      longitudeDestino: longitudeDestino ?? this.longitudeDestino,
+      // Coordinación mejorada
+      numeroIntentosContacto: numeroIntentosContacto ?? this.numeroIntentosContacto,
+      resultadoUltimoIntento: resultadoUltimoIntento ?? this.resultadoUltimoIntento,
+      entregadoEn: entregadoEn ?? this.entregadoEn,
+      entregadoA: entregadoA ?? this.entregadoA,
+      observacionesEntrega: observacionesEntrega ?? this.observacionesEntrega,
+      coordinacionActualizadaEn: coordinacionActualizadaEn ?? this.coordinacionActualizadaEn,
     );
   }
 

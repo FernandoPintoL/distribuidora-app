@@ -31,7 +31,7 @@ class ProductProvider with ChangeNotifier {
     int? supplierId,
     bool? active,
     bool append = false,
-    int almacenId = 3,
+    int almacenId = 2,
     bool withStock = true,
   }) async {
     if (!append) {
@@ -75,7 +75,9 @@ class ProductProvider with ChangeNotifier {
         // Debug: Verificar que los productos se cargaron
         debugPrint('✅ ProductProvider: ${_products.length} productos cargados');
         if (_products.isNotEmpty) {
-          debugPrint('   Primer producto: ${_products.first.nombre} - Stock: ${_products.first.stockPrincipal?.cantidad}');
+          debugPrint(
+            '   Primer producto: ${_products.first.nombre} - Stock: ${_products.first.stockPrincipal?.cantidad}',
+          );
         }
 
         // Retrasar notifyListeners hasta después del build

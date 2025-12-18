@@ -135,6 +135,40 @@ class _ProfilePhotoSelectorState extends State<ProfilePhotoSelector> {
     );
   }
 
+  Widget _buildProfileIconFallback() {
+    return Container(
+      width: widget.size,
+      height: widget.size,
+      decoration: BoxDecoration(
+        color: Theme.of(context).brightness == Brightness.dark
+            ? Colors.grey[800]
+            : Colors.blue.shade50,
+        shape: BoxShape.circle,
+        border: Border.all(
+          color: Theme.of(context).primaryColor,
+          width: 3,
+        ),
+      ),
+      child: Icon(
+        Icons.person,
+        size: widget.size * 0.5,
+        color: Theme.of(context).brightness == Brightness.dark
+            ? Colors.grey[400]
+            : Colors.blue.shade700,
+      ),
+    );
+  }
+
+  Widget _buildProfileIconContent() {
+    return Icon(
+      Icons.person,
+      size: widget.size * 0.5,
+      color: Theme.of(context).brightness == Brightness.dark
+          ? Colors.grey[400]
+          : Colors.blue.shade700,
+    );
+  }
+
   Widget _buildPhotoWidget() {
     final photoUrl =
         _selectedImage?.path ?? _buildFullUrl(widget.currentPhotoUrl);
@@ -203,6 +237,45 @@ class _ProfilePhotoSelectorState extends State<ProfilePhotoSelector> {
       );
     }
 
+    // Si es una URL de red, usar Future para manejar el error de carga
+    if (_selectedImage == null) {
+      return FutureBuilder<void>(
+        future: precacheImage(NetworkImage(photoUrl), context)
+            .catchError((e) {
+          debugPrint('Error al cargar imagen de red: $e');
+          // Si hay error, no hacer nada - el errorWidget lo manejará
+        }),
+        builder: (context, snapshot) {
+          if (snapshot.hasError) {
+            // Si hay error, mostrar icono de perfil
+            return _buildProfileIconFallback();
+          }
+
+          return Container(
+            width: widget.size,
+            height: widget.size,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              border: Border.all(color: Theme.of(context).primaryColor, width: 3),
+              image: DecorationImage(
+                image: NetworkImage(photoUrl),
+                fit: BoxFit.cover,
+                onError: (exception, stackTrace) {
+                  debugPrint('❌ Error al cargar imagen de red: $exception');
+                  // No hacer nada, dejar que se muestre el errorWidget
+                },
+              ),
+            ),
+            child: snapshot.connectionState == ConnectionState.waiting
+                ? null // Mostrar la imagen mientras carga
+                : snapshot.hasError
+                    ? _buildProfileIconContent()
+                    : null,
+          );
+        },
+      );
+    }
+
     return Container(
       width: widget.size,
       height: widget.size,
@@ -210,21 +283,10 @@ class _ProfilePhotoSelectorState extends State<ProfilePhotoSelector> {
         shape: BoxShape.circle,
         border: Border.all(color: Theme.of(context).primaryColor, width: 3),
         image: DecorationImage(
-          image: _selectedImage != null
-              ? FileImage(_selectedImage!)
-              : NetworkImage(photoUrl) as ImageProvider,
+          image: FileImage(_selectedImage!),
           fit: BoxFit.cover,
           onError: (exception, stackTrace) {
-            debugPrint('Error al cargar imagen: $exception');
-            // Intentar resetear la imagen si hay un error
-            WidgetsBinding.instance.addPostFrameCallback((_) {
-              if (mounted) {
-                setState(() {
-                  _selectedImage = null;
-                });
-                widget.onPhotoSelected(null);
-              }
-            });
+            debugPrint('Error al cargar imagen local: $exception');
           },
         ),
       ),

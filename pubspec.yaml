@@ -69,6 +69,15 @@ dependencies:
   cached_network_image: ^3.3.0
   shimmer: ^3.0.0
   timeline_tile: ^2.0.0
+
+  # Gráficos y charts
+  fl_chart: ^0.68.0
+
+  # Animaciones
+  flutter_animate: ^4.5.0
+
+  # Servicios de mapas y rutas
+  google_directions_api: ^0.10.0
   
   # Formularios y validación
   form_builder: ^1.0.1

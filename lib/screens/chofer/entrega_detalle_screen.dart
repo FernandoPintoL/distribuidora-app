@@ -2,6 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../models/entrega.dart';
 import '../../providers/entrega_provider.dart';
+import '../../widgets/widgets.dart';
+import '../../widgets/chofer/entrega_timeline.dart';
+import '../../widgets/chofer/navigation_panel.dart';
+import '../../widgets/chofer/animated_navigation_card.dart';
+import '../../config/config.dart';
+import '../../services/location_service.dart';
 
 class EntregaDetalleScreen extends StatefulWidget {
   final int entregaId;
@@ -29,12 +35,261 @@ class _EntregaDetalleScreenState extends State<EntregaDetalleScreen> {
     await _provider.obtenerEntrega(widget.entregaId);
   }
 
+  Future<void> _mostrarDialogoMarcarLlegada(BuildContext context, Entrega entrega) async {
+    if (!mounted) return;
+
+    final resultado = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Marcar Llegada'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.location_on, size: 48, color: Colors.orange),
+            const SizedBox(height: 16),
+            const Text('¿Confirmas que has llegado al destino?'),
+            const SizedBox(height: 8),
+            if (entrega.direccion != null)
+              Text(
+                entrega.direccion!,
+                style: const TextStyle(
+                  fontSize: 12,
+                  color: Colors.grey,
+                  fontStyle: FontStyle.italic,
+                ),
+                textAlign: TextAlign.center,
+              ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancelar'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.orange),
+            child: const Text('Confirmar Llegada'),
+          ),
+        ],
+      ),
+    );
+
+    if (resultado == true && mounted) {
+      // Mostrar loading mientras se procesa
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => const Center(
+          child: CircularProgressIndicator(),
+        ),
+      );
+
+      try {
+        // Obtener ubicación actual del dispositivo con reintentos
+        final locationService = LocationService();
+        final position = await locationService.getCurrentLocationWithRetry(
+          maxRetries: 3,
+          retryDelay: const Duration(seconds: 1),
+        );
+
+        if (mounted) {
+          Navigator.pop(context); // Cerrar loading
+
+          if (position == null) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('No se pudo obtener la ubicación. Verifica que el GPS esté habilitado.'),
+                backgroundColor: Colors.red,
+                duration: Duration(seconds: 3),
+              ),
+            );
+            return;
+          }
+
+          // Mostrar loading nuevamente para la API call
+          showDialog(
+            context: context,
+            barrierDismissible: false,
+            builder: (context) => const Center(
+              child: CircularProgressIndicator(),
+            ),
+          );
+
+          final success = await _provider.marcarLlegada(
+            entrega.id,
+            latitud: position.latitude,
+            longitud: position.longitude,
+          );
+
+          if (mounted) {
+            Navigator.pop(context); // Cerrar loading
+
+            if (success) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Llegada marcada correctamente'),
+                  backgroundColor: Colors.green,
+                  duration: Duration(seconds: 2),
+                ),
+              );
+              // Recargar detalle
+              await _cargarDetalle();
+            } else {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('Error: ${_provider.errorMessage}'),
+                  backgroundColor: Colors.red,
+                ),
+              );
+            }
+          }
+        }
+      } catch (e) {
+        if (mounted) {
+          Navigator.pop(context); // Cerrar loading
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Error inesperado: ${e.toString()}'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
+    }
+  }
+
+  Future<void> _mostrarDialogoReportarNovedad(BuildContext context, Entrega entrega) async {
+    if (!mounted) return;
+
+    final motivoController = TextEditingController();
+    final descripcionController = TextEditingController();
+
+    final resultado = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Reportar Novedad'),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.warning_amber, size: 48, color: Colors.orange),
+              const SizedBox(height: 16),
+              TextField(
+                controller: motivoController,
+                decoration: InputDecoration(
+                  labelText: 'Motivo *',
+                  hintText: 'Ej: Cliente ausente, Dirección incorrecta',
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+                maxLines: 2,
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: descripcionController,
+                decoration: InputDecoration(
+                  labelText: 'Descripción (opcional)',
+                  hintText: 'Detalles adicionales...',
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+                maxLines: 3,
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              motivoController.dispose();
+              descripcionController.dispose();
+              Navigator.pop(context, false);
+            },
+            child: const Text('Cancelar'),
+          ),
+          ElevatedButton(
+            onPressed: motivoController.text.isEmpty
+                ? null
+                : () {
+                    Navigator.pop(context, true);
+                  },
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            child: const Text('Reportar'),
+          ),
+        ],
+      ),
+    );
+
+    if (resultado == true && mounted) {
+      // Mostrar loading mientras se procesa
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => const Center(
+          child: CircularProgressIndicator(),
+        ),
+      );
+
+      try {
+        final success = await _provider.reportarNovedad(
+          entrega.id,
+          motivo: motivoController.text,
+          descripcion: descripcionController.text.isNotEmpty
+              ? descripcionController.text
+              : null,
+        );
+
+        if (mounted) {
+          Navigator.pop(context); // Cerrar loading
+
+          if (success) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Novedad reportada correctamente'),
+                backgroundColor: Colors.red,
+                duration: Duration(seconds: 2),
+              ),
+            );
+            // Recargar detalle
+            await _cargarDetalle();
+          } else {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('Error: ${_provider.errorMessage}'),
+                backgroundColor: Colors.red,
+              ),
+            );
+          }
+        }
+      } catch (e) {
+        if (mounted) {
+          Navigator.pop(context); // Cerrar loading
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Error inesperado: ${e.toString()}'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      } finally {
+        motivoController.dispose();
+        descripcionController.dispose();
+      }
+    } else {
+      motivoController.dispose();
+      descripcionController.dispose();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Detalle de Entrega'),
-        elevation: 0,
+      appBar: CustomGradientAppBar(
+        title: 'Detalle de Entrega',
+        customGradient: AppGradients.green,
       ),
       body: Consumer<EntregaProvider>(
         builder: (context, provider, _) {
@@ -82,13 +337,32 @@ class _EntregaDetalleScreenState extends State<EntregaDetalleScreen> {
                 // Fecha y tiempos
                 _FechasCard(entrega: entrega),
                 const SizedBox(height: 16),
+                // Timeline visual de estados
+                EntregaTimeline(entrega: entrega),
+                const SizedBox(height: 16),
+                // Panel de navegación con animación de entrada
+                AnimatedNavigationCard(
+                  clientName: entrega.cliente ?? 'Cliente',
+                  address: entrega.direccion ?? 'Dirección no disponible',
+                  child: NavigationPanel(
+                    clientName: entrega.cliente ?? 'Cliente',
+                    address: entrega.direccion ?? 'Dirección no disponible',
+                    destinationLatitude: entrega.latitudeDestino,
+                    destinationLongitude: entrega.longitudeDestino,
+                  ),
+                ),
+                const SizedBox(height: 16),
                 // Historial de estados
                 if (provider.historialEstados.isNotEmpty) ...[
                   _HistorialEstadosCard(estados: provider.historialEstados),
                   const SizedBox(height: 16),
                 ],
                 // Botones de acción
-                _BotonesAccion(entrega: entrega),
+                _BotonesAccion(
+                  entrega: entrega,
+                  onMarcarLlegada: _mostrarDialogoMarcarLlegada,
+                  onReportarNovedad: _mostrarDialogoReportarNovedad,
+                ),
               ],
             ),
           );
@@ -371,10 +645,14 @@ class _HistorialEstadosCard extends StatelessWidget {
 
 class _BotonesAccion extends StatelessWidget {
   final Entrega entrega;
+  final Function(BuildContext, Entrega) onMarcarLlegada;
+  final Function(BuildContext, Entrega) onReportarNovedad;
 
   const _BotonesAccion({
     Key? key,
     required this.entrega,
+    required this.onMarcarLlegada,
+    required this.onReportarNovedad,
   }) : super(key: key);
 
   @override
@@ -399,8 +677,8 @@ class _BotonesAccion extends StatelessWidget {
             label: 'Marcar Llegada',
             icon: Icons.location_on,
             color: Colors.orange,
-            onPressed: () {
-              // TODO: Implementar marcar llegada
+            onPressed: () async {
+              await onMarcarLlegada(context, entrega);
             },
           ),
         if (entrega.puedeConfirmarEntrega)
@@ -420,8 +698,8 @@ class _BotonesAccion extends StatelessWidget {
             label: 'Reportar Novedad',
             icon: Icons.warning,
             color: Colors.red,
-            onPressed: () {
-              // TODO: Implementar reportar novedad
+            onPressed: () async {
+              await onReportarNovedad(context, entrega);
             },
           ),
       ],

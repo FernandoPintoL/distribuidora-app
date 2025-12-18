@@ -5,11 +5,14 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:provider/provider.dart';
 import 'models/models.dart';
 import 'providers/providers.dart';
+import 'providers/theme_provider.dart';
 import 'screens/screens.dart';
 import 'screens/carrito/carrito_abandonado_list_screen.dart';
 import 'screens/cliente/mis_direcciones_screen.dart';
 import 'screens/cliente/direccion_form_screen.dart';
 import 'widgets/realtime_notifications_listener.dart';
+import 'config/app_themes.dart';
+import 'services/local_notification_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -18,9 +21,18 @@ void main() async {
   await dotenv.load(fileName: ".env");
   debugPrint('✅ .env loaded');
 
+  final themeProvider = ThemeProvider();
+  await themeProvider.init();
+
+  // Initialize notification service
+  final notificationService = LocalNotificationService();
+  await notificationService.initialize();
+  debugPrint('✅ LocalNotificationService initialized');
+
   runApp(
     MultiProvider(
       providers: [
+        ChangeNotifierProvider<ThemeProvider>.value(value: themeProvider),
         ChangeNotifierProvider(create: (_) => AuthProvider()),
         ChangeNotifierProvider(create: (_) => ProductProvider()),
         ChangeNotifierProvider(create: (_) => ClientProvider()),
@@ -40,150 +52,131 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Distribuidora Paucara',
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
-        useMaterial3: true,
-        scaffoldBackgroundColor: Colors.white,
-        appBarTheme: const AppBarTheme(centerTitle: true, elevation: 2),
-        cardTheme: CardThemeData(
-          elevation: 4,
-          margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-        ),
-        elevatedButtonTheme: ElevatedButtonThemeData(
-          style: ElevatedButton.styleFrom(
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(8),
-            ),
-          ),
-        ),
-        inputDecorationTheme: InputDecorationTheme(
-          border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-          filled: true,
-          fillColor: Colors.grey.shade50,
-        ),
-      ),
-      // Add localization delegates to support Material date/time pickers
-      localizationsDelegates: const [
-        GlobalMaterialLocalizations.delegate,
-        GlobalWidgetsLocalizations.delegate,
-        GlobalCupertinoLocalizations.delegate,
-      ],
-      supportedLocales: const [
-        Locale('es', 'ES'), // Spanish - Spain
-        Locale('es', ''), // Spanish - Default
-        Locale('en', ''), // English - Default
-      ],
-      home: const AuthWrapper(),
-      debugShowCheckedModeBanner: false,
-      routes: {
-        '/login': (context) => const LoginScreen(),
-        '/home': (context) => const HomeScreen(),
-        '/home-cliente': (context) => const HomeClienteScreen(),
-        '/home-chofer': (context) => const HomeChoferScreen(),
-        '/products': (context) => const ProductListScreen(),
-        '/clients': (context) => const ClientListScreen(),
-        '/carrito': (context) => const CarritoScreen(),
-        '/carrito-abandonados': (context) => const CarritoAbandonadoListScreen(),
-        '/direccion-entrega-seleccion': (context) => const DireccionEntregaSeleccionScreen(),
-        '/mis-pedidos': (context) => const PedidosHistorialScreen(),
-        '/mis-direcciones': (context) => const MisDireccionesScreen(),
-        '/notifications': (context) => const NotificationsScreen(),
-      },
-      onGenerateRoute: (settings) {
-        // Handle routes with arguments
-        switch (settings.name) {
-          case '/client-form':
-            final client = settings.arguments as Client?;
-            return MaterialPageRoute(
-              builder: (context) => ClientFormScreen(client: client),
-            );
+    return Consumer<ThemeProvider>(
+      builder: (context, themeProvider, _) {
+        return MaterialApp(
+          title: 'Distribuidora Paucara',
+          theme: AppThemes.lightTheme,
+          darkTheme: AppThemes.darkTheme,
+          themeMode: themeProvider.themeMode,
+          // Add localization delegates to support Material date/time pickers
+          localizationsDelegates: const [
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          supportedLocales: const [
+            Locale('es', 'ES'), // Spanish - Spain
+            Locale('es', ''), // Spanish - Default
+            Locale('en', ''), // English - Default
+          ],
+          home: const AuthWrapper(),
+          debugShowCheckedModeBanner: false,
+          routes: {
+            '/login': (context) => const LoginScreen(),
+            '/home': (context) => const HomeScreen(),
+            '/home-cliente': (context) => const HomeClienteScreen(),
+            '/home-chofer': (context) => const HomeChoferScreen(),
+            '/products': (context) => const ProductListScreen(),
+            '/clients': (context) => const ClientListScreen(),
+            '/carrito': (context) => const CarritoScreen(),
+            '/carrito-abandonados': (context) => const CarritoAbandonadoListScreen(),
+            '/direccion-entrega-seleccion': (context) => const DireccionEntregaSeleccionScreen(),
+            '/mis-pedidos': (context) => const PedidosHistorialScreen(),
+            '/mis-direcciones': (context) => const MisDireccionesScreen(),
+            '/notifications': (context) => const NotificationsScreen(),
+          },
+          onGenerateRoute: (settings) {
+            // Handle routes with arguments
+            switch (settings.name) {
+              case '/client-form':
+                final client = settings.arguments as Client?;
+                return MaterialPageRoute(
+                  builder: (context) => ClientFormScreen(client: client),
+                );
 
-          case '/direccion-form':
-            final direccion = settings.arguments as ClientAddress?;
-            return MaterialPageRoute(
-              builder: (context) => DireccionFormScreen(direccion: direccion),
-            );
+              case '/direccion-form':
+                final direccion = settings.arguments as ClientAddress?;
+                return MaterialPageRoute(
+                  builder: (context) => DireccionFormScreen(direccion: direccion),
+                );
 
-          case '/fecha-hora-entrega':
-            final direccion = settings.arguments as ClientAddress?;
-            if (direccion == null) {
-              return MaterialPageRoute(
-                builder: (context) => const Scaffold(
-                  body: Center(child: Text('Error: Dirección no encontrada')),
-                ),
-              );
+              case '/fecha-hora-entrega':
+                final direccion = settings.arguments as ClientAddress?;
+                if (direccion == null) {
+                  return MaterialPageRoute(
+                    builder: (context) => const Scaffold(
+                      body: Center(child: Text('Error: Dirección no encontrada')),
+                    ),
+                  );
+                }
+                return MaterialPageRoute(
+                  builder: (context) => FechaHoraEntregaScreen(direccion: direccion),
+                );
+
+              case '/resumen-pedido':
+                final args = settings.arguments as Map<String, dynamic>?;
+                if (args == null) {
+                  return MaterialPageRoute(
+                    builder: (context) => const Scaffold(
+                      body: Center(child: Text('Error: Parámetros no encontrados')),
+                    ),
+                  );
+                }
+                return MaterialPageRoute(
+                  builder: (context) => ResumenPedidoScreen(
+                    direccion: args['direccion'] as ClientAddress,
+                    fechaProgramada: args['fechaProgramada'] as DateTime?,
+                    horaInicio: args['horaInicio'] as TimeOfDay?,
+                    horaFin: args['horaFin'] as TimeOfDay?,
+                    observaciones: args['observaciones'] as String?,
+                  ),
+                );
+
+              case '/pedido-creado':
+                final pedido = settings.arguments as Pedido?;
+                if (pedido == null) {
+                  return MaterialPageRoute(
+                    builder: (context) => const Scaffold(
+                      body: Center(child: Text('Error: Pedido no encontrado')),
+                    ),
+                  );
+                }
+                return MaterialPageRoute(
+                  builder: (context) => PedidoCreadoScreen(pedido: pedido),
+                );
+
+              case '/pedido-detalle':
+                final pedidoId = settings.arguments as int?;
+                if (pedidoId == null) {
+                  return MaterialPageRoute(
+                    builder: (context) => const Scaffold(
+                      body: Center(child: Text('Error: ID de pedido no encontrado')),
+                    ),
+                  );
+                }
+                return MaterialPageRoute(
+                  builder: (context) => PedidoDetalleScreen(pedidoId: pedidoId),
+                );
+
+              case '/pedido-tracking':
+                final pedido = settings.arguments as Pedido?;
+                if (pedido == null) {
+                  return MaterialPageRoute(
+                    builder: (context) => const Scaffold(
+                      body: Center(child: Text('Error: Pedido no encontrado')),
+                    ),
+                  );
+                }
+                return MaterialPageRoute(
+                  builder: (context) => PedidoTrackingScreen(pedido: pedido),
+                );
+
+              default:
+                return null;
             }
-            return MaterialPageRoute(
-              builder: (context) => FechaHoraEntregaScreen(direccion: direccion),
-            );
-
-          case '/resumen-pedido':
-            final args = settings.arguments as Map<String, dynamic>?;
-            if (args == null) {
-              return MaterialPageRoute(
-                builder: (context) => const Scaffold(
-                  body: Center(child: Text('Error: Parámetros no encontrados')),
-                ),
-              );
-            }
-            return MaterialPageRoute(
-              builder: (context) => ResumenPedidoScreen(
-                direccion: args['direccion'] as ClientAddress,
-                fechaProgramada: args['fechaProgramada'] as DateTime?,
-                horaInicio: args['horaInicio'] as TimeOfDay?,
-                horaFin: args['horaFin'] as TimeOfDay?,
-                observaciones: args['observaciones'] as String?,
-              ),
-            );
-
-          case '/pedido-creado':
-            final pedido = settings.arguments as Pedido?;
-            if (pedido == null) {
-              return MaterialPageRoute(
-                builder: (context) => const Scaffold(
-                  body: Center(child: Text('Error: Pedido no encontrado')),
-                ),
-              );
-            }
-            return MaterialPageRoute(
-              builder: (context) => PedidoCreadoScreen(pedido: pedido),
-            );
-
-          case '/pedido-detalle':
-            final pedidoId = settings.arguments as int?;
-            if (pedidoId == null) {
-              return MaterialPageRoute(
-                builder: (context) => const Scaffold(
-                  body: Center(child: Text('Error: ID de pedido no encontrado')),
-                ),
-              );
-            }
-            return MaterialPageRoute(
-              builder: (context) => PedidoDetalleScreen(pedidoId: pedidoId),
-            );
-
-          case '/pedido-tracking':
-            final pedido = settings.arguments as Pedido?;
-            if (pedido == null) {
-              return MaterialPageRoute(
-                builder: (context) => const Scaffold(
-                  body: Center(child: Text('Error: Pedido no encontrado')),
-                ),
-              );
-            }
-            return MaterialPageRoute(
-              builder: (context) => PedidoTrackingScreen(pedido: pedido),
-            );
-
-          default:
-            return null;
-        }
+          },
+        );
       },
     );
   }
@@ -258,10 +251,10 @@ class _AuthWrapperState extends State<AuthWrapper> with WidgetsBindingObserver {
 
       debugPrint('✅ Auth check completed');
 
-      // Después de auth exitosa, intentar recuperar carrito
-      if (mounted && authProvider.isLoggedIn && authProvider.user != null) {
-        await _inicializarYRecuperarCarrito(authProvider.user!.id);
-      }
+      // Recuperación de carrito desactivada
+      // if (mounted && authProvider.isLoggedIn && authProvider.user != null) {
+      //   await _inicializarYRecuperarCarrito(authProvider.user!.id);
+      // }
     } catch (e) {
       // If there's an error loading user, ensure loading state is cleared
       debugPrint('❌ Error loading user: $e');

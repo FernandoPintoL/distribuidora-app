@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../models/models.dart';
 import '../../providers/providers.dart';
+import '../../widgets/widgets.dart';
+import '../../config/config.dart';
 
 class MisDireccionesScreen extends StatefulWidget {
   const MisDireccionesScreen({super.key});
@@ -98,9 +100,9 @@ class _MisDireccionesScreenState extends State<MisDireccionesScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Mis Direcciones'),
-        elevation: 0,
+      appBar: CustomGradientAppBar(
+        title: 'Mis Direcciones',
+        customGradient: AppGradients.blue,
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())

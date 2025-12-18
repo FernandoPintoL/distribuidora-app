@@ -4,6 +4,9 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 import '../../providers/entrega_provider.dart';
+import '../../widgets/widgets.dart';
+import '../../widgets/chofer/quick_camera_capture.dart';
+import '../../config/config.dart';
 
 class ConfirmacionEntregaScreen extends StatefulWidget {
   final int entregaId;
@@ -19,8 +22,7 @@ class ConfirmacionEntregaScreen extends StatefulWidget {
 
 class _ConfirmacionEntregaScreenState extends State<ConfirmacionEntregaScreen> {
   final _observacionesController = TextEditingController();
-  File? _fotoSeleccionada;
-  final _imagePicker = ImagePicker();
+  final List<File> _fotosCapturadas = [];
   bool _consentimientoLectura = false;
 
   @override
@@ -29,22 +31,16 @@ class _ConfirmacionEntregaScreenState extends State<ConfirmacionEntregaScreen> {
     super.dispose();
   }
 
-  Future<void> _seleccionarFoto() async {
-    final pickedFile = await _imagePicker.pickImage(
-      source: ImageSource.camera,
-      imageQuality: 80,
-    );
-
-    if (pickedFile != null) {
-      setState(() {
-        _fotoSeleccionada = File(pickedFile.path);
-      });
-    }
-  }
-
   String _convertirFotoABase64(File foto) {
     final bytes = foto.readAsBytesSync();
     return base64Encode(bytes);
+  }
+
+  void _onFotosChanged(List<File> fotos) {
+    setState(() {
+      _fotosCapturadas.clear();
+      _fotosCapturadas.addAll(fotos);
+    });
   }
 
   Future<void> _confirmarEntrega() async {
@@ -61,9 +57,10 @@ class _ConfirmacionEntregaScreenState extends State<ConfirmacionEntregaScreen> {
     // Generar firma placeholder (en producción, usar SignaturePad)
     final firmaBase64 = base64Encode(utf8.encode('Firma digital - ${DateTime.now()}'));
 
+    // Convertir todas las fotos capturadas a Base64
     final fotosBase64 = <String>[];
-    if (_fotoSeleccionada != null) {
-      fotosBase64.add(_convertirFotoABase64(_fotoSeleccionada!));
+    for (final foto in _fotosCapturadas) {
+      fotosBase64.add(_convertirFotoABase64(foto));
     }
 
     final provider = context.read<EntregaProvider>();
@@ -98,9 +95,9 @@ class _ConfirmacionEntregaScreenState extends State<ConfirmacionEntregaScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Confirmar Entrega'),
-        elevation: 0,
+      appBar: CustomGradientAppBar(
+        title: 'Confirmar Entrega',
+        customGradient: AppGradients.green,
       ),
       body: ListView(
         padding: const EdgeInsets.all(16),
@@ -191,78 +188,9 @@ class _ConfirmacionEntregaScreenState extends State<ConfirmacionEntregaScreen> {
           Card(
             child: Padding(
               padding: const EdgeInsets.all(12),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  if (_fotoSeleccionada != null) ...[
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(8),
-                      child: Image.file(
-                        _fotoSeleccionada!,
-                        height: 200,
-                        width: double.infinity,
-                        fit: BoxFit.cover,
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton.icon(
-                        onPressed: _seleccionarFoto,
-                        icon: const Icon(Icons.camera_alt),
-                        label: const Text('Cambiar Foto'),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.orange,
-                        ),
-                      ),
-                    ),
-                  ] else ...[
-                    Container(
-                      height: 150,
-                      decoration: BoxDecoration(
-                        border: Border.all(color: Colors.grey[300]!),
-                        borderRadius: BorderRadius.circular(8),
-                        color: Colors.grey[50],
-                      ),
-                      child: Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(
-                              Icons.camera_alt,
-                              size: 40,
-                              color: Colors.grey[400],
-                            ),
-                            const SizedBox(height: 12),
-                            const Text(
-                              'Sin foto seleccionada',
-                              style: TextStyle(color: Colors.grey),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton.icon(
-                        onPressed: _seleccionarFoto,
-                        icon: const Icon(Icons.camera_alt),
-                        label: const Text('Tomar Foto'),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.blue,
-                        ),
-                      ),
-                    ),
-                  ],
-                  const SizedBox(height: 8),
-                  Text(
-                    'Recomendado: Una foto del producto entregado',
-                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                      color: Colors.grey,
-                    ),
-                  ),
-                ],
+              child: QuickCameraCapture(
+                maxPhotos: 3,
+                onPhotosChanged: _onFotosChanged,
               ),
             ),
           ),

@@ -6,6 +6,8 @@ import '../../providers/providers.dart';
 import '../../widgets/profile_photo_selector.dart';
 import '../../widgets/select_search.dart';
 import '../../widgets/location_selector.dart';
+import '../../widgets/widgets.dart';
+import '../../config/config.dart';
 import 'dart:io';
 
 class ClientFormScreen extends StatefulWidget {
@@ -63,7 +65,7 @@ class _ClientFormScreenState extends State<ClientFormScreen> {
         _loadLocalidades();
         _loadCategorias();
         if (_isEditing) {
-          _loadClientData();
+          _loadClientData(); // Ya carga todas las relaciones desde el backend
         }
       }
     });
@@ -71,70 +73,92 @@ class _ClientFormScreenState extends State<ClientFormScreen> {
 
   void _loadClientData() {
     try {
-      final client = widget.client!;
+      // Obtener cliente del widget que fue pasado
+      final clientArgument = widget.client!;
+      debugPrint('📝 Cargando datos del cliente ID: ${clientArgument.id}');
 
-      debugPrint('📝 Cargando datos del cliente: ${client.id}');
-
-      _nameController.text = client.nombre;
-      _businessNameController.text = client.razonSocial ?? '';
-      _nitController.text = client.nit ?? '';
-      _emailController.text = client.email ?? '';
-      _phoneController.text = client.telefono ?? '';
-      _selectedLocationId = client.localidadId;
-      _isActive = client.activo;
-      _createUser =
-          client.userId != null; // Verificar si ya tiene acceso al sistema
-      _observationsController.text = client.observaciones ?? '';
-
-      // Cargar direcciones de forma segura
-      if (client.direcciones != null) {
-        _addresses = List<ClientAddress>.from(client.direcciones!);
-        debugPrint('📍 Direcciones cargadas: ${_addresses.length}');
-      } else {
-        _addresses = [];
-        debugPrint('📍 No hay direcciones para este cliente');
-      }
-
-      // Inicializar categorías seleccionadas y ventanas de entrega al editar
-      if (client.categorias != null && client.categorias!.isNotEmpty) {
-        _selectedCategoriasIds
-          ..clear()
-          ..addAll(client.categorias!.map((c) => c.id));
-        debugPrint('🏷️ Categorías cargadas: ${_selectedCategoriasIds.length}');
-      }
-
-      if (client.ventanasEntrega != null && client.ventanasEntrega!.isNotEmpty) {
-        _ventanasEntrega = List.from(client.ventanasEntrega!);
-        debugPrint('⏰ Ventanas de entrega cargadas: ${_ventanasEntrega.length}');
-      }
-
-      // Cargar primera dirección si existe
-      if (_addresses.isNotEmpty) {
-        final firstAddress = _addresses.first;
-        _addressController.text = firstAddress.direccion;
-        _latitude = firstAddress.latitud;
-        _longitude = firstAddress.longitud;
-
-        final dirObs = firstAddress.observaciones;
-        if (dirObs != null && dirObs.isNotEmpty) {
-          _locationObservationsController.text = dirObs;
-          if (_observationsController.text.isNotEmpty) {
-            _observationsController.text =
-                '${_observationsController.text}\n\nObservaciones de dirección: $dirObs';
-          } else {
-            _observationsController.text = dirObs;
-          }
+      // Hacer una llamada al API para obtener el cliente COMPLETO con todas las relaciones
+      // esto es importante porque el cliente pasado como argumento podría no tener todas las relaciones
+      _clientProvider.getClient(clientArgument.id).then((clientCompleto) {
+        if (clientCompleto == null) {
+          debugPrint('❌ Error: No se pudo cargar el cliente desde el API');
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: const Text('Error al cargar los datos del cliente'),
+              backgroundColor: Colors.red.shade700,
+              duration: const Duration(seconds: 5),
+            ),
+          );
+          return;
         }
 
-        debugPrint('📍 Primera dirección cargada: ${firstAddress.direccion}');
-      }
+        debugPrint('✅ Cliente completo cargado desde API');
 
-      debugPrint('✅ Datos del cliente cargados exitosamente');
+        // Usar el cliente completo que viene del API con TODAS las relaciones
+        _nameController.text = clientCompleto.nombre;
+        _businessNameController.text = clientCompleto.razonSocial ?? '';
+        _nitController.text = clientCompleto.nit ?? '';
+        _emailController.text = clientCompleto.email ?? '';
+        _phoneController.text = clientCompleto.telefono ?? '';
+        _selectedLocationId = clientCompleto.localidadId;
+        _isActive = clientCompleto.activo;
+        _createUser = clientCompleto.userId != null;
+        _observationsController.text = clientCompleto.observaciones ?? '';
+
+        // Cargar direcciones
+        if (clientCompleto.direcciones != null) {
+          _addresses = List<ClientAddress>.from(clientCompleto.direcciones!);
+          debugPrint('📍 Direcciones cargadas: ${_addresses.length}');
+        } else {
+          _addresses = [];
+          debugPrint('📍 No hay direcciones para este cliente');
+        }
+
+        // Cargar categorías seleccionadas del cliente
+        if (clientCompleto.categorias != null && clientCompleto.categorias!.isNotEmpty) {
+          _selectedCategoriasIds
+            ..clear()
+            ..addAll(clientCompleto.categorias!.map((c) => c.id));
+          debugPrint('🏷️ Categorías del cliente cargadas: ${_selectedCategoriasIds.length}');
+        } else {
+          debugPrint('📝 El cliente no tiene categorías asignadas');
+        }
+
+        // Cargar ventanas de entrega del cliente
+        if (clientCompleto.ventanasEntrega != null && clientCompleto.ventanasEntrega!.isNotEmpty) {
+          _ventanasEntrega = List.from(clientCompleto.ventanasEntrega!);
+          debugPrint('⏰ Ventanas de entrega cargadas: ${_ventanasEntrega.length}');
+        } else {
+          debugPrint('📝 El cliente no tiene ventanas de entrega configuradas');
+        }
+
+        // Cargar primera dirección si existe
+        if (_addresses.isNotEmpty) {
+          final firstAddress = _addresses.first;
+          _addressController.text = firstAddress.direccion;
+          _latitude = firstAddress.latitud;
+          _longitude = firstAddress.longitud;
+
+          final dirObs = firstAddress.observaciones;
+          if (dirObs != null && dirObs.isNotEmpty) {
+            _locationObservationsController.text = dirObs;
+          }
+
+          debugPrint('📍 Primera dirección cargada: ${firstAddress.direccion}');
+        }
+
+        if (mounted) {
+          setState(() {
+            // Disparar rebuild para mostrar los datos cargados
+          });
+        }
+
+        debugPrint('✅ Datos del cliente cargados exitosamente con TODAS las relaciones');
+      });
     } catch (e, stackTrace) {
       debugPrint('❌ Error al cargar datos del cliente: $e');
       debugPrint('Stack trace: $stackTrace');
 
-      // Mostrar error al usuario
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -248,23 +272,9 @@ class _ClientFormScreenState extends State<ClientFormScreen> {
         return true;
       },
       child: Scaffold(
-        appBar: AppBar(
-          title: Text(
-            _isEditing ? 'Editar Cliente' : 'Nuevo Cliente',
-            style: const TextStyle(fontWeight: FontWeight.bold),
-          ),
-          elevation: 0,
-          flexibleSpace: Container(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: _isEditing
-                    ? [Colors.orange.shade700, Colors.orange.shade900]
-                    : [Colors.green.shade700, Colors.teal.shade800],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-            ),
-          ),
+        appBar: CustomGradientAppBar(
+          title: _isEditing ? 'Editar Cliente' : 'Nuevo Cliente',
+          customGradient: _isEditing ? AppGradients.orange : AppGradients.green,
           actions: [
             Container(
               margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
@@ -504,7 +514,7 @@ class _ClientFormScreenState extends State<ClientFormScreen> {
 
                         // Preferencias de entrega
                         _buildSection(
-                          title: 'Preferencias de entrega',
+                          title: 'Dias de Visitas',
                           icon: Icons.access_time,
                           children: [
                             if (_ventanasEntrega.isNotEmpty)
@@ -568,7 +578,7 @@ class _ClientFormScreenState extends State<ClientFormScreen> {
                               )
                             else
                               const Text(
-                                'Agrega los días y horarios preferidos para entregar pedidos.',
+                                'Agrega los días y horarios preferidos para visitas.',
                                 style: TextStyle(color: Colors.grey),
                               ),
                             const SizedBox(height: 8),
@@ -577,7 +587,7 @@ class _ClientFormScreenState extends State<ClientFormScreen> {
                               child: OutlinedButton.icon(
                                 onPressed: () => _showVentanaDialog(),
                                 icon: const Icon(Icons.add),
-                                label: const Text('Agregar ventana'),
+                                label: const Text('Agregar dia de visita'),
                               ),
                             ),
                           ],
@@ -1197,7 +1207,7 @@ class _ClientFormScreenState extends State<ClientFormScreen> {
           builder: (context, setLocalState) {
             return AlertDialog(
               title: Text(
-                '${index == null ? 'Agregar' : 'Editar'} ventana de entrega',
+                '${index == null ? 'Agregar' : 'Editar'} dia de visita',
               ),
               content: Column(
                 mainAxisSize: MainAxisSize.min,

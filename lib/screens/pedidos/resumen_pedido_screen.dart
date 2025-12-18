@@ -3,6 +3,8 @@ import 'package:provider/provider.dart';
 import '../../models/models.dart';
 import '../../providers/providers.dart';
 import '../../services/services.dart';
+import '../../widgets/widgets.dart';
+import '../../config/config.dart';
 
 class ResumenPedidoScreen extends StatefulWidget {
   final ClientAddress direccion;
@@ -147,9 +149,9 @@ class _ResumenPedidoScreenState extends State<ResumenPedidoScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Resumen del Pedido'),
-        elevation: 0,
+      appBar: CustomGradientAppBar(
+        title: 'Resumen del Pedido',
+        customGradient: AppGradients.blue,
       ),
       body: Consumer<CarritoProvider>(
         builder: (context, carritoProvider, _) {

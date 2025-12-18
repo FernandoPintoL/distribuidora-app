@@ -2,15 +2,18 @@ import 'package:flutter/widgets.dart';
 import '../models/entrega.dart';
 import '../models/ubicacion_tracking.dart';
 import '../services/entrega_service.dart';
+import '../services/local_notification_service.dart';
 
 class EntregaProvider with ChangeNotifier {
   final EntregaService _entregaService = EntregaService();
+  final LocalNotificationService _notificationService = LocalNotificationService();
 
   List<Entrega> _entregas = [];
   Entrega? _entregaActual;
   List<UbicacionTracking> _ubicaciones = [];
   UbicacionTracking? _ubicacionActual;
   List<EntregaEstadoHistorial> _historialEstados = [];
+  int _previousEntregasCount = 0;
 
   bool _isLoading = false;
   String? _errorMessage;
@@ -47,7 +50,23 @@ class EntregaProvider with ChangeNotifier {
       );
 
       if (response.success && response.data != null) {
-        _entregas = response.data!;
+        final newEntregas = response.data!;
+
+        // Detectar nuevas entregas y mostrar notificaciones
+        if (newEntregas.length > _previousEntregasCount) {
+          final nuevasEntregas = newEntregas.length - _previousEntregasCount;
+          for (int i = 0; i < nuevasEntregas && i < newEntregas.length; i++) {
+            final entrega = newEntregas[i];
+            await _notificationService.showNewDeliveryNotification(
+              deliveryId: entrega.id,
+              clientName: entrega.cliente ?? 'Cliente',
+              address: entrega.direccion ?? 'Dirección desconocida',
+            );
+          }
+        }
+
+        _entregas = newEntregas;
+        _previousEntregasCount = newEntregas.length;
         _errorMessage = null;
 
         WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -147,6 +166,13 @@ class EntregaProvider with ChangeNotifier {
         _actualizarEnListaEntregas(_entregaActual!);
         _errorMessage = null;
 
+        // Mostrar notificación de cambio de estado
+        await _notificationService.showDeliveryStateChangeNotification(
+          deliveryId: _entregaActual!.id,
+          newState: _entregaActual!.estado,
+          clientName: _entregaActual!.cliente ?? 'Cliente',
+        );
+
         WidgetsBinding.instance.addPostFrameCallback((_) {
           notifyListeners();
         });
@@ -196,6 +222,13 @@ class EntregaProvider with ChangeNotifier {
         _entregaActual = response.data;
         _actualizarEnListaEntregas(_entregaActual!);
         _errorMessage = null;
+
+        // Mostrar notificación de cambio de estado
+        await _notificationService.showDeliveryStateChangeNotification(
+          deliveryId: _entregaActual!.id,
+          newState: _entregaActual!.estado,
+          clientName: _entregaActual!.cliente ?? 'Cliente',
+        );
 
         WidgetsBinding.instance.addPostFrameCallback((_) {
           notifyListeners();
@@ -248,6 +281,18 @@ class EntregaProvider with ChangeNotifier {
         _entregaActual = response.data;
         _actualizarEnListaEntregas(_entregaActual!);
         _errorMessage = null;
+
+        // Mostrar notificación de cambio de estado
+        await _notificationService.showDeliveryStateChangeNotification(
+          deliveryId: _entregaActual!.id,
+          newState: _entregaActual!.estado,
+          clientName: _entregaActual!.cliente ?? 'Cliente',
+        );
+
+        // Si todas las entregas están completadas, mostrar notificación de finalización
+        if (_entregas.every((e) => e.estado == 'ENTREGADO' || e.estado == 'CANCELADA')) {
+          await _notificationService.showCompletionNotification();
+        }
 
         WidgetsBinding.instance.addPostFrameCallback((_) {
           notifyListeners();

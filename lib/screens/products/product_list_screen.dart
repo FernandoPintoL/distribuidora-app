@@ -3,6 +3,8 @@ import 'package:provider/provider.dart';
 import '../../providers/providers.dart';
 import '../../models/models.dart';
 import '../../widgets/product/index.dart';
+import '../../widgets/widgets.dart';
+import '../../config/config.dart';
 import '../../utils/stock_status.dart';
 import '../carrito/carrito_screen.dart';
 import 'producto_detalle_screen.dart' as producto;
@@ -48,70 +50,11 @@ class _ProductListScreenState extends State<ProductListScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Productos'),
-        actions: [
-          // Badge de carrito
-          Consumer<CarritoProvider>(
-            builder: (context, carritoProvider, _) {
-              return Stack(
-                children: [
-                  IconButton(
-                    icon: const Icon(Icons.shopping_cart),
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const CarritoScreen(),
-                        ),
-                      );
-                    },
-                    tooltip: 'Ver carrito',
-                  ),
-                  if (carritoProvider.cantidadProductos > 0)
-                    Positioned(
-                      right: 8,
-                      top: 8,
-                      child: Container(
-                        padding: const EdgeInsets.all(4),
-                        decoration: BoxDecoration(
-                          color: Colors.red,
-                          shape: BoxShape.circle,
-                        ),
-                        constraints: const BoxConstraints(
-                          minWidth: 18,
-                          minHeight: 18,
-                        ),
-                        child: Text(
-                          '${carritoProvider.cantidadProductos}',
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 10,
-                            fontWeight: FontWeight.bold,
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
-                      ),
-                    ),
-                ],
-              );
-            },
-          ),
-          Consumer<AuthProvider>(
-            builder: (context, authProvider, child) {
-              if (authProvider.canCreateProducts) {
-                return IconButton(
-                  icon: const Icon(Icons.add),
-                  onPressed: () {
-                    // TODO: Navigate to create product screen
-                  },
-                );
-              }
-              return const SizedBox.shrink();
-            },
-          ),
-        ],
-      ),
+      /* appBar: CustomGradientAppBar(
+        title: 'Productos',
+        customGradient: AppGradients.blue,
+        actions: [CartBadgeAction()],
+      ), */
       body: Column(
         children: [
           // Search bar
@@ -291,9 +234,7 @@ class _ProductListScreenState extends State<ProductListScreen> {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => producto.ProductoDetalleScreen(
-          producto: product,
-        ),
+        builder: (context) => producto.ProductoDetalleScreen(producto: product),
       ),
     );
   }
@@ -316,7 +257,8 @@ class ProductListItem extends StatelessWidget {
       stock: stock,
       minimumStock: product.stockMinimo,
     );
-    final canAddToCart = product.activo && product.precioVenta != null && stock > 0;
+    final canAddToCart =
+        product.activo && product.precioVenta != null && stock > 0;
 
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
@@ -355,7 +297,7 @@ class ProductListItem extends StatelessWidget {
                 ],
               ),
               // Segunda fila: Detalles de almacén
-              ProductWarehouseInfoWidget(product: product),
+              // ProductWarehouseInfoWidget(product: product),
             ],
           ),
         ),

@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../models/models.dart';
 import '../../providers/providers.dart';
+import '../../widgets/widgets.dart';
+import '../../config/config.dart';
 import 'package:intl/intl.dart';
 
 class PedidosHistorialScreen extends StatefulWidget {
@@ -109,9 +111,9 @@ class _PedidosHistorialScreenState extends State<PedidosHistorialScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Mis Pedidos'),
-        elevation: 0,
+      appBar: CustomGradientAppBar(
+        title: 'Mis Pedidos',
+        customGradient: AppGradients.blue,
         actions: [
           IconButton(
             icon: Stack(

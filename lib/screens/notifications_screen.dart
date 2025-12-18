@@ -3,6 +3,8 @@ import 'package:provider/provider.dart';
 import 'package:timeago/timeago.dart' as timeago;
 import '../providers/providers.dart';
 import '../models/models.dart';
+import '../widgets/widgets.dart';
+import '../config/config.dart';
 
 class NotificationsScreen extends StatefulWidget {
   const NotificationsScreen({super.key});
@@ -36,8 +38,9 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Notificaciones'),
+      appBar: CustomGradientAppBar(
+        title: 'Notificaciones',
+        customGradient: AppGradients.blue,
         actions: [
           // Marcar todas como leídas
           Consumer<NotificationProvider>(

@@ -12,6 +12,8 @@ class AuthProvider with ChangeNotifier {
   bool _isLoading = false;
   String? _errorMessage;
   bool _biometricAvailable = false;
+  bool _hasFaceRecognition = false;
+  bool _hasFingerprintRecognition = false;
 
   // ✅ NUEVO: Caché de permisos con TTL
   DateTime? _permissionsUpdatedAt;
@@ -22,6 +24,8 @@ class AuthProvider with ChangeNotifier {
   String? get errorMessage => _errorMessage;
   bool get isLoggedIn => _user != null;
   bool get biometricAvailable => _biometricAvailable;
+  bool get hasFaceRecognition => _hasFaceRecognition;
+  bool get hasFingerprintRecognition => _hasFingerprintRecognition;
 
   // ✅ NUEVO: Getters para caché de permisos
   bool get _isPermissionsCacheValid {
@@ -437,6 +441,25 @@ class AuthProvider with ChangeNotifier {
     final canCheck = await _biometricService.canCheckBiometrics();
     final isSupported = await _biometricService.isDeviceSupported();
     _biometricAvailable = canCheck && isSupported;
+
+    debugPrint('🔐 Verificación de biometría:');
+    debugPrint('   - canCheckBiometrics: $canCheck');
+    debugPrint('   - isDeviceSupported: $isSupported');
+    debugPrint('   - _biometricAvailable: $_biometricAvailable');
+
+    if (_biometricAvailable) {
+      _hasFaceRecognition = await _biometricService.hasFaceRecognition();
+      _hasFingerprintRecognition = await _biometricService.hasFingerprintRecognition();
+
+      debugPrint('✅ Biometría disponible:');
+      debugPrint('   - Face ID/Facial: $_hasFaceRecognition');
+      debugPrint('   - Huella Digital: $_hasFingerprintRecognition');
+    } else {
+      debugPrint('⚠️ Biometría NO disponible');
+      _hasFaceRecognition = false;
+      _hasFingerprintRecognition = false;
+    }
+
     notifyListeners();
   }
 

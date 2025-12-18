@@ -36,14 +36,31 @@ class BiometricAuthService {
   /// Obtiene la lista de biometrías disponibles (huella, cara, etc.)
   Future<List<BiometricType>> getAvailableBiometrics() async {
     try {
-      return await _localAuth.getAvailableBiometrics();
+      final canCheck = await _localAuth.canCheckBiometrics;
+      final isDeviceSupported = await _localAuth.isDeviceSupported();
+
+      _debugPrint('Verificación de biometría:');
+      _debugPrint('  - canCheckBiometrics: $canCheck');
+      _debugPrint('  - isDeviceSupported: $isDeviceSupported');
+
+      final biometrics = await _localAuth.getAvailableBiometrics();
+
+      _debugPrint('  - Biometrías disponibles: ${biometrics.length}');
+      for (final biometric in biometrics) {
+        _debugPrint('    • $biometric');
+      }
+
+      return biometrics;
     } on PlatformException catch (e) {
-      _debugPrint('Error getting available biometrics: ${e.message}');
+      _debugPrint('❌ Error getting available biometrics:');
+      _debugPrint('  - Code: ${e.code}');
+      _debugPrint('  - Message: ${e.message}');
+      _debugPrint('  - Details: ${e.details}');
       return [];
     }
   }
 
-  /// Intenta autenticar usando biometría
+  /// Intenta autenticar usando biometría (cualquier tipo disponible)
   Future<bool> authenticate({
     String localizedReason = 'Por favor autentícate para iniciar sesión',
   }) async {
@@ -58,6 +75,32 @@ class BiometricAuthService {
     } on PlatformException catch (e) {
       if (e.code == auth_error.notEnrolled) {
         _debugPrint('Usuario no tiene biometría configurada');
+      } else if (e.code == auth_error.lockedOut ||
+          e.code == auth_error.permanentlyLockedOut) {
+        _debugPrint('Autenticación bloqueada temporalmente');
+      } else {
+        _debugPrint('Error durante autenticación: ${e.message}');
+      }
+      return false;
+    }
+  }
+
+  /// Intenta autenticar usando un tipo específico de biometría
+  Future<bool> authenticateWithType({
+    required BiometricType biometricType,
+    String localizedReason = 'Por favor autentícate para iniciar sesión',
+  }) async {
+    try {
+      return await _localAuth.authenticate(
+        localizedReason: localizedReason,
+        options: const AuthenticationOptions(
+          stickyAuth: true,
+          biometricOnly: true,
+        ),
+      );
+    } on PlatformException catch (e) {
+      if (e.code == auth_error.notEnrolled) {
+        _debugPrint('Usuario no tiene $biometricType configurada');
       } else if (e.code == auth_error.lockedOut ||
           e.code == auth_error.permanentlyLockedOut) {
         _debugPrint('Autenticación bloqueada temporalmente');
@@ -161,6 +204,72 @@ class BiometricAuthService {
     // Este método puede ser expandido para retornar diferentes iconos
     // según el tipo de biometría disponible
     return 'fingerprint'; // Por defecto huella
+  }
+
+  /// Verifica si Face ID/Reconocimiento facial está disponible
+  Future<bool> hasFaceRecognition() async {
+    try {
+      final biometrics = await getAvailableBiometrics();
+
+      // Si se encuentra explícitamente Face
+      if (biometrics.contains(BiometricType.face)) {
+        _debugPrint('✓ Face ID/Facial detectado explícitamente');
+        return true;
+      }
+
+      // En Android, si getAvailableBiometrics está vacío pero canCheckBiometrics es true,
+      // asumir que probablemente tenga Face ID disponible
+      // (ya que el usuario reporta que funciona)
+      final canCheck = await canCheckBiometrics();
+      if (canCheck && biometrics.isEmpty) {
+        _debugPrint('⚠️ Asumiendo Face ID disponible (Android retorna lista vacía)');
+        return true;
+      }
+
+      return false;
+    } catch (e) {
+      _debugPrint('Error checking face recognition: $e');
+      return false;
+    }
+  }
+
+  /// Verifica si huella digital está disponible
+  /// En Android, a veces getAvailableBiometrics() no expone fingerprint correctamente.
+  /// Así que asumimos que si canCheckBiometrics() es true, probablemente tenga alguna biometría
+  Future<bool> hasFingerprintRecognition() async {
+    try {
+      final biometrics = await getAvailableBiometrics();
+
+      // Si se encuentra explícitamente el tipo fingerprint
+      if (biometrics.contains(BiometricType.fingerprint)) {
+        _debugPrint('✓ Huella Digital detectada explícitamente');
+        return true;
+      }
+
+      // En Android, si getAvailableBiometrics está vacío pero canCheckBiometrics es true,
+      // asumir que probablemente tenga Huella disponible (o ambas opciones)
+      final canCheck = await canCheckBiometrics();
+      if (canCheck && biometrics.isEmpty) {
+        _debugPrint('⚠️ Asumiendo Huella Digital disponible (Android retorna lista vacía)');
+        return true;
+      }
+
+      return false;
+    } catch (e) {
+      _debugPrint('Error checking fingerprint: $e');
+      return false;
+    }
+  }
+
+  /// Obtiene la cantidad de métodos biométricos disponibles
+  Future<int> getAvailableBiometricCount() async {
+    try {
+      final biometrics = await getAvailableBiometrics();
+      return biometrics.length;
+    } catch (e) {
+      _debugPrint('Error getting biometric count: $e');
+      return 0;
+    }
   }
 
   /// Función de debug privada

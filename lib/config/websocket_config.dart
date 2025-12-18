@@ -26,6 +26,7 @@ class WebSocketConfig {
   static const String eventProformaApproved = 'proforma.aprobada';
   static const String eventProformaRejected = 'proforma.rechazada';
   static const String eventProformaConverted = 'proforma.convertida';
+  static const String eventProformaCoordinationUpdated = 'proforma.coordinacion.actualizada'; // NUEVO
 
   // Eventos de Stock
   static const String eventStockReserved = 'stock_reserved';

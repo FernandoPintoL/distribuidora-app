@@ -17,6 +17,7 @@ class WebSocketService {
 
   // Stream controllers para notificaciones
   final _proformaController = StreamController<Map<String, dynamic>>.broadcast();
+  final _coordinacionController = StreamController<Map<String, dynamic>>.broadcast(); // NUEVO
   final _stockController = StreamController<Map<String, dynamic>>.broadcast();
   final _envioController = StreamController<Map<String, dynamic>>.broadcast();
   final _ubicacionController = StreamController<Map<String, dynamic>>.broadcast();
@@ -25,6 +26,7 @@ class WebSocketService {
 
   // Getters de streams
   Stream<Map<String, dynamic>> get proformaStream => _proformaController.stream;
+  Stream<Map<String, dynamic>> get coordinacionStream => _coordinacionController.stream; // NUEVO
   Stream<Map<String, dynamic>> get stockStream => _stockController.stream;
   Stream<Map<String, dynamic>> get envioStream => _envioController.stream;
   Stream<Map<String, dynamic>> get ubicacionStream => _ubicacionController.stream;
@@ -242,6 +244,16 @@ class WebSocketService {
       _handleEvent(WebSocketConfig.eventProformaConverted, data);
     });
 
+    // Evento de coordinación de entrega (NUEVO)
+    _socket!.on(WebSocketConfig.eventProformaCoordinationUpdated, (data) {
+      debugPrint('📍 Coordinación de entrega actualizada: $data');
+      _coordinacionController.add({
+        'type': 'coordination_updated',
+        'data': data,
+      });
+      _handleEvent(WebSocketConfig.eventProformaCoordinationUpdated, data);
+    });
+
     // Eventos de Stock
     _socket!.on(WebSocketConfig.eventStockReserved, (data) {
       debugPrint('🔒 Stock reservado: $data');
@@ -302,6 +314,16 @@ class WebSocketService {
         'data': data,
       });
       _handleEvent(WebSocketConfig.eventEnvioEnRuta, data);
+    });
+
+    // ✅ NUEVO: Evento chofer llegó
+    _socket!.on('chofer.llego', (data) {
+      debugPrint('📍 Chofer llegó: $data');
+      _envioController.add({
+        'type': 'chofer_llego',
+        'data': data,
+      });
+      _handleEvent('chofer.llego', data);
     });
 
     _socket!.on(WebSocketConfig.eventUbicacionActualizada, (data) {

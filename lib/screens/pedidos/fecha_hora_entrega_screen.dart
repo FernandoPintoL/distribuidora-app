@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../models/models.dart';
+import '../../widgets/widgets.dart';
+import '../../config/config.dart';
 
 class FechaHoraEntregaScreen extends StatefulWidget {
   final ClientAddress direccion;
@@ -145,9 +147,9 @@ class _FechaHoraEntregaScreenState extends State<FechaHoraEntregaScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Fecha y Hora de Entrega'),
-        elevation: 0,
+      appBar: CustomGradientAppBar(
+        title: 'Fecha y Hora de Entrega',
+        customGradient: AppGradients.blue,
       ),
       body: SingleChildScrollView(
         child: Column(

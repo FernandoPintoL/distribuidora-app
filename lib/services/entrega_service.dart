@@ -7,7 +7,7 @@ import 'api_service.dart';
 class EntregaService {
   final ApiService _apiService = ApiService();
 
-  // Obtener entregas asignadas al chofer actual
+  // Obtener entregas + envios asignados al chofer (combinados)
   Future<ApiResponse<List<Entrega>>> obtenerEntregasAsignadas({
     int page = 1,
     String? estado,
@@ -22,25 +22,35 @@ class EntregaService {
         if (fechaHasta != null) 'fecha_hasta': fechaHasta,
       };
 
+      // Nuevo endpoint que devuelve entregas + envios
       final response = await _apiService.get(
-        '/chofer/entregas',
+        '/chofer/trabajos',
         queryParameters: params,
       );
 
       final data = response.data as Map<String, dynamic>;
-      final entregas = (data['data'] as List)
-          .map((e) => Entrega.fromJson(e as Map<String, dynamic>))
+      final trabajos = (data['data'] as List)
+          .map((trabajo) {
+            // Convertir trabajos (entregas + envios) a modelo Entrega
+            // El nuevo endpoint incluye 'type' para distinguir entre 'entrega' y 'envio'
+            final trabajoMap = trabajo as Map<String, dynamic>;
+
+            // Normalizar para el modelo Entrega
+            trabajoMap['trabajoType'] = trabajoMap['type']; // Guardar el tipo original
+
+            return Entrega.fromJson(trabajoMap);
+          })
           .toList();
 
       return ApiResponse(
         success: true,
-        data: entregas,
-        message: 'Entregas obtenidas exitosamente',
+        data: trabajos,
+        message: 'Trabajos obtenidos exitosamente',
       );
     } on DioException catch (e) {
       return ApiResponse(
         success: false,
-        message: 'Error al obtener entregas: ${e.message}',
+        message: 'Error al obtener trabajos: ${e.message}',
       );
     } catch (e) {
       return ApiResponse(

@@ -6,6 +6,8 @@ import '../../providers/providers.dart';
 import '../../models/models.dart';
 import '../screens.dart';
 import '../perfil/perfil_screen.dart';
+import '../../widgets/widgets.dart';
+import '../../config/config.dart';
 
 /// Pantalla principal para usuarios con rol CLIENTE
 ///
@@ -24,22 +26,10 @@ class HomeClienteScreen extends BaseHomeScreen {
 class _HomeClienteScreenState extends BaseHomeScreenState<HomeClienteScreen> {
   @override
   List<NavigationItem> get navigationItems => [
-    NavigationItem(
-      icon: Icons.home,
-      label: 'Inicio',
-    ),
-    NavigationItem(
-      icon: Icons.inventory_2,
-      label: 'Productos',
-    ),
-    NavigationItem(
-      icon: Icons.receipt_long,
-      label: 'Mis Pedidos',
-    ),
-    NavigationItem(
-      icon: Icons.person,
-      label: 'Perfil',
-    ),
+    NavigationItem(icon: Icons.home, label: 'Inicio'),
+    NavigationItem(icon: Icons.inventory_2, label: 'Productos'),
+    NavigationItem(icon: Icons.receipt_long, label: 'Mis Pedidos'),
+    NavigationItem(icon: Icons.person, label: 'Perfil'),
   ];
 
   @override
@@ -51,37 +41,10 @@ class _HomeClienteScreenState extends BaseHomeScreenState<HomeClienteScreen> {
   ];
 
   @override
-  PreferredSizeWidget get appBar => AppBar(
-    title: const Text('Distribuidora Paucara'),
-    actions: [
-      // Carrito
-      IconButton(
-        icon: const Badge(
-          label: Text('0'), // TODO: Actualizar con cantidad real
-          child: Icon(Icons.shopping_cart),
-        ),
-        onPressed: () {
-          Navigator.pushNamed(context, '/carrito');
-        },
-      ),
-      // Notificaciones
-      Consumer<NotificationProvider>(
-        builder: (context, notificationProvider, child) {
-          final unreadCount = notificationProvider.unreadCount;
-
-          return IconButton(
-            icon: Badge(
-              label: Text('$unreadCount'),
-              isLabelVisible: unreadCount > 0,
-              child: const Icon(Icons.notifications_outlined),
-            ),
-            onPressed: () {
-              Navigator.pushNamed(context, '/notifications');
-            },
-          );
-        },
-      ),
-    ],
+  PreferredSizeWidget get appBar => CustomGradientAppBar(
+    title: 'Distribuidora Paucara',
+    userRole: 'cliente',
+    actions: [CartBadgeAction(), NotificationBadgeAction()],
   );
 
   @override
@@ -107,6 +70,7 @@ class _HomeClienteScreenState extends BaseHomeScreenState<HomeClienteScreen> {
     }
   }
 }
+
 class _DashboardTab extends StatelessWidget {
   const _DashboardTab();
 
@@ -155,8 +119,10 @@ class _DashboardTab extends StatelessWidget {
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [
-            Theme.of(context).primaryColor,
-            Theme.of(context).primaryColor.withValues(alpha: 0.7),
+            /* Theme.of(context).primaryColor,
+            Theme.of(context).primaryColor.withValues(alpha: 0.7), */
+            Colors.blueAccent,
+            Colors.lightBlueAccent.withValues(alpha: 0.7),
           ],
         ),
         borderRadius: BorderRadius.circular(16),
@@ -175,10 +141,7 @@ class _DashboardTab extends StatelessWidget {
           const SizedBox(height: 8),
           const Text(
             'Bienvenido a tu tienda de distribución',
-            style: TextStyle(
-              color: Colors.white70,
-              fontSize: 14,
-            ),
+            style: TextStyle(color: Colors.white70, fontSize: 14),
           ),
         ],
       ),
@@ -191,10 +154,7 @@ class _DashboardTab extends StatelessWidget {
       children: [
         const Text(
           'Acciones Rápidas',
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-          ),
+          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 12),
         Row(
@@ -229,7 +189,7 @@ class _DashboardTab extends StatelessWidget {
               child: _QuickActionCard(
                 icon: Icons.receipt_long,
                 title: 'Mis Pedidos',
-                color: Colors.green,
+                color: Colors.blue,
                 onTap: () {
                   Navigator.pushNamed(context, '/mis-pedidos');
                 },
@@ -260,10 +220,7 @@ class _DashboardTab extends StatelessWidget {
       children: [
         const Text(
           'Mis Pedidos',
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-          ),
+          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 12),
         if (provider.isLoadingStats)
@@ -365,7 +322,11 @@ class _DashboardTab extends StatelessWidget {
                   ),
                   child: Row(
                     children: [
-                      Icon(Icons.warning, color: Colors.orange.shade700, size: 20),
+                      Icon(
+                        Icons.warning,
+                        color: Colors.orange.shade700,
+                        size: 20,
+                      ),
                       const SizedBox(width: 8),
                       Expanded(
                         child: Text(
@@ -399,6 +360,7 @@ class _DashboardTab extends StatelessWidget {
         icon: const Icon(Icons.receipt_long),
         label: const Text('Ver Todos Mis Pedidos'),
         style: ElevatedButton.styleFrom(
+          backgroundColor: Colors.blueAccent,
           padding: const EdgeInsets.symmetric(vertical: 16),
         ),
       ),

@@ -34,13 +34,18 @@ android {
         versionCode = flutter.versionCode
         versionName = flutter.versionName
 
-        // Configurar la API key de Google Maps desde local.properties
+        // Leer la API key de Google Maps desde el archivo .env
+        val envFile = rootProject.file("../.env")
         val properties = Properties()
-        val localPropertiesFile = rootProject.file("local.properties")
-        if (localPropertiesFile.exists()) {
-            properties.load(FileInputStream(localPropertiesFile))
+
+        if (envFile.exists()) {
+            properties.load(FileInputStream(envFile))
         }
-        val mapsApiKey = properties.getProperty("MAPS_API_KEY") ?: System.getenv("MAPS_API_KEY") ?: ""
+
+        val mapsApiKey = properties.getProperty("GOOGLE_MAPS_API_KEY")
+            ?: System.getenv("GOOGLE_MAPS_API_KEY")
+            ?: "YOUR_API_KEY_HERE"
+
         resValue("string", "MAPS_API_KEY", mapsApiKey)
     }
 

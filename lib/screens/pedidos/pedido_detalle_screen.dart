@@ -5,6 +5,8 @@ import '../../models/models.dart';
 import '../../providers/providers.dart';
 import 'package:intl/intl.dart';
 import 'package:timeline_tile/timeline_tile.dart';
+import '../../widgets/widgets.dart';
+import '../../config/config.dart';
 
 class PedidoDetalleScreen extends StatefulWidget {
   final int pedidoId;
@@ -88,14 +90,13 @@ class _PedidoDetalleScreenState extends State<PedidoDetalleScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Detalle del Pedido'),
-        elevation: 0,
+      appBar: CustomGradientAppBar(
+        title: 'Detalle del Pedido',
+        customGradient: AppGradients.blue,
         actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            onPressed: _onRefresh,
-            tooltip: 'Actualizar',
+          RefreshAction(
+            isLoading: false,
+            onRefresh: _onRefresh,
           ),
         ],
       ),

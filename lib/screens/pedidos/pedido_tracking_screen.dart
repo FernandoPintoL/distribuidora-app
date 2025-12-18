@@ -4,6 +4,8 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 import '../../models/models.dart';
 import '../../providers/providers.dart';
 import 'dart:async';
+import '../../widgets/widgets.dart';
+import '../../config/config.dart';
 
 class PedidoTrackingScreen extends StatefulWidget {
   final Pedido pedido;
@@ -135,9 +137,9 @@ class _PedidoTrackingScreenState extends State<PedidoTrackingScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Tracking en Tiempo Real'),
-        elevation: 0,
+      appBar: CustomGradientAppBar(
+        title: 'Tracking en Tiempo Real',
+        customGradient: AppGradients.blue,
         actions: [
           IconButton(
             icon: const Icon(Icons.my_location),

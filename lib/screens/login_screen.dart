@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/providers.dart';
+import '../widgets/loading_overlay.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -89,29 +90,31 @@ class _LoginScreenState extends State<LoginScreen>
     final size = MediaQuery.of(context).size;
 
     return Scaffold(
-      body: Container(
-        width: size.width,
-        height: size.height,
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              Theme.of(context).primaryColor,
-              Theme.of(context).primaryColor.withValues(alpha: 0.7),
-              Theme.of(context).colorScheme.secondary,
-            ],
+      body: LoadingOverlay(
+        child: Container(
+          width: size.width,
+          height: size.height,
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                Theme.of(context).primaryColor,
+                Theme.of(context).primaryColor.withValues(alpha: 0.7),
+                Theme.of(context).colorScheme.secondary,
+              ],
+            ),
           ),
-        ),
-        child: SafeArea(
-          child: Center(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.all(24.0),
-              child: FadeTransition(
-                opacity: _fadeAnimation,
-                child: SlideTransition(
-                  position: _slideAnimation,
-                  child: _buildLoginCard(context),
+          child: SafeArea(
+            child: Center(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(24.0),
+                child: FadeTransition(
+                  opacity: _fadeAnimation,
+                  child: SlideTransition(
+                    position: _slideAnimation,
+                    child: _buildLoginCard(context),
+                  ),
                 ),
               ),
             ),
@@ -156,6 +159,10 @@ class _LoginScreenState extends State<LoginScreen>
 
                   // Recordar contraseña y biometría
                   _buildRememberMeRow(),
+                  const SizedBox(height: 16),
+
+                  // Indicador de métodos biométricos disponibles
+                  _buildBiometricAvailabilityIndicator(authProvider),
                   const SizedBox(height: 24),
 
                   // Mostrar error si existe
@@ -194,7 +201,7 @@ class _LoginScreenState extends State<LoginScreen>
           width: 80,
           height: 80,
           decoration: BoxDecoration(
-            shape: BoxShape.circle,
+            shape: BoxShape.rectangle,
             gradient: LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
@@ -211,10 +218,11 @@ class _LoginScreenState extends State<LoginScreen>
               ),
             ],
           ),
-          child: const Icon(
-            Icons.store,
-            size: 40,
-            color: Colors.white,
+          child: const Center(
+            child: Image(
+              image: AssetImage('assets/icons/icon.png'),
+              fit: BoxFit.contain,
+            )
           ),
         ),
         const SizedBox(height: 24),
@@ -378,6 +386,55 @@ class _LoginScreenState extends State<LoginScreen>
     );
   }
 
+  Widget _buildBiometricAvailabilityIndicator(AuthProvider authProvider) {
+    if (!authProvider.biometricAvailable) {
+      return const SizedBox.shrink();
+    }
+
+    final hasFace = authProvider.hasFaceRecognition;
+    final hasFingerprint = authProvider.hasFingerprintRecognition;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: Colors.blue.shade50,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: Colors.blue.shade200),
+      ),
+      child: Row(
+        children: [
+          Icon(
+            Icons.check_circle_outline,
+            color: Colors.blue.shade700,
+            size: 18,
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              'Biometría disponible: ${_getBiometricTypesText(hasFace, hasFingerprint)}',
+              style: TextStyle(
+                fontSize: 12,
+                color: Colors.blue.shade700,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _getBiometricTypesText(bool hasFace, bool hasFingerprint) {
+    if (hasFace && hasFingerprint) {
+      return 'Face ID + Huella';
+    } else if (hasFace) {
+      return 'Face ID';
+    } else if (hasFingerprint) {
+      return 'Huella Digital';
+    }
+    return 'Desconocida';
+  }
+
   Widget _buildErrorMessage(String message) {
     return Container(
       padding: const EdgeInsets.all(12),
@@ -419,27 +476,27 @@ class _LoginScreenState extends State<LoginScreen>
           elevation: 0,
           shadowColor: Theme.of(context).primaryColor.withValues(alpha: 0.4),
         ),
-        child: authProvider.isLoading
-            ? const SizedBox(
-                height: 24,
-                width: 24,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2.5,
-                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                ),
-              )
-            : const Text(
-                'Iniciar Sesión',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
+        child: const Text(
+          'Iniciar Sesión',
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
       ),
     );
   }
 
   Widget _buildBiometricButton(AuthProvider authProvider) {
+    // Si no hay biometría disponible, no mostrar nada
+    if (!authProvider.biometricAvailable) {
+      return const SizedBox.shrink();
+    }
+
+    final hasFace = authProvider.hasFaceRecognition;
+    final hasFingerprint = authProvider.hasFingerprintRecognition;
+    final hasBoth = hasFace && hasFingerprint;
+
     return Column(
       children: [
         Row(
@@ -456,67 +513,96 @@ class _LoginScreenState extends State<LoginScreen>
           ],
         ),
         const SizedBox(height: 16),
-        SizedBox(
-          width: double.infinity,
-          height: 56,
-          child: FutureBuilder<String>(
-            future: authProvider.getBiometricTypeMessage(),
-            builder: (context, snapshot) {
-              final biometricType = snapshot.data ?? 'Biometría';
-              final isFaceId = biometricType.contains('Face');
+        // Si ambos métodos están disponibles, mostrar dos botones
+        if (hasBoth) ...[
+          _buildBiometricOptionButton(
+            label: 'Usar Face ID',
+            icon: Icons.face,
+            isLoading: authProvider.isLoading,
+            onPressed: _loginWithBiometrics,
+          ),
+          const SizedBox(height: 12),
+          _buildBiometricOptionButton(
+            label: 'Usar Huella Digital',
+            icon: Icons.fingerprint,
+            isLoading: authProvider.isLoading,
+            onPressed: _loginWithBiometrics,
+          ),
+        ] else if (hasFace) ...[
+          // Si solo Face ID está disponible
+          _buildBiometricOptionButton(
+            label: 'Usar Face ID',
+            icon: Icons.face,
+            isLoading: authProvider.isLoading,
+            onPressed: _loginWithBiometrics,
+          ),
+        ] else if (hasFingerprint) ...[
+          // Si solo Huella Digital está disponible
+          _buildBiometricOptionButton(
+            label: 'Usar Huella Digital',
+            icon: Icons.fingerprint,
+            isLoading: authProvider.isLoading,
+            onPressed: _loginWithBiometrics,
+          ),
+        ]
+      ],
+    );
+  }
 
-              return AnimatedContainer(
-                duration: const Duration(milliseconds: 300),
-                child: OutlinedButton(
-                  onPressed: authProvider.isLoading ? null : _loginWithBiometrics,
-                  style: OutlinedButton.styleFrom(
-                    side: BorderSide(
-                      color: Theme.of(context).primaryColor,
-                      width: 2,
-                    ),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      TweenAnimationBuilder<double>(
-                        tween: Tween<double>(begin: 0.8, end: 1.0),
-                        duration: const Duration(milliseconds: 1500),
-                        curve: Curves.easeInOut,
-                        builder: (context, scale, child) {
-                          return Transform.scale(
-                            scale: scale,
-                            child: Icon(
-                              isFaceId ? Icons.face : Icons.fingerprint,
-                              size: 28,
-                              color: Theme.of(context).primaryColor,
-                            ),
-                          );
-                        },
-                      ),
-                      const SizedBox(width: 12),
-                      Flexible(
-                        child: Text(
-                          'Usar $biometricType',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                            color: Theme.of(context).primaryColor,
-                          ),
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              );
-            },
+  Widget _buildBiometricOptionButton({
+    required String label,
+    required IconData icon,
+    required bool isLoading,
+    required VoidCallback onPressed,
+  }) {
+    return SizedBox(
+      width: double.infinity,
+      height: 56,
+      child: OutlinedButton(
+        onPressed: isLoading ? null : onPressed,
+        style: OutlinedButton.styleFrom(
+          side: BorderSide(
+            color: Theme.of(context).primaryColor,
+            width: 2,
+          ),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
           ),
         ),
-      ],
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TweenAnimationBuilder<double>(
+              tween: Tween<double>(begin: 0.8, end: 1.0),
+              duration: const Duration(milliseconds: 1500),
+              curve: Curves.easeInOut,
+              builder: (context, scale, child) {
+                return Transform.scale(
+                  scale: scale,
+                  child: Icon(
+                    icon,
+                    size: 28,
+                    color: Theme.of(context).primaryColor,
+                  ),
+                );
+              },
+            ),
+            const SizedBox(width: 12),
+            Flexible(
+              child: Text(
+                label,
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  color: Theme.of(context).primaryColor,
+                ),
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -557,10 +643,17 @@ class _LoginScreenState extends State<LoginScreen>
   void _login() async {
     if (_formKey.currentState?.validate() ?? false) {
       final authProvider = context.read<AuthProvider>();
+
+      // Mostrar el LoadingOverlay
+      LoadingOverlay.show(context, message: 'Iniciando sesión...');
+
       final success = await authProvider.login(
         _loginController.text.trim(),
         _passwordController.text,
       );
+
+      // Ocultar el LoadingOverlay
+      LoadingOverlay.hide();
 
       if (success && _rememberMe && _biometricAvailable) {
         // Guardar credenciales para login biométrico
@@ -575,37 +668,15 @@ class _LoginScreenState extends State<LoginScreen>
   void _loginWithBiometrics() async {
     final authProvider = context.read<AuthProvider>();
 
-    // Mostrar indicador de progreso con animación
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Row(
-            children: [
-              const SizedBox(
-                width: 20,
-                height: 20,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                ),
-              ),
-              const SizedBox(width: 16),
-              const Expanded(
-                child: Text('Autenticando con biometría...'),
-              ),
-            ],
-          ),
-          duration: const Duration(seconds: 3),
-          backgroundColor: Theme.of(context).primaryColor,
-        ),
-      );
-    }
+    // Mostrar el LoadingOverlay
+    LoadingOverlay.show(context, message: 'Autenticando con biometría...');
 
     final success = await authProvider.loginWithBiometrics();
 
-    if (mounted) {
-      ScaffoldMessenger.of(context).hideCurrentSnackBar();
+    // Ocultar el LoadingOverlay
+    LoadingOverlay.hide();
 
+    if (mounted) {
       if (!success && authProvider.errorMessage != null) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(

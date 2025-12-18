@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/providers.dart';
 import '../../widgets/carrito/index.dart';
+import '../../widgets/widgets.dart';
+import '../../config/config.dart';
 import 'carrito_helpers.dart';
 
 class CarritoScreen extends StatelessWidget {
@@ -10,8 +12,9 @@ class CarritoScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Mi Carrito'),
+      appBar: CustomGradientAppBar(
+        title: 'Mi Carrito',
+        customGradient: AppGradients.blue,
         actions: [
           Consumer<CarritoProvider>(
             builder: (context, carritoProvider, _) {

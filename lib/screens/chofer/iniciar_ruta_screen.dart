@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:provider/provider.dart';
 import '../../providers/entrega_provider.dart';
+import '../../widgets/widgets.dart';
+import '../../config/config.dart';
 
 class IniciarRutaScreen extends StatefulWidget {
   final int entregaId;
@@ -106,9 +108,9 @@ class _IniciarRutaScreenState extends State<IniciarRutaScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Iniciar Ruta'),
-        elevation: 0,
+      appBar: CustomGradientAppBar(
+        title: 'Iniciar Ruta',
+        customGradient: AppGradients.green,
       ),
       body: Padding(
         padding: const EdgeInsets.all(16),

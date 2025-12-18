@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/carrito_provider.dart';
 import '../../models/carrito.dart';
+import '../../widgets/widgets.dart';
+import '../../config/config.dart';
 
 class CarritoAbandonadoListScreen extends StatefulWidget {
   const CarritoAbandonadoListScreen({super.key});
@@ -124,9 +126,9 @@ class _CarritoAbandonadoListScreenState
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Mis Carritos Guardados'),
-        elevation: 0,
+      appBar: CustomGradientAppBar(
+        title: 'Mis Carritos Guardados',
+        customGradient: AppGradients.blue,
       ),
       body: RefreshIndicator(
         onRefresh: _refrescar,

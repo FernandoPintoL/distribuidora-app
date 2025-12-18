@@ -9,6 +9,7 @@ class PedidoProvider with ChangeNotifier {
   final WebSocketService _webSocketService = WebSocketService();
   StreamSubscription? _proformaSubscription;
   StreamSubscription? _envioSubscription;
+  StreamSubscription? _ubicacionSubscription;
 
   // Constructor: iniciar escucha WebSocket automáticamente
   PedidoProvider() {
@@ -380,6 +381,9 @@ class PedidoProvider with ChangeNotifier {
         case 'en_ruta':
           _handleEnvioEnRuta(data);
           break;
+        case 'chofer_llego':
+          _handleChoferLlego(data);
+          break;
         case 'proximo':
           _handleEnvioProximo(data);
           break;
@@ -391,6 +395,20 @@ class PedidoProvider with ChangeNotifier {
           break;
       }
     });
+
+    // Escuchar eventos de ubicación (tracking en tiempo real)
+    _ubicacionSubscription = _webSocketService.ubicacionStream.listen((event) {
+      final type = event['type'] as String;
+      final data = event['data'] as Map<String, dynamic>;
+
+      debugPrint('📍 PedidoProvider: Evento ubicación recibido: $type');
+
+      // Las ubicaciones se actualizan principalmente en TrackingProvider
+      // Aquí solo sincronizamos si es necesario
+      if (type == 'ubicacion') {
+        _handleUbicacionActualizada(data);
+      }
+    });
   }
 
   /// Detener escucha de eventos WebSocket
@@ -398,6 +416,7 @@ class PedidoProvider with ChangeNotifier {
     debugPrint('🔌 PedidoProvider: Deteniendo escucha WebSocket');
     _proformaSubscription?.cancel();
     _envioSubscription?.cancel();
+    _ubicacionSubscription?.cancel();
   }
 
   // Handlers de eventos WebSocket
@@ -466,41 +485,179 @@ class PedidoProvider with ChangeNotifier {
 
   void _handleEnvioProgramado(Map<String, dynamic> data) {
     // Envío fue programado
-    final envioId = data['envio_id'] as int?;
+    final ventaId = data['venta_id'] ?? data['proforma_id'] ?? data['envio_id'];
     final fechaProgramada = data['fecha_programada'] as String?;
-    debugPrint('📅 Envío programado: $envioId para $fechaProgramada');
+    debugPrint('📅 Envío programado: $ventaId para $fechaProgramada');
 
     // Actualizar pedido relacionado
-    // Nota: necesitaríamos el venta_id en el evento para actualizar correctamente
-    notifyListeners();
+    if (ventaId != null) {
+      final index = _pedidos.indexWhere((p) => p.id == ventaId);
+      if (index != -1) {
+        _pedidos[index] = _pedidos[index].copyWith(
+          estado: EstadoPedido.PREPARANDO,
+        );
+        notifyListeners();
+      }
+
+      // Actualizar pedido actual si es el mismo
+      if (_pedidoActual?.id == ventaId) {
+        _pedidoActual = _pedidoActual!.copyWith(
+          estado: EstadoPedido.PREPARANDO,
+        );
+        notifyListeners();
+      }
+    }
   }
 
   void _handleEnvioEnPreparacion(Map<String, dynamic> data) {
-    debugPrint('📦 Envío en preparación');
+    final ventaId = data['venta_id'] ?? data['proforma_id'] ?? data['envio_id'];
+    debugPrint('📦 Envío en preparación: $ventaId');
+
     // Actualizar estado del pedido
+    if (ventaId != null) {
+      final index = _pedidos.indexWhere((p) => p.id == ventaId);
+      if (index != -1) {
+        _pedidos[index] = _pedidos[index].copyWith(
+          estado: EstadoPedido.PREPARANDO,
+        );
+        notifyListeners();
+      }
+
+      if (_pedidoActual?.id == ventaId) {
+        _pedidoActual = _pedidoActual!.copyWith(
+          estado: EstadoPedido.PREPARANDO,
+        );
+        notifyListeners();
+      }
+    }
   }
 
   void _handleEnvioEnRuta(Map<String, dynamic> data) {
-    debugPrint('🚛 Envío en ruta');
+    final ventaId = data['venta_id'] ?? data['proforma_id'] ?? data['envio_id'];
+    final choferId = data['chofer_id'] as int?;
+    final vehiculoPlaca = data['vehiculo_placa'] as String?;
+    debugPrint('🚛 Envío en ruta: $ventaId');
+
     // Actualizar estado del pedido a EN_RUTA
+    if (ventaId != null) {
+      final index = _pedidos.indexWhere((p) => p.id == ventaId);
+      if (index != -1) {
+        _pedidos[index] = _pedidos[index].copyWith(
+          estado: EstadoPedido.EN_RUTA,
+          choferId: choferId,
+        );
+        notifyListeners();
+      }
+
+      if (_pedidoActual?.id == ventaId) {
+        _pedidoActual = _pedidoActual!.copyWith(
+          estado: EstadoPedido.EN_RUTA,
+          choferId: choferId,
+        );
+        notifyListeners();
+      }
+    }
+  }
+
+  void _handleChoferLlego(Map<String, dynamic> data) {
+    final ventaId = data['venta_id'] ?? data['proforma_id'] ?? data['envio_id'];
+    debugPrint('📍 Chofer llegó: $ventaId');
+
+    // Actualizar estado - el chofer llegó al destino
+    if (ventaId != null) {
+      final index = _pedidos.indexWhere((p) => p.id == ventaId);
+      if (index != -1) {
+        _pedidos[index] = _pedidos[index].copyWith(
+          estado: EstadoPedido.LLEGO,
+        );
+        notifyListeners();
+      }
+
+      if (_pedidoActual?.id == ventaId) {
+        _pedidoActual = _pedidoActual!.copyWith(
+          estado: EstadoPedido.LLEGO,
+        );
+        notifyListeners();
+      }
+    }
   }
 
   void _handleEnvioProximo(Map<String, dynamic> data) {
-    final tiempoEstimado = data['tiempo_estimado_min'] as int?;
-    debugPrint('⏰ Envío próximo: $tiempoEstimado minutos');
-    // Mostrar notificación urgente al usuario
+    final ventaId = data['venta_id'] ?? data['proforma_id'] ?? data['envio_id'];
+    final tiempoEstimado = data['eta_minutos'] ?? data['tiempo_estimado_min'] as int?;
+    final distanciaKm = data['distancia_km'] as double?;
+    debugPrint('⏰ Envío próximo: $tiempoEstimado minutos, distancia: $distanciaKm km');
+
+    // Mostrar notificación urgente al usuario - solo actualizar display info
+    if (ventaId != null) {
+      final index = _pedidos.indexWhere((p) => p.id == ventaId);
+      if (index != -1) {
+        // No cambiar estado, solo guardar info de distancia/ETA para tracking
+        debugPrint('✅ Pedido $ventaId próximo a llegar');
+        notifyListeners();
+      }
+    }
   }
 
   void _handleEnvioEntregado(Map<String, dynamic> data) {
-    final envioId = data['envio_id'] as int?;
-    debugPrint('✅ Envío #$envioId entregado');
+    final ventaId = data['venta_id'] ?? data['proforma_id'] ?? data['envio_id'];
+    debugPrint('✅ Envío entregado: $ventaId');
+
     // Actualizar estado del pedido a ENTREGADO
+    if (ventaId != null) {
+      final index = _pedidos.indexWhere((p) => p.id == ventaId);
+      if (index != -1) {
+        _pedidos[index] = _pedidos[index].copyWith(
+          estado: EstadoPedido.ENTREGADO,
+        );
+        notifyListeners();
+      }
+
+      if (_pedidoActual?.id == ventaId) {
+        _pedidoActual = _pedidoActual!.copyWith(
+          estado: EstadoPedido.ENTREGADO,
+        );
+        notifyListeners();
+      }
+    }
   }
 
   void _handleEntregaRechazada(Map<String, dynamic> data) {
+    final ventaId = data['venta_id'] ?? data['proforma_id'] ?? data['envio_id'];
     final motivo = data['motivo'] as String?;
-    debugPrint('❌ Entrega rechazada: $motivo');
+    debugPrint('❌ Entrega rechazada: $ventaId - $motivo');
+
     // Actualizar estado del pedido con la novedad
+    if (ventaId != null) {
+      final index = _pedidos.indexWhere((p) => p.id == ventaId);
+      if (index != -1) {
+        _pedidos[index] = _pedidos[index].copyWith(
+          estado: EstadoPedido.NOVEDAD,
+          comentariosAprobacion: motivo,
+        );
+        notifyListeners();
+      }
+
+      if (_pedidoActual?.id == ventaId) {
+        _pedidoActual = _pedidoActual!.copyWith(
+          estado: EstadoPedido.NOVEDAD,
+          comentariosAprobacion: motivo,
+        );
+        notifyListeners();
+      }
+    }
+  }
+
+  void _handleUbicacionActualizada(Map<String, dynamic> data) {
+    // Las ubicaciones se manejan principalmente en TrackingProvider
+    // Pero aquí sincronizamos datos si es necesario
+    final entregaId = data['entrega_id'] as int?;
+    final ventaId = data['venta_id'] as int?;
+    debugPrint('📍 Ubicación actualizada: entrega=$entregaId, venta=$ventaId');
+
+    // Sincronización adicional si es necesario
+    // Por ahora solo registramos el evento
+    notifyListeners();
   }
 
   /// Resetear provider

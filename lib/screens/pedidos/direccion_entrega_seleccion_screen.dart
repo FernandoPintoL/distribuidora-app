@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../models/models.dart';
 import '../../providers/providers.dart';
+import '../../widgets/widgets.dart';
+import '../../config/config.dart';
 
 class DireccionEntregaSeleccionScreen extends StatefulWidget {
   const DireccionEntregaSeleccionScreen({super.key});
@@ -68,9 +70,9 @@ class _DireccionEntregaSeleccionScreenState
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Dirección de Entregas'),
-        elevation: 0,
+      appBar: CustomGradientAppBar(
+        title: 'Dirección de Entregas',
+        customGradient: AppGradients.blue,
         actions: [
           IconButton(
             icon: const Icon(Icons.settings),

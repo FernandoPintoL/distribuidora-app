@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/providers.dart';
+import '../../providers/theme_provider.dart';
 import '../../services/role_based_router.dart';
 
 /// Pantalla de perfil compartida para todos los roles
@@ -145,6 +146,12 @@ class _PerfilScreenState extends State<PerfilScreen> with SingleTickerProviderSt
                       _buildModernSectionTitle('Seguridad', Icons.security_outlined),
                       const SizedBox(height: 12),
                       _buildSecurityCard(context, authProvider),
+                      const SizedBox(height: 24),
+
+                      // Apariencia
+                      _buildModernSectionTitle('Apariencia', Icons.palette_outlined),
+                      const SizedBox(height: 12),
+                      _buildAppearanceCard(context),
                       const SizedBox(height: 24),
 
                       // Opciones específicas por rol
@@ -1192,6 +1199,91 @@ class _PerfilScreenState extends State<PerfilScreen> with SingleTickerProviderSt
       ),
       trailing: Icon(Icons.chevron_right, color: Colors.grey.shade400),
       onTap: onTap,
+    );
+  }
+
+  // Tarjeta de apariencia con switch de tema
+  Widget _buildAppearanceCard(BuildContext context) {
+    return Consumer<ThemeProvider>(
+      builder: (context, themeProvider, _) {
+        final isDark = themeProvider.isDarkMode;
+
+        return Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(16),
+            gradient: LinearGradient(
+              colors: isDark
+                  ? [Colors.grey.shade800, Colors.grey.shade900]
+                  : [Colors.amber.shade50, Colors.orange.shade50],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.05),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(
+                          isDark ? Icons.dark_mode : Icons.light_mode,
+                          size: 20,
+                          color: isDark ? Colors.amber : Colors.orange,
+                        ),
+                        const SizedBox(width: 12),
+                        Text(
+                          'Modo ${isDark ? 'Oscuro' : 'Claro'}',
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      isDark
+                          ? 'Interfaz oscura para menos luz'
+                          : 'Interfaz clara para mejor visibilidad',
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: Colors.grey.shade600,
+                        fontWeight: FontWeight.w400,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 12),
+              AnimatedSwitcher(
+                duration: const Duration(milliseconds: 300),
+                child: Switch(
+                  key: ValueKey(isDark),
+                  value: isDark,
+                  onChanged: (value) {
+                    themeProvider.toggleTheme();
+                  },
+                  activeColor: Colors.amber,
+                  activeTrackColor: Colors.amber.shade200,
+                  inactiveThumbColor: Colors.grey.shade400,
+                  inactiveTrackColor: Colors.grey.shade300,
+                ),
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 

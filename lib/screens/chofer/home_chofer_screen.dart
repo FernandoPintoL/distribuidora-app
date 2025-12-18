@@ -4,7 +4,13 @@ import '../base/base_home_screen.dart';
 import '../../models/navigation_item.dart';
 import '../../providers/providers.dart';
 import 'entregas_asignadas_screen.dart';
+import 'tracking_screen.dart';
 import '../perfil/perfil_screen.dart';
+import '../../widgets/widgets.dart';
+import '../../widgets/chofer/dashboard_stats_card.dart';
+import '../../widgets/chofer/mini_tracking_map.dart';
+import '../../widgets/chofer/quick_actions_panel.dart';
+import '../../config/config.dart';
 
 /// Pantalla principal para usuarios con rol CHOFER
 ///
@@ -45,16 +51,11 @@ class _HomeChoferScreenState extends BaseHomeScreenState<HomeChoferScreen> {
   ];
 
   @override
-  PreferredSizeWidget get appBar => AppBar(
-    title: const Text('Distribuidora Paucara - Chofer'),
+  PreferredSizeWidget get appBar => CustomGradientAppBar(
+    title: 'Mis Entregas',
+    userRole: 'chofer',
     actions: [
-      // Notificaciones
-      IconButton(
-        icon: const Icon(Icons.notifications_outlined),
-        onPressed: () {
-          // TODO: Abrir notificaciones
-        },
-      ),
+      NotificationBadgeAction(),
     ],
   );
 
@@ -110,80 +111,63 @@ class _DashboardTab extends StatelessWidget {
           ),
           const SizedBox(height: 16),
 
-          // Estadísticas
+          // Card de Estadísticas Visuales con Gráfico Circular
           Consumer<EntregaProvider>(
             builder: (context, entregaProvider, _) {
-              return Row(
-                children: [
-                  Expanded(
-                    child: Card(
-                      child: Padding(
-                        padding: const EdgeInsets.all(16),
-                        child: Column(
-                          children: [
-                            Text(
-                              'Entregas',
-                              style: Theme.of(context).textTheme.bodyMedium,
-                            ),
-                            const SizedBox(height: 8),
-                            Text(
-                              '${entregaProvider.entregas.length}',
-                              style: Theme.of(context).textTheme.headlineMedium,
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Card(
-                      child: Padding(
-                        padding: const EdgeInsets.all(16),
-                        child: Column(
-                          children: [
-                            Text(
-                              'Completadas',
-                              style: Theme.of(context).textTheme.bodyMedium,
-                            ),
-                            const SizedBox(height: 8),
-                            Text(
-                              '0',
-                              style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                                    color: Colors.green,
-                                  ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
+              final totalEntregas = entregaProvider.entregas.length;
+              final entregasCompletadas = entregaProvider.entregas
+                  .where((e) => e.estado == 'ENTREGADO')
+                  .length;
+              final entregasPendientes = totalEntregas - entregasCompletadas;
+
+              return DashboardStatsCard(
+                totalEntregas: totalEntregas,
+                entregasCompletadas: entregasCompletadas,
+                entregasPendientes: entregasPendientes,
               );
             },
           ),
           const SizedBox(height: 16),
 
-          // Botones de acción
-          ElevatedButton.icon(
-            onPressed: () {
+          // Mini Mapa de Tracking en Vivo
+          Consumer<EntregaProvider>(
+            builder: (context, entregaProvider, _) {
+              return MiniTrackingMap(
+                entregas: entregaProvider.entregas,
+                onMapTap: () {
+                  // TODO: Navegar a vista ampliada del mapa
+                },
+              );
+            },
+          ),
+          const SizedBox(height: 16),
+
+          // Panel de Acciones Rápidas
+          QuickActionsPanel(
+            onInitializeRoute: () {
+              // Navegar a pantalla de tracking en vivo
               Navigator.of(context).push(
                 MaterialPageRoute(
-                  builder: (context) => const EntregasAsignadasScreen(),
+                  builder: (context) => const TrackingScreen(),
                 ),
               );
             },
-            icon: const Icon(Icons.local_shipping),
-            label: const Text('Ver Entregas Asignadas'),
-          ),
-          const SizedBox(height: 8),
-          OutlinedButton.icon(
-            onPressed: () {
-              // TODO: Implementar inicio de ruta
+            onViewAllDeliveriesMap: () {
+              // Navegar a vista completa del mapa con todas las entregas
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (context) => const TrackingScreen(),
+                ),
+              );
             },
-            icon: const Icon(Icons.route),
-            label: const Text('Iniciar Ruta'),
+            onScanQR: () {
+              // TODO: Abrir escáner de QR
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Función de QR próximamente')),
+              );
+            },
           ),
+          const SizedBox(height: 16),
         ],
       ),
     );

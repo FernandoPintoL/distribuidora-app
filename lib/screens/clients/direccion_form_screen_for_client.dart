@@ -3,6 +3,8 @@ import 'package:provider/provider.dart';
 import '../../models/models.dart';
 import '../../providers/providers.dart';
 import '../../widgets/direccion_form_widget.dart';
+import '../../widgets/widgets.dart';
+import '../../config/config.dart';
 
 class DireccionFormScreenForClient extends StatefulWidget {
   final int clientId;
@@ -140,9 +142,9 @@ class _DireccionFormScreenForClientState
     final isEditing = widget.direccion != null;
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text(isEditing ? 'Editar Dirección' : 'Nueva Dirección'),
-        elevation: 0,
+      appBar: CustomGradientAppBar(
+        title: isEditing ? 'Editar Dirección' : 'Nueva Dirección',
+        customGradient: AppGradients.orange,
       ),
       body: Form(
         key: _formKey,

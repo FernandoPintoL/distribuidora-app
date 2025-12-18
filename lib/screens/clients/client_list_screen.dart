@@ -4,7 +4,9 @@ import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../providers/providers.dart';
 import '../../models/models.dart';
-import '../../utils.dart';
+import '../../utils/utils.dart';
+import '../../widgets/widgets.dart';
+import '../../config/config.dart';
 import 'client_detail_screen.dart';
 import 'client_form_screen.dart';
 import '../login_screen.dart';
@@ -48,7 +50,8 @@ class _ClientListScreenState extends State<ClientListScreen> {
   }
 
   void _onScroll() {
-    if (_scrollController.position.pixels >= _scrollController.position.maxScrollExtent - 200) {
+    if (_scrollController.position.pixels >=
+        _scrollController.position.maxScrollExtent - 200) {
       // Cuando está a 200px del final, cargar más
       if (!_isLoadingMore && _clientProvider.hasMorePages) {
         _loadMoreClients();
@@ -89,7 +92,9 @@ class _ClientListScreenState extends State<ClientListScreen> {
         search: _searchQuery.isNotEmpty ? _searchQuery : null,
         active: _activeFilterValue(),
       );
-      debugPrint('✅ Clientes cargados: ${_clientProvider.clients.length} de ${_clientProvider.totalItems}');
+      debugPrint(
+        '✅ Clientes cargados: ${_clientProvider.clients.length} de ${_clientProvider.totalItems}',
+      );
     } catch (e) {
       debugPrint('❌ Error al cargar clientes: $e');
       // El error será manejado por el provider y mostrado en la UI
@@ -133,7 +138,9 @@ class _ClientListScreenState extends State<ClientListScreen> {
     }
 
     if (_isLoadingMore || _isLoadingClients) {
-      debugPrint('⚠️ _loadMoreClients: Ya hay una carga en progreso, cancelando');
+      debugPrint(
+        '⚠️ _loadMoreClients: Ya hay una carga en progreso, cancelando',
+      );
       return;
     }
 
@@ -145,7 +152,9 @@ class _ClientListScreenState extends State<ClientListScreen> {
     setState(() {
       _isLoadingMore = true;
     });
-    debugPrint('📋 Cargando más clientes (página ${_clientProvider.currentPage + 1})...');
+    debugPrint(
+      '📋 Cargando más clientes (página ${_clientProvider.currentPage + 1})...',
+    );
 
     try {
       await _clientProvider.loadClients(
@@ -155,7 +164,9 @@ class _ClientListScreenState extends State<ClientListScreen> {
         search: _searchQuery.isNotEmpty ? _searchQuery : null,
         active: _activeFilterValue(),
       );
-      debugPrint('✅ Más clientes cargados: ${_clientProvider.clients.length} de ${_clientProvider.totalItems}');
+      debugPrint(
+        '✅ Más clientes cargados: ${_clientProvider.clients.length} de ${_clientProvider.totalItems}',
+      );
     } catch (e) {
       debugPrint('❌ Error al cargar más clientes: $e');
       // El error será manejado por el provider y mostrado en la UI
@@ -181,54 +192,22 @@ class _ClientListScreenState extends State<ClientListScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Clientes', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
-        elevation: 0,
-        flexibleSpace: Container(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [Colors.blue.shade700, Colors.blue.shade900],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
-          ),
-        ),
+      /* appBar: CustomGradientAppBar(
+        title: 'Clientes',
+        customGradient: AppGradients.blue,
         actions: [
-          /*IconButton(
-            icon: const Icon(Icons.logout),
-            onPressed: _logout,
-            tooltip: 'Cerrar sesión',
-          ),*/
-          // Mostrar indicador de carga en el AppBar si está cargando
-          if (_isLoadingClients)
-            const Padding(
-              padding: EdgeInsets.all(16.0),
-              child: SizedBox(
-                width: 20,
-                height: 20,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                ),
-              ),
-            )
-          else
-            IconButton(
-              icon: const Icon(Icons.refresh, color: Colors.white,),
-              onPressed: _safeLoadClients,
-              tooltip: 'Recargar lista',
-            ),
+          RefreshAction(
+            isLoading: _isLoadingClients,
+            onRefresh: _safeLoadClients,
+          ),
         ],
-      ),
+      ), */
       body: Container(
         decoration: BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [
-              Colors.blue.shade50,
-              Colors.white,
-            ],
+            colors: [Colors.blue.shade50, Colors.white],
           ),
         ),
         child: Column(
@@ -256,7 +235,10 @@ class _ClientListScreenState extends State<ClientListScreen> {
                     prefixIcon: Icon(Icons.search, color: Colors.blue.shade700),
                     suffixIcon: _searchQuery.isNotEmpty
                         ? IconButton(
-                            icon: Icon(Icons.clear, color: Colors.grey.shade600),
+                            icon: Icon(
+                              Icons.clear,
+                              color: Colors.grey.shade600,
+                            ),
                             onPressed: _isLoadingClients ? null : _clearSearch,
                           )
                         : null,
@@ -266,7 +248,10 @@ class _ClientListScreenState extends State<ClientListScreen> {
                     ),
                     filled: true,
                     fillColor: Colors.white,
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 20,
+                      vertical: 16,
+                    ),
                   ),
                   onChanged: _onSearchChanged,
                   textInputAction: TextInputAction.search,
@@ -281,7 +266,11 @@ class _ClientListScreenState extends State<ClientListScreen> {
               padding: const EdgeInsets.symmetric(horizontal: 16.0),
               child: Row(
                 children: [
-                  Icon(Icons.filter_list, color: Colors.grey.shade600, size: 20),
+                  Icon(
+                    Icons.filter_list,
+                    color: Colors.grey.shade600,
+                    size: 20,
+                  ),
                   const SizedBox(width: 8),
                   Text(
                     'Filtros:',
@@ -336,147 +325,157 @@ class _ClientListScreenState extends State<ClientListScreen> {
             ),
             const SizedBox(height: 12),
 
-          // Mostrar mensaje de carga si está cargando inicialmente
-          if (_isLoadingClients && _clientProvider.clients.isEmpty)
-            Expanded(
-              child: Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const CircularProgressIndicator(),
-                    const SizedBox(height: 16),
-                    Text(
-                      'Cargando clientes...',
-                      style: Theme.of(context).textTheme.titleMedium,
-                    ),
-                  ],
+            // Mostrar mensaje de carga si está cargando inicialmente
+            if (_isLoadingClients && _clientProvider.clients.isEmpty)
+              Expanded(
+                child: Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const CircularProgressIndicator(),
+                      const SizedBox(height: 16),
+                      Text(
+                        'Cargando clientes...',
+                        style: Theme.of(context).textTheme.titleMedium,
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-            )
-          else
-            // Clients list
-            Expanded(
-              child: Consumer<ClientProvider>(
-                builder: (context, clientProvider, child) {
-                  if (clientProvider.isLoading &&
-                      clientProvider.clients.isEmpty) {
-                    return const Center(child: CircularProgressIndicator());
-                  }
+              )
+            else
+              // Clients list
+              Expanded(
+                child: Consumer<ClientProvider>(
+                  builder: (context, clientProvider, child) {
+                    if (clientProvider.isLoading &&
+                        clientProvider.clients.isEmpty) {
+                      return const Center(child: CircularProgressIndicator());
+                    }
 
-                  if (clientProvider.errorMessage != null &&
-                      clientProvider.clients.isEmpty) {
-                    return Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          const Icon(
-                            Icons.error_outline,
-                            size: 64,
-                            color: Colors.red,
-                          ),
-                          const SizedBox(height: 16),
-                          Text(
-                            clientProvider.errorMessage!,
-                            textAlign: TextAlign.center,
-                            style: const TextStyle(color: Colors.red),
-                          ),
-                          const SizedBox(height: 16),
-                          ElevatedButton(
-                            onPressed: _isLoadingClients
-                                ? null
-                                : _safeLoadClients,
-                            child: const Text('Reintentar'),
-                          ),
-                        ],
-                      ),
-                    );
-                  }
+                    if (clientProvider.errorMessage != null &&
+                        clientProvider.clients.isEmpty) {
+                      return Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const Icon(
+                              Icons.error_outline,
+                              size: 64,
+                              color: Colors.red,
+                            ),
+                            const SizedBox(height: 16),
+                            Text(
+                              clientProvider.errorMessage!,
+                              textAlign: TextAlign.center,
+                              style: const TextStyle(color: Colors.red),
+                            ),
+                            const SizedBox(height: 16),
+                            ElevatedButton(
+                              onPressed: _isLoadingClients
+                                  ? null
+                                  : _safeLoadClients,
+                              child: const Text('Reintentar'),
+                            ),
+                          ],
+                        ),
+                      );
+                    }
 
-                  if (clientProvider.clients.isEmpty) {
-                    return Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          const Icon(
-                            Icons.people,
-                            size: 64,
-                            color: Colors.grey,
-                          ),
-                          const SizedBox(height: 16),
-                          const Text(
-                            'No hay clientes',
-                            style: TextStyle(fontSize: 18, color: Colors.grey),
-                          ),
-                          const SizedBox(height: 16),
-                          ElevatedButton(
-                            onPressed: _isLoadingClients
-                                ? null
-                                : _safeLoadClients,
-                            child: const Text('Cargar Clientes'),
-                          ),
-                        ],
-                      ),
-                    );
-                  }
-
-                  return RefreshIndicator(
-                    onRefresh: _isLoadingClients
-                        ? () async {}
-                        : _safeRefreshClients,
-                    child: ListView.builder(
-                      controller: _scrollController,
-                      itemCount: clientProvider.clients.length + (_isLoadingMore ? 1 : 0),
-                      itemBuilder: (context, index) {
-                        // Mostrar indicador de carga al final
-                        if (index == clientProvider.clients.length) {
-                          return Container(
-                            padding: const EdgeInsets.symmetric(vertical: 20),
-                            child: Center(
-                              child: Column(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  SizedBox(
-                                    width: 24,
-                                    height: 24,
-                                    child: CircularProgressIndicator(
-                                      strokeWidth: 2.5,
-                                      valueColor: AlwaysStoppedAnimation<Color>(
-                                        Colors.blue.shade600,
-                                      ),
-                                    ),
-                                  ),
-                                  const SizedBox(height: 12),
-                                  Text(
-                                    'Cargando más clientes...',
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      color: Colors.grey.shade600,
-                                    ),
-                                  ),
-                                ],
+                    if (clientProvider.clients.isEmpty) {
+                      return Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const Icon(
+                              Icons.people,
+                              size: 64,
+                              color: Colors.grey,
+                            ),
+                            const SizedBox(height: 16),
+                            const Text(
+                              'No hay clientes',
+                              style: TextStyle(
+                                fontSize: 18,
+                                color: Colors.grey,
                               ),
                             ),
-                          );
-                        }
+                            const SizedBox(height: 16),
+                            ElevatedButton(
+                              onPressed: _isLoadingClients
+                                  ? null
+                                  : _safeLoadClients,
+                              child: const Text('Cargar Clientes'),
+                            ),
+                          ],
+                        ),
+                      );
+                    }
 
-                        final client = clientProvider.clients[index];
-                        return ClientListItem(
-                          client: client,
-                          onTap: () => _onClientTap(client),
-                          onCall: client.telefono != null && client.telefono!.isNotEmpty
-                              ? () => _makePhoneCall(client.telefono!)
-                              : null,
-                          onWhatsApp: client.telefono != null && client.telefono!.isNotEmpty
-                              ? () => _sendWhatsAppMessage(client.telefono!)
-                              : null,
-                          onEdit: () => _navigateToEditClient(client),
-                        );
-                      },
-                    ),
-                  );
-                },
+                    return RefreshIndicator(
+                      onRefresh: _isLoadingClients
+                          ? () async {}
+                          : _safeRefreshClients,
+                      child: ListView.builder(
+                        controller: _scrollController,
+                        itemCount:
+                            clientProvider.clients.length +
+                            (_isLoadingMore ? 1 : 0),
+                        itemBuilder: (context, index) {
+                          // Mostrar indicador de carga al final
+                          if (index == clientProvider.clients.length) {
+                            return Container(
+                              padding: const EdgeInsets.symmetric(vertical: 20),
+                              child: Center(
+                                child: Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    SizedBox(
+                                      width: 24,
+                                      height: 24,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2.5,
+                                        valueColor:
+                                            AlwaysStoppedAnimation<Color>(
+                                              Colors.blue.shade600,
+                                            ),
+                                      ),
+                                    ),
+                                    const SizedBox(height: 12),
+                                    Text(
+                                      'Cargando más clientes...',
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        color: Colors.grey.shade600,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            );
+                          }
+
+                          final client = clientProvider.clients[index];
+                          return ClientListItem(
+                            client: client,
+                            onTap: () => _onClientTap(client),
+                            onCall:
+                                client.telefono != null &&
+                                    client.telefono!.isNotEmpty
+                                ? () => _makePhoneCall(client.telefono!)
+                                : null,
+                            onWhatsApp:
+                                client.telefono != null &&
+                                    client.telefono!.isNotEmpty
+                                ? () => _sendWhatsAppMessage(client.telefono!)
+                                : null,
+                            onEdit: () => _navigateToEditClient(client),
+                          );
+                        },
+                      ),
+                    );
+                  },
+                ),
               ),
-            ),
           ],
         ),
       ),
@@ -508,10 +507,14 @@ class _ClientListScreenState extends State<ClientListScreen> {
                     valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                   ),
                 )
-              : const Icon(Icons.add, size: 24),
+              : const Icon(Icons.add, size: 24, color: Colors.white),
           label: const Text(
             'Nuevo Cliente',
-            style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16),
+            style: TextStyle(
+              fontWeight: FontWeight.w600,
+              fontSize: 16,
+              color: Colors.white,
+            ),
           ),
         ),
       ),
@@ -526,8 +529,10 @@ class _ClientListScreenState extends State<ClientListScreen> {
     Color? color,
   }) {
     final Color chipColor = color ?? Colors.blue;
-    final Color lightColor = Color.lerp(chipColor, Colors.white, 0.3) ?? chipColor;
-    final Color darkColor = Color.lerp(chipColor, Colors.black, 0.2) ?? chipColor;
+    final Color lightColor =
+        Color.lerp(chipColor, Colors.white, 0.3) ?? chipColor;
+    final Color darkColor =
+        Color.lerp(chipColor, Colors.black, 0.2) ?? chipColor;
 
     return GestureDetector(
       onTap: onTap,
@@ -536,9 +541,7 @@ class _ClientListScreenState extends State<ClientListScreen> {
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         decoration: BoxDecoration(
           gradient: isSelected
-              ? LinearGradient(
-                  colors: [lightColor, darkColor],
-                )
+              ? LinearGradient(colors: [lightColor, darkColor])
               : null,
           color: isSelected ? null : Colors.grey.shade100,
           borderRadius: BorderRadius.circular(20),
@@ -745,11 +748,17 @@ class ClientListItem extends StatelessWidget {
                       ),
                       child: ClipRRect(
                         borderRadius: BorderRadius.circular(10),
-                        child: client.fotoPerfil != null && client.fotoPerfil!.isNotEmpty
+                        child:
+                            client.fotoPerfil != null &&
+                                client.fotoPerfil!.isNotEmpty
                             ? _buildProfileImage(client.fotoPerfil!)
                             : Container(
                                 color: Colors.green.shade50,
-                                child: const Icon(Icons.person, color: Colors.green, size: 32),
+                                child: const Icon(
+                                  Icons.person,
+                                  color: Colors.green,
+                                  size: 32,
+                                ),
                               ),
                       ),
                     ),
@@ -761,9 +770,7 @@ class ClientListItem extends StatelessWidget {
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _buildClientInfo(),
-                    ],
+                    children: [_buildClientInfo()],
                   ),
                 ),
 
@@ -845,26 +852,36 @@ class ClientListItem extends StatelessWidget {
           ),
 
         // Localidad y Código
-        if (client.localidad != null || (client.codigoCliente != null && client.codigoCliente!.isNotEmpty))
+        if (client.localidad != null ||
+            (client.codigoCliente != null && client.codigoCliente!.isNotEmpty))
           Padding(
             padding: const EdgeInsets.only(top: 4),
             child: Row(
               children: [
                 if (client.localidad != null) ...[
-                  Icon(Icons.location_on, size: 14, color: Colors.grey.shade600),
+                  Icon(
+                    Icons.location_on,
+                    size: 14,
+                    color: Colors.grey.shade600,
+                  ),
                   const SizedBox(width: 4),
                   Flexible(
                     child: Text(
                       _getLocalidadName(client.localidad),
-                      style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.grey.shade600,
+                      ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),
-                  if (client.codigoCliente != null && client.codigoCliente!.isNotEmpty)
+                  if (client.codigoCliente != null &&
+                      client.codigoCliente!.isNotEmpty)
                     const SizedBox(width: 8),
                 ],
-                if (client.codigoCliente != null && client.codigoCliente!.isNotEmpty)
+                if (client.codigoCliente != null &&
+                    client.codigoCliente!.isNotEmpty)
                   Text(
                     'Cód: ${client.codigoCliente}',
                     style: TextStyle(
@@ -884,23 +901,31 @@ class ClientListItem extends StatelessWidget {
             child: Wrap(
               spacing: 4,
               runSpacing: 4,
-              children: client.categorias!.take(2).map((c) => Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [Colors.blue.shade400, Colors.blue.shade600],
-                  ),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Text(
-                  c.nombre ?? c.clave ?? 'Cat',
-                  style: const TextStyle(
-                    fontSize: 10,
-                    color: Colors.white,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              )).toList(),
+              children: client.categorias!
+                  .take(2)
+                  .map(
+                    (c) => Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 3,
+                      ),
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [Colors.blue.shade400, Colors.blue.shade600],
+                        ),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Text(
+                        c.nombre ?? c.clave ?? 'Cat',
+                        style: const TextStyle(
+                          fontSize: 10,
+                          color: Colors.white,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  )
+                  .toList(),
             ),
           ),
       ],
@@ -924,7 +949,9 @@ class ClientListItem extends StatelessWidget {
             borderRadius: BorderRadius.circular(12),
             boxShadow: [
               BoxShadow(
-                color: (client.activo ? Colors.green : Colors.red).withOpacity(0.3),
+                color: (client.activo ? Colors.green : Colors.red).withOpacity(
+                  0.3,
+                ),
                 blurRadius: 6,
                 offset: const Offset(0, 2),
               ),
@@ -979,7 +1006,11 @@ class ClientListItem extends StatelessWidget {
                     shape: BoxShape.circle,
                   ),
                   child: IconButton(
-                    icon: Icon(Icons.call, color: Colors.green.shade700, size: 18),
+                    icon: Icon(
+                      Icons.call,
+                      color: Colors.green.shade700,
+                      size: 18,
+                    ),
                     onPressed: onCall,
                     tooltip: 'Llamar',
                     padding: const EdgeInsets.all(6),
@@ -994,7 +1025,11 @@ class ClientListItem extends StatelessWidget {
                     shape: BoxShape.circle,
                   ),
                   child: IconButton(
-                    icon: Icon(Icons.message, color: Colors.green.shade700, size: 18),
+                    icon: Icon(
+                      Icons.message,
+                      color: Colors.green.shade700,
+                      size: 18,
+                    ),
                     onPressed: onWhatsApp,
                     tooltip: 'WhatsApp',
                     padding: const EdgeInsets.all(6),
@@ -1053,11 +1088,7 @@ class ClientListItem extends StatelessWidget {
         color: Colors.green.shade50,
         borderRadius: BorderRadius.circular(6),
       ),
-      child: const Icon(
-        Icons.person_outline,
-        color: Colors.green,
-        size: 28,
-      ),
+      child: const Icon(Icons.person_outline, color: Colors.green, size: 28),
     );
   }
 

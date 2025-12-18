@@ -4,7 +4,9 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../models/models.dart';
 import '../../providers/providers.dart';
-import '../../utils.dart';
+import '../../utils/utils.dart';
+import '../../widgets/widgets.dart';
+import '../../config/config.dart';
 import 'client_form_screen.dart';
 import 'direccion_form_screen_for_client.dart';
 
@@ -173,42 +175,15 @@ class _ClientDetailScreenState extends State<ClientDetailScreen>
     }
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text(_client!.nombre, style: const TextStyle(fontWeight: FontWeight.bold)),
-        elevation: 0,
-        flexibleSpace: Container(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [Colors.green.shade700, Colors.teal.shade800],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
-          ),
-        ),
+      appBar: CustomGradientAppBar(
+        titleWidget: Text(_client!.nombre, style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
+        customGradient: AppGradients.green,
         actions: [
-          Container(
-            margin: const EdgeInsets.only(right: 4),
-            decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.2),
-              shape: BoxShape.circle,
-            ),
-            child: IconButton(
-              icon: const Icon(Icons.edit),
-              onPressed: () => _navigateToEditClient(),
-              tooltip: 'Editar cliente',
-            ),
-          ),
-          Container(
-            margin: const EdgeInsets.only(right: 8),
-            decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.2),
-              shape: BoxShape.circle,
-            ),
-            child: IconButton(
-              icon: const Icon(Icons.delete),
-              onPressed: _showDeleteDialog,
-              tooltip: 'Eliminar cliente',
-            ),
+          EditAction(onEdit: () => _navigateToEditClient()),
+          IconButton(
+            icon: const Icon(Icons.delete, color: Colors.white),
+            onPressed: _showDeleteDialog,
+            tooltip: 'Eliminar cliente',
           ),
         ],
         bottom: PreferredSize(

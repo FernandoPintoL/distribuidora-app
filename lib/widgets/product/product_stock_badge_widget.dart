@@ -15,10 +15,7 @@ class ProductStockBadgeWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: 8,
-        vertical: 6,
-      ),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
       decoration: BoxDecoration(
         color: status.backgroundWithOpacity,
         borderRadius: BorderRadius.circular(20),
@@ -27,14 +24,10 @@ class ProductStockBadgeWidget extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(
-            status.icon,
-            size: 14,
-            color: status.color,
-          ),
+          Icon(status.icon, size: 14, color: status.color),
           const SizedBox(width: 4),
           Text(
-            '$stock un',
+            '$stock',
             style: TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.bold,
