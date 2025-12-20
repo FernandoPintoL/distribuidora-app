@@ -63,9 +63,20 @@ android {
     }
 }
 
+configurations.all {
+    exclude(group = "androidx.camera", module = "camera-android-camerax")
+    exclude(group = "androidx.camera", module = "camera-core")
+    resolutionStrategy {
+        // Use stable camera-core instead of RC
+        force("androidx.camera:camera-core:1.4.1")
+    }
+}
+
 dependencies {
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")
     implementation("androidx.concurrent:concurrent-futures:1.1.0")
+    implementation("org.jspecify:jspecify:0.3.0")
+    implementation("androidx.camera:camera-core:1.4.1")
 }
 
 flutter {
