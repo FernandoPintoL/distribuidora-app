@@ -13,6 +13,11 @@ android {
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
 
+    testOptions {
+        unitTests.isIncludeAndroidResources = false
+        unitTests.isReturnDefaultValues = true
+    }
+
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
@@ -60,6 +65,7 @@ android {
 
 dependencies {
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")
+    implementation("androidx.concurrent:concurrent-futures:1.1.0")
 }
 
 flutter {

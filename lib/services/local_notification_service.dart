@@ -24,7 +24,7 @@ class LocalNotificationService {
 
     // Configuración para Android
     const AndroidInitializationSettings androidSettings =
-        AndroidInitializationSettings('@mipmap/ic_launcher');
+        AndroidInitializationSettings('@drawable/ic_notification');
 
     // Configuración para iOS
     const DarwinInitializationSettings iOSSettings =
@@ -85,6 +85,16 @@ class LocalNotificationService {
       importance: Importance.defaultImportance,
     );
 
+    const AndroidNotificationChannel proformasChannel =
+        AndroidNotificationChannel(
+      'proformas',
+      'Proformas',
+      description: 'Notificaciones de proformas (aprobadas, rechazadas, convertidas)',
+      importance: Importance.high,
+      enableVibration: true,
+      enableLights: true,
+    );
+
     await _notificationsPlugin
         .resolvePlatformSpecificImplementation<
             AndroidFlutterLocalNotificationsPlugin>()
@@ -99,6 +109,11 @@ class LocalNotificationService {
         .resolvePlatformSpecificImplementation<
             AndroidFlutterLocalNotificationsPlugin>()
         ?.createNotificationChannel(recordatoriosChannel);
+
+    await _notificationsPlugin
+        .resolvePlatformSpecificImplementation<
+            AndroidFlutterLocalNotificationsPlugin>()
+        ?.createNotificationChannel(proformasChannel);
   }
 
   /// Solicitar permisos en iOS
@@ -195,6 +210,7 @@ class LocalNotificationService {
         priority: Priority.high,
         enableVibration: true,
         playSound: true,
+        icon: '@drawable/ic_notification',
         styleInformation: const BigTextStyleInformation(''),
       );
 
@@ -231,6 +247,8 @@ class LocalNotificationService {
         return 'Cambios de Estado';
       case 'recordatorios':
         return 'Recordatorios';
+      case 'proformas':
+        return 'Proformas';
       default:
         return 'Notificaciones';
     }
@@ -245,6 +263,8 @@ class LocalNotificationService {
         return 'Notificaciones de cambios en estado de entregas';
       case 'recordatorios':
         return 'Recordatorios de entregas pendientes';
+      case 'proformas':
+        return 'Notificaciones de proformas (aprobadas, rechazadas, convertidas)';
       default:
         return 'Notificaciones de la aplicación';
     }
@@ -284,6 +304,119 @@ class LocalNotificationService {
       default:
         return state;
     }
+  }
+
+  /// Mostrar notificación de proforma aprobada
+  Future<void> showProformaApprovedNotification({
+    required String numero,
+    String? clientName,
+  }) async {
+    await _showNotification(
+      id: numero.hashCode,
+      title: '✅ Proforma Aprobada',
+      body: 'La proforma $numero ha sido aprobada${clientName != null ? ' - Cliente: $clientName' : ''}',
+      channelId: 'proformas',
+      payload: 'proforma_$numero',
+    );
+  }
+
+  /// Mostrar notificación de proforma rechazada
+  Future<void> showProformaRejectedNotification({
+    required String numero,
+    String? motivo,
+  }) async {
+    await _showNotification(
+      id: numero.hashCode,
+      title: '❌ Proforma Rechazada',
+      body: 'La proforma $numero fue rechazada${motivo != null ? ': $motivo' : ''}',
+      channelId: 'proformas',
+      payload: 'proforma_$numero',
+    );
+  }
+
+  /// Mostrar notificación de proforma convertida a venta
+  Future<void> showProformaConvertedNotification({
+    required String numero,
+    String? ventaNumero,
+  }) async {
+    await _showNotification(
+      id: numero.hashCode,
+      title: '🛒 Proforma Convertida',
+      body: 'La proforma $numero se convirtió en venta${ventaNumero != null ? ' #$ventaNumero' : ''}',
+      channelId: 'proformas',
+      payload: 'proforma_$numero',
+    );
+  }
+
+  /// Mostrar notificación de envío programado
+  Future<void> showEnvioProgramadoNotification({
+    required int envioId,
+    String? cliente,
+    String? fecha,
+  }) async {
+    await _showNotification(
+      id: envioId,
+      title: '📦 Envío Programado',
+      body: 'Nuevo envío #$envioId${cliente != null ? ' para $cliente' : ''}${fecha != null ? ' - $fecha' : ''}',
+      channelId: 'cambio_estados',
+      payload: 'envio_$envioId',
+    );
+  }
+
+  /// Mostrar notificación de envío en ruta
+  Future<void> showEnvioEnRutaNotification({
+    required int envioId,
+    String? chofer,
+  }) async {
+    await _showNotification(
+      id: envioId,
+      title: '🚚 Envío En Ruta',
+      body: 'El envío #$envioId está en camino${chofer != null ? ' - Chofer: $chofer' : ''}',
+      channelId: 'cambio_estados',
+      payload: 'envio_$envioId',
+    );
+  }
+
+  /// Mostrar notificación de envío próximo
+  Future<void> showEnvioProximoNotification({
+    required int envioId,
+    String? direccion,
+  }) async {
+    await _showNotification(
+      id: envioId,
+      title: '📍 Envío Próximo',
+      body: 'El envío #$envioId está por llegar${direccion != null ? ' a $direccion' : ''}',
+      channelId: 'cambio_estados',
+      payload: 'envio_$envioId',
+    );
+  }
+
+  /// Mostrar notificación de envío entregado
+  Future<void> showEnvioEntregadoNotification({
+    required int envioId,
+    String? cliente,
+  }) async {
+    await _showNotification(
+      id: envioId,
+      title: '✅ Envío Entregado',
+      body: 'El envío #$envioId fue entregado exitosamente${cliente != null ? ' a $cliente' : ''}',
+      channelId: 'cambio_estados',
+      payload: 'envio_$envioId',
+    );
+  }
+
+  /// Mostrar notificación de entrega rechazada/con novedad
+  Future<void> showEntregaRechazadaNotification({
+    required int envioId,
+    String? motivo,
+  }) async {
+    await _showNotification(
+      id: envioId,
+      title: '⚠️ Entrega con Novedad',
+      body: 'Problema con envío #$envioId${motivo != null ? ': $motivo' : ''}',
+      channelId: 'cambio_estados',
+      payload: 'envio_$envioId',
+    );
   }
 
   /// Cancelar notificación

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'dart:async';
 import 'package:provider/provider.dart';
 import '../services/services.dart';
+import '../services/local_notification_service.dart';
 import '../providers/providers.dart';
 
 /// Widget que escucha eventos WebSocket y muestra notificaciones en tiempo real
@@ -28,6 +29,7 @@ class RealtimeNotificationsListener extends StatefulWidget {
 class _RealtimeNotificationsListenerState
     extends State<RealtimeNotificationsListener> {
   final WebSocketService _webSocketService = WebSocketService();
+  final LocalNotificationService _notificationService = LocalNotificationService();
   StreamSubscription? _proformaSubscription;
   StreamSubscription? _envioSubscription;
 
@@ -93,8 +95,17 @@ class _RealtimeNotificationsListenerState
 
   void _mostrarNotificacionProformaAprobada(Map<String, dynamic> data) {
     final numero = data['numero'] as String?;
+    final clientName = data['cliente_nombre'] as String?;
 
     if (!mounted) return;
+
+    // ✅ Mostrar notificación NATIVA del sistema
+    if (numero != null) {
+      _notificationService.showProformaApprovedNotification(
+        numero: numero,
+        clientName: clientName,
+      );
+    }
 
     // ✅ Recargar solo las estadísticas (contador) sin cargar todas las notificaciones
     context.read<NotificationProvider>().loadStats();
@@ -144,6 +155,14 @@ class _RealtimeNotificationsListenerState
 
     if (!mounted) return;
 
+    // ✅ Mostrar notificación NATIVA del sistema
+    if (numero != null) {
+      _notificationService.showProformaRejectedNotification(
+        numero: numero,
+        motivo: motivo,
+      );
+    }
+
     // ✅ Recargar solo las estadísticas (contador) sin cargar todas las notificaciones
     context.read<NotificationProvider>().loadStats();
 
@@ -186,9 +205,18 @@ class _RealtimeNotificationsListenerState
   }
 
   void _mostrarNotificacionProformaConvertida(Map<String, dynamic> data) {
+    final numero = data['numero'] as String?;
     final ventaNumero = data['venta_numero'] as String?;
 
     if (!mounted) return;
+
+    // ✅ Mostrar notificación NATIVA del sistema
+    if (numero != null) {
+      _notificationService.showProformaConvertedNotification(
+        numero: numero,
+        ventaNumero: ventaNumero,
+      );
+    }
 
     // ✅ Recargar solo las estadísticas (contador) sin cargar todas las notificaciones
     context.read<NotificationProvider>().loadStats();
@@ -226,9 +254,20 @@ class _RealtimeNotificationsListenerState
   }
 
   void _mostrarNotificacionEnvioProgramado(Map<String, dynamic> data) {
+    final envioId = data['id'] as int?;
+    final cliente = data['cliente_nombre'] as String?;
     final fechaProgramada = data['fecha_programada'] as String?;
 
     if (!mounted) return;
+
+    // ✅ Mostrar notificación NATIVA del sistema
+    if (envioId != null) {
+      _notificationService.showEnvioProgramadoNotification(
+        envioId: envioId,
+        cliente: cliente,
+        fecha: fechaProgramada,
+      );
+    }
 
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -263,7 +302,18 @@ class _RealtimeNotificationsListenerState
   }
 
   void _mostrarNotificacionEnvioEnRuta(Map<String, dynamic> data) {
+    final envioId = data['id'] as int?;
+    final chofer = data['chofer_nombre'] as String?;
+
     if (!mounted) return;
+
+    // ✅ Mostrar notificación NATIVA del sistema
+    if (envioId != null) {
+      _notificationService.showEnvioEnRutaNotification(
+        envioId: envioId,
+        chofer: chofer,
+      );
+    }
 
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -304,10 +354,20 @@ class _RealtimeNotificationsListenerState
   }
 
   void _mostrarNotificacionEnvioProximo(Map<String, dynamic> data) {
+    final envioId = data['id'] as int?;
+    final direccion = data['direccion'] as String?;
     final tiempoEstimado = data['tiempo_estimado_min'] as int?;
     final distanciaKm = data['distancia_km'] as double?;
 
     if (!mounted) return;
+
+    // ✅ Mostrar notificación NATIVA del sistema
+    if (envioId != null) {
+      _notificationService.showEnvioProximoNotification(
+        envioId: envioId,
+        direccion: direccion,
+      );
+    }
 
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -344,7 +404,18 @@ class _RealtimeNotificationsListenerState
   }
 
   void _mostrarNotificacionEnvioEntregado(Map<String, dynamic> data) {
+    final envioId = data['id'] as int?;
+    final cliente = data['cliente_nombre'] as String?;
+
     if (!mounted) return;
+
+    // ✅ Mostrar notificación NATIVA del sistema
+    if (envioId != null) {
+      _notificationService.showEnvioEntregadoNotification(
+        envioId: envioId,
+        cliente: cliente,
+      );
+    }
 
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -379,9 +450,18 @@ class _RealtimeNotificationsListenerState
   }
 
   void _mostrarNotificacionEntregaRechazada(Map<String, dynamic> data) {
+    final envioId = data['id'] as int?;
     final motivo = data['motivo'] as String?;
 
     if (!mounted) return;
+
+    // ✅ Mostrar notificación NATIVA del sistema
+    if (envioId != null) {
+      _notificationService.showEntregaRechazadaNotification(
+        envioId: envioId,
+        motivo: motivo,
+      );
+    }
 
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(

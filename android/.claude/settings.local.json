@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(./gradlew build:*)",
+      "Bash(./gradlew:*)",
+      "Bash(timeout 300 ./gradlew build:*)",
+      "Bash(timeout 600 ./gradlew build:*)",
+      "Bash(where /r \"C:\\\\Program Files\" \"java.exe\")",
+      "Bash(java -version:*)",
+      "Bash(javac:*)",
+      "Bash(git add:*)"
+    ]
+  }
+}
