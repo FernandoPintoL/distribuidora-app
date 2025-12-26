@@ -2,12 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../base/base_home_screen.dart';
 import '../../models/navigation_item.dart';
-import '../../providers/providers.dart';
 import '../../models/models.dart';
+import '../../providers/providers.dart';
 import '../screens.dart';
 import '../perfil/perfil_screen.dart';
 import '../../widgets/widgets.dart';
-import '../../config/config.dart';
 
 /// Pantalla principal para usuarios con rol CLIENTE
 ///
@@ -113,17 +112,17 @@ class _DashboardTab extends StatelessWidget {
   }
 
   Widget _buildWelcomeBanner(BuildContext context, String userName) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     return Container(
       width: MediaQuery.of(context).size.width,
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: [
-            /* Theme.of(context).primaryColor,
-            Theme.of(context).primaryColor.withValues(alpha: 0.7), */
-            Colors.blueAccent,
-            Colors.lightBlueAccent.withValues(alpha: 0.7),
-          ],
+          colors: isDark
+              ? [Colors.teal.shade700, Colors.teal.shade900]
+              : [Colors.teal.shade600, Colors.teal.shade800],
         ),
         borderRadius: BorderRadius.circular(16),
       ),
@@ -149,12 +148,21 @@ class _DashboardTab extends StatelessWidget {
   }
 
   Widget _buildQuickActions(BuildContext context) {
+    // Obtener acceso al estado del BaseHomeScreen para navegar entre tabs
+    final homeState = context.findAncestorStateOfType<_HomeClienteScreenState>();
+    final pedidoProvider = context.watch<PedidoProvider>();
+
+    // Calcular cantidad de pedidos en ruta (EN_RUTA + LLEGO)
+    final pedidosEnRuta = pedidoProvider.pedidosEnProceso.where((p) =>
+      p.estado == EstadoPedido.EN_RUTA || p.estado == EstadoPedido.LLEGO
+    ).length;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
+        Text(
           'Acciones Rápidas',
-          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+          style: Theme.of(context).textTheme.headlineSmall,
         ),
         const SizedBox(height: 12),
         Row(
@@ -165,7 +173,8 @@ class _DashboardTab extends StatelessWidget {
                 title: 'Ver Productos',
                 color: Colors.blue,
                 onTap: () {
-                  Navigator.pushNamed(context, '/products');
+                  // Navegar al tab de Productos (índice 1)
+                  homeState?.navigateToIndex(1);
                 },
               ),
             ),
@@ -176,6 +185,7 @@ class _DashboardTab extends StatelessWidget {
                 title: 'Mi Carrito',
                 color: Colors.orange,
                 onTap: () {
+                  // El carrito sí navega a otra página
                   Navigator.pushNamed(context, '/carrito');
                 },
               ),
@@ -191,7 +201,8 @@ class _DashboardTab extends StatelessWidget {
                 title: 'Mis Pedidos',
                 color: Colors.blue,
                 onTap: () {
-                  Navigator.pushNamed(context, '/mis-pedidos');
+                  // Navegar al tab de Mis Pedidos (índice 2)
+                  homeState?.navigateToIndex(2);
                 },
               ),
             ),
@@ -201,8 +212,13 @@ class _DashboardTab extends StatelessWidget {
                 icon: Icons.local_shipping,
                 title: 'Seguimiento',
                 color: Colors.purple,
+                badgeCount: pedidosEnRuta, // Mostrar cantidad de pedidos en ruta
                 onTap: () {
-                  Navigator.pushNamed(context, '/mis-pedidos');
+                  // Aplicar filtro de pedidos EN_RUTA y navegar al tab
+                  context.read<PedidoProvider>().aplicarFiltroEstado(EstadoPedido.EN_RUTA);
+
+                  // Navegar al tab de Mis Pedidos (índice 2)
+                  homeState?.navigateToIndex(2);
                 },
               ),
             ),
@@ -351,16 +367,20 @@ class _DashboardTab extends StatelessWidget {
   }
 
   Widget _buildViewAllPedidosButton(BuildContext context) {
+    // Obtener acceso al estado del BaseHomeScreen para navegar entre tabs
+    final homeState = context.findAncestorStateOfType<_HomeClienteScreenState>();
+
     return SizedBox(
       width: double.infinity,
       child: ElevatedButton.icon(
         onPressed: () {
-          Navigator.pushNamed(context, '/mis-pedidos');
+          // Navegar al tab de Mis Pedidos (índice 2)
+          homeState?.navigateToIndex(2);
         },
         icon: const Icon(Icons.receipt_long),
         label: const Text('Ver Todos Mis Pedidos'),
         style: ElevatedButton.styleFrom(
-          backgroundColor: Colors.blueAccent,
+          backgroundColor: Colors.teal,
           padding: const EdgeInsets.symmetric(vertical: 16),
         ),
       ),
@@ -374,12 +394,14 @@ class _QuickActionCard extends StatelessWidget {
   final String title;
   final Color color;
   final VoidCallback onTap;
+  final int? badgeCount; // Contador opcional para mostrar badge
 
   const _QuickActionCard({
     required this.icon,
     required this.title,
     required this.color,
     required this.onTap,
+    this.badgeCount,
   });
 
   @override
@@ -393,7 +415,40 @@ class _QuickActionCard extends StatelessWidget {
           padding: const EdgeInsets.all(16),
           child: Column(
             children: [
-              Icon(icon, size: 32, color: color),
+              // Icono con badge opcional
+              Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  Icon(icon, size: 32, color: color),
+                  if (badgeCount != null && badgeCount! > 0)
+                    Positioned(
+                      right: -8,
+                      top: -8,
+                      child: Container(
+                        padding: const EdgeInsets.all(4),
+                        decoration: BoxDecoration(
+                          color: Colors.red,
+                          shape: BoxShape.circle,
+                          border: Border.all(color: Colors.white, width: 2),
+                        ),
+                        constraints: const BoxConstraints(
+                          minWidth: 20,
+                          minHeight: 20,
+                        ),
+                        child: Center(
+                          child: Text(
+                            badgeCount! > 9 ? '9+' : '$badgeCount',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                ],
+              ),
               const SizedBox(height: 8),
               Text(
                 title,

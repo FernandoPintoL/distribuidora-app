@@ -39,12 +39,10 @@ class _LoginScreenState extends State<LoginScreen>
       CurvedAnimation(parent: _animationController, curve: Curves.easeIn),
     );
 
-    _slideAnimation = Tween<Offset>(
-      begin: const Offset(0, 0.3),
-      end: Offset.zero,
-    ).animate(
-      CurvedAnimation(parent: _animationController, curve: Curves.easeOut),
-    );
+    _slideAnimation =
+        Tween<Offset>(begin: const Offset(0, 0.3), end: Offset.zero).animate(
+          CurvedAnimation(parent: _animationController, curve: Curves.easeOut),
+        );
 
     _animationController.forward();
 
@@ -101,7 +99,7 @@ class _LoginScreenState extends State<LoginScreen>
               colors: [
                 Theme.of(context).primaryColor,
                 Theme.of(context).primaryColor.withValues(alpha: 0.7),
-                Theme.of(context).colorScheme.secondary,
+                // Theme.of(context).colorScheme.secondary,
               ],
             ),
           ),
@@ -125,16 +123,20 @@ class _LoginScreenState extends State<LoginScreen>
   }
 
   Widget _buildLoginCard(BuildContext context) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+
     return Consumer<AuthProvider>(
       builder: (context, authProvider, child) {
         return Container(
           constraints: const BoxConstraints(maxWidth: 400),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: Theme.of(context).cardColor,
             borderRadius: BorderRadius.circular(24),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withValues(alpha: 0.2),
+                color: isDarkMode
+                    ? Colors.black.withValues(alpha: 0.5)
+                    : Colors.black.withValues(alpha: 0.2),
                 blurRadius: 20,
                 offset: const Offset(0, 10),
               ),
@@ -162,8 +164,8 @@ class _LoginScreenState extends State<LoginScreen>
                   const SizedBox(height: 16),
 
                   // Indicador de métodos biométricos disponibles
-                  _buildBiometricAvailabilityIndicator(authProvider),
-                  const SizedBox(height: 24),
+                  /*  _buildBiometricAvailabilityIndicator(authProvider),
+                  const SizedBox(height: 24), */
 
                   // Mostrar error si existe
                   if (authProvider.errorMessage != null &&
@@ -179,7 +181,6 @@ class _LoginScreenState extends State<LoginScreen>
                   // Botón de autenticación biométrica
                   if (_biometricAvailable && _biometricEnabled)
                     _buildBiometricButton(authProvider),
-
                   const SizedBox(height: 24),
 
                   // Texto de ayuda
@@ -222,62 +223,63 @@ class _LoginScreenState extends State<LoginScreen>
             child: Image(
               image: AssetImage('assets/icons/icon.png'),
               fit: BoxFit.contain,
-            )
+            ),
           ),
         ),
         const SizedBox(height: 24),
         Text(
           'Distribuidora Paucara',
-          style: TextStyle(
-            fontSize: 28,
+          style: Theme.of(context).textTheme.headlineMedium?.copyWith(
             fontWeight: FontWeight.bold,
-            color: Theme.of(context).primaryColor,
+            color: Theme.of(context).colorScheme.primary,
           ),
           textAlign: TextAlign.center,
         ),
         const SizedBox(height: 8),
-        Text(
+        /* Text(
           'Bienvenido de vuelta',
-          style: TextStyle(
-            fontSize: 16,
-            color: Colors.grey.shade600,
-          ),
+          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
           textAlign: TextAlign.center,
-        ),
+        ), */
       ],
     );
   }
 
   Widget _buildUsernameField() {
+    final colorScheme = Theme.of(context).colorScheme;
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+
     return TextFormField(
       controller: _loginController,
       decoration: InputDecoration(
         labelText: 'Usuario o Email',
         hintText: 'Ingresa tu usuario',
-        prefixIcon: Icon(
-          Icons.person_outline,
-          color: Theme.of(context).primaryColor,
-        ),
+        prefixIcon: Icon(Icons.person_outline, color: colorScheme.primary),
         filled: true,
-        fillColor: Colors.grey.shade50,
+        fillColor: isDarkMode
+            ? colorScheme.surfaceContainerHighest
+            : colorScheme.surfaceContainerHighest,
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
           borderSide: BorderSide.none,
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: Colors.grey.shade200),
+          borderSide: BorderSide(
+            color: isDarkMode
+                ? colorScheme.outline.withValues(alpha: 0.3)
+                : colorScheme.outline.withValues(alpha: 0.2),
+          ),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(
-            color: Theme.of(context).primaryColor,
-            width: 2,
-          ),
+          borderSide: BorderSide(color: colorScheme.primary, width: 2),
         ),
         errorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: Colors.red),
+          borderSide: BorderSide(color: colorScheme.error),
         ),
         contentPadding: const EdgeInsets.symmetric(
           horizontal: 16,
@@ -295,20 +297,22 @@ class _LoginScreenState extends State<LoginScreen>
   }
 
   Widget _buildPasswordField() {
+    final colorScheme = Theme.of(context).colorScheme;
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+
     return TextFormField(
       controller: _passwordController,
       obscureText: _obscurePassword,
       decoration: InputDecoration(
         labelText: 'Contraseña',
         hintText: 'Ingresa tu contraseña',
-        prefixIcon: Icon(
-          Icons.lock_outline,
-          color: Theme.of(context).primaryColor,
-        ),
+        prefixIcon: Icon(Icons.lock_outline, color: colorScheme.primary),
         suffixIcon: IconButton(
           icon: Icon(
-            _obscurePassword ? Icons.visibility_outlined : Icons.visibility_off_outlined,
-            color: Colors.grey.shade600,
+            _obscurePassword
+                ? Icons.visibility_outlined
+                : Icons.visibility_off_outlined,
+            color: colorScheme.onSurfaceVariant,
           ),
           onPressed: () {
             setState(() {
@@ -317,25 +321,28 @@ class _LoginScreenState extends State<LoginScreen>
           },
         ),
         filled: true,
-        fillColor: Colors.grey.shade50,
+        fillColor: isDarkMode
+            ? colorScheme.surfaceContainerHighest
+            : colorScheme.surfaceContainerHighest,
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
           borderSide: BorderSide.none,
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: Colors.grey.shade200),
+          borderSide: BorderSide(
+            color: isDarkMode
+                ? colorScheme.outline.withValues(alpha: 0.3)
+                : colorScheme.outline.withValues(alpha: 0.2),
+          ),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(
-            color: Theme.of(context).primaryColor,
-            width: 2,
-          ),
+          borderSide: BorderSide(color: colorScheme.primary, width: 2),
         ),
         errorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: Colors.red),
+          borderSide: BorderSide(color: colorScheme.error),
         ),
         contentPadding: const EdgeInsets.symmetric(
           horizontal: 16,
@@ -357,6 +364,8 @@ class _LoginScreenState extends State<LoginScreen>
   }
 
   Widget _buildRememberMeRow() {
+    final colorScheme = Theme.of(context).colorScheme;
+
     return Row(
       children: [
         Checkbox(
@@ -366,22 +375,16 @@ class _LoginScreenState extends State<LoginScreen>
               _rememberMe = value ?? false;
             });
           },
-          activeColor: Theme.of(context).primaryColor,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(4),
-          ),
+          activeColor: colorScheme.primary,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
         ),
-        const Text(
+        Text(
           'Recordar mis credenciales',
-          style: TextStyle(fontSize: 14),
+          style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontSize: 14),
         ),
         const Spacer(),
         if (_biometricAvailable && _biometricEnabled)
-          Icon(
-            Icons.fingerprint,
-            color: Theme.of(context).primaryColor,
-            size: 20,
-          ),
+          Icon(Icons.fingerprint, color: colorScheme.primary, size: 20),
       ],
     );
   }
@@ -391,30 +394,38 @@ class _LoginScreenState extends State<LoginScreen>
       return const SizedBox.shrink();
     }
 
+    final colorScheme = Theme.of(context).colorScheme;
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
     final hasFace = authProvider.hasFaceRecognition;
     final hasFingerprint = authProvider.hasFingerprintRecognition;
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
-        color: Colors.blue.shade50,
+        color: isDarkMode
+            ? colorScheme.primaryContainer.withValues(alpha: 0.3)
+            : colorScheme.primaryContainer.withValues(alpha: 0.5),
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.blue.shade200),
+        border: Border.all(
+          color: isDarkMode
+              ? colorScheme.primary.withValues(alpha: 0.5)
+              : colorScheme.primary.withValues(alpha: 0.3),
+        ),
       ),
       child: Row(
         children: [
           Icon(
             Icons.check_circle_outline,
-            color: Colors.blue.shade700,
+            color: colorScheme.primary,
             size: 18,
           ),
           const SizedBox(width: 8),
           Expanded(
             child: Text(
               'Biometría disponible: ${_getBiometricTypesText(hasFace, hasFingerprint)}',
-              style: TextStyle(
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
                 fontSize: 12,
-                color: Colors.blue.shade700,
+                color: colorScheme.onPrimaryContainer,
                 fontWeight: FontWeight.w500,
               ),
             ),
@@ -436,22 +447,31 @@ class _LoginScreenState extends State<LoginScreen>
   }
 
   Widget _buildErrorMessage(String message) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.red.shade50,
+        color: isDarkMode
+            ? colorScheme.errorContainer.withValues(alpha: 0.3)
+            : colorScheme.errorContainer.withValues(alpha: 0.5),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.red.shade200),
+        border: Border.all(
+          color: isDarkMode
+              ? colorScheme.error.withValues(alpha: 0.5)
+              : colorScheme.error.withValues(alpha: 0.3),
+        ),
       ),
       child: Row(
         children: [
-          Icon(Icons.error_outline, color: Colors.red.shade700, size: 20),
+          Icon(Icons.error_outline, color: colorScheme.error, size: 20),
           const SizedBox(width: 12),
           Expanded(
             child: Text(
               message,
-              style: TextStyle(
-                color: Colors.red.shade700,
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: colorScheme.onErrorContainer,
                 fontSize: 14,
               ),
             ),
@@ -462,26 +482,25 @@ class _LoginScreenState extends State<LoginScreen>
   }
 
   Widget _buildLoginButton(AuthProvider authProvider) {
+    final colorScheme = Theme.of(context).colorScheme;
+
     return SizedBox(
       width: double.infinity,
       height: 56,
       child: ElevatedButton(
         onPressed: authProvider.isLoading ? null : _login,
         style: ElevatedButton.styleFrom(
-          backgroundColor: Theme.of(context).primaryColor,
-          foregroundColor: Colors.white,
+          backgroundColor: colorScheme.primary,
+          foregroundColor: colorScheme.onPrimary,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
           ),
           elevation: 0,
-          shadowColor: Theme.of(context).primaryColor.withValues(alpha: 0.4),
+          shadowColor: colorScheme.primary.withValues(alpha: 0.4),
         ),
         child: const Text(
           'Iniciar Sesión',
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w600,
-          ),
+          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
         ),
       ),
     );
@@ -497,19 +516,21 @@ class _LoginScreenState extends State<LoginScreen>
     final hasFingerprint = authProvider.hasFingerprintRecognition;
     final hasBoth = hasFace && hasFingerprint;
 
+    final colorScheme = Theme.of(context).colorScheme;
+
     return Column(
       children: [
         Row(
           children: [
-            Expanded(child: Divider(color: Colors.grey.shade300)),
+            Expanded(child: Divider(color: colorScheme.outlineVariant)),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: Text(
                 'o',
-                style: TextStyle(color: Colors.grey.shade600),
+                style: TextStyle(color: colorScheme.onSurfaceVariant),
               ),
             ),
-            Expanded(child: Divider(color: Colors.grey.shade300)),
+            Expanded(child: Divider(color: colorScheme.outlineVariant)),
           ],
         ),
         const SizedBox(height: 16),
@@ -544,7 +565,7 @@ class _LoginScreenState extends State<LoginScreen>
             isLoading: authProvider.isLoading,
             onPressed: _loginWithBiometrics,
           ),
-        ]
+        ],
       ],
     );
   }
@@ -555,16 +576,15 @@ class _LoginScreenState extends State<LoginScreen>
     required bool isLoading,
     required VoidCallback onPressed,
   }) {
+    final colorScheme = Theme.of(context).colorScheme;
+
     return SizedBox(
       width: double.infinity,
       height: 56,
       child: OutlinedButton(
         onPressed: isLoading ? null : onPressed,
         style: OutlinedButton.styleFrom(
-          side: BorderSide(
-            color: Theme.of(context).primaryColor,
-            width: 2,
-          ),
+          side: BorderSide(color: colorScheme.primary, width: 2),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
           ),
@@ -580,11 +600,7 @@ class _LoginScreenState extends State<LoginScreen>
               builder: (context, scale, child) {
                 return Transform.scale(
                   scale: scale,
-                  child: Icon(
-                    icon,
-                    size: 28,
-                    color: Theme.of(context).primaryColor,
-                  ),
+                  child: Icon(icon, size: 28, color: colorScheme.primary),
                 );
               },
             ),
@@ -595,7 +611,7 @@ class _LoginScreenState extends State<LoginScreen>
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w600,
-                  color: Theme.of(context).primaryColor,
+                  color: colorScheme.primary,
                 ),
                 overflow: TextOverflow.ellipsis,
               ),
@@ -607,30 +623,31 @@ class _LoginScreenState extends State<LoginScreen>
   }
 
   Widget _buildHelpText() {
+    final colorScheme = Theme.of(context).colorScheme;
+
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
         Text(
           '¿Olvidaste tu contraseña?',
-          style: TextStyle(
-            color: Colors.grey.shade600,
+          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+            color: colorScheme.onSurfaceVariant,
             fontSize: 14,
           ),
         ),
         TextButton(
           onPressed: () {
-            // TODO: Implementar recuperación de contraseña
             ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Funcionalidad en desarrollo'),
-                backgroundColor: Colors.orange,
+              SnackBar(
+                content: const Text('Funcionalidad en desarrollo'),
+                backgroundColor: colorScheme.tertiary,
               ),
             );
           },
           child: Text(
             'Recuperar',
             style: TextStyle(
-              color: Theme.of(context).primaryColor,
+              color: colorScheme.primary,
               fontSize: 14,
               fontWeight: FontWeight.w600,
             ),
@@ -641,6 +658,7 @@ class _LoginScreenState extends State<LoginScreen>
   }
 
   void _login() async {
+    print('🤷‍♂️🤷‍♂️🤷‍♂️🤷‍♂️ Iniciando proceso de login...');
     if (_formKey.currentState?.validate() ?? false) {
       final authProvider = context.read<AuthProvider>();
 
@@ -684,9 +702,7 @@ class _LoginScreenState extends State<LoginScreen>
               children: [
                 const Icon(Icons.error_outline, color: Colors.white),
                 const SizedBox(width: 16),
-                Expanded(
-                  child: Text(authProvider.errorMessage!),
-                ),
+                Expanded(child: Text(authProvider.errorMessage!)),
               ],
             ),
             backgroundColor: Colors.red,

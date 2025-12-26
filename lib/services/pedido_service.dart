@@ -103,12 +103,14 @@ class PedidoService {
   /// - estado: Filtrar por estado (opcional)
   /// - fechaDesde: Filtrar desde fecha (opcional)
   /// - fechaHasta: Filtrar hasta fecha (opcional)
+  /// - busqueda: Buscar por número de proforma (opcional)
   Future<PaginatedResponse<Pedido>> getPedidosCliente({
     int page = 1,
     int perPage = 15,
     EstadoPedido? estado,
     DateTime? fechaDesde,
     DateTime? fechaHasta,
+    String? busqueda,
   }) async {
     try {
       final queryParams = <String, dynamic>{'page': page, 'per_page': perPage};
@@ -123,6 +125,10 @@ class PedidoService {
 
       if (fechaHasta != null) {
         queryParams['fecha_hasta'] = fechaHasta.toIso8601String();
+      }
+
+      if (busqueda != null && busqueda.isNotEmpty) {
+        queryParams['busqueda'] = busqueda;
       }
 
       final response = await _apiService.get(

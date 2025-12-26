@@ -30,9 +30,7 @@ class _HomeScreenState extends BaseHomeScreenState<HomeScreen> {
   PreferredSizeWidget get appBar => CustomGradientAppBar(
     title: 'Distribuidora Paucara',
     userRole: _getDynamicRole(),
-    actions: [
-      LogoutAction(onLogout: () => _showLogoutDialog(context)),
-    ],
+    actions: [LogoutAction(onLogout: () => _showLogoutDialog(context))],
   );
 
   String _getDynamicRole() {
@@ -105,7 +103,8 @@ class DashboardPreventista extends StatefulWidget {
   State<DashboardPreventista> createState() => _DashboardPreventistaState();
 }
 
-class _DashboardPreventistaState extends State<DashboardPreventista> with SingleTickerProviderStateMixin {
+class _DashboardPreventistaState extends State<DashboardPreventista>
+    with SingleTickerProviderStateMixin {
   late AnimationController _animationController;
 
   @override
@@ -155,9 +154,7 @@ class _DashboardPreventistaState extends State<DashboardPreventista> with Single
             children: [
               // Header mejorado con gradiente
               Container(
-                decoration: BoxDecoration(
-                  gradient: AppGradients.orange,
-                ),
+                decoration: BoxDecoration(gradient: AppGradients.orange),
                 padding: const EdgeInsets.fromLTRB(20, 32, 20, 24),
                 child: Consumer<AuthProvider>(
                   builder: (context, authProvider, child) {
@@ -269,36 +266,6 @@ class _DashboardPreventistaState extends State<DashboardPreventista> with Single
                             Navigator.pushNamed(context, '/client-form');
                           },
                         ),
-                        _buildGradientCard(
-                          context,
-                          title: 'Pedidos',
-                          subtitle: 'Ver lista',
-                          icon: Icons.shopping_cart_outlined,
-                          gradient: AppGradients.orange,
-                          onTap: () {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text('Función en desarrollo'),
-                                duration: Duration(seconds: 2),
-                              ),
-                            );
-                          },
-                        ),
-                        _buildGradientCard(
-                          context,
-                          title: 'Reportes',
-                          subtitle: 'Análisis',
-                          icon: Icons.bar_chart_outlined,
-                          gradient: AppGradients.red,
-                          onTap: () {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text('Función en desarrollo'),
-                                duration: Duration(seconds: 2),
-                              ),
-                            );
-                          },
-                        ),
                       ],
                     ),
                     const SizedBox(height: 32),
@@ -316,10 +283,12 @@ class _DashboardPreventistaState extends State<DashboardPreventista> with Single
                     Consumer<ClientProvider>(
                       builder: (context, clientProvider, child) {
                         final totalClientes = clientProvider.clients.length;
-                        final clientesActivos =
-                            clientProvider.clients.where((c) => c.activo).length;
+                        final clientesActivos = clientProvider.clients
+                            .where((c) => c.activo)
+                            .length;
                         final porcentajeActivos = totalClientes > 0
-                            ? ((clientesActivos / totalClientes) * 100).toStringAsFixed(1)
+                            ? ((clientesActivos / totalClientes) * 100)
+                                  .toStringAsFixed(1)
                             : '0';
 
                         return Column(
@@ -342,7 +311,8 @@ class _DashboardPreventistaState extends State<DashboardPreventista> with Single
                               title: 'Clientes Activos',
                               current: clientesActivos,
                               total: totalClientes,
-                              percentage: double.tryParse(porcentajeActivos) ?? 0,
+                              percentage:
+                                  double.tryParse(porcentajeActivos) ?? 0,
                               icon: Icons.check_circle,
                               color: Colors.green,
                             ),
@@ -354,7 +324,9 @@ class _DashboardPreventistaState extends State<DashboardPreventista> with Single
                               title: 'Clientes para Reactivar',
                               current: totalClientes - clientesActivos,
                               total: totalClientes,
-                              percentage: 100 - (double.tryParse(porcentajeActivos) ?? 0),
+                              percentage:
+                                  100 -
+                                  (double.tryParse(porcentajeActivos) ?? 0),
                               icon: Icons.warning_rounded,
                               color: Colors.red,
                             ),
@@ -376,8 +348,9 @@ class _DashboardPreventistaState extends State<DashboardPreventista> with Single
 
                     Consumer<ClientProvider>(
                       builder: (context, clientProvider, child) {
-                        final clientesPendientes =
-                            clientProvider.clients.where((c) => !c.activo).toList();
+                        final clientesPendientes = clientProvider.clients
+                            .where((c) => !c.activo)
+                            .toList();
 
                         if (clientesPendientes.isEmpty) {
                           return Container(
@@ -422,7 +395,9 @@ class _DashboardPreventistaState extends State<DashboardPreventista> with Single
                                   context,
                                   nombre: cliente.nombre,
                                   telefono: cliente.telefono ?? 'Sin teléfono',
-                                  localidad: cliente.localidad?.nombre ?? 'Sin localidad',
+                                  localidad:
+                                      cliente.localidad?.nombre ??
+                                      'Sin localidad',
                                 ),
                               );
                             }),
@@ -547,9 +522,7 @@ class _DashboardPreventistaState extends State<DashboardPreventista> with Single
                 color: color.withOpacity(0.15),
                 shape: BoxShape.circle,
               ),
-              child: Center(
-                child: Icon(icon, size: 28, color: color),
-              ),
+              child: Center(child: Icon(icon, size: 28, color: color)),
             ),
             const SizedBox(width: 16),
             Expanded(
@@ -575,10 +548,7 @@ class _DashboardPreventistaState extends State<DashboardPreventista> with Single
                   const SizedBox(height: 4),
                   Text(
                     subtitle,
-                    style: TextStyle(
-                      fontSize: 11,
-                      color: Colors.grey.shade500,
-                    ),
+                    style: TextStyle(fontSize: 11, color: Colors.grey.shade500),
                   ),
                 ],
               ),
@@ -618,9 +588,7 @@ class _DashboardPreventistaState extends State<DashboardPreventista> with Single
                     color: color.withOpacity(0.15),
                     shape: BoxShape.circle,
                   ),
-                  child: Center(
-                    child: Icon(icon, size: 22, color: color),
-                  ),
+                  child: Center(child: Icon(icon, size: 22, color: color)),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
@@ -733,7 +701,11 @@ class _DashboardPreventistaState extends State<DashboardPreventista> with Single
                   const SizedBox(height: 2),
                   Row(
                     children: [
-                      Icon(Icons.location_on, size: 12, color: Colors.grey.shade600),
+                      Icon(
+                        Icons.location_on,
+                        size: 12,
+                        color: Colors.grey.shade600,
+                      ),
                       const SizedBox(width: 4),
                       Expanded(
                         child: Text(

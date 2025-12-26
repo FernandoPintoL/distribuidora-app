@@ -12,8 +12,7 @@ abstract class BaseHomeScreen extends StatefulWidget {
   const BaseHomeScreen({super.key});
 }
 
-abstract class BaseHomeScreenState<T extends BaseHomeScreen>
-    extends State<T> {
+abstract class BaseHomeScreenState<T extends BaseHomeScreen> extends State<T> {
   late int _currentIndex;
 
   /// Lista de items de navegación (definida por subclases)
@@ -63,12 +62,18 @@ abstract class BaseHomeScreenState<T extends BaseHomeScreen>
 
   /// Construye el BottomNavigationBar
   BottomNavigationBar buildBottomNavigationBar() {
+    final colorScheme = Theme.of(context).colorScheme;
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+
     return BottomNavigationBar(
       currentIndex: _currentIndex,
       onTap: onNavigationItemTapped,
       type: BottomNavigationBarType.fixed,
-      selectedItemColor: Theme.of(context).primaryColor,
-      unselectedItemColor: Colors.grey,
+      selectedItemColor: Colors.teal,
+      unselectedItemColor: isDarkMode
+          ? Colors.grey.shade600
+          : Colors.grey.shade500,
+      backgroundColor: isDarkMode ? colorScheme.surface : colorScheme.surface,
       items: navigationItems.map((item) => item.toBottomNavItem()).toList(),
     );
   }

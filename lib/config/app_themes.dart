@@ -1,11 +1,15 @@
 import 'package:flutter/material.dart';
+import 'app_colors.dart';
 
 /// Definición de temas claros y oscuros para la aplicación
+/// ACTUALIZADO: Esquema unificado Gris Neutro
 class AppThemes {
-  // Colores principales
-  static const Color _primaryColor = Color(0xFF22c55e); // Verde
-  static const Color _primaryDark = Color(0xFF16a34a); // Verde oscuro
-  static const Color _accentColor = Color(0xFF3b82f6); // Azul
+  // Colores principales - Gris Neutro
+  static const Color _primaryColor = Color(0xFF6B7280);          // Gris 500
+  static const Color _primaryDark = Color(0xFF4B5563);           // Gris 700
+  static const Color _secondaryColor = Color(0xFF9CA3AF);        // Gris 400
+  static const Color _secondaryLight = Color(0xFFD1D5DB);        // Gris 300
+  static const Color _secondaryDark = Color(0xFF374151);         // Gris 800
 
   // Tema Claro
   static ThemeData get lightTheme {
@@ -17,85 +21,91 @@ class AppThemes {
       cardColor: Colors.white,
 
       // AppBar
-      appBarTheme: AppBarTheme(
+      appBarTheme: const AppBarTheme(
         backgroundColor: _primaryColor,
         foregroundColor: Colors.white,
         elevation: 0,
         centerTitle: false,
       ),
 
-      // Color scheme
+      // Color scheme - ACTUALIZADO con Verde-Teal
       colorScheme: ColorScheme.light(
-        primary: _primaryColor,
-        secondary: _accentColor,
+        primary: _primaryColor,              // Verde
+        secondary: _secondaryColor,          // Teal
+        tertiary: _secondaryLight,           // Teal claro
         surface: Colors.white,
         background: Colors.grey[50]!,
-        error: Colors.red[600]!,
+        error: AppColors.error,              // Rojo moderno
+        onPrimary: Colors.white,
+        onSecondary: Colors.white,
+        onSurface: Colors.black87,
+        onBackground: Colors.black87,
+        onError: Colors.white,
       ),
 
       // Text themes
-      textTheme: TextTheme(
-        displayLarge: const TextStyle(
+      textTheme: const TextTheme(
+        displayLarge: TextStyle(
           fontSize: 32,
           fontWeight: FontWeight.bold,
           color: Colors.black87,
         ),
-        displayMedium: const TextStyle(
+        displayMedium: TextStyle(
           fontSize: 28,
           fontWeight: FontWeight.bold,
           color: Colors.black87,
         ),
-        displaySmall: const TextStyle(
+        displaySmall: TextStyle(
           fontSize: 24,
           fontWeight: FontWeight.bold,
           color: Colors.black87,
         ),
-        headlineMedium: const TextStyle(
+        headlineMedium: TextStyle(
           fontSize: 20,
           fontWeight: FontWeight.bold,
           color: Colors.black87,
         ),
-        headlineSmall: const TextStyle(
+        headlineSmall: TextStyle(
           fontSize: 18,
           fontWeight: FontWeight.w600,
           color: Colors.black87,
         ),
-        titleLarge: const TextStyle(
+        titleLarge: TextStyle(
           fontSize: 16,
           fontWeight: FontWeight.w600,
           color: Colors.black87,
         ),
-        titleMedium: const TextStyle(
+        titleMedium: TextStyle(
           fontSize: 14,
           fontWeight: FontWeight.w600,
           color: Colors.black87,
         ),
-        titleSmall: const TextStyle(
+        titleSmall: TextStyle(
           fontSize: 12,
           fontWeight: FontWeight.w600,
           color: Colors.black87,
         ),
-        bodyLarge: const TextStyle(
+        bodyLarge: TextStyle(
           fontSize: 16,
           fontWeight: FontWeight.normal,
           color: Colors.black87,
         ),
-        bodyMedium: const TextStyle(
+        bodyMedium: TextStyle(
           fontSize: 14,
           fontWeight: FontWeight.normal,
           color: Colors.black87,
         ),
-        bodySmall: const TextStyle(
+        bodySmall: TextStyle(
           fontSize: 12,
           fontWeight: FontWeight.normal,
           color: Colors.black54,
         ),
-        labelLarge: const TextStyle(
+        labelLarge: TextStyle(
           fontSize: 12,
           fontWeight: FontWeight.w600,
           color: Colors.black87,
         ),
-        labelSmall: const TextStyle(
+        labelSmall: TextStyle(
           fontSize: 10,
           fontWeight: FontWeight.normal,
           color: Colors.black54,
@@ -112,13 +122,21 @@ class AppThemes {
         ),
       ),
 
-      // Outlined Button
+      // Outlined Button - ACTUALIZADO con Teal
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: OutlinedButton.styleFrom(
-          foregroundColor: _primaryColor,
-          side: const BorderSide(color: _primaryColor),
+          foregroundColor: _secondaryColor,
+          side: const BorderSide(color: _secondaryColor),
           padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+        ),
+      ),
+
+      // Text Button - NUEVO
+      textButtonTheme: TextButtonThemeData(
+        style: TextButton.styleFrom(
+          foregroundColor: _primaryColor,
+          padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
         ),
       ),
 
@@ -141,9 +159,13 @@ class AppThemes {
           borderRadius: BorderRadius.circular(8),
           borderSide: BorderSide(color: Colors.grey[300]!),
         ),
-        focusedBorder: OutlineInputBorder(
+        focusedBorder: const OutlineInputBorder(
+          borderRadius: BorderRadius.all(Radius.circular(8)),
+          borderSide: BorderSide(color: _primaryColor, width: 2),
+        ),
+        errorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8),
-          borderSide: const BorderSide(color: _primaryColor, width: 2),
+          borderSide: const BorderSide(color: AppColors.error),
         ),
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       ),
@@ -152,6 +174,20 @@ class AppThemes {
       progressIndicatorTheme: const ProgressIndicatorThemeData(
         color: _primaryColor,
         linearTrackColor: Color(0xFFE0E0E0),
+      ),
+
+      // FloatingActionButton
+      floatingActionButtonTheme: const FloatingActionButtonThemeData(
+        backgroundColor: _primaryColor,
+        foregroundColor: Colors.white,
+      ),
+
+      // Chip
+      chipTheme: ChipThemeData(
+        backgroundColor: Colors.grey[200]!,
+        selectedColor: _primaryColor,
+        labelStyle: const TextStyle(color: Colors.black87),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       ),
     );
   }
@@ -173,78 +209,84 @@ class AppThemes {
         centerTitle: false,
       ),
 
-      // Color scheme
-      colorScheme: ColorScheme.dark(
-        primary: _primaryDark,
-        secondary: const Color(0xFF60A5FA), // Azul más claro para modo oscuro
-        surface: const Color(0xFF1E1E1E),
-        background: const Color(0xFF121212),
-        error: Colors.red[400]!,
+      // Color scheme - ACTUALIZADO con Verde-Teal para modo oscuro
+      colorScheme: const ColorScheme.dark(
+        primary: _primaryDark,               // Verde oscuro
+        secondary: _secondaryColor,          // Teal
+        tertiary: _secondaryDark,            // Teal oscuro
+        surface: Color(0xFF1E1E1E),
+        background: Color(0xFF121212),
+        error: AppColors.error,              // Rojo moderno
+        onPrimary: Colors.white,
+        onSecondary: Colors.white,
+        onSurface: Colors.white,
+        onBackground: Colors.white,
+        onError: Colors.white,
       ),
 
       // Text themes
-      textTheme: TextTheme(
-        displayLarge: const TextStyle(
+      textTheme: const TextTheme(
+        displayLarge: TextStyle(
           fontSize: 32,
           fontWeight: FontWeight.bold,
           color: Colors.white,
         ),
-        displayMedium: const TextStyle(
+        displayMedium: TextStyle(
           fontSize: 28,
           fontWeight: FontWeight.bold,
           color: Colors.white,
         ),
-        displaySmall: const TextStyle(
+        displaySmall: TextStyle(
           fontSize: 24,
           fontWeight: FontWeight.bold,
           color: Colors.white,
         ),
-        headlineMedium: const TextStyle(
+        headlineMedium: TextStyle(
           fontSize: 20,
           fontWeight: FontWeight.bold,
           color: Colors.white,
         ),
-        headlineSmall: const TextStyle(
+        headlineSmall: TextStyle(
           fontSize: 18,
           fontWeight: FontWeight.w600,
           color: Colors.white,
         ),
-        titleLarge: const TextStyle(
+        titleLarge: TextStyle(
           fontSize: 16,
           fontWeight: FontWeight.w600,
           color: Colors.white,
         ),
-        titleMedium: const TextStyle(
+        titleMedium: TextStyle(
           fontSize: 14,
           fontWeight: FontWeight.w600,
           color: Colors.white,
         ),
-        titleSmall: const TextStyle(
+        titleSmall: TextStyle(
           fontSize: 12,
           fontWeight: FontWeight.w600,
           color: Colors.white70,
         ),
-        bodyLarge: const TextStyle(
+        bodyLarge: TextStyle(
           fontSize: 16,
           fontWeight: FontWeight.normal,
           color: Colors.white,
         ),
-        bodyMedium: const TextStyle(
+        bodyMedium: TextStyle(
           fontSize: 14,
           fontWeight: FontWeight.normal,
           color: Colors.white70,
         ),
-        bodySmall: const TextStyle(
+        bodySmall: TextStyle(
           fontSize: 12,
           fontWeight: FontWeight.normal,
           color: Colors.white54,
         ),
-        labelLarge: const TextStyle(
+        labelLarge: TextStyle(
           fontSize: 12,
           fontWeight: FontWeight.w600,
           color: Colors.white,
         ),
-        labelSmall: const TextStyle(
+        labelSmall: TextStyle(
           fontSize: 10,
           fontWeight: FontWeight.normal,
           color: Colors.white70,
@@ -261,13 +303,21 @@ class AppThemes {
         ),
       ),
 
-      // Outlined Button
+      // Outlined Button - ACTUALIZADO con Teal
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: OutlinedButton.styleFrom(
-          foregroundColor: const Color(0xFF60A5FA),
-          side: const BorderSide(color: Color(0xFF60A5FA)),
+          foregroundColor: _secondaryLight,
+          side: const BorderSide(color: _secondaryLight),
           padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+        ),
+      ),
+
+      // Text Button - NUEVO
+      textButtonTheme: TextButtonThemeData(
+        style: TextButton.styleFrom(
+          foregroundColor: _primaryDark,
+          padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
         ),
       ),
 
@@ -290,9 +340,13 @@ class AppThemes {
           borderRadius: BorderRadius.circular(8),
           borderSide: BorderSide(color: Colors.grey[700]!),
         ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8),
-          borderSide: const BorderSide(color: _primaryDark, width: 2),
+        focusedBorder: const OutlineInputBorder(
+          borderRadius: BorderRadius.all(Radius.circular(8)),
+          borderSide: BorderSide(color: _primaryDark, width: 2),
+        ),
+        errorBorder: const OutlineInputBorder(
+          borderRadius: BorderRadius.all(Radius.circular(8)),
+          borderSide: BorderSide(color: AppColors.error),
         ),
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       ),
@@ -301,6 +355,20 @@ class AppThemes {
       progressIndicatorTheme: const ProgressIndicatorThemeData(
         color: _primaryDark,
         linearTrackColor: Color(0xFF2A2A2A),
+      ),
+
+      // FloatingActionButton
+      floatingActionButtonTheme: const FloatingActionButtonThemeData(
+        backgroundColor: _primaryDark,
+        foregroundColor: Colors.white,
+      ),
+
+      // Chip
+      chipTheme: const ChipThemeData(
+        backgroundColor: Color(0xFF2A2A2A),
+        selectedColor: _primaryDark,
+        labelStyle: TextStyle(color: Colors.white),
+        padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       ),
     );
   }

@@ -1,17 +1,24 @@
 import 'package:flutter/material.dart';
 import '../../models/product.dart';
+import '../../extensions/theme_extension.dart';
 
 /// Widget que muestra la información del producto (nombre, SKU, marca, precio)
+/// Adaptado para modo oscuro
 class ProductInfoWidget extends StatelessWidget {
   final Product product;
+  final bool isGridView;
 
   const ProductInfoWidget({
     super.key,
     required this.product,
+    this.isGridView = false,
   });
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = context.colorScheme;
+    final isDark = context.isDark;
+
     return Expanded(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -19,12 +26,13 @@ class ProductInfoWidget extends StatelessWidget {
           // Nombre
           Text(
             product.nombre,
-            style: const TextStyle(
+            style: context.textTheme.titleMedium?.copyWith(
               fontWeight: FontWeight.bold,
-              fontSize: 15,
+              fontSize: isGridView ? 14 : 15,
               height: 1.2,
+              color: colorScheme.onSurface,
             ),
-            maxLines: 2,
+            maxLines: isGridView ? 2 : 2,
             overflow: TextOverflow.ellipsis,
           ),
           const SizedBox(height: 4),
@@ -32,14 +40,18 @@ class ProductInfoWidget extends StatelessWidget {
           // SKU y Marca
           Row(
             children: [
-              Text(
-                'SKU: ${product.sku}',
-                style: TextStyle(
-                  fontSize: 11,
-                  color: Colors.grey.shade600,
+              Flexible(
+                child: Text(
+                  'SKU: ${product.sku}',
+                  style: context.textTheme.bodySmall?.copyWith(
+                    fontSize: 11,
+                    color: context.textTheme.bodySmall?.color,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
-              if (product.marca != null) ...[
+              if (product.marca != null && !isGridView) ...[
                 const SizedBox(width: 8),
                 Container(
                   padding: const EdgeInsets.symmetric(
@@ -47,16 +59,24 @@ class ProductInfoWidget extends StatelessWidget {
                     vertical: 2,
                   ),
                   decoration: BoxDecoration(
-                    color: Colors.purple.shade50,
+                    color: isDark
+                        ? colorScheme.secondaryContainer
+                        : colorScheme.secondaryContainer.withAlpha(100),
                     borderRadius: BorderRadius.circular(4),
-                    border: Border.all(color: Colors.purple.shade200),
+                    border: Border.all(
+                      color: isDark
+                          ? colorScheme.secondary.withAlpha(80)
+                          : colorScheme.secondary.withAlpha(100),
+                    ),
                   ),
                   child: Text(
                     product.marca!.nombre,
-                    style: TextStyle(
+                    style: context.textTheme.labelSmall?.copyWith(
                       fontSize: 10,
-                      color: Colors.purple.shade700,
-                      fontWeight: FontWeight.w500,
+                      color: isDark
+                          ? colorScheme.onSecondaryContainer
+                          : colorScheme.secondary,
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
                 ),
@@ -69,10 +89,10 @@ class ProductInfoWidget extends StatelessWidget {
           if (product.precioVenta != null)
             Text(
               'Bs ${product.precioVenta!.toStringAsFixed(2)}',
-              style: TextStyle(
-                color: Colors.green.shade700,
+              style: context.textTheme.titleMedium?.copyWith(
+                color: colorScheme.primary,
                 fontWeight: FontWeight.bold,
-                fontSize: 16,
+                fontSize: isGridView ? 15 : 16,
               ),
             ),
         ],

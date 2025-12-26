@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'app_colors.dart';
 
 /// Clase que define todos los gradientes de la aplicación
-/// Utilizados principalmente en AppBars y componentes visuales
+/// Esquema unificado Verde-Teal para coherencia visual
+///
+/// NUEVO: AppGradients.blue ahora es Verde-Teal para clientes
 class AppGradients {
   AppGradients._(); // Constructor privado
 
@@ -10,48 +12,55 @@ class AppGradients {
   static const Alignment _defaultBegin = Alignment.topLeft;
   static const Alignment _defaultEnd = Alignment.bottomRight;
 
+  // ==================== GRADIENTES PRINCIPALES ====================
+
+  /// Gradiente principal Verde-Teal (reemplaza el azul anterior)
+  /// Usado como gradiente por defecto para clientes
+  static const LinearGradient primary = LinearGradient(
+    colors: [AppColors.primary, AppColors.secondary],  // Verde a Teal
+    begin: _defaultBegin,
+    end: _defaultEnd,
+  );
+
+  /// Gradiente verde puro (para acciones principales)
+  static const LinearGradient green = LinearGradient(
+    colors: [AppColors.primaryLight, AppColors.primaryDark],
+    begin: _defaultBegin,
+    end: _defaultEnd,
+  );
+
+  /// Gradiente teal puro (para información, estados secundarios)
+  static const LinearGradient teal = LinearGradient(
+    colors: [AppColors.secondaryLight, AppColors.secondaryDark],
+    begin: _defaultBegin,
+    end: _defaultEnd,
+  );
+
   // ==================== GRADIENTES POR ROL ====================
 
-  /// Obtiene el gradiente automáticamente según el rol del usuario
-  ///
-  /// Ejemplo:
-  /// ```dart
-  /// final gradient = AppGradients.getRoleGradient('cliente');
-  /// ```
-  static LinearGradient getRoleGradient(String role) {
-    final colors = AppColors.getRoleColors(role);
-    return LinearGradient(
-      colors: colors,
-      begin: _defaultBegin,
-      end: _defaultEnd,
-    );
-  }
-
-  // ==================== GRADIENTES PREDEFINIDOS ====================
-
-  /// Gradiente azul (para Cliente)
-  /// Utilizado como gradiente por defecto
+  /// Gradiente para Cliente: Verde-Teal (ACTUALIZADO)
+  /// Anteriormente era azul, ahora es verde-teal para coherencia
   static const LinearGradient blue = LinearGradient(
     colors: [AppColors.clientePrimary, AppColors.clienteSecondary],
     begin: _defaultBegin,
     end: _defaultEnd,
   );
 
-  /// Gradiente verde (para Chofer)
-  static const LinearGradient green = LinearGradient(
+  /// Gradiente para Chofer: Verde oscuro (ACTUALIZADO)
+  static const LinearGradient greenDark = LinearGradient(
     colors: [AppColors.choferPrimary, AppColors.choferSecondary],
     begin: _defaultBegin,
     end: _defaultEnd,
   );
 
-  /// Gradiente naranja (para Preventista)
+  /// Gradiente para Preventista: Naranja
   static const LinearGradient orange = LinearGradient(
     colors: [AppColors.preventistaPrimary, AppColors.preventistaSecondary],
     begin: _defaultBegin,
     end: _defaultEnd,
   );
 
-  /// Gradiente rojo (para Admin)
+  /// Gradiente para Admin: Rojo
   static const LinearGradient red = LinearGradient(
     colors: [AppColors.adminPrimary, AppColors.adminSecondary],
     begin: _defaultBegin,
@@ -64,6 +73,19 @@ class AppGradients {
     begin: _defaultBegin,
     end: _defaultEnd,
   );
+
+  // ==================== MÉTODOS ====================
+
+  /// Obtiene el gradiente automáticamente según el rol del usuario
+  ///
+  /// Ejemplo:
+  /// ```dart
+  /// final gradient = AppGradients.getRoleGradient('cliente');
+  /// // Retorna gradiente Verde-Teal
+  /// ```
+  static LinearGradient getRoleGradient(String role) {
+    return AppColors.getRoleGradient(role);
+  }
 
   // ==================== GRADIENTES PERSONALIZADOS ====================
 

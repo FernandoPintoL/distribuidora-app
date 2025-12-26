@@ -18,7 +18,8 @@ class PerfilScreen extends StatefulWidget {
   State<PerfilScreen> createState() => _PerfilScreenState();
 }
 
-class _PerfilScreenState extends State<PerfilScreen> with SingleTickerProviderStateMixin {
+class _PerfilScreenState extends State<PerfilScreen>
+    with SingleTickerProviderStateMixin {
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
   late Animation<Offset> _slideAnimation;
@@ -35,10 +36,10 @@ class _PerfilScreenState extends State<PerfilScreen> with SingleTickerProviderSt
       CurvedAnimation(parent: _animationController, curve: Curves.easeOut),
     );
 
-    _slideAnimation = Tween<Offset>(
-      begin: const Offset(0, 0.1),
-      end: Offset.zero,
-    ).animate(CurvedAnimation(parent: _animationController, curve: Curves.easeOut));
+    _slideAnimation =
+        Tween<Offset>(begin: const Offset(0, 0.1), end: Offset.zero).animate(
+          CurvedAnimation(parent: _animationController, curve: Curves.easeOut),
+        );
 
     _animationController.forward();
   }
@@ -95,7 +96,10 @@ class _PerfilScreenState extends State<PerfilScreen> with SingleTickerProviderSt
                       const SizedBox(height: 24),
 
                       // Información personal
-                      _buildModernSectionTitle('Información Personal', Icons.person_outline),
+                      _buildModernSectionTitle(
+                        'Información Personal',
+                        Icons.person_outline,
+                      ),
                       const SizedBox(height: 12),
                       _buildModernInfoCard(
                         context: context,
@@ -113,7 +117,10 @@ class _PerfilScreenState extends State<PerfilScreen> with SingleTickerProviderSt
                         title: 'Correo Electrónico',
                         value: user?.email ?? 'No disponible',
                         gradient: LinearGradient(
-                          colors: [Colors.purple.shade400, Colors.purple.shade600],
+                          colors: [
+                            Colors.purple.shade400,
+                            Colors.purple.shade600,
+                          ],
                         ),
                       ),
                       if (user?.usernick != null) ...[
@@ -124,32 +131,47 @@ class _PerfilScreenState extends State<PerfilScreen> with SingleTickerProviderSt
                           title: 'Usuario',
                           value: '@${user?.usernick}',
                           gradient: LinearGradient(
-                            colors: [Colors.orange.shade400, Colors.orange.shade600],
+                            colors: [
+                              Colors.orange.shade400,
+                              Colors.orange.shade600,
+                            ],
                           ),
                         ),
                       ],
                       const SizedBox(height: 24),
 
                       // Roles y permisos
-                      _buildModernSectionTitle('Roles y Permisos', Icons.admin_panel_settings_outlined),
+                      _buildModernSectionTitle(
+                        'Roles y Permisos',
+                        Icons.admin_panel_settings_outlined,
+                      ),
                       const SizedBox(height: 12),
                       _buildModernRolesCard(user),
                       const SizedBox(height: 24),
 
                       // Estado del usuario
-                      _buildModernSectionTitle('Estado de Cuenta', Icons.verified_user_outlined),
+                      _buildModernSectionTitle(
+                        'Estado de Cuenta',
+                        Icons.verified_user_outlined,
+                      ),
                       const SizedBox(height: 12),
                       _buildModernStatusCard(user),
                       const SizedBox(height: 24),
 
                       // Seguridad y Autenticación
-                      _buildModernSectionTitle('Seguridad', Icons.security_outlined),
+                      _buildModernSectionTitle(
+                        'Seguridad',
+                        Icons.security_outlined,
+                      ),
                       const SizedBox(height: 12),
                       _buildSecurityCard(context, authProvider),
                       const SizedBox(height: 24),
 
                       // Apariencia
-                      _buildModernSectionTitle('Apariencia', Icons.palette_outlined),
+                      _buildModernSectionTitle(
+                        'Apariencia',
+                        Icons.palette_outlined,
+                      ),
                       const SizedBox(height: 12),
                       _buildAppearanceCard(context),
                       const SizedBox(height: 24),
@@ -205,7 +227,7 @@ class _PerfilScreenState extends State<PerfilScreen> with SingleTickerProviderSt
         return LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [Colors.blue.shade600, Colors.blue.shade900],
+          colors: [Colors.teal.shade600, Colors.teal.shade900],
         );
       case 'chofer':
         return LinearGradient(
@@ -222,7 +244,11 @@ class _PerfilScreenState extends State<PerfilScreen> with SingleTickerProviderSt
     }
   }
 
-  Widget _buildProfileHeader(BuildContext context, dynamic user, String primaryRole) {
+  Widget _buildProfileHeader(
+    BuildContext context,
+    dynamic user,
+    String primaryRole,
+  ) {
     return Center(
       child: Padding(
         padding: const EdgeInsets.only(top: 30, bottom: 10),
@@ -542,7 +568,9 @@ class _PerfilScreenState extends State<PerfilScreen> with SingleTickerProviderSt
               shape: BoxShape.circle,
               boxShadow: [
                 BoxShadow(
-                  color: (isActive ? Colors.green : Colors.red).withOpacity(0.3),
+                  color: (isActive ? Colors.green : Colors.red).withOpacity(
+                    0.3,
+                  ),
                   blurRadius: 10,
                   offset: const Offset(0, 4),
                 ),
@@ -585,7 +613,9 @@ class _PerfilScreenState extends State<PerfilScreen> with SingleTickerProviderSt
                       style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
-                        color: isActive ? Colors.green.shade700 : Colors.red.shade700,
+                        color: isActive
+                            ? Colors.green.shade700
+                            : Colors.red.shade700,
                       ),
                     ),
                   ],
@@ -609,14 +639,16 @@ class _PerfilScreenState extends State<PerfilScreen> with SingleTickerProviderSt
           child: Column(
             children: [
               // Autenticación Biométrica
-              FutureBuilder<bool>(
-                future: authProvider.checkBiometricAvailability().then((_) => authProvider.biometricAvailable),
-                builder: (context, availSnapshot) {
-                  final biometricAvailable = availSnapshot.data ?? false;
+              Builder(
+                builder: (context) {
+                  final biometricAvailable = authProvider.biometricAvailable;
 
                   if (!biometricAvailable) {
                     return ListTile(
-                      leading: Icon(Icons.fingerprint, color: Colors.grey.shade400),
+                      leading: Icon(
+                        Icons.fingerprint,
+                        color: Colors.grey.shade400,
+                      ),
                       title: const Text('Autenticación Biométrica'),
                       subtitle: const Text('No disponible en este dispositivo'),
                       enabled: false,
@@ -630,8 +662,12 @@ class _PerfilScreenState extends State<PerfilScreen> with SingleTickerProviderSt
 
                       return SwitchListTile(
                         secondary: Icon(
-                          biometricType.contains('Face') ? Icons.face : Icons.fingerprint,
-                          color: biometricEnabled ? Theme.of(context).primaryColor : Colors.grey,
+                          biometricType.contains('Face')
+                              ? Icons.face
+                              : Icons.fingerprint,
+                          color: biometricEnabled
+                              ? Theme.of(context).primaryColor
+                              : Colors.grey,
                         ),
                         title: Text('Usar $biometricType'),
                         subtitle: Text(
@@ -646,7 +682,8 @@ class _PerfilScreenState extends State<PerfilScreen> with SingleTickerProviderSt
                             _showEnableBiometricDialog(context, authProvider);
                           } else {
                             // Deshabilitar directamente
-                            final success = await authProvider.disableBiometricLogin();
+                            final success = await authProvider
+                                .disableBiometricLogin();
                             if (success && context.mounted) {
                               ScaffoldMessenger.of(context).showSnackBar(
                                 SnackBar(
@@ -687,7 +724,10 @@ class _PerfilScreenState extends State<PerfilScreen> with SingleTickerProviderSt
     );
   }
 
-  void _showEnableBiometricDialog(BuildContext context, AuthProvider authProvider) {
+  void _showEnableBiometricDialog(
+    BuildContext context,
+    AuthProvider authProvider,
+  ) {
     final usernameController = TextEditingController();
     final passwordController = TextEditingController();
     final formKey = GlobalKey<FormState>();
@@ -806,7 +846,7 @@ class _PerfilScreenState extends State<PerfilScreen> with SingleTickerProviderSt
       case 'preventista':
         return Colors.orange;
       case 'cliente':
-        return Colors.blue;
+        return Colors.teal;
       case 'chofer':
         return Colors.green;
       default:
@@ -844,7 +884,11 @@ class _PerfilScreenState extends State<PerfilScreen> with SingleTickerProviderSt
   }
 
   // Estadísticas específicas por rol
-  Widget _buildRoleSpecificStats(BuildContext context, dynamic user, String primaryRole) {
+  Widget _buildRoleSpecificStats(
+    BuildContext context,
+    dynamic user,
+    String primaryRole,
+  ) {
     switch (primaryRole.toLowerCase()) {
       case 'cliente':
         return _buildClientStats(context);
@@ -865,11 +909,11 @@ class _PerfilScreenState extends State<PerfilScreen> with SingleTickerProviderSt
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(16),
         gradient: LinearGradient(
-          colors: [Colors.blue.shade400, Colors.blue.shade600],
+          colors: [Colors.teal.shade400, Colors.teal.shade600],
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.blue.withOpacity(0.3),
+            color: Colors.teal.shade600.withOpacity(0.3),
             blurRadius: 15,
             offset: const Offset(0, 5),
           ),
@@ -945,13 +989,9 @@ class _PerfilScreenState extends State<PerfilScreen> with SingleTickerProviderSt
           const SizedBox(height: 20),
           Row(
             children: [
-              Expanded(
-                child: _buildStatItem('Clientes', '0', Icons.people),
-              ),
+              Expanded(child: _buildStatItem('Clientes', '0', Icons.people)),
               const SizedBox(width: 16),
-              Expanded(
-                child: _buildStatItem('Ventas', '0', Icons.trending_up),
-              ),
+              Expanded(child: _buildStatItem('Ventas', '0', Icons.trending_up)),
             ],
           ),
         ],
@@ -995,13 +1035,9 @@ class _PerfilScreenState extends State<PerfilScreen> with SingleTickerProviderSt
           const SizedBox(height: 20),
           Row(
             children: [
-              Expanded(
-                child: _buildStatItem('Entregas', '0', Icons.inventory),
-              ),
+              Expanded(child: _buildStatItem('Entregas', '0', Icons.inventory)),
               const SizedBox(width: 16),
-              Expanded(
-                child: _buildStatItem('Rutas', '0', Icons.map),
-              ),
+              Expanded(child: _buildStatItem('Rutas', '0', Icons.map)),
             ],
           ),
         ],
@@ -1045,13 +1081,9 @@ class _PerfilScreenState extends State<PerfilScreen> with SingleTickerProviderSt
           const SizedBox(height: 20),
           Row(
             children: [
-              Expanded(
-                child: _buildStatItem('Usuarios', '0', Icons.people),
-              ),
+              Expanded(child: _buildStatItem('Usuarios', '0', Icons.people)),
               const SizedBox(width: 16),
-              Expanded(
-                child: _buildStatItem('Sistema', 'OK', Icons.settings),
-              ),
+              Expanded(child: _buildStatItem('Sistema', 'OK', Icons.settings)),
             ],
           ),
         ],
@@ -1093,7 +1125,11 @@ class _PerfilScreenState extends State<PerfilScreen> with SingleTickerProviderSt
   }
 
   // Opciones específicas por rol
-  Widget _buildRoleSpecificOptions(BuildContext context, dynamic user, String primaryRole) {
+  Widget _buildRoleSpecificOptions(
+    BuildContext context,
+    dynamic user,
+    String primaryRole,
+  ) {
     switch (primaryRole.toLowerCase()) {
       case 'cliente':
         return Column(
@@ -1185,17 +1221,11 @@ class _PerfilScreenState extends State<PerfilScreen> with SingleTickerProviderSt
       ),
       title: Text(
         title,
-        style: const TextStyle(
-          fontWeight: FontWeight.w600,
-          fontSize: 16,
-        ),
+        style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 16),
       ),
       subtitle: Text(
         subtitle,
-        style: TextStyle(
-          color: Colors.grey.shade600,
-          fontSize: 13,
-        ),
+        style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
       ),
       trailing: Icon(Icons.chevron_right, color: Colors.grey.shade400),
       onTap: onTap,
@@ -1310,7 +1340,7 @@ class _PerfilScreenState extends State<PerfilScreen> with SingleTickerProviderSt
         style: ElevatedButton.styleFrom(
           backgroundColor: Colors.red.shade600,
           foregroundColor: Colors.white,
-          padding: const EdgeInsets.symmetric(vertical: 16),
+          padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
           ),

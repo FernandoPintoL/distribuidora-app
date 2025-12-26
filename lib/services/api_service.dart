@@ -108,20 +108,35 @@ class ApiService {
   }
 
   Future<void> _loadToken() async {
-    final prefs = await SharedPreferences.getInstance();
-    _token = prefs.getString(tokenKey);
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      _token = prefs.getString(tokenKey);
+    } catch (e) {
+      debugPrint('⚠️ Error loading token from SharedPreferences: $e');
+      _token = null;
+    }
   }
 
   Future<void> _saveToken(String token) async {
     _token = token;
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(tokenKey, token);
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(tokenKey, token);
+    } catch (e) {
+      debugPrint('⚠️ Error saving token to SharedPreferences: $e');
+      // El token se mantiene en memoria aunque falle el guardado
+    }
   }
 
   Future<void> _clearToken() async {
     _token = null;
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.remove(tokenKey);
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove(tokenKey);
+    } catch (e) {
+      debugPrint('⚠️ Error clearing token from SharedPreferences: $e');
+      // El token ya está limpio en memoria
+    }
   }
 
   Future<void> _handleTokenExpiration() async {
@@ -233,7 +248,11 @@ class ApiService {
   static Future<ApiService> getInstance() async {
     if (_instance == null) {
       _instance = ApiService._internal();
-      await _instance!._loadToken(); // Cargar token al inicializar
+      try {
+        await _instance!._loadToken(); // Cargar token al inicializar
+      } catch (e) {
+        debugPrint('⚠️ Error loading token during getInstance: $e');
+      }
     }
     return _instance!;
   }
@@ -251,14 +270,19 @@ class ApiService {
     _instance = ApiService._internal();
     // Cargar token de manera asíncrona sin bloquear
     Future.microtask(() async {
-      await _instance!._loadToken();
+      try {
+        await _instance!._loadToken();
+      } catch (e) {
+        debugPrint('⚠️ Error loading token in factory constructor: $e');
+      }
     });
     return _instance!;
   }
 
   ApiService._internal() {
     _initializeDio();
-    _loadToken(); // Cargar token automáticamente al inicializar
+    // No llamar a _loadToken aquí porque es async y el constructor es sync
+    // Se carga en getInstance() o en el factory
   }
 
   // Método público para recargar variables de entorno
@@ -267,6 +291,10 @@ class ApiService {
     // Re-inicializar Dio con la nueva URL
     _initializeDio();
     // Recargar token por si cambió algo
-    await _loadToken();
+    try {
+      await _loadToken();
+    } catch (e) {
+      debugPrint('⚠️ Error reloading token in reloadEnvironment: $e');
+    }
   }
 }

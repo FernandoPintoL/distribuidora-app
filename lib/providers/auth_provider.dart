@@ -46,11 +46,7 @@ class AuthProvider with ChangeNotifier {
   Future<bool> login(String login, String password) async {
     _isLoading = true;
     _errorMessage = null;
-
-    // Retrasar notifyListeners hasta después del build
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      notifyListeners();
-    });
+    notifyListeners();
 
     try {
       final response = await _authService.login(login, password);
@@ -72,33 +68,21 @@ class AuthProvider with ChangeNotifier {
         // Conectar al WebSocket después de login exitoso
         _connectWebSocket(response.data!.token);
 
-        // Retrasar notifyListeners hasta después del build
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          notifyListeners();
-        });
+        _isLoading = false;
+        notifyListeners();
         return true;
       } else {
         _errorMessage = response.message;
         debugPrint('❌ Login failed: ${response.message}');
-        // Retrasar notifyListeners hasta después del build
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          notifyListeners();
-        });
+        _isLoading = false;
+        notifyListeners();
         return false;
       }
     } catch (e) {
       _errorMessage = 'Error inesperado: ${e.toString()}';
-      // Retrasar notifyListeners hasta después del build
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        notifyListeners();
-      });
-      return false;
-    } finally {
       _isLoading = false;
-      // Retrasar notifyListeners hasta después del build
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        notifyListeners();
-      });
+      notifyListeners();
+      return false;
     }
   }
 
@@ -111,11 +95,7 @@ class AuthProvider with ChangeNotifier {
   }) async {
     _isLoading = true;
     _errorMessage = null;
-
-    // Retrasar notifyListeners hasta después del build
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      notifyListeners();
-    });
+    notifyListeners();
 
     try {
       final response = await _authService.register(
@@ -138,32 +118,20 @@ class AuthProvider with ChangeNotifier {
         // Conectar al WebSocket después de registro exitoso
         _connectWebSocket(response.data!.token);
 
-        // Retrasar notifyListeners hasta después del build
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          notifyListeners();
-        });
+        _isLoading = false;
+        notifyListeners();
         return true;
       } else {
         _errorMessage = response.message;
-        // Retrasar notifyListeners hasta después del build
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          notifyListeners();
-        });
+        _isLoading = false;
+        notifyListeners();
         return false;
       }
     } catch (e) {
       _errorMessage = 'Error inesperado: ${e.toString()}';
-      // Retrasar notifyListeners hasta después del build
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        notifyListeners();
-      });
-      return false;
-    } finally {
       _isLoading = false;
-      // Retrasar notifyListeners hasta después del build
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        notifyListeners();
-      });
+      notifyListeners();
+      return false;
     }
   }
 
@@ -171,16 +139,14 @@ class AuthProvider with ChangeNotifier {
     final isLoggedIn = await _authService.isLoggedIn();
     if (!isLoggedIn) {
       debugPrint('🚫 No token found, user not logged in');
+      _isLoading = false;
+      notifyListeners();
       return false;
     }
 
     _isLoading = true;
     _errorMessage = null;
-
-    // Retrasar notifyListeners hasta después del build
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      notifyListeners();
-    });
+    notifyListeners();
 
     try {
       debugPrint('📡 Loading user from API...');
@@ -199,36 +165,30 @@ class AuthProvider with ChangeNotifier {
         // ✅ NUEVO: Refrescar permisos si es necesario
         await refreshPermissionsIfNeeded();
 
-        // Retrasar notifyListeners hasta después del build
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          notifyListeners();
-        });
         debugPrint('✅ User loaded successfully: ${_user?.name}');
+        _isLoading = false;
+        notifyListeners();
         return true;
       } else {
         _errorMessage = response.message;
-        // Retrasar notifyListeners hasta después del build
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          notifyListeners();
-        });
         debugPrint('❌ Failed to load user: ${response.message}');
+        _isLoading = false;
+        notifyListeners();
         return false;
       }
     } catch (e) {
       _errorMessage = 'Error inesperado: ${e.toString()}';
-      // Retrasar notifyListeners hasta después del build
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        notifyListeners();
-      });
       debugPrint('💥 Exception loading user: $e');
+      _isLoading = false;
+      notifyListeners();
       return false;
     } finally {
-      _isLoading = false;
-      // Retrasar notifyListeners hasta después del build
-      WidgetsBinding.instance.addPostFrameCallback((_) {
+      // Asegurar que isLoading siempre se establece a false
+      if (_isLoading) {
+        _isLoading = false;
         notifyListeners();
-      });
-      debugPrint('🔄 Load user completed, isLoading set to false');
+        debugPrint('🔄 Load user completed, isLoading set to false in finally');
+      }
     }
   }
 
@@ -252,11 +212,7 @@ class AuthProvider with ChangeNotifier {
 
   Future<void> logout() async {
     _isLoading = true;
-
-    // Retrasar notifyListeners hasta después del build
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      notifyListeners();
-    });
+    notifyListeners();
 
     try {
       // Desconectar del WebSocket antes de hacer logout
@@ -265,6 +221,7 @@ class AuthProvider with ChangeNotifier {
       await _authService.logout();
     } catch (e) {
       // Even if logout fails, we clear local data
+      debugPrint('❌ Error during logout: $e');
     } finally {
       _user = null;
       _errorMessage = null;
@@ -272,19 +229,13 @@ class AuthProvider with ChangeNotifier {
       // ✅ NUEVO: Limpiar cache TTL al logout
       _permissionsUpdatedAt = null;
       _cacheTTL = null;
-      // Retrasar notifyListeners hasta después del build
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        notifyListeners();
-      });
+      notifyListeners();
     }
   }
 
   void clearError() {
     _errorMessage = null;
-    // Retrasar notifyListeners hasta después del build
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      notifyListeners();
-    });
+    notifyListeners();
   }
 
   /// ✅ NUEVO: Refrescar permisos si el caché ha expirado
@@ -315,9 +266,7 @@ class AuthProvider with ChangeNotifier {
           debugPrint('   - Roles: ${response.roles.length}');
           debugPrint('   - TTL: ${_cacheTTL} segundos');
 
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            notifyListeners();
-          });
+          notifyListeners();
         }
       } else {
         debugPrint('⚠️ Error refrescando permisos: ${response}');

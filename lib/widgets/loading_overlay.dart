@@ -5,13 +5,12 @@ import 'package:flutter/material.dart';
 class LoadingOverlay extends StatefulWidget {
   final Widget child;
 
-  const LoadingOverlay({
-    super.key,
-    required this.child,
-  });
-
   static final GlobalKey<_LoadingOverlayState> _key =
       GlobalKey<_LoadingOverlayState>();
+
+  LoadingOverlay({
+    required this.child,
+  }) : super(key: _key);
 
   static void show(
     BuildContext context, {
@@ -38,6 +37,7 @@ class _LoadingOverlayState extends State<LoadingOverlay> {
     required String message,
     required bool dismissible,
   }) {
+    debugPrint('🔄 LoadingOverlay.show() called with message: "$message"');
     setState(() {
       _isLoading = true;
       _message = message;
@@ -46,6 +46,7 @@ class _LoadingOverlayState extends State<LoadingOverlay> {
   }
 
   void _hide() {
+    debugPrint('✅ LoadingOverlay.hide() called');
     if (mounted) {
       setState(() {
         _isLoading = false;
@@ -122,6 +123,10 @@ class _LoadingWidgetState extends State<_LoadingWidget>
 
   @override
   Widget build(BuildContext context) {
+    // Usar colores del tema actual
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     return ScaleTransition(
       scale: _scaleAnimation,
       child: Column(
@@ -131,7 +136,7 @@ class _LoadingWidgetState extends State<_LoadingWidget>
           Container(
             padding: const EdgeInsets.all(32),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: isDark ? theme.cardColor : Colors.white,
               borderRadius: BorderRadius.circular(20),
               boxShadow: [
                 BoxShadow(
@@ -162,7 +167,7 @@ class _LoadingWidgetState extends State<_LoadingWidget>
                           return Icon(
                             Icons.shopping_cart,
                             size: 60,
-                            color: Colors.blue[600],
+                            color: theme.primaryColor,
                           );
                         },
                       ),
@@ -177,14 +182,14 @@ class _LoadingWidgetState extends State<_LoadingWidget>
 
                 const SizedBox(height: 24),
 
-                // Texto de mensaje
+                // Texto de mensaje - SIN especificar fontFamily para usar la fuente por defecto
                 Text(
                   widget.message,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w500,
-                    color: Colors.black87,
-                    fontFamily: 'Poppins',
+                    color: theme.textTheme.bodyLarge?.color ??
+                           (isDark ? Colors.white : Colors.black87),
                   ),
                   textAlign: TextAlign.center,
                 ),

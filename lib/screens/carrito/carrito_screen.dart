@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/providers.dart';
 import '../../widgets/carrito/index.dart';
+import '../../widgets/carrito/carrito_total_bar.dart';
 import '../../widgets/widgets.dart';
 import '../../config/config.dart';
 import 'carrito_helpers.dart';
@@ -13,7 +14,7 @@ class CarritoScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: CustomGradientAppBar(
-        title: 'Mi Carrito',
+        title: 'Mi Carritosss',
         customGradient: AppGradients.blue,
         actions: [
           Consumer<CarritoProvider>(
@@ -57,7 +58,11 @@ class CarritoScreen extends StatelessWidget {
                       item: item,
                       onIncrement: () {
                         carritoProvider.incrementarCantidad(item.producto.id);
-                        mostrarErrorSiExiste(context, carritoProvider, duracion: 3);
+                        mostrarErrorSiExiste(
+                          context,
+                          carritoProvider,
+                          duracion: 3,
+                        );
                       },
                       onDecrement: () {
                         carritoProvider.decrementarCantidad(item.producto.id);
@@ -66,7 +71,9 @@ class CarritoScreen extends StatelessWidget {
                         carritoProvider.eliminarProducto(item.producto.id);
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
-                            content: Text('${item.producto.nombre} eliminado del carrito'),
+                            content: Text(
+                              '${item.producto.nombre} eliminado del carrito',
+                            ),
                             duration: const Duration(seconds: 2),
                           ),
                         );
@@ -76,39 +83,17 @@ class CarritoScreen extends StatelessWidget {
                           item.producto.id,
                           nuevaCantidad,
                         );
-                        mostrarErrorSiExiste(context, carritoProvider, duracion: 3);
+                        mostrarErrorSiExiste(
+                          context,
+                          carritoProvider,
+                          duracion: 3,
+                        );
                       },
                     );
                   },
                 ),
               ),
 
-              // Resumen de totales
-              CarritoResumenTotales(
-                subtotal: carritoProvider.subtotal,
-                impuesto: carritoProvider.impuesto,
-                costoEnvio: carritoProvider.costoEnvio,
-                descuento: carritoProvider.montoDescuento,
-                porcentajeDescuento: carritoProvider.porcentajeDescuento,
-                tieneDescuento: carritoProvider.tieneDescuento,
-                codigoDescuento: carritoProvider.codigoDescuento,
-                validandoDescuento: carritoProvider.validandoDescuento,
-                calculandoEnvio: carritoProvider.calculandoEnvio,
-                onAplicarDescuento: (codigo) async {
-                  final success = await carritoProvider.aplicarDescuento(codigo);
-                  if (success && context.mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text('Cupón "$codigo" aplicado correctamente'),
-                        backgroundColor: Colors.green,
-                        duration: const Duration(seconds: 2),
-                      ),
-                    );
-                  }
-                  return success;
-                },
-                onRemoverDescuento: () => carritoProvider.removerDescuento(),
-              ),
             ],
           );
         },
@@ -117,88 +102,10 @@ class CarritoScreen extends StatelessWidget {
         builder: (context, carritoProvider, _) {
           if (carritoProvider.isEmpty) return const SizedBox.shrink();
 
-          return CarritoActionButtons(
+          return CarritoTotalBar(
+            total: carritoProvider.total,
             isLoading: carritoProvider.isLoading,
-            isSaving: carritoProvider.guardandoCarrito,
-            onContinuarCompra: () => continuarCompra(context),
-            onGuardarCarrito: () async {
-              final success = await carritoProvider.guardarCarrito();
-              if (context.mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(
-                      success
-                          ? 'Carrito guardado correctamente'
-                          : carritoProvider.errorMessage ?? 'Error al guardar carrito',
-                    ),
-                    backgroundColor: success ? Colors.green : Colors.orange,
-                    duration: const Duration(seconds: 2),
-                  ),
-                );
-              }
-            },
-            onConvertirProforma: () async {
-              // Mostrar loading dialog
-              if (context.mounted) {
-                showDialog(
-                  context: context,
-                  barrierDismissible: false,
-                  builder: (context) => const Dialog(
-                    child: Padding(
-                      padding: EdgeInsets.all(20.0),
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          CircularProgressIndicator(),
-                          SizedBox(height: 16),
-                          Text('Creando proforma...'),
-                        ],
-                      ),
-                    ),
-                  ),
-                );
-              }
-
-              try {
-                final proforma = await carritoProvider.convertirAProforma();
-
-                if (context.mounted) {
-                  // Cerrar loading dialog
-                  Navigator.of(context).pop();
-
-                  if (proforma != null) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text('✅ Proforma creada: ${proforma['numero']}'),
-                        backgroundColor: Colors.green,
-                        duration: const Duration(seconds: 3),
-                      ),
-                    );
-                  } else {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(
-                          carritoProvider.errorMessage ?? 'Error al crear proforma',
-                        ),
-                        backgroundColor: Colors.red,
-                        duration: const Duration(seconds: 3),
-                      ),
-                    );
-                  }
-                }
-              } catch (e) {
-                if (context.mounted) {
-                  Navigator.of(context).pop();
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text('❌ Error: $e'),
-                      backgroundColor: Colors.red,
-                      duration: const Duration(seconds: 3),
-                    ),
-                  );
-                }
-              }
-            },
+            onCheckout: () => continuarCompra(context),
           );
         },
       ),

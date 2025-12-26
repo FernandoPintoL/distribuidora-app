@@ -36,6 +36,7 @@ class PedidoProvider with ChangeNotifier {
   EstadoPedido? _filtroEstado;
   DateTime? _filtroFechaDesde;
   DateTime? _filtroFechaHasta;
+  String? _filtroBusqueda;
 
   // Getters
   List<Pedido> get pedidos => _pedidos;
@@ -50,12 +51,14 @@ class PedidoProvider with ChangeNotifier {
   EstadoPedido? get filtroEstado => _filtroEstado;
   DateTime? get filtroFechaDesde => _filtroFechaDesde;
   DateTime? get filtroFechaHasta => _filtroFechaHasta;
+  String? get filtroBusqueda => _filtroBusqueda;
 
   /// Cargar historial de pedidos (página 1)
   Future<void> loadPedidos({
     EstadoPedido? estado,
     DateTime? fechaDesde,
     DateTime? fechaHasta,
+    String? busqueda,
     bool refresh = false,
   }) async {
     if (_isLoading && !refresh) return;
@@ -66,6 +69,7 @@ class PedidoProvider with ChangeNotifier {
     _filtroEstado = estado;
     _filtroFechaDesde = fechaDesde;
     _filtroFechaHasta = fechaHasta;
+    _filtroBusqueda = busqueda;
 
     if (refresh) {
       // Si es refresh, no mostramos loading inicial
@@ -81,6 +85,7 @@ class PedidoProvider with ChangeNotifier {
         estado: estado,
         fechaDesde: fechaDesde,
         fechaHasta: fechaHasta,
+        busqueda: busqueda,
       );
 
       if (response.success && response.data != null) {
@@ -160,6 +165,7 @@ class PedidoProvider with ChangeNotifier {
         estado: _filtroEstado,
         fechaDesde: _filtroFechaDesde,
         fechaHasta: _filtroFechaHasta,
+        busqueda: _filtroBusqueda,
       );
 
       if (response.success && response.data != null) {
@@ -317,6 +323,17 @@ class PedidoProvider with ChangeNotifier {
       estado: _filtroEstado,
       fechaDesde: desde,
       fechaHasta: hasta,
+      busqueda: _filtroBusqueda,
+    );
+  }
+
+  /// Aplicar búsqueda
+  Future<void> aplicarBusqueda(String? busqueda) async {
+    await loadPedidos(
+      estado: _filtroEstado,
+      fechaDesde: _filtroFechaDesde,
+      fechaHasta: _filtroFechaHasta,
+      busqueda: busqueda,
     );
   }
 
@@ -674,6 +691,7 @@ class PedidoProvider with ChangeNotifier {
     _filtroEstado = null;
     _filtroFechaDesde = null;
     _filtroFechaHasta = null;
+    _filtroBusqueda = null;
     notifyListeners();
   }
 
