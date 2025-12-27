@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../../providers/providers.dart';
 import '../../providers/theme_provider.dart';
 import '../../services/role_based_router.dart';
+import '../../extensions/theme_extension.dart';
 
 /// Pantalla de perfil compartida para todos los roles
 /// - Cliente
@@ -356,26 +357,35 @@ class _PerfilScreenState extends State<PerfilScreen>
 
   // Título de sección moderno
   Widget _buildModernSectionTitle(String title, IconData icon) {
-    return Row(
-      children: [
-        Container(
-          padding: const EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            color: Colors.blue.shade50,
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: Icon(icon, size: 20, color: Colors.blue.shade700),
-        ),
-        const SizedBox(width: 12),
-        Text(
-          title,
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-            color: Colors.grey.shade800,
-          ),
-        ),
-      ],
+    return Builder(
+      builder: (context) {
+        final colorScheme = context.colorScheme;
+        final isDark = context.isDark;
+
+        return Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: isDark
+                    ? colorScheme.primary.withOpacity(0.2)
+                    : colorScheme.primary.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Icon(icon, size: 20, color: colorScheme.primary),
+            ),
+            const SizedBox(width: 12),
+            Text(
+              title,
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: context.textTheme.titleLarge?.color,
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 
@@ -387,6 +397,8 @@ class _PerfilScreenState extends State<PerfilScreen>
     required String value,
     required Gradient gradient,
   }) {
+    final colorScheme = context.colorScheme;
+
     return Container(
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(16),
@@ -422,7 +434,7 @@ class _PerfilScreenState extends State<PerfilScreen>
                       title,
                       style: TextStyle(
                         fontSize: 12,
-                        color: Colors.grey.shade600,
+                        color: colorScheme.onSurfaceVariant,
                         fontWeight: FontWeight.w500,
                         letterSpacing: 0.5,
                       ),
@@ -430,10 +442,10 @@ class _PerfilScreenState extends State<PerfilScreen>
                     const SizedBox(height: 6),
                     Text(
                       value,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
-                        color: Colors.black87,
+                        color: context.textTheme.titleMedium?.color,
                       ),
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -451,88 +463,100 @@ class _PerfilScreenState extends State<PerfilScreen>
   Widget _buildModernRolesCard(dynamic user) {
     final roles = user?.roles ?? [];
 
-    if (roles.isEmpty) {
-      return Container(
-        padding: const EdgeInsets.all(20),
-        decoration: BoxDecoration(
-          color: Colors.grey.shade50,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: Colors.grey.shade200),
-        ),
-        child: Row(
-          children: [
-            Icon(Icons.info_outline, color: Colors.grey.shade400),
-            const SizedBox(width: 12),
-            Text(
-              'Sin roles asignados',
-              style: TextStyle(color: Colors.grey.shade600),
-            ),
-          ],
-        ),
-      );
-    }
+    return Builder(
+      builder: (context) {
+        final colorScheme = context.colorScheme;
+        final isDark = context.isDark;
 
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(16),
-        gradient: LinearGradient(
-          colors: [Colors.blue.shade50, Colors.purple.shade50],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Wrap(
-        spacing: 10,
-        runSpacing: 10,
-        children: (roles as List<dynamic>).map((role) {
+        if (roles.isEmpty) {
           return Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [
-                  _getRoleColor(role.toString()),
-                  _getRoleColor(role.toString()).withOpacity(0.8),
-                ],
+              color: isDark
+                  ? colorScheme.surfaceContainerHighest
+                  : colorScheme.surfaceContainerHighest.withAlpha(100),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: colorScheme.outline.withAlpha(50),
               ),
-              borderRadius: BorderRadius.circular(12),
-              boxShadow: [
-                BoxShadow(
-                  color: _getRoleColor(role.toString()).withOpacity(0.3),
-                  blurRadius: 8,
-                  offset: const Offset(0, 4),
-                ),
-              ],
             ),
             child: Row(
-              mainAxisSize: MainAxisSize.min,
               children: [
                 Icon(
-                  _getRolePrimaryIcon(role.toString()),
-                  size: 18,
-                  color: Colors.white,
+                  Icons.info_outline,
+                  color: colorScheme.onSurfaceVariant,
                 ),
-                const SizedBox(width: 8),
+                const SizedBox(width: 12),
                 Text(
-                  _getRoleLabel(role.toString()),
-                  style: const TextStyle(
-                    fontWeight: FontWeight.w600,
-                    color: Colors.white,
-                    fontSize: 14,
-                  ),
+                  'Sin roles asignados',
+                  style: TextStyle(color: colorScheme.onSurfaceVariant),
                 ),
               ],
             ),
           );
-        }).toList(),
-      ),
+        }
+
+        return Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(16),
+            color: isDark
+                ? colorScheme.surfaceContainerHighest
+                : colorScheme.surfaceContainerHighest.withAlpha(100),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.05),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Wrap(
+            spacing: 10,
+            runSpacing: 10,
+            children: (roles as List<dynamic>).map((role) {
+              return Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      _getRoleColor(role.toString()),
+                      _getRoleColor(role.toString()).withOpacity(0.8),
+                    ],
+                  ),
+                  borderRadius: BorderRadius.circular(12),
+                  boxShadow: [
+                    BoxShadow(
+                      color: _getRoleColor(role.toString()).withOpacity(0.3),
+                      blurRadius: 8,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      _getRolePrimaryIcon(role.toString()),
+                      size: 18,
+                      color: Colors.white,
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      _getRoleLabel(role.toString()),
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w600,
+                        color: Colors.white,
+                        fontSize: 14,
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            }).toList(),
+          ),
+        );
+      },
     );
   }
 
@@ -540,91 +564,91 @@ class _PerfilScreenState extends State<PerfilScreen>
   Widget _buildModernStatusCard(dynamic user) {
     final isActive = user?.activo ?? false;
 
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(16),
-        gradient: LinearGradient(
-          colors: isActive
-              ? [Colors.green.shade50, Colors.green.shade100]
-              : [Colors.red.shade50, Colors.red.shade100],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
+    return Builder(
+      builder: (context) {
+        final statusColor = isActive ? Colors.green : Colors.red;
+        final colorScheme = context.colorScheme;
+        final isDark = context.isDark;
+
+        return Container(
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(16),
+            color: isDark
+                ? statusColor.withOpacity(0.1)
+                : statusColor.withOpacity(0.05),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.05),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
+              ),
+            ],
           ),
-        ],
-      ),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: isActive ? Colors.green : Colors.red,
-              shape: BoxShape.circle,
-              boxShadow: [
-                BoxShadow(
-                  color: (isActive ? Colors.green : Colors.red).withOpacity(
-                    0.3,
-                  ),
-                  blurRadius: 10,
-                  offset: const Offset(0, 4),
-                ),
-              ],
-            ),
-            child: Icon(
-              isActive ? Icons.check_circle : Icons.cancel,
-              color: Colors.white,
-              size: 24,
-            ),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Estado de Cuenta',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Colors.grey.shade600,
-                    fontWeight: FontWeight.w500,
-                    letterSpacing: 0.5,
-                  ),
-                ),
-                const SizedBox(height: 6),
-                Row(
-                  children: [
-                    Container(
-                      width: 8,
-                      height: 8,
-                      decoration: BoxDecoration(
-                        color: isActive ? Colors.green : Colors.red,
-                        shape: BoxShape.circle,
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      isActive ? 'Activo' : 'Inactivo',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: isActive
-                            ? Colors.green.shade700
-                            : Colors.red.shade700,
-                      ),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: statusColor,
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: statusColor.withOpacity(0.3),
+                      blurRadius: 10,
+                      offset: const Offset(0, 4),
                     ),
                   ],
                 ),
-              ],
-            ),
+                child: Icon(
+                  isActive ? Icons.check_circle : Icons.cancel,
+                  color: Colors.white,
+                  size: 24,
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Estado de Cuenta',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: colorScheme.onSurfaceVariant,
+                        fontWeight: FontWeight.w500,
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Row(
+                      children: [
+                        Container(
+                          width: 8,
+                          height: 8,
+                          decoration: BoxDecoration(
+                            color: statusColor,
+                            shape: BoxShape.circle,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          isActive ? 'Activo' : 'Inactivo',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: statusColor,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
-        ],
-      ),
+        );
+      },
     );
   }
 
@@ -1209,6 +1233,8 @@ class _PerfilScreenState extends State<PerfilScreen>
     required Gradient gradient,
     required VoidCallback onTap,
   }) {
+    final colorScheme = context.colorScheme;
+
     return ListTile(
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       leading: Container(
@@ -1221,34 +1247,43 @@ class _PerfilScreenState extends State<PerfilScreen>
       ),
       title: Text(
         title,
-        style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 16),
+        style: TextStyle(
+          fontWeight: FontWeight.w600,
+          fontSize: 16,
+          color: context.textTheme.titleMedium?.color,
+        ),
       ),
       subtitle: Text(
         subtitle,
-        style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
+        style: TextStyle(
+          color: colorScheme.onSurfaceVariant,
+          fontSize: 13,
+        ),
       ),
-      trailing: Icon(Icons.chevron_right, color: Colors.grey.shade400),
+      trailing: Icon(
+        Icons.chevron_right,
+        color: colorScheme.onSurfaceVariant,
+      ),
       onTap: onTap,
     );
   }
 
   // Tarjeta de apariencia con switch de tema
   Widget _buildAppearanceCard(BuildContext context) {
+    final colorScheme = context.colorScheme;
+    final isDark = context.isDark;
+
     return Consumer<ThemeProvider>(
       builder: (context, themeProvider, _) {
-        final isDark = themeProvider.isDarkMode;
+        final isDarkMode = themeProvider.isDarkMode;
 
         return Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(16),
-            gradient: LinearGradient(
-              colors: isDark
-                  ? [Colors.grey.shade800, Colors.grey.shade900]
-                  : [Colors.amber.shade50, Colors.orange.shade50],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
+            color: isDark
+                ? colorScheme.surfaceContainerHighest
+                : colorScheme.surfaceContainerHighest.withAlpha(100),
             boxShadow: [
               BoxShadow(
                 color: Colors.black.withOpacity(0.05),
@@ -1267,28 +1302,31 @@ class _PerfilScreenState extends State<PerfilScreen>
                     Row(
                       children: [
                         Icon(
-                          isDark ? Icons.dark_mode : Icons.light_mode,
+                          isDarkMode ? Icons.dark_mode : Icons.light_mode,
                           size: 20,
-                          color: isDark ? Colors.amber : Colors.orange,
+                          color: isDarkMode
+                              ? Colors.amber
+                              : Colors.orange,
                         ),
                         const SizedBox(width: 12),
                         Text(
-                          'Modo ${isDark ? 'Oscuro' : 'Claro'}',
-                          style: const TextStyle(
+                          'Modo ${isDarkMode ? 'Oscuro' : 'Claro'}',
+                          style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.w600,
+                            color: context.textTheme.titleMedium?.color,
                           ),
                         ),
                       ],
                     ),
                     const SizedBox(height: 6),
                     Text(
-                      isDark
+                      isDarkMode
                           ? 'Interfaz oscura para menos luz'
                           : 'Interfaz clara para mejor visibilidad',
                       style: TextStyle(
                         fontSize: 13,
-                        color: Colors.grey.shade600,
+                        color: colorScheme.onSurfaceVariant,
                         fontWeight: FontWeight.w400,
                       ),
                     ),
@@ -1299,15 +1337,13 @@ class _PerfilScreenState extends State<PerfilScreen>
               AnimatedSwitcher(
                 duration: const Duration(milliseconds: 300),
                 child: Switch(
-                  key: ValueKey(isDark),
-                  value: isDark,
+                  key: ValueKey(isDarkMode),
+                  value: isDarkMode,
                   onChanged: (value) {
                     themeProvider.toggleTheme();
                   },
                   activeColor: Colors.amber,
                   activeTrackColor: Colors.amber.shade200,
-                  inactiveThumbColor: Colors.grey.shade400,
-                  inactiveTrackColor: Colors.grey.shade300,
                 ),
               ),
             ],

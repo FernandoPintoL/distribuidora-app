@@ -3,6 +3,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'services/role_based_router.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'models/models.dart';
 import 'providers/providers.dart';
 import 'providers/theme_provider.dart';
@@ -17,6 +18,15 @@ import 'services/local_notification_service.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   debugPrint('🌍 App starting...');
+
+  // Initialize SharedPreferences BEFORE any service that uses it
+  try {
+    await SharedPreferences.getInstance();
+    debugPrint('✅ SharedPreferences initialized');
+  } catch (e) {
+    debugPrint('⚠️ Error initializing SharedPreferences: $e');
+  }
+
   // Load environment variables before initializing services/UI
   await dotenv.load(fileName: ".env");
   debugPrint('✅ .env loaded');
@@ -28,6 +38,9 @@ void main() async {
   final notificationService = LocalNotificationService();
   await notificationService.initialize();
   debugPrint('✅ LocalNotificationService initialized');
+
+  // Print service status for debugging
+  await notificationService.printServiceStatus();
 
   runApp(
     MultiProvider(

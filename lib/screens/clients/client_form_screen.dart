@@ -6,6 +6,7 @@ import '../../providers/providers.dart';
 import '../../widgets/profile_photo_selector.dart';
 import '../../widgets/select_search.dart';
 import '../../widgets/location_selector.dart';
+import '../../widgets/custom_time_picker_dialog.dart';
 import '../../widgets/widgets.dart';
 import '../../config/config.dart';
 import 'dart:io';
@@ -1237,9 +1238,12 @@ class _ClientFormScreenState extends State<ClientFormScreen> {
                       Expanded(
                         child: OutlinedButton(
                           onPressed: () async {
-                            final picked = await showTimePicker(
+                            final picked = await showCustomTimePicker(
                               context: context,
                               initialTime: start,
+                              helpText: 'Hora de inicio',
+                              cancelText: 'Cancelar',
+                              confirmText: 'Aceptar',
                             );
                             if (picked != null)
                               setLocalState(() => start = picked);
@@ -1251,9 +1255,12 @@ class _ClientFormScreenState extends State<ClientFormScreen> {
                       Expanded(
                         child: OutlinedButton(
                           onPressed: () async {
-                            final picked = await showTimePicker(
+                            final picked = await showCustomTimePicker(
                               context: context,
                               initialTime: end,
+                              helpText: 'Hora de fin',
+                              cancelText: 'Cancelar',
+                              confirmText: 'Aceptar',
                             );
                             if (picked != null)
                               setLocalState(() => end = picked);

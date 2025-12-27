@@ -56,24 +56,37 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
             },
           ),
           // Menú de opciones
-          PopupMenuButton<String>(
-            onSelected: (value) {
-              if (value == 'delete_all') {
-                _confirmDeleteAll(context);
-              }
+          Consumer<NotificationProvider>(
+            builder: (context, provider, child) {
+              final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+              return PopupMenuButton<String>(
+                onSelected: (value) {
+                  if (value == 'delete_all') {
+                    _confirmDeleteAll(context);
+                  }
+                },
+                itemBuilder: (context) => [
+                  PopupMenuItem(
+                    value: 'delete_all',
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.delete_sweep,
+                          color: isDarkMode ? Colors.red.shade400 : Colors.red,
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          'Eliminar todas',
+                          style: TextStyle(
+                            color: isDarkMode ? Colors.red.shade400 : Colors.red,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              );
             },
-            itemBuilder: (context) => [
-              const PopupMenuItem(
-                value: 'delete_all',
-                child: Row(
-                  children: [
-                    Icon(Icons.delete_sweep, color: Colors.red),
-                    SizedBox(width: 8),
-                    Text('Eliminar todas'),
-                  ],
-                ),
-              ),
-            ],
           ),
         ],
       ),
@@ -86,15 +99,23 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
 
           // Mostrar error si existe
           if (provider.error != null) {
+            final isDarkMode = Theme.of(context).brightness == Brightness.dark;
             return Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const Icon(Icons.error_outline, size: 64, color: Colors.red),
+                  Icon(
+                    Icons.error_outline,
+                    size: 64,
+                    color: isDarkMode ? Colors.red.shade400 : Colors.red,
+                  ),
                   const SizedBox(height: 16),
                   Text(
                     provider.error!,
-                    style: const TextStyle(color: Colors.red),
+                    style: TextStyle(
+                      color: isDarkMode ? Colors.red.shade400 : Colors.red,
+                      fontSize: 16,
+                    ),
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 16),
@@ -110,6 +131,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
 
           // Mostrar lista vacía
           if (provider.notifications.isEmpty) {
+            final isDarkMode = Theme.of(context).brightness == Brightness.dark;
             return Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -117,14 +139,14 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                   Icon(
                     Icons.notifications_none,
                     size: 100,
-                    color: Colors.grey[300],
+                    color: isDarkMode ? Colors.grey[600] : Colors.grey[300],
                   ),
                   const SizedBox(height: 24),
                   Text(
                     'No tienes notificaciones',
                     style: TextStyle(
                       fontSize: 18,
-                      color: Colors.grey[600],
+                      color: isDarkMode ? Colors.grey[300] : Colors.grey[700],
                       fontWeight: FontWeight.w500,
                     ),
                   ),
@@ -133,7 +155,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                     'Te avisaremos cuando recibas nuevas notificaciones',
                     style: TextStyle(
                       fontSize: 14,
-                      color: Colors.grey[500],
+                      color: isDarkMode ? Colors.grey[400] : Colors.grey[600],
                     ),
                     textAlign: TextAlign.center,
                   ),
@@ -164,11 +186,14 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     AppNotification notification,
     NotificationProvider provider,
   ) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    final theme = Theme.of(context);
+
     return Dismissible(
       key: Key('notification-${notification.id}'),
       direction: DismissDirection.endToStart,
       background: Container(
-        color: Colors.red,
+        color: Colors.red.shade600,
         alignment: Alignment.centerRight,
         padding: const EdgeInsets.only(right: 20),
         child: const Icon(Icons.delete, color: Colors.white, size: 32),
@@ -188,7 +213,9 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
               ),
               TextButton(
                 onPressed: () => Navigator.of(context).pop(true),
-                style: TextButton.styleFrom(foregroundColor: Colors.red),
+                style: TextButton.styleFrom(
+                  foregroundColor: isDarkMode ? Colors.red.shade400 : Colors.red,
+                ),
                 child: const Text('Eliminar'),
               ),
             ],
@@ -198,19 +225,26 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       onDismissed: (direction) {
         provider.deleteNotification(notification.id);
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Notificación eliminada'),
-            duration: Duration(seconds: 2),
+          SnackBar(
+            content: const Text('Notificación eliminada'),
+            backgroundColor: isDarkMode ? Colors.grey[800] : null,
+            duration: const Duration(seconds: 2),
           ),
         );
       },
       child: Card(
         margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
         elevation: notification.read ? 0 : 2,
-        color: notification.read ? null : Colors.blue.shade50,
+        color: notification.read
+            ? null
+            : isDarkMode
+                ? Colors.blue.shade900.withAlpha((0.3 * 255).toInt())
+                : Colors.blue.shade50,
         child: ListTile(
           leading: CircleAvatar(
-            backgroundColor: notification.color.withOpacity(0.15),
+            backgroundColor: notification.color.withAlpha(
+              (isDarkMode ? 0.25 : 0.15 * 255).toInt(),
+            ),
             child: Icon(
               notification.icon,
               color: notification.color,
@@ -222,6 +256,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
             style: TextStyle(
               fontWeight: notification.read ? FontWeight.normal : FontWeight.bold,
               fontSize: 16,
+              color: theme.textTheme.bodyLarge?.color,
             ),
           ),
           subtitle: Column(
@@ -230,7 +265,10 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
               const SizedBox(height: 4),
               Text(
                 notification.message,
-                style: const TextStyle(fontSize: 14),
+                style: TextStyle(
+                  fontSize: 14,
+                  color: isDarkMode ? Colors.grey[400] : Colors.grey[700],
+                ),
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
               ),
@@ -239,14 +277,18 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                 timeago.format(notification.createdAt, locale: 'es'),
                 style: TextStyle(
                   fontSize: 12,
-                  color: Colors.grey[600],
+                  color: isDarkMode ? Colors.grey[500] : Colors.grey[600],
                 ),
               ),
             ],
           ),
           trailing: PopupMenuButton<String>(
             padding: EdgeInsets.zero,
-            icon: const Icon(Icons.more_vert, size: 20),
+            icon: Icon(
+              Icons.more_vert,
+              size: 20,
+              color: isDarkMode ? Colors.grey[300] : null,
+            ),
             onSelected: (value) {
               if (value == 'toggle_read') {
                 if (notification.read) {
@@ -278,22 +320,31 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                   ],
                 ),
               ),
-              const PopupMenuItem(
+              PopupMenuItem(
                 value: 'delete',
                 child: Row(
                   children: [
-                    Icon(Icons.delete, size: 20, color: Colors.red),
-                    SizedBox(width: 8),
-                    Text('Eliminar', style: TextStyle(color: Colors.red)),
+                    Icon(
+                      Icons.delete,
+                      size: 20,
+                      color: isDarkMode ? Colors.red.shade400 : Colors.red,
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      'Eliminar',
+                      style: TextStyle(
+                        color: isDarkMode ? Colors.red.shade400 : Colors.red,
+                      ),
+                    ),
                   ],
                 ),
               ),
             ],
           ),
-          onTap: () async {
+          onTap: () {
             // Marcar como leída si no lo está
             if (!notification.read) {
-              await provider.markAsRead(notification.id);
+              provider.markAsRead(notification.id);
             }
 
             // TODO: Navegar a la pantalla correspondiente según el tipo
@@ -323,17 +374,21 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
 
   Future<void> _markAllAsRead(BuildContext context) async {
     final provider = context.read<NotificationProvider>();
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    final messenger = ScaffoldMessenger.of(context);
     final success = await provider.markAllAsRead();
 
     if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
+      messenger.showSnackBar(
         SnackBar(
           content: Text(
             success
                 ? 'Todas las notificaciones marcadas como leídas'
                 : 'Error al marcar notificaciones',
           ),
-          backgroundColor: success ? Colors.green : Colors.red,
+          backgroundColor: success
+              ? (isDarkMode ? Colors.green.shade800 : Colors.green)
+              : (isDarkMode ? Colors.red.shade800 : Colors.red),
         ),
       );
     }
@@ -344,6 +399,8 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     int notificationId,
     NotificationProvider provider,
   ) async {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    final messenger = ScaffoldMessenger.of(context);
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
@@ -358,22 +415,26 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
           ),
           TextButton(
             onPressed: () => Navigator.of(context).pop(true),
-            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            style: TextButton.styleFrom(
+              foregroundColor: isDarkMode ? Colors.red.shade400 : Colors.red,
+            ),
             child: const Text('Eliminar'),
           ),
         ],
       ),
     );
 
-    if (confirmed == true) {
+    if (mounted && confirmed == true) {
       final success = await provider.deleteNotification(notificationId);
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
+        messenger.showSnackBar(
           SnackBar(
             content: Text(
               success ? 'Notificación eliminada' : 'Error al eliminar',
             ),
-            backgroundColor: success ? Colors.green : Colors.red,
+            backgroundColor: success
+                ? (isDarkMode ? Colors.green.shade800 : Colors.green)
+                : (isDarkMode ? Colors.red.shade800 : Colors.red),
           ),
         );
       }
@@ -382,6 +443,8 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
 
   Future<void> _confirmDeleteAll(BuildContext context) async {
     final provider = context.read<NotificationProvider>();
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    final messenger = ScaffoldMessenger.of(context);
 
     final confirmed = await showDialog<bool>(
       context: context,
@@ -397,24 +460,28 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
           ),
           TextButton(
             onPressed: () => Navigator.of(context).pop(true),
-            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            style: TextButton.styleFrom(
+              foregroundColor: isDarkMode ? Colors.red.shade400 : Colors.red,
+            ),
             child: const Text('Eliminar todas'),
           ),
         ],
       ),
     );
 
-    if (confirmed == true) {
+    if (mounted && confirmed == true) {
       final success = await provider.deleteAllNotifications();
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
+        messenger.showSnackBar(
           SnackBar(
             content: Text(
               success
                   ? 'Todas las notificaciones eliminadas'
                   : 'Error al eliminar notificaciones',
             ),
-            backgroundColor: success ? Colors.green : Colors.red,
+            backgroundColor: success
+                ? (isDarkMode ? Colors.green.shade800 : Colors.green)
+                : (isDarkMode ? Colors.red.shade800 : Colors.red),
           ),
         );
       }

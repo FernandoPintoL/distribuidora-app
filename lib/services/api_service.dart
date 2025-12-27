@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'http_logger.dart';
 
 class ApiService {
@@ -108,34 +109,126 @@ class ApiService {
   }
 
   Future<void> _loadToken() async {
+    // Intentar primero con SharedPreferences
     try {
       final prefs = await SharedPreferences.getInstance();
       _token = prefs.getString(tokenKey);
+      if (_token != null) {
+        debugPrint('✅ Token loaded from SharedPreferences');
+        return;
+      } else {
+        debugPrint('ℹ️ No token found in SharedPreferences');
+      }
     } catch (e) {
       debugPrint('⚠️ Error loading token from SharedPreferences: $e');
-      _token = null;
+    }
+
+    // Fallback: intentar cargar del Secure Storage
+    try {
+      const storage = FlutterSecureStorage();
+      _token = await storage.read(key: tokenKey);
+      if (_token != null) {
+        debugPrint('✅ Token loaded from Secure Storage (fallback)');
+        return;
+      }
+    } catch (secureError) {
+      debugPrint('⚠️ Error loading token from Secure Storage: $secureError');
+    }
+
+    // Reintento con SharedPreferences después de delay
+    try {
+      await Future.delayed(const Duration(milliseconds: 500));
+      final prefs = await SharedPreferences.getInstance();
+      _token = prefs.getString(tokenKey);
+      if (_token != null) {
+        debugPrint('✅ Token loaded from SharedPreferences (retry)');
+        return;
+      }
+    } catch (retryError) {
+      debugPrint('⚠️ Token load retry failed: $retryError');
+    }
+
+    if (_token == null) {
+      debugPrint('❌ No token found anywhere');
     }
   }
 
   Future<void> _saveToken(String token) async {
     _token = token;
+    bool saved = false;
+
+    // Intentar primero con SharedPreferences
     try {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString(tokenKey, token);
+      debugPrint('✅ Token saved successfully to SharedPreferences');
+      saved = true;
     } catch (e) {
-      debugPrint('⚠️ Error saving token to SharedPreferences: $e');
-      // El token se mantiene en memoria aunque falle el guardado
+      debugPrint('❌ Error saving token to SharedPreferences: $e');
+
+      // Fallback: usar flutter_secure_storage
+      try {
+        const storage = FlutterSecureStorage();
+        await storage.write(key: tokenKey, value: token);
+        debugPrint('✅ Token saved to Secure Storage (fallback)');
+        saved = true;
+      } catch (secureError) {
+        debugPrint('❌ Error saving token to Secure Storage: $secureError');
+
+        // Reintento con SharedPreferences después de delay
+        try {
+          await Future.delayed(const Duration(milliseconds: 500));
+          final prefs = await SharedPreferences.getInstance();
+          await prefs.setString(tokenKey, token);
+          debugPrint('✅ Token saved successfully to SharedPreferences (retry)');
+          saved = true;
+        } catch (retryError) {
+          debugPrint('❌ Token save retry failed: $retryError');
+          debugPrint(
+              '⚠️ Token stored in memory only. Some features may not work after app restart.');
+        }
+      }
+    }
+
+    if (saved) {
+      debugPrint('✅ Token persistence confirmed');
     }
   }
 
   Future<void> _clearToken() async {
     _token = null;
+    bool cleared = false;
+
+    // Intentar limpiar de SharedPreferences
     try {
       final prefs = await SharedPreferences.getInstance();
       await prefs.remove(tokenKey);
+      debugPrint('✅ Token cleared from SharedPreferences');
+      cleared = true;
     } catch (e) {
       debugPrint('⚠️ Error clearing token from SharedPreferences: $e');
-      // El token ya está limpio en memoria
+    }
+
+    // También limpiar del Secure Storage
+    try {
+      const storage = FlutterSecureStorage();
+      await storage.delete(key: tokenKey);
+      debugPrint('✅ Token cleared from Secure Storage');
+      cleared = true;
+    } catch (secureError) {
+      debugPrint('⚠️ Error clearing token from Secure Storage: $secureError');
+    }
+
+    // Reintento si nada funcionó
+    if (!cleared) {
+      try {
+        await Future.delayed(const Duration(milliseconds: 500));
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.remove(tokenKey);
+        debugPrint('✅ Token cleared from SharedPreferences (retry)');
+      } catch (retryError) {
+        debugPrint('⚠️ Token clear retry failed: $retryError');
+      }
     }
   }
 

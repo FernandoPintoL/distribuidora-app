@@ -14,7 +14,7 @@ class CarritoScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: CustomGradientAppBar(
-        title: 'Mi Carritosss',
+        title: 'Mi Carrito',
         customGradient: AppGradients.blue,
         actions: [
           Consumer<CarritoProvider>(
@@ -93,7 +93,6 @@ class CarritoScreen extends StatelessWidget {
                   },
                 ),
               ),
-
             ],
           );
         },

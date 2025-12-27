@@ -25,12 +25,13 @@ class Carrito {
   }
 
   double get impuesto {
-    // 13% de impuesto (ajustar según tu país)
-    return subtotal * 0.13;
+    // Impuestos deshabilitados por ahora
+    return 0.0;
   }
 
   double get total {
-    return subtotal + impuesto;
+    // Solo el subtotal sin impuestos
+    return subtotal;
   }
 
   int get cantidadItems {

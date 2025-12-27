@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../models/models.dart';
 import '../../widgets/widgets.dart';
+import '../../widgets/custom_time_picker_dialog.dart';
 import '../../config/config.dart';
 
 class FechaHoraEntregaScreen extends StatefulWidget {
@@ -22,8 +23,9 @@ class _FechaHoraEntregaScreenState extends State<FechaHoraEntregaScreen> {
   @override
   void initState() {
     super.initState();
-    // Establecer valores por defecto: fecha del siguiente día y horario de 09:00 a 17:00
-    _fechaSeleccionada = DateTime.now().add(const Duration(days: 1));
+    // Establecer valores por defecto: fecha de hoy y horario de 09:00 a 17:00
+    final now = DateTime.now();
+    _fechaSeleccionada = DateTime(now.year, now.month, now.day);
     _horaInicio = const TimeOfDay(hour: 9, minute: 0);
     _horaFin = const TimeOfDay(hour: 17, minute: 0);
   }
@@ -36,7 +38,7 @@ class _FechaHoraEntregaScreenState extends State<FechaHoraEntregaScreen> {
 
   Future<void> _seleccionarFecha() async {
     final DateTime now = DateTime.now();
-    final DateTime firstDate = now.add(const Duration(days: 1)); // Mínimo es mañana
+    final DateTime firstDate = DateTime(now.year, now.month, now.day); // Hoy es el mínimo
     final DateTime lastDate = now.add(const Duration(days: 30));
 
     final DateTime? picked = await showDatePicker(
@@ -58,7 +60,7 @@ class _FechaHoraEntregaScreenState extends State<FechaHoraEntregaScreen> {
   }
 
   Future<void> _seleccionarHoraInicio() async {
-    final TimeOfDay? picked = await showTimePicker(
+    final TimeOfDay? picked = await showCustomTimePicker(
       context: context,
       initialTime: _horaInicio ?? TimeOfDay.now(),
       helpText: 'Hora de inicio preferida',
@@ -66,7 +68,7 @@ class _FechaHoraEntregaScreenState extends State<FechaHoraEntregaScreen> {
       confirmText: 'Aceptar',
     );
 
-    if (picked != null) {
+    if (picked != null && mounted) {
       setState(() {
         _horaInicio = picked;
       });
@@ -74,7 +76,7 @@ class _FechaHoraEntregaScreenState extends State<FechaHoraEntregaScreen> {
   }
 
   Future<void> _seleccionarHoraFin() async {
-    final TimeOfDay? picked = await showTimePicker(
+    final TimeOfDay? picked = await showCustomTimePicker(
       context: context,
       initialTime: _horaFin ?? TimeOfDay.now(),
       helpText: 'Hora de fin preferida',
@@ -82,7 +84,7 @@ class _FechaHoraEntregaScreenState extends State<FechaHoraEntregaScreen> {
       confirmText: 'Aceptar',
     );
 
-    if (picked != null) {
+    if (picked != null && mounted) {
       setState(() {
         _horaFin = picked;
       });

@@ -32,7 +32,13 @@
       "Bash(flutter --version:*)",
       "Bash(./gradlew clean:*)",
       "Bash(powershell:*)",
-      "Bash(ls:*)"
+      "Bash(ls:*)",
+      "Bash(flutter pub upgrade:*)",
+      "Bash(timeout 300 flutter run:*)",
+      "Bash(git add:*)",
+      "Bash(gradlew clean:*)",
+      "Bash(timeout 120 flutter run:*)",
+      "Bash(timeout 180 flutter run:*)"
     ],
     "deny": [],
     "ask": []

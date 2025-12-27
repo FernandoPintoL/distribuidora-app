@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:mobile_scanner/mobile_scanner.dart';
 import '../../providers/providers.dart';
 import '../../models/models.dart';
 import '../../widgets/product/index.dart';
@@ -76,6 +77,198 @@ class _ProductListScreenState extends State<ProductListScreen> {
     productProvider.loadProducts();
   }
 
+  Future<void> _openBarcodeScanner() async {
+    try {
+      // Abre directamente el diálogo del scanner
+      // Si no hay permisos o hay error, el MobileScanner lo maneja
+      showDialog(
+        context: context,
+        barrierDismissible: true,
+        builder: (context) => _buildBarcodeScannerDialog(),
+      );
+    } catch (e) {
+      debugPrint('Error al abrir scanner: $e');
+      // Si hay cualquier error, muestra entrada manual
+      if (mounted) {
+        _showManualBarcodeInput();
+      }
+    }
+  }
+
+  void _showManualBarcodeInput() {
+    showDialog(
+      context: context,
+      builder: (context) {
+        final TextEditingController manualController = TextEditingController();
+        return AlertDialog(
+          title: const Text('Ingresar código de barras'),
+          content: TextField(
+            controller: manualController,
+            autofocus: true,
+            decoration: InputDecoration(
+              hintText: 'Escanea o ingresa el código',
+              prefixIcon: const Icon(Icons.qr_code),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+            onSubmitted: (value) {
+              if (value.isNotEmpty) {
+                Navigator.pop(context);
+                _searchByBarcode(value);
+              }
+            },
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancelar'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                if (manualController.text.isNotEmpty) {
+                  Navigator.pop(context);
+                  _searchByBarcode(manualController.text);
+                }
+              },
+              child: const Text('Buscar'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildBarcodeScannerDialog() {
+    return Dialog(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Título
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text(
+                  'Escanear código de barras',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.close),
+                  onPressed: () => Navigator.pop(context),
+                ),
+              ],
+            ),
+          ),
+          const Divider(height: 0),
+          // Scanner
+          SizedBox(
+            height: 300,
+            child: _buildScannerContent(),
+          ),
+          const Divider(height: 0),
+          // Pie de página con opción manual
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              children: [
+                Text(
+                  'Apunta la cámara al código de barras',
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: Colors.grey[600],
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 12),
+                TextButton.icon(
+                  onPressed: () {
+                    Navigator.pop(context);
+                    _showManualBarcodeInput();
+                  },
+                  icon: const Icon(Icons.edit),
+                  label: const Text('Ingresar manualmente'),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildScannerContent() {
+    // Crear un nuevo controlador cada vez para evitar problemas de lifecycle
+    final scannerController = MobileScannerController();
+
+    return MobileScanner(
+      controller: scannerController,
+      onDetect: (capture) {
+        try {
+          final List<Barcode> barcodes = capture.barcodes;
+          if (barcodes.isNotEmpty) {
+            final scannedCode = barcodes.first.rawValue ?? '';
+            if (scannedCode.isNotEmpty && mounted) {
+              // Detener el scanner y cerrar el diálogo
+              try {
+                scannerController.stop();
+              } catch (e) {
+                debugPrint('Error al detener scanner: $e');
+              }
+              Navigator.pop(context);
+              _searchByBarcode(scannedCode);
+            }
+          }
+        } catch (e) {
+          debugPrint('Error al detectar código: $e');
+        }
+      },
+      errorBuilder: (context, error) {
+        return Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(Icons.camera_alt_outlined, size: 48, color: Colors.grey),
+              const SizedBox(height: 16),
+              Text(
+                'Error con la cámara',
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
+              const SizedBox(height: 8),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 32),
+                child: Text(
+                  'Permiso denegado o dispositivo sin cámara',
+                  style: Theme.of(context).textTheme.bodySmall,
+                  textAlign: TextAlign.center,
+                ),
+              ),
+              const SizedBox(height: 16),
+              ElevatedButton.icon(
+                onPressed: () {
+                  Navigator.pop(context);
+                  _showManualBarcodeInput();
+                },
+                icon: const Icon(Icons.edit),
+                label: const Text('Entrada manual'),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  void _searchByBarcode(String barcode) {
+    _searchController.text = barcode;
+    _onSearchChanged(barcode);
+  }
+
   void _toggleView() {
     setState(() {
       _isGridView = !_isGridView;
@@ -137,6 +330,25 @@ class _ProductListScreenState extends State<ProductListScreen> {
                   ),
                 ),
                 const SizedBox(width: 12),
+                // Botón de scanner de código de barras
+                Container(
+                  height: 50,
+                  decoration: BoxDecoration(
+                    color: isDark
+                        ? colorScheme.surfaceContainerHighest
+                        : colorScheme.surfaceContainerHighest.withAlpha(100),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: IconButton(
+                    onPressed: _openBarcodeScanner,
+                    icon: Icon(
+                      Icons.qr_code_scanner,
+                      color: colorScheme.primary,
+                    ),
+                    tooltip: 'Escanear código de barras',
+                  ),
+                ),
+                const SizedBox(width: 8),
                 // Botón de cambio de vista
                 Container(
                   height: 50,
@@ -211,20 +423,7 @@ class _ProductListScreenState extends State<ProductListScreen> {
           ),
         ],
       ),
-      floatingActionButton: Consumer<AuthProvider>(
-        builder: (context, authProvider, child) {
-          if (authProvider.canCreateProducts) {
-            return FloatingActionButton(
-              onPressed: () {
-                // TODO: Navigate to create product screen
-              },
-              backgroundColor: colorScheme.primary,
-              child: const Icon(Icons.add, color: Colors.white),
-            );
-          }
-          return const SizedBox.shrink();
-        },
-      ),
+      floatingActionButton: _buildFloatingActionButton(colorScheme),
     );
   }
 
@@ -374,6 +573,40 @@ class _ProductListScreenState extends State<ProductListScreen> {
       MaterialPageRoute(
         builder: (context) => producto.ProductoDetalleScreen(producto: product),
       ),
+    );
+  }
+
+  Widget _buildFloatingActionButton(ColorScheme colorScheme) {
+    return Consumer2<AuthProvider, CarritoProvider>(
+      builder: (context, authProvider, carritoProvider, child) {
+        // Si hay items en el carrito, mostrar botón para ir al carrito
+        if (carritoProvider.items.isNotEmpty) {
+          return FloatingActionButton.extended(
+            onPressed: () {
+              Navigator.pushNamed(context, '/carrito');
+            },
+            backgroundColor: colorScheme.primary,
+            icon: const Icon(Icons.shopping_cart),
+            label: Text(
+              'Carrito (${carritoProvider.items.length})',
+              style: const TextStyle(fontWeight: FontWeight.w600),
+            ),
+          );
+        }
+
+        // Si el usuario puede crear productos, mostrar botón de agregar
+        if (authProvider.canCreateProducts) {
+          return FloatingActionButton(
+            onPressed: () {
+              // TODO: Navigate to create product screen
+            },
+            backgroundColor: colorScheme.primary,
+            child: const Icon(Icons.add, color: Colors.white),
+          );
+        }
+
+        return const SizedBox.shrink();
+      },
     );
   }
 }

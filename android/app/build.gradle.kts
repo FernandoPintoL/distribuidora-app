@@ -64,11 +64,11 @@ android {
 }
 
 configurations.all {
-    exclude(group = "androidx.camera", module = "camera-android-camerax")
-    exclude(group = "androidx.camera", module = "camera-core")
     resolutionStrategy {
-        // Use stable camera-core instead of RC
-        force("androidx.camera:camera-core:1.4.1")
+        // Use stable camera versions for mobile_scanner compatibility
+        force("androidx.camera:camera-core:1.3.4")
+        force("androidx.camera:camera-camera2:1.3.4")
+        force("androidx.camera:camera-lifecycle:1.3.4")
     }
 }
 
@@ -76,7 +76,11 @@ dependencies {
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")
     implementation("androidx.concurrent:concurrent-futures:1.1.0")
     implementation("org.jspecify:jspecify:0.3.0")
-    implementation("androidx.camera:camera-core:1.4.1")
+
+    // Camera dependencies for mobile_scanner
+    implementation("androidx.camera:camera-core:1.3.4")
+    implementation("androidx.camera:camera-camera2:1.3.4")
+    implementation("androidx.camera:camera-lifecycle:1.3.4")
 }
 
 flutter {

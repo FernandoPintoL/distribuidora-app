@@ -116,8 +116,9 @@ class LocalNotificationService {
         ?.createNotificationChannel(proformasChannel);
   }
 
-  /// Solicitar permisos en iOS
+  /// Solicitar permisos en iOS y Android 13+
   Future<void> _requestPermissions() async {
+    // iOS: solicitar permisos para notificaciones
     await _notificationsPlugin
         .resolvePlatformSpecificImplementation<
             IOSFlutterLocalNotificationsPlugin>()
@@ -125,7 +126,27 @@ class LocalNotificationService {
           alert: true,
           badge: true,
           sound: true,
+          provisional: false,
         );
+
+    debugPrint('✅ Permisos solicitados en iOS');
+
+    // Android 13+ (API 33+): solicitar permiso POST_NOTIFICATIONS
+    // Nota: El permiso también debe estar en AndroidManifest.xml
+    try {
+      final androidPlugin = _notificationsPlugin
+          .resolvePlatformSpecificImplementation<
+              AndroidFlutterLocalNotificationsPlugin>();
+
+      // Solicitar el permiso en Android 13+
+      final hasNotificationPermission =
+          await androidPlugin?.requestNotificationsPermission();
+      if (hasNotificationPermission == true) {
+        debugPrint('✅ Permiso POST_NOTIFICATIONS otorgado en Android');
+      }
+    } catch (e) {
+      debugPrint('⚠️ Error solicitando permiso POST_NOTIFICATIONS: $e');
+    }
   }
 
   /// Callback cuando se toca una notificación
@@ -201,17 +222,29 @@ class LocalNotificationService {
     required String payload,
   }) async {
     try {
+      // Determinar la importancia según el canal
+      final Importance importance = _getImportanceForChannel(channelId);
+      final Priority priority = _getPriorityForChannel(channelId);
+
       final AndroidNotificationDetails androidDetails =
           AndroidNotificationDetails(
         channelId,
         _getChannelName(channelId),
         channelDescription: _getChannelDescription(channelId),
-        importance: Importance.max,
-        priority: Priority.high,
-        enableVibration: true,
+        importance: importance,
+        priority: priority,
+        enableVibration: _shouldVibrate(channelId),
         playSound: true,
-        icon: '@drawable/ic_notification',
-        styleInformation: const BigTextStyleInformation(''),
+        icon: '@drawable/ic_launcher_foreground',
+        // Mostrar cuerpo completo en notificaciones grandes
+        styleInformation: BigTextStyleInformation(
+          body,
+          contentTitle: title,
+          htmlFormatBigText: false,
+          htmlFormatContent: false,
+        ),
+        showWhen: true,
+        autoCancel: true,
       );
 
       const DarwinNotificationDetails iOSDetails =
@@ -233,8 +266,51 @@ class LocalNotificationService {
         details,
         payload: payload,
       );
+
+      debugPrint('✅ Notificación mostrada: $title (Canal: $channelId)');
     } catch (e) {
       debugPrint('❌ Error mostrando notificación: $e');
+    }
+  }
+
+  /// Obtener importancia según el canal
+  Importance _getImportanceForChannel(String channelId) {
+    switch (channelId) {
+      case 'entregas_nuevas':
+      case 'proformas':
+        return Importance.max;
+      case 'cambio_estados':
+        return Importance.high;
+      case 'recordatorios':
+      default:
+        return Importance.defaultImportance;
+    }
+  }
+
+  /// Obtener prioridad según el canal
+  Priority _getPriorityForChannel(String channelId) {
+    switch (channelId) {
+      case 'entregas_nuevas':
+      case 'proformas':
+        return Priority.high;
+      case 'cambio_estados':
+        return Priority.high;
+      case 'recordatorios':
+      default:
+        return Priority.defaultPriority;
+    }
+  }
+
+  /// Determinar si debe vibrar según el canal
+  bool _shouldVibrate(String channelId) {
+    switch (channelId) {
+      case 'entregas_nuevas':
+      case 'cambio_estados':
+      case 'proformas':
+        return true;
+      case 'recordatorios':
+      default:
+        return false;
     }
   }
 
@@ -435,5 +511,54 @@ class LocalNotificationService {
     } catch (e) {
       debugPrint('❌ Error cancelando todas las notificaciones: $e');
     }
+  }
+
+  /// 🧪 MÉTODO DE PRUEBA: Enviar notificación de prueba
+  /// Útil para verificar que todo funciona correctamente
+  Future<void> sendTestNotification({
+    required String channel,
+  }) async {
+    switch (channel) {
+      case 'entregas':
+        await showNewDeliveryNotification(
+          deliveryId: 9999,
+          clientName: 'CLIENTE PRUEBA',
+          address: 'Calle de prueba 123',
+        );
+        break;
+      case 'estado':
+        await showDeliveryStateChangeNotification(
+          deliveryId: 9999,
+          newState: 'EN_CAMINO',
+          clientName: 'CLIENTE PRUEBA',
+        );
+        break;
+      case 'proforma':
+        await showProformaApprovedNotification(
+          numero: 'PRO-TEST-001',
+          clientName: 'CLIENTE PRUEBA',
+        );
+        break;
+      case 'envio':
+        await showEnvioProgramadoNotification(
+          envioId: 9999,
+          cliente: 'CLIENTE PRUEBA',
+          fecha: 'Mañana a las 10:00',
+        );
+        break;
+    }
+  }
+
+  /// 🔍 VERIFICACIÓN: Estado del servicio
+  Future<void> printServiceStatus() async {
+    debugPrint('\n═══════════════════════════════════════');
+    debugPrint('📊 ESTADO DEL SERVICIO DE NOTIFICACIONES');
+    debugPrint('═══════════════════════════════════════');
+    debugPrint('✅ Inicializado: $_isInitialized');
+    debugPrint('✅ Plugin: ${_notificationsPlugin.runtimeType}');
+    debugPrint('✅ Canales Android: entregas_nuevas, cambio_estados, recordatorios, proformas');
+    debugPrint('✅ Permisos iOS: Alert, Badge, Sound');
+    debugPrint('✅ Permisos Android: POST_NOTIFICATIONS, VIBRATE');
+    debugPrint('═══════════════════════════════════════\n');
   }
 }

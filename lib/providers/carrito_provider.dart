@@ -38,7 +38,7 @@ class CarritoProvider with ChangeNotifier {
   double get impuesto => _carrito.impuesto;
   double get total => _carrito.total;
   double get costoEnvio => _costoEnvio;
-  double get totalConEnvio => subtotal + impuesto + _costoEnvio;
+  double get totalConEnvio => subtotal + _costoEnvio;
 
   // Descuentos getters
   String? get codigoDescuento => _codigoDescuento;
@@ -47,9 +47,9 @@ class CarritoProvider with ChangeNotifier {
   bool get tieneDescuento => _montoDescuento > 0;
   bool get validandoDescuento => _validandoDescuento;
 
-  // Total con descuento e impuesto
+  // Total con descuento (sin impuesto)
   double get subtotalConDescuento => subtotal - _montoDescuento;
-  double get totalConDescuento => subtotalConDescuento + impuesto + _costoEnvio;
+  double get totalConDescuento => subtotalConDescuento + _costoEnvio;
 
   bool get isEmpty => _carrito.isEmpty;
   bool get isNotEmpty => _carrito.isNotEmpty;
