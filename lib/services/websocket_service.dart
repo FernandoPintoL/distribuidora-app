@@ -22,6 +22,8 @@ class WebSocketService {
   final _envioController = StreamController<Map<String, dynamic>>.broadcast();
   final _ubicacionController = StreamController<Map<String, dynamic>>.broadcast();
   final _rutaController = StreamController<Map<String, dynamic>>.broadcast();
+  final _entregaController = StreamController<Map<String, dynamic>>.broadcast(); // NUEVO para entregas
+  final _cargoController = StreamController<Map<String, dynamic>>.broadcast(); // NUEVO para cargas
   final _connectionController = StreamController<bool>.broadcast();
 
   // Getters de streams
@@ -31,6 +33,8 @@ class WebSocketService {
   Stream<Map<String, dynamic>> get envioStream => _envioController.stream;
   Stream<Map<String, dynamic>> get ubicacionStream => _ubicacionController.stream;
   Stream<Map<String, dynamic>> get rutaStream => _rutaController.stream;
+  Stream<Map<String, dynamic>> get entregaStream => _entregaController.stream; // NUEVO para entregas
+  Stream<Map<String, dynamic>> get cargoStream => _cargoController.stream; // NUEVO para cargas
   Stream<bool> get connectionStream => _connectionController.stream;
 
   bool get isConnected => _isConnected;
@@ -389,6 +393,107 @@ class WebSocketService {
       });
       _handleEvent(WebSocketConfig.eventRutaDetalleActualizado, data);
     });
+
+    // Eventos de Entregas/Cargas (flujo de preparación y carga)
+    _socket!.on(WebSocketConfig.eventEntregaProgramada, (data) {
+      debugPrint('📅 Entrega programada: #${data['numero']}');
+      _entregaController.add({
+        'type': 'programada',
+        'data': data,
+      });
+      _handleEvent(WebSocketConfig.eventEntregaProgramada, data);
+    });
+
+    _socket!.on(WebSocketConfig.eventEntregaEnPreparacionCarga, (data) {
+      debugPrint('📋 Entrega en preparación de carga: #${data['numero']}');
+      _entregaController.add({
+        'type': 'preparacion_carga',
+        'data': data,
+      });
+      _handleEvent(WebSocketConfig.eventEntregaEnPreparacionCarga, data);
+    });
+
+    _socket!.on(WebSocketConfig.eventEntregaEnCarga, (data) {
+      debugPrint('📦 Entrega en carga: #${data['numero']}');
+      _entregaController.add({
+        'type': 'en_carga',
+        'data': data,
+      });
+      _handleEvent(WebSocketConfig.eventEntregaEnCarga, data);
+    });
+
+    _socket!.on(WebSocketConfig.eventEntregaListoParaEntrega, (data) {
+      debugPrint('✅ Entrega lista para entrega: #${data['numero']}');
+      _entregaController.add({
+        'type': 'listo_para_entrega',
+        'data': data,
+      });
+      _handleEvent(WebSocketConfig.eventEntregaListoParaEntrega, data);
+    });
+
+    _socket!.on(WebSocketConfig.eventEntregaEnTransito, (data) {
+      debugPrint('🚚 Entrega en tránsito: #${data['numero']}');
+      _entregaController.add({
+        'type': 'en_transito',
+        'data': data,
+      });
+      _handleEvent(WebSocketConfig.eventEntregaEnTransito, data);
+    });
+
+    _socket!.on(WebSocketConfig.eventEntregaCompletada, (data) {
+      debugPrint('🎉 Entrega completada: #${data['numero']}');
+      _entregaController.add({
+        'type': 'completada',
+        'data': data,
+      });
+      _handleEvent(WebSocketConfig.eventEntregaCompletada, data);
+    });
+
+    _socket!.on(WebSocketConfig.eventEntregaNovedad, (data) {
+      debugPrint('⚠️ Novedad en entrega: #${data['numero']} - ${data['motivo']}');
+      _entregaController.add({
+        'type': 'novedad',
+        'data': data,
+      });
+      _handleEvent(WebSocketConfig.eventEntregaNovedad, data);
+    });
+
+    _socket!.on(WebSocketConfig.eventEntregaCancelada, (data) {
+      debugPrint('❌ Entrega cancelada: #${data['numero']}');
+      _entregaController.add({
+        'type': 'cancelada',
+        'data': data,
+      });
+      _handleEvent(WebSocketConfig.eventEntregaCancelada, data);
+    });
+
+    // Eventos de Confirmación de Cargas
+    _socket!.on(WebSocketConfig.eventVentaCargada, (data) {
+      debugPrint('✔️ Venta cargada: #${data['venta_numero']} en entrega #${data['entrega_numero']}');
+      _cargoController.add({
+        'type': 'venta_cargada',
+        'data': data,
+      });
+      _handleEvent(WebSocketConfig.eventVentaCargada, data);
+    });
+
+    _socket!.on(WebSocketConfig.eventCargoProgreso, (data) {
+      debugPrint('📊 Progreso de carga: ${data['confirmadas']}/${data['total']} (${data['porcentaje']}%)');
+      _cargoController.add({
+        'type': 'progreso',
+        'data': data,
+      });
+      _handleEvent(WebSocketConfig.eventCargoProgreso, data);
+    });
+
+    _socket!.on(WebSocketConfig.eventCargoConfirmado, (data) {
+      debugPrint('🎉 Carga completamente confirmada: #${data['entrega_numero']}');
+      _cargoController.add({
+        'type': 'confirmado',
+        'data': data,
+      });
+      _handleEvent(WebSocketConfig.eventCargoConfirmado, data);
+    });
   }
 
   /// Registrar callback para evento específico
@@ -423,10 +528,13 @@ class WebSocketService {
   void dispose() {
     disconnect();
     _proformaController.close();
+    _coordinacionController.close();
     _stockController.close();
     _envioController.close();
     _ubicacionController.close();
     _rutaController.close();
+    _entregaController.close();
+    _cargoController.close();
     _connectionController.close();
     _eventHandlers.clear();
   }

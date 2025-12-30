@@ -6,6 +6,8 @@ export 'clients/client_list_screen.dart';
 export 'clients/client_form_screen.dart';
 export 'cliente/home_cliente_screen.dart';
 export 'chofer/home_chofer_screen.dart';
+export 'chofer/entrega_detalle_screen.dart';
+export 'chofer/confirmacion_entrega_screen.dart';
 export 'carrito/carrito_screen.dart';
 export 'pedidos/direccion_entrega_seleccion_screen.dart';
 export 'pedidos/fecha_hora_entrega_screen.dart';

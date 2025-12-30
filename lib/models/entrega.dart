@@ -1,4 +1,7 @@
 import 'package:intl/intl.dart';
+import 'venta.dart';
+import 'chofer.dart';
+import 'vehiculo.dart';
 
 class Entrega {
   final int id;
@@ -33,6 +36,16 @@ class Entrega {
   final String? observacionesEntrega;
   final DateTime? coordinacionActualizadaEn;
 
+  // Historial de estados (viene en la respuesta principal)
+  final List<EntregaEstadoHistorial> historialEstados;
+
+  // Ventas asignadas a esta entrega
+  final List<Venta> ventas;
+
+  // Relaciones con objetos completos del backend
+  final Chofer? chofer;
+  final Vehiculo? vehiculo;
+
   Entrega({
     required this.id,
     required this.proformaId,
@@ -60,6 +73,13 @@ class Entrega {
     this.entregadoA,
     this.observacionesEntrega,
     this.coordinacionActualizadaEn,
+    // Historial de estados
+    this.historialEstados = const [],
+    // Ventas
+    this.ventas = const [],
+    // Relaciones
+    this.chofer,
+    this.vehiculo,
   });
 
   factory Entrega.fromJson(Map<String, dynamic> json) {
@@ -77,6 +97,49 @@ class Entrega {
     // O buscar en campos raíz
     latDestino = (json['latitud_destino'] as num?)?.toDouble() ?? latDestino;
     lngDestino = (json['longitud_destino'] as num?)?.toDouble() ?? lngDestino;
+
+    // Extraer nombre del cliente si es un objeto Map
+    String? clienteName;
+    if (json['cliente'] is Map<String, dynamic>) {
+      final clienteObj = json['cliente'] as Map<String, dynamic>;
+      clienteName = clienteObj['nombre'] as String?;
+    } else {
+      clienteName = json['cliente'] as String?;
+    }
+
+    // Extraer dirección si existe
+    String? direccionValue;
+    if (json['direccion'] is String) {
+      direccionValue = json['direccion'] as String?;
+    }
+
+    // Parsear historial de estados si existe en la respuesta
+    List<EntregaEstadoHistorial> historial = [];
+    if (json['historial_estados'] is List) {
+      historial = (json['historial_estados'] as List)
+          .map((h) => EntregaEstadoHistorial.fromJson(h as Map<String, dynamic>))
+          .toList();
+    }
+
+    // Parsear ventas si existen en la respuesta
+    List<Venta> ventasList = [];
+    if (json['ventas'] is List) {
+      ventasList = (json['ventas'] as List)
+          .map((v) => Venta.fromJson(v as Map<String, dynamic>))
+          .toList();
+    }
+
+    // Parsear chofer si existe en la respuesta
+    Chofer? choferObj;
+    if (json['chofer'] is Map<String, dynamic>) {
+      choferObj = Chofer.fromJson(json['chofer'] as Map<String, dynamic>);
+    }
+
+    // Parsear vehículo si existe en la respuesta
+    Vehiculo? vehiculoObj;
+    if (json['vehiculo'] is Map<String, dynamic>) {
+      vehiculoObj = Vehiculo.fromJson(json['vehiculo'] as Map<String, dynamic>);
+    }
 
     return Entrega(
       id: json['id'] as int,
@@ -101,8 +164,8 @@ class Entrega {
       // Nuevos campos del endpoint /api/chofer/trabajos
       trabajoType: json['trabajoType'] as String? ?? json['type'] as String?,
       numero: json['numero'] as String?,
-      cliente: json['cliente'] as String?,
-      direccion: json['direccion'] as String?,
+      cliente: clienteName,
+      direccion: direccionValue,
       // Coordenadas del destino
       latitudeDestino: latDestino,
       longitudeDestino: lngDestino,
@@ -117,6 +180,13 @@ class Entrega {
       coordinacionActualizadaEn: json['coordinacion_actualizada_en'] != null
           ? DateTime.parse(json['coordinacion_actualizada_en'] as String)
           : null,
+      // Historial de estados
+      historialEstados: historial,
+      // Ventas
+      ventas: ventasList,
+      // Relaciones
+      chofer: choferObj,
+      vehiculo: vehiculoObj,
     );
   }
 
@@ -152,53 +222,68 @@ class Entrega {
   }
 
   String get estadoLabel {
-    // Soporta tanto estados de entregas como de envios
+    // Estados sincronizados con base de datos real (check constraint migration)
     const estadoLabels = {
-      // Estados de entregas (proformas)
+      // Estados principales
+      'PROGRAMADO': 'Programado',
       'ASIGNADA': 'Asignada',
+      // Flujo legacy
       'EN_CAMINO': 'En Camino',
       'LLEGO': 'Llegó',
       'ENTREGADO': 'Entregado',
+      // Flujo nuevo de carga
+      'PREPARACION_CARGA': 'Preparación de Carga',
+      'EN_CARGA': 'En Carga',
+      'LISTO_PARA_ENTREGA': 'Listo para Entrega',
+      'EN_TRANSITO': 'En Tránsito',
+      // Estados especiales
       'NOVEDAD': 'Novedad',
+      'RECHAZADO': 'Rechazado',
       'CANCELADA': 'Cancelada',
-      // Estados de envios (ventas)
-      'PROGRAMADO': 'Programado',
-      'EN_PREPARACION': 'En Preparación',
-      'EN_RUTA': 'En Ruta',
     };
     return estadoLabels[estado] ?? estado;
   }
 
   String get estadoColor {
     const colors = {
-      // Estados de entregas (proformas)
+      // Estados principales
+      'PROGRAMADO': '#eab308', // yellow
       'ASIGNADA': '#3b82f6', // blue
+      // Flujo legacy
       'EN_CAMINO': '#f97316', // orange
       'LLEGO': '#eab308', // yellow
-      'ENTREGADO': '#22c55e', // green
+      'ENTREGADO': '#22c55e', // light green
+      // Flujo nuevo de carga
+      'PREPARACION_CARGA': '#f97316', // orange
+      'EN_CARGA': '#f97316', // orange
+      'LISTO_PARA_ENTREGA': '#eab308', // yellow
+      'EN_TRANSITO': '#f97316', // orange (similar a EN_CAMINO)
+      // Estados especiales
       'NOVEDAD': '#ef4444', // red
+      'RECHAZADO': '#ef4444', // red
       'CANCELADA': '#6b7280', // gray
-      // Estados de envios (ventas)
-      'PROGRAMADO': '#3b82f6', // blue
-      'EN_PREPARACION': '#f97316', // orange
-      'EN_RUTA': '#eab308', // yellow
     };
     return colors[estado] ?? '#000000';
   }
 
   String get estadoIcon {
     const icons = {
-      // Estados de entregas (proformas)
+      // Estados principales
+      'PROGRAMADO': '📅',
       'ASIGNADA': '📋',
+      // Flujo legacy
       'EN_CAMINO': '🚚',
       'LLEGO': '🏁',
       'ENTREGADO': '✅',
+      // Flujo nuevo de carga
+      'PREPARACION_CARGA': '📦',
+      'EN_CARGA': '📦',
+      'LISTO_PARA_ENTREGA': '📦',
+      'EN_TRANSITO': '🚚',
+      // Estados especiales
       'NOVEDAD': '⚠️',
-      'CANCELADA': '❌',
-      // Estados de envios (ventas)
-      'PROGRAMADO': '📅',
-      'EN_PREPARACION': '📦',
-      'EN_RUTA': '🚚',
+      'RECHAZADO': '❌',
+      'CANCELADA': '🚫',
     };
     return icons[estado] ?? '❓';
   }
@@ -213,10 +298,18 @@ class Entrega {
     return '📋'; // Por defecto
   }
 
-  bool get puedeIniciarRuta => estado == 'ASIGNADA';
+  // Validaciones de transiciones de estado
+  bool get puedeIniciarRuta =>
+      estado == 'ASIGNADA' || estado == 'LISTO_PARA_ENTREGA';
+
+  // Backend solo acepta EN_CAMINO para marcar llegada (estado legacy)
   bool get puedeMarcarLlegada => estado == 'EN_CAMINO';
-  bool get puedeConfirmarEntrega => estado == 'LLEGO' || estado == 'EN_CAMINO';
-  bool get puedeReportarNovedad => !['ENTREGADO', 'CANCELADA'].contains(estado);
+
+  bool get puedeConfirmarEntrega =>
+      estado == 'LLEGO' || estado == 'EN_CAMINO' || estado == 'EN_TRANSITO';
+
+  bool get puedeReportarNovedad =>
+      !['ENTREGADO', 'CANCELADA'].contains(estado);
 
   String formatFecha(DateTime? fecha) {
     if (fecha == null) return 'N/A';

@@ -40,7 +40,10 @@
       "Bash(timeout 120 flutter run:*)",
       "Bash(timeout 180 flutter run:*)",
       "Bash(dir /s /b \"D:\\\\paucara\")",
-      "Bash(findstr:*)"
+      "Bash(findstr:*)",
+      "Bash(sqlite3:*)",
+      "Bash(find:*)",
+      "Bash(php artisan db:seed:*)"
     ],
     "deny": [],
     "ask": []

@@ -349,14 +349,27 @@ class LocalNotificationService {
   /// Obtener emoji para el estado
   String _getStateEmoji(String state) {
     switch (state) {
+      case 'PROGRAMADO':
+        return '📅';
+      case 'ASIGNADA':
+        return '📋';
       case 'EN_CAMINO':
+      case 'EN_TRANSITO':
         return '🚚';
       case 'LLEGO':
         return '🏁';
       case 'ENTREGADO':
         return '✅';
+      case 'PREPARACION_CARGA':
+      case 'EN_CARGA':
+      case 'LISTO_PARA_ENTREGA':
+        return '📦';
       case 'NOVEDAD':
         return '⚠️';
+      case 'RECHAZADO':
+        return '❌';
+      case 'CANCELADA':
+        return '🚫';
       default:
         return '📋';
     }
@@ -365,16 +378,28 @@ class LocalNotificationService {
   /// Obtener etiqueta para el estado
   String _getStateLabel(String state) {
     switch (state) {
+      case 'PROGRAMADO':
+        return 'Programado';
       case 'ASIGNADA':
         return 'Asignada';
       case 'EN_CAMINO':
         return 'En Camino';
+      case 'EN_TRANSITO':
+        return 'En Tránsito';
       case 'LLEGO':
         return 'Llegó';
       case 'ENTREGADO':
-        return 'Entregada';
+        return 'Entregado';
+      case 'PREPARACION_CARGA':
+        return 'Preparación de Carga';
+      case 'EN_CARGA':
+        return 'En Carga';
+      case 'LISTO_PARA_ENTREGA':
+        return 'Listo para Entrega';
       case 'NOVEDAD':
         return 'Novedad Reportada';
+      case 'RECHAZADO':
+        return 'Rechazado';
       case 'CANCELADA':
         return 'Cancelada';
       default:

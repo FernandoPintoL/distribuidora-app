@@ -3,7 +3,7 @@ import 'package:timeline_tile/timeline_tile.dart';
 import '../../models/entrega.dart';
 
 /// Widget que muestra un timeline visual del progreso de una entrega
-/// Displays states: ASIGNADA → EN_CAMINO → LLEGO → ENTREGADO
+/// Displays states: ASIGNADA → EN_CAMINO/EN_TRANSITO → LLEGO → ENTREGADO (sincronizado con BD)
 class EntregaTimeline extends StatelessWidget {
   final Entrega entrega;
 
@@ -48,7 +48,7 @@ class EntregaTimeline extends StatelessWidget {
                 final isCurrent = index == currentEstadoIndex;
 
                 return TimelineTile(
-                  alignment: TimelineAlign.start,
+                  alignment: TimelineAlign.center,
                   isFirst: index == 0,
                   isLast: index == estados.length - 1,
                   beforeLineStyle: LineStyle(
@@ -115,6 +115,7 @@ class EntregaTimeline extends StatelessWidget {
   }
 
   /// Obtener orden de estados para esta entrega
+  /// Sincronizado con estados reales de la BD
   List<Map<String, dynamic>> _getEstadosProgresion() {
     return [
       {
@@ -155,9 +156,17 @@ class EntregaTimeline extends StatelessWidget {
   }
 
   /// Obtener índice del estado actual en la progresión
+  /// Soporta EN_CAMINO y EN_TRANSITO como estados intermedios
   int _getCurrentEstadoIndex() {
     const estadoOrder = ['ASIGNADA', 'EN_CAMINO', 'LLEGO', 'ENTREGADO'];
-    int index = estadoOrder.indexOf(entrega.estado);
+
+    // Si está en EN_TRANSITO (nuevo flujo), mapearlo como EN_CAMINO
+    String estadoActual = entrega.estado;
+    if (estadoActual == 'EN_TRANSITO') {
+      estadoActual = 'EN_CAMINO'; // Mostrar en misma posición que EN_CAMINO
+    }
+
+    int index = estadoOrder.indexOf(estadoActual);
     return index >= 0 ? index : 0;
   }
 }

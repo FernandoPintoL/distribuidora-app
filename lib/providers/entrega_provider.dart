@@ -1,12 +1,15 @@
 import 'package:flutter/widgets.dart';
+import 'dart:async';
 import '../models/entrega.dart';
 import '../models/ubicacion_tracking.dart';
 import '../services/entrega_service.dart';
 import '../services/local_notification_service.dart';
+import '../services/websocket_service.dart';
 
 class EntregaProvider with ChangeNotifier {
   final EntregaService _entregaService = EntregaService();
   final LocalNotificationService _notificationService = LocalNotificationService();
+  final WebSocketService _webSocketService = WebSocketService();
 
   List<Entrega> _entregas = [];
   Entrega? _entregaActual;
@@ -17,6 +20,10 @@ class EntregaProvider with ChangeNotifier {
 
   bool _isLoading = false;
   String? _errorMessage;
+
+  // WebSocket subscriptions
+  StreamSubscription? _entregaSubscription;
+  StreamSubscription? _cargoSubscription;
 
   // Getters
   List<Entrega> get entregas => _entregas;
@@ -110,11 +117,11 @@ class EntregaProvider with ChangeNotifier {
         _entregaActual = response.data;
         _errorMessage = null;
 
-        // Cargar ubicaciones y historial
-        await Future.wait([
-          obtenerUbicaciones(entregaId),
-          obtenerHistorialEstados(entregaId),
-        ]);
+        // El historial de estados ya viene en la respuesta de entrega
+        _historialEstados = _entregaActual?.historialEstados ?? [];
+
+        // Cargar solo ubicaciones (el historial ya está en la entrega)
+        await obtenerUbicaciones(entregaId);
 
         WidgetsBinding.instance.addPostFrameCallback((_) {
           notifyListeners();
@@ -258,7 +265,7 @@ class EntregaProvider with ChangeNotifier {
   // Confirmar entrega
   Future<bool> confirmarEntrega(
     int entregaId, {
-    required String firmaBase64,
+    String? firmaBase64,
     List<String>? fotosBase64,
     String? observaciones,
   }) async {
@@ -489,6 +496,283 @@ class EntregaProvider with ChangeNotifier {
     }
   }
 
+  /// Iniciar escucha de eventos WebSocket
+  void iniciarEscuchaWebSocket() {
+    debugPrint('🔌 EntregaProvider: Iniciando escucha WebSocket');
+
+    // Escuchar eventos de entregas
+    _entregaSubscription = _webSocketService.entregaStream.listen((event) {
+      debugPrint('📦 EntregaProvider recibió evento: ${event['type']}');
+      _handleEntregaEvent(event);
+    });
+
+    // Escuchar eventos de carga/confirmación
+    _cargoSubscription = _webSocketService.cargoStream.listen((event) {
+      debugPrint('📦 EntregaProvider recibió evento de carga: ${event['type']}');
+      _handleCargoEvent(event);
+    });
+  }
+
+  /// Detener escucha de eventos WebSocket
+  void detenerEscuchaWebSocket() {
+    debugPrint('🔌 EntregaProvider: Deteniendo escucha WebSocket');
+    _entregaSubscription?.cancel();
+    _cargoSubscription?.cancel();
+  }
+
+  /// Manejar eventos de entregas
+  void _handleEntregaEvent(Map<String, dynamic> event) {
+    final type = event['type'] as String?;
+    final data = event['data'] as Map<String, dynamic>?;
+
+    if (data == null) return;
+
+    switch (type) {
+      case 'preparacion_carga':
+        debugPrint('📋 Entrega en preparación de carga: ${data['numero']}');
+        _actualizarEntregaActual(data);
+        break;
+      case 'en_carga':
+        debugPrint('📦 Entrega en carga: ${data['numero']}');
+        _actualizarEntregaActual(data);
+        break;
+      case 'listo_para_entrega':
+        debugPrint('✅ Entrega lista para entrega: ${data['numero']}');
+        _actualizarEntregaActual(data);
+        break;
+      case 'en_transito':
+        debugPrint('🚚 Entrega en tránsito: ${data['numero']}');
+        _actualizarEntregaActual(data);
+        break;
+      case 'completada':
+        debugPrint('🎉 Entrega completada: ${data['numero']}');
+        _actualizarEntregaActual(data);
+        break;
+      case 'novedad':
+        debugPrint('⚠️ Novedad en entrega: ${data['numero']}');
+        _actualizarEntregaActual(data);
+        break;
+      default:
+        debugPrint('❓ Evento de entrega desconocido: $type');
+    }
+  }
+
+  /// Manejar eventos de carga/confirmación
+  void _handleCargoEvent(Map<String, dynamic> event) {
+    final type = event['type'] as String?;
+    final data = event['data'] as Map<String, dynamic>?;
+
+    if (data == null) return;
+
+    switch (type) {
+      case 'venta_cargada':
+        debugPrint('✔️ Venta cargada: ${data['venta_numero']}');
+        // Actualizar entrega actual si existe
+        if (_entregaActual?.id == data['entrega_id']) {
+          // Podrías recargar la entrega aquí si es necesario
+          notifyListeners();
+        }
+        break;
+      case 'progreso':
+        debugPrint('📊 Progreso: ${data['confirmadas']}/${data['total']}');
+        if (_entregaActual?.id == data['entrega_id']) {
+          notifyListeners();
+        }
+        break;
+      case 'confirmado':
+        debugPrint('🎉 Carga confirmada: ${data['entrega_numero']}');
+        _actualizarEntregaActual(data);
+        break;
+      default:
+        debugPrint('❓ Evento de carga desconocido: $type');
+    }
+  }
+
+  /// Actualizar entrega actual desde datos WebSocket
+  void _actualizarEntregaActual(Map<String, dynamic> data) {
+    try {
+      final entregaActualizada = Entrega.fromJson(data);
+      if (_entregaActual?.id == entregaActualizada.id) {
+        _entregaActual = entregaActualizada;
+        _actualizarEnListaEntregas(entregaActualizada);
+        notifyListeners();
+      }
+    } catch (e) {
+      debugPrint('❌ Error actualizando entrega desde WebSocket: $e');
+    }
+  }
+
+  // Confirmar venta cargada (FASE 2)
+  Future<bool> confirmarVentaCargada(
+    int entregaId,
+    int ventaId, {
+    String? notas,
+  }) async {
+    _isLoading = true;
+    _errorMessage = null;
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      notifyListeners();
+    });
+
+    try {
+      final response = await _entregaService.confirmarVentaCargada(
+        entregaId,
+        ventaId,
+        notas: notas,
+      );
+
+      if (response.success) {
+        // Actualizar la entrega si se devuelve (puede ser null si solo hubo confirmación)
+        if (response.data != null) {
+          _entregaActual = response.data;
+          _actualizarEnListaEntregas(_entregaActual!);
+        }
+        // Si no hay datos, recargar la entrega para obtener los cambios
+        else {
+          await obtenerEntrega(entregaId);
+        }
+        _errorMessage = null;
+
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          notifyListeners();
+        });
+        return true;
+      } else {
+        _errorMessage = response.message;
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          notifyListeners();
+        });
+        return false;
+      }
+    } catch (e) {
+      _errorMessage = 'Error al confirmar venta: ${e.toString()}';
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        notifyListeners();
+      });
+      return false;
+    } finally {
+      _isLoading = false;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        notifyListeners();
+      });
+    }
+  }
+
+  // Desmarcar venta cargada (FASE 2)
+  Future<bool> desmarcarVentaCargada(
+    int entregaId,
+    int ventaId,
+  ) async {
+    _isLoading = true;
+    _errorMessage = null;
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      notifyListeners();
+    });
+
+    try {
+      final response = await _entregaService.desmarcarVentaCargada(
+        entregaId,
+        ventaId,
+      );
+
+      if (response.success && response.data != null) {
+        _entregaActual = response.data;
+        _actualizarEnListaEntregas(_entregaActual!);
+        _errorMessage = null;
+
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          notifyListeners();
+        });
+        return true;
+      } else {
+        _errorMessage = response.message;
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          notifyListeners();
+        });
+        return false;
+      }
+    } catch (e) {
+      _errorMessage = 'Error al desmarcar venta: ${e.toString()}';
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        notifyListeners();
+      });
+      return false;
+    } finally {
+      _isLoading = false;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        notifyListeners();
+      });
+    }
+  }
+
+  // Confirmar cargo completo (FASE 2)
+  Future<bool> confirmarCargoCompleto(int entregaId) async {
+    _isLoading = true;
+    _errorMessage = null;
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      notifyListeners();
+    });
+
+    try {
+      final response = await _entregaService.confirmarCargoCompleto(entregaId);
+
+      if (response.success && response.data != null) {
+        _entregaActual = response.data;
+        _actualizarEnListaEntregas(_entregaActual!);
+        _errorMessage = null;
+
+        // Mostrar notificación de cambio de estado
+        await _notificationService.showDeliveryStateChangeNotification(
+          deliveryId: _entregaActual!.id,
+          newState: _entregaActual!.estado,
+          clientName: _entregaActual!.cliente ?? 'Cliente',
+        );
+
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          notifyListeners();
+        });
+        return true;
+      } else {
+        _errorMessage = response.message;
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          notifyListeners();
+        });
+        return false;
+      }
+    } catch (e) {
+      _errorMessage = 'Error al confirmar cargo: ${e.toString()}';
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        notifyListeners();
+      });
+      return false;
+    } finally {
+      _isLoading = false;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        notifyListeners();
+      });
+    }
+  }
+
+  // Obtener progreso de entrega (FASE 2)
+  Future<Map<String, dynamic>?> obtenerProgresoEntrega(int entregaId) async {
+    try {
+      final response = await _entregaService.obtenerProgresoEntrega(entregaId);
+
+      if (response.success && response.data != null) {
+        return response.data!;
+      } else {
+        _errorMessage = response.message;
+        return null;
+      }
+    } catch (e) {
+      _errorMessage = 'Error al obtener progreso: ${e.toString()}';
+      return null;
+    }
+  }
+
   // Limpiar
   void limpiar() {
     _entregas = [];
@@ -498,6 +782,7 @@ class EntregaProvider with ChangeNotifier {
     _historialEstados = [];
     _isLoading = false;
     _errorMessage = null;
+    detenerEscuchaWebSocket();
     notifyListeners();
   }
 }

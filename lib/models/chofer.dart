@@ -11,6 +11,8 @@ class Chofer {
   final String? fotoUrl;
   final bool activo;
   final DateTime? fechaContratacion;
+  final String? nombre; // Campo adicional que viene del API (nombre completo)
+  final String? email;
 
   Chofer({
     required this.id,
@@ -25,14 +27,16 @@ class Chofer {
     this.fotoUrl,
     this.activo = true,
     this.fechaContratacion,
+    this.nombre,
+    this.email,
   });
 
   factory Chofer.fromJson(Map<String, dynamic> json) {
     return Chofer(
       id: json['id'] as int,
       userId: json['user_id'] as int,
-      nombres: json['nombres'] as String,
-      apellidos: json['apellidos'] as String,
+      nombres: json['nombres'] as String? ?? '',
+      apellidos: json['apellidos'] as String? ?? '',
       ci: json['ci'] as String,
       telefono: json['telefono'] as String,
       licenciaConducir: json['licencia_conducir'] as String?,
@@ -45,6 +49,8 @@ class Chofer {
       fechaContratacion: json['fecha_contratacion'] != null
           ? DateTime.parse(json['fecha_contratacion'] as String)
           : null,
+      nombre: json['nombre'] as String?,
+      email: json['email'] as String?,
     );
   }
 
@@ -62,10 +68,18 @@ class Chofer {
       'foto_url': fotoUrl,
       'activo': activo,
       'fecha_contratacion': fechaContratacion?.toIso8601String(),
+      'nombre': nombre,
+      'email': email,
     };
   }
 
-  String get nombreCompleto => '$nombres $apellidos';
+  // Prioriza el campo 'nombre' si está disponible, sino combina nombres y apellidos
+  String get nombreCompleto {
+    if (nombre != null && nombre!.isNotEmpty) {
+      return nombre!;
+    }
+    return '$nombres $apellidos'.trim();
+  }
 
   bool get licenciaVigente {
     if (fechaVencimientoLicencia == null) return false;

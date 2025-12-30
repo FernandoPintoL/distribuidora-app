@@ -25,8 +25,12 @@ class _QuickCameraCaptureState extends State<QuickCameraCapture> {
   @override
   void initState() {
     super.initState();
-    // Notificar cambios iniciales
-    widget.onPhotosChanged(_capturedPhotos);
+    // Notificar cambios iniciales después de que el frame se complete
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        widget.onPhotosChanged(_capturedPhotos);
+      }
+    });
   }
 
   Future<void> _capturePhoto() async {

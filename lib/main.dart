@@ -185,6 +185,32 @@ class MyApp extends StatelessWidget {
                   builder: (context) => PedidoTrackingScreen(pedido: pedido),
                 );
 
+              case '/chofer/entrega-detalle':
+                final entregaId = settings.arguments as int?;
+                if (entregaId == null) {
+                  return MaterialPageRoute(
+                    builder: (context) => const Scaffold(
+                      body: Center(child: Text('Error: ID de entrega no encontrado')),
+                    ),
+                  );
+                }
+                return MaterialPageRoute(
+                  builder: (context) => EntregaDetalleScreen(entregaId: entregaId),
+                );
+
+              case '/chofer/confirmar-entrega':
+                final entregaId = settings.arguments as int?;
+                if (entregaId == null) {
+                  return MaterialPageRoute(
+                    builder: (context) => const Scaffold(
+                      body: Center(child: Text('Error: ID de entrega no encontrado')),
+                    ),
+                  );
+                }
+                return MaterialPageRoute(
+                  builder: (context) => ConfirmacionEntregaScreen(entregaId: entregaId),
+                );
+
               default:
                 return null;
             }

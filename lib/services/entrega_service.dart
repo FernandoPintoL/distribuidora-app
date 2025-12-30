@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:dio/dio.dart';
 import '../models/api_response.dart';
 import '../models/entrega.dart';
@@ -67,8 +68,9 @@ class EntregaService {
         '/chofer/entregas/$entregaId',
       );
 
+      final responseData = response.data as Map<String, dynamic>;
       final entrega = Entrega.fromJson(
-        response.data as Map<String, dynamic>,
+        responseData['data'] as Map<String, dynamic>,
       );
 
       return ApiResponse(
@@ -89,7 +91,7 @@ class EntregaService {
     }
   }
 
-  // Iniciar ruta (cambiar estado a EN_CAMINO)
+  // Iniciar ruta (cambiar estado a EN_RUTA)
   Future<ApiResponse<Entrega>> iniciarRuta(
     int entregaId, {
     required double latitud,
@@ -106,8 +108,9 @@ class EntregaService {
         data: data,
       );
 
+      final responseData = response.data as Map<String, dynamic>;
       final entrega = Entrega.fromJson(
-        response.data as Map<String, dynamic>,
+        responseData['data'] as Map<String, dynamic>,
       );
 
       return ApiResponse(
@@ -145,8 +148,9 @@ class EntregaService {
         data: data,
       );
 
+      final responseData = response.data as Map<String, dynamic>;
       final entrega = Entrega.fromJson(
-        response.data as Map<String, dynamic>,
+        responseData['data'] as Map<String, dynamic>,
       );
 
       return ApiResponse(
@@ -184,8 +188,25 @@ class EntregaService {
         data: data,
       );
 
+      final responseData = response.data as Map<String, dynamic>;
+
+      // Verificar si la respuesta contiene un mensaje de error del backend
+      if (responseData['success'] == false) {
+        return ApiResponse(
+          success: false,
+          message: responseData['message'] as String? ?? 'Error al marcar llegada',
+        );
+      }
+
+      // Si no hay campo 'data', intentar recargar la entrega
+      if (responseData['data'] == null) {
+        debugPrint('⚠️ Backend no retornó datos completos, recargando entrega...');
+        final entregaResponse = await obtenerEntrega(entregaId);
+        return entregaResponse;
+      }
+
       final entrega = Entrega.fromJson(
-        response.data as Map<String, dynamic>,
+        responseData['data'] as Map<String, dynamic>,
       );
 
       return ApiResponse(
@@ -194,9 +215,17 @@ class EntregaService {
         message: 'Llegada marcada exitosamente',
       );
     } on DioException catch (e) {
+      // Intentar extraer mensaje de error del backend
+      String errorMessage = 'Error al marcar llegada: ${e.message}';
+
+      if (e.response?.data is Map<String, dynamic>) {
+        final errorData = e.response?.data as Map<String, dynamic>;
+        errorMessage = errorData['message'] as String? ?? errorMessage;
+      }
+
       return ApiResponse(
         success: false,
-        message: 'Error al marcar llegada: ${e.message}',
+        message: errorMessage,
       );
     } catch (e) {
       return ApiResponse(
@@ -209,14 +238,14 @@ class EntregaService {
   // Confirmar entrega con firma y fotos
   Future<ApiResponse<Entrega>> confirmarEntrega(
     int entregaId, {
-    required String firmaBase64,
+    String? firmaBase64,
     List<String>? fotosBase64,
     String? observaciones,
   }) async {
     try {
       final data = {
-        'firma_digital': firmaBase64,
-        'observaciones': observaciones,
+        if (firmaBase64 != null) 'firma_digital': firmaBase64,
+        if (observaciones != null) 'observaciones': observaciones,
         if (fotosBase64 != null) 'fotos': fotosBase64,
       };
 
@@ -225,8 +254,9 @@ class EntregaService {
         data: data,
       );
 
+      final responseData = response.data as Map<String, dynamic>;
       final entrega = Entrega.fromJson(
-        response.data as Map<String, dynamic>,
+        responseData['data'] as Map<String, dynamic>,
       );
 
       return ApiResponse(
@@ -266,8 +296,9 @@ class EntregaService {
         data: data,
       );
 
+      final responseData = response.data as Map<String, dynamic>;
       final entrega = Entrega.fromJson(
-        response.data as Map<String, dynamic>,
+        responseData['data'] as Map<String, dynamic>,
       );
 
       return ApiResponse(
@@ -315,8 +346,9 @@ class EntregaService {
         data: data,
       );
 
+      final responseData = response.data as Map<String, dynamic>;
       final ubicacion = UbicacionTracking.fromJson(
-        response.data as Map<String, dynamic>,
+        responseData['data'] as Map<String, dynamic>,
       );
 
       return ApiResponse(
@@ -383,8 +415,9 @@ class EntregaService {
         '/tracking/ultima-ubicacion/$entregaId',
       );
 
+      final responseData = response.data as Map<String, dynamic>;
       final ubicacion = UbicacionTracking.fromJson(
-        response.data as Map<String, dynamic>,
+        responseData['data'] as Map<String, dynamic>,
       );
 
       return ApiResponse(
@@ -465,6 +498,182 @@ class EntregaService {
       return ApiResponse(
         success: false,
         message: 'Error al obtener historial: ${e.message}',
+      );
+    } catch (e) {
+      return ApiResponse(
+        success: false,
+        message: 'Error inesperado: ${e.toString()}',
+      );
+    }
+  }
+
+  // ========== MÉTODOS DE CARGA/CONFIRMACIÓN ==========
+
+  /// Confirmar que una venta ha sido cargada en la entrega
+  /// Usado en el flujo PREPARACION_CARGA o EN_CARGA
+  Future<ApiResponse<Entrega>> confirmarVentaCargada(
+    int entregaId,
+    int ventaId, {
+    String? notas,
+  }) async {
+    try {
+      final payload = {
+        if (notas != null) 'notas': notas,
+      };
+
+      final response = await _apiService.post(
+        '/entregas/$entregaId/confirmar-venta/$ventaId',
+        data: payload,
+      );
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        // Backend devolvió éxito, aunque puede que no devuelva la entrega completa
+        // En ese caso, obtenemos la entrega actualizada con una llamada adicional
+        try {
+          final entregaCompleta = await obtenerEntrega(entregaId);
+          if (entregaCompleta.success && entregaCompleta.data != null) {
+            return ApiResponse(
+              success: true,
+              data: entregaCompleta.data,
+              message: 'Venta confirmada como cargada',
+            );
+          }
+        } catch (_) {
+          // Si no podemos obtener la entrega, retornamos éxito de todas formas
+        }
+
+        // Fallback: retornar éxito aunque no tengamos la entrega completa
+        return ApiResponse(
+          success: true,
+          data: null,
+          message: 'Venta confirmada como cargada',
+        );
+      } else {
+        return ApiResponse(
+          success: false,
+          message: response.data['message'] ?? 'Error al confirmar venta',
+        );
+      }
+    } on DioException catch (e) {
+      return ApiResponse(
+        success: false,
+        message: 'Error al confirmar venta: ${e.message}',
+      );
+    } catch (e) {
+      return ApiResponse(
+        success: false,
+        message: 'Error inesperado: ${e.toString()}',
+      );
+    }
+  }
+
+  /// Obtener progreso de carga de una entrega
+  /// Devuelve { confirmadas, total, pendientes, porcentaje, completado }
+  Future<ApiResponse<Map<String, dynamic>>> obtenerProgresoEntrega(
+    int entregaId,
+  ) async {
+    try {
+      final response = await _apiService.get(
+        '/entregas/$entregaId/progreso',
+      );
+
+      final progreso = response.data['data'] as Map<String, dynamic>;
+      return ApiResponse(
+        success: true,
+        data: progreso,
+        message: 'Progreso obtenido exitosamente',
+      );
+    } on DioException catch (e) {
+      return ApiResponse(
+        success: false,
+        message: 'Error al obtener progreso: ${e.message}',
+      );
+    } catch (e) {
+      return ApiResponse(
+        success: false,
+        message: 'Error inesperado: ${e.toString()}',
+      );
+    }
+  }
+
+  /// Confirmar que la carga está lista (transición de EN_CARGA a LISTO_PARA_ENTREGA)
+  Future<ApiResponse<Entrega>> confirmarCargoCompleto(
+    int entregaId,
+  ) async {
+    try {
+      final response = await _apiService.post(
+        '/entregas/$entregaId/listo-para-entrega',
+        data: {},
+      );
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        final entrega = Entrega.fromJson(response.data['data'] as Map<String, dynamic>);
+        return ApiResponse(
+          success: true,
+          data: entrega,
+          message: 'Carga confirmada - Entrega lista para entrega',
+        );
+      } else {
+        return ApiResponse(
+          success: false,
+          message: response.data['message'] ?? 'Error al confirmar carga',
+        );
+      }
+    } on DioException catch (e) {
+      return ApiResponse(
+        success: false,
+        message: 'Error al confirmar carga: ${e.message}',
+      );
+    } catch (e) {
+      return ApiResponse(
+        success: false,
+        message: 'Error inesperado: ${e.toString()}',
+      );
+    }
+  }
+
+  /// Desmarcar una venta como cargada (en caso de error)
+  Future<ApiResponse<Entrega>> desmarcarVentaCargada(
+    int entregaId,
+    int ventaId,
+  ) async {
+    try {
+      final response = await _apiService.delete(
+        '/entregas/$entregaId/confirmar-venta/$ventaId',
+      );
+
+      if (response.statusCode == 200 || response.statusCode == 204) {
+        // Backend devolvió éxito, aunque puede que no devuelva la entrega completa
+        // En ese caso, obtenemos la entrega actualizada con una llamada adicional
+        try {
+          final entregaCompleta = await obtenerEntrega(entregaId);
+          if (entregaCompleta.success && entregaCompleta.data != null) {
+            return ApiResponse(
+              success: true,
+              data: entregaCompleta.data,
+              message: 'Venta desmarcada correctamente',
+            );
+          }
+        } catch (_) {
+          // Si no podemos obtener la entrega, retornamos éxito de todas formas
+        }
+
+        // Fallback: retornar éxito aunque no tengamos la entrega completa
+        return ApiResponse(
+          success: true,
+          data: null,
+          message: 'Venta desmarcada correctamente',
+        );
+      } else {
+        return ApiResponse(
+          success: false,
+          message: response.data['message'] ?? 'Error al desmarcar venta',
+        );
+      }
+    } on DioException catch (e) {
+      return ApiResponse(
+        success: false,
+        message: 'Error al desmarcar venta: ${e.message}',
       );
     } catch (e) {
       return ApiResponse(

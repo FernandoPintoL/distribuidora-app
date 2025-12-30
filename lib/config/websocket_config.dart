@@ -45,6 +45,23 @@ class WebSocketConfig {
   static const String eventEnvioEntregado = 'envio_entregado';
   static const String eventEntregaRechazada = 'entrega_rechazada';
 
+  // Eventos de Entregas/Cargas (flujo de preparación y carga)
+  // ✅ Sincronizados con Laravel Broadcast EntregaWebSocketService
+  static const String eventEntregaProgramada = 'entrega.programada';
+  static const String eventEntregaEnPreparacionCarga = 'entrega.preparacion_carga';
+  static const String eventEntregaEnCarga = 'entrega.en_carga';
+  static const String eventEntregaListoParaEntrega = 'entrega.listo_para_entrega';
+  static const String eventEntregaEnTransito = 'entrega.en_transito';
+  static const String eventEntregaLlegada = 'entrega.llegada';
+  static const String eventEntregaCompletada = 'entrega.completada';
+  static const String eventEntregaNovedad = 'entrega.novedad';
+  static const String eventEntregaCancelada = 'entrega.cancelada';
+
+  // Eventos de Confirmación de Cargas (venta confirmada como cargada)
+  static const String eventVentaCargada = 'venta.cargada';
+  static const String eventCargoProgreso = 'cargo.progreso'; // { confirmadas, total, porcentaje }
+  static const String eventCargoConfirmado = 'cargo.confirmado';
+
   // Eventos de Rutas (nuevos para planificación de entregas)
   // ✅ Sincronizados con Laravel Broadcast (RutaPlanificada, RutaModificada, RutaDetalleActualizado)
   static const String eventRutaPlanificada = 'ruta.planificada';

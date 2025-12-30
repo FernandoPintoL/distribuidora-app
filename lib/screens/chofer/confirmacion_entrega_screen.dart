@@ -1,4 +1,4 @@
-import 'dart:convert';
+import 'dart:convert' show base64Encode;
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
@@ -23,7 +23,6 @@ class ConfirmacionEntregaScreen extends StatefulWidget {
 class _ConfirmacionEntregaScreenState extends State<ConfirmacionEntregaScreen> {
   final _observacionesController = TextEditingController();
   final List<File> _fotosCapturadas = [];
-  bool _consentimientoLectura = false;
 
   @override
   void dispose() {
@@ -44,19 +43,6 @@ class _ConfirmacionEntregaScreenState extends State<ConfirmacionEntregaScreen> {
   }
 
   Future<void> _confirmarEntrega() async {
-    if (!_consentimientoLectura) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Debe aceptar la lectura de datos'),
-          backgroundColor: Colors.red,
-        ),
-      );
-      return;
-    }
-
-    // Generar firma placeholder (en producción, usar SignaturePad)
-    final firmaBase64 = base64Encode(utf8.encode('Firma digital - ${DateTime.now()}'));
-
     // Convertir todas las fotos capturadas a Base64
     final fotosBase64 = <String>[];
     for (final foto in _fotosCapturadas) {
@@ -67,7 +53,6 @@ class _ConfirmacionEntregaScreenState extends State<ConfirmacionEntregaScreen> {
 
     final exito = await provider.confirmarEntrega(
       widget.entregaId,
-      firmaBase64: firmaBase64,
       fotosBase64: fotosBase64.isNotEmpty ? fotosBase64 : null,
       observaciones: _observacionesController.text.isNotEmpty
           ? _observacionesController.text
@@ -102,86 +87,6 @@ class _ConfirmacionEntregaScreenState extends State<ConfirmacionEntregaScreen> {
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          // Instrucción
-          Card(
-            color: Colors.blue[50],
-            child: Padding(
-              padding: const EdgeInsets.all(12),
-              child: Row(
-                children: [
-                  Icon(Icons.info, color: Colors.blue[600]),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Text(
-                      'Complete la confirmación de entrega con firma y fotos',
-                      style: TextStyle(color: Colors.blue[900]),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-          const SizedBox(height: 24),
-
-          // Sección de Firma
-          _SectionTitle(title: '📝 Firma Digital'),
-          const SizedBox(height: 12),
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(12),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Container(
-                    height: 150,
-                    decoration: BoxDecoration(
-                      border: Border.all(color: Colors.grey[300]!),
-                      borderRadius: BorderRadius.circular(8),
-                      color: Colors.grey[50],
-                    ),
-                    child: Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            Icons.pan_tool,
-                            size: 40,
-                            color: Colors.grey[400],
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            'Área de firma (placeholder)',
-                            style: TextStyle(
-                              color: Colors.grey[600],
-                              fontSize: 12,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            'En producción: Usar SignaturePad',
-                            style: TextStyle(
-                              color: Colors.grey[500],
-                              fontSize: 10,
-                              fontStyle: FontStyle.italic,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  Text(
-                    'Nota: La firma se capturará automáticamente',
-                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                      color: Colors.amber[700],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-          const SizedBox(height: 24),
-
           // Sección de Fotos
           _SectionTitle(title: '📷 Fotografía de Entrega'),
           const SizedBox(height: 12),
@@ -209,43 +114,7 @@ class _ConfirmacionEntregaScreenState extends State<ConfirmacionEntregaScreen> {
               ),
             ),
           ),
-          const SizedBox(height: 24),
-
-          // Consentimiento
-          Card(
-            color: Colors.amber[50],
-            child: Padding(
-              padding: const EdgeInsets.all(12),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  CheckboxListTile(
-                    contentPadding: EdgeInsets.zero,
-                    value: _consentimientoLectura,
-                    onChanged: (value) {
-                      setState(() {
-                        _consentimientoLectura = value ?? false;
-                      });
-                    },
-                    title: const Text(
-                      'Autorizo la lectura de mis datos de ubicación',
-                      style: TextStyle(fontSize: 12),
-                    ),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: Text(
-                      'Al confirmar, acepto el almacenamiento y procesamiento de datos según la política de privacidad',
-                      style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                        color: Colors.grey[600],
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-          const SizedBox(height: 24),
+          const SizedBox(height: 32),
 
           // Botones
           Consumer<EntregaProvider>(

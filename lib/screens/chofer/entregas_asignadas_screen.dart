@@ -1,12 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../models/entrega.dart';
 import '../../providers/entrega_provider.dart';
 import '../../widgets/widgets.dart';
-import '../../widgets/chofer/distance_badge.dart';
 import '../../config/config.dart';
 
 class EntregasAsignadasScreen extends StatefulWidget {
@@ -19,6 +17,17 @@ class EntregasAsignadasScreen extends StatefulWidget {
 
 class _EntregasAsignadasScreenState extends State<EntregasAsignadasScreen> {
   String? _filtroEstado;
+  String _busqueda = '';
+  final TextEditingController _searchController = TextEditingController();
+
+  final List<String> _estadosFiltro = [
+    'Todas',
+    'ASIGNADA',
+    'EN_CAMINO',
+    'EN_TRANSITO',
+    'LLEGO',
+    'ENTREGADO',
+  ];
 
   @override
   void initState() {
@@ -26,62 +35,183 @@ class _EntregasAsignadasScreenState extends State<EntregasAsignadasScreen> {
     _cargarEntregas();
   }
 
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
   Future<void> _cargarEntregas() async {
     final provider = context.read<EntregaProvider>();
-    await provider.obtenerEntregasAsignadas(estado: _filtroEstado);
+    await provider.obtenerEntregasAsignadas(
+      estado: _filtroEstado != 'Todas' ? _filtroEstado : null,
+    );
+  }
+
+  List<Entrega> _getEntregasFiltradas(List<Entrega> entregas) {
+    return entregas.where((entrega) {
+      // Filtro por búsqueda
+      if (_busqueda.isNotEmpty) {
+        final numero = entrega.numero?.toLowerCase() ?? '';
+        final cliente = entrega.cliente?.toLowerCase() ?? '';
+        final search = _busqueda.toLowerCase();
+
+        if (!numero.contains(search) && !cliente.contains(search)) {
+          return false;
+        }
+      }
+      return true;
+    }).toList();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      /* appBar: CustomGradientAppBar(
-        title: 'Entregas Asignadas',
-        customGradient: AppGradients.green,
-      ), */
       body: Consumer<EntregaProvider>(
         builder: (context, provider, _) {
-          if (provider.isLoading) {
-            return const Center(child: CircularProgressIndicator());
-          }
+          final entregasFiltradas = _getEntregasFiltradas(provider.entregas);
 
-          if (provider.entregas.isEmpty) {
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.local_shipping, size: 64, color: Colors.grey[400]),
-                  const SizedBox(height: 16),
-                  Text(
-                    'No hay entregas ni envios',
-                    style: Theme.of(context).textTheme.titleLarge,
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Las entregas y envios aparecerán aquí cuando se asignen',
-                    style: Theme.of(
-                      context,
-                    ).textTheme.bodyMedium?.copyWith(color: Colors.grey[600]),
-                    textAlign: TextAlign.center,
-                  ),
-                ],
+          return Column(
+            children: [
+              // Filtros y búsqueda
+              Container(
+                padding: const EdgeInsets.all(12),
+                color: Colors.white,
+                child: Column(
+                  children: [
+                    // Barra de búsqueda
+                    TextField(
+                      controller: _searchController,
+                      onChanged: (value) {
+                        setState(() {
+                          _busqueda = value;
+                        });
+                      },
+                      decoration: InputDecoration(
+                        hintText: 'Buscar por número o cliente...',
+                        prefixIcon: const Icon(Icons.search),
+                        suffixIcon: _busqueda.isNotEmpty
+                            ? IconButton(
+                                icon: const Icon(Icons.clear),
+                                onPressed: () {
+                                  _searchController.clear();
+                                  setState(() {
+                                    _busqueda = '';
+                                  });
+                                },
+                              )
+                            : null,
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 8,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    // Filtro por estado
+                    SizedBox(
+                      height: 40,
+                      child: ListView.builder(
+                        scrollDirection: Axis.horizontal,
+                        itemCount: _estadosFiltro.length,
+                        itemBuilder: (context, index) {
+                          final estado = _estadosFiltro[index];
+                          final isSelected =
+                              (_filtroEstado == null && estado == 'Todas') ||
+                                  _filtroEstado == estado;
+
+                          return Padding(
+                            padding: const EdgeInsets.only(right: 8),
+                            child: FilterChip(
+                              label: Text(estado == 'Todas' ? 'Todas' : _getEtiquetaEstado(estado)),
+                              selected: isSelected,
+                              onSelected: (selected) {
+                                setState(() {
+                                  _filtroEstado = estado == 'Todas' ? null : estado;
+                                });
+                                _cargarEntregas();
+                              },
+                              backgroundColor: Colors.grey[200],
+                              selectedColor: Colors.blue,
+                              labelStyle: TextStyle(
+                                color: isSelected ? Colors.white : Colors.black,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                  ],
+                ),
               ),
-            );
-          }
-
-          return RefreshIndicator(
-            onRefresh: _cargarEntregas,
-            child: ListView.builder(
-              padding: const EdgeInsets.all(8),
-              itemCount: provider.entregas.length,
-              itemBuilder: (context, index) {
-                final entrega = provider.entregas[index];
-                return _EntregaCard(entrega: entrega);
-              },
-            ),
+              // Lista de entregas
+              Expanded(
+                child: _buildListado(provider, entregasFiltradas),
+              ),
+            ],
           );
         },
       ),
     );
+  }
+
+  Widget _buildListado(EntregaProvider provider, List<Entrega> entregas) {
+    if (provider.isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    if (entregas.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.local_shipping, size: 64, color: Colors.grey[400]),
+            const SizedBox(height: 16),
+            Text(
+              'No hay entregas',
+              style: Theme.of(context).textTheme.titleLarge,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              _busqueda.isNotEmpty
+                  ? 'No se encontraron resultados para "$_busqueda"'
+                  : 'Las entregas aparecerán aquí cuando se asignen',
+              style: Theme.of(context)
+                  .textTheme
+                  .bodyMedium
+                  ?.copyWith(color: Colors.grey[600]),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+      );
+    }
+
+    return RefreshIndicator(
+      onRefresh: _cargarEntregas,
+      child: ListView.builder(
+        padding: const EdgeInsets.all(8),
+        itemCount: entregas.length,
+        itemBuilder: (context, index) {
+          final entrega = entregas[index];
+          return _EntregaCard(entrega: entrega);
+        },
+      ),
+    );
+  }
+
+  String _getEtiquetaEstado(String estado) {
+    const etiquetas = {
+      'ASIGNADA': 'Asignadas',
+      'EN_CAMINO': 'En Camino',
+      'LLEGO': 'Llegó',
+      'ENTREGADO': 'Entregadas',
+    };
+    return etiquetas[estado] ?? estado;
   }
 }
 
@@ -95,104 +225,9 @@ class _EntregaCard extends StatefulWidget {
 }
 
 class _EntregaCardState extends State<_EntregaCard> {
-  late GoogleMapController _mapController;
-  LatLng? _currentLocation;
-  Set<Marker> _markers = {};
-  bool _isLoadingMap = true;
+  bool _ventasExpandidas = false;
 
-  @override
-  void initState() {
-    super.initState();
-    _initializeMapLocation();
-  }
-
-  Future<void> _initializeMapLocation() async {
-    try {
-      // Solicitar permiso de ubicación si es necesario
-      LocationPermission permission = await Geolocator.checkPermission();
-      if (permission == LocationPermission.denied) {
-        permission = await Geolocator.requestPermission();
-      }
-
-      if (permission != LocationPermission.deniedForever &&
-          permission != LocationPermission.denied) {
-        // Obtener posición actual
-        Position position = await Geolocator.getCurrentPosition(
-          desiredAccuracy: LocationAccuracy.high,
-        );
-
-        setState(() {
-          _currentLocation = LatLng(position.latitude, position.longitude);
-          _addMarkers();
-          _isLoadingMap = false;
-        });
-      } else {
-        setState(() {
-          _isLoadingMap = false;
-        });
-      }
-    } catch (e) {
-      debugPrint('Error initializing map: $e');
-      setState(() {
-        _isLoadingMap = false;
-      });
-    }
-  }
-
-  void _addMarkers() {
-    if (_currentLocation == null) return;
-
-    Set<Marker> markers = {};
-
-    // Marcador de ubicación actual (azul)
-    markers.add(
-      Marker(
-        markerId: const MarkerId('current_location'),
-        position: _currentLocation!,
-        infoWindow: const InfoWindow(
-          title: '📍 Tu Ubicación',
-        ),
-        icon: BitmapDescriptor.defaultMarkerWithHue(
-          BitmapDescriptor.hueBlue,
-        ),
-      ),
-    );
-
-    // Marcador de la entrega (naranja/rojo)
-    // Ubicación ficticia cercana para demostración
-    final deliveryLocation = LatLng(
-      _currentLocation!.latitude + 0.01,
-      _currentLocation!.longitude + 0.01,
-    );
-
-    markers.add(
-      Marker(
-        markerId: MarkerId('entrega_${widget.entrega.id}'),
-        position: deliveryLocation,
-        infoWindow: InfoWindow(
-          title: '${widget.entrega.tipoWorkIcon} Entrega #${widget.entrega.id}',
-          snippet: widget.entrega.cliente ?? 'Cliente',
-        ),
-        icon: BitmapDescriptor.defaultMarkerWithHue(
-          BitmapDescriptor.hueOrange,
-        ),
-      ),
-    );
-
-    setState(() {
-      _markers = markers;
-    });
-  }
-
-  void _onMapCreated(GoogleMapController controller) {
-    _mapController = controller;
-
-    if (_currentLocation != null) {
-      _mapController.animateCamera(
-        CameraUpdate.newLatLngZoom(_currentLocation!, 15),
-      );
-    }
-  }
+  Entrega get entrega => widget.entrega;
 
   @override
   Widget build(BuildContext context) {
@@ -220,12 +255,12 @@ class _EntregaCardState extends State<_EntregaCard> {
                     Row(
                       children: [
                         Text(
-                          widget.entrega.tipoWorkIcon,
+                          entrega.tipoWorkIcon,
                           style: const TextStyle(fontSize: 18),
                         ),
                         const SizedBox(width: 8),
                         Text(
-                          _getTituloTrabajo(widget.entrega),
+                          _getTituloTrabajo(entrega),
                           style: const TextStyle(
                             color: Colors.white,
                             fontSize: 16,
@@ -235,7 +270,7 @@ class _EntregaCardState extends State<_EntregaCard> {
                       ],
                     ),
                     Text(
-                      widget.entrega.numero ?? '#${widget.entrega.id}',
+                      entrega.numero ?? '#${entrega.id}',
                       style: const TextStyle(
                         color: Colors.white70,
                         fontSize: 12,
@@ -253,7 +288,7 @@ class _EntregaCardState extends State<_EntregaCard> {
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Text(
-                    widget.entrega.estadoLabel,
+                    entrega.estadoLabel,
                     style: const TextStyle(
                       color: Colors.white,
                       fontSize: 12,
@@ -265,61 +300,164 @@ class _EntregaCardState extends State<_EntregaCard> {
             ),
           ),
 
-          // Mini Mapa
-          if (_isLoadingMap)
-            Container(
-              height: 150,
-              decoration: BoxDecoration(
-                color: Colors.grey[100],
-                borderRadius: const BorderRadius.only(
-                  topLeft: Radius.circular(0),
-                  topRight: Radius.circular(0),
-                ),
+          // Ubicación (sin mapa interactivo)
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            decoration: BoxDecoration(
+              color: Colors.grey[50],
+              border: Border(
+                bottom: BorderSide(color: Colors.grey[200]!),
               ),
-              child: const Center(
-                child: CircularProgressIndicator(),
-              ),
-            )
-          else if (_currentLocation != null)
-            Stack(
+            ),
+            child: Row(
               children: [
-                ClipRRect(
-                  borderRadius: BorderRadius.zero,
-                  child: SizedBox(
-                    height: 150,
-                    child: GoogleMap(
-                      onMapCreated: _onMapCreated,
-                      initialCameraPosition: CameraPosition(
-                        target: _currentLocation!,
-                        zoom: 15,
+                Icon(Icons.location_on, size: 20, color: Colors.orange),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        entrega.direccion ?? 'Dirección no disponible',
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w500,
+                        ),
                       ),
-                      markers: _markers,
-                      myLocationEnabled: false,
-                      myLocationButtonEnabled: false,
-                      zoomControlsEnabled: false,
-                      mapType: MapType.normal,
-                    ),
-                  ),
-                ),
-                // Badge con distancia y tiempo
-                Positioned(
-                  top: 12,
-                  right: 12,
-                  child: DistanceBadge(
-                    distanceKm: 2.5, // Placeholder - en production calcular real
-                    estimatedMinutes: 8,
+                    ],
                   ),
                 ),
               ],
-            )
-          else
+            ),
+          ),
+
+          // Ventas asignadas (expandible)
+          if (entrega.ventas.isNotEmpty)
             Container(
-              height: 150,
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
               decoration: BoxDecoration(
-                color: Colors.grey[100],
+                color: Colors.blue[50],
+                border: Border(
+                  bottom: BorderSide(color: Colors.grey[200]!),
+                ),
               ),
-              child: const Center(
-                child: Text('Ubicación no disponible'),
+              child: Column(
+                children: [
+                  GestureDetector(
+                    onTap: () {
+                      setState(() {
+                        _ventasExpandidas = !_ventasExpandidas;
+                      });
+                    },
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.receipt_long,
+                              size: 20,
+                              color: Colors.blue[700],
+                            ),
+                            const SizedBox(width: 8),
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  '📦 ${entrega.ventas.length} venta${entrega.ventas.length > 1 ? 's' : ''} asignada${entrega.ventas.length > 1 ? 's' : ''}',
+                                  style: const TextStyle(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w600,
+                                    color: Colors.blue,
+                                  ),
+                                ),
+                                if (entrega.ventas.isNotEmpty)
+                                  Text(
+                                    'Total: BS ${entrega.ventas.fold<double>(0, (sum, v) => sum + v.total).toStringAsFixed(2)}',
+                                    style: const TextStyle(
+                                      fontSize: 12,
+                                      color: Colors.blue,
+                                    ),
+                                  ),
+                              ],
+                            ),
+                          ],
+                        ),
+                        Icon(
+                          _ventasExpandidas
+                              ? Icons.expand_less
+                              : Icons.expand_more,
+                          color: Colors.blue[700],
+                        ),
+                      ],
+                    ),
+                  ),
+                  // Ventas expandidas
+                  if (_ventasExpandidas) ...[
+                    const SizedBox(height: 8),
+                    const Divider(height: 1),
+                    const SizedBox(height: 8),
+                    ListView.builder(
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      itemCount: entrega.ventas.length,
+                      itemBuilder: (context, index) {
+                        final venta = entrega.ventas[index];
+                        return Padding(
+                          padding: const EdgeInsets.only(bottom: 8),
+                          child: Row(
+                            children: [
+                              Container(
+                                width: 4,
+                                height: 40,
+                                decoration: BoxDecoration(
+                                  color: Colors.blue[300],
+                                  borderRadius: BorderRadius.circular(2),
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      venta.numero,
+                                      style: const TextStyle(
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                    Text(
+                                      venta.clienteNombre ??
+                                          venta.cliente ??
+                                          'Cliente desconocido',
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: const TextStyle(
+                                        fontSize: 11,
+                                        color: Colors.grey,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              Text(
+                                'BS ${venta.total.toStringAsFixed(2)}',
+                                style: const TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                  color: Colors.blue,
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      },
+                    ),
+                  ],
+                ],
               ),
             ),
 
@@ -330,38 +468,26 @@ class _EntregaCardState extends State<_EntregaCard> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 // Cliente
-                if (widget.entrega.cliente != null &&
-                    widget.entrega.cliente!.isNotEmpty) ...[
+                if (entrega.cliente != null && entrega.cliente!.isNotEmpty) ...[
                   _InfoRow(
                     icon: Icons.person,
                     label: 'Cliente',
-                    value: widget.entrega.cliente!,
-                  ),
-                  const SizedBox(height: 8),
-                ],
-                // Dirección
-                if (widget.entrega.direccion != null &&
-                    widget.entrega.direccion!.isNotEmpty) ...[
-                  _InfoRow(
-                    icon: Icons.location_on,
-                    label: 'Dirección',
-                    value: widget.entrega.direccion!,
+                    value: entrega.cliente!,
                   ),
                   const SizedBox(height: 8),
                 ],
                 // Información de fecha
-                if (widget.entrega.fechaAsignacion != null) ...[
+                if (entrega.fechaAsignacion != null) ...[
                   _InfoRow(
                     icon: Icons.calendar_today,
                     label: 'Asignada',
-                    value: widget.entrega.formatFecha(
-                        widget.entrega.fechaAsignacion),
+                    value: entrega.formatFecha(entrega.fechaAsignacion),
                   ),
                   const SizedBox(height: 8),
                 ],
                 // Observaciones
-                if (widget.entrega.observaciones != null &&
-                    widget.entrega.observaciones!.isNotEmpty) ...[
+                if (entrega.observaciones != null &&
+                    entrega.observaciones!.isNotEmpty) ...[
                   const Text(
                     'Observaciones:',
                     style: TextStyle(
@@ -372,8 +498,10 @@ class _EntregaCardState extends State<_EntregaCard> {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    widget.entrega.observaciones!,
+                    entrega.observaciones!,
                     style: const TextStyle(fontSize: 14),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
                   ),
                   const SizedBox(height: 12),
                 ],
@@ -394,7 +522,7 @@ class _EntregaCardState extends State<_EntregaCard> {
                   onPressed: () {
                     Navigator.of(context).pushNamed(
                       '/chofer/entrega-detalle',
-                      arguments: widget.entrega.id,
+                      arguments: entrega.id,
                     );
                   },
                 ),
@@ -402,9 +530,9 @@ class _EntregaCardState extends State<_EntregaCard> {
                   label: 'Cómo llegar',
                   icon: Icons.map,
                   color: Colors.orange,
-                  onPressed: _openInGoogleMaps,
+                  onPressed: () => _openInGoogleMaps(context),
                 ),
-                if (widget.entrega.puedeIniciarRuta)
+                if (entrega.puedeIniciarRuta)
                   _BotonAccion(
                     label: 'Iniciar Ruta',
                     icon: Icons.navigation,
@@ -412,7 +540,7 @@ class _EntregaCardState extends State<_EntregaCard> {
                     onPressed: () {
                       Navigator.of(context).pushNamed(
                         '/chofer/iniciar-ruta',
-                        arguments: widget.entrega.id,
+                        arguments: entrega.id,
                       );
                     },
                   ),
@@ -425,8 +553,7 @@ class _EntregaCardState extends State<_EntregaCard> {
   }
 
   Color _getColorEstado() {
-    final colorHex = widget.entrega.estadoColor;
-    // Convertir hex a Color
+    final colorHex = entrega.estadoColor;
     return Color(int.parse('0xff${colorHex.substring(1)}'));
   }
 
@@ -439,9 +566,8 @@ class _EntregaCardState extends State<_EntregaCard> {
     return 'Trabajo #${entrega.id}';
   }
 
-  /// Abrir ubicación en Google Maps
-  Future<void> _openInGoogleMaps() async {
-    final address = widget.entrega.direccion ?? '';
+  Future<void> _openInGoogleMaps(BuildContext context) async {
+    final address = entrega.direccion ?? '';
     if (address.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Dirección no disponible')),
@@ -456,20 +582,12 @@ class _EntregaCardState extends State<_EntregaCard> {
     if (await canLaunchUrl(url)) {
       await launchUrl(url, mode: LaunchMode.externalApplication);
     } else {
-      if (mounted) {
+      if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('No se pudo abrir Google Maps')),
         );
       }
     }
-  }
-
-  @override
-  void dispose() {
-    if (_currentLocation != null) {
-      _mapController.dispose();
-    }
-    super.dispose();
   }
 }
 
