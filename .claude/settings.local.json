@@ -38,7 +38,9 @@
       "Bash(git add:*)",
       "Bash(gradlew clean:*)",
       "Bash(timeout 120 flutter run:*)",
-      "Bash(timeout 180 flutter run:*)"
+      "Bash(timeout 180 flutter run:*)",
+      "Bash(dir /s /b \"D:\\\\paucara\")",
+      "Bash(findstr:*)"
     ],
     "deny": [],
     "ask": []

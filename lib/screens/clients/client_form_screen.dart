@@ -86,7 +86,7 @@ class _ClientFormScreenState extends State<ClientFormScreen> {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: const Text('Error al cargar los datos del cliente'),
-              backgroundColor: Colors.red.shade700,
+              backgroundColor: Theme.of(context).colorScheme.error,
               duration: const Duration(seconds: 5),
             ),
           );
@@ -164,7 +164,7 @@ class _ClientFormScreenState extends State<ClientFormScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Error al cargar datos del cliente: $e'),
-            backgroundColor: Colors.red.shade700,
+            backgroundColor: Theme.of(context).colorScheme.error,
             duration: const Duration(seconds: 5),
           ),
         );
@@ -204,7 +204,7 @@ class _ClientFormScreenState extends State<ClientFormScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Error al cargar localidades: ${e.toString()}'),
-            backgroundColor: Colors.orange.shade700,
+            backgroundColor: Theme.of(context).colorScheme.error,
             duration: const Duration(seconds: 4),
           ),
         );
@@ -251,7 +251,7 @@ class _ClientFormScreenState extends State<ClientFormScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Error al cargar categorías: ${e.toString()}'),
-            backgroundColor: Colors.orange.shade700,
+            backgroundColor: Theme.of(context).colorScheme.error,
             duration: const Duration(seconds: 4),
           ),
         );
@@ -327,23 +327,8 @@ class _ClientFormScreenState extends State<ClientFormScreen> {
             ),
           ],
         ),
-        body: Container(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: _isEditing
-                  ? [
-                      Colors.orange.shade50,
-                      Colors.white,
-                    ]
-                  : [
-                      Colors.green.shade50,
-                      Colors.white,
-                    ],
-            ),
-          ),
-          child: _isInitialized
+        backgroundColor: Theme.of(context).colorScheme.surface,
+        body: _isInitialized
               ? Form(
                   key: _formKey,
                   child: SingleChildScrollView(
@@ -456,7 +441,7 @@ class _ClientFormScreenState extends State<ClientFormScreen> {
                               autoGetLocation: true,
                             ),
                             const SizedBox(height: 16),
-                            // Localidad selector (mantener el existente)
+                            // Localidad selector (mejorado)
                             Container(
                               decoration: BoxDecoration(
                                 color: Theme.of(context).colorScheme.surface,
@@ -467,25 +452,45 @@ class _ClientFormScreenState extends State<ClientFormScreen> {
                                   ).colorScheme.outline.withOpacity(0.3),
                                 ),
                               ),
-                              child: SelectSearch<Localidad>(
-                                label: 'Localidad',
-                                items: _localidades,
-                                value: _selectedLocationId != null
-                                    ? _localidades.cast<Localidad?>().firstWhere(
-                                        (localidad) =>
-                                            localidad?.id == _selectedLocationId,
-                                        orElse: () => null,
-                                      )
-                                    : null,
-                                displayString: (localidad) => localidad.nombre,
-                                onChanged: (localidad) {
-                                  setState(() {
-                                    _selectedLocationId = localidad?.id;
-                                  });
-                                },
-                                hintText: 'Buscar localidad...',
-                                prefixIcon: const Icon(Icons.location_city),
-                              ),
+                              child: _isLoadingLocalidades
+                                  ? Padding(
+                                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                                      child: Row(
+                                        children: [
+                                          const SizedBox(
+                                            width: 20,
+                                            height: 20,
+                                            child: CircularProgressIndicator(strokeWidth: 2),
+                                          ),
+                                          const SizedBox(width: 12),
+                                          Text(
+                                            'Cargando localidades...',
+                                            style: TextStyle(
+                                              color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    )
+                                  : SelectSearch<Localidad>(
+                                      label: 'Localidad',
+                                      items: _localidades.where((l) => l.nombre.trim().isNotEmpty).toList(),
+                                      value: _selectedLocationId != null
+                                          ? _localidades.where((l) => l.nombre.trim().isNotEmpty).cast<Localidad?>().firstWhere(
+                                              (localidad) =>
+                                                  localidad?.id == _selectedLocationId,
+                                              orElse: () => null,
+                                            )
+                                          : null,
+                                      displayString: (localidad) => localidad.nombre,
+                                      onChanged: (localidad) {
+                                        setState(() {
+                                          _selectedLocationId = localidad?.id;
+                                        });
+                                      },
+                                      hintText: 'Buscar localidad...',
+                                      prefixIcon: const Icon(Icons.location_city),
+                                    ),
                             ),
                             const SizedBox(height: 16),
                             TextFormField(
@@ -594,55 +599,55 @@ class _ClientFormScreenState extends State<ClientFormScreen> {
                           ],
                         ),
 
-                        const SizedBox(height: 24),
+                        // ✅ Solo mostrar Categorías y Configuración cuando se está EDITANDO
+                        if (_isEditing) ...[
+                          const SizedBox(height: 24),
 
-                        // Categorías del cliente
-                        _buildSection(
-                          title: 'Categorías',
-                          icon: Icons.category,
-                          children: [
-                            if (_categoriasCatalogo.isEmpty)
-                              const Text(
-                                'No hay categorías disponibles',
-                                style: TextStyle(color: Colors.grey),
-                              )
-                            else
-                              Wrap(
-                                spacing: 8,
-                                runSpacing: 8,
-                                children: _categoriasCatalogo.map((cat) {
-                                  final selected = _selectedCategoriasIds
-                                      .contains(cat.id);
-                                  return FilterChip(
-                                    label: Text(
-                                      cat.nombre ??
-                                          cat.clave ??
-                                          'Cat ${cat.id}',
-                                    ),
-                                    selected: selected,
-                                    onSelected: (val) {
-                                      setState(() {
-                                        if (val) {
-                                          _selectedCategoriasIds.add(cat.id);
-                                        } else {
-                                          _selectedCategoriasIds.remove(cat.id);
-                                        }
-                                      });
-                                    },
-                                  );
-                                }).toList(),
-                              ),
-                          ],
-                        ),
+                          // Categorías del cliente (solo en modo edición)
+                          _buildSection(
+                            title: 'Categorías',
+                            icon: Icons.category,
+                            children: [
+                              if (_categoriasCatalogo.isEmpty)
+                                const Text(
+                                  'No hay categorías disponibles',
+                                  style: TextStyle(color: Colors.grey),
+                                )
+                              else
+                                Wrap(
+                                  spacing: 8,
+                                  runSpacing: 8,
+                                  children: _categoriasCatalogo.map((cat) {
+                                    final selected = _selectedCategoriasIds
+                                        .contains(cat.id);
+                                    return FilterChip(
+                                      label: Text(
+                                        cat.nombre ??
+                                            cat.clave ??
+                                            'Cat ${cat.id}',
+                                      ),
+                                      selected: selected,
+                                      onSelected: (val) {
+                                        setState(() {
+                                          if (val) {
+                                            _selectedCategoriasIds.add(cat.id);
+                                          } else {
+                                            _selectedCategoriasIds.remove(cat.id);
+                                          }
+                                        });
+                                      },
+                                    );
+                                  }).toList(),
+                                ),
+                            ],
+                          ),
 
-                        const SizedBox(height: 24),
-                        // Configuración
-                        _buildSection(
-                          title: 'Configuración',
-                          icon: Icons.settings,
-                          children: [
-                            // Solo mostrar el switch de estado al editar
-                            if (_isEditing) ...[
+                          const SizedBox(height: 24),
+                          // Configuración (solo en modo edición)
+                          _buildSection(
+                            title: 'Configuración',
+                            icon: Icons.settings,
+                            children: [
                               Container(
                                 padding: const EdgeInsets.all(16),
                                 decoration: BoxDecoration(
@@ -706,112 +711,48 @@ class _ClientFormScreenState extends State<ClientFormScreen> {
                                 ),
                               ),
                               const SizedBox(height: 16),
-                            ] else ...[
-                              // Al crear, mostrar que será activo por defecto (sin opción a cambiar)
-                              Container(
-                                padding: const EdgeInsets.all(16),
-                                decoration: BoxDecoration(
-                                  gradient: LinearGradient(
-                                    colors: [Colors.green.shade50, Colors.green.shade100],
-                                  ),
-                                  borderRadius: BorderRadius.circular(12),
-                                  border: Border.all(
-                                    color: Colors.green.shade300,
-                                    width: 1.5,
-                                  ),
-                                ),
-                                child: Row(
-                                  children: [
-                                    Container(
-                                      padding: const EdgeInsets.all(8),
-                                      decoration: BoxDecoration(
-                                        gradient: LinearGradient(
-                                          colors: [Colors.green.shade400, Colors.green.shade600],
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          'Crear Usuario',
+                                          style: TextStyle(
+                                            fontSize: 16,
+                                            fontWeight: FontWeight.w500,
+                                            color: Theme.of(
+                                              context,
+                                            ).colorScheme.onSurface,
+                                          ),
                                         ),
-                                        borderRadius: BorderRadius.circular(8),
-                                      ),
-                                      child: const Icon(
-                                        Icons.check_circle,
-                                        color: Colors.white,
-                                        size: 20,
-                                      ),
-                                    ),
-                                    const SizedBox(width: 12),
-                                    Expanded(
-                                      child: Column(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
-                                        children: [
-                                          Text(
-                                            'Estado del Cliente',
-                                            style: TextStyle(
-                                              fontSize: 14,
-                                              color: Colors.grey.shade700,
-                                              fontWeight: FontWeight.w500,
-                                            ),
+                                        Text(
+                                          'Crear cuenta de usuario para acceso a la app',
+                                          style: TextStyle(
+                                            fontSize: 14,
+                                            color: Theme.of(
+                                              context,
+                                            ).colorScheme.onSurfaceVariant,
                                           ),
-                                          const SizedBox(height: 4),
-                                          Text(
-                                            'Activo por defecto',
-                                            style: TextStyle(
-                                              fontSize: 16,
-                                              fontWeight: FontWeight.bold,
-                                              color: Colors.green.shade700,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
+                                        ),
+                                      ],
                                     ),
-                                    Icon(
-                                      Icons.info_outline,
-                                      color: Colors.green.shade600,
-                                      size: 20,
-                                    ),
-                                  ],
-                                ),
+                                  ),
+                                  Switch(
+                                    value: _createUser,
+                                    onChanged: (value) =>
+                                        setState(() => _createUser = value),
+                                    activeThumbColor: Theme.of(
+                                      context,
+                                    ).colorScheme.primary,
+                                  ),
+                                ],
                               ),
-                              const SizedBox(height: 16),
                             ],
-                            Row(
-                              children: [
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        'Crear Usuario',
-                                        style: TextStyle(
-                                          fontSize: 16,
-                                          fontWeight: FontWeight.w500,
-                                          color: Theme.of(
-                                            context,
-                                          ).colorScheme.onSurface,
-                                        ),
-                                      ),
-                                      Text(
-                                        'Crear cuenta de usuario para acceso a la app',
-                                        style: TextStyle(
-                                          fontSize: 14,
-                                          color: Theme.of(
-                                            context,
-                                          ).colorScheme.onSurfaceVariant,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                                Switch(
-                                  value: _createUser,
-                                  onChanged: (value) =>
-                                      setState(() => _createUser = value),
-                                  activeThumbColor: Theme.of(
-                                    context,
-                                  ).colorScheme.primary,
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
+                          ),
+                        ],
 
                         const SizedBox(height: 32),
                       ],
@@ -839,7 +780,6 @@ class _ClientFormScreenState extends State<ClientFormScreen> {
                     ],
                   ),
                 ),
-        ),
       ),
     );
   }
@@ -850,44 +790,47 @@ class _ClientFormScreenState extends State<ClientFormScreen> {
     IconData? prefixIcon,
     Widget? suffixIcon,
   }) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final accentColor = _isEditing ? colorScheme.tertiary : colorScheme.primary;
+
     return InputDecoration(
       labelText: labelText,
       hintText: hintText,
       prefixIcon: prefixIcon != null
           ? Icon(
               prefixIcon,
-              color: _isEditing ? Colors.orange.shade600 : Colors.green.shade600,
+              color: accentColor,
             )
           : null,
       suffixIcon: suffixIcon,
       filled: true,
-      fillColor: Colors.grey.shade50,
+      fillColor: colorScheme.surface,
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
-        borderSide: BorderSide(color: Colors.grey.shade300),
+        borderSide: BorderSide(color: colorScheme.outline.withOpacity(0.3)),
       ),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
-        borderSide: BorderSide(color: Colors.grey.shade300),
+        borderSide: BorderSide(color: colorScheme.outline.withOpacity(0.3)),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
         borderSide: BorderSide(
-          color: _isEditing ? Colors.orange.shade600 : Colors.green.shade600,
+          color: accentColor,
           width: 2,
         ),
       ),
       errorBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
-        borderSide: BorderSide(color: Colors.red.shade400),
+        borderSide: BorderSide(color: colorScheme.error.withOpacity(0.5)),
       ),
       focusedErrorBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
-        borderSide: BorderSide(color: Colors.red.shade600, width: 2),
+        borderSide: BorderSide(color: colorScheme.error, width: 2),
       ),
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
       labelStyle: TextStyle(
-        color: _isEditing ? Colors.orange.shade700 : Colors.green.shade700,
+        color: accentColor,
         fontWeight: FontWeight.w500,
       ),
     );
@@ -898,18 +841,17 @@ class _ClientFormScreenState extends State<ClientFormScreen> {
     required IconData icon,
     required List<Widget> children,
   }) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final accentColor = _isEditing ? colorScheme.tertiary : colorScheme.primary;
+
     return Container(
       margin: const EdgeInsets.only(bottom: 20),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(20),
-        gradient: LinearGradient(
-          colors: [Colors.white, Colors.grey.shade50],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
+        color: colorScheme.surface,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.08),
+            color: colorScheme.shadow.withOpacity(0.08),
             blurRadius: 15,
             offset: const Offset(0, 5),
           ),
@@ -921,13 +863,7 @@ class _ClientFormScreenState extends State<ClientFormScreen> {
           Container(
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: _isEditing
-                    ? [Colors.orange.shade50, Colors.orange.shade100]
-                    : [Colors.green.shade50, Colors.teal.shade50],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
+              color: colorScheme.primaryContainer,
               borderRadius: const BorderRadius.only(
                 topLeft: Radius.circular(20),
                 topRight: Radius.circular(20),
@@ -939,14 +875,15 @@ class _ClientFormScreenState extends State<ClientFormScreen> {
                   padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
-                      colors: _isEditing
-                          ? [Colors.orange.shade400, Colors.orange.shade600]
-                          : [Colors.green.shade400, Colors.teal.shade600],
+                      colors: [
+                        accentColor,
+                        accentColor.withOpacity(0.7),
+                      ],
                     ),
                     borderRadius: BorderRadius.circular(12),
                     boxShadow: [
                       BoxShadow(
-                        color: (_isEditing ? Colors.orange : Colors.green).withOpacity(0.3),
+                        color: accentColor.withOpacity(0.3),
                         blurRadius: 8,
                         offset: const Offset(0, 4),
                       ),
@@ -954,7 +891,7 @@ class _ClientFormScreenState extends State<ClientFormScreen> {
                   ),
                   child: Icon(
                     icon,
-                    color: Colors.white,
+                    color: colorScheme.onPrimary,
                     size: 24,
                   ),
                 ),
@@ -964,7 +901,7 @@ class _ClientFormScreenState extends State<ClientFormScreen> {
                   style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
-                    color: Colors.grey.shade800,
+                    color: colorScheme.onPrimaryContainer,
                   ),
                 ),
               ],
@@ -996,6 +933,7 @@ class _ClientFormScreenState extends State<ClientFormScreen> {
     _showLoadingDialog('Guardando cliente...');
 
     bool success = false;
+    String? errorMessage;
     try {
       if (_isEditing) {
         success = await _clientProvider.updateClient(
@@ -1046,6 +984,10 @@ class _ClientFormScreenState extends State<ClientFormScreen> {
                 ]
               : [],
         );
+        // Obtener mensaje de error si falló
+        if (!success) {
+          errorMessage = _clientProvider.errorMessage;
+        }
       } else {
         success = await _clientProvider.createClient(
           nombre: _nameController.text,
@@ -1066,6 +1008,10 @@ class _ClientFormScreenState extends State<ClientFormScreen> {
           localidadId: _selectedLocationId,
           //crear usuario solo si se seleccionó y no está editando
           crearUsuario: _createUser,
+          // Si se va a crear usuario, usar el teléfono como password
+          password: _createUser && _phoneController.text.isNotEmpty
+              ? _phoneController.text
+              : null,
           direcciones: _addressController.text.isNotEmpty
               ? [
                   ClientAddress(
@@ -1093,10 +1039,15 @@ class _ClientFormScreenState extends State<ClientFormScreen> {
               : null,
           fotoPerfil: _selectedProfilePhoto,
         );
+        // Obtener mensaje de error si falló
+        if (!success) {
+          errorMessage = _clientProvider.errorMessage;
+        }
       }
     } catch (e) {
       debugPrint('Error en _saveClient: $e');
       success = false;
+      errorMessage = 'Error inesperado: ${e.toString()}';
     } finally {
       // Asegurarse de cerrar el diálogo y actualizar el estado
       if (mounted) {
@@ -1115,7 +1066,7 @@ class _ClientFormScreenState extends State<ClientFormScreen> {
                     : 'Cliente creado exitosamente',
                 style: const TextStyle(fontWeight: FontWeight.w500),
               ),
-              backgroundColor: Colors.green.shade700,
+              backgroundColor: Theme.of(context).colorScheme.primary,
               duration: const Duration(seconds: 3),
               behavior: SnackBarBehavior.floating,
               shape: RoundedRectangleBorder(
@@ -1134,14 +1085,14 @@ class _ClientFormScreenState extends State<ClientFormScreen> {
             }
           });
         } else {
-          // Mostrar mensaje de error
+          // Mostrar mensaje de error específico del backend o genérico
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(
-                'Error al guardar cliente',
+                errorMessage ?? 'Error al guardar cliente',
                 style: const TextStyle(fontWeight: FontWeight.w500),
               ),
-              backgroundColor: Colors.red.shade700,
+              backgroundColor: Theme.of(context).colorScheme.error,
               duration: const Duration(seconds: 5),
               action: SnackBarAction(
                 label: 'Reintentar',

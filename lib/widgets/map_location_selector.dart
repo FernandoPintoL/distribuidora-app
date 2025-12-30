@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geocoding/geocoding.dart';
+import 'package:geolocator/geolocator.dart';
+import '../services/location_service.dart';
 
 class MapLocationSelector extends StatefulWidget {
   final double? initialLatitude;
@@ -25,6 +27,9 @@ class _MapLocationSelectorState extends State<MapLocationSelector> {
   final Set<Marker> _markers = {};
   bool _isMapLoading = true;
   bool _hasMapError = false;
+  bool _hasLocationPermission = false;
+  MapType _mapType = MapType.normal;
+  final _locationService = LocationService();
 
   @override
   void initState() {
@@ -38,6 +43,17 @@ class _MapLocationSelectorState extends State<MapLocationSelector> {
       _addMarker(_selectedLocation!);
       _getAddressFromCoordinates(_selectedLocation!);
     }
+
+    // Verificar permisos de ubicación
+    _checkLocationPermission();
+  }
+
+  Future<void> _checkLocationPermission() async {
+    final hasPermission = await _locationService.requestLocationPermission();
+    setState(() {
+      _hasLocationPermission = hasPermission;
+    });
+    debugPrint('📍 Permisos de ubicación en mapa: $_hasLocationPermission');
   }
 
   void _onMapCreated(GoogleMapController controller) {
@@ -141,6 +157,12 @@ class _MapLocationSelectorState extends State<MapLocationSelector> {
     }
   }
 
+  void _toggleMapType() {
+    setState(() {
+      _mapType = _mapType == MapType.normal ? MapType.satellite : MapType.normal;
+    });
+  }
+
   void _confirmLocation() {
     if (_selectedLocation != null) {
       widget.onLocationSelected(
@@ -165,6 +187,14 @@ class _MapLocationSelectorState extends State<MapLocationSelector> {
       appBar: AppBar(
         title: const Text('Seleccionar ubicación'),
         actions: [
+          IconButton(
+            onPressed: _toggleMapType,
+            icon: Icon(
+              _mapType == MapType.normal ? Icons.satellite : Icons.map,
+              color: Theme.of(context).colorScheme.onPrimary,
+            ),
+            tooltip: _mapType == MapType.normal ? 'Vista satelital' : 'Vista normal',
+          ),
           if (_selectedLocation != null)
             TextButton(
               onPressed: _confirmLocation,
@@ -190,9 +220,9 @@ class _MapLocationSelectorState extends State<MapLocationSelector> {
                   ),
                   onTap: _onTap,
                   markers: _markers,
-                  myLocationEnabled: true,
-                  myLocationButtonEnabled: true,
-                  mapType: MapType.normal,
+                  myLocationEnabled: _hasLocationPermission,
+                  myLocationButtonEnabled: _hasLocationPermission,
+                  mapType: _mapType,
                   compassEnabled: true,
                   zoomControlsEnabled: true,
                   zoomGesturesEnabled: true,
@@ -269,6 +299,46 @@ class _MapLocationSelectorState extends State<MapLocationSelector> {
                               foregroundColor: Theme.of(
                                 context,
                               ).colorScheme.onPrimary,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                if (!_hasLocationPermission && !_isMapLoading && !_hasMapError)
+                  Positioned(
+                    top: 16,
+                    left: 16,
+                    right: 16,
+                    child: Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.orange.shade700,
+                        borderRadius: BorderRadius.circular(8),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.3),
+                            blurRadius: 8,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.location_off,
+                            color: Colors.white,
+                            size: 20,
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Text(
+                              'Se requieren permisos de ubicación para ver tu posición actual',
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 12,
+                                fontWeight: FontWeight.w500,
+                              ),
                             ),
                           ),
                         ],

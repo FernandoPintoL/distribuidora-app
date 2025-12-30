@@ -56,8 +56,10 @@ class Client {
 
   factory Client.fromJson(Map<String, dynamic> json) {
     return Client(
-      id: json['id'],
-      userId: json['user_id'],
+      id: json['id'] is int ? json['id'] : int.tryParse(json['id'].toString()) ?? 0,
+      userId: json['user_id'] != null
+          ? (json['user_id'] is int ? json['user_id'] : int.tryParse(json['user_id'].toString()))
+          : null,
       nombre: json['nombre'],
       razonSocial: json['razon_social'],
       nit: json['nit'],
@@ -69,7 +71,9 @@ class Client {
       limiteCredito: json['limite_credito'] != null
           ? double.tryParse(json['limite_credito'].toString()) ?? 0.0
           : null,
-      localidadId: json['localidad_id'],
+      localidadId: json['localidad_id'] != null
+          ? (json['localidad_id'] is int ? json['localidad_id'] : int.tryParse(json['localidad_id'].toString()))
+          : null,
       latitud: json['latitud'] != null
           ? double.tryParse(json['latitud'].toString())
           : null,
@@ -176,8 +180,12 @@ class ClientAddress {
 
   factory ClientAddress.fromJson(Map<String, dynamic> json) {
     return ClientAddress(
-      id: json['id'],
-      clienteId: json['cliente_id'],
+      id: json['id'] != null
+          ? (json['id'] is int ? json['id'] : int.tryParse(json['id'].toString()))
+          : null,
+      clienteId: json['cliente_id'] != null
+          ? (json['cliente_id'] is int ? json['cliente_id'] : int.tryParse(json['cliente_id'].toString()))
+          : null,
       direccion: json['direccion'],
       observaciones: json['observaciones'],
       ciudad: json['ciudad'],
@@ -189,7 +197,9 @@ class ClientAddress {
       longitud: json['longitud'] != null
           ? double.tryParse(json['longitud'].toString())
           : null,
-      localidadId: json['localidad_id'],
+      localidadId: json['localidad_id'] != null
+          ? (json['localidad_id'] is int ? json['localidad_id'] : int.tryParse(json['localidad_id'].toString()))
+          : null,
       localidad: json['localidad'] != null
           ? Localidad.fromJson(json['localidad'])
           : null,

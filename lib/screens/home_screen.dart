@@ -49,7 +49,24 @@ class _HomeScreenState extends BaseHomeScreenState<HomeScreen> {
   }
 
   @override
-  Future<void> loadInitialData() async {}
+  Future<void> loadInitialData() async {
+    // ✅ NUEVO: Cargar datos del preventista desde el login
+    try {
+      final authProvider = context.read<AuthProvider>();
+      final clientProvider = context.read<ClientProvider>();
+
+      // Si el preventista tiene estadísticas desde el login, cargarlas
+      if (authProvider.preventistaStats != null) {
+        debugPrint('📊 Cargando datos del preventista desde login...');
+        clientProvider.loadClientsFromPreventistaStats(authProvider.preventistaStats!);
+        debugPrint('✅ Datos del preventista cargados en el dashboard');
+      } else {
+        debugPrint('ℹ️ No hay estadísticas del preventista disponibles en login');
+      }
+    } catch (e) {
+      debugPrint('❌ Error cargando datos iniciales: $e');
+    }
+  }
 
   void _buildDynamicNavigation() {
     final screens = <Widget>[
@@ -248,12 +265,9 @@ class _DashboardPreventistaState extends State<DashboardPreventista>
                           icon: Icons.people_outline,
                           gradient: AppGradients.blue,
                           onTap: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => const ClientListScreen(),
-                              ),
-                            );
+                            // Cambiar a pestaña de Clientes sin abrir nueva ventana
+                            final homeState = context.findAncestorStateOfType<_HomeScreenState>();
+                            homeState?.navigateToIndex(1); // Index 1 = Clientes
                           },
                         ),
                         _buildGradientCard(

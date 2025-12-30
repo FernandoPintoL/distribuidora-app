@@ -7,6 +7,7 @@ import '../../providers/providers.dart';
 import '../../utils/utils.dart';
 import '../../widgets/widgets.dart';
 import '../../config/config.dart';
+import '../../services/url_launcher_service.dart';
 import 'client_form_screen.dart';
 import 'direccion_form_screen_for_client.dart';
 
@@ -121,7 +122,7 @@ class _ClientDetailScreenState extends State<ClientDetailScreen>
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Error al cargar direcciones: ${addressError.toString()}'),
-            backgroundColor: Colors.orange.shade700,
+            backgroundColor: Theme.of(context).colorScheme.error,
             duration: const Duration(seconds: 3),
           ),
         );
@@ -175,43 +176,98 @@ class _ClientDetailScreenState extends State<ClientDetailScreen>
     }
 
     return Scaffold(
+      backgroundColor: Theme.of(context).colorScheme.surface,
       appBar: CustomGradientAppBar(
-        titleWidget: Text(_client!.nombre, style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
-        customGradient: AppGradients.green,
-        actions: [
-          EditAction(onEdit: () => _navigateToEditClient()),
-          IconButton(
-            icon: const Icon(Icons.delete, color: Colors.white),
-            onPressed: _showDeleteDialog,
-            tooltip: 'Eliminar cliente',
-          ),
-        ],
-        bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(48),
-          child: Container(
-            color: Colors.white,
-            child: TabBar(
-              controller: _tabController,
-              labelColor: Colors.green.shade700,
-              unselectedLabelColor: Colors.grey.shade600,
-              indicatorColor: Colors.green.shade700,
-              indicatorWeight: 3,
-              labelStyle: const TextStyle(fontWeight: FontWeight.w600),
-              tabs: const [
-                Tab(text: 'Información', icon: Icon(Icons.info_outline, size: 20)),
-                Tab(text: 'Direcciones', icon: Icon(Icons.location_on_outlined, size: 20)),
-              ],
-            ),
-          ),
+        titleWidget: Text(
+          _client!.nombre,
+          style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white, fontSize: 18),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
         ),
+        customGradient: AppGradients.green,
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
-          : TabBarView(
-              controller: _tabController,
+          : Column(
               children: [
-                _buildInfoTab(),
-                _buildDireccionesTab(),
+                // Barra de acciones (Editar/Eliminar)
+                Container(
+                  color: Theme.of(context).colorScheme.surface,
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      // Espacio vacío a la izquierda para balance
+                      const SizedBox(width: 48),
+                      // Botones de acción
+                      Row(
+                        children: [
+                          Tooltip(
+                            message: 'Editar cliente',
+                            child: ElevatedButton.icon(
+                              onPressed: () => _navigateToEditClient(),
+                              icon: const Icon(Icons.edit, size: 18),
+                              label: const Text('Editar'),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Theme.of(context).colorScheme.primary,
+                                foregroundColor: Theme.of(context).colorScheme.onPrimary,
+                                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                                elevation: 2,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Tooltip(
+                            message: 'Eliminar cliente',
+                            child: ElevatedButton.icon(
+                              onPressed: _showDeleteDialog,
+                              icon: const Icon(Icons.delete, size: 18),
+                              label: const Text('Eliminar'),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Theme.of(context).colorScheme.error,
+                                foregroundColor: Theme.of(context).colorScheme.onError,
+                                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                                elevation: 2,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(width: 48),
+                    ],
+                  ),
+                ),
+                // Divider
+                Divider(
+                  height: 1,
+                  color: Theme.of(context).colorScheme.outline.withOpacity(0.2),
+                ),
+                // TabBar
+                Container(
+                  color: Theme.of(context).colorScheme.surface,
+                  child: TabBar(
+                    controller: _tabController,
+                    labelColor: Theme.of(context).colorScheme.primary,
+                    unselectedLabelColor: Theme.of(context).colorScheme.onSurfaceVariant,
+                    indicatorColor: Theme.of(context).colorScheme.primary,
+                    indicatorWeight: 3,
+                    labelStyle: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+                    tabs: const [
+                      Tab(text: 'Información', icon: Icon(Icons.info_outline, size: 20)),
+                      Tab(text: 'Direcciones', icon: Icon(Icons.location_on_outlined, size: 20)),
+                    ],
+                  ),
+                ),
+                // Content
+                Expanded(
+                  child: TabBarView(
+                    controller: _tabController,
+                    children: [
+                      _buildInfoTab(),
+                      _buildDireccionesTab(),
+                    ],
+                  ),
+                ),
               ],
             ),
       floatingActionButton: _buildFloatingActionButton(),
@@ -224,15 +280,20 @@ class _ClientDetailScreenState extends State<ClientDetailScreen>
       return null;
     }
 
+    final colorScheme = Theme.of(context).colorScheme;
+
     return Container(
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(16),
         gradient: LinearGradient(
-          colors: [Colors.green.shade600, Colors.teal.shade700],
+          colors: [
+            colorScheme.primary,
+            colorScheme.primary.withOpacity(0.8),
+          ],
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.green.withOpacity(0.4),
+            color: colorScheme.primary.withOpacity(0.3),
             blurRadius: 12,
             offset: const Offset(0, 6),
           ),
@@ -242,10 +303,14 @@ class _ClientDetailScreenState extends State<ClientDetailScreen>
         onPressed: _agregarDireccion,
         backgroundColor: Colors.transparent,
         elevation: 0,
-        icon: const Icon(Icons.add_location, size: 24),
-        label: const Text(
+        icon: Icon(Icons.add_location, size: 24, color: colorScheme.onPrimary),
+        label: Text(
           'Agregar Dirección',
-          style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16),
+          style: TextStyle(
+            fontWeight: FontWeight.w600,
+            fontSize: 16,
+            color: colorScheme.onPrimary,
+          ),
         ),
       ),
     );
@@ -272,7 +337,7 @@ class _ClientDetailScreenState extends State<ClientDetailScreen>
                       shape: BoxShape.circle,
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withOpacity(0.2),
+                          color: Theme.of(context).colorScheme.shadow.withOpacity(0.2),
                           blurRadius: 15,
                           offset: const Offset(0, 8),
                         ),
@@ -287,9 +352,9 @@ class _ClientDetailScreenState extends State<ClientDetailScreen>
                       shape: BoxShape.circle,
                       gradient: LinearGradient(
                         colors: [
-                          Colors.green.shade400,
-                          Colors.green.shade600,
-                          Colors.teal.shade600,
+                          Theme.of(context).colorScheme.primary,
+                          Theme.of(context).colorScheme.primary.withOpacity(0.7),
+                          Theme.of(context).colorScheme.primaryContainer,
                         ],
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
@@ -298,15 +363,15 @@ class _ClientDetailScreenState extends State<ClientDetailScreen>
                     child: Padding(
                       padding: const EdgeInsets.all(3),
                       child: Container(
-                        decoration: const BoxDecoration(
+                        decoration: BoxDecoration(
                           shape: BoxShape.circle,
-                          color: Colors.white,
+                          color: Theme.of(context).colorScheme.surface,
                         ),
                         child: Padding(
                           padding: const EdgeInsets.all(2),
                           child: CircleAvatar(
                             radius: 58,
-                            backgroundColor: Colors.green.shade50,
+                            backgroundColor: Theme.of(context).colorScheme.primaryContainer,
                             child: _buildSafeProfileImage(),
                           ),
                         ),
@@ -320,11 +385,11 @@ class _ClientDetailScreenState extends State<ClientDetailScreen>
                       height: 128,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        color: Colors.black.withOpacity(0.3),
+                        color: Theme.of(context).colorScheme.shadow.withOpacity(0.3),
                       ),
-                      child: const Icon(
+                      child: Icon(
                         Icons.hourglass_empty,
-                        color: Colors.white,
+                        color: Theme.of(context).colorScheme.onSurface,
                         size: 32,
                       ),
                     ),
@@ -364,8 +429,10 @@ class _ClientDetailScreenState extends State<ClientDetailScreen>
                     .map(
                       (c) => Chip(
                         label: Text(c.nombre ?? c.clave ?? 'Categoría'),
-                        backgroundColor: Colors.green.shade50,
-                        side: BorderSide(color: Colors.green.shade200),
+                        backgroundColor: Theme.of(context).colorScheme.primaryContainer,
+                        side: BorderSide(
+                          color: Theme.of(context).colorScheme.outline.withOpacity(0.3),
+                        ),
                       ),
                     )
                     .toList(),
@@ -633,18 +700,16 @@ class _ClientDetailScreenState extends State<ClientDetailScreen>
   }
 
   Widget _buildInfoCard(String title, List<Widget> children) {
+    final colorScheme = Theme.of(context).colorScheme;
+
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(16),
-        gradient: LinearGradient(
-          colors: [Colors.white, Colors.grey.shade50],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
+        color: colorScheme.surface,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.06),
+            color: colorScheme.shadow.withOpacity(0.06),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -656,9 +721,7 @@ class _ClientDetailScreenState extends State<ClientDetailScreen>
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [Colors.green.shade50, Colors.teal.shade50],
-              ),
+              color: colorScheme.primaryContainer,
               borderRadius: const BorderRadius.only(
                 topLeft: Radius.circular(16),
                 topRight: Radius.circular(16),
@@ -669,10 +732,14 @@ class _ClientDetailScreenState extends State<ClientDetailScreen>
                 Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: Colors.green.shade100,
+                    color: colorScheme.primary.withOpacity(0.2),
                     borderRadius: BorderRadius.circular(8),
                   ),
-                  child: Icon(Icons.info_outline, color: Colors.green.shade700, size: 20),
+                  child: Icon(
+                    Icons.info_outline,
+                    color: colorScheme.primary,
+                    size: 20,
+                  ),
                 ),
                 const SizedBox(width: 12),
                 Text(
@@ -680,7 +747,7 @@ class _ClientDetailScreenState extends State<ClientDetailScreen>
                   style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
-                    color: Colors.grey.shade800,
+                    color: colorScheme.onPrimaryContainer,
                   ),
                 ),
               ],
@@ -836,34 +903,25 @@ class _ClientDetailScreenState extends State<ClientDetailScreen>
   }
 
   Future<void> _makePhoneCall(String phoneNumber) async {
-    final Uri launchUri = Uri(scheme: 'tel', path: phoneNumber);
-    if (await canLaunchUrl(launchUri)) {
-      await launchUrl(launchUri);
-    } else {
+    // ✅ Usar el nuevo servicio robusto con reintentos
+    final success = await UrlLauncherService.makePhoneCall(phoneNumber);
+
+    if (!success) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('No se pudo realizar la llamada')),
+        const SnackBar(
+          content: Text('❌ No se pudo realizar la llamada. Intenta de nuevo o verifica el número.'),
+          duration: Duration(seconds: 3),
+        ),
       );
     }
   }
 
   Future<void> _sendWhatsAppMessage(String phoneNumber) async {
-    // Asegurarse de que el número tenga el formato correcto (sin espacios ni caracteres especiales)
-    String formattedNumber = phoneNumber.replaceAll(RegExp(r'\s+'), '');
-    if (!formattedNumber.startsWith('+')) {
-      // Si no tiene código de país, asumimos que es Bolivia (+591)
-      if (!formattedNumber.startsWith('591')) {
-        formattedNumber = '591$formattedNumber';
-      }
-    } else {
-      // Si ya tiene +, quitamos el + y dejamos solo los números
-      formattedNumber = formattedNumber.substring(1);
-    }
+    // ✅ Usar el nuevo servicio robusto con reintentos
+    final success = await UrlLauncherService.openWhatsApp(phoneNumber);
 
-    final Uri launchUri = Uri.parse('https://wa.me/$formattedNumber');
-    if (await canLaunchUrl(launchUri)) {
-      await launchUrl(launchUri, mode: LaunchMode.externalApplication);
-    } else {
+    if (!success) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('No se pudo abrir WhatsApp')),

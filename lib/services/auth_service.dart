@@ -77,6 +77,21 @@ class AuthService {
     }
   }
 
+  /// ✅ NUEVO: Obtener datos del usuario y estadísticas en una sola respuesta
+  Future<Map<String, dynamic>?> getUserWithStats() async {
+    try {
+      final response = await _apiService.get('/user');
+
+      if (response.statusCode == 200) {
+        return response.data as Map<String, dynamic>;
+      }
+      return null;
+    } catch (e) {
+      debugPrint('❌ Error en getUserWithStats: $e');
+      return null;
+    }
+  }
+
   Future<ApiResponse<User>> getUser() async {
     try {
       final response = await _apiService.get('/user');

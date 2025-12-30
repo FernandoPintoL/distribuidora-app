@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:geocoding/geocoding.dart';
 import 'package:permission_handler/permission_handler.dart';
+import '../services/location_service.dart';
 import 'map_location_selector.dart';
 
 class LocationSelector extends StatefulWidget {
@@ -28,6 +29,7 @@ class _LocationSelectorState extends State<LocationSelector> {
   String? _address;
   bool _isLoading = false;
   String? _errorMessage;
+  final _locationService = LocationService();
 
   @override
   void initState() {
@@ -42,33 +44,78 @@ class _LocationSelectorState extends State<LocationSelector> {
     }
   }
 
-  Future<void> _requestLocationPermission() async {
-    final status = await Permission.location.request();
-    if (status.isDenied) {
+  Future<bool> _checkLocationServiceEnabled() async {
+    final isEnabled = await _locationService.isLocationServiceEnabled();
+    if (!isEnabled) {
       setState(() {
-        _errorMessage = 'Permiso de ubicación denegado';
+        _errorMessage = 'El servicio de ubicación está deshabilitado. Por favor habilítalo en configuración.';
       });
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text(
-              'Se necesita permiso de ubicación para obtener la posición actual',
+          SnackBar(
+            content: const Text(
+              'El servicio de ubicación está deshabilitado',
             ),
             action: SnackBarAction(
-              label: 'Configurar',
-              onPressed: openAppSettings,
+              label: 'Ir a Configuración',
+              onPressed: () => Geolocator.openLocationSettings(),
             ),
           ),
         );
       }
-      return;
     }
+    return isEnabled;
+  }
 
-    if (status.isPermanentlyDenied) {
+  Future<bool> _requestLocationPermission() async {
+    try {
+      final hasPermission = await _locationService.requestLocationPermission();
+
+      if (!hasPermission) {
+        final status = await Permission.location.status;
+        if (status.isDenied) {
+          setState(() {
+            _errorMessage = 'Permiso de ubicación denegado. Por favor concédelo en configuración.';
+          });
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: const Text(
+                  'Se necesita permiso de ubicación para obtener la posición actual',
+                ),
+                action: SnackBarAction(
+                  label: 'Configurar',
+                  onPressed: openAppSettings,
+                ),
+              ),
+            );
+          }
+        } else if (status.isPermanentlyDenied) {
+          setState(() {
+            _errorMessage = 'Permiso de ubicación denegado permanentemente. Abre configuración de la app.';
+          });
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: const Text(
+                  'Permiso denegado permanentemente. Abre configuración de la app.',
+                ),
+                action: SnackBarAction(
+                  label: 'Ir a Configuración',
+                  onPressed: openAppSettings,
+                ),
+              ),
+            );
+          }
+        }
+      }
+
+      return hasPermission;
+    } catch (e) {
       setState(() {
-        _errorMessage = 'Permiso de ubicación denegado permanentemente';
+        _errorMessage = 'Error al solicitar permisos: $e';
       });
-      return;
+      return false;
     }
   }
 
@@ -79,12 +126,41 @@ class _LocationSelectorState extends State<LocationSelector> {
     });
 
     try {
-      await _requestLocationPermission();
+      // Verificar que el servicio de ubicación esté habilitado
+      final serviceEnabled = await _checkLocationServiceEnabled();
+      if (!serviceEnabled) {
+        setState(() => _isLoading = false);
+        return;
+      }
 
-      final position = await Geolocator.getCurrentPosition(
-        desiredAccuracy: LocationAccuracy.high,
-        timeLimit: const Duration(seconds: 10),
+      // Solicitar permisos y validar que se hayan otorgado
+      final hasPermission = await _requestLocationPermission();
+      if (!hasPermission) {
+        setState(() => _isLoading = false);
+        return;
+      }
+
+      // Intentar obtener ubicación con reintentos
+      final position = await _locationService.getCurrentLocationWithRetry(
+        maxRetries: 3,
+        retryDelay: const Duration(seconds: 1),
       );
+
+      if (position == null) {
+        setState(() {
+          _errorMessage = 'No se pudo obtener la ubicación. Verifica los permisos y que el GPS esté habilitado.';
+        });
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: const Text('No se pudo obtener la ubicación'),
+              backgroundColor: Colors.orange.shade700,
+            ),
+          );
+        }
+        setState(() => _isLoading = false);
+        return;
+      }
 
       setState(() {
         _latitude = position.latitude;
@@ -101,6 +177,7 @@ class _LocationSelectorState extends State<LocationSelector> {
       setState(() {
         _errorMessage = 'Error al obtener ubicación: $e';
       });
+      debugPrint('❌ Error en _getCurrentLocation: $e');
     } finally {
       setState(() {
         _isLoading = false;

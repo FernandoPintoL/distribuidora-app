@@ -6,6 +6,7 @@ import '../../providers/providers.dart';
 import 'package:intl/intl.dart';
 import 'package:timeline_tile/timeline_tile.dart';
 import '../../widgets/widgets.dart';
+import '../../widgets/dialogs/renovacion_reservas_dialog.dart';
 import '../../config/config.dart';
 
 class PedidoDetalleScreen extends StatefulWidget {
@@ -18,6 +19,9 @@ class PedidoDetalleScreen extends StatefulWidget {
 }
 
 class _PedidoDetalleScreenState extends State<PedidoDetalleScreen> {
+  // Estado para el flujo de conversión
+  bool _showRenovacionDialog = false;
+
   @override
   void initState() {
     super.initState();
@@ -77,6 +81,114 @@ class _PedidoDetalleScreenState extends State<PedidoDetalleScreen> {
     }
   }
 
+  /// Convertir proforma a venta
+  Future<void> _convertirAVenta() async {
+    final pedidoProvider = context.read<PedidoProvider>();
+    final pedido = pedidoProvider.pedidoActual;
+
+    if (pedido == null) return;
+
+    try {
+      // Intentar confirmación
+      final success = await pedidoProvider.confirmarProforma(
+        proformaId: pedido.id,
+      );
+
+      if (!mounted) return;
+
+      if (success) {
+        // ✅ Éxito - Recargar y mostrar mensaje
+        await _cargarPedido();
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('✅ Proforma convertida a venta exitosamente'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      } else if (pedidoProvider.errorCode == 'RESERVAS_EXPIRADAS') {
+        // ⚠️ Reservas expiradas - Mostrar diálogo de renovación
+        setState(() {
+          _showRenovacionDialog = true;
+        });
+      } else {
+        // ❌ Otro error
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              pedidoProvider.errorMessage ?? 'Error al convertir proforma',
+            ),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  /// Renovar reservas expiradas
+  Future<void> _renovarReservas() async {
+    final pedidoProvider = context.read<PedidoProvider>();
+    final pedido = pedidoProvider.pedidoActual;
+
+    if (pedido == null) return;
+
+    try {
+      final success = await pedidoProvider.renovarReservas(pedido.id);
+
+      if (!mounted) return;
+
+      if (success) {
+        // ✅ Reservas renovadas - Cerrar diálogo y reintentar conversión
+        setState(() {
+          _showRenovacionDialog = false;
+        });
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('✅ Reservas renovadas. Reintentando conversión...'),
+            backgroundColor: Colors.blue,
+          ),
+        );
+
+        // Esperar un poco y reintentar conversión automáticamente
+        await Future.delayed(const Duration(milliseconds: 1500));
+
+        if (!mounted) return;
+
+        // Reintentar conversión
+        await _convertirAVenta();
+      } else {
+        // ❌ Error al renovar
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              pedidoProvider.errorMessage ?? 'Error al renovar reservas',
+            ),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
   String _formatearFecha(DateTime fecha) {
     final formatter = DateFormat('dd MMM yyyy, HH:mm', 'es_ES');
     return formatter.format(fecha);
@@ -100,80 +212,13 @@ class _PedidoDetalleScreenState extends State<PedidoDetalleScreen> {
           ),
         ],
       ),
-      body: Consumer<PedidoProvider>(
-        builder: (context, pedidoProvider, _) {
-          if (pedidoProvider.isLoading && pedidoProvider.pedidoActual == null) {
-            return const Center(child: CircularProgressIndicator());
-          }
-
-          if (pedidoProvider.errorMessage != null &&
-              pedidoProvider.pedidoActual == null) {
-            return _buildErrorState(pedidoProvider.errorMessage!);
-          }
-
-          final pedido = pedidoProvider.pedidoActual;
-          if (pedido == null) {
-            return const Center(child: Text('Pedido no encontrado'));
-          }
-
-          return RefreshIndicator(
-            onRefresh: _onRefresh,
-            child: SingleChildScrollView(
-              physics: const AlwaysScrollableScrollPhysics(),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Header con estado
-                  _buildHeader(pedido),
-
-                  // Botón de tracking (si está en ruta)
-                  if (pedido.estado == EstadoPedido.EN_RUTA ||
-                      pedido.estado == EstadoPedido.LLEGO)
-                    _buildSeccionTracking(pedido),
-
-                  // Timeline de estados
-                  if (pedido.historialEstados.isNotEmpty)
-                    _buildTimelineEstados(pedido),
-
-                  const SizedBox(height: 16),
-
-                  // Información general
-                  _buildSeccionInfo(pedido),
-
-                  // Dirección de entrega
-                  if (pedido.direccionEntrega != null)
-                    _buildSeccionDireccion(pedido),
-
-                  // Fecha programada
-                  if (pedido.fechaProgramada != null)
-                    _buildSeccionFechaProgramada(pedido),
-
-                  // Productos
-                  _buildSeccionProductos(pedido),
-
-                  // Reservas de stock
-                  if (pedido.reservas.isNotEmpty) _buildSeccionReservas(pedido),
-
-                  // Resumen de montos
-                  _buildSeccionResumen(pedido),
-
-                  // Observaciones
-                  if (pedido.observaciones != null &&
-                      pedido.observaciones!.isNotEmpty)
-                    _buildSeccionObservaciones(pedido),
-
-                  const SizedBox(height: 100),
-                ],
-              ),
-            ),
-          );
-        },
-      ),
       bottomNavigationBar: Consumer<PedidoProvider>(
         builder: (context, pedidoProvider, _) {
           final pedido = pedidoProvider.pedidoActual;
+          final puedeConvertir = pedido?.estado == EstadoPedido.PENDIENTE ||
+              pedido?.estado == EstadoPedido.APROBADA;
 
-          if (pedido == null || !pedido.puedeExtenderReservas) {
+          if (pedido == null) {
             return const SizedBox.shrink();
           }
 
@@ -190,18 +235,149 @@ class _PedidoDetalleScreenState extends State<PedidoDetalleScreen> {
               ],
             ),
             child: SafeArea(
-              child: ElevatedButton.icon(
-                onPressed: _extenderReserva,
-                icon: const Icon(Icons.access_time),
-                label: const Text('Extender Reserva'),
-                style: ElevatedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  backgroundColor: Colors.orange,
-                ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (puedeConvertir) ...[
+                    ElevatedButton.icon(
+                      onPressed: pedidoProvider.isConverting
+                          ? null
+                          : _convertirAVenta,
+                      icon: pedidoProvider.isConverting
+                          ? const SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                              ),
+                            )
+                          : const Icon(Icons.shopping_cart),
+                      label: Text(
+                        pedidoProvider.isConverting
+                            ? 'Convirtiendo...'
+                            : 'Convertir a Venta',
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        backgroundColor: Colors.blue,
+                        minimumSize: const Size(double.infinity, 50),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                  ],
+                  if (pedido.puedeExtenderReservas)
+                    ElevatedButton.icon(
+                      onPressed: _extenderReserva,
+                      icon: const Icon(Icons.access_time),
+                      label: const Text('Extender Reserva'),
+                      style: ElevatedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        backgroundColor: Colors.orange,
+                        minimumSize: const Size(double.infinity, 50),
+                      ),
+                    ),
+                ],
               ),
             ),
           );
         },
+      ),
+      // Diálogo de renovación de reservas
+      body: Stack(
+        children: [
+          Consumer<PedidoProvider>(
+            builder: (context, pedidoProvider, child) {
+              if (pedidoProvider.isLoading && pedidoProvider.pedidoActual == null) {
+                return const Center(child: CircularProgressIndicator());
+              }
+
+              if (pedidoProvider.errorMessage != null &&
+                  pedidoProvider.pedidoActual == null) {
+                return _buildErrorState(pedidoProvider.errorMessage!);
+              }
+
+              final pedido = pedidoProvider.pedidoActual;
+              if (pedido == null) {
+                return const Center(child: Text('Pedido no encontrado'));
+              }
+
+              return RefreshIndicator(
+                onRefresh: _onRefresh,
+                child: SingleChildScrollView(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Header con estado
+                      _buildHeader(pedido),
+
+                      // Botón de tracking (si está en ruta)
+                      if (pedido.estado == EstadoPedido.EN_RUTA ||
+                          pedido.estado == EstadoPedido.LLEGO)
+                        _buildSeccionTracking(pedido),
+
+                      // Timeline de estados
+                      if (pedido.historialEstados.isNotEmpty)
+                        _buildTimelineEstados(pedido),
+
+                      const SizedBox(height: 16),
+
+                      // Información general
+                      _buildSeccionInfo(pedido),
+
+                      // Dirección de entrega
+                      if (pedido.direccionEntrega != null)
+                        _buildSeccionDireccion(pedido),
+
+                      // Fecha programada
+                      if (pedido.fechaProgramada != null)
+                        _buildSeccionFechaProgramada(pedido),
+
+                      // Productos
+                      _buildSeccionProductos(pedido),
+
+                      // Reservas de stock
+                      if (pedido.reservas.isNotEmpty)
+                        _buildSeccionReservas(pedido),
+
+                      // Resumen de montos
+                      _buildSeccionResumen(pedido),
+
+                      // Observaciones
+                      if (pedido.observaciones != null &&
+                          pedido.observaciones!.isNotEmpty)
+                        _buildSeccionObservaciones(pedido),
+
+                      const SizedBox(height: 100),
+                    ],
+                  ),
+                ),
+              );
+            },
+          ),
+          // Diálogo de renovación superpuesto
+          if (_showRenovacionDialog)
+            Consumer<PedidoProvider>(
+              builder: (context, pedidoProvider, _) {
+                final pedido = pedidoProvider.pedidoActual;
+                return Dialog(
+                  child: RenovacionReservasDialog(
+                    proformaNumero: pedido?.numero ?? 'N/A',
+                    reservasExpiradas:
+                        pedidoProvider.errorData?['reservas_expiradas'] ?? 1,
+                    isLoading: pedidoProvider.isRenovandoReservas,
+                    onRenovar: _renovarReservas,
+                    onCancelar: () {
+                      setState(() {
+                        _showRenovacionDialog = false;
+                      });
+                      pedidoProvider.limpiarErrores();
+                    },
+                  ),
+                );
+              },
+            ),
+        ],
       ),
     );
   }

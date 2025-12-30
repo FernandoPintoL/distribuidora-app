@@ -24,7 +24,11 @@ class PedidoProvider with ChangeNotifier {
   bool _isLoading = false;
   bool _isLoadingMore = false;
   bool _isLoadingStats = false;
+  bool _isConverting = false;
+  bool _isRenovandoReservas = false;
   String? _errorMessage;
+  String? _errorCode;
+  Map<String, dynamic>? _errorData;
 
   // Paginación
   int _currentPage = 1;
@@ -45,7 +49,11 @@ class PedidoProvider with ChangeNotifier {
   bool get isLoading => _isLoading;
   bool get isLoadingMore => _isLoadingMore;
   bool get isLoadingStats => _isLoadingStats;
+  bool get isConverting => _isConverting;
+  bool get isRenovandoReservas => _isRenovandoReservas;
   String? get errorMessage => _errorMessage;
+  String? get errorCode => _errorCode;
+  Map<String, dynamic>? get errorData => _errorData;
   bool get hasMorePages => _hasMorePages;
   int get totalItems => _totalItems;
   EstadoPedido? get filtroEstado => _filtroEstado;
@@ -340,6 +348,116 @@ class PedidoProvider with ChangeNotifier {
   /// Limpiar filtros
   Future<void> limpiarFiltros() async {
     await loadPedidos();
+  }
+
+  /// Confirmar una proforma aprobada y convertirla en venta
+  ///
+  /// Este método intenta convertir una proforma en venta. Si la proforma
+  /// tiene reservas expiradas, retorna un error RESERVAS_EXPIRADAS y guarda
+  /// los datos de error para que la UI pueda mostrar opciones de renovación.
+  ///
+  /// Retorna:
+  /// - true si la conversión fue exitosa
+  /// - false si hay error (puede ser RESERVAS_EXPIRADAS u otro)
+  Future<bool> confirmarProforma({
+    required int proformaId,
+    String politicaPago = 'MEDIO_MEDIO',
+  }) async {
+    try {
+      _isConverting = true;
+      _errorMessage = null;
+      _errorCode = null;
+      _errorData = null;
+      notifyListeners();
+
+      debugPrint('🔄 Confirmando proforma #$proformaId');
+
+      final response = await _proformaService.confirmarProforma(
+        proformaId: proformaId,
+        politicaPago: politicaPago,
+      );
+
+      if (response.success && response.data != null) {
+        // ✅ Conversión exitosa
+        debugPrint('✅ Proforma convertida a venta exitosamente');
+        _errorCode = null;
+        _errorData = null;
+        notifyListeners();
+        return true;
+      } else if (!response.success && response.code == 'RESERVAS_EXPIRADAS') {
+        // ⚠️ Reservas expiradas - guardar información para que la UI maneje renovación
+        _errorCode = 'RESERVAS_EXPIRADAS';
+        _errorData = response.additionalData;
+        _errorMessage = response.message;
+        debugPrint('⚠️ Detectado error de RESERVAS_EXPIRADAS');
+        notifyListeners();
+        return false;
+      } else {
+        // ❌ Otros errores
+        _errorMessage = response.message;
+        _errorCode = response.code;
+        _errorData = response.additionalData;
+        debugPrint('❌ Error al confirmar proforma: ${response.message}');
+        notifyListeners();
+        return false;
+      }
+    } catch (e) {
+      debugPrint('❌ Error inesperado al confirmar proforma: $e');
+      _errorMessage = 'Error inesperado: ${e.toString()}';
+      _isConverting = false;
+      notifyListeners();
+      return false;
+    } finally {
+      _isConverting = false;
+    }
+  }
+
+  /// Renovar reservas expiradas de una proforma
+  ///
+  /// Parámetros:
+  /// - proformaId: ID de la proforma cuyas reservas necesitan renovación
+  ///
+  /// Retorna:
+  /// - true si las reservas fueron renovadas exitosamente
+  /// - false si hay error
+  Future<bool> renovarReservas(int proformaId) async {
+    try {
+      _isRenovandoReservas = true;
+      notifyListeners();
+
+      debugPrint('🔄 Renovando reservas para proforma #$proformaId');
+
+      final response = await _proformaService.renovarReservas(proformaId);
+
+      if (response.success) {
+        debugPrint('✅ Reservas renovadas exitosamente');
+        _errorCode = null;
+        _errorData = null;
+        _errorMessage = null;
+        notifyListeners();
+        return true;
+      } else {
+        _errorMessage = response.message;
+        debugPrint('❌ Error al renovar reservas: ${response.message}');
+        notifyListeners();
+        return false;
+      }
+    } catch (e) {
+      debugPrint('❌ Error inesperado al renovar reservas: $e');
+      _errorMessage = 'Error inesperado: ${e.toString()}';
+      notifyListeners();
+      return false;
+    } finally {
+      _isRenovandoReservas = false;
+    }
+  }
+
+  /// Limpiar errores
+  void limpiarErrores() {
+    _errorMessage = null;
+    _errorCode = null;
+    _errorData = null;
+    notifyListeners();
   }
 
   /// Limpiar error

@@ -1,4 +1,6 @@
 import 'package:flutter/widgets.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:convert';
 import '../models/models.dart';
 import '../models/permissions_response.dart';
 import '../services/services.dart';
@@ -19,6 +21,9 @@ class AuthProvider with ChangeNotifier {
   DateTime? _permissionsUpdatedAt;
   int? _cacheTTL;
 
+  // ✅ NUEVO: Estadísticas del preventista desde el login
+  PreventistStats? _preventistaStats;
+
   User? get user => _user;
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
@@ -26,6 +31,7 @@ class AuthProvider with ChangeNotifier {
   bool get biometricAvailable => _biometricAvailable;
   bool get hasFaceRecognition => _hasFaceRecognition;
   bool get hasFingerprintRecognition => _hasFingerprintRecognition;
+  PreventistStats? get preventistaStats => _preventistaStats;
 
   // ✅ NUEVO: Getters para caché de permisos
   bool get _isPermissionsCacheValid {
@@ -64,6 +70,18 @@ class AuthProvider with ChangeNotifier {
         _cacheTTL = response.data!.cacheTtl;
         _permissionsUpdatedAt = DateTime.now();
         debugPrint('✅ Cache TTL guardado: ${_cacheTTL} segundos (${minutosRestantesCache} minutos)');
+
+        // ✅ NUEVO: Guardar estadísticas del preventista si existen
+        if (response.data!.preventistaStats != null) {
+          _preventistaStats = response.data!.preventistaStats;
+          // Guardar en SharedPreferences para persistencia
+          await _savePreventistaStats(_preventistaStats!);
+          debugPrint('📊 Estadísticas del preventista guardadas');
+          debugPrint('   Total clientes: ${_preventistaStats!.totalClientes}');
+          debugPrint('   Clientes activos: ${_preventistaStats!.clientesActivos}');
+          debugPrint('   Clientes inactivos: ${_preventistaStats!.clientesInactivos}');
+          debugPrint('✅ Stats guardados en SharedPreferences');
+        }
 
         // Conectar al WebSocket después de login exitoso
         _connectWebSocket(response.data!.token);
@@ -156,6 +174,20 @@ class AuthProvider with ChangeNotifier {
         _user = response.data;
         _errorMessage = null;
 
+        // ✅ NUEVO: Obtener estadísticas desde la respuesta de /user
+        final userWithStats = await _authService.getUserWithStats();
+        if (userWithStats != null && userWithStats.containsKey('preventista_stats')) {
+          try {
+            _preventistaStats = PreventistStats.fromJson(userWithStats['preventista_stats']);
+            debugPrint('📊 PreventistaStats obtenidos desde API /user');
+            debugPrint('   Total clientes: ${_preventistaStats!.totalClientes}');
+          } catch (e) {
+            debugPrint('❌ Error parseando preventistaStats: $e');
+          }
+        } else {
+          debugPrint('ℹ️ No hay preventistaStats en la respuesta de /user');
+        }
+
         // Conectar al WebSocket si el usuario se cargó exitosamente
         final token = await _authService.getToken();
         if (token != null) {
@@ -229,6 +261,9 @@ class AuthProvider with ChangeNotifier {
       // ✅ NUEVO: Limpiar cache TTL al logout
       _permissionsUpdatedAt = null;
       _cacheTTL = null;
+      // ✅ NUEVO: Limpiar preventistaStats al logout
+      _preventistaStats = null;
+      _clearPreventistaStats();
       notifyListeners();
     }
   }
@@ -469,5 +504,48 @@ class AuthProvider with ChangeNotifier {
   /// Obtiene el mensaje descriptivo del tipo de biometría
   Future<String> getBiometricTypeMessage() async {
     return await _biometricService.getBiometricTypeMessage();
+  }
+
+  /// ✅ NUEVO: Guardar preventistaStats en SharedPreferences
+  Future<void> _savePreventistaStats(PreventistStats stats) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final statsJson = jsonEncode(stats.toJson());
+      await prefs.setString('preventista_stats', statsJson);
+      debugPrint('💾 PreventistaStats guardados en SharedPreferences');
+    } catch (e) {
+      debugPrint('❌ Error al guardar preventistaStats: $e');
+    }
+  }
+
+  /// ✅ NUEVO: Cargar preventistaStats desde SharedPreferences
+  Future<void> _loadPreventistaStats() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final statsJson = prefs.getString('preventista_stats');
+
+      if (statsJson != null) {
+        final statsMap = jsonDecode(statsJson);
+        _preventistaStats = PreventistStats.fromJson(statsMap);
+        debugPrint('📂 PreventistaStats cargados desde SharedPreferences');
+      } else {
+        debugPrint('ℹ️ No hay preventistaStats guardados en SharedPreferences');
+        _preventistaStats = null;
+      }
+    } catch (e) {
+      debugPrint('❌ Error al cargar preventistaStats: $e');
+      _preventistaStats = null;
+    }
+  }
+
+  /// ✅ NUEVO: Limpiar preventistaStats de SharedPreferences
+  Future<void> _clearPreventistaStats() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove('preventista_stats');
+      debugPrint('🗑️ PreventistaStats removidos de SharedPreferences');
+    } catch (e) {
+      debugPrint('❌ Error al limpiar preventistaStats: $e');
+    }
   }
 }

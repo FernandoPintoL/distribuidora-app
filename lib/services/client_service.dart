@@ -130,6 +130,7 @@ class ClientService {
     List<VentanaEntregaCliente>? ventanasEntrega,
     List<int>? categoriasIds,
     bool? crearUsuario,
+    String? password,
     File? fotoPerfil,
     File? ciAnverso,
     File? ciReverso,
@@ -172,6 +173,7 @@ class ClientService {
               .toList(),
         if (categoriasIds != null) 'categorias_ids': categoriasIds,
         if (crearUsuario != null) 'crear_usuario': crearUsuario,
+        if (password != null) 'password': password,
       };
 
       dynamic requestData = data;
@@ -209,6 +211,9 @@ class ClientService {
           formData.fields.add(
             MapEntry('crear_usuario', crearUsuario ? '1' : '0'),
           );
+        }
+        if (password != null) {
+          formData.fields.add(MapEntry('password', password));
         }
 
         // Booleans en multipart: enviar como '1'/'0' para compatibilidad con Laravel boolean

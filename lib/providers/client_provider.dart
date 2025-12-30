@@ -178,6 +178,50 @@ class ClientProvider with ChangeNotifier {
     }
   }
 
+  /// ✅ NUEVO: Cargar datos desde las estadísticas del preventista obtenidas en el login
+  /// Esto permite que el dashboard tenga datos iniciales sin hacer llamadas adicionales
+  void loadClientsFromPreventistaStats(PreventistStats stats) {
+    try {
+      // Convertir ClienteBasico a Client
+      // Nota: Esto crea clientes con datos básicos del login
+      _clients = stats.clientesParaReactivar
+          .map((clienteBasico) => Client(
+            id: clienteBasico.id,
+            nombre: clienteBasico.nombre,
+            razonSocial: clienteBasico.razonSocial,
+            telefono: clienteBasico.telefono,
+            email: clienteBasico.email,
+            activo: clienteBasico.activo,
+            nit: null,
+            fotoPerfil: null,
+            limiteCredito: null,
+            fechaRegistro: null,
+            localidad: null,
+            direcciones: [],
+            ventanasEntrega: [],
+            categorias: [],
+          ))
+          .toList();
+
+      _totalItems = stats.totalClientes;
+      _currentPage = 1;
+      _totalPages = 1;
+      _hasMorePages = false;
+      _errorMessage = null;
+
+      print('✅ Clientes cargados desde PreventistStats: ${_clients.length}');
+      print('   Total de clientes: ${stats.totalClientes}');
+      print('   Clientes activos: ${stats.clientesActivos}');
+      print('   Clientes inactivos: ${stats.clientesInactivos}');
+
+      _safeNotifyListeners();
+    } catch (e) {
+      print('❌ Error al cargar clientes desde stats: $e');
+      _errorMessage = 'Error al cargar estadísticas del preventista';
+      _safeNotifyListeners();
+    }
+  }
+
   Future<bool> createClient({
     required String nombre,
     String? razonSocial,
@@ -194,6 +238,7 @@ class ClientProvider with ChangeNotifier {
     List<VentanaEntregaCliente>? ventanasEntrega,
     List<int>? categoriasIds,
     bool? crearUsuario,
+    String? password,
     File? fotoPerfil,
     File? ciAnverso,
     File? ciReverso,
@@ -223,6 +268,7 @@ class ClientProvider with ChangeNotifier {
         ventanasEntrega: ventanasEntrega,
         categoriasIds: categoriasIds,
         crearUsuario: crearUsuario,
+        password: password,
         fotoPerfil: fotoPerfil,
         ciAnverso: ciAnverso,
         ciReverso: ciReverso,
@@ -289,6 +335,7 @@ class ClientProvider with ChangeNotifier {
         longitud: longitud,
         activo: activo,
         observaciones: observaciones,
+        direcciones: direcciones,
         ventanasEntrega: ventanasEntrega,
         categoriasIds: categoriasIds,
         crearUsuario: crearUsuario,

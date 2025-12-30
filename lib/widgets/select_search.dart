@@ -64,8 +64,13 @@ class _SelectSearchState<T> extends State<SelectSearch<T>> {
   void didUpdateWidget(SelectSearch<T> oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.value != widget.value || oldWidget.items != widget.items) {
-      _updateControllerText();
-      _filterItems(_controller.text);
+      // Usar addPostFrameCallback para evitar setState() durante build
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          _updateControllerText();
+          _filterItems(_controller.text);
+        }
+      });
     }
   }
 

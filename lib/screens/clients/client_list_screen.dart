@@ -7,6 +7,7 @@ import '../../models/models.dart';
 import '../../utils/utils.dart';
 import '../../widgets/widgets.dart';
 import '../../config/config.dart';
+import '../../services/url_launcher_service.dart';
 import 'client_detail_screen.dart';
 import 'client_form_screen.dart';
 import '../login_screen.dart';
@@ -191,7 +192,10 @@ class _ClientListScreenState extends State<ClientListScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
     return Scaffold(
+      backgroundColor: colorScheme.surface,
       /* appBar: CustomGradientAppBar(
         title: 'Clientes',
         customGradient: AppGradients.blue,
@@ -203,13 +207,7 @@ class _ClientListScreenState extends State<ClientListScreen> {
         ],
       ), */
       body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [Colors.blue.shade50, Colors.white],
-          ),
-        ),
+        color: colorScheme.surface,
         child: Column(
           children: [
             // Barra de búsqueda modernizada
@@ -217,11 +215,14 @@ class _ClientListScreenState extends State<ClientListScreen> {
               padding: const EdgeInsets.all(16.0),
               child: Container(
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: colorScheme.surface,
                   borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                    color: colorScheme.outline.withOpacity(0.2),
+                  ),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.08),
+                      color: colorScheme.shadow.withOpacity(0.08),
                       blurRadius: 10,
                       offset: const Offset(0, 4),
                     ),
@@ -231,13 +232,13 @@ class _ClientListScreenState extends State<ClientListScreen> {
                   controller: _searchController,
                   decoration: InputDecoration(
                     hintText: 'Buscar clientes...',
-                    hintStyle: TextStyle(color: Colors.grey.shade400),
-                    prefixIcon: Icon(Icons.search, color: Colors.blue.shade700),
+                    hintStyle: TextStyle(color: colorScheme.onSurfaceVariant),
+                    prefixIcon: Icon(Icons.search, color: colorScheme.primary),
                     suffixIcon: _searchQuery.isNotEmpty
                         ? IconButton(
                             icon: Icon(
                               Icons.clear,
-                              color: Colors.grey.shade600,
+                              color: colorScheme.onSurfaceVariant,
                             ),
                             onPressed: _isLoadingClients ? null : _clearSearch,
                           )
@@ -247,12 +248,13 @@ class _ClientListScreenState extends State<ClientListScreen> {
                       borderSide: BorderSide.none,
                     ),
                     filled: true,
-                    fillColor: Colors.white,
+                    fillColor: colorScheme.surface,
                     contentPadding: const EdgeInsets.symmetric(
                       horizontal: 20,
                       vertical: 16,
                     ),
                   ),
+                  style: TextStyle(color: colorScheme.onSurface),
                   onChanged: _onSearchChanged,
                   textInputAction: TextInputAction.search,
                   onSubmitted: (_) => _performSearch(),
@@ -268,7 +270,7 @@ class _ClientListScreenState extends State<ClientListScreen> {
                 children: [
                   Icon(
                     Icons.filter_list,
-                    color: Colors.grey.shade600,
+                    color: colorScheme.onSurfaceVariant,
                     size: 20,
                   ),
                   const SizedBox(width: 8),
@@ -276,7 +278,7 @@ class _ClientListScreenState extends State<ClientListScreen> {
                     'Filtros:',
                     style: TextStyle(
                       fontWeight: FontWeight.w600,
-                      color: Colors.grey.shade700,
+                      color: colorScheme.onSurface,
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -354,20 +356,21 @@ class _ClientListScreenState extends State<ClientListScreen> {
 
                     if (clientProvider.errorMessage != null &&
                         clientProvider.clients.isEmpty) {
+                      final colorScheme = Theme.of(context).colorScheme;
                       return Center(
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            const Icon(
+                            Icon(
                               Icons.error_outline,
                               size: 64,
-                              color: Colors.red,
+                              color: colorScheme.error,
                             ),
                             const SizedBox(height: 16),
                             Text(
                               clientProvider.errorMessage!,
                               textAlign: TextAlign.center,
-                              style: const TextStyle(color: Colors.red),
+                              style: TextStyle(color: colorScheme.error),
                             ),
                             const SizedBox(height: 16),
                             ElevatedButton(
@@ -483,11 +486,14 @@ class _ClientListScreenState extends State<ClientListScreen> {
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(16),
           gradient: LinearGradient(
-            colors: [Colors.blue.shade600, Colors.blue.shade800],
+            colors: [
+              colorScheme.primary,
+              colorScheme.primary.withOpacity(0.8),
+            ],
           ),
           boxShadow: [
             BoxShadow(
-              color: Colors.blue.withOpacity(0.4),
+              color: colorScheme.primary.withOpacity(0.4),
               blurRadius: 12,
               offset: const Offset(0, 6),
             ),
@@ -499,21 +505,21 @@ class _ClientListScreenState extends State<ClientListScreen> {
           elevation: 0,
           tooltip: _isLoadingClients ? 'Cargando...' : 'Nuevo cliente',
           icon: _isLoadingClients
-              ? const SizedBox(
+              ? SizedBox(
                   width: 20,
                   height: 20,
                   child: CircularProgressIndicator(
                     strokeWidth: 2,
-                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                    valueColor: AlwaysStoppedAnimation<Color>(colorScheme.onPrimary),
                   ),
                 )
-              : const Icon(Icons.add, size: 24, color: Colors.white),
-          label: const Text(
+              : Icon(Icons.add, size: 24, color: colorScheme.onPrimary),
+          label: Text(
             'Nuevo Cliente',
             style: TextStyle(
               fontWeight: FontWeight.w600,
               fontSize: 16,
-              color: Colors.white,
+              color: colorScheme.onPrimary,
             ),
           ),
         ),
@@ -528,11 +534,12 @@ class _ClientListScreenState extends State<ClientListScreen> {
     required IconData icon,
     Color? color,
   }) {
-    final Color chipColor = color ?? Colors.blue;
+    final colorScheme = Theme.of(context).colorScheme;
+    final Color chipColor = color ?? colorScheme.primary;
     final Color lightColor =
-        Color.lerp(chipColor, Colors.white, 0.3) ?? chipColor;
+        Color.lerp(chipColor, colorScheme.surface, 0.3) ?? chipColor;
     final Color darkColor =
-        Color.lerp(chipColor, Colors.black, 0.2) ?? chipColor;
+        Color.lerp(chipColor, colorScheme.onSurface, 0.2) ?? chipColor;
 
     return GestureDetector(
       onTap: onTap,
@@ -543,10 +550,10 @@ class _ClientListScreenState extends State<ClientListScreen> {
           gradient: isSelected
               ? LinearGradient(colors: [lightColor, darkColor])
               : null,
-          color: isSelected ? null : Colors.grey.shade100,
+          color: isSelected ? null : colorScheme.primaryContainer.withOpacity(0.3),
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
-            color: isSelected ? chipColor : Colors.grey.shade300,
+            color: isSelected ? chipColor : colorScheme.outline.withOpacity(0.3),
             width: isSelected ? 2 : 1,
           ),
           boxShadow: isSelected
@@ -565,13 +572,13 @@ class _ClientListScreenState extends State<ClientListScreen> {
             Icon(
               icon,
               size: 16,
-              color: isSelected ? Colors.white : Colors.grey.shade600,
+              color: isSelected ? colorScheme.onPrimary : colorScheme.onSurfaceVariant,
             ),
             const SizedBox(width: 6),
             Text(
               label,
               style: TextStyle(
-                color: isSelected ? Colors.white : Colors.grey.shade700,
+                color: isSelected ? colorScheme.onPrimary : colorScheme.onSurface,
                 fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
                 fontSize: 14,
               ),
@@ -631,37 +638,73 @@ class _ClientListScreenState extends State<ClientListScreen> {
   }
 
   Future<void> _makePhoneCall(String phoneNumber) async {
-    final Uri launchUri = Uri(scheme: 'tel', path: phoneNumber);
-    if (await canLaunchUrl(launchUri)) {
-      await launchUrl(launchUri);
-    } else {
+    try {
+      // ✅ Usar el nuevo servicio robusto con reintentos
+      final success = await UrlLauncherService.makePhoneCall(phoneNumber);
+
+      if (!success) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('❌ No se pudo realizar la llamada. Intenta de nuevo.'),
+            duration: Duration(seconds: 3),
+          ),
+        );
+      }
+    } catch (e) {
       if (!mounted) return;
+      debugPrint('❌ Error al realizar llamada: $e');
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('No se pudo realizar la llamada')),
+        SnackBar(
+          content: Text('Error: $e'),
+          duration: const Duration(seconds: 3),
+        ),
       );
     }
   }
 
   Future<void> _sendWhatsAppMessage(String phoneNumber) async {
-    // Asegurarse de que el número tenga el formato correcto (sin espacios ni caracteres especiales)
-    String formattedNumber = phoneNumber.replaceAll(RegExp(r'\s+'), '');
-    if (!formattedNumber.startsWith('+')) {
-      // Si no tiene código de país, asumimos que es Bolivia (+591)
-      if (!formattedNumber.startsWith('591')) {
-        formattedNumber = '591$formattedNumber';
+    try {
+      String formattedNumber = phoneNumber.replaceAll(RegExp(r'\s+'), '');
+      if (!formattedNumber.startsWith('+')) {
+        if (!formattedNumber.startsWith('591')) {
+          formattedNumber = '591$formattedNumber';
+        }
+      } else {
+        formattedNumber = formattedNumber.substring(1);
       }
-    } else {
-      // Si ya tiene +, quitamos el + y dejamos solo los números
-      formattedNumber = formattedNumber.substring(1);
-    }
 
-    final Uri launchUri = Uri.parse('https://wa.me/$formattedNumber');
-    if (await canLaunchUrl(launchUri)) {
+      final Uri launchUri = Uri.parse('https://wa.me/$formattedNumber');
+      debugPrint('💬 WhatsApp a: $formattedNumber');
+
+      if (!await canLaunchUrl(launchUri)) {
+        if (!mounted) return;
+        debugPrint('❌ WhatsApp no está disponible en este dispositivo');
+
+        // Intentar abrir el navegador como fallback
+        final webUri = Uri.parse('https://web.whatsapp.com/send?phone=$formattedNumber');
+        if (await canLaunchUrl(webUri)) {
+          await launchUrl(webUri, mode: LaunchMode.externalApplication);
+          return;
+        }
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('WhatsApp no está instalado en este dispositivo'),
+          ),
+        );
+        return;
+      }
+
       await launchUrl(launchUri, mode: LaunchMode.externalApplication);
-    } else {
+    } catch (e) {
       if (!mounted) return;
+      debugPrint('❌ Error al abrir WhatsApp: $e');
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('No se pudo abrir WhatsApp')),
+        SnackBar(
+          content: Text('No se pudo abrir WhatsApp: $e'),
+          duration: const Duration(seconds: 3),
+        ),
       );
     }
   }
@@ -693,18 +736,16 @@ class ClientListItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(16),
-        gradient: LinearGradient(
-          colors: [Colors.white, Colors.grey.shade50],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
+        color: colorScheme.surface,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.06),
+            color: colorScheme.shadow.withOpacity(0.06),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -726,14 +767,17 @@ class ClientListItem extends StatelessWidget {
                   height: 60,
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
-                      colors: [Colors.green.shade400, Colors.teal.shade600],
+                      colors: [
+                        colorScheme.primary,
+                        colorScheme.primary.withOpacity(0.7),
+                      ],
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
                     ),
                     borderRadius: BorderRadius.circular(12),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.green.withOpacity(0.3),
+                        color: colorScheme.primary.withOpacity(0.3),
                         blurRadius: 8,
                         offset: const Offset(0, 4),
                       ),
@@ -743,7 +787,7 @@ class ClientListItem extends StatelessWidget {
                     padding: const EdgeInsets.all(2),
                     child: Container(
                       decoration: BoxDecoration(
-                        color: Colors.white,
+                        color: colorScheme.surface,
                         borderRadius: BorderRadius.circular(10),
                       ),
                       child: ClipRRect(
@@ -751,12 +795,12 @@ class ClientListItem extends StatelessWidget {
                         child:
                             client.fotoPerfil != null &&
                                 client.fotoPerfil!.isNotEmpty
-                            ? _buildProfileImage(client.fotoPerfil!)
+                            ? _buildProfileImage(context, client.fotoPerfil!)
                             : Container(
-                                color: Colors.green.shade50,
-                                child: const Icon(
+                                color: colorScheme.primaryContainer,
+                                child: Icon(
                                   Icons.person,
-                                  color: Colors.green,
+                                  color: colorScheme.onPrimaryContainer,
                                   size: 32,
                                 ),
                               ),
@@ -770,12 +814,12 @@ class ClientListItem extends StatelessWidget {
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [_buildClientInfo()],
+                    children: [_buildClientInfo(colorScheme)],
                   ),
                 ),
 
                 // Acciones y estado
-                _buildActionsAndStatus(),
+                _buildActionsAndStatus(colorScheme),
               ],
             ),
           ),
@@ -784,17 +828,17 @@ class ClientListItem extends StatelessWidget {
     );
   }
 
-  Widget _buildClientInfo() {
+  Widget _buildClientInfo(ColorScheme colorScheme) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         // Nombre
         Text(
           client.nombre,
-          style: const TextStyle(
+          style: TextStyle(
             fontWeight: FontWeight.bold,
             fontSize: 16,
-            color: Colors.black87,
+            color: colorScheme.onSurface,
           ),
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
@@ -809,7 +853,7 @@ class ClientListItem extends StatelessWidget {
               client.razonSocial!,
               style: TextStyle(
                 fontSize: 13,
-                color: Colors.grey.shade700,
+                color: colorScheme.onSurfaceVariant,
                 fontStyle: FontStyle.italic,
               ),
               maxLines: 1,
@@ -821,11 +865,11 @@ class ClientListItem extends StatelessWidget {
         Row(
           children: [
             if (client.telefono != null && client.telefono!.isNotEmpty) ...[
-              Icon(Icons.phone, size: 14, color: Colors.grey.shade600),
+              Icon(Icons.phone, size: 14, color: colorScheme.onSurfaceVariant),
               const SizedBox(width: 4),
               Text(
                 client.telefono!,
-                style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                style: TextStyle(fontSize: 12, color: colorScheme.onSurfaceVariant),
               ),
               const SizedBox(width: 12),
             ],
@@ -837,12 +881,12 @@ class ClientListItem extends StatelessWidget {
             padding: const EdgeInsets.only(top: 4),
             child: Row(
               children: [
-                Icon(Icons.email, size: 14, color: Colors.grey.shade600),
+                Icon(Icons.email, size: 14, color: colorScheme.onSurfaceVariant),
                 const SizedBox(width: 4),
                 Expanded(
                   child: Text(
                     client.email!,
-                    style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                    style: TextStyle(fontSize: 12, color: colorScheme.onSurfaceVariant),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -862,7 +906,7 @@ class ClientListItem extends StatelessWidget {
                   Icon(
                     Icons.location_on,
                     size: 14,
-                    color: Colors.grey.shade600,
+                    color: colorScheme.onSurfaceVariant,
                   ),
                   const SizedBox(width: 4),
                   Flexible(
@@ -870,7 +914,7 @@ class ClientListItem extends StatelessWidget {
                       _getLocalidadName(client.localidad),
                       style: TextStyle(
                         fontSize: 12,
-                        color: Colors.grey.shade600,
+                        color: colorScheme.onSurfaceVariant,
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
@@ -886,7 +930,7 @@ class ClientListItem extends StatelessWidget {
                     'Cód: ${client.codigoCliente}',
                     style: TextStyle(
                       fontSize: 11,
-                      color: Colors.grey.shade600,
+                      color: colorScheme.onSurfaceVariant,
                       fontWeight: FontWeight.w500,
                     ),
                   ),
@@ -911,15 +955,18 @@ class ClientListItem extends StatelessWidget {
                       ),
                       decoration: BoxDecoration(
                         gradient: LinearGradient(
-                          colors: [Colors.blue.shade400, Colors.blue.shade600],
+                          colors: [
+                            colorScheme.primary,
+                            colorScheme.primary.withOpacity(0.8),
+                          ],
                         ),
                         borderRadius: BorderRadius.circular(10),
                       ),
                       child: Text(
                         c.nombre ?? c.clave ?? 'Cat',
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 10,
-                          color: Colors.white,
+                          color: colorScheme.onPrimary,
                           fontWeight: FontWeight.w600,
                         ),
                       ),
@@ -932,7 +979,7 @@ class ClientListItem extends StatelessWidget {
     );
   }
 
-  Widget _buildActionsAndStatus() {
+  Widget _buildActionsAndStatus(ColorScheme colorScheme) {
     return Column(
       mainAxisAlignment: MainAxisAlignment.start,
       crossAxisAlignment: CrossAxisAlignment.end,
@@ -943,15 +990,14 @@ class ClientListItem extends StatelessWidget {
           decoration: BoxDecoration(
             gradient: LinearGradient(
               colors: client.activo
-                  ? [Colors.green.shade400, Colors.green.shade600]
-                  : [Colors.red.shade400, Colors.red.shade600],
+                  ? [colorScheme.primary, colorScheme.primary.withOpacity(0.8)]
+                  : [colorScheme.error, colorScheme.error.withOpacity(0.8)],
             ),
             borderRadius: BorderRadius.circular(12),
             boxShadow: [
               BoxShadow(
-                color: (client.activo ? Colors.green : Colors.red).withOpacity(
-                  0.3,
-                ),
+                color: (client.activo ? colorScheme.primary : colorScheme.error)
+                    .withOpacity(0.3),
                 blurRadius: 6,
                 offset: const Offset(0, 2),
               ),
@@ -959,8 +1005,8 @@ class ClientListItem extends StatelessWidget {
           ),
           child: Text(
             client.activo ? 'Activo' : 'Inactivo',
-            style: const TextStyle(
-              color: Colors.white,
+            style: TextStyle(
+              color: client.activo ? colorScheme.onPrimary : colorScheme.onError,
               fontSize: 11,
               fontWeight: FontWeight.bold,
             ),
@@ -973,19 +1019,22 @@ class ClientListItem extends StatelessWidget {
         Container(
           decoration: BoxDecoration(
             gradient: LinearGradient(
-              colors: [Colors.orange.shade400, Colors.orange.shade600],
+              colors: [
+                colorScheme.tertiary,
+                colorScheme.tertiary.withOpacity(0.8),
+              ],
             ),
             shape: BoxShape.circle,
             boxShadow: [
               BoxShadow(
-                color: Colors.orange.withOpacity(0.3),
+                color: colorScheme.tertiary.withOpacity(0.3),
                 blurRadius: 6,
                 offset: const Offset(0, 2),
               ),
             ],
           ),
           child: IconButton(
-            icon: const Icon(Icons.edit, color: Colors.white, size: 18),
+            icon: Icon(Icons.edit, color: colorScheme.onTertiary, size: 18),
             onPressed: onEdit,
             tooltip: 'Editar',
             padding: const EdgeInsets.all(8),
@@ -1002,13 +1051,13 @@ class ClientListItem extends StatelessWidget {
               if (onCall != null)
                 Container(
                   decoration: BoxDecoration(
-                    color: Colors.green.shade50,
+                    color: colorScheme.primaryContainer,
                     shape: BoxShape.circle,
                   ),
                   child: IconButton(
                     icon: Icon(
                       Icons.call,
-                      color: Colors.green.shade700,
+                      color: colorScheme.onPrimaryContainer,
                       size: 18,
                     ),
                     onPressed: onCall,
@@ -1021,13 +1070,13 @@ class ClientListItem extends StatelessWidget {
                 const SizedBox(width: 6),
                 Container(
                   decoration: BoxDecoration(
-                    color: Colors.green.shade50,
+                    color: colorScheme.primaryContainer,
                     shape: BoxShape.circle,
                   ),
                   child: IconButton(
                     icon: Icon(
                       Icons.message,
-                      color: Colors.green.shade700,
+                      color: colorScheme.onPrimaryContainer,
                       size: 18,
                     ),
                     onPressed: onWhatsApp,
@@ -1044,11 +1093,11 @@ class ClientListItem extends StatelessWidget {
     );
   }
 
-  Widget _buildProfileImage(String imagePath) {
+  Widget _buildProfileImage(BuildContext context, String imagePath) {
     // Validar que el imagePath no esté vacío
     if (imagePath.isEmpty) {
       debugPrint('⚠️ ImagePath está vacío, mostrando fallback');
-      return _buildFallbackIcon();
+      return _buildFallbackIcon(context);
     }
 
     // Usar ImageUtils para construir URLs de manera robusta
@@ -1056,39 +1105,41 @@ class ClientListItem extends StatelessWidget {
 
     if (urls.isEmpty) {
       debugPrint('⚠️ No se pudieron generar URLs para la imagen: $imagePath');
-      return _buildFallbackIcon();
+      return _buildFallbackIcon(context);
     }
 
     debugPrint('🔍 Intentando cargar imagen de perfil desde URLs: $urls');
 
+    final colorScheme = Theme.of(context).colorScheme;
     return _ImageWithFallback(
       urls: urls,
       width: 50,
       height: 50,
       fit: BoxFit.cover,
-      fallbackWidget: _buildFallbackIcon(),
-      loadingWidget: const Center(
+      fallbackWidget: _buildFallbackIcon(context),
+      loadingWidget: Center(
         child: SizedBox(
           width: 20,
           height: 20,
           child: CircularProgressIndicator(
             strokeWidth: 2,
-            valueColor: AlwaysStoppedAnimation<Color>(Colors.green),
+            valueColor: AlwaysStoppedAnimation<Color>(colorScheme.primary),
           ),
         ),
       ),
     );
   }
 
-  Widget _buildFallbackIcon() {
+  Widget _buildFallbackIcon(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     return Container(
       width: 50,
       height: 50,
       decoration: BoxDecoration(
-        color: Colors.green.shade50,
+        color: colorScheme.primaryContainer,
         borderRadius: BorderRadius.circular(6),
       ),
-      child: const Icon(Icons.person_outline, color: Colors.green, size: 28),
+      child: Icon(Icons.person_outline, color: colorScheme.onPrimaryContainer, size: 28),
     );
   }
 

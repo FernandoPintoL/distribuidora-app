@@ -45,20 +45,48 @@ class _ProfilePhotoSelectorState extends State<ProfilePhotoSelector> {
   }
 
   Future<void> _requestPermissions() async {
-    final cameraStatus = await Permission.camera.request();
-    final photosStatus = await Permission.photos.request();
+    try {
+      // Solicitar permiso de cámara
+      final cameraStatus = await Permission.camera.request();
 
-    if (cameraStatus.isDenied || photosStatus.isDenied) {
+      // Solicitar permiso de galería/almacenamiento
+      // En Android 13+, usar READ_MEDIA_IMAGES; en versiones anteriores, READ_EXTERNAL_STORAGE
+      PermissionStatus photosStatus = PermissionStatus.denied;
+      try {
+        photosStatus = await Permission.photos.request();
+      } catch (e) {
+        debugPrint('⚠️ Permission.photos no disponible, intentando con storage: $e');
+        photosStatus = await Permission.storage.request();
+      }
+
+      debugPrint('📸 Estado de cámara: $cameraStatus');
+      debugPrint('🖼️ Estado de galería: $photosStatus');
+
+      // Mostrar mensaje solo si ambos permisos fueron denegados
+      if ((cameraStatus.isDenied || cameraStatus.isPermanentlyDenied) &&
+          (photosStatus.isDenied || photosStatus.isPermanentlyDenied)) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: const Text(
+                'Se necesitan permisos de cámara y galería para seleccionar fotos',
+              ),
+              action: SnackBarAction(
+                label: 'Configurar',
+                onPressed: openAppSettings,
+              ),
+              duration: const Duration(seconds: 5),
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      debugPrint('❌ Error al solicitar permisos: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text(
-              'Se necesitan permisos de cámara y galería para seleccionar fotos',
-            ),
-            action: SnackBarAction(
-              label: 'Configurar',
-              onPressed: openAppSettings,
-            ),
+          SnackBar(
+            content: Text('Error al solicitar permisos: $e'),
+            duration: const Duration(seconds: 4),
           ),
         );
       }

@@ -18,12 +18,16 @@ class ProformaService {
   /// - La proforma no ha vencido
   /// - El stock de productos está disponible
   /// - Tiene mínimo 5 productos diferentes
+  /// - Las reservas no han expirado (o necesitan renovación)
   ///
   /// Parámetros:
   /// - proformaId: ID de la proforma a confirmar
   /// - politicaPago: ANTICIPADO_100, MEDIO_MEDIO o CONTRA_ENTREGA (opcional, default: MEDIO_MEDIO)
   ///
-  /// Retorna: La venta/pedido creado
+  /// Retorna:
+  /// - Success: La venta/pedido creado
+  /// - Error RESERVAS_EXPIRADAS: Incluye información para renovación
+  /// - Otros errores: Mensajes de validación
   Future<ApiResponse<Pedido>> confirmarProforma({
     required int proformaId,
     String politicaPago = 'MEDIO_MEDIO',
@@ -50,18 +54,44 @@ class ProformaService {
           data: venta,
         );
       } else {
-        return ApiResponse<Pedido>(
+        // Crear ApiResponse con información de error enriquecida
+        final apiResponse = ApiResponse<Pedido>(
           success: false,
           message: responseData['message'] as String? ?? 'Error al confirmar proforma',
           data: null,
         );
+
+        // Agregar código de error si está disponible
+        if (responseData['code'] != null) {
+          apiResponse.code = responseData['code'] as String;
+        }
+
+        // Agregar información adicional para RESERVAS_EXPIRADAS
+        if (responseData['code'] == 'RESERVAS_EXPIRADAS' && responseData['data'] != null) {
+          apiResponse.additionalData = responseData['data'] as Map<String, dynamic>;
+        }
+
+        return apiResponse;
       }
     } on DioException catch (e) {
-      return ApiResponse<Pedido>(
+      final apiResponse = ApiResponse<Pedido>(
         success: false,
         message: _getErrorMessage(e),
         data: null,
       );
+
+      // Intentar extraer código de error de la respuesta
+      if (e.response?.data != null) {
+        final Map<String, dynamic> errorData = e.response!.data as Map<String, dynamic>;
+        if (errorData['code'] != null) {
+          apiResponse.code = errorData['code'] as String;
+        }
+        if (errorData['data'] != null) {
+          apiResponse.additionalData = errorData['data'] as Map<String, dynamic>;
+        }
+      }
+
+      return apiResponse;
     } catch (e) {
       return ApiResponse<Pedido>(
         success: false,
@@ -207,6 +237,46 @@ class ProformaService {
       return ApiResponse<Map<String, dynamic>>(
         success: false,
         message: 'Error inesperado al obtener estado de pago: ${e.toString()}',
+        data: null,
+      );
+    }
+  }
+
+  /// Renovar reservas expiradas de una proforma
+  ///
+  /// Parámetros:
+  /// - proformaId: ID de la proforma cuyas reservas necesitan renovación
+  ///
+  /// Retorna:
+  /// - Success: true si las reservas fueron renovadas (válidas por 7 días más)
+  /// - Data: Información actualizada de las reservas
+  ///
+  /// Códigos de error:
+  /// - NO_EXPIRED_RESERVATIONS: La proforma no tiene reservas expiradas
+  /// - RESERVAS_EXPIRADAS: Error al renovar las reservas
+  Future<ApiResponse<Map<String, dynamic>>> renovarReservas(int proformaId) async {
+    try {
+      debugPrint('🔄 Renovando reservas para proforma #$proformaId');
+
+      final response = await _apiService.post(
+        '/proformas/$proformaId/renovar-reservas',
+        data: {},
+      );
+
+      return ApiResponse<Map<String, dynamic>>.fromJson(
+        response.data,
+        (data) => data as Map<String, dynamic>,
+      );
+    } on DioException catch (e) {
+      return ApiResponse<Map<String, dynamic>>(
+        success: false,
+        message: _getErrorMessage(e),
+        data: null,
+      );
+    } catch (e) {
+      return ApiResponse<Map<String, dynamic>>(
+        success: false,
+        message: 'Error inesperado al renovar reservas: ${e.toString()}',
         data: null,
       );
     }
