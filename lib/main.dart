@@ -3,10 +3,12 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'services/role_based_router.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:provider/provider.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart' as riverpod;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'models/models.dart';
 import 'providers/providers.dart';
 import 'providers/theme_provider.dart';
+import 'providers/estados_provider.dart';
 import 'screens/screens.dart';
 import 'screens/carrito/carrito_abandonado_list_screen.dart';
 import 'screens/cliente/mis_direcciones_screen.dart';
@@ -43,19 +45,21 @@ void main() async {
   await notificationService.printServiceStatus();
 
   runApp(
-    MultiProvider(
-      providers: [
-        ChangeNotifierProvider<ThemeProvider>.value(value: themeProvider),
-        ChangeNotifierProvider(create: (_) => AuthProvider()),
-        ChangeNotifierProvider(create: (_) => ProductProvider()),
-        ChangeNotifierProvider(create: (_) => ClientProvider()),
-        ChangeNotifierProvider(create: (_) => CarritoProvider()),
-        ChangeNotifierProvider(create: (_) => PedidoProvider()),
-        ChangeNotifierProvider(create: (_) => TrackingProvider()),
-        ChangeNotifierProvider(create: (_) => EntregaProvider()),
-        ChangeNotifierProvider(create: (_) => NotificationProvider()),
-      ],
-      child: const MyApp(),
+    riverpod.ProviderScope(
+      child: MultiProvider(
+        providers: [
+          ChangeNotifierProvider<ThemeProvider>.value(value: themeProvider),
+          ChangeNotifierProvider(create: (_) => AuthProvider()),
+          ChangeNotifierProvider(create: (_) => ProductProvider()),
+          ChangeNotifierProvider(create: (_) => ClientProvider()),
+          ChangeNotifierProvider(create: (_) => CarritoProvider()),
+          ChangeNotifierProvider(create: (_) => PedidoProvider()),
+          ChangeNotifierProvider(create: (_) => TrackingProvider()),
+          ChangeNotifierProvider(create: (_) => EntregaProvider()),
+          ChangeNotifierProvider(create: (_) => NotificationProvider()),
+        ],
+        child: const MyApp(),
+      ),
     ),
   );
 }

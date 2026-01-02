@@ -221,8 +221,11 @@ class Entrega {
     };
   }
 
+  /// @deprecated Use EstadosHelper.getEstadoLabel() instead
+  /// Mantener por compatibilidad pero usar helpers dinámicos para nuevos código
   String get estadoLabel {
-    // Estados sincronizados con base de datos real (check constraint migration)
+    // Importar dinámicamente para evitar dependencia circular
+    // En nueva arquitectura, usar EstadosHelper.getEstadoLabel('entrega', estado)
     const estadoLabels = {
       // Estados principales
       'PROGRAMADO': 'Programado',
@@ -244,6 +247,8 @@ class Entrega {
     return estadoLabels[estado] ?? estado;
   }
 
+  /// @deprecated Use EstadosHelper.getEstadoColor() instead
+  /// Mantener por compatibilidad pero usar helpers dinámicos para nuevos código
   String get estadoColor {
     const colors = {
       // Estados principales
@@ -266,6 +271,8 @@ class Entrega {
     return colors[estado] ?? '#000000';
   }
 
+  /// @deprecated Use EstadosHelper.getEstadoIcon() instead
+  /// Mantener por compatibilidad pero usar helpers dinámicos para nuevos código
   String get estadoIcon {
     const icons = {
       // Estados principales
