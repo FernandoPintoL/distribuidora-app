@@ -28,10 +28,44 @@
 	<true/>
 	<key>NSFaceIDUsageDescription</key>
 	<string>Esta aplicación necesita usar Face ID para iniciar sesión de forma segura y rápida.</string>
+
+	<!-- ✅ Permisos de Cámara y Fotos -->
+	<key>NSCameraUsageDescription</key>
+	<string>Necesitamos acceso a la cámara para escanear códigos de barras, tomar fotos de productos y documentos.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Necesitamos acceso a tus fotos para que puedas seleccionar imágenes de productos y documentos.</string>
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>Esta aplicación necesita permiso para guardar fotos en tu galería.</string>
+
+	<!-- ✅ Permisos de Ubicación -->
+	<key>NSLocationAlwaysUsageDescription</key>
+	<string>Esta aplicación necesita acceso continuo a tu ubicación para optimizar rutas de entrega.</string>
 	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
 	<string>Esta aplicación necesita acceso continuo a tu ubicación para funcionalidades del mapa.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>Esta aplicación necesita acceso a tu ubicación para mostrar el mapa y seleccionar ubicaciones.</string>
+
+	<!-- ✅ Google Maps API Key -->
+	<key>GOOGLE_MAPS_API_KEY</key>
+	<string>$(GOOGLE_MAPS_API_KEY_IOS)</string>
+
+	<!-- ✅ Esquemas de URL para abrir apps externas (WhatsApp, Maps, etc.) -->
+	<key>LSApplicationQueriesSchemes</key>
+	<array>
+		<string>whatsapp</string>
+		<string>whatsapp-business</string>
+		<string>tel</string>
+		<string>telprompt</string>
+		<string>mailto</string>
+		<string>sms</string>
+		<string>http</string>
+		<string>https</string>
+		<string>comgooglemaps</string>
+		<string>googlemaps</string>
+		<string>waze</string>
+		<string>maps</string>
+	</array>
+
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
 	<key>UILaunchStoryboardName</key>

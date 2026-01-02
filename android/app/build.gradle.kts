@@ -13,6 +13,10 @@ android {
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
 
+    buildFeatures {
+        buildConfig = true
+    }
+
     testOptions {
         unitTests.isIncludeAndroidResources = false
         unitTests.isReturnDefaultValues = true
@@ -63,6 +67,9 @@ android {
     }
 }
 
+// ⚠️ COMENTADO: Esta configuración puede causar conflictos con mobile_scanner
+// Si el scanner no funciona, descomentar y ajustar las versiones según sea necesario
+/*
 configurations.all {
     resolutionStrategy {
         // Use stable camera versions for mobile_scanner compatibility
@@ -71,6 +78,7 @@ configurations.all {
         force("androidx.camera:camera-lifecycle:1.3.4")
     }
 }
+*/
 
 dependencies {
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")

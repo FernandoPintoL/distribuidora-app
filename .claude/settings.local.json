@@ -43,7 +43,8 @@
       "Bash(findstr:*)",
       "Bash(sqlite3:*)",
       "Bash(find:*)",
-      "Bash(php artisan db:seed:*)"
+      "Bash(php artisan db:seed:*)",
+      "Bash(./gradlew assembleDebug:*)"
     ],
     "deny": [],
     "ask": []
