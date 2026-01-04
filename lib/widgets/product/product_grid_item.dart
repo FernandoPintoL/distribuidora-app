@@ -86,10 +86,7 @@ class _ProductGridItemState extends State<ProductGridItem> {
             children: [
               // Imagen grande
               Center(
-                child: ProductImageWidget(
-                  product: widget.product,
-                  size: 100,
-                ),
+                child: ProductImageWidget(product: widget.product, size: 100),
               ),
               const SizedBox(height: 12),
 
@@ -121,7 +118,7 @@ class _ProductGridItemState extends State<ProductGridItem> {
                 ),
               ),
 
-              const SizedBox(height: 8),
+              // const SizedBox(height: 8),
 
               // Precio y acciones
               Row(
@@ -145,10 +142,10 @@ class _ProductGridItemState extends State<ProductGridItem> {
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
-                      ProductStockBadgeWidget(
+                      /* ProductStockBadgeWidget(
                         stock: stock,
                         status: stockStatus,
-                      ),
+                      ), */
                       if (canAddToCart) ...[
                         const SizedBox(height: 4),
                         if (_quantity == 0)
@@ -157,7 +154,10 @@ class _ProductGridItemState extends State<ProductGridItem> {
                             height: 36,
                             child: IconButton(
                               onPressed: _incrementQuantity,
-                              icon: const Icon(Icons.add_shopping_cart, size: 18),
+                              icon: const Icon(
+                                Icons.add_shopping_cart,
+                                size: 18,
+                              ),
                               style: IconButton.styleFrom(
                                 backgroundColor: colorScheme.primary,
                                 foregroundColor: Colors.white,
@@ -196,10 +196,11 @@ class _ProductGridItemState extends State<ProductGridItem> {
                                   child: Center(
                                     child: Text(
                                       '$_quantity',
-                                      style: context.textTheme.labelMedium?.copyWith(
-                                        fontWeight: FontWeight.bold,
-                                        color: colorScheme.primary,
-                                      ),
+                                      style: context.textTheme.labelMedium
+                                          ?.copyWith(
+                                            fontWeight: FontWeight.bold,
+                                            color: colorScheme.primary,
+                                          ),
                                     ),
                                   ),
                                 ),

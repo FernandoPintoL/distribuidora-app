@@ -33,6 +33,8 @@ class _ClientFormScreenState extends State<ClientFormScreen> {
   int? _selectedLocationId;
   bool _isActive = true;
   bool _createUser = true;
+  bool _puedeAtenerCredito = false;
+  double _limiteCredito = 0.0;
   List<ClientAddress> _addresses = [];
   List<Localidad> _localidades = [];
   File? _selectedProfilePhoto;
@@ -104,6 +106,8 @@ class _ClientFormScreenState extends State<ClientFormScreen> {
         _selectedLocationId = clientCompleto.localidadId;
         _isActive = clientCompleto.activo;
         _createUser = clientCompleto.userId != null;
+        _puedeAtenerCredito = clientCompleto.puedeAtenerCredito;
+        _limiteCredito = clientCompleto.limiteCredito ?? 0.0;
         _observationsController.text = clientCompleto.observaciones ?? '';
 
         // Cargar direcciones
@@ -750,6 +754,68 @@ class _ClientFormScreenState extends State<ClientFormScreen> {
                                   ),
                                 ],
                               ),
+                              const SizedBox(height: 24),
+                              // 💳 Configuración de Crédito
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          'Habilitar Crédito',
+                                          style: TextStyle(
+                                            fontSize: 16,
+                                            fontWeight: FontWeight.w500,
+                                            color: Theme.of(
+                                              context,
+                                            ).colorScheme.onSurface,
+                                          ),
+                                        ),
+                                        Text(
+                                          'Permite que el cliente use crédito',
+                                          style: TextStyle(
+                                            fontSize: 14,
+                                            color: Theme.of(
+                                              context,
+                                            ).colorScheme.onSurfaceVariant,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  Switch(
+                                    value: _puedeAtenerCredito,
+                                    onChanged: (value) =>
+                                        setState(() => _puedeAtenerCredito = value),
+                                    activeThumbColor: Colors.blue.shade600,
+                                  ),
+                                ],
+                              ),
+                              // Límite de Crédito (solo visible si está habilitado)
+                              if (_puedeAtenerCredito) ...[
+                                const SizedBox(height: 16),
+                                TextFormField(
+                                  initialValue: _limiteCredito > 0 ? _limiteCredito.toString() : '',
+                                  decoration: _buildInputDecoration(
+                                    labelText: 'Límite de Crédito (BOB)',
+                                    hintText: '0.00',
+                                    prefixIcon: Icons.attach_money,
+                                  ),
+                                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                                  inputFormatters: [
+                                    FilteringTextInputFormatter.allow(
+                                      RegExp(r'^\d+\.?\d{0,2}'),
+                                    ),
+                                  ],
+                                  onChanged: (value) {
+                                    setState(() {
+                                      _limiteCredito = double.tryParse(value) ?? 0.0;
+                                    });
+                                  },
+                                ),
+                              ],
                             ],
                           ),
                         ],
@@ -952,7 +1018,8 @@ class _ClientFormScreenState extends State<ClientFormScreen> {
               ? null
               : _observationsController.text,
           fotoPerfil: _selectedProfilePhoto,
-          limiteCredito: 0.0,
+          limiteCredito: _puedeAtenerCredito ? _limiteCredito : 0.0,
+          puedeAtenerCredito: _puedeAtenerCredito,
           latitud: _latitude,
           longitud: _longitude,
           localidadId: _selectedLocationId,
@@ -1003,6 +1070,8 @@ class _ClientFormScreenState extends State<ClientFormScreen> {
           observaciones: _observationsController.text.isEmpty
               ? null
               : _observationsController.text,
+          puedeAtenerCredito: false,
+          limiteCredito: 0.0,
           latitud: _latitude,
           longitud: _longitude,
           localidadId: _selectedLocationId,

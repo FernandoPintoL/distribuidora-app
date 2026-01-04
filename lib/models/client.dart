@@ -11,6 +11,7 @@ class Client {
   final String? email;
   final String? telefono;
   final double? limiteCredito;
+  final bool puedeAtenerCredito;
   final int? localidadId;
   final double? latitud;
   final double? longitud;
@@ -38,6 +39,7 @@ class Client {
     this.fechaNacimiento,
     this.genero, */
     this.limiteCredito,
+    this.puedeAtenerCredito = false,
     this.localidadId,
     this.latitud,
     this.longitud,
@@ -71,6 +73,7 @@ class Client {
       limiteCredito: json['limite_credito'] != null
           ? double.tryParse(json['limite_credito'].toString()) ?? 0.0
           : null,
+      puedeAtenerCredito: json['puede_atener_credito'] ?? false,
       localidadId: json['localidad_id'] != null
           ? (json['localidad_id'] is int ? json['localidad_id'] : int.tryParse(json['localidad_id'].toString()))
           : null,
@@ -125,6 +128,7 @@ class Client {
       'fecha_nacimiento': fechaNacimiento,
       'genero': genero, */
       'limite_credito': limiteCredito,
+      'puede_atener_credito': puedeAtenerCredito,
       'localidad_id': localidadId,
       'latitud': latitud,
       'longitud': longitud,

@@ -44,7 +44,10 @@
       "Bash(sqlite3:*)",
       "Bash(find:*)",
       "Bash(php artisan db:seed:*)",
-      "Bash(./gradlew assembleDebug:*)"
+      "Bash(./gradlew assembleDebug:*)",
+      "Bash(where:*)",
+      "Bash(dir \"C:\\\\Program Files\\\\Java\")",
+      "Bash(.gradlew:*)"
     ],
     "deny": [],
     "ask": []

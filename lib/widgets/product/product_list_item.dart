@@ -93,11 +93,11 @@ class _ProductListItemState extends State<ProductListItem> {
               Column(
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
-                  ProductStockBadgeWidget(
+                  /* ProductStockBadgeWidget(
                     stock: stock,
                     status: stockStatus,
                   ),
-                  const SizedBox(height: 6),
+                  const SizedBox(height: 6), */
                   if (canAddToCart)
                     if (_quantity == 0)
                       SizedBox(
@@ -142,10 +142,11 @@ class _ProductListItemState extends State<ProductListItem> {
                               child: Center(
                                 child: Text(
                                   '$_quantity',
-                                  style: context.textTheme.labelMedium?.copyWith(
-                                    fontWeight: FontWeight.bold,
-                                    color: colorScheme.primary,
-                                  ),
+                                  style: context.textTheme.labelMedium
+                                      ?.copyWith(
+                                        fontWeight: FontWeight.bold,
+                                        color: colorScheme.primary,
+                                      ),
                                 ),
                               ),
                             ),
