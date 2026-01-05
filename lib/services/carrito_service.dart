@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import '../models/carrito.dart';
 import '../models/carrito_item.dart';
+import '../models/carrito_con_rangos.dart';
 import 'api_service.dart';
 
 /// Servicio para gestionar persistencia de carritos en la base de datos
@@ -266,6 +267,99 @@ class CarritoService {
     } catch (e) {
       debugPrint('❌ Error al obtener estadísticas: $e');
       return {};
+    }
+  }
+
+  /// Calcular precios del carrito considerando rangos de cantidad
+  /// POST /api/carrito/calcular
+  ///
+  /// Retorna detalles del carrito con:
+  /// - Precio unitario ajustado por rango
+  /// - Información del rango actual aplicado
+  /// - Información del próximo rango disponible
+  /// - Monto de ahorro potencial
+  Future<CarritoConRangos?> calcularCarritoConRangos(
+    List<CarritoItem> items,
+  ) async {
+    try {
+      debugPrint('📊 Calculando carrito con rangos de precio...');
+      debugPrint('   Items: ${items.length}');
+
+      // Convertir items al formato esperado por la API
+      final itemsData = items.map((item) => {
+        'producto_id': item.producto.id,
+        'cantidad': item.cantidad,
+      }).toList();
+
+      final response = await _apiService.post(
+        '/carrito/calcular',
+        data: {'items': itemsData},
+      );
+
+      if (response.statusCode == 200 && response.data['data'] != null) {
+        final carritoConRangos = CarritoConRangos.fromJson(response.data['data']);
+
+        debugPrint('✅ Carrito calculado con éxito');
+        debugPrint('   Subtotal: ${carritoConRangos.subtotal.toStringAsFixed(2)} Bs');
+        debugPrint('   Items con oportunidad de ahorro: ${carritoConRangos.detalles.where((d) => d.tieneOportunidadAhorro).length}');
+        debugPrint('   Ahorro disponible: ${carritoConRangos.ahorroDisponible.toStringAsFixed(2)} Bs');
+
+        return carritoConRangos;
+      }
+
+      debugPrint('❌ Error: Status ${response.statusCode}');
+      return null;
+    } on DioException catch (e) {
+      debugPrint('❌ Error al calcular carrito: ${_getErrorMessage(e)}');
+      return null;
+    } catch (e) {
+      debugPrint('❌ Error inesperado al calcular carrito: $e');
+      return null;
+    }
+  }
+
+  /// Calcular precio de un producto individual considerando cantidad
+  /// POST /api/productos/{productoId}/calcular-precio
+  ///
+  /// Retorna detalles de precio incluyendo:
+  /// - Precio unitario ajustado por cantidad
+  /// - Rango actual aplicado
+  /// - Próximo rango y oportunidad de ahorro
+  Future<Map<String, dynamic>?> calcularPrecioProducto(
+    int productoId,
+    double cantidad,
+  ) async {
+    try {
+      debugPrint('💰 Calculando precio de producto...');
+      debugPrint('   Producto ID: $productoId');
+      debugPrint('   Cantidad: $cantidad');
+
+      final response = await _apiService.post(
+        '/productos/$productoId/calcular-precio',
+        data: {'cantidad': cantidad},
+      );
+
+      if (response.statusCode == 200 && response.data['data'] != null) {
+        final detalles = response.data['data'] as Map<String, dynamic>;
+
+        debugPrint('✅ Precio calculado');
+        debugPrint('   Precio unitario: ${detalles['precio_unitario']?.toStringAsFixed(2)} Bs');
+        if (detalles['proximo_rango'] != null) {
+          debugPrint('   Próximo rango disponible: ${detalles['proximo_rango']['rango_texto']}');
+          debugPrint('   Ahorro potencial: ${detalles['ahorro_proximo']?.toStringAsFixed(2)} Bs');
+        }
+
+        return detalles;
+      }
+
+      debugPrint('❌ Error: Status ${response.statusCode}');
+      return null;
+    } on DioException catch (e) {
+      debugPrint('❌ Error al calcular precio: ${_getErrorMessage(e)}');
+      return null;
+    } catch (e) {
+      debugPrint('❌ Error inesperado al calcular precio: $e');
+      return null;
     }
   }
 

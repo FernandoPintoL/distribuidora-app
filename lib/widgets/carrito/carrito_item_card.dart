@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../models/models.dart';
+import 'carrito_item_ahorro_section.dart';
 
 class CarritoItemCard extends StatefulWidget {
   final CarritoItem item;
@@ -7,6 +8,8 @@ class CarritoItemCard extends StatefulWidget {
   final VoidCallback onDecrement;
   final VoidCallback onRemove;
   final Function(double) onUpdateCantidad;
+  final DetalleCarritoConRango? detalleConRango;
+  final VoidCallback? onAgregarParaAhorrar;
 
   const CarritoItemCard({
     super.key,
@@ -15,6 +18,8 @@ class CarritoItemCard extends StatefulWidget {
     required this.onDecrement,
     required this.onRemove,
     required this.onUpdateCantidad,
+    this.detalleConRango,
+    this.onAgregarParaAhorrar,
   });
 
   @override
@@ -243,6 +248,13 @@ class _CarritoItemCardState extends State<CarritoItemCard> {
               padding: const EdgeInsets.only(top: 12),
               child: _buildObservacionesSection(),
             ),*/
+
+            // Sección de ahorro si está disponible
+            if (widget.detalleConRango != null && widget.onAgregarParaAhorrar != null)
+              CarritoItemAhorroSection(
+                detalle: widget.detalleConRango!,
+                onAgregarParaAhorrar: widget.onAgregarParaAhorrar!,
+              ),
           ],
         ),
       ),

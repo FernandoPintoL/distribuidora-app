@@ -32,17 +32,26 @@ class ProductImageWidget extends StatelessWidget {
                   colorScheme.surfaceContainer,
                 ]
               : [
-                  colorScheme.primaryContainer.withAlpha(50),
+                  colorScheme.primaryContainer.withAlpha(30),
                   colorScheme.surface,
                 ],
         ),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
           color: isDark
-              ? colorScheme.outline.withAlpha(80)
-              : colorScheme.primary.withAlpha(50),
+              ? colorScheme.outline.withAlpha(60)
+              : colorScheme.primary.withAlpha(30),
           width: 1.5,
         ),
+        boxShadow: [
+          BoxShadow(
+            color: isDark
+                ? Colors.black.withAlpha(30)
+                : colorScheme.primary.withAlpha(8),
+            blurRadius: 8,
+            offset: const Offset(0, 3),
+          ),
+        ],
       ),
       child: Stack(
         alignment: Alignment.center,

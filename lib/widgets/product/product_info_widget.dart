@@ -27,17 +27,18 @@ class ProductInfoWidget extends StatelessWidget {
           Text(
             product.nombre,
             style: context.textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.bold,
-              fontSize: isGridView ? 14 : 15,
-              height: 1.2,
+              fontWeight: FontWeight.w700,
+              fontSize: isGridView ? 15 : 15,
+              height: 1.3,
+              letterSpacing: 0.2,
               color: colorScheme.onSurface,
             ),
             maxLines: isGridView ? 2 : 2,
             overflow: TextOverflow.ellipsis,
           ),
-          const SizedBox(height: 4),
+          const SizedBox(height: 6),
 
-          // SKU y Marca
+          // SKU, Marca y Categoría en fila
           Row(
             children: [
               Flexible(
@@ -51,39 +52,55 @@ class ProductInfoWidget extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
-              if (product.marca != null && !isGridView) ...[
-                const SizedBox(width: 8),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 6,
-                    vertical: 2,
-                  ),
-                  decoration: BoxDecoration(
-                    color: isDark
-                        ? colorScheme.secondaryContainer
-                        : colorScheme.secondaryContainer.withAlpha(100),
-                    borderRadius: BorderRadius.circular(4),
-                    border: Border.all(
-                      color: isDark
-                          ? colorScheme.secondary.withAlpha(80)
-                          : colorScheme.secondary.withAlpha(100),
-                    ),
-                  ),
+              if (product.marca != null) ...[
+                const SizedBox(width: 6),
+                Text('•', style: context.textTheme.bodySmall),
+                const SizedBox(width: 6),
+                Flexible(
                   child: Text(
                     product.marca!.nombre,
-                    style: context.textTheme.labelSmall?.copyWith(
+                    style: context.textTheme.bodySmall?.copyWith(
                       fontSize: 10,
-                      color: isDark
-                          ? colorScheme.onSecondaryContainer
-                          : colorScheme.secondary,
                       fontWeight: FontWeight.w600,
+                      color: colorScheme.secondary,
                     ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
+              if (product.categoria != null) ...[
+                const SizedBox(width: 6),
+                Text('•', style: context.textTheme.bodySmall),
+                const SizedBox(width: 6),
+                Flexible(
+                  child: Text(
+                    product.categoria!.nombre,
+                    style: context.textTheme.bodySmall?.copyWith(
+                      fontSize: 10,
+                      color: colorScheme.tertiary,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
               ],
             ],
           ),
-          const SizedBox(height: 6),
+          const SizedBox(height: 4),
+
+          // Unidad de medida
+          if (product.unidadMedida != null)
+            Text(
+              'Unidad: ${product.unidadMedida!.nombre}',
+              style: context.textTheme.bodySmall?.copyWith(
+                fontSize: 9,
+                color: Colors.grey,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          const SizedBox(height: 2),
 
           // Precio
           if (product.precioVenta != null)

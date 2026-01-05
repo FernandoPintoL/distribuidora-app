@@ -1,6 +1,8 @@
 import 'package:flutter/widgets.dart';
 import '../models/carrito.dart';
 import '../models/carrito_item.dart';
+import '../models/carrito_con_rangos.dart';
+import '../models/detalle_carrito_con_rango.dart';
 import '../models/product.dart';
 import '../services/carrito_service.dart';
 import '../services/api_service.dart';
@@ -24,6 +26,11 @@ class CarritoProvider with ChangeNotifier {
   bool _guardandoCarrito = false;
   bool _recuperandoCarrito = false;
   int? _usuarioId;
+
+  // Rangos de precio
+  CarritoConRangos? _carritoConRangos;
+  bool _calculandoRangos = false;
+  Map<int, DetalleCarritoConRango> _detallesConRango = {};
 
   CarritoProvider() {
     _carritoService = CarritoService(ApiService());
@@ -50,6 +57,16 @@ class CarritoProvider with ChangeNotifier {
   // Total con descuento (sin impuesto)
   double get subtotalConDescuento => subtotal - _montoDescuento;
   double get totalConDescuento => subtotalConDescuento + _costoEnvio;
+
+  // Rangos getters
+  CarritoConRangos? get carritoConRangos => _carritoConRangos;
+  bool get calculandoRangos => _calculandoRangos;
+  Map<int, DetalleCarritoConRango> get detallesConRango => _detallesConRango;
+
+  /// Obtener detalle con rango de un producto específico
+  DetalleCarritoConRango? obtenerDetalleConRango(int productoId) {
+    return _detallesConRango[productoId];
+  }
 
   bool get isEmpty => _carrito.isEmpty;
   bool get isNotEmpty => _carrito.isNotEmpty;
@@ -866,6 +883,85 @@ class CarritoProvider with ChangeNotifier {
   void _calcularTotales() {
     // Esto se puede mejorar, pero por ahora es suficiente
     // El cálculo real se hace en los getters de _carrito
+  }
+
+  /// Calcular carrito con rangos de precio
+  /// Llama a la API para obtener precios ajustados por cantidad
+  Future<bool> calcularCarritoConRangos() async {
+    try {
+      _calculandoRangos = true;
+      notifyListeners();
+
+      debugPrint('🔄 Calculando carrito con rangos de precio...');
+
+      final carritoConRangos = await _carritoService.calcularCarritoConRangos(_carrito.items);
+
+      if (carritoConRangos != null) {
+        _carritoConRangos = carritoConRangos;
+
+        // Mapear detalles por ID de producto para acceso rápido
+        _detallesConRango.clear();
+        for (final detalle in carritoConRangos.detalles) {
+          _detallesConRango[detalle.productoId] = detalle;
+        }
+
+        debugPrint('✅ Carrito calculado con éxito');
+        debugPrint('   Ahorro disponible: ${carritoConRangos.ahorroDisponible.toStringAsFixed(2)} Bs');
+
+        notifyListeners();
+        return true;
+      }
+
+      _errorMessage = 'No fue posible calcular los precios con rangos';
+      notifyListeners();
+      return false;
+    } catch (e) {
+      debugPrint('❌ Error al calcular carrito con rangos: $e');
+      _errorMessage = 'Error al calcular precios: $e';
+      notifyListeners();
+      return false;
+    } finally {
+      _calculandoRangos = false;
+      notifyListeners();
+    }
+  }
+
+  /// Agregar cantidad a un producto para alcanzar el próximo rango
+  /// Valida stock y actualiza la cantidad
+  void agregarParaAhorrar(int productoId, int cantidadAgregar) {
+    try {
+      final detalle = obtenerDetalleConRango(productoId);
+      if (detalle == null) {
+        debugPrint('❌ No hay información de rango para el producto $productoId');
+        return;
+      }
+
+      final item = _carrito.getItemByProductoId(productoId);
+      if (item == null) {
+        debugPrint('❌ El producto $productoId no está en el carrito');
+        return;
+      }
+
+      final nuevaCantidad = item.cantidad + cantidadAgregar;
+
+      // Validar stock
+      final stockDisponible = item.cantidadDisponible;
+      if (nuevaCantidad > stockDisponible) {
+        _errorMessage = 'Stock insuficiente. Disponible: ${stockDisponible.toStringAsFixed(1)}';
+        notifyListeners();
+        return;
+      }
+
+      // Actualizar cantidad
+      actualizarCantidad(productoId, nuevaCantidad);
+
+      // Recalcular con rangos
+      calcularCarritoConRangos();
+    } catch (e) {
+      debugPrint('❌ Error al agregar para ahorrar: $e');
+      _errorMessage = 'Error al actualizar cantidad: $e';
+      notifyListeners();
+    }
   }
 }
 

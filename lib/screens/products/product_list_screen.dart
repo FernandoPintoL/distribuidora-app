@@ -17,18 +17,38 @@ class ProductListScreen extends StatefulWidget {
   State<ProductListScreen> createState() => _ProductListScreenState();
 }
 
-class _ProductListScreenState extends State<ProductListScreen> {
+class _ProductListScreenState extends State<ProductListScreen>
+    with TickerProviderStateMixin {
   final _searchController = TextEditingController();
   final _scrollController = ScrollController();
+  final _searchFocusNode = FocusNode();
   Timer? _debounceTimer;
   bool _isGridView = true;
+  bool _isSearchFocused = false;
+  late AnimationController _listAnimationController;
 
   @override
   void initState() {
     super.initState();
     _scrollController.addListener(_onScroll);
+    _searchFocusNode.addListener(_onSearchFocusChanged);
+
+    // Initialize list animation controller
+    _listAnimationController = AnimationController(
+      duration: const Duration(milliseconds: 600),
+      vsync: this,
+    );
+
     Future.delayed(Duration.zero, () {
       _loadProductsIfNeeded();
+      // Trigger animation when products load
+      _listAnimationController.forward(from: 0.0);
+    });
+  }
+
+  void _onSearchFocusChanged() {
+    setState(() {
+      _isSearchFocused = _searchFocusNode.hasFocus;
     });
   }
 
@@ -37,6 +57,9 @@ class _ProductListScreenState extends State<ProductListScreen> {
     _scrollController.removeListener(_onScroll);
     _scrollController.dispose();
     _searchController.dispose();
+    _searchFocusNode.removeListener(_onSearchFocusChanged);
+    _searchFocusNode.dispose();
+    _listAnimationController.dispose();
     _debounceTimer?.cancel();
     super.dispose();
   }
@@ -45,8 +68,12 @@ class _ProductListScreenState extends State<ProductListScreen> {
     if (_scrollController.position.pixels >=
         _scrollController.position.maxScrollExtent * 0.9) {
       final productProvider = context.read<ProductProvider>();
+      debugPrint('📍 SCROLL LISTENER - isLoading: ${productProvider.isLoading}, hasMorePages: ${productProvider.hasMorePages}, currentPage: ${productProvider.currentPage}, totalPages: ${productProvider.totalPages}, totalProducts: ${productProvider.products.length}');
       if (!productProvider.isLoading && productProvider.hasMorePages) {
+        debugPrint('📍 Cargando más productos...');
         productProvider.loadMoreProducts(search: _searchController.text);
+      } else if (!productProvider.hasMorePages) {
+        debugPrint('📍 ¡Ya no hay más productos! totalPages: ${productProvider.totalPages}, currentPage: ${productProvider.currentPage}');
       }
     }
   }
@@ -295,74 +322,134 @@ class _ProductListScreenState extends State<ProductListScreen> {
             child: Row(
               children: [
                 Expanded(
-                  child: TextField(
-                    controller: _searchController,
-                    onChanged: _onSearchChanged,
-                    decoration: InputDecoration(
-                      hintText: 'Buscar productos...',
-                      hintStyle: TextStyle(
-                        color: context.textTheme.bodySmall?.color,
-                      ),
-                      prefixIcon: Icon(
-                        Icons.search,
-                        color: colorScheme.primary,
-                      ),
-                      suffixIcon: _searchController.text.isNotEmpty
-                          ? IconButton(
-                              icon: const Icon(Icons.clear),
-                              onPressed: _clearSearch,
-                            )
-                          : null,
-                      filled: true,
-                      fillColor: isDark
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 200),
+                    curve: Curves.easeInOut,
+                    height: 56,
+                    decoration: BoxDecoration(
+                      color: isDark
                           ? colorScheme.surfaceContainerHighest
                           : colorScheme.surfaceContainerHighest.withAlpha(100),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide.none,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                        color: _isSearchFocused
+                            ? colorScheme.primary.withAlpha(80)
+                            : colorScheme.outline.withAlpha(30),
+                        width: _isSearchFocused ? 2 : 1,
                       ),
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 14,
-                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: _isSearchFocused
+                              ? colorScheme.primary.withAlpha(20)
+                              : Colors.black.withAlpha(6),
+                          blurRadius: _isSearchFocused ? 16 : 12,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
                     ),
-                    textInputAction: TextInputAction.search,
+                    child: TextField(
+                      controller: _searchController,
+                      focusNode: _searchFocusNode,
+                      onChanged: _onSearchChanged,
+                      decoration: InputDecoration(
+                        hintText: 'Buscar productos...',
+                        hintStyle: TextStyle(
+                          color: context.textTheme.bodySmall?.color,
+                        ),
+                        prefixIcon: Icon(
+                          Icons.search,
+                          color: colorScheme.primary,
+                        ),
+                        suffixIcon: _searchController.text.isNotEmpty
+                            ? IconButton(
+                                icon: const Icon(Icons.clear),
+                                onPressed: _clearSearch,
+                              )
+                            : null,
+                        border: InputBorder.none,
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 20,
+                          vertical: 18,
+                        ),
+                      ),
+                      textInputAction: TextInputAction.search,
+                    ),
                   ),
                 ),
                 const SizedBox(width: 12),
-                // Botón de scanner de código de barras
+                // Botón de scanner de código de barras - Premium style
                 Container(
-                  height: 50,
+                  height: 56,
+                  width: 56,
                   decoration: BoxDecoration(
                     color: isDark
                         ? colorScheme.surfaceContainerHighest
                         : colorScheme.surfaceContainerHighest.withAlpha(100),
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: colorScheme.outline.withAlpha(30),
+                      width: 1,
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withAlpha(6),
+                        blurRadius: 12,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
                   ),
                   child: IconButton(
                     onPressed: _openBarcodeScanner,
                     icon: Icon(
                       Icons.qr_code_scanner,
                       color: colorScheme.primary,
+                      size: 24,
                     ),
                     tooltip: 'Escanear código de barras',
                   ),
                 ),
                 const SizedBox(width: 8),
-                // Botón de cambio de vista
+                // Botón de cambio de vista - Premium style
                 Container(
-                  height: 50,
+                  height: 56,
+                  width: 56,
                   decoration: BoxDecoration(
                     color: isDark
                         ? colorScheme.surfaceContainerHighest
                         : colorScheme.surfaceContainerHighest.withAlpha(100),
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: colorScheme.outline.withAlpha(30),
+                      width: 1,
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withAlpha(6),
+                        blurRadius: 12,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
                   ),
                   child: IconButton(
                     onPressed: _toggleView,
-                    icon: Icon(
-                      _isGridView ? Icons.view_list : Icons.grid_view,
-                      color: colorScheme.primary,
+                    icon: AnimatedSwitcher(
+                      duration: const Duration(milliseconds: 200),
+                      transitionBuilder: (child, animation) {
+                        return RotationTransition(
+                          turns: Tween<double>(begin: 0.0, end: 0.5)
+                              .animate(animation),
+                          child: FadeTransition(
+                              opacity: animation, child: child),
+                        );
+                      },
+                      child: Icon(
+                        _isGridView
+                            ? Icons.view_list_rounded
+                            : Icons.grid_view_rounded,
+                        color: colorScheme.primary,
+                        size: 24,
+                        key: ValueKey(_isGridView),
+                      ),
                     ),
                     tooltip: _isGridView
                         ? 'Vista de lista'
@@ -390,34 +477,93 @@ class _ProductListScreenState extends State<ProductListScreen> {
           Expanded(
             child: Consumer<ProductProvider>(
               builder: (context, productProvider, child) {
-                // Estado de carga inicial con skeleton
-                if (productProvider.isLoading &&
-                    productProvider.products.isEmpty) {
-                  return _buildSkeletonLoading();
+                debugPrint('🔍 Consumer rebuild - isLoading: ${productProvider.isLoading}, productos: ${productProvider.products.length}');
+
+                // Estado de carga - Mostrar simple loading
+                if (productProvider.isLoading) {
+                  return Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        CircularProgressIndicator(
+                          color: colorScheme.primary,
+                        ),
+                        const SizedBox(height: 16),
+                        Text(
+                          'Cargando productos...',
+                          style: context.textTheme.bodyLarge,
+                        ),
+                      ],
+                    ),
+                  );
                 }
 
                 // Estado de error
-                if (productProvider.errorMessage != null &&
-                    productProvider.products.isEmpty) {
-                  return _buildErrorState(
-                    productProvider.errorMessage!,
-                    colorScheme,
+                if (productProvider.errorMessage != null) {
+                  return Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.error_outline,
+                          size: 64,
+                          color: colorScheme.error,
+                        ),
+                        const SizedBox(height: 16),
+                        Text(
+                          'Error: ${productProvider.errorMessage}',
+                          textAlign: TextAlign.center,
+                          style: context.textTheme.bodyLarge?.copyWith(
+                            color: colorScheme.error,
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        ElevatedButton(
+                          onPressed: _loadProducts,
+                          child: const Text('Reintentar'),
+                        ),
+                      ],
+                    ),
                   );
                 }
 
                 // Estado vacío
                 if (productProvider.products.isEmpty) {
-                  return _buildEmptyState(colorScheme, isDark);
+                  return Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.shopping_bag_outlined,
+                          size: 64,
+                          color: colorScheme.outline,
+                        ),
+                        const SizedBox(height: 16),
+                        Text(
+                          'No hay productos disponibles',
+                          style: context.textTheme.bodyLarge,
+                        ),
+                      ],
+                    ),
+                  );
                 }
 
                 // Grid o Lista de productos
-                return RefreshIndicator(
-                  onRefresh: _loadProducts,
-                  color: colorScheme.primary,
-                  child: _isGridView
-                      ? _buildGridView(productProvider)
-                      : _buildListView(productProvider),
-                );
+                debugPrint('✅ Construyendo ${_isGridView ? "GRID" : "LIST"} con ${productProvider.products.length} productos');
+                try {
+                  return RefreshIndicator(
+                    onRefresh: _loadProducts,
+                    color: colorScheme.primary,
+                    child: _isGridView
+                        ? _buildGridView(productProvider)
+                        : _buildListView(productProvider),
+                  );
+                } catch (e) {
+                  debugPrint('❌ ERROR construyendo lista/grid: $e');
+                  return Center(
+                    child: Text('Error: $e'),
+                  );
+                }
               },
             ),
           ),
@@ -429,66 +575,118 @@ class _ProductListScreenState extends State<ProductListScreen> {
 
   Widget _buildSkeletonLoading() {
     return _isGridView
-        ? GridView.builder(
-            padding: const EdgeInsets.all(12),
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 2,
-              childAspectRatio: 0.7,
-              crossAxisSpacing: 12,
-              mainAxisSpacing: 12,
-            ),
-            itemCount: 6,
-            itemBuilder: (context, index) =>
-                const ProductSkeletonWidget(isGridView: true),
-          )
+        ? _buildResponsiveGridWithSkeletons()
         : ListView.builder(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             itemCount: 6,
             itemBuilder: (context, index) =>
                 const ProductSkeletonWidget(isGridView: false),
           );
   }
 
-  Widget _buildGridView(ProductProvider productProvider) {
+  Widget _buildResponsiveGridWithSkeletons() {
+    final screenSize = MediaQuery.of(context).size;
+    final isLandscape = screenSize.width > screenSize.height;
+
+    // Responsive grid configuration (same as _buildGridView)
+    final crossAxisCount = isLandscape ? 3 : 2;
+    final spacing = 16.0;
+    final padding = 16.0;
+    final availableWidth = screenSize.width - (padding * 2) - (spacing * (crossAxisCount - 1));
+    final itemWidth = availableWidth / crossAxisCount;
+    final mainAxisExtent = itemWidth * 1.4;
+
     return GridView.builder(
-      controller: _scrollController,
-      padding: const EdgeInsets.all(12),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 2,
-        childAspectRatio: 0.7,
-        crossAxisSpacing: 12,
-        mainAxisSpacing: 12,
+      padding: const EdgeInsets.all(16),
+      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: crossAxisCount,
+        mainAxisExtent: mainAxisExtent,
+        crossAxisSpacing: spacing,
+        mainAxisSpacing: spacing,
       ),
-      itemCount:
-          productProvider.products.length + (productProvider.isLoading ? 2 : 0),
-      itemBuilder: (context, index) {
-        if (index >= productProvider.products.length) {
-          return const ProductSkeletonWidget(isGridView: true);
-        }
-        final product = productProvider.products[index];
-        return ProductGridItem(
-          product: product,
-          onTap: () => _onProductTap(product),
-        );
-      },
+      itemCount: 6,
+      itemBuilder: (context, index) =>
+          const ProductSkeletonWidget(isGridView: true),
+    );
+  }
+
+  Widget _buildGridView(ProductProvider productProvider) {
+    final screenSize = MediaQuery.of(context).size;
+    final isLandscape = screenSize.width > screenSize.height;
+
+    // Responsive grid configuration
+    final crossAxisCount = isLandscape ? 3 : 2;
+    final spacing = 16.0;
+    final padding = 16.0;
+    final availableWidth = screenSize.width - (padding * 2) - (spacing * (crossAxisCount - 1));
+    final itemWidth = availableWidth / crossAxisCount;
+    // Use mainAxisExtent to let items be their natural height
+    final mainAxisExtent = itemWidth * 1.4;
+
+    return Stack(
+      children: [
+        GridView.builder(
+          controller: _scrollController,
+          padding: const EdgeInsets.all(16),
+          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: crossAxisCount,
+            mainAxisExtent: mainAxisExtent,
+            crossAxisSpacing: spacing,
+            mainAxisSpacing: spacing,
+          ),
+          itemCount: productProvider.products.length,
+          itemBuilder: (context, index) {
+            final product = productProvider.products[index];
+            return ProductGridItem(
+              product: product,
+              onTap: () => _onProductTap(product),
+            );
+          },
+        ),
+        // Loading indicator at bottom when fetching more products
+        if (productProvider.isLoading && productProvider.products.isNotEmpty)
+          Positioned(
+            bottom: 16,
+            left: 0,
+            right: 0,
+            child: Center(
+              child: CircularProgressIndicator(
+                color: Theme.of(context).colorScheme.primary,
+              ),
+            ),
+          ),
+      ],
     );
   }
 
   Widget _buildListView(ProductProvider productProvider) {
-    return ListView.builder(
-      controller: _scrollController,
-      itemCount:
-          productProvider.products.length + (productProvider.isLoading ? 1 : 0),
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      itemBuilder: (context, index) {
-        if (index >= productProvider.products.length) {
-          return const ProductSkeletonWidget(isGridView: false);
-        }
-        final product = productProvider.products[index];
-        return ProductListItem(
-          product: product,
-          onTap: () => _onProductTap(product),
-        );
-      },
+    return Stack(
+      children: [
+        ListView.builder(
+          controller: _scrollController,
+          itemCount: productProvider.products.length,
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          itemBuilder: (context, index) {
+            final product = productProvider.products[index];
+            return ProductListItem(
+              product: product,
+              onTap: () => _onProductTap(product),
+            );
+          },
+        ),
+        // Loading indicator at bottom when fetching more products
+        if (productProvider.isLoading && productProvider.products.isNotEmpty)
+          Positioned(
+            bottom: 16,
+            left: 0,
+            right: 0,
+            child: Center(
+              child: CircularProgressIndicator(
+                color: Theme.of(context).colorScheme.primary,
+              ),
+            ),
+          ),
+      ],
     );
   }
 
@@ -585,11 +783,20 @@ class _ProductListScreenState extends State<ProductListScreen> {
             onPressed: () {
               Navigator.pushNamed(context, '/carrito');
             },
+            elevation: 6,
+            highlightElevation: 8,
             backgroundColor: colorScheme.primary,
             icon: const Icon(Icons.shopping_cart),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
             label: Text(
               'Carrito (${carritoProvider.items.length})',
-              style: const TextStyle(fontWeight: FontWeight.w600),
+              style: const TextStyle(
+                fontWeight: FontWeight.w700,
+                fontSize: 15,
+                letterSpacing: 0.5,
+              ),
             ),
           );
         }
@@ -600,8 +807,13 @@ class _ProductListScreenState extends State<ProductListScreen> {
             onPressed: () {
               // TODO: Navigate to create product screen
             },
+            elevation: 6,
+            highlightElevation: 8,
             backgroundColor: colorScheme.primary,
-            child: const Icon(Icons.add, color: Colors.white),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: const Icon(Icons.add, color: Colors.white, size: 28),
           );
         }
 

@@ -38,13 +38,14 @@ class ProductProvider with ChangeNotifier {
       _isLoading = true;
       _products = [];
       _currentPage = 1;
+      debugPrint('🔄 ProductProvider.loadProducts() - iniciando carga');
+      // Notificar del estado de carga
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        debugPrint('🔔 Notificando estado de carga...');
+        notifyListeners();
+      });
     }
     _errorMessage = null;
-
-    // Retrasar notifyListeners hasta después del build
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      notifyListeners();
-    });
 
     try {
       final response = await _productService.getProducts(
@@ -73,37 +74,27 @@ class ProductProvider with ChangeNotifier {
         _errorMessage = null;
 
         // Debug: Verificar que los productos se cargaron
-        debugPrint('✅ ProductProvider: ${_products.length} productos cargados');
+        debugPrint('✅ ProductProvider: ${_products.length} productos cargados (append: $append)');
+        debugPrint('   📊 Pagination: page=${_currentPage}/${_totalPages}, total=${_totalItems}, hasMorePages=$_hasMorePages');
         if (_products.isNotEmpty) {
           debugPrint(
-            '   Primer producto: ${_products.first.nombre} - Stock: ${_products.first.stockPrincipal?.cantidad}',
+            '   📦 Primer producto: ${_products.first.nombre} - Stock: ${_products.first.stockPrincipal?.cantidad}',
           );
         }
-
-        // Retrasar notifyListeners hasta después del build
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          notifyListeners();
-        });
         return true;
       } else {
         _errorMessage = response.message;
-        // Retrasar notifyListeners hasta después del build
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          notifyListeners();
-        });
         return false;
       }
     } catch (e) {
       _errorMessage = 'Error inesperado: ${e.toString()}';
-      // Retrasar notifyListeners hasta después del build
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        notifyListeners();
-      });
       return false;
     } finally {
       _isLoading = false;
-      // Retrasar notifyListeners hasta después del build
+      debugPrint('✅ ProductProvider.loadProducts() - completado. Total productos: ${_products.length}, Error: $_errorMessage');
+      // Notificar cambios después de que se carguen los datos o si hay error
       WidgetsBinding.instance.addPostFrameCallback((_) {
+        debugPrint('🔔 Notificando resultado final (${_products.length} productos)...');
         notifyListeners();
       });
     }
@@ -115,11 +106,17 @@ class ProductProvider with ChangeNotifier {
     int? brandId,
     int? supplierId,
     bool? active,
-    int almacenId = 3,
+    int almacenId = 2,
     bool withStock = true,
   }) async {
-    if (!_hasMorePages || _isLoading) return false;
+    debugPrint('📄 loadMoreProducts() called - hasMorePages: $_hasMorePages, isLoading: $_isLoading, currentPage: $_currentPage, totalPages: $_totalPages');
 
+    if (!_hasMorePages || _isLoading) {
+      debugPrint('📄 loadMoreProducts() REJECTED - hasMorePages: $_hasMorePages, isLoading: $_isLoading');
+      return false;
+    }
+
+    debugPrint('📄 loadMoreProducts() proceeding - Loading page ${_currentPage + 1}...');
     return loadProducts(
       page: _currentPage + 1,
       search: search,
