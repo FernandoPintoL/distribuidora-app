@@ -62,19 +62,22 @@ class PaginatedData<T> {
   final List<T> data;
   final int perPage;
   final int total;
+  final int? lastPage;
 
   PaginatedData({
     required this.currentPage,
     required this.data,
     required this.perPage,
     required this.total,
+    this.lastPage,
   });
 
   // Getter para calcular si hay más páginas
   bool get hasMorePages => currentPage * perPage < total;
 
   // Getter para obtener el número total de páginas
-  int get totalPages => (total / perPage).ceil();
+  // Prioriza lastPage del API si está disponible
+  int get totalPages => lastPage ?? (total / perPage).ceil();
 
   factory PaginatedData.fromJson(
     Map<String, dynamic> json,
@@ -107,6 +110,7 @@ class PaginatedData<T> {
         }).toList(),
         perPage: paginacion['por_pagina'] ?? 20,
         total: paginacion['total'] ?? 0,
+        lastPage: paginacion['ultima_pagina'],
       );
     }
 
@@ -139,6 +143,7 @@ class PaginatedData<T> {
         }).toList(),
         perPage: json['per_page'] ?? 20,
         total: json['total'] ?? 0,
+        lastPage: json['last_page'],
       );
     } catch (e) {
       debugPrint('❌ Error in PaginatedData.fromJson: $e');
@@ -152,6 +157,7 @@ class PaginatedData<T> {
       'data': data,
       'per_page': perPage,
       'total': total,
+      'last_page': lastPage,
     };
   }
 }

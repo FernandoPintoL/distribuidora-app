@@ -34,11 +34,18 @@ class ProductProvider with ChangeNotifier {
     int almacenId = 2,
     bool withStock = true,
   }) async {
+    debugPrint('📥 loadProducts() - INICIO: append=$append, page=$page, search=$search');
+
     if (!append) {
       _isLoading = true;
       _products = [];
       _currentPage = 1;
+      // Reset completo de variables de paginación
+      _hasMorePages = true;
+      _totalItems = 0;
+      _totalPages = 1;
       debugPrint('🔄 ProductProvider.loadProducts() - iniciando carga');
+      debugPrint('   Estado ANTES: 0 productos, reseteo completo');
       // Notificar del estado de carga
       WidgetsBinding.instance.addPostFrameCallback((_) {
         debugPrint('🔔 Notificando estado de carga...');
@@ -68,17 +75,20 @@ class ProductProvider with ChangeNotifier {
         }
 
         _currentPage = response.data!.currentPage;
-        _totalPages = (response.data!.total / perPage).ceil();
+        _totalPages = response.data!.totalPages;  // Ahora usa el getter que prioriza lastPage
         _totalItems = response.data!.total;
-        _hasMorePages = _currentPage < _totalPages;
+        _hasMorePages = response.data!.hasMorePages;  // Usa el getter del modelo
         _errorMessage = null;
 
         // Debug: Verificar que los productos se cargaron
-        debugPrint('✅ ProductProvider: ${_products.length} productos cargados (append: $append)');
-        debugPrint('   📊 Pagination: page=${_currentPage}/${_totalPages}, total=${_totalItems}, hasMorePages=$_hasMorePages');
+        debugPrint('📥 loadProducts() - RESULTADOS:');
+        debugPrint('   ✅ Productos cargados: ${response.data!.data.length} items en esta página');
+        debugPrint('   📊 Paginación: currentPage=${_currentPage}, totalPages=${_totalPages}, total=${_totalItems}');
+        debugPrint('   📊 hasMorePages=$_hasMorePages (lastPage=${response.data!.lastPage})');
+        debugPrint('   📊 Total en lista: ${_products.length} productos');
         if (_products.isNotEmpty) {
           debugPrint(
-            '   📦 Primer producto: ${_products.first.nombre} - Stock: ${_products.first.stockPrincipal?.cantidad}',
+            '   📦 Primer producto: ${_products.first.nombre}',
           );
         }
         return true;
@@ -91,7 +101,10 @@ class ProductProvider with ChangeNotifier {
       return false;
     } finally {
       _isLoading = false;
-      debugPrint('✅ ProductProvider.loadProducts() - completado. Total productos: ${_products.length}, Error: $_errorMessage');
+      debugPrint('📥 loadProducts() - FINALIZADO');
+      debugPrint('   Total en lista: ${_products.length} productos');
+      debugPrint('   hasMorePages: $_hasMorePages');
+      debugPrint('   Error: $_errorMessage');
       // Notificar cambios después de que se carguen los datos o si hay error
       WidgetsBinding.instance.addPostFrameCallback((_) {
         debugPrint('🔔 Notificando resultado final (${_products.length} productos)...');
@@ -109,14 +122,17 @@ class ProductProvider with ChangeNotifier {
     int almacenId = 2,
     bool withStock = true,
   }) async {
-    debugPrint('📄 loadMoreProducts() called - hasMorePages: $_hasMorePages, isLoading: $_isLoading, currentPage: $_currentPage, totalPages: $_totalPages');
+    debugPrint('📄 loadMoreProducts() CALLED');
+    debugPrint('   Estado: hasMorePages=$_hasMorePages, isLoading=$_isLoading');
+    debugPrint('   Paginación: currentPage=$_currentPage, totalPages=$_totalPages');
+    debugPrint('   Total en lista: ${_products.length} productos');
 
     if (!_hasMorePages || _isLoading) {
-      debugPrint('📄 loadMoreProducts() REJECTED - hasMorePages: $_hasMorePages, isLoading: $_isLoading');
+      debugPrint('📄 loadMoreProducts() RECHAZADO - hasMorePages=$_hasMorePages, isLoading=$_isLoading');
       return false;
     }
 
-    debugPrint('📄 loadMoreProducts() proceeding - Loading page ${_currentPage + 1}...');
+    debugPrint('📄 loadMoreProducts() PROCEDIENDO - Cargando página ${_currentPage + 1}...');
     return loadProducts(
       page: _currentPage + 1,
       search: search,

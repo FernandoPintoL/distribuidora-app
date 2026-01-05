@@ -25,6 +25,7 @@ class _ProductListScreenState extends State<ProductListScreen>
   Timer? _debounceTimer;
   bool _isGridView = true;
   bool _isSearchFocused = false;
+  bool _isLoadingMore = false;  // Flag para prevenir race conditions en scroll
   late AnimationController _listAnimationController;
 
   @override
@@ -68,12 +69,35 @@ class _ProductListScreenState extends State<ProductListScreen>
     if (_scrollController.position.pixels >=
         _scrollController.position.maxScrollExtent * 0.9) {
       final productProvider = context.read<ProductProvider>();
-      debugPrint('📍 SCROLL LISTENER - isLoading: ${productProvider.isLoading}, hasMorePages: ${productProvider.hasMorePages}, currentPage: ${productProvider.currentPage}, totalPages: ${productProvider.totalPages}, totalProducts: ${productProvider.products.length}');
+
+      debugPrint('📍 SCROLL LISTENER TRIGGERED');
+      debugPrint('   isLoading: ${productProvider.isLoading}');
+      debugPrint('   hasMorePages: ${productProvider.hasMorePages}');
+      debugPrint('   currentPage: ${productProvider.currentPage}/${productProvider.totalPages}');
+      debugPrint('   totalProducts: ${productProvider.products.length}');
+      debugPrint('   _isLoadingMore flag: $_isLoadingMore');
+
+      // Prevenir race conditions con flag local
+      if (_isLoadingMore) {
+        debugPrint('📍 ⚠️ YA ESTÁ CARGANDO - ignorando scroll');
+        return;
+      }
+
       if (!productProvider.isLoading && productProvider.hasMorePages) {
-        debugPrint('📍 Cargando más productos...');
-        productProvider.loadMoreProducts(search: _searchController.text);
+        _isLoadingMore = true;
+        debugPrint('📍 ✅ Cargando más productos...');
+
+        productProvider.loadMoreProducts(search: _searchController.text).then((_) {
+          _isLoadingMore = false;
+          debugPrint('📍 ✅ Carga completada, flag reseteado');
+        }).catchError((e) {
+          _isLoadingMore = false;
+          debugPrint('📍 ❌ Error en carga, flag reseteado');
+        });
       } else if (!productProvider.hasMorePages) {
-        debugPrint('📍 ¡Ya no hay más productos! totalPages: ${productProvider.totalPages}, currentPage: ${productProvider.currentPage}');
+        debugPrint('📍 ℹ️ No hay más productos. totalPages: ${productProvider.totalPages}, currentPage: ${productProvider.currentPage}');
+      } else if (productProvider.isLoading) {
+        debugPrint('📍 ℹ️ Provider aún cargando...');
       }
     }
   }
