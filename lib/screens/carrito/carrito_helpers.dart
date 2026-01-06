@@ -51,7 +51,7 @@ void mostrarDialogoVaciarCarrito(BuildContext context) {
   );
 }
 
-/// Navega a la pantalla de selección de dirección de entrega
+/// Navega a la pantalla de selección de tipo de entrega (DELIVERY o PICKUP)
 void continuarCompra(BuildContext context) {
   // Verificar que el carrito no esté vacío
   final carritoProvider = context.read<CarritoProvider>();
@@ -66,6 +66,7 @@ void continuarCompra(BuildContext context) {
     return;
   }
 
-  // Navegar a selección de dirección de entrega
-  Navigator.pushNamed(context, '/direccion-entrega-seleccion');
+  // Navegar a la selección del tipo de entrega (DELIVERY o PICKUP)
+  // Luego el usuario elegirá el tipo y será dirigido a direcciones (para DELIVERY) o fecha/hora (para PICKUP)
+  Navigator.pushNamed(context, '/tipo-entrega-seleccion');
 }

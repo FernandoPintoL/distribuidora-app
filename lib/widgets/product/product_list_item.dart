@@ -3,7 +3,6 @@ import 'package:provider/provider.dart';
 import '../../models/models.dart';
 import '../../providers/providers.dart';
 import '../../utils/stock_status.dart';
-import '../../utils/product_color_utils.dart';
 import '../../extensions/theme_extension.dart';
 import '../product/index.dart';
 
@@ -110,35 +109,23 @@ class _ProductListItemState extends State<ProductListItem>
         widget.product.precioVenta != null &&
         stock > 0;
 
-    // Obtener colores únicos para este producto
-    final productColor = ProductColorUtils.getProductColor(
-      widget.product.id,
-      isDark: isDark,
-    );
-    final productColorLight = ProductColorUtils.getProductColorLight(
-      widget.product.id,
-      isDark: isDark,
-    );
-    final productShadowColor = ProductColorUtils.getProductShadowColor(
-      widget.product.id,
-      isDark: isDark,
-    );
-    final productBorderColor = ProductColorUtils.getProductBorderColor(
-      widget.product.id,
-      isDark: isDark,
-    );
+    // Color marrón fijo para botones, precios y categoría
+    const brownColor = Color(0xFF795548);
+    final brownColorLight = brownColor.withAlpha(isDark ? 100 : 40);
+    final brownShadow = brownColor.withAlpha(isDark ? 30 : 15);
+    final brownBorder = brownColor.withAlpha(120);
 
     return Card(
         margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         elevation: 4,
         color: _quantity > 0
-            ? productColorLight
+            ? brownColorLight
             : (isDark ? colorScheme.surface : Colors.white),
-        shadowColor: productShadowColor,
+        shadowColor: brownShadow,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16),
           side: BorderSide(
-            color: _quantity > 0 ? productBorderColor : colorScheme.outline.withAlpha(20),
+            color: _quantity > 0 ? brownBorder : colorScheme.outline.withAlpha(20),
             width: _quantity > 0 ? 2 : 1,
           ),
         ),
@@ -178,10 +165,10 @@ class _ProductListItemState extends State<ProductListItem>
                             onPressed: _incrementQuantity,
                             icon: const Icon(Icons.add_shopping_cart),
                             style: IconButton.styleFrom(
-                              backgroundColor: productColor,
+                              backgroundColor: brownColor,
                               foregroundColor: Colors.white,
                               elevation: 3,
-                              shadowColor: productColor.withAlpha(40),
+                              shadowColor: brownColor.withAlpha(40),
                             ),
                             tooltip: 'Agregar al carrito',
                           ),
@@ -190,10 +177,10 @@ class _ProductListItemState extends State<ProductListItem>
                     else
                       Container(
                         decoration: BoxDecoration(
-                          color: productColor.withAlpha(20),
+                          color: brownColor.withAlpha(20),
                           borderRadius: BorderRadius.circular(12),
                           border: Border.all(
-                            color: productColor,
+                            color: brownColor,
                             width: 1.5,
                           ),
                         ),
@@ -207,7 +194,7 @@ class _ProductListItemState extends State<ProductListItem>
                                 icon: const Icon(Icons.remove, size: 16),
                                 padding: EdgeInsets.zero,
                                 style: IconButton.styleFrom(
-                                  foregroundColor: productColor,
+                                  foregroundColor: brownColor,
                                 ),
                               ),
                             ),
@@ -234,7 +221,7 @@ class _ProductListItemState extends State<ProductListItem>
                                         ?.copyWith(
                                           fontWeight: FontWeight.bold,
                                           fontSize: 15,
-                                          color: productColor,
+                                          color: brownColor,
                                         ),
                                   ),
                                 ),
@@ -248,7 +235,7 @@ class _ProductListItemState extends State<ProductListItem>
                                 icon: const Icon(Icons.add, size: 16),
                                 padding: EdgeInsets.zero,
                                 style: IconButton.styleFrom(
-                                  foregroundColor: productColor,
+                                  foregroundColor: brownColor,
                                 ),
                               ),
                             ),

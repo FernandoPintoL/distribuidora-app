@@ -11,16 +11,18 @@ class PedidoService {
   /// Parámetros:
   /// - clienteId: ID del cliente
   /// - items: Lista de items del carrito con formato {producto_id, cantidad, precio_unitario}
+  /// - tipoEntrega: Tipo de entrega (DELIVERY o PICKUP) (REQUERIDO)
   /// - fechaProgramada: Fecha programada de entrega (REQUERIDO)
-  /// - direccionId: ID de la dirección de entrega (REQUERIDO - debe venir del cliente)
+  /// - direccionId: ID de la dirección de entrega (REQUERIDO para DELIVERY, NULL para PICKUP)
   /// - horaInicio: Hora de inicio preferida (opcional)
   /// - horaFin: Hora de fin preferida (opcional)
   /// - observaciones: Observaciones adicionales (opcional)
   Future<ApiResponse<Pedido>> crearPedido({
     required int clienteId,
     required List<Map<String, dynamic>> items,
+    required String tipoEntrega, // DELIVERY o PICKUP
     required DateTime fechaProgramada,
-    required int direccionId,
+    int? direccionId, // null para PICKUP, required para DELIVERY
     TimeOfDay? horaInicio,
     TimeOfDay? horaFin,
     String? observaciones,
@@ -30,9 +32,14 @@ class PedidoService {
       final Map<String, dynamic> requestBody = {
         'cliente_id': clienteId,
         'productos': items,
+        'tipo_entrega': tipoEntrega, // NUEVO: Indicar si es DELIVERY o PICKUP
         'fecha_programada': fechaProgramada.toIso8601String(),
-        'direccion_entrega_solicitada_id': direccionId,
       };
+
+      // Agregar dirección SOLO si es DELIVERY
+      if (tipoEntrega == 'DELIVERY' && direccionId != null) {
+        requestBody['direccion_entrega_solicitada_id'] = direccionId;
+      }
 
       // Agregar campos opcionales si están presentes
       if (horaInicio != null) {
@@ -51,8 +58,12 @@ class PedidoService {
 
       debugPrint('📋 Creando proforma con ${items.length} productos');
       debugPrint('   Cliente ID: $clienteId');
+      debugPrint('   Tipo de entrega: $tipoEntrega');
       if (fechaProgramada != null) {
         debugPrint('   Fecha programada: ${fechaProgramada.toIso8601String()}');
+      }
+      if (direccionId != null && tipoEntrega == 'DELIVERY') {
+        debugPrint('   Dirección ID: $direccionId');
       }
       if (horaInicio != null) {
         debugPrint('   Hora inicio: ${horaInicio.hour}:${horaInicio.minute.toString().padLeft(2, '0')}');

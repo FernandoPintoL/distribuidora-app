@@ -9,6 +9,7 @@ export 'chofer/home_chofer_screen.dart';
 export 'chofer/entrega_detalle_screen.dart';
 export 'chofer/confirmacion_entrega_screen.dart';
 export 'carrito/carrito_screen.dart';
+export 'pedidos/tipo_entrega_seleccion_screen.dart';
 export 'pedidos/direccion_entrega_seleccion_screen.dart';
 export 'pedidos/fecha_hora_entrega_screen.dart';
 export 'pedidos/resumen_pedido_screen.dart';

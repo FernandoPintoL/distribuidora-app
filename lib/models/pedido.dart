@@ -26,6 +26,7 @@ class Pedido {
   final double impuesto;
   final double total;
   final String? observaciones;
+  final String? observacionesRechazo;
 
   // Items del pedido
   final List<PedidoItem> items;
@@ -47,11 +48,15 @@ class Pedido {
   final DateTime? fechaEntrega;
   final int? usuarioAprobadorId;
   final String? comentariosAprobacion;
+  final String? comentarioRechazo;
 
   // Comprobantes de entrega
   final String? firmaDigitalUrl;
   final String? fotoEntregaUrl;
   final DateTime? fechaFirmaEntrega;
+
+  // Campos de proforma (nuevo backend)
+  final int? estadoProformaId;
 
   Pedido({
     required this.id,
@@ -68,6 +73,7 @@ class Pedido {
     required this.impuesto,
     required this.total,
     this.observaciones,
+    this.observacionesRechazo,
     this.items = const [],
     this.historialEstados = const [],
     this.reservas = const [],
@@ -81,9 +87,11 @@ class Pedido {
     this.fechaEntrega,
     this.usuarioAprobadorId,
     this.comentariosAprobacion,
+    this.comentarioRechazo,
     this.firmaDigitalUrl,
     this.fotoEntregaUrl,
     this.fechaFirmaEntrega,
+    this.estadoProformaId,
   });
 
   factory Pedido.fromJson(Map<String, dynamic> json) {
@@ -105,7 +113,10 @@ class Pedido {
         direccionEntrega: json['direccion_entrega'] != null
             ? ClientAddress.fromJson(json['direccion_entrega'] as Map<String, dynamic>)
             : null,
-        estado: EstadoInfo.fromString(json['estado'] as String),
+        // Obtener estado del código devuelto por estadoLogistica o del campo estado antiguo
+        estado: json['estadoLogistica'] != null
+            ? EstadoInfo.fromString((json['estadoLogistica'] as Map<String, dynamic>)['codigo'] as String?)
+            : EstadoInfo.fromString(json['estado'] as String?),
         // Backend can use fecha_programada, fecha_entrega_solicitada, or fecha
         fechaProgramada: json['fecha_programada'] != null
             ? DateTime.parse(json['fecha_programada'] as String)
@@ -114,12 +125,11 @@ class Pedido {
                 : (json['fecha'] != null
                     ? DateTime.parse(json['fecha'] as String)
                     : null)),
-        // Backend returns hora_entrega_solicitada or hora_inicio_preferida
+        // Backend returns hora_inicio_preferida (use only if it's a complete DateTime)
+        // Ignore hora_entrega_solicitada as it's just a time string (HH:MM:SS)
         horaInicioPreferida: json['hora_inicio_preferida'] != null
             ? DateTime.parse(json['hora_inicio_preferida'] as String)
-            : (json['hora_entrega_solicitada'] != null
-                ? DateTime.parse('2025-01-01T${json['hora_entrega_solicitada']}:00')
-                : null),
+            : null,
         horaFinPreferida: json['hora_fin_preferida'] != null
             ? DateTime.parse(json['hora_fin_preferida'] as String)
             : null,
@@ -128,6 +138,7 @@ class Pedido {
         impuesto: _parseDouble(json['impuesto']),
         total: _parseDouble(json['total']),
         observaciones: json['observaciones'] as String?,
+        observacionesRechazo: json['observaciones_rechazo'] as String?,
         // Backend returns detalles instead of items
         items: json['items'] != null
             ? (json['items'] as List)
@@ -166,11 +177,13 @@ class Pedido {
             : null,
         usuarioAprobadorId: json['usuario_aprobador_id'] as int?,
         comentariosAprobacion: json['comentarios_aprobacion'] as String?,
+        comentarioRechazo: json['comentario_rechazo'] as String? ?? json['observaciones_rechazo'] as String?,
         firmaDigitalUrl: json['firma_digital_url'] as String?,
         fotoEntregaUrl: json['foto_entrega_url'] as String?,
         fechaFirmaEntrega: json['fecha_firma_entrega'] != null
             ? DateTime.parse(json['fecha_firma_entrega'] as String)
             : null,
+        estadoProformaId: json['estado_proforma_id'] as int?,
       );
     } catch (e) {
       debugPrint('❌ Error parsing Pedido: $e');
@@ -211,6 +224,7 @@ class Pedido {
       'impuesto': impuesto,
       'total': total,
       'observaciones': observaciones,
+      'observaciones_rechazo': observacionesRechazo,
       'items': items.map((item) => item.toJson()).toList(),
       'historial_estados': historialEstados.map((h) => h.toJson()).toList(),
       'reservas': reservas.map((r) => r.toJson()).toList(),
@@ -224,9 +238,11 @@ class Pedido {
       'fecha_entrega': fechaEntrega?.toIso8601String(),
       'usuario_aprobador_id': usuarioAprobadorId,
       'comentarios_aprobacion': comentariosAprobacion,
+      'comentario_rechazo': comentarioRechazo,
       'firma_digital_url': firmaDigitalUrl,
       'foto_entrega_url': fotoEntregaUrl,
       'fecha_firma_entrega': fechaFirmaEntrega?.toIso8601String(),
+      'estado_proforma_id': estadoProformaId,
     };
   }
 
@@ -245,6 +261,7 @@ class Pedido {
     double? impuesto,
     double? total,
     String? observaciones,
+    String? observacionesRechazo,
     List<PedidoItem>? items,
     List<PedidoEstadoHistorial>? historialEstados,
     List<ReservaStock>? reservas,
@@ -258,9 +275,11 @@ class Pedido {
     DateTime? fechaEntrega,
     int? usuarioAprobadorId,
     String? comentariosAprobacion,
+    String? comentarioRechazo,
     String? firmaDigitalUrl,
     String? fotoEntregaUrl,
     DateTime? fechaFirmaEntrega,
+    int? estadoProformaId,
   }) {
     return Pedido(
       id: id ?? this.id,
@@ -277,6 +296,7 @@ class Pedido {
       impuesto: impuesto ?? this.impuesto,
       total: total ?? this.total,
       observaciones: observaciones ?? this.observaciones,
+      observacionesRechazo: observacionesRechazo ?? this.observacionesRechazo,
       items: items ?? this.items,
       historialEstados: historialEstados ?? this.historialEstados,
       reservas: reservas ?? this.reservas,
@@ -290,9 +310,11 @@ class Pedido {
       fechaEntrega: fechaEntrega ?? this.fechaEntrega,
       usuarioAprobadorId: usuarioAprobadorId ?? this.usuarioAprobadorId,
       comentariosAprobacion: comentariosAprobacion ?? this.comentariosAprobacion,
+      comentarioRechazo: comentarioRechazo ?? this.comentarioRechazo,
       firmaDigitalUrl: firmaDigitalUrl ?? this.firmaDigitalUrl,
       fotoEntregaUrl: fotoEntregaUrl ?? this.fotoEntregaUrl,
       fechaFirmaEntrega: fechaFirmaEntrega ?? this.fechaFirmaEntrega,
+      estadoProformaId: estadoProformaId ?? this.estadoProformaId,
     );
   }
 

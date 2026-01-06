@@ -98,6 +98,7 @@ class MyApp extends StatelessWidget {
             '/clients': (context) => const ClientListScreen(),
             '/carrito': (context) => const CarritoScreen(),
             '/carrito-abandonados': (context) => const CarritoAbandonadoListScreen(),
+            '/tipo-entrega-seleccion': (context) => const TipoEntregaSeleccionScreen(),
             '/direccion-entrega-seleccion': (context) => const DireccionEntregaSeleccionScreen(),
             '/mis-pedidos': (context) => const PedidosHistorialScreen(),
             '/mis-direcciones': (context) => const MisDireccionesScreen(),
@@ -119,14 +120,8 @@ class MyApp extends StatelessWidget {
                 );
 
               case '/fecha-hora-entrega':
+                // La dirección puede ser null para PICKUP, o ClientAddress para DELIVERY
                 final direccion = settings.arguments as ClientAddress?;
-                if (direccion == null) {
-                  return MaterialPageRoute(
-                    builder: (context) => const Scaffold(
-                      body: Center(child: Text('Error: Dirección no encontrada')),
-                    ),
-                  );
-                }
                 return MaterialPageRoute(
                   builder: (context) => FechaHoraEntregaScreen(direccion: direccion),
                 );
@@ -140,9 +135,14 @@ class MyApp extends StatelessWidget {
                     ),
                   );
                 }
+
+                // Extraer tipoEntrega (requerido)
+                final tipoEntrega = args['tipoEntrega'] as String? ?? 'DELIVERY';
+
                 return MaterialPageRoute(
                   builder: (context) => ResumenPedidoScreen(
-                    direccion: args['direccion'] as ClientAddress,
+                    tipoEntrega: tipoEntrega,
+                    direccion: args['direccion'] as ClientAddress?, // Nullable para PICKUP
                     fechaProgramada: args['fechaProgramada'] as DateTime?,
                     horaInicio: args['horaInicio'] as TimeOfDay?,
                     horaFin: args['horaFin'] as TimeOfDay?,

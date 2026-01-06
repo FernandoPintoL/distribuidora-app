@@ -117,12 +117,14 @@ class EstadoInfo {
   }
 
   // Helper para convertir string a enum
-  static EstadoPedido fromString(String estado) {
+  static EstadoPedido fromString(String? estado) {
+    if (estado == null) return EstadoPedido.PENDIENTE;
     return EstadoPedido.values.firstWhere(
       (e) => e.name == estado,
       orElse: () => EstadoPedido.PENDIENTE,
     );
   }
+
 
   // Helper para convertir enum a string
   static String enumToString(EstadoPedido estado) {

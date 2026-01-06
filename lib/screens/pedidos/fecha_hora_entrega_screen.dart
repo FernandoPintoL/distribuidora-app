@@ -5,9 +5,9 @@ import '../../widgets/custom_time_picker_dialog.dart';
 import '../../config/config.dart';
 
 class FechaHoraEntregaScreen extends StatefulWidget {
-  final ClientAddress direccion;
+  final ClientAddress? direccion; // Nullable para soportar PICKUP
 
-  const FechaHoraEntregaScreen({super.key, required this.direccion});
+  const FechaHoraEntregaScreen({super.key, this.direccion});
 
   @override
   State<FechaHoraEntregaScreen> createState() => _FechaHoraEntregaScreenState();
@@ -19,6 +19,9 @@ class _FechaHoraEntregaScreenState extends State<FechaHoraEntregaScreen> {
   TimeOfDay? _horaFin;
   final TextEditingController _observacionesController =
       TextEditingController();
+
+  // Detectar si es PICKUP (dirección es null) o DELIVERY (dirección no es null)
+  bool get esPickup => widget.direccion == null;
 
   @override
   void initState() {
@@ -92,12 +95,13 @@ class _FechaHoraEntregaScreenState extends State<FechaHoraEntregaScreen> {
   }
 
   void _continuarAlResumen() {
-    // Navegar a la pantalla de resumen
+    // Navegar a la pantalla de resumen con tipoEntrega
     Navigator.pushNamed(
       context,
       '/resumen-pedido',
       arguments: {
-        'direccion': widget.direccion,
+        'tipoEntrega': esPickup ? 'PICKUP' : 'DELIVERY',
+        'direccion': widget.direccion, // null para PICKUP, ClientAddress para DELIVERY
         'fechaProgramada': _fechaSeleccionada,
         'horaInicio': _horaInicio,
         'horaFin': _horaFin,
@@ -150,7 +154,7 @@ class _FechaHoraEntregaScreenState extends State<FechaHoraEntregaScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: CustomGradientAppBar(
-        title: 'Fecha y Hora de Entrega',
+        title: esPickup ? 'Fecha y Hora de Retiro' : 'Fecha y Hora de Entrega',
         customGradient: AppGradients.blue,
       ),
       body: SingleChildScrollView(
@@ -164,14 +168,18 @@ class _FechaHoraEntregaScreenState extends State<FechaHoraEntregaScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
-                    '¿Cuándo deseas recibir tu pedido?',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+                  Text(
+                    esPickup
+                        ? '¿Cuándo deseas retirar tu pedido?'
+                        : '¿Cuándo deseas recibir tu pedido?',
+                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
                   ),
                   const SizedBox(height: 4),
-                  const Text(
-                    'Selecciona fecha y rango horario (opcional)',
-                    style: TextStyle(fontSize: 14, color: Colors.grey),
+                  Text(
+                    esPickup
+                        ? 'Agenda la fecha y hora preferida para tu retiro'
+                        : 'Selecciona fecha y rango horario (opcional)',
+                    style: const TextStyle(fontSize: 14, color: Colors.grey),
                   ),
                 ],
               ),
@@ -182,42 +190,91 @@ class _FechaHoraEntregaScreenState extends State<FechaHoraEntregaScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Dirección seleccionada
-                  Card(
-                    child: Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: Row(
-                        children: [
-                          Icon(
-                            Icons.location_on,
-                            color: Theme.of(context).primaryColor,
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                const Text(
-                                  'Dirección de entrega',
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    color: Colors.grey,
-                                  ),
-                                ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  widget.direccion.direccion,
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                              ],
+                  // Mostrar dirección SOLO si es DELIVERY
+                  if (!esPickup)
+                    Card(
+                      child: Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Row(
+                          children: [
+                            Icon(
+                              Icons.location_on,
+                              color: Theme.of(context).primaryColor,
                             ),
-                          ),
-                        ],
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Text(
+                                    'Dirección de entrega',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: Colors.grey,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    widget.direccion!.direccion,
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
-                  ),
+
+                  // Mostrar info de almacén SI es PICKUP
+                  if (esPickup)
+                    Card(
+                      color: Colors.orange.withOpacity(0.05),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        side: BorderSide(
+                          color: Colors.orange.withOpacity(0.3),
+                          width: 1.5,
+                        ),
+                      ),
+                      child: Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Row(
+                          children: [
+                            Icon(
+                              Icons.storefront_outlined,
+                              color: Colors.orange.shade700,
+                              size: 28,
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Text(
+                                    'Lugar de Retiro',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: Colors.grey,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    'Almacén Principal',
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.w600,
+                                      color: Colors.orange.shade700,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
 
                   const SizedBox(height: 24),
 

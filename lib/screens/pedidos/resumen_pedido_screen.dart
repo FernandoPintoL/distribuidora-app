@@ -7,7 +7,8 @@ import '../../widgets/widgets.dart';
 import '../../config/config.dart';
 
 class ResumenPedidoScreen extends StatefulWidget {
-  final ClientAddress direccion;
+  final String tipoEntrega; // DELIVERY or PICKUP
+  final ClientAddress? direccion; // Null para PICKUP, required para DELIVERY
   final DateTime? fechaProgramada;
   final TimeOfDay? horaInicio;
   final TimeOfDay? horaFin;
@@ -15,7 +16,8 @@ class ResumenPedidoScreen extends StatefulWidget {
 
   const ResumenPedidoScreen({
     super.key,
-    required this.direccion,
+    required this.tipoEntrega,
+    this.direccion,
     this.fechaProgramada,
     this.horaInicio,
     this.horaFin,
@@ -29,6 +31,9 @@ class ResumenPedidoScreen extends StatefulWidget {
 class _ResumenPedidoScreenState extends State<ResumenPedidoScreen> {
   bool _isCreandoPedido = false;
   final PedidoService _pedidoService = PedidoService();
+
+  // Detectar si es PICKUP o DELIVERY
+  bool get esPickup => widget.tipoEntrega == 'PICKUP';
 
   Future<void> _confirmarPedido() async {
     final carritoProvider = context.read<CarritoProvider>();
@@ -57,10 +62,16 @@ class _ResumenPedidoScreenState extends State<ResumenPedidoScreen> {
         throw Exception('Cliente no autenticado');
       }
 
-      // Validar que la dirección tenga ID
-      if (widget.direccion.id == null) {
-        throw Exception('La dirección no tiene ID válido');
+      // Validación condicional según tipo de entrega
+      int? direccionId;
+      if (!esPickup) {
+        // Para DELIVERY: la dirección es REQUERIDA
+        if (widget.direccion == null || widget.direccion!.id == null) {
+          throw Exception('La dirección de entrega es requerida para pedidos de tipo DELIVERY');
+        }
+        direccionId = widget.direccion!.id;
       }
+      // Para PICKUP: direccionId puede ser null
 
       // Validar que el cliente esté asociado al usuario
       // IMPORTANTE: Solo clientes pueden crear proformas
@@ -73,13 +84,14 @@ class _ResumenPedidoScreenState extends State<ResumenPedidoScreen> {
         );
       }
 
-      // Crear proforma con dirección
+      // Crear proforma con tipoEntrega
       // IMPORTANTE: Usar clienteId, NO userId (que es el user.id)
       final response = await _pedidoService.crearPedido(
         clienteId: clienteId,
         items: items,
+        tipoEntrega: widget.tipoEntrega, // DELIVERY o PICKUP
         fechaProgramada: widget.fechaProgramada ?? DateTime.now(),
-        direccionId: widget.direccion.id!,
+        direccionId: direccionId, // null para PICKUP, int para DELIVERY
         horaInicio: widget.horaInicio,
         horaFin: widget.horaFin,
         observaciones: widget.observaciones,
@@ -269,66 +281,128 @@ class _ResumenPedidoScreenState extends State<ResumenPedidoScreen> {
 
                       const SizedBox(height: 24),
 
-                      // Dirección de entrega
-                      const Text(
-                        'Dirección de entrega',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
+                      // Mostrar dirección SOLO si es DELIVERY
+                      if (!esPickup) ...[
+                        const Text(
+                          'Dirección de entrega',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: 12),
+                        const SizedBox(height: 12),
 
-                      Card(
-                        child: Padding(
-                          padding: const EdgeInsets.all(16),
-                          child: Row(
-                            children: [
-                              Icon(
-                                Icons.location_on,
-                                color: Theme.of(context).primaryColor,
-                                size: 28,
-                              ),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      widget.direccion.direccion,
-                                      style: const TextStyle(
-                                        fontWeight: FontWeight.w600,
-                                        fontSize: 16,
-                                      ),
-                                    ),
-                                    if (widget.direccion.ciudad != null) ...[
-                                      const SizedBox(height: 4),
+                        Card(
+                          child: Padding(
+                            padding: const EdgeInsets.all(16),
+                            child: Row(
+                              children: [
+                                Icon(
+                                  Icons.location_on,
+                                  color: Theme.of(context).primaryColor,
+                                  size: 28,
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
                                       Text(
-                                        'Ciudad: ${widget.direccion.ciudad}',
+                                        widget.direccion!.direccion,
                                         style: const TextStyle(
-                                          color: Colors.grey,
+                                          fontWeight: FontWeight.w600,
+                                          fontSize: 16,
                                         ),
                                       ),
+                                      if (widget.direccion!.ciudad != null) ...[
+                                        const SizedBox(height: 4),
+                                        Text(
+                                          'Ciudad: ${widget.direccion!.ciudad}',
+                                          style: const TextStyle(
+                                            color: Colors.grey,
+                                          ),
+                                        ),
+                                      ],
+                                      if (widget.direccion!.observaciones != null) ...[
+                                        const SizedBox(height: 4),
+                                        Text(
+                                          'Obs: ${widget.direccion!.observaciones}',
+                                          style: TextStyle(
+                                            color: Colors.blue.shade700,
+                                            fontSize: 13,
+                                          ),
+                                        ),
+                                      ],
                                     ],
-                                    if (widget.direccion.observaciones != null) ...[
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+
+                        const SizedBox(height: 24),
+                      ],
+
+                      // Mostrar info de almacén SI es PICKUP
+                      if (esPickup) ...[
+                        const Text(
+                          'Lugar de Retiro',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+
+                        Card(
+                          color: Colors.orange.withOpacity(0.05),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            side: BorderSide(
+                              color: Colors.orange.withOpacity(0.3),
+                              width: 1.5,
+                            ),
+                          ),
+                          child: Padding(
+                            padding: const EdgeInsets.all(16),
+                            child: Row(
+                              children: [
+                                Icon(
+                                  Icons.storefront_outlined,
+                                  color: Colors.orange.shade700,
+                                  size: 28,
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      const Text(
+                                        'Almacén Principal',
+                                        style: TextStyle(
+                                          fontWeight: FontWeight.w600,
+                                          fontSize: 16,
+                                        ),
+                                      ),
                                       const SizedBox(height: 4),
                                       Text(
-                                        'Obs: ${widget.direccion.observaciones}',
+                                        'Retira tu pedido cuando esté listo',
                                         style: TextStyle(
-                                          color: Colors.blue.shade700,
+                                          color: Colors.orange.shade700,
                                           fontSize: 13,
                                         ),
                                       ),
                                     ],
-                                  ],
+                                  ),
                                 ),
-                              ),
-                            ],
+                              ],
+                            ),
                           ),
                         ),
-                      ),
 
-                      const SizedBox(height: 24),
+                        const SizedBox(height: 24),
+                      ],
 
                       // Fecha y hora programada
                       if (widget.fechaProgramada != null ||
