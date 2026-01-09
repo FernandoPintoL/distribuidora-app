@@ -1787,6 +1787,16 @@ class _VentasAsignadasCardState extends State<_VentasAsignadasCard> {
           if (ventaActualizada != null) {
             debugPrint('[CONFIRM_DEBUG] ✅ Estado logístico actualizado: ${ventaActualizada.estadoLogistico} (ID: ${ventaActualizada.estadoLogisticoId})');
           }
+
+          // Sincronizar estado de confirmación de todas las ventas basándose en el estado logístico
+          // Una venta se considera confirmada si su estado es PENDIENTE_ENVIO (ID: 8)
+          setState(() {
+            for (var v in widget.provider.entregaActual!.ventas) {
+              // Si el estado logístico es PENDIENTE_ENVIO (8), la venta fue confirmada
+              _ventasConfirmadas[v.id] = (v.estadoLogisticoId == 8);
+              debugPrint('[CHECKBOX_SYNC] Venta #${v.numero}: ${_ventasConfirmadas[v.id]} (estado_id: ${v.estadoLogisticoId})');
+            }
+          });
         }
 
         // Mostrar SnackBar de éxito
@@ -1879,6 +1889,13 @@ class _VentasAsignadasCardState extends State<_VentasAsignadasCard> {
                         for (var v in widget.provider.entregaActual!.ventas) {
                           debugPrint('[CARGO_DEBUG] Venta #${v.numero}: ${v.estadoLogistico} (ID: ${v.estadoLogisticoId})');
                         }
+
+                        // Sincronizar estado de confirmación de todas las ventas basándose en el estado logístico
+                        setState(() {
+                          for (var v in widget.provider.entregaActual!.ventas) {
+                            _ventasConfirmadas[v.id] = (v.estadoLogisticoId == 8);
+                          }
+                        });
                       }
 
                       ScaffoldMessenger.of(context).showSnackBar(
