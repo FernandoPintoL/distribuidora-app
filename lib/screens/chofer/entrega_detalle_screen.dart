@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:collection/collection.dart';
 import '../../models/entrega.dart';
 import '../../models/venta.dart';
 import '../../providers/entrega_provider.dart';
@@ -7,6 +8,7 @@ import '../../widgets/widgets.dart';
 import '../../widgets/chofer/entrega_timeline.dart';
 import '../../widgets/chofer/navigation_panel.dart';
 import '../../widgets/chofer/animated_navigation_card.dart';
+import '../../widgets/chofer/sla_status_widget.dart';
 import '../../config/config.dart';
 import '../../services/location_service.dart';
 
@@ -27,6 +29,7 @@ class _EntregaDetalleScreenState extends State<EntregaDetalleScreen> {
   void initState() {
     super.initState();
     _provider = context.read<EntregaProvider>();
+    print('Iniciando detalle de entrega ID: ${widget.entregaId}');
     _cargarDetalle();
     // Iniciar escucha de WebSocket para actualizaciones en tiempo real
     _provider.iniciarEscuchaWebSocket();
@@ -40,6 +43,9 @@ class _EntregaDetalleScreenState extends State<EntregaDetalleScreen> {
   }
 
   Future<void> _cargarDetalle() async {
+    if (!mounted) return;
+    // El loading se maneja automáticamente a través del isLoading del provider
+    // que se refleja en el Stack del build()
     await _provider.obtenerEntrega(widget.entregaId);
   }
 
@@ -49,6 +55,7 @@ class _EntregaDetalleScreenState extends State<EntregaDetalleScreen> {
   ) async {
     if (!mounted) return;
 
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
     final resultado = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
@@ -63,9 +70,9 @@ class _EntregaDetalleScreenState extends State<EntregaDetalleScreen> {
             if (entrega.direccion != null)
               Text(
                 entrega.direccion!,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 12,
-                  color: Colors.grey,
+                  color: isDarkMode ? Colors.grey[400] : Colors.grey[600],
                   fontStyle: FontStyle.italic,
                 ),
                 textAlign: TextAlign.center,
@@ -299,84 +306,179 @@ class _EntregaDetalleScreenState extends State<EntregaDetalleScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+
     return Scaffold(
+      backgroundColor: isDarkMode ? Colors.grey[900] : Colors.grey[50],
       appBar: CustomGradientAppBar(
-        title: 'Detalle de Entrega',
+        title: 'Detalle de Entregas',
         customGradient: AppGradients.green,
       ),
       body: Consumer<EntregaProvider>(
         builder: (context, provider, _) {
-          if (provider.isLoading) {
-            return const Center(child: CircularProgressIndicator());
-          }
-
-          if (provider.entregaActual == null) {
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.error_outline, size: 64, color: Colors.red[300]),
-                  const SizedBox(height: 16),
-                  const Text('Error al cargar entrega'),
-                  const SizedBox(height: 16),
-                  ElevatedButton(
-                    onPressed: _cargarDetalle,
-                    child: const Text('Reintentar'),
-                  ),
-                ],
-              ),
-            );
-          }
-
-          final entrega = provider.entregaActual!;
-
-          return RefreshIndicator(
-            onRefresh: _cargarDetalle,
-            child: ListView(
-              padding: const EdgeInsets.all(16),
-              children: [
-                // Estado
-                _EstadoCard(entrega: entrega),
-                const SizedBox(height: 16),
-                // Información general
-                _InformacionGeneralCard(entrega: entrega),
-                const SizedBox(height: 16),
-                // Fecha y tiempos
-                _FechasCard(entrega: entrega),
-                const SizedBox(height: 16),
-                // Timeline visual de estados
-                EntregaTimeline(entrega: entrega),
-                const SizedBox(height: 16),
-                // Sección de Ventas Asignadas
-                _VentasAsignadasCard(entrega: entrega, provider: provider),
-                const SizedBox(height: 16),
-                // Panel de navegación con animación de entrada
-                AnimatedNavigationCard(
-                  clientName: entrega.cliente ?? 'Cliente',
-                  address: entrega.direccion ?? 'Dirección no disponible',
-                  child: NavigationPanel(
-                    clientName: entrega.cliente ?? 'Cliente',
-                    address: entrega.direccion ?? 'Dirección no disponible',
-                    destinationLatitude: entrega.latitudeDestino,
-                    destinationLongitude: entrega.longitudeDestino,
+          return Stack(
+            children: [
+              // Contenido principal
+              if (provider.entregaActual == null)
+                _buildErrorContent()
+              else
+                _buildContent(provider),
+              // Loading overlay modal
+              if (provider.isLoading)
+                Positioned.fill(
+                  child: Container(
+                    color: Colors.black.withValues(alpha: 0.3),
+                    child: Center(
+                      child: Builder(
+                        builder: (ctx) {
+                          final isDark = Theme.of(ctx).brightness == Brightness.dark;
+                          return Container(
+                            padding: const EdgeInsets.all(32),
+                            decoration: BoxDecoration(
+                              color: isDark ? Colors.grey[850] : Colors.white,
+                              borderRadius: BorderRadius.circular(16),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withValues(alpha: 0.2),
+                                  blurRadius: 20,
+                                  spreadRadius: 5,
+                                ),
+                              ],
+                            ),
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                SizedBox(
+                                  width: 60,
+                                  height: 60,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 3,
+                                    valueColor: AlwaysStoppedAnimation<Color>(
+                                      Theme.of(ctx).primaryColor,
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(height: 24),
+                                Text(
+                                  'Cargando detalles de entrega...',
+                                  style: Theme.of(ctx).textTheme.titleMedium?.copyWith(
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                  textAlign: TextAlign.center,
+                                ),
+                                const SizedBox(height: 8),
+                                Text(
+                                  'Por favor espera',
+                                  style: Theme.of(ctx).textTheme.bodySmall?.copyWith(
+                                        color: isDark ? Colors.grey[400] : Colors.grey[600],
+                                      ),
+                                ),
+                              ],
+                            ),
+                          );
+                        },
+                      ),
+                    ),
                   ),
                 ),
-                const SizedBox(height: 16),
-                // Historial de estados
-                /* if (provider.historialEstados.isNotEmpty) ...[
-                  _HistorialEstadosCard(estados: provider.historialEstados),
-                  const SizedBox(height: 16),
-                ], */
-                // Botones de acción
-                _BotonesAccion(
-                  entrega: entrega,
-                  onMarcarLlegada: _mostrarDialogoMarcarLlegada,
-                  onReportarNovedad: _mostrarDialogoReportarNovedad,
-                ),
-              ],
-            ),
+            ],
           );
         },
+      ),
+    );
+  }
+
+  Widget _buildErrorContent() {
+    return Builder(
+      builder: (context) {
+        final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+        return Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.error_outline,
+                size: 64,
+                color: isDarkMode ? Colors.red[400] : Colors.red[300],
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'Error al cargar entrega',
+                style: TextStyle(
+                  fontSize: 16,
+                  color: isDarkMode ? Colors.grey[300] : Colors.grey[700],
+                ),
+              ),
+              const SizedBox(height: 16),
+              ElevatedButton(
+                onPressed: _cargarDetalle,
+                child: const Text('Reintentar'),
+              ),
+            ],
+          ),
+        );
+      }
+    );
+  }
+
+  Widget _buildContent(EntregaProvider provider) {
+    final entrega = provider.entregaActual!;
+
+    return RefreshIndicator(
+      onRefresh: _cargarDetalle,
+      child: ListView(
+        padding: const EdgeInsets.all(16),
+        children: [
+          // Estado
+          _EstadoCard(entrega: entrega),
+          const SizedBox(height: 16),
+          // SLA Status - FASE 6
+          if (entrega.fechaEntregaComprometida != null) ...[
+            SlaStatusWidget(
+              fechaEntregaComprometida: entrega.fechaEntregaComprometida,
+              ventanaEntregaIni: entrega.ventanaEntregaIni,
+              ventanaEntregaFin: entrega.ventanaEntregaFin,
+              estado: entrega.estado,
+              compact: false,
+            ),
+            const SizedBox(height: 16),
+          ],
+          // Información general
+          _InformacionGeneralCard(entrega: entrega),
+          const SizedBox(height: 16),
+          // Fecha y tiempos
+          _FechasCard(entrega: entrega),
+          const SizedBox(height: 16),
+          // Timeline visual de estados
+          EntregaTimeline(entrega: entrega),
+          const SizedBox(height: 16),
+          // Sección de Ventas Asignadas
+          _VentasAsignadasCard(entrega: entrega, provider: provider),
+          const SizedBox(height: 16),
+          // Panel de navegación con animación de entrada
+          AnimatedNavigationCard(
+            clientName: entrega.cliente ?? 'Cliente',
+            address: entrega.direccion ?? 'Dirección no disponible',
+            child: NavigationPanel(
+              clientName: entrega.cliente ?? 'Cliente',
+              address: entrega.direccion ?? 'Dirección no disponible',
+              destinationLatitude: entrega.latitudeDestino,
+              destinationLongitude: entrega.longitudeDestino,
+            ),
+          ),
+          const SizedBox(height: 16),
+          // Historial de estados
+          /* if (provider.historialEstados.isNotEmpty) ...[
+            _HistorialEstadosCard(estados: provider.historialEstados),
+            const SizedBox(height: 16),
+          ], */
+          // Botones de acción
+          _BotonesAccion(
+            entrega: entrega,
+            onMarcarLlegada: _mostrarDialogoMarcarLlegada,
+            onReportarNovedad: _mostrarDialogoReportarNovedad,
+          ),
+        ],
       ),
     );
   }
@@ -473,7 +575,7 @@ class _InformacionGeneralCard extends StatelessWidget {
             _InfoItem(
               icon: Icons.confirmation_number,
               label: 'ID Entrega',
-              value: '#${entrega.id}',
+              value: '#${entrega.id} - ${entrega.numeroEntrega}',
             ),
             const Divider(),
             if (entrega.chofer != null)
@@ -495,12 +597,13 @@ class _InformacionGeneralCard extends StatelessWidget {
                 value: 'No asignado',
               ),
             if (entrega.chofer != null &&
-                entrega.chofer!.telefono.isNotEmpty) ...[
+                entrega.chofer!.telefono != null &&
+                entrega.chofer!.telefono!.isNotEmpty) ...[
               const Divider(),
               _InfoItem(
                 icon: Icons.phone,
                 label: 'Teléfono Chofer',
-                value: entrega.chofer!.telefono,
+                value: entrega.chofer!.telefono ?? 'N/A',
               ),
             ],
             const Divider(),
@@ -555,6 +658,8 @@ class _FechasCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+
     return Card(
       elevation: 2,
       child: Padding(
@@ -595,11 +700,13 @@ class _FechasCard extends StatelessWidget {
             if (entrega.fechaAsignacion == null &&
                 entrega.fechaInicio == null &&
                 entrega.fechaEntrega == null)
-              const Padding(
-                padding: EdgeInsets.symmetric(vertical: 16),
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 16),
                 child: Text(
                   'Sin fechas registradas',
-                  style: TextStyle(color: Colors.grey),
+                  style: TextStyle(
+                    color: isDarkMode ? Colors.grey[500] : Colors.grey[400],
+                  ),
                 ),
               ),
           ],
@@ -617,6 +724,8 @@ class _HistorialEstadosCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+
     return Card(
       elevation: 2,
       child: Padding(
@@ -638,6 +747,9 @@ class _HistorialEstadosCard extends StatelessWidget {
               separatorBuilder: (_, __) => const Divider(),
               itemBuilder: (context, index) {
                 final estado = estados[index];
+                final bgColor = isDarkMode ? Colors.blue[900] : Colors.blue[100];
+                final textColor = isDarkMode ? Colors.blue[300] : Colors.blue[900];
+
                 return Padding(
                   padding: const EdgeInsets.symmetric(vertical: 8),
                   child: Column(
@@ -651,7 +763,7 @@ class _HistorialEstadosCard extends StatelessWidget {
                               vertical: 4,
                             ),
                             decoration: BoxDecoration(
-                              color: Colors.blue[100],
+                              color: bgColor,
                               borderRadius: BorderRadius.circular(4),
                             ),
                             child: Text(
@@ -659,7 +771,7 @@ class _HistorialEstadosCard extends StatelessWidget {
                               style: TextStyle(
                                 fontSize: 12,
                                 fontWeight: FontWeight.bold,
-                                color: Colors.blue[900],
+                                color: textColor,
                               ),
                             ),
                           ),
@@ -668,16 +780,20 @@ class _HistorialEstadosCard extends StatelessWidget {
                       const SizedBox(height: 4),
                       Text(
                         estado.createdAt.toString(),
-                        style: Theme.of(
-                          context,
-                        ).textTheme.labelSmall?.copyWith(color: Colors.grey),
+                        style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                              color:
+                                  isDarkMode ? Colors.grey[500] : Colors.grey[600],
+                            ),
                       ),
                       if (estado.comentario != null &&
                           estado.comentario!.isNotEmpty) ...[
                         const SizedBox(height: 4),
                         Text(
                           estado.comentario!,
-                          style: const TextStyle(fontSize: 12),
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: isDarkMode ? Colors.grey[300] : Colors.grey[800],
+                          ),
                         ),
                       ],
                     ],
@@ -768,27 +884,34 @@ class _InfoItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8),
       child: Row(
         children: [
-          Icon(icon, size: 20, color: Colors.grey[600]),
+          Icon(
+            icon,
+            size: 20,
+            color: isDarkMode ? Colors.grey[500] : Colors.grey[600],
+          ),
           const SizedBox(width: 12),
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
                 label,
-                style: Theme.of(
-                  context,
-                ).textTheme.labelSmall?.copyWith(color: Colors.grey),
+                style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                      color: isDarkMode ? Colors.grey[400] : Colors.grey[600],
+                    ),
               ),
               const SizedBox(height: 4),
               Text(
                 value,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
+                  color: isDarkMode ? Colors.grey[100] : Colors.grey[900],
                 ),
               ),
             ],
@@ -867,6 +990,7 @@ class _VentasAsignadasCardState extends State<_VentasAsignadasCard> {
 
   @override
   Widget build(BuildContext context) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
     final esPreparacion = widget.entrega.estado == 'PREPARACION_CARGA';
     final esEnCarga = widget.entrega.estado == 'EN_CARGA';
     final esModoCarga = esPreparacion || esEnCarga;
@@ -891,7 +1015,10 @@ class _VentasAsignadasCardState extends State<_VentasAsignadasCard> {
             // Encabezado
             Row(
               children: [
-                const Icon(Icons.local_shipping, color: Colors.blue),
+                Icon(
+                  Icons.local_shipping,
+                  color: isDarkMode ? Colors.blue[400] : Colors.blue,
+                ),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Column(
@@ -908,7 +1035,7 @@ class _VentasAsignadasCardState extends State<_VentasAsignadasCard> {
                           '$ventasConfirmadas/$totalVentas cargadas ($porcentaje%)',
                           style: TextStyle(
                             fontSize: 12,
-                            color: Colors.grey[600],
+                            color: isDarkMode ? Colors.grey[400] : Colors.grey[600],
                             fontWeight: FontWeight.w500,
                           ),
                         ),
@@ -924,8 +1051,8 @@ class _VentasAsignadasCardState extends State<_VentasAsignadasCard> {
                     ),
                     decoration: BoxDecoration(
                       color: ventasConfirmadas == totalVentas
-                          ? Colors.green[100]
-                          : Colors.orange[100],
+                          ? (isDarkMode ? Colors.green[900] : Colors.green[100])
+                          : (isDarkMode ? Colors.orange[900] : Colors.orange[100]),
                       borderRadius: BorderRadius.circular(4),
                     ),
                     child: Text(
@@ -936,8 +1063,10 @@ class _VentasAsignadasCardState extends State<_VentasAsignadasCard> {
                         fontSize: 11,
                         fontWeight: FontWeight.bold,
                         color: ventasConfirmadas == totalVentas
-                            ? Colors.green[900]
-                            : Colors.orange[900],
+                            ? (isDarkMode ? Colors.green[300] : Colors.green[900])
+                            : (isDarkMode
+                                ? Colors.orange[300]
+                                : Colors.orange[900]),
                       ),
                     ),
                   ),
@@ -952,7 +1081,8 @@ class _VentasAsignadasCardState extends State<_VentasAsignadasCard> {
                 child: LinearProgressIndicator(
                   value: totalVentas > 0 ? ventasConfirmadas / totalVentas : 0,
                   minHeight: 6,
-                  backgroundColor: Colors.grey[300],
+                  backgroundColor:
+                      isDarkMode ? Colors.grey[700] : Colors.grey[300],
                   valueColor: AlwaysStoppedAnimation<Color>(
                     ventasConfirmadas == totalVentas
                         ? Colors.green
@@ -1011,9 +1141,10 @@ class _VentasAsignadasCardState extends State<_VentasAsignadasCard> {
                       children: [
                         Text(
                           'Venta #${venta.numero}',
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontWeight: FontWeight.bold,
                             fontSize: 13,
+                            color: isDarkMode ? Colors.grey[100] : Colors.grey[900],
                           ),
                         ),
                         const SizedBox(height: 4),
@@ -1021,27 +1152,42 @@ class _VentasAsignadasCardState extends State<_VentasAsignadasCard> {
                           venta.clienteNombre ?? 'Cliente',
                           style: TextStyle(
                             fontSize: 12,
-                            color: Colors.grey[600],
+                            color: isDarkMode ? Colors.grey[400] : Colors.grey[600],
                           ),
                         ),
                         const SizedBox(height: 6),
                         _buildUbicacionBadge(widget.entrega),
                       ],
                     ),
-                    trailing: Column(
-                      crossAxisAlignment: CrossAxisAlignment.end,
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text(
-                          'BS ${venta.total.toStringAsFixed(2)}',
-                          style: const TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 13,
+                    trailing: SizedBox(
+                      width: 135,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            'BS ${venta.total.toStringAsFixed(2)}',
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 11,
+                              color: isDarkMode ? Colors.grey[100] : Colors.grey[900],
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                           ),
-                        ),
-                        const SizedBox(height: 4),
-                        _buildEstadoPagoBadge(venta.estadoPago),
-                      ],
+                          const SizedBox(height: 1),
+                          SizedBox(
+                            height: 16,
+                            child: _buildEstadoLogisticoBadge(venta),
+                          ),
+                          const SizedBox(height: 1),
+                          SizedBox(
+                            height: 16,
+                            child: _buildEstadoPagoBadge(venta.estadoPago),
+                          ),
+                        ],
+                      ),
                     ),
                     children: [
                       // Detalles/Productos de la venta
@@ -1050,6 +1196,60 @@ class _VentasAsignadasCardState extends State<_VentasAsignadasCard> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
+                            // SLA Info para la venta - FASE 6
+                            if (widget.entrega.fechaEntregaComprometida != null) ...[
+                              Container(
+                                padding: const EdgeInsets.all(12),
+                                decoration: BoxDecoration(
+                                  color: isDarkMode ? Colors.blue[900] : Colors.blue[50],
+                                  border: Border.all(
+                                    color: isDarkMode
+                                        ? Colors.blue[700]!
+                                        : Colors.blue[200]!,
+                                  ),
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Row(
+                                      children: [
+                                        Icon(
+                                          Icons.schedule,
+                                          color: isDarkMode
+                                              ? Colors.blue[400]
+                                              : Colors.blue[600],
+                                          size: 18,
+                                        ),
+                                        const SizedBox(width: 8),
+                                        Text(
+                                          'Información de Entrega',
+                                          style: TextStyle(
+                                            fontWeight: FontWeight.bold,
+                                            color: isDarkMode
+                                                ? Colors.blue[300]
+                                                : Colors.blue[900],
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 8),
+                                    if (widget.entrega.ventanaEntregaIni != null &&
+                                        widget.entrega.ventanaEntregaFin != null)
+                                      Text(
+                                        'Ventana: ${widget.entrega.ventanaEntregaIni!.hour.toString().padLeft(2, '0')}:${widget.entrega.ventanaEntregaIni!.minute.toString().padLeft(2, '0')} - ${widget.entrega.ventanaEntregaFin!.hour.toString().padLeft(2, '0')}:${widget.entrega.ventanaEntregaFin!.minute.toString().padLeft(2, '0')}',
+                                        style: TextStyle(
+                                          fontSize: 12,
+                                          color: isDarkMode
+                                              ? Colors.grey[400]
+                                              : Colors.grey[700],
+                                        ),
+                                      ),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(height: 16),
+                            ],
                             // Encabezado de detalles
                             Text(
                               'Productos',
@@ -1075,18 +1275,22 @@ class _VentasAsignadasCardState extends State<_VentasAsignadasCard> {
                                           width: 40,
                                           height: 40,
                                           decoration: BoxDecoration(
-                                            color: Colors.blue[50],
+                                            color: isDarkMode
+                                                ? Colors.blue[900]
+                                                : Colors.blue[50],
                                             borderRadius: BorderRadius.circular(
                                               8,
                                             ),
                                           ),
                                           child: Center(
                                             child: Text(
-                                              '${detalle.cantidad}x',
-                                              style: const TextStyle(
+                                              '${detalle.cantidad % 1 == 0 ? detalle.cantidad.toInt() : detalle.cantidad}x',
+                                              style: TextStyle(
                                                 fontWeight: FontWeight.bold,
                                                 fontSize: 12,
-                                                color: Colors.blue,
+                                                color: isDarkMode
+                                                    ? Colors.blue[300]
+                                                    : Colors.blue,
                                               ),
                                             ),
                                           ),
@@ -1101,9 +1305,12 @@ class _VentasAsignadasCardState extends State<_VentasAsignadasCard> {
                                               Text(
                                                 detalle.producto?.nombre ??
                                                     'Producto desconocido',
-                                                style: const TextStyle(
+                                                style: TextStyle(
                                                   fontWeight: FontWeight.w600,
                                                   fontSize: 12,
+                                                  color: isDarkMode
+                                                      ? Colors.grey[100]
+                                                      : Colors.grey[900],
                                                 ),
                                               ),
                                               const SizedBox(height: 4),
@@ -1115,7 +1322,9 @@ class _VentasAsignadasCardState extends State<_VentasAsignadasCard> {
                                                   'SKU: ${detalle.producto!.descripcion}',
                                                   style: TextStyle(
                                                     fontSize: 11,
-                                                    color: Colors.grey[500],
+                                                    color: isDarkMode
+                                                        ? Colors.grey[500]
+                                                        : Colors.grey[600],
                                                   ),
                                                 ),
                                             ],
@@ -1128,16 +1337,21 @@ class _VentasAsignadasCardState extends State<_VentasAsignadasCard> {
                                           children: [
                                             Text(
                                               'BS ${detalle.subtotal.toStringAsFixed(2)}',
-                                              style: const TextStyle(
+                                              style: TextStyle(
                                                 fontWeight: FontWeight.bold,
                                                 fontSize: 12,
+                                                color: isDarkMode
+                                                    ? Colors.grey[100]
+                                                    : Colors.grey[900],
                                               ),
                                             ),
                                             Text(
                                               'BS ${detalle.precioUnitario.toStringAsFixed(2)} c/u',
                                               style: TextStyle(
                                                 fontSize: 11,
-                                                color: Colors.grey[500],
+                                                color: isDarkMode
+                                                    ? Colors.grey[500]
+                                                    : Colors.grey[600],
                                               ),
                                             ),
                                           ],
@@ -1156,7 +1370,9 @@ class _VentasAsignadasCardState extends State<_VentasAsignadasCard> {
                               Text(
                                 'Sin productos',
                                 style: TextStyle(
-                                  color: Colors.grey[400],
+                                  color: isDarkMode
+                                      ? Colors.grey[600]
+                                      : Colors.grey[400],
                                   fontStyle: FontStyle.italic,
                                 ),
                               ),
@@ -1166,7 +1382,9 @@ class _VentasAsignadasCardState extends State<_VentasAsignadasCard> {
                               Container(
                                 padding: const EdgeInsets.all(12),
                                 decoration: BoxDecoration(
-                                  color: Colors.grey[100],
+                                  color: isDarkMode
+                                      ? Colors.grey[800]
+                                      : Colors.grey[100],
                                   borderRadius: BorderRadius.circular(6),
                                 ),
                                 child: Row(
@@ -1174,68 +1392,54 @@ class _VentasAsignadasCardState extends State<_VentasAsignadasCard> {
                                       MainAxisAlignment.spaceBetween,
                                   children: [
                                     Text(
-                                      'Subtotal',
+                                      'Total',
                                       style: TextStyle(
                                         fontSize: 12,
-                                        color: Colors.grey[600],
+                                        color: isDarkMode
+                                            ? Colors.grey[400]
+                                            : Colors.grey[600],
                                       ),
                                     ),
                                     Text(
                                       'BS ${venta.subtotal.toStringAsFixed(2)}',
-                                      style: const TextStyle(
+                                      style: TextStyle(
                                         fontWeight: FontWeight.w600,
                                         fontSize: 12,
+                                        color: isDarkMode
+                                            ? Colors.grey[100]
+                                            : Colors.grey[900],
                                       ),
                                     ),
                                   ],
                                 ),
                               ),
-                              if (venta.impuesto > 0) ...[
-                                const SizedBox(height: 8),
-                                Row(
-                                  mainAxisAlignment:
-                                      MainAxisAlignment.spaceBetween,
-                                  children: [
-                                    Text(
-                                      'Impuesto',
-                                      style: TextStyle(
-                                        fontSize: 12,
-                                        color: Colors.grey[600],
-                                      ),
-                                    ),
-                                    Text(
-                                      'BS ${venta.impuesto.toStringAsFixed(2)}',
-                                      style: const TextStyle(
-                                        fontWeight: FontWeight.w600,
-                                        fontSize: 12,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ],
                               const SizedBox(height: 8),
-                              Row(
+                              /* Row(
                                 mainAxisAlignment:
                                     MainAxisAlignment.spaceBetween,
                                 children: [
-                                  const Text(
+                                  Text(
                                     'Total',
                                     style: TextStyle(
                                       fontWeight: FontWeight.bold,
                                       fontSize: 13,
-                                      color: Colors.blue,
+                                      color: isDarkMode
+                                          ? Colors.blue[300]
+                                          : Colors.blue,
                                     ),
                                   ),
                                   Text(
                                     'BS ${venta.total.toStringAsFixed(2)}',
-                                    style: const TextStyle(
+                                    style: TextStyle(
                                       fontWeight: FontWeight.bold,
                                       fontSize: 14,
-                                      color: Colors.blue,
+                                      color: isDarkMode
+                                          ? Colors.blue[300]
+                                          : Colors.blue,
                                     ),
                                   ),
                                 ],
-                              ),
+                              ), */
                             ],
                           ],
                         ),
@@ -1274,7 +1478,7 @@ class _VentasAsignadasCardState extends State<_VentasAsignadasCard> {
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: Colors.grey[100],
+                  color: isDarkMode ? Colors.grey[800] : Colors.grey[100],
                   borderRadius: BorderRadius.circular(6),
                 ),
                 child: Row(
@@ -1287,15 +1491,20 @@ class _VentasAsignadasCardState extends State<_VentasAsignadasCard> {
                           'Total a Entregar',
                           style: TextStyle(
                             fontSize: 12,
-                            color: Colors.grey[600],
+                            color: isDarkMode
+                                ? Colors.grey[400]
+                                : Colors.grey[600],
                           ),
                         ),
                         const SizedBox(height: 4),
                         Text(
                           'BS ${widget.entrega.ventas.fold<double>(0, (sum, v) => sum + v.total).toStringAsFixed(2)}',
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontWeight: FontWeight.bold,
                             fontSize: 16,
+                            color: isDarkMode
+                                ? Colors.grey[100]
+                                : Colors.grey[900],
                           ),
                         ),
                       ],
@@ -1307,15 +1516,20 @@ class _VentasAsignadasCardState extends State<_VentasAsignadasCard> {
                           'Cantidad de Ventas',
                           style: TextStyle(
                             fontSize: 12,
-                            color: Colors.grey[600],
+                            color: isDarkMode
+                                ? Colors.grey[400]
+                                : Colors.grey[600],
                           ),
                         ),
                         const SizedBox(height: 4),
                         Text(
                           '${widget.entrega.ventas.length}',
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontWeight: FontWeight.bold,
                             fontSize: 16,
+                            color: isDarkMode
+                                ? Colors.grey[100]
+                                : Colors.grey[900],
                           ),
                         ),
                       ],
@@ -1351,63 +1565,157 @@ class _VentasAsignadasCardState extends State<_VentasAsignadasCard> {
         estadoColores[estadoPago] ??
         {'color': Colors.grey, 'label': estadoPago, 'icon': '?'};
 
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(
-        color: (config['color'] as Color).withOpacity(0.15),
-        borderRadius: BorderRadius.circular(4),
-        border: Border.all(color: config['color'] as Color, width: 0.5),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(config['icon'] as String, style: const TextStyle(fontSize: 10)),
-          const SizedBox(width: 4),
-          Text(
-            config['label'] as String,
-            style: TextStyle(
-              fontSize: 10,
-              fontWeight: FontWeight.w600,
-              color: config['color'] as Color,
-            ),
+    return Builder(
+      builder: (context) {
+        final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+        final bgColor = isDarkMode
+            ? (config['color'] as Color).withOpacity(0.25)
+            : (config['color'] as Color).withOpacity(0.15);
+
+        return Container(
+          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+          decoration: BoxDecoration(
+            color: bgColor,
+            borderRadius: BorderRadius.circular(3),
+            border: Border.all(color: config['color'] as Color, width: 0.5),
           ),
-        ],
-      ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(config['icon'] as String,
+                  style: const TextStyle(fontSize: 9)),
+              const SizedBox(width: 2),
+              Flexible(
+                child: Text(
+                  config['label'] as String,
+                  style: TextStyle(
+                    fontSize: 9,
+                    fontWeight: FontWeight.w600,
+                    color: config['color'] as Color,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildEstadoLogisticoBadge(Venta venta) {
+    // Usar color e icono del backend si están disponibles, sino usar defaults
+    Color color = Colors.grey;
+    if (venta.estadoLogisticoColor != null) {
+      try {
+        // Convertir hex string a Color
+        final hexColor = venta.estadoLogisticoColor!.replaceFirst('#', '');
+        color = Color(int.parse('FF$hexColor', radix: 16));
+      } catch (e) {
+        color = Colors.grey;
+      }
+    }
+
+    return Builder(
+      builder: (context) {
+        final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+        final bgColor = isDarkMode
+            ? color.withOpacity(0.25)
+            : color.withOpacity(0.15);
+
+        return Container(
+          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+          decoration: BoxDecoration(
+            color: bgColor,
+            borderRadius: BorderRadius.circular(3),
+            border: Border.all(color: color, width: 0.5),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                venta.estadoLogisticoIcon ?? '📦',
+                style: const TextStyle(fontSize: 9),
+              ),
+              const SizedBox(width: 2),
+              Flexible(
+                child: Text(
+                  venta.estadoLogistico,
+                  style: TextStyle(
+                    fontSize: 9,
+                    fontWeight: FontWeight.w600,
+                    color: color,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 
   /// Widget para mostrar el indicador de ubicación de entrega
   Widget _buildUbicacionBadge(Entrega entrega) {
-    final tieneUbicacion = entrega.latitudeDestino != null && entrega.longitudeDestino != null;
+    // Verificar si hay ubicación desde coordenadas o desde dirección
+    final tieneUbicacion = (entrega.latitudeDestino != null && entrega.longitudeDestino != null) ||
+        (entrega.direccion != null && entrega.direccion!.isNotEmpty);
 
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(
-        color: tieneUbicacion ? Colors.green[100] : Colors.red[100],
-        borderRadius: BorderRadius.circular(4),
-        border: Border.all(
-          color: tieneUbicacion ? Colors.green[600]! : Colors.red[600]!,
-          width: 0.5,
-        ),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(
-            tieneUbicacion ? '📍' : '❌',
-            style: const TextStyle(fontSize: 10),
-          ),
-          const SizedBox(width: 4),
-          Text(
-            tieneUbicacion ? 'Ubicación' : 'Sin ubicación',
-            style: TextStyle(
-              fontSize: 10,
-              fontWeight: FontWeight.w600,
-              color: tieneUbicacion ? Colors.green[700] : Colors.red[700],
+    print('[UI_UBICACION] lat=${entrega.latitudeDestino}, lng=${entrega.longitudeDestino}, dir=${entrega.direccion}, tieneUbicacion=$tieneUbicacion');
+
+    return Builder(
+      builder: (context) {
+        final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+
+        final bgColor = tieneUbicacion
+            ? (isDarkMode ? Colors.green[900] : Colors.green[100])
+            : (isDarkMode ? Colors.red[900] : Colors.red[100]);
+
+        final borderColor = tieneUbicacion
+            ? (isDarkMode ? Colors.green[700] : Colors.green[600])
+            : (isDarkMode ? Colors.red[700] : Colors.red[600]);
+
+        final textColor = tieneUbicacion
+            ? (isDarkMode ? Colors.green[300] : Colors.green[700])
+            : (isDarkMode ? Colors.red[300] : Colors.red[700]);
+
+        return Container(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+          decoration: BoxDecoration(
+            color: bgColor,
+            borderRadius: BorderRadius.circular(4),
+            border: Border.all(
+              color: borderColor!,
+              width: 0.5,
             ),
           ),
-        ],
-      ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                tieneUbicacion ? '📍' : '❌',
+                style: const TextStyle(fontSize: 10),
+              ),
+              const SizedBox(width: 4),
+              Flexible(
+                child: Text(
+                  tieneUbicacion ? 'Ubicación' : 'Sin ubicación',
+                  overflow: TextOverflow.ellipsis,
+                  maxLines: 1,
+                  style: TextStyle(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w600,
+                    color: textColor,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 
@@ -1421,6 +1729,13 @@ class _VentasAsignadasCardState extends State<_VentasAsignadasCard> {
     debugPrint(
       '🔄 Procesando confirmación de venta #${venta.id}, nuevo estado: $nuevoEstado',
     );
+
+    // Log detallado de IDs siendo usados
+    debugPrint('[CONFIRM_DEBUG] entrega.id=${widget.entrega.id}, venta.id=${venta.id}, venta.numero=${venta.numero}');
+    debugPrint('[CONFIRM_DEBUG] Todas las ventas en la entrega: ${widget.entrega.ventas.map((v) => 'ID:${v.id}(#${v.numero})').join(', ')}');
+
+    // Log del estado logístico actual
+    debugPrint('[CONFIRM_DEBUG] Estado logístico actual de venta: ${venta.estadoLogistico} (ID: ${venta.estadoLogisticoId})');
 
     // Verificar que el widget aún está montado
     if (!mounted) {
@@ -1464,6 +1779,15 @@ class _VentasAsignadasCardState extends State<_VentasAsignadasCard> {
         await widget.provider.obtenerEntrega(widget.entrega.id);
 
         if (!mounted) return;
+
+        // Log del estado logístico DESPUÉS de recargar
+        if (widget.provider.entregaActual != null) {
+          final ventaActualizada = widget.provider.entregaActual!.ventas
+              .firstWhereOrNull((v) => v.id == venta.id);
+          if (ventaActualizada != null) {
+            debugPrint('[CONFIRM_DEBUG] ✅ Estado logístico actualizado: ${ventaActualizada.estadoLogistico} (ID: ${ventaActualizada.estadoLogisticoId})');
+          }
+        }
 
         // Mostrar SnackBar de éxito
         ScaffoldMessenger.of(context).showSnackBar(
@@ -1549,6 +1873,14 @@ class _VentasAsignadasCardState extends State<_VentasAsignadasCard> {
                     await widget.provider.obtenerEntrega(widget.entrega.id);
 
                     if (mounted) {
+                      // Log de estados de las ventas después de la confirmación
+                      if (widget.provider.entregaActual != null) {
+                        debugPrint('[CARGO_DEBUG] Todos los estados de ventas después de confirmar carga:');
+                        for (var v in widget.provider.entregaActual!.ventas) {
+                          debugPrint('[CARGO_DEBUG] Venta #${v.numero}: ${v.estadoLogistico} (ID: ${v.estadoLogisticoId})');
+                        }
+                      }
+
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(
                           content: Text(
