@@ -982,9 +982,11 @@ class _VentasAsignadasCardState extends State<_VentasAsignadasCard> {
     super.initState();
     _ventasConfirmadas = {};
     _cargandoVenta = {};
-    // Inicializar estado de confirmación de ventas
+    // Inicializar estado de confirmación de ventas basándose en el estado logístico
     for (var venta in widget.entrega.ventas) {
-      _ventasConfirmadas[venta.id] = false;
+      // Una venta está confirmada si su código de estado es PENDIENTE_ENVIO
+      _ventasConfirmadas[venta.id] = (venta.estadoLogisticoCodigo == 'PENDIENTE_ENVIO');
+      debugPrint('[INIT_SYNC] Venta #${venta.numero}: ${_ventasConfirmadas[venta.id]} (estado: ${venta.estadoLogisticoCodigo})');
     }
   }
 
