@@ -1868,7 +1868,9 @@ class _VentasAsignadasCardState extends State<_VentasAsignadasCard> {
           ),
           ElevatedButton(
             onPressed: () async {
-              Navigator.pop(context); // Cerrar el AlertDialog
+              // Guardar context antes de pop() para evitar widget deactivado
+              final currentContext = context;
+              Navigator.pop(currentContext); // Cerrar el AlertDialog
 
               try {
                 debugPrint('📤 Confirmando carga completa...');
@@ -1900,32 +1902,38 @@ class _VentasAsignadasCardState extends State<_VentasAsignadasCard> {
                         });
                       }
 
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text(
-                            'Carga confirmada correctamente. Estado: Listo para entrega',
+                      // Usar context guardado y verificar que mounted
+                      if (mounted && currentContext.mounted) {
+                        ScaffoldMessenger.of(currentContext).showSnackBar(
+                          const SnackBar(
+                            content: Text(
+                              'Carga confirmada correctamente. Estado: Listo para entrega',
+                            ),
+                            backgroundColor: Colors.green,
+                            duration: Duration(seconds: 3),
                           ),
-                          backgroundColor: Colors.green,
-                          duration: Duration(seconds: 3),
+                        );
+                      }
+                    }
+                  } else {
+                    // Usar context guardado y verificar mounted
+                    if (mounted && currentContext.mounted) {
+                      ScaffoldMessenger.of(currentContext).showSnackBar(
+                        SnackBar(
+                          content: Text(
+                            'Error: ${widget.provider.errorMessage ?? 'Error desconocido'}',
+                          ),
+                          backgroundColor: Colors.red,
                         ),
                       );
                     }
-                  } else {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(
-                          'Error: ${widget.provider.errorMessage ?? 'Error desconocido'}',
-                        ),
-                        backgroundColor: Colors.red,
-                      ),
-                    );
                   }
                 }
               } catch (e) {
                 debugPrint('❌ Error confirmando carga: $e');
 
-                if (mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
+                if (mounted && currentContext.mounted) {
+                  ScaffoldMessenger.of(currentContext).showSnackBar(
                     SnackBar(
                       content: Text('Error inesperado: ${e.toString()}'),
                       backgroundColor: Colors.red,
