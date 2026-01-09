@@ -3,7 +3,11 @@ import 'package:provider/provider.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../models/entrega.dart';
+import '../../models/venta.dart';
+import '../../models/estado.dart';
 import '../../providers/entrega_provider.dart';
+import '../../providers/entrega_estados_provider.dart';
+import '../../services/estados_helpers.dart';
 import '../../widgets/widgets.dart';
 import '../../config/config.dart';
 
@@ -18,21 +22,18 @@ class EntregasAsignadasScreen extends StatefulWidget {
 class _EntregasAsignadasScreenState extends State<EntregasAsignadasScreen> {
   String? _filtroEstado;
   String _busqueda = '';
+  DateTime? _fechaInicio;
+  DateTime? _fechaFin;
+  bool _filtrosExpandidos = false;
   final TextEditingController _searchController = TextEditingController();
-
-  final List<String> _estadosFiltro = [
-    'Todas',
-    'ASIGNADA',
-    'EN_CAMINO',
-    'EN_TRANSITO',
-    'LLEGO',
-    'ENTREGADO',
-  ];
 
   @override
   void initState() {
     super.initState();
-    _cargarEntregas();
+    // Defer loading until after build phase to avoid setState during build
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _cargarDatos();
+    });
   }
 
   @override
@@ -41,116 +42,120 @@ class _EntregasAsignadasScreenState extends State<EntregasAsignadasScreen> {
     super.dispose();
   }
 
-  Future<void> _cargarEntregas() async {
-    final provider = context.read<EntregaProvider>();
-    await provider.obtenerEntregasAsignadas(
-      estado: _filtroEstado != 'Todas' ? _filtroEstado : null,
+  Future<void> _cargarDatos() async {
+    // Cargar estados de entrega desde la BD (dinámicos)
+    final estadosProvider = context.read<EntregaEstadosProvider>();
+    await estadosProvider.cargarEstados();
+
+    // Cargar entregas asignadas
+    final entregaProvider = context.read<EntregaProvider>();
+    await entregaProvider.obtenerEntregasAsignadas(
+      estado: _filtroEstado != 'Todas' && _filtroEstado != null
+          ? _filtroEstado
+          : null,
     );
   }
 
+  Future<void> _cargarEntregas() async {
+    final provider = context.read<EntregaProvider>();
+    await provider.obtenerEntregasAsignadas(
+      estado: _filtroEstado != 'Todas' && _filtroEstado != null
+          ? _filtroEstado
+          : null,
+    );
+  }
+
+  /// Búsqueda avanzada case-insensitive con múltiples campos
   List<Entrega> _getEntregasFiltradas(List<Entrega> entregas) {
     return entregas.where((entrega) {
-      // Filtro por búsqueda
+      // Filtro por búsqueda (búsqueda avanzada)
       if (_busqueda.isNotEmpty) {
-        final numero = entrega.numero?.toLowerCase() ?? '';
-        final cliente = entrega.cliente?.toLowerCase() ?? '';
         final search = _busqueda.toLowerCase();
+        bool coincide = false;
 
-        if (!numero.contains(search) && !cliente.contains(search)) {
+        // Búsqueda en Entrega
+        if ((entrega.id.toString().contains(search)) ||
+            (entrega.numero?.toLowerCase().contains(search) ?? false) ||
+            (entrega.cliente?.toLowerCase().contains(search) ?? false) ||
+            (entrega.direccion?.toLowerCase().contains(search) ?? false)) {
+          coincide = true;
+        }
+
+        // Búsqueda en Ventas
+        if (!coincide && entrega.ventas.isNotEmpty) {
+          for (final venta in entrega.ventas) {
+            if ((venta.id.toString().contains(search)) ||
+                (venta.numero?.toLowerCase().contains(search) ?? false) ||
+                (venta.clienteNombre?.toLowerCase().contains(search) ??
+                    false) ||
+                (venta.cliente?.toLowerCase().contains(search) ?? false)) {
+              coincide = true;
+              break;
+            }
+            // Búsqueda en datos del cliente dentro de la venta
+            if (venta.cliente is Map) {
+              final clienteMap = venta.cliente as Map;
+              if ((clienteMap['nombre']?.toString().toLowerCase().contains(search) ?? false) ||
+                  (clienteMap['ci']?.toString().toLowerCase().contains(search) ?? false) ||
+                  (clienteMap['telefono']?.toString().toLowerCase().contains(search) ?? false)) {
+                coincide = true;
+                break;
+              }
+            }
+          }
+        }
+
+        if (!coincide) {
           return false;
         }
       }
+
+      // Filtro por fechas
+      if (_fechaInicio != null || _fechaFin != null) {
+        final fecha = entrega.fechaAsignacion;
+        if (fecha != null) {
+          if (_fechaInicio != null &&
+              fecha.isBefore(_fechaInicio!.subtract(const Duration(hours: 1)))) {
+            return false;
+          }
+          if (_fechaFin != null &&
+              fecha.isAfter(_fechaFin!.add(const Duration(days: 1)))) {
+            return false;
+          }
+        }
+      }
+
       return true;
     }).toList();
   }
 
+  void _limpiarFiltros() {
+    setState(() {
+      _filtroEstado = null;
+      _busqueda = '';
+      _fechaInicio = null;
+      _fechaFin = null;
+      _searchController.clear();
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+
     return Scaffold(
+      backgroundColor: isDarkMode ? Colors.grey[900] : Colors.grey[50],
       body: Consumer<EntregaProvider>(
         builder: (context, provider, _) {
           final entregasFiltradas = _getEntregasFiltradas(provider.entregas);
 
           return Column(
             children: [
-              // Filtros y búsqueda
-              Container(
-                padding: const EdgeInsets.all(12),
-                color: Colors.white,
-                child: Column(
-                  children: [
-                    // Barra de búsqueda
-                    TextField(
-                      controller: _searchController,
-                      onChanged: (value) {
-                        setState(() {
-                          _busqueda = value;
-                        });
-                      },
-                      decoration: InputDecoration(
-                        hintText: 'Buscar por número o cliente...',
-                        prefixIcon: const Icon(Icons.search),
-                        suffixIcon: _busqueda.isNotEmpty
-                            ? IconButton(
-                                icon: const Icon(Icons.clear),
-                                onPressed: () {
-                                  _searchController.clear();
-                                  setState(() {
-                                    _busqueda = '';
-                                  });
-                                },
-                              )
-                            : null,
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 8,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    // Filtro por estado
-                    SizedBox(
-                      height: 40,
-                      child: ListView.builder(
-                        scrollDirection: Axis.horizontal,
-                        itemCount: _estadosFiltro.length,
-                        itemBuilder: (context, index) {
-                          final estado = _estadosFiltro[index];
-                          final isSelected =
-                              (_filtroEstado == null && estado == 'Todas') ||
-                                  _filtroEstado == estado;
-
-                          return Padding(
-                            padding: const EdgeInsets.only(right: 8),
-                            child: FilterChip(
-                              label: Text(estado == 'Todas' ? 'Todas' : _getEtiquetaEstado(estado)),
-                              selected: isSelected,
-                              onSelected: (selected) {
-                                setState(() {
-                                  _filtroEstado = estado == 'Todas' ? null : estado;
-                                });
-                                _cargarEntregas();
-                              },
-                              backgroundColor: Colors.grey[200],
-                              selectedColor: Colors.blue,
-                              labelStyle: TextStyle(
-                                color: isSelected ? Colors.white : Colors.black,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                          );
-                        },
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+              // Filtros y búsqueda mejorados
+              _buildFiltrosModernos(isDarkMode),
               // Lista de entregas
               Expanded(
-                child: _buildListado(provider, entregasFiltradas),
+                child: _buildListado(provider, entregasFiltradas, isDarkMode),
               ),
             ],
           );
@@ -159,9 +164,412 @@ class _EntregasAsignadasScreenState extends State<EntregasAsignadasScreen> {
     );
   }
 
-  Widget _buildListado(EntregaProvider provider, List<Entrega> entregas) {
+  Widget _buildFiltrosModernos(bool isDarkMode) {
+    final hasFilters = _busqueda.isNotEmpty ||
+        _filtroEstado != null ||
+        _fechaInicio != null ||
+        _fechaFin != null;
+
+    return Container(
+      color: isDarkMode ? Colors.grey[850] : Colors.white,
+      child: SingleChildScrollView(
+        child: Column(
+          children: [
+            // Header colapsable
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.tune,
+                        color: isDarkMode ? Colors.grey[400] : Colors.grey[600],
+                        size: 20,
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Filtros',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: isDarkMode ? Colors.white : Colors.black87,
+                        ),
+                      ),
+                      if (hasFilters) ...[
+                        const SizedBox(width: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: Colors.blue,
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Text(
+                            'Activo',
+                            style: TextStyle(
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                  GestureDetector(
+                    onTap: () {
+                      setState(() {
+                        _filtrosExpandidos = !_filtrosExpandidos;
+                      });
+                    },
+                    child: Icon(
+                      _filtrosExpandidos ? Icons.expand_less : Icons.expand_more,
+                      color: isDarkMode ? Colors.grey[400] : Colors.grey[600],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            // Contenido colapsable
+            if (_filtrosExpandidos) ...[
+              // Barra de búsqueda mejorada
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: TextField(
+                controller: _searchController,
+                onChanged: (value) {
+                  setState(() {
+                    _busqueda = value;
+                  });
+                },
+                decoration: InputDecoration(
+                  hintText:
+                      'Buscar: ID, cliente, CI, teléfono, venta, fecha...',
+                  hintStyle: TextStyle(
+                    color: isDarkMode ? Colors.grey[400] : Colors.grey[600],
+                  ),
+                  prefixIcon:
+                      Icon(Icons.search,
+                          color: isDarkMode ? Colors.grey[400] : Colors.grey),
+                  suffixIcon: _busqueda.isNotEmpty
+                      ? IconButton(
+                          icon: Icon(Icons.clear,
+                              color: isDarkMode
+                                  ? Colors.grey[400]
+                                  : Colors.grey),
+                          onPressed: () {
+                            _searchController.clear();
+                            setState(() {
+                              _busqueda = '';
+                            });
+                          },
+                        )
+                      : null,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(
+                      color: isDarkMode ? Colors.grey[700]! : Colors.grey[300]!,
+                    ),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(
+                      color: isDarkMode ? Colors.grey[700]! : Colors.grey[300]!,
+                    ),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: const BorderSide(color: Colors.blue, width: 2),
+                  ),
+                  filled: true,
+                  fillColor: isDarkMode ? Colors.grey[800] : Colors.grey[50],
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 14,
+                  ),
+                ),
+                style: TextStyle(
+                  color: isDarkMode ? Colors.white : Colors.black87,
+                ),
+              ),
+            ),
+
+            // Filtros de estado y fechas
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Filtro de estados - DINÁMICO desde la BD
+                  Consumer<EntregaEstadosProvider>(
+                    builder: (context, estadosProvider, _) {
+                      final estadosFiltro =
+                          estadosProvider.getEstadosParaFiltrado();
+
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Estados',
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                              color: isDarkMode
+                                  ? Colors.grey[300]
+                                  : Colors.grey[700],
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          SizedBox(
+                            height: 44,
+                            child: ListView.builder(
+                              scrollDirection: Axis.horizontal,
+                              padding: const EdgeInsets.symmetric(horizontal: 0),
+                              clipBehavior: Clip.hardEdge,
+                              itemCount: estadosFiltro.length + 1,
+                              itemBuilder: (context, index) {
+                                // Primera opción es "Todas"
+                                if (index == 0) {
+                                  final isSelected = _filtroEstado == null;
+                                  return Padding(
+                                    padding: const EdgeInsets.only(left: 0, right: 8),
+                                    child: FilterChip(
+                                      label: Text(
+                                        'Todas',
+                                        style: TextStyle(
+                                          color: isSelected
+                                              ? Colors.white
+                                              : (isDarkMode
+                                                  ? Colors.grey[300]
+                                                  : Colors.grey[700]),
+                                          fontWeight: FontWeight.w500,
+                                          fontSize: 12,
+                                        ),
+                                      ),
+                                      selected: isSelected,
+                                      onSelected: (selected) {
+                                        setState(() {
+                                          _filtroEstado = null;
+                                        });
+                                        _cargarEntregas();
+                                      },
+                                      backgroundColor: isDarkMode
+                                          ? Colors.grey[700]
+                                          : Colors.grey[200],
+                                      selectedColor: Colors.blue,
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius:
+                                            BorderRadius.circular(20),
+                                        side: BorderSide(
+                                          color: isSelected
+                                              ? Colors.blue
+                                              : Colors.transparent,
+                                        ),
+                                      ),
+                                    ),
+                                  );
+                                }
+
+                                // Estados dinámicos desde la BD
+                                final estado = estadosFiltro[index - 1];
+                                final isSelected =
+                                    _filtroEstado == estado.codigo;
+
+                                return Padding(
+                                  padding: const EdgeInsets.only(right: 8),
+                                  child: FilterChip(
+                                    label: Text(
+                                      estado.nombre,
+                                      style: TextStyle(
+                                        color: isSelected
+                                            ? Colors.white
+                                            : (isDarkMode
+                                                ? Colors.grey[300]
+                                                : Colors.grey[700]),
+                                        fontWeight: FontWeight.w500,
+                                        fontSize: 12,
+                                      ),
+                                    ),
+                                    selected: isSelected,
+                                    onSelected: (selected) {
+                                      setState(() {
+                                        _filtroEstado = estado.codigo;
+                                      });
+                                      _cargarEntregas();
+                                    },
+                                    backgroundColor: isDarkMode
+                                        ? Colors.grey[700]
+                                        : Colors.grey[200],
+                                    selectedColor: Colors.blue,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius:
+                                          BorderRadius.circular(20),
+                                      side: BorderSide(
+                                        color: isSelected
+                                            ? Colors.blue
+                                            : Colors.transparent,
+                                      ),
+                                    ),
+                                  ),
+                                );
+                              },
+                            ),
+                          ),
+                        ],
+                      );
+                    },
+                  ),
+                  const SizedBox(height: 16),
+
+                  // Filtro de fechas
+                  Text(
+                    'Rango de fechas',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: isDarkMode ? Colors.grey[300] : Colors.grey[700],
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _buildDatePicker(
+                          label: 'Desde',
+                          date: _fechaInicio,
+                          onDateSelected: (date) {
+                            setState(() {
+                              _fechaInicio = date;
+                            });
+                          },
+                          isDarkMode: isDarkMode,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: _buildDatePicker(
+                          label: 'Hasta',
+                          date: _fechaFin,
+                          onDateSelected: (date) {
+                            setState(() {
+                              _fechaFin = date;
+                            });
+                          },
+                          isDarkMode: isDarkMode,
+                        ),
+                      ),
+                    ],
+                  ),
+
+                  // Botón de limpiar filtros
+                  if (hasFilters) ...[
+                    const SizedBox(height: 12),
+                    SizedBox(
+                      width: double.infinity,
+                      child: OutlinedButton.icon(
+                        onPressed: _limpiarFiltros,
+                        icon: const Icon(Icons.clear_all, size: 18),
+                        label: const Text('Limpiar filtros'),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: Colors.blue,
+                          side: const BorderSide(color: Colors.blue),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+
+                  const SizedBox(height: 16),
+                ],
+              ),
+            ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDatePicker({
+    required String label,
+    required DateTime? date,
+    required Function(DateTime) onDateSelected,
+    required bool isDarkMode,
+  }) {
+    return GestureDetector(
+      onTap: () async {
+        final selectedDate = await showDatePicker(
+          context: context,
+          initialDate: date ?? DateTime.now(),
+          firstDate: DateTime(2020),
+          lastDate: DateTime.now().add(const Duration(days: 365)),
+        );
+        if (selectedDate != null) {
+          onDateSelected(selectedDate);
+        }
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(
+            color: isDarkMode ? Colors.grey[700]! : Colors.grey[300]!,
+          ),
+          color: isDarkMode ? Colors.grey[800] : Colors.grey[50],
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: isDarkMode ? Colors.grey[400] : Colors.grey[600],
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  date != null
+                      ? '${date.day}/${date.month}/${date.year}'
+                      : 'Seleccionar',
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: isDarkMode
+                        ? (date != null ? Colors.white : Colors.grey[400])
+                        : (date != null ? Colors.black87 : Colors.grey[600]),
+                  ),
+                ),
+              ],
+            ),
+            Icon(
+              Icons.calendar_today,
+              size: 18,
+              color: isDarkMode ? Colors.grey[400] : Colors.grey[600],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildListado(EntregaProvider provider, List<Entrega> entregas,
+      bool isDarkMode) {
     if (provider.isLoading) {
-      return const Center(child: CircularProgressIndicator());
+      return Center(
+        child: CircularProgressIndicator(
+          valueColor: AlwaysStoppedAnimation<Color>(
+            isDarkMode ? Colors.blue : Colors.blue,
+          ),
+        ),
+      );
     }
 
     if (entregas.isEmpty) {
@@ -169,21 +577,28 @@ class _EntregasAsignadasScreenState extends State<EntregasAsignadasScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.local_shipping, size: 64, color: Colors.grey[400]),
+            Icon(
+              Icons.local_shipping,
+              size: 64,
+              color: isDarkMode ? Colors.grey[600] : Colors.grey[400],
+            ),
             const SizedBox(height: 16),
             Text(
               'No hay entregas',
-              style: Theme.of(context).textTheme.titleLarge,
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w600,
+                color: isDarkMode ? Colors.white : Colors.black87,
+              ),
             ),
             const SizedBox(height: 8),
             Text(
-              _busqueda.isNotEmpty
-                  ? 'No se encontraron resultados para "$_busqueda"'
+              _busqueda.isNotEmpty || _filtroEstado != null
+                  ? 'No se encontraron resultados para los filtros seleccionados'
                   : 'Las entregas aparecerán aquí cuando se asignen',
-              style: Theme.of(context)
-                  .textTheme
-                  .bodyMedium
-                  ?.copyWith(color: Colors.grey[600]),
+              style: TextStyle(
+                color: isDarkMode ? Colors.grey[400] : Colors.grey[600],
+              ),
               textAlign: TextAlign.center,
             ),
           ],
@@ -193,12 +608,17 @@ class _EntregasAsignadasScreenState extends State<EntregasAsignadasScreen> {
 
     return RefreshIndicator(
       onRefresh: _cargarEntregas,
+      color: Colors.blue,
+      backgroundColor: isDarkMode ? Colors.grey[800] : Colors.white,
       child: ListView.builder(
-        padding: const EdgeInsets.all(8),
+        padding: const EdgeInsets.all(12),
         itemCount: entregas.length,
         itemBuilder: (context, index) {
           final entrega = entregas[index];
-          return _EntregaCard(entrega: entrega);
+          return _EntregaCard(
+            entrega: entrega,
+            isDarkMode: isDarkMode,
+          );
         },
       ),
     );
@@ -206,10 +626,18 @@ class _EntregasAsignadasScreenState extends State<EntregasAsignadasScreen> {
 
   String _getEtiquetaEstado(String estado) {
     const etiquetas = {
-      'ASIGNADA': 'Asignadas',
+      'PROGRAMADO': 'Programado',
+      'ASIGNADA': 'Asignada',
+      'PREPARACION_CARGA': 'En Prep.',
+      'EN_CARGA': 'En Carga',
+      'LISTO_PARA_ENTREGA': 'Listo',
       'EN_CAMINO': 'En Camino',
+      'EN_TRANSITO': 'En Tránsito',
       'LLEGO': 'Llegó',
-      'ENTREGADO': 'Entregadas',
+      'ENTREGADO': 'Entregado',
+      'NOVEDAD': 'Novedad',
+      'RECHAZADO': 'Rechazado',
+      'CANCELADA': 'Cancelada',
     };
     return etiquetas[estado] ?? estado;
   }
@@ -217,8 +645,13 @@ class _EntregasAsignadasScreenState extends State<EntregasAsignadasScreen> {
 
 class _EntregaCard extends StatefulWidget {
   final Entrega entrega;
+  final bool isDarkMode;
 
-  const _EntregaCard({Key? key, required this.entrega}) : super(key: key);
+  const _EntregaCard({
+    Key? key,
+    required this.entrega,
+    required this.isDarkMode,
+  }) : super(key: key);
 
   @override
   State<_EntregaCard> createState() => _EntregaCardState();
@@ -228,12 +661,19 @@ class _EntregaCardState extends State<_EntregaCard> {
   bool _ventasExpandidas = false;
 
   Entrega get entrega => widget.entrega;
+  bool get isDarkMode => widget.isDarkMode;
 
   @override
   Widget build(BuildContext context) {
+    final cardColor = isDarkMode ? Colors.grey[850] : Colors.white;
+
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-      elevation: 2,
+      elevation: 4,
+      color: cardColor,
+      shadowColor: isDarkMode
+          ? Colors.black.withAlpha((0.5 * 255).toInt())
+          : Colors.grey.withAlpha((0.3 * 255).toInt()),
       child: Column(
         children: [
           // Header con estado
@@ -242,41 +682,47 @@ class _EntregaCardState extends State<_EntregaCard> {
             decoration: BoxDecoration(
               color: _getColorEstado(),
               borderRadius: const BorderRadius.only(
-                topLeft: Radius.circular(4),
-                topRight: Radius.circular(4),
+                topLeft: Radius.circular(8),
+                topRight: Radius.circular(8),
               ),
             ),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Text(
-                          entrega.tipoWorkIcon,
-                          style: const TextStyle(fontSize: 18),
-                        ),
-                        const SizedBox(width: 8),
-                        Text(
-                          _getTituloTrabajo(entrega),
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Text(
+                            entrega.tipoWorkIcon,
+                            style: const TextStyle(fontSize: 18),
                           ),
-                        ),
-                      ],
-                    ),
-                    Text(
-                      entrega.numero ?? '#${entrega.id}',
-                      style: const TextStyle(
-                        color: Colors.white70,
-                        fontSize: 12,
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              _getTituloTrabajo(entrega),
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
-                    ),
-                  ],
+                      Text(
+                        'Entrega: ${entrega.numeroEntrega ?? '#${entrega.id}'}',
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          color: Colors.white70,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
                 Container(
                   padding: const EdgeInsets.symmetric(
@@ -300,13 +746,73 @@ class _EntregaCardState extends State<_EntregaCard> {
             ),
           ),
 
-          // Ubicación (sin mapa interactivo)
-          Container(
+          // Resumen de montos
+          /*Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
             decoration: BoxDecoration(
-              color: Colors.grey[50],
+              color: isDarkMode ? Colors.grey[850] : Colors.grey[100],
               border: Border(
-                bottom: BorderSide(color: Colors.grey[200]!),
+                bottom: BorderSide(
+                  color: isDarkMode ? Colors.grey[700]! : Colors.grey[300]!,
+                ),
+              ),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Text(
+                      'Total',
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: isDarkMode ? Colors.grey[400] : Colors.grey[600],
+                      ),
+                    ),
+                    Text(
+                      'Bs. ${entrega.subtotalTotal?.toStringAsFixed(2) ?? '0.00'}',
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.bold,
+                        color: isDarkMode ? Colors.white : Colors.black87,
+                      ),
+                    ),
+                  ],
+                ),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Text(
+                      'Total',
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: isDarkMode ? Colors.grey[400] : Colors.grey[600],
+                      ),
+                    ),
+                    Text(
+                      'Bs. ${entrega.totalGeneral?.toStringAsFixed(2) ?? '0.00'}',
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.bold,
+                        color: isDarkMode ? Colors.blue[300] : Colors.blue[700],
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),*/
+
+          // Ubicación (sin mapa interactivo)
+          /* Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            decoration: BoxDecoration(
+              color: isDarkMode ? Colors.grey[800] : Colors.grey[50],
+              border: Border(
+                bottom: BorderSide(
+                  color: isDarkMode ? Colors.grey[700]! : Colors.grey[200]!,
+                ),
               ),
             ),
             child: Row(
@@ -321,9 +827,11 @@ class _EntregaCardState extends State<_EntregaCard> {
                         entrega.direccion ?? 'Dirección no disponible',
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 13,
                           fontWeight: FontWeight.w500,
+                          color:
+                              isDarkMode ? Colors.white : Colors.black87,
                         ),
                       ),
                     ],
@@ -331,16 +839,18 @@ class _EntregaCardState extends State<_EntregaCard> {
                 ),
               ],
             ),
-          ),
+          ), */
 
           // Ventas asignadas (expandible)
           if (entrega.ventas.isNotEmpty)
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
               decoration: BoxDecoration(
-                color: Colors.blue[50],
+                color: isDarkMode ? Colors.blue[900]?.withAlpha((0.3 * 255).toInt()) : Colors.blue[50],
                 border: Border(
-                  bottom: BorderSide(color: Colors.grey[200]!),
+                  bottom: BorderSide(
+                    color: isDarkMode ? Colors.grey[700]! : Colors.grey[200]!,
+                  ),
                 ),
               ),
               child: Column(
@@ -359,7 +869,7 @@ class _EntregaCardState extends State<_EntregaCard> {
                             Icon(
                               Icons.receipt_long,
                               size: 20,
-                              color: Colors.blue[700],
+                              color: Colors.blue,
                             ),
                             const SizedBox(width: 8),
                             Column(
@@ -367,7 +877,7 @@ class _EntregaCardState extends State<_EntregaCard> {
                               children: [
                                 Text(
                                   '📦 ${entrega.ventas.length} venta${entrega.ventas.length > 1 ? 's' : ''} asignada${entrega.ventas.length > 1 ? 's' : ''}',
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     fontSize: 13,
                                     fontWeight: FontWeight.w600,
                                     color: Colors.blue,
@@ -375,8 +885,8 @@ class _EntregaCardState extends State<_EntregaCard> {
                                 ),
                                 if (entrega.ventas.isNotEmpty)
                                   Text(
-                                    'Total: BS ${entrega.ventas.fold<double>(0, (sum, v) => sum + v.total).toStringAsFixed(2)}',
-                                    style: const TextStyle(
+                                    'Total: BS ${entrega.ventas.fold<double>(0, (sum, v) => sum + v.subtotal).toStringAsFixed(2)}',
+                                    style: TextStyle(
                                       fontSize: 12,
                                       color: Colors.blue,
                                     ),
@@ -389,7 +899,7 @@ class _EntregaCardState extends State<_EntregaCard> {
                           _ventasExpandidas
                               ? Icons.expand_less
                               : Icons.expand_more,
-                          color: Colors.blue[700],
+                          color: Colors.blue,
                         ),
                       ],
                     ),
@@ -397,7 +907,10 @@ class _EntregaCardState extends State<_EntregaCard> {
                   // Ventas expandidas
                   if (_ventasExpandidas) ...[
                     const SizedBox(height: 8),
-                    const Divider(height: 1),
+                    Divider(
+                      height: 1,
+                      color: isDarkMode ? Colors.grey[700] : Colors.grey[300],
+                    ),
                     const SizedBox(height: 8),
                     ListView.builder(
                       shrinkWrap: true,
@@ -405,53 +918,140 @@ class _EntregaCardState extends State<_EntregaCard> {
                       itemCount: entrega.ventas.length,
                       itemBuilder: (context, index) {
                         final venta = entrega.ventas[index];
+                        // print('[ENTREGA_CARD] Mostrando venta: ${venta.estadoLogistico}, cliente: ${venta.clienteNombre ?? venta.cliente}');
                         return Padding(
-                          padding: const EdgeInsets.only(bottom: 8),
-                          child: Row(
-                            children: [
-                              Container(
-                                width: 4,
-                                height: 40,
-                                decoration: BoxDecoration(
-                                  color: Colors.blue[300],
-                                  borderRadius: BorderRadius.circular(2),
-                                ),
+                          padding: const EdgeInsets.only(bottom: 12),
+                          child: Container(
+                            decoration: BoxDecoration(
+                              color: isDarkMode ? Colors.grey[900]?.withAlpha((0.3 * 255).toInt()) : Colors.white,
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(
+                                color: isDarkMode ? Colors.grey[700]! : Colors.grey[200]!,
                               ),
-                              const SizedBox(width: 8),
-                              Expanded(
-                                child: Column(
+                            ),
+                            padding: const EdgeInsets.all(8),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                // Encabezado: número, cliente y estado logístico
+                                Row(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    Text(
-                                      venta.numero,
-                                      style: const TextStyle(
-                                        fontSize: 12,
-                                        fontWeight: FontWeight.w600,
+                                    Container(
+                                      width: 4,
+                                      height: 36,
+                                      decoration: BoxDecoration(
+                                        color: Colors.blue,
+                                        borderRadius: BorderRadius.circular(2),
                                       ),
                                     ),
-                                    Text(
-                                      venta.clienteNombre ??
-                                          venta.cliente ??
-                                          'Cliente desconocido',
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                      style: const TextStyle(
-                                        fontSize: 11,
-                                        color: Colors.grey,
+                                    const SizedBox(width: 8),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Row(
+                                            crossAxisAlignment: CrossAxisAlignment.center,
+                                            children: [
+                                              Expanded(
+                                                child: Column(
+                                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                                  children: [
+                                                    Text(
+                                                      venta.numero,
+                                                      style: TextStyle(
+                                                        fontSize: 12,
+                                                        fontWeight: FontWeight.w600,
+                                                        color: isDarkMode ? Colors.white : Colors.black87,
+                                                      ),
+                                                    ),
+                                                    Text(
+                                                      venta.clienteNombre ??
+                                                          venta.cliente ??
+                                                          'Cliente desconocido',
+                                                      maxLines: 1,
+                                                      overflow: TextOverflow.ellipsis,
+                                                      style: TextStyle(
+                                                        fontSize: 11,
+                                                        color: isDarkMode
+                                                            ? Colors.grey[400]
+                                                            : Colors.grey[600],
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
+                                              ),
+                                              const SizedBox(width: 8),
+                                              // Estado logístico badge
+                                              _buildEstadoVentaBadge(
+                                                venta.estadoLogisticoId,
+                                                venta.estadoLogistico,
+                                                venta.estadoLogisticoColor,
+                                                venta.estadoLogisticoIcon,
+                                                isDarkMode,
+                                              ),
+                                            ],
+                                          ),
+                                        ],
                                       ),
                                     ),
                                   ],
                                 ),
-                              ),
-                              Text(
-                                'BS ${venta.total.toStringAsFixed(2)}',
-                                style: const TextStyle(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w600,
-                                  color: Colors.blue,
+                                const SizedBox(height: 8),
+                                // Fila de montos: Subtotal y Total
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    // Subtotal
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            'Total',
+                                            style: TextStyle(
+                                              fontSize: 10,
+                                              color: isDarkMode ? Colors.grey[500] : Colors.grey[600],
+                                            ),
+                                          ),
+                                          Text(
+                                            'Bs. ${venta.subtotal?.toStringAsFixed(2) ?? '0.00'}',
+                                            style: TextStyle(
+                                              fontSize: 11,
+                                              fontWeight: FontWeight.w600,
+                                              color: isDarkMode ? Colors.grey[300] : Colors.black87,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    // Total
+                                    /* Expanded(
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.end,
+                                        children: [
+                                          Text(
+                                            'Total',
+                                            style: TextStyle(
+                                              fontSize: 10,
+                                              color: isDarkMode ? Colors.grey[500] : Colors.grey[600],
+                                            ),
+                                          ),
+                                          Text(
+                                            'Bs. ${venta.total.toStringAsFixed(2)}',
+                                            style: TextStyle(
+                                              fontSize: 11,
+                                              fontWeight: FontWeight.w600,
+                                              color: Colors.blue,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ), */
+                                  ],
                                 ),
-                              ),
-                            ],
+                              ],
+                            ),
                           ),
                         );
                       },
@@ -462,7 +1062,7 @@ class _EntregaCardState extends State<_EntregaCard> {
             ),
 
           // Contenido
-          Padding(
+          /* Padding(
             padding: const EdgeInsets.all(12),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -472,16 +1072,7 @@ class _EntregaCardState extends State<_EntregaCard> {
                   _InfoRow(
                     icon: Icons.person,
                     label: 'Cliente',
-                    value: entrega.cliente!,
-                  ),
-                  const SizedBox(height: 8),
-                ],
-                // Información de fecha
-                if (entrega.fechaAsignacion != null) ...[
-                  _InfoRow(
-                    icon: Icons.calendar_today,
-                    label: 'Asignada',
-                    value: entrega.formatFecha(entrega.fechaAsignacion),
+                    value: entrega.cliente! ?? 'N/A',
                   ),
                   const SizedBox(height: 8),
                 ],
@@ -507,43 +1098,103 @@ class _EntregaCardState extends State<_EntregaCard> {
                 ],
               ],
             ),
-          ),
+          ), */
 
-          // Botones de acción
+          // Fecha y botones de acción
           Padding(
-            padding: const EdgeInsets.all(12),
-            child: Column(
-              spacing: 8,
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                _BotonAccion(
-                  label: 'Ver Detalles',
-                  icon: Icons.info_outline,
-                  color: Colors.blue,
-                  onPressed: () {
-                    Navigator.of(context).pushNamed(
-                      '/chofer/entrega-detalle',
-                      arguments: entrega.id,
-                    );
-                  },
+                // Fecha asignada
+                if (entrega.fechaAsignacion != null)
+                  Expanded(
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.calendar_today,
+                          size: 14,
+                          color: isDarkMode ? Colors.grey[400] : Colors.grey[600],
+                        ),
+                        const SizedBox(width: 6),
+                        Expanded(
+                          child: Text(
+                            entrega.formatFecha(entrega.fechaAsignacion),
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: isDarkMode ? Colors.grey[300] : Colors.grey[700],
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ),
+                  )
+                else
+                  const SizedBox.shrink(), // Widget vacío sin conflictos de layout
+                // Botones de acción
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // Ver Detalles
+                    Tooltip(
+                      message: 'Ver Detalles',
+                      child: IconButton(
+                        icon: const Icon(Icons.info_outline),
+                        color: Colors.blue,
+                        iconSize: 20,
+                        padding: const EdgeInsets.all(4),
+                        constraints: const BoxConstraints(
+                          minWidth: 32,
+                          minHeight: 32,
+                        ),
+                        onPressed: () {
+                          Navigator.of(context).pushNamed(
+                            '/chofer/entrega-detalle',
+                            arguments: entrega.id,
+                          );
+                        },
+                      ),
+                    ),
+                    // Cómo llegar
+                    Tooltip(
+                      message: 'Cómo llegar',
+                      child: IconButton(
+                        icon: const Icon(Icons.map),
+                        color: Colors.orange,
+                        iconSize: 20,
+                        padding: const EdgeInsets.all(4),
+                        constraints: const BoxConstraints(
+                          minWidth: 32,
+                          minHeight: 32,
+                        ),
+                        onPressed: () => _openInGoogleMaps(context),
+                      ),
+                    ),
+                    // Iniciar Ruta (condicional)
+                    if (entrega.puedeIniciarRuta)
+                      Tooltip(
+                        message: 'Iniciar Ruta',
+                        child: IconButton(
+                          icon: const Icon(Icons.navigation),
+                          color: Colors.green,
+                          iconSize: 20,
+                          padding: const EdgeInsets.all(4),
+                          constraints: const BoxConstraints(
+                            minWidth: 32,
+                            minHeight: 32,
+                          ),
+                          onPressed: () {
+                            Navigator.of(context).pushNamed(
+                              '/chofer/iniciar-ruta',
+                              arguments: entrega.id,
+                            );
+                          },
+                        ),
+                      ),
+                  ],
                 ),
-                _BotonAccion(
-                  label: 'Cómo llegar',
-                  icon: Icons.map,
-                  color: Colors.orange,
-                  onPressed: () => _openInGoogleMaps(context),
-                ),
-                if (entrega.puedeIniciarRuta)
-                  _BotonAccion(
-                    label: 'Iniciar Ruta',
-                    icon: Icons.navigation,
-                    color: Colors.green,
-                    onPressed: () {
-                      Navigator.of(context).pushNamed(
-                        '/chofer/iniciar-ruta',
-                        arguments: entrega.id,
-                      );
-                    },
-                  ),
               ],
             ),
           ),
@@ -559,11 +1210,64 @@ class _EntregaCardState extends State<_EntregaCard> {
 
   String _getTituloTrabajo(Entrega entrega) {
     if (entrega.trabajoType == 'entrega') {
-      return 'Entrega Directa #${entrega.id}';
+      return 'Entrega #${entrega.id}';
     } else if (entrega.trabajoType == 'envio') {
       return 'Envío #${entrega.id}';
     }
     return 'Trabajo #${entrega.id}';
+  }
+
+  Widget _buildEstadoVentaBadge(
+    int? estadoLogisticoId,
+    String? estadoLogisticoCodigo,
+    String? estadoLogisticoColor,
+    String? estadoLogisticoIcon,
+    bool isDarkMode,
+  ) {
+    // Usar directamente los datos del backend si están disponibles
+    String nombre = estadoLogisticoCodigo ?? 'Desconocido';
+    String icono = estadoLogisticoIcon ?? '📦';
+    String colorHex = estadoLogisticoColor ?? '#000000';
+
+    // Si no tenemos color/icon del backend, intentar buscar en el caché
+    if ((estadoLogisticoColor == null || estadoLogisticoIcon == null) && estadoLogisticoId != null) {
+      final estado = EstadosHelper.getEstadoPorId('venta_logistica', estadoLogisticoId);
+      if (estado != null) {
+        nombre = estado.nombre;
+        icono = estado.icono ?? '📦';
+        colorHex = estado.color;
+      }
+    }
+
+    // Convertir color hex a Color
+    final color = Color(EstadosHelper.colorHexToInt(colorHex));
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: color.withAlpha((0.15 * 255).toInt()),
+        border: Border.all(color: color, width: 1),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            icono,
+            style: const TextStyle(fontSize: 10),
+          ),
+          const SizedBox(width: 4),
+          Text(
+            nombre,
+            style: TextStyle(
+              fontSize: 10,
+              fontWeight: FontWeight.w600,
+              color: color,
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   Future<void> _openInGoogleMaps(BuildContext context) async {
@@ -629,35 +1333,3 @@ class _InfoRow extends StatelessWidget {
   }
 }
 
-class _BotonAccion extends StatelessWidget {
-  final String label;
-  final IconData icon;
-  final Color color;
-  final VoidCallback onPressed;
-
-  const _BotonAccion({
-    Key? key,
-    required this.label,
-    required this.icon,
-    required this.color,
-    required this.onPressed,
-  }) : super(key: key);
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      width: double.infinity,
-      child: ElevatedButton.icon(
-        onPressed: onPressed,
-        icon: Icon(icon),
-        label: Text(label),
-        style: ElevatedButton.styleFrom(
-          backgroundColor: color,
-          foregroundColor: Colors.white,
-          padding: const EdgeInsets.symmetric(vertical: 12),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-        ),
-      ),
-    );
-  }
-}
