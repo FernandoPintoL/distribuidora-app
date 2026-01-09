@@ -47,6 +47,8 @@ class EntregaTimeline extends StatelessWidget {
                 final isCompleted = index <= currentEstadoIndex;
                 final isCurrent = index == currentEstadoIndex;
 
+                debugPrint('[TIMELINE] Estado ${estadoInfo['codigo']}: index=$index, current=$currentEstadoIndex, isCurrent=$isCurrent');
+
                 return TimelineTile(
                   alignment: TimelineAlign.center,
                   isFirst: index == 0,
@@ -115,36 +117,58 @@ class EntregaTimeline extends StatelessWidget {
   }
 
   /// Obtener orden de estados para esta entrega
-  /// Sincronizado con estados reales de la BD
+  /// Sincronizado con estados reales de la BD (tabla estados_logistica)
+  /// Incluye estados de preparación, carga y transito
   List<Map<String, dynamic>> _getEstadosProgresion() {
     return [
       {
-        'estado': 'ASIGNADA',
-        'label': 'Asignada',
-        'icon': '📋',
-        'info': 'Entrega asignada al chofer',
+        'codigo': 'PROGRAMADO',
+        'label': 'Programada',
+        'icon': '📅',
+        'info': 'Entrega programada',
         'fecha': entrega.fechaAsignacion != null
             ? entrega.formatFecha(entrega.fechaAsignacion)
             : null,
       },
       {
-        'estado': 'EN_CAMINO',
-        'label': 'En Camino',
+        'codigo': 'PREPARACION_CARGA',
+        'label': 'Preparación',
+        'icon': '📦',
+        'info': 'Preparando la carga en almacén',
+        'fecha': null,
+      },
+      {
+        'codigo': 'EN_CARGA',
+        'label': 'En Carga',
+        'icon': '⚙️',
+        'info': 'Cargando productos al vehículo',
+        'fecha': null,
+      },
+      {
+        'codigo': 'LISTO_PARA_ENTREGA',
+        'label': 'Listo para Entrega',
+        'icon': '✓',
+        'info': 'Carga completada, listo para salir',
+        'fecha': null,
+      },
+      {
+        'codigo': 'EN_TRANSITO',
+        'label': 'En Tránsito',
         'icon': '🚚',
-        'info': 'El chofer se dirige hacia la dirección',
+        'info': 'El chofer se dirige hacia la entrega',
         'fecha': entrega.fechaInicio != null
             ? entrega.formatFecha(entrega.fechaInicio)
             : null,
       },
       {
-        'estado': 'LLEGO',
+        'codigo': 'LLEGO',
         'label': 'Llegó',
         'icon': '🏁',
         'info': 'El chofer ha llegado al lugar de entrega',
         'fecha': null,
       },
       {
-        'estado': 'ENTREGADO',
+        'codigo': 'ENTREGADO',
         'label': 'Entregado',
         'icon': '✅',
         'info': 'Entrega completada y confirmada',
@@ -156,15 +180,23 @@ class EntregaTimeline extends StatelessWidget {
   }
 
   /// Obtener índice del estado actual en la progresión
-  /// Soporta EN_CAMINO y EN_TRANSITO como estados intermedios
+  /// Usa el código de estado dinámico desde tabla estados_logistica
   int _getCurrentEstadoIndex() {
-    const estadoOrder = ['ASIGNADA', 'EN_CAMINO', 'LLEGO', 'ENTREGADO'];
+    const estadoOrder = ['PROGRAMADO', 'PREPARACION_CARGA', 'EN_CARGA', 'LISTO_PARA_ENTREGA', 'EN_TRANSITO', 'LLEGO', 'ENTREGADO'];
 
-    // Si está en EN_TRANSITO (nuevo flujo), mapearlo como EN_CAMINO
-    String estadoActual = entrega.estado;
-    if (estadoActual == 'EN_TRANSITO') {
-      estadoActual = 'EN_CAMINO'; // Mostrar en misma posición que EN_CAMINO
-    }
+    // Usar estadoEntregaCodigo (desde tabla estados_logistica) si disponible
+    // Fallback al ENUM legacy si no está disponible
+    String estadoActual = entrega.estadoEntregaCodigo ?? entrega.estado;
+
+    // Mapeo compatible con ENUM legacy para retrocompatibilidad
+    final mapeoLegacy = {
+      'ASIGNADA': 'PROGRAMADO',
+      'EN_CAMINO': 'EN_TRANSITO',
+      'LLEGO': 'LLEGO',
+      'ENTREGADO': 'ENTREGADO',
+    };
+
+    estadoActual = mapeoLegacy[estadoActual] ?? estadoActual;
 
     int index = estadoOrder.indexOf(estadoActual);
     return index >= 0 ? index : 0;

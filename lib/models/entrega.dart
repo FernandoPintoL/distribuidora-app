@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'venta.dart';
 import 'chofer.dart';
@@ -5,11 +6,16 @@ import 'vehiculo.dart';
 
 class Entrega {
   final int id;
-  final int proformaId;
+  final int? proformaId;  // Ahora opcional, ya que el backend no siempre lo envía
   final int? choferId;
   final int? vehiculoId;
   final int? direccionClienteId;
-  final String estado; // ASIGNADA, EN_CAMINO, LLEGO, ENTREGADO, NOVEDAD, CANCELADA
+  final String estado; // ASIGNADA, EN_CAMINO, LLEGO, ENTREGADO, NOVEDAD, CANCELADA (legacy ENUM)
+  final int? estadoEntregaId; // FK a estados_logistica.id (normalizado)
+  final String? estadoEntregaCodigo; // Código del estado (PROGRAMADO, PREPARACION_CARGA, etc)
+  final String? estadoEntregaNombre; // Nombre del estado (ej: "Preparación de Carga")
+  final String? estadoEntregaColor; // Color hex del estado
+  final String? estadoEntregaIcono; // Ícono del estado
   final DateTime? fechaAsignacion;
   final DateTime? fechaInicio;
   final DateTime? fechaEntrega;
@@ -21,8 +27,14 @@ class Entrega {
   // Campos adicionales del nuevo endpoint /api/chofer/trabajos
   final String? trabajoType; // 'entrega' | 'envio' (opcional, para compatibilidad)
   final String? numero; // Número de proforma o envío (opcional)
+  final String? numeroEntrega; // Número de entrega (ej: ENT-20260108-12)
   final String? cliente; // Nombre del cliente (opcional)
   final String? direccion; // Dirección de entrega (opcional)
+
+  // Campos de totales agregados
+  final double? subtotalTotal; // Suma de subtotales de todas las ventas
+  final double? impuestoTotal; // Suma de impuestos de todas las ventas
+  final double? totalGeneral; // Total general de la entrega
 
   // Coordenadas del destino para navegación
   final double? latitudeDestino;
@@ -36,6 +48,11 @@ class Entrega {
   final String? observacionesEntrega;
   final DateTime? coordinacionActualizadaEn;
 
+  // Campos SLA - FASE 5 (NUEVOS)
+  final DateTime? fechaEntregaComprometida; // Fecha comprometida de entrega
+  final TimeOfDay? ventanaEntregaIni; // Hora inicio ventana de entrega
+  final TimeOfDay? ventanaEntregaFin; // Hora fin ventana de entrega
+
   // Historial de estados (viene en la respuesta principal)
   final List<EntregaEstadoHistorial> historialEstados;
 
@@ -48,11 +65,16 @@ class Entrega {
 
   Entrega({
     required this.id,
-    required this.proformaId,
+    this.proformaId,  // Ahora opcional
     this.choferId,
     this.vehiculoId,
     this.direccionClienteId,
     required this.estado,
+    this.estadoEntregaId,
+    this.estadoEntregaCodigo,
+    this.estadoEntregaNombre,
+    this.estadoEntregaColor,
+    this.estadoEntregaIcono,
     this.fechaAsignacion,
     this.fechaInicio,
     this.fechaEntrega,
@@ -62,8 +84,12 @@ class Entrega {
     this.fotoEntregaUrl,
     this.trabajoType,
     this.numero,
+    this.numeroEntrega,
     this.cliente,
     this.direccion,
+    this.subtotalTotal,
+    this.impuestoTotal,
+    this.totalGeneral,
     this.latitudeDestino,
     this.longitudeDestino,
     // Coordinación mejorada
@@ -73,6 +99,10 @@ class Entrega {
     this.entregadoA,
     this.observacionesEntrega,
     this.coordinacionActualizadaEn,
+    // SLA - FASE 5
+    this.fechaEntregaComprometida,
+    this.ventanaEntregaIni,
+    this.ventanaEntregaFin,
     // Historial de estados
     this.historialEstados = const [],
     // Ventas
@@ -87,9 +117,13 @@ class Entrega {
     double? latDestino;
     double? lngDestino;
 
-    // Buscar en direccionCliente
+    // Buscar en direccionCliente (probar ambos formatos)
     if (json['direccionCliente'] is Map<String, dynamic>) {
       final dirCliente = json['direccionCliente'] as Map<String, dynamic>;
+      latDestino = (dirCliente['latitud'] as num?)?.toDouble();
+      lngDestino = (dirCliente['longitud'] as num?)?.toDouble();
+    } else if (json['direccion_cliente'] is Map<String, dynamic>) {
+      final dirCliente = json['direccion_cliente'] as Map<String, dynamic>;
       latDestino = (dirCliente['latitud'] as num?)?.toDouble();
       lngDestino = (dirCliente['longitud'] as num?)?.toDouble();
     }
@@ -129,6 +163,22 @@ class Entrega {
           .toList();
     }
 
+    // Si no se encontraron coordenadas en el nivel Entrega,
+    // buscar en la primera venta disponible
+    if ((latDestino == null || lngDestino == null) && ventasList.isNotEmpty) {
+      final primeraVenta = ventasList.first;
+      print('[ENTREGA_PARSE] Buscando coords en primera venta: venta.latitud=${primeraVenta.latitud}, venta.longitud=${primeraVenta.longitud}');
+      if (primeraVenta.latitud != null && primeraVenta.longitud != null) {
+        latDestino = primeraVenta.latitud;
+        lngDestino = primeraVenta.longitud;
+        // También extraer dirección de la venta si no hay dirección en Entrega
+        direccionValue = direccionValue ?? primeraVenta.direccion;
+        print('[ENTREGA_PARSE] Coordenadas extraídas de venta: lat=$latDestino, lng=$lngDestino, dir=$direccionValue');
+      }
+    } else {
+      print('[ENTREGA_PARSE] Coordenadas a nivel Entrega: lat=$latDestino, lng=$lngDestino');
+    }
+
     // Parsear chofer si existe en la respuesta
     Chofer? choferObj;
     if (json['chofer'] is Map<String, dynamic>) {
@@ -141,13 +191,61 @@ class Entrega {
       vehiculoObj = Vehiculo.fromJson(json['vehiculo'] as Map<String, dynamic>);
     }
 
+    // Parsear campos SLA - FASE 5
+    TimeOfDay? ventanaIni;
+    TimeOfDay? ventanaFin;
+
+    if (json['ventana_entrega_ini'] is String) {
+      final parts = (json['ventana_entrega_ini'] as String).split(':');
+      if (parts.length >= 2) {
+        ventanaIni = TimeOfDay(
+          hour: int.parse(parts[0]),
+          minute: int.parse(parts[1]),
+        );
+      }
+    }
+
+    if (json['ventana_entrega_fin'] is String) {
+      final parts = (json['ventana_entrega_fin'] as String).split(':');
+      if (parts.length >= 2) {
+        ventanaFin = TimeOfDay(
+          hour: int.parse(parts[0]),
+          minute: int.parse(parts[1]),
+        );
+      }
+    }
+
+    // Parsear estado_entrega desde la relación con tabla estados_logistica
+    int? estadoEntregaId;
+    String? estadoEntregaCodigo;
+    String? estadoEntregaNombre;
+    String? estadoEntregaColor;
+    String? estadoEntregaIcono;
+
+    if (json['estado_entrega'] is Map<String, dynamic>) {
+      final estadoEntregaObj = json['estado_entrega'] as Map<String, dynamic>;
+      estadoEntregaId = estadoEntregaObj['id'] as int?;
+      estadoEntregaCodigo = estadoEntregaObj['codigo'] as String?;
+      estadoEntregaNombre = estadoEntregaObj['nombre'] as String?;
+      estadoEntregaColor = estadoEntregaObj['color'] as String?;
+      estadoEntregaIcono = estadoEntregaObj['icono'] as String?;
+    } else if (json['estado_entrega_id'] is int) {
+      // Fallback: solo guardar el ID si no viene la relación completa
+      estadoEntregaId = json['estado_entrega_id'] as int?;
+    }
+
     return Entrega(
       id: json['id'] as int,
-      proformaId: json['proforma_id'] as int? ?? json['id'] as int,
+      proformaId: json['proforma_id'] as int?,  // Ahora opcional
       choferId: json['chofer_id'] as int?,
       vehiculoId: json['vehiculo_id'] as int?,
       direccionClienteId: json['direccion_cliente_id'] as int?,
       estado: json['estado'] as String,
+      estadoEntregaId: estadoEntregaId,
+      estadoEntregaCodigo: estadoEntregaCodigo,
+      estadoEntregaNombre: estadoEntregaNombre,
+      estadoEntregaColor: estadoEntregaColor,
+      estadoEntregaIcono: estadoEntregaIcono,
       fechaAsignacion: json['fecha_asignacion'] != null
           ? DateTime.parse(json['fecha_asignacion'] as String)
           : null,
@@ -164,8 +262,13 @@ class Entrega {
       // Nuevos campos del endpoint /api/chofer/trabajos
       trabajoType: json['trabajoType'] as String? ?? json['type'] as String?,
       numero: json['numero'] as String?,
+      numeroEntrega: json['numero_entrega'] as String? ?? json['numeroEntrega'] as String?,
       cliente: clienteName,
       direccion: direccionValue,
+      // Totales agregados
+      subtotalTotal: (json['subtotal_total'] as num?)?.toDouble(),
+      impuestoTotal: (json['impuesto_total'] as num?)?.toDouble(),
+      totalGeneral: (json['total_general'] as num?)?.toDouble(),
       // Coordenadas del destino
       latitudeDestino: latDestino,
       longitudeDestino: lngDestino,
@@ -180,6 +283,12 @@ class Entrega {
       coordinacionActualizadaEn: json['coordinacion_actualizada_en'] != null
           ? DateTime.parse(json['coordinacion_actualizada_en'] as String)
           : null,
+      // SLA - FASE 5
+      fechaEntregaComprometida: json['fecha_entrega_comprometida'] != null
+          ? DateTime.parse(json['fecha_entrega_comprometida'] as String)
+          : null,
+      ventanaEntregaIni: ventanaIni,
+      ventanaEntregaFin: ventanaFin,
       // Historial de estados
       historialEstados: historial,
       // Ventas
@@ -198,6 +307,11 @@ class Entrega {
       'vehiculo_id': vehiculoId,
       'direccion_cliente_id': direccionClienteId,
       'estado': estado,
+      'estado_entrega_id': estadoEntregaId,
+      'estado_entrega_codigo': estadoEntregaCodigo,
+      'estado_entrega_nombre': estadoEntregaNombre,
+      'estado_entrega_color': estadoEntregaColor,
+      'estado_entrega_icono': estadoEntregaIcono,
       'fecha_asignacion': fechaAsignacion?.toIso8601String(),
       'fecha_inicio': fechaInicio?.toIso8601String(),
       'fecha_entrega': fechaEntrega?.toIso8601String(),
@@ -207,8 +321,12 @@ class Entrega {
       'foto_entrega_url': fotoEntregaUrl,
       'trabajo_type': trabajoType,
       'numero': numero,
+      'numero_entrega': numeroEntrega,
       'cliente': cliente,
       'direccion': direccion,
+      'subtotal_total': subtotalTotal,
+      'impuesto_total': impuestoTotal,
+      'total_general': totalGeneral,
       'latitud_destino': latitudeDestino,
       'longitud_destino': longitudeDestino,
       // Coordinación mejorada
@@ -218,6 +336,14 @@ class Entrega {
       'entregado_a': entregadoA,
       'observaciones_entrega': observacionesEntrega,
       'coordinacion_actualizada_en': coordinacionActualizadaEn?.toIso8601String(),
+      // SLA - FASE 5
+      'fecha_entrega_comprometida': fechaEntregaComprometida?.toIso8601String(),
+      'ventana_entrega_ini': ventanaEntregaIni != null
+          ? '${ventanaEntregaIni!.hour.toString().padLeft(2, '0')}:${ventanaEntregaIni!.minute.toString().padLeft(2, '0')}:00'
+          : null,
+      'ventana_entrega_fin': ventanaEntregaFin != null
+          ? '${ventanaEntregaFin!.hour.toString().padLeft(2, '0')}:${ventanaEntregaFin!.minute.toString().padLeft(2, '0')}:00'
+          : null,
     };
   }
 
@@ -338,6 +464,10 @@ class Entrega {
     String? motivoNovedad,
     String? firmaDigitalUrl,
     String? fotoEntregaUrl,
+    String? numeroEntrega,
+    double? subtotalTotal,
+    double? impuestoTotal,
+    double? totalGeneral,
     double? latitudeDestino,
     double? longitudeDestino,
     int? numeroIntentosContacto,
@@ -346,6 +476,9 @@ class Entrega {
     String? entregadoA,
     String? observacionesEntrega,
     DateTime? coordinacionActualizadaEn,
+    DateTime? fechaEntregaComprometida,
+    TimeOfDay? ventanaEntregaIni,
+    TimeOfDay? ventanaEntregaFin,
   }) {
     return Entrega(
       id: id ?? this.id,
@@ -361,6 +494,10 @@ class Entrega {
       motivoNovedad: motivoNovedad ?? this.motivoNovedad,
       firmaDigitalUrl: firmaDigitalUrl ?? this.firmaDigitalUrl,
       fotoEntregaUrl: fotoEntregaUrl ?? this.fotoEntregaUrl,
+      numeroEntrega: numeroEntrega ?? this.numeroEntrega,
+      subtotalTotal: subtotalTotal ?? this.subtotalTotal,
+      impuestoTotal: impuestoTotal ?? this.impuestoTotal,
+      totalGeneral: totalGeneral ?? this.totalGeneral,
       latitudeDestino: latitudeDestino ?? this.latitudeDestino,
       longitudeDestino: longitudeDestino ?? this.longitudeDestino,
       // Coordinación mejorada
@@ -370,6 +507,10 @@ class Entrega {
       entregadoA: entregadoA ?? this.entregadoA,
       observacionesEntrega: observacionesEntrega ?? this.observacionesEntrega,
       coordinacionActualizadaEn: coordinacionActualizadaEn ?? this.coordinacionActualizadaEn,
+      // SLA - FASE 5
+      fechaEntregaComprometida: fechaEntregaComprometida ?? this.fechaEntregaComprometida,
+      ventanaEntregaIni: ventanaEntregaIni ?? this.ventanaEntregaIni,
+      ventanaEntregaFin: ventanaEntregaFin ?? this.ventanaEntregaFin,
     );
   }
 
