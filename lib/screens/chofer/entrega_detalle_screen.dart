@@ -1789,12 +1789,12 @@ class _VentasAsignadasCardState extends State<_VentasAsignadasCard> {
           }
 
           // Sincronizar estado de confirmación de todas las ventas basándose en el estado logístico
-          // Una venta se considera confirmada si su estado es PENDIENTE_ENVIO (ID: 8)
+          // Una venta se considera confirmada si su código de estado es PENDIENTE_ENVIO
           setState(() {
             for (var v in widget.provider.entregaActual!.ventas) {
-              // Si el estado logístico es PENDIENTE_ENVIO (8), la venta fue confirmada
-              _ventasConfirmadas[v.id] = (v.estadoLogisticoId == 8);
-              debugPrint('[CHECKBOX_SYNC] Venta #${v.numero}: ${_ventasConfirmadas[v.id]} (estado_id: ${v.estadoLogisticoId})');
+              // Si el código del estado logístico es PENDIENTE_ENVIO, la venta fue confirmada
+              _ventasConfirmadas[v.id] = (v.estadoLogisticoCodigo == 'PENDIENTE_ENVIO');
+              debugPrint('[CHECKBOX_SYNC] Venta #${v.numero}: ${_ventasConfirmadas[v.id]} (estado: ${v.estadoLogisticoCodigo})');
             }
           });
         }
@@ -1893,7 +1893,7 @@ class _VentasAsignadasCardState extends State<_VentasAsignadasCard> {
                         // Sincronizar estado de confirmación de todas las ventas basándose en el estado logístico
                         setState(() {
                           for (var v in widget.provider.entregaActual!.ventas) {
-                            _ventasConfirmadas[v.id] = (v.estadoLogisticoId == 8);
+                            _ventasConfirmadas[v.id] = (v.estadoLogisticoCodigo == 'PENDIENTE_ENVIO');
                           }
                         });
                       }
