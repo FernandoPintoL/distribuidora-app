@@ -3,6 +3,7 @@ import '../../models/models.dart';
 import '../../widgets/widgets.dart';
 import '../../widgets/custom_time_picker_dialog.dart';
 import '../../config/config.dart';
+import '../../extensions/theme_extension.dart';
 
 class FechaHoraEntregaScreen extends StatefulWidget {
   final ClientAddress? direccion; // Nullable para soportar PICKUP
@@ -152,6 +153,9 @@ class _FechaHoraEntregaScreenState extends State<FechaHoraEntregaScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = context.colorScheme;
+    final isDark = context.isDark;
+
     return Scaffold(
       appBar: CustomGradientAppBar(
         title: esPickup ? 'Fecha y Hora de Retiro' : 'Fecha y Hora de Entrega',
@@ -164,7 +168,7 @@ class _FechaHoraEntregaScreenState extends State<FechaHoraEntregaScreen> {
             Container(
               width: double.infinity,
               padding: const EdgeInsets.all(16),
-              color: Theme.of(context).primaryColor.withOpacity(0.1),
+              color: colorScheme.primary.withOpacity(isDark ? 0.15 : 0.1),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -172,14 +176,21 @@ class _FechaHoraEntregaScreenState extends State<FechaHoraEntregaScreen> {
                     esPickup
                         ? '¿Cuándo deseas retirar tu pedido?'
                         : '¿Cuándo deseas recibir tu pedido?',
-                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                      color: colorScheme.onSurface,
+                    ),
                   ),
                   const SizedBox(height: 4),
                   Text(
                     esPickup
                         ? 'Agenda la fecha y hora preferida para tu retiro'
                         : 'Selecciona fecha y rango horario (opcional)',
-                    style: const TextStyle(fontSize: 14, color: Colors.grey),
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: colorScheme.onSurfaceVariant,
+                    ),
                   ),
                 ],
               ),
@@ -193,31 +204,33 @@ class _FechaHoraEntregaScreenState extends State<FechaHoraEntregaScreen> {
                   // Mostrar dirección SOLO si es DELIVERY
                   if (!esPickup)
                     Card(
+                      color: colorScheme.surface,
                       child: Padding(
                         padding: const EdgeInsets.all(16),
                         child: Row(
                           children: [
                             Icon(
                               Icons.location_on,
-                              color: Theme.of(context).primaryColor,
+                              color: colorScheme.primary,
                             ),
                             const SizedBox(width: 12),
                             Expanded(
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  const Text(
+                                  Text(
                                     'Dirección de entrega',
                                     style: TextStyle(
                                       fontSize: 12,
-                                      color: Colors.grey,
+                                      color: colorScheme.onSurfaceVariant,
                                     ),
                                   ),
                                   const SizedBox(height: 4),
                                   Text(
                                     widget.direccion!.direccion,
-                                    style: const TextStyle(
+                                    style: TextStyle(
                                       fontWeight: FontWeight.w600,
+                                      color: colorScheme.onSurface,
                                     ),
                                   ),
                                 ],
@@ -231,11 +244,13 @@ class _FechaHoraEntregaScreenState extends State<FechaHoraEntregaScreen> {
                   // Mostrar info de almacén SI es PICKUP
                   if (esPickup)
                     Card(
-                      color: Colors.orange.withOpacity(0.05),
+                      color: isDark
+                          ? Color(0xFFFFC107).withOpacity(0.15)
+                          : Color(0xFFFFC107).withOpacity(0.08),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
                         side: BorderSide(
-                          color: Colors.orange.withOpacity(0.3),
+                          color: Color(0xFFFFC107).withOpacity(isDark ? 0.4 : 0.3),
                           width: 1.5,
                         ),
                       ),
@@ -245,7 +260,7 @@ class _FechaHoraEntregaScreenState extends State<FechaHoraEntregaScreen> {
                           children: [
                             Icon(
                               Icons.storefront_outlined,
-                              color: Colors.orange.shade700,
+                              color: Color(0xFFFFC107),
                               size: 28,
                             ),
                             const SizedBox(width: 12),
@@ -253,11 +268,11 @@ class _FechaHoraEntregaScreenState extends State<FechaHoraEntregaScreen> {
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  const Text(
+                                  Text(
                                     'Lugar de Retiro',
                                     style: TextStyle(
                                       fontSize: 12,
-                                      color: Colors.grey,
+                                      color: colorScheme.onSurfaceVariant,
                                     ),
                                   ),
                                   const SizedBox(height: 4),
@@ -265,7 +280,7 @@ class _FechaHoraEntregaScreenState extends State<FechaHoraEntregaScreen> {
                                     'Almacén Principal',
                                     style: TextStyle(
                                       fontWeight: FontWeight.w600,
-                                      color: Colors.orange.shade700,
+                                      color: Color(0xFFFFC107),
                                     ),
                                   ),
                                 ],
@@ -279,9 +294,13 @@ class _FechaHoraEntregaScreenState extends State<FechaHoraEntregaScreen> {
                   const SizedBox(height: 24),
 
                   // Selección de fecha
-                  const Text(
+                  Text(
                     'Fecha programada',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: colorScheme.onSurface,
+                    ),
                   ),
                   const SizedBox(height: 8),
                   InkWell(
@@ -289,14 +308,16 @@ class _FechaHoraEntregaScreenState extends State<FechaHoraEntregaScreen> {
                     child: Container(
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
-                        border: Border.all(color: Colors.grey.shade300),
+                        border: Border.all(
+                          color: colorScheme.outline.withAlpha(isDark ? 80 : 40),
+                        ),
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Row(
                         children: [
                           Icon(
                             Icons.calendar_today,
-                            color: Theme.of(context).primaryColor,
+                            color: colorScheme.primary,
                           ),
                           const SizedBox(width: 16),
                           Expanded(
@@ -307,12 +328,15 @@ class _FechaHoraEntregaScreenState extends State<FechaHoraEntregaScreen> {
                               style: TextStyle(
                                 fontSize: 16,
                                 color: _fechaSeleccionada != null
-                                    ? Colors.black
-                                    : Colors.grey,
+                                    ? colorScheme.onSurface
+                                    : colorScheme.onSurfaceVariant,
                               ),
                             ),
                           ),
-                          const Icon(Icons.chevron_right, color: Colors.grey),
+                          Icon(
+                            Icons.chevron_right,
+                            color: colorScheme.onSurfaceVariant,
+                          ),
                         ],
                       ),
                     ),
@@ -321,14 +345,21 @@ class _FechaHoraEntregaScreenState extends State<FechaHoraEntregaScreen> {
                   const SizedBox(height: 24),
 
                   // Horario preferido
-                  const Text(
+                  Text(
                     'Horario preferido (opcional)',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: colorScheme.onSurface,
+                    ),
                   ),
                   const SizedBox(height: 8),
-                  const Text(
+                  Text(
                     'Especifica un rango horario para coordinar mejor la entrega',
-                    style: TextStyle(fontSize: 14, color: Colors.grey),
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: colorScheme.onSurfaceVariant,
+                    ),
                   ),
                   const SizedBox(height: 12),
 
@@ -341,23 +372,29 @@ class _FechaHoraEntregaScreenState extends State<FechaHoraEntregaScreen> {
                           child: Container(
                             padding: const EdgeInsets.all(16),
                             decoration: BoxDecoration(
-                              border: Border.all(color: Colors.grey.shade300),
+                              border: Border.all(
+                                color: colorScheme.outline.withAlpha(isDark ? 80 : 40),
+                              ),
                               borderRadius: BorderRadius.circular(12),
                             ),
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                const Text(
+                                Text(
                                   'Desde',
                                   style: TextStyle(
                                     fontSize: 12,
-                                    color: Colors.grey,
+                                    color: colorScheme.onSurfaceVariant,
                                   ),
                                 ),
                                 const SizedBox(height: 8),
                                 Row(
                                   children: [
-                                    const Icon(Icons.access_time, size: 20),
+                                    Icon(
+                                      Icons.access_time,
+                                      size: 20,
+                                      color: colorScheme.onSurfaceVariant,
+                                    ),
                                     const SizedBox(width: 8),
                                     Text(
                                       _horaInicio != null
@@ -367,8 +404,8 @@ class _FechaHoraEntregaScreenState extends State<FechaHoraEntregaScreen> {
                                         fontSize: 16,
                                         fontWeight: FontWeight.w600,
                                         color: _horaInicio != null
-                                            ? Colors.black
-                                            : Colors.grey,
+                                            ? colorScheme.onSurface
+                                            : colorScheme.onSurfaceVariant,
                                       ),
                                     ),
                                   ],
@@ -388,23 +425,29 @@ class _FechaHoraEntregaScreenState extends State<FechaHoraEntregaScreen> {
                           child: Container(
                             padding: const EdgeInsets.all(16),
                             decoration: BoxDecoration(
-                              border: Border.all(color: Colors.grey.shade300),
+                              border: Border.all(
+                                color: colorScheme.outline.withAlpha(isDark ? 80 : 40),
+                              ),
                               borderRadius: BorderRadius.circular(12),
                             ),
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                const Text(
+                                Text(
                                   'Hasta',
                                   style: TextStyle(
                                     fontSize: 12,
-                                    color: Colors.grey,
+                                    color: colorScheme.onSurfaceVariant,
                                   ),
                                 ),
                                 const SizedBox(height: 8),
                                 Row(
                                   children: [
-                                    const Icon(Icons.access_time, size: 20),
+                                    Icon(
+                                      Icons.access_time,
+                                      size: 20,
+                                      color: colorScheme.onSurfaceVariant,
+                                    ),
                                     const SizedBox(width: 8),
                                     Text(
                                       _horaFin != null
@@ -414,8 +457,8 @@ class _FechaHoraEntregaScreenState extends State<FechaHoraEntregaScreen> {
                                         fontSize: 16,
                                         fontWeight: FontWeight.w600,
                                         color: _horaFin != null
-                                            ? Colors.black
-                                            : Colors.grey,
+                                            ? colorScheme.onSurface
+                                            : colorScheme.onSurfaceVariant,
                                       ),
                                     ),
                                   ],
@@ -431,19 +474,43 @@ class _FechaHoraEntregaScreenState extends State<FechaHoraEntregaScreen> {
                   const SizedBox(height: 24),
 
                   // Observaciones
-                  const Text(
+                  Text(
                     'Observaciones (opcional)',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: colorScheme.onSurface,
+                    ),
                   ),
                   const SizedBox(height: 8),
                   TextField(
                     controller: _observacionesController,
                     maxLines: 3,
+                    style: TextStyle(color: colorScheme.onSurface),
                     decoration: InputDecoration(
                       hintText:
                           'Ej: Llamar antes de llegar, tocar el timbre, etc.',
+                      hintStyle: TextStyle(color: colorScheme.onSurfaceVariant),
+                      filled: true,
+                      fillColor: colorScheme.surface,
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(
+                          color: colorScheme.outline.withAlpha(isDark ? 80 : 40),
+                        ),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(
+                          color: colorScheme.outline.withAlpha(isDark ? 80 : 40),
+                        ),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(
+                          color: colorScheme.primary,
+                          width: 2,
+                        ),
                       ),
                     ),
                   ),
@@ -454,14 +521,17 @@ class _FechaHoraEntregaScreenState extends State<FechaHoraEntregaScreen> {
                   Container(
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: Colors.blue.shade50,
+                      color: colorScheme.primary.withOpacity(isDark ? 0.15 : 0.08),
                       borderRadius: BorderRadius.circular(8),
+                      border: Border.all(
+                        color: colorScheme.primary.withOpacity(isDark ? 0.3 : 0.2),
+                      ),
                     ),
                     child: Row(
                       children: [
                         Icon(
                           Icons.info_outline,
-                          color: Colors.blue.shade700,
+                          color: colorScheme.primary,
                           size: 20,
                         ),
                         const SizedBox(width: 12),
@@ -470,7 +540,7 @@ class _FechaHoraEntregaScreenState extends State<FechaHoraEntregaScreen> {
                             'Fecha y horario son referenciales. El tiempo exacto se coordinará una vez aprobada tu proforma.',
                             style: TextStyle(
                               fontSize: 13,
-                              color: Colors.blue.shade900,
+                              color: colorScheme.onSurface,
                             ),
                           ),
                         ),
@@ -488,10 +558,10 @@ class _FechaHoraEntregaScreenState extends State<FechaHoraEntregaScreen> {
       bottomNavigationBar: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: colorScheme.surface,
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.05),
+              color: Colors.black.withOpacity(isDark ? 0.3 : 0.05),
               blurRadius: 10,
               offset: const Offset(0, -5),
             ),

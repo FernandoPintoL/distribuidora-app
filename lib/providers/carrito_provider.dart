@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/widgets.dart';
 import '../models/carrito.dart';
 import '../models/carrito_item.dart';
@@ -32,8 +33,19 @@ class CarritoProvider with ChangeNotifier {
   bool _calculandoRangos = false;
   Map<int, DetalleCarritoConRango> _detallesConRango = {};
 
+  // 🔑 FASE 3: Debounce para cálculo de rangos
+  Timer? _detalleDebounce;
+  static const Duration _detalleDebounceDelay = Duration(milliseconds: 500);
+
   CarritoProvider() {
     _carritoService = CarritoService(ApiService());
+  }
+
+  @override
+  void dispose() {
+    // 🔑 Cancelar debounce si existe
+    _detalleDebounce?.cancel();
+    super.dispose();
   }
 
   // Getters
@@ -68,6 +80,19 @@ class CarritoProvider with ChangeNotifier {
     return _detallesConRango[productoId];
   }
 
+  /// 🔑 NUEVO: Obtener cantidad de un producto en el carrito
+  /// Utilizado en ProductGridItem para sincronizar cantidad
+  int obtenerCantidadProducto(int productoId) {
+    try {
+      final item = _carrito.items.firstWhere(
+        (item) => item.producto.id == productoId,
+      );
+      return item.cantidad;
+    } catch (e) {
+      return 0;
+    }
+  }
+
   bool get isEmpty => _carrito.isEmpty;
   bool get isNotEmpty => _carrito.isNotEmpty;
   bool get isLoading => _isLoading;
@@ -85,7 +110,7 @@ class CarritoProvider with ChangeNotifier {
   // Agregar producto al carrito con validación de stock
   void agregarProducto(
     Product producto, {
-    double cantidad = 1.0,
+    int cantidad = 1,
     String? observaciones,
   }) {
     _errorMessage = null;
@@ -100,10 +125,10 @@ class CarritoProvider with ChangeNotifier {
     }
 
     // Validar cantidad mínima
-    final cantidadMinima = (producto.cantidadMinima ?? 1).toDouble();
+    final cantidadMinima = producto.cantidadMinima ?? 1;
     if (cantidad < cantidadMinima) {
       final unidad = producto.unidadMedida?.nombre ?? 'unidades';
-      _errorMessage = 'Cantidad mínima: ${cantidadMinima.toStringAsFixed(1)} $unidad (solicitaste: ${cantidad.toStringAsFixed(1)})';
+      _errorMessage = 'Cantidad mínima: $cantidadMinima $unidad (solicitaste: $cantidad)';
       WidgetsBinding.instance.addPostFrameCallback((_) {
         notifyListeners();
       });
@@ -113,10 +138,10 @@ class CarritoProvider with ChangeNotifier {
 
     // Validar stock disponible
     final stockDisponible = producto.stockPrincipal?.cantidadDisponible ?? 0;
-    final stockDispDouble = (stockDisponible as num).toDouble();
+    final stockDispInt = (stockDisponible as num).toInt();
 
-    if (cantidad > stockDispDouble) {
-      _errorMessage = 'Stock insuficiente. Disponible: ${stockDispDouble.toStringAsFixed(1)} ${producto.unidadMedida?.nombre ?? 'unidades'}';
+    if (cantidad > stockDispInt) {
+      _errorMessage = 'Stock insuficiente. Disponible: $stockDispInt ${producto.unidadMedida?.nombre ?? 'unidades'}';
       WidgetsBinding.instance.addPostFrameCallback((_) {
         notifyListeners();
       });
@@ -132,8 +157,8 @@ class CarritoProvider with ChangeNotifier {
     if (itemExistente != null) {
       // Si ya existe, validar que la nueva cantidad total no exceda el stock
       final nuevaCantidadTotal = itemExistente.cantidad + cantidad;
-      if (nuevaCantidadTotal > stockDispDouble) {
-        _errorMessage = 'Cantidad total excede el stock disponible. Máximo disponible: ${stockDispDouble.toStringAsFixed(1)}, actualmente en carrito: ${itemExistente.cantidad.toStringAsFixed(1)}';
+      if (nuevaCantidadTotal > stockDispInt) {
+        _errorMessage = 'Cantidad total excede el stock disponible. Máximo disponible: $stockDispInt, actualmente en carrito: ${itemExistente.cantidad}';
         WidgetsBinding.instance.addPostFrameCallback((_) {
           notifyListeners();
         });
@@ -169,7 +194,7 @@ class CarritoProvider with ChangeNotifier {
   }
 
   // Actualizar cantidad de un producto con validación de stock
-  void actualizarCantidad(int productoId, double nuevaCantidad) {
+  void actualizarCantidad(int productoId, int nuevaCantidad) {
     _errorMessage = null;
 
     if (nuevaCantidad <= 0) {
@@ -183,10 +208,10 @@ class CarritoProvider with ChangeNotifier {
     // Validar stock disponible
     final producto = itemExistente.producto;
     final stockDisponible = producto.stockPrincipal?.cantidadDisponible ?? 0;
-    final stockDispDouble = (stockDisponible as num).toDouble();
+    final stockDispInt = (stockDisponible as num).toInt();
 
-    if (nuevaCantidad > stockDispDouble) {
-      _errorMessage = 'Cantidad excede el stock disponible. Máximo: ${stockDispDouble.toStringAsFixed(1)} ${producto.unidadMedida?.nombre ?? 'unidades'}';
+    if (nuevaCantidad > stockDispInt) {
+      _errorMessage = 'Cantidad excede el stock disponible. Máximo: $stockDispInt ${producto.unidadMedida?.nombre ?? 'unidades'}';
       WidgetsBinding.instance.addPostFrameCallback((_) {
         notifyListeners();
       });
@@ -211,7 +236,7 @@ class CarritoProvider with ChangeNotifier {
   }
 
   // Incrementar cantidad de un producto con validación de stock
-  void incrementarCantidad(int productoId, {double incremento = 1.0}) {
+  void incrementarCantidad(int productoId, {int incremento = 1}) {
     _errorMessage = null;
 
     final itemExistente = _carrito.getItemByProductoId(productoId);
@@ -219,11 +244,11 @@ class CarritoProvider with ChangeNotifier {
 
     final producto = itemExistente.producto;
     final stockDisponible = producto.stockPrincipal?.cantidadDisponible ?? 0;
-    final stockDispDouble = (stockDisponible as num).toDouble();
+    final stockDispInt = (stockDisponible as num).toInt();
     final nuevaCantidadTotal = itemExistente.cantidad + incremento;
 
-    if (nuevaCantidadTotal > stockDispDouble) {
-      _errorMessage = 'No hay stock suficiente para agregar más. Disponible: ${stockDispDouble.toStringAsFixed(1)}, en carrito: ${itemExistente.cantidad.toStringAsFixed(1)}';
+    if (nuevaCantidadTotal > stockDispInt) {
+      _errorMessage = 'No hay stock suficiente para agregar más. Disponible: $stockDispInt, en carrito: ${itemExistente.cantidad}';
       WidgetsBinding.instance.addPostFrameCallback((_) {
         notifyListeners();
       });
@@ -236,7 +261,7 @@ class CarritoProvider with ChangeNotifier {
   }
 
   // Decrementar cantidad de un producto
-  void decrementarCantidad(int productoId, {double decremento = 1.0}) {
+  void decrementarCantidad(int productoId, {int decremento = 1}) {
     final itemExistente = _carrito.getItemByProductoId(productoId);
     if (itemExistente == null) return;
 
@@ -302,23 +327,23 @@ class CarritoProvider with ChangeNotifier {
   }
 
   // Verificar si hay stock suficiente para un producto antes de operaciones
-  bool tieneStockDisponible(int productoId, double cantidadSolicitada) {
+  bool tieneStockDisponible(int productoId, int cantidadSolicitada) {
     final item = _carrito.getItemByProductoId(productoId);
     if (item == null) return false;
 
     final stockDisponible = item.producto.stockPrincipal?.cantidadDisponible ?? 0;
-    final stockDispDouble = (stockDisponible as num).toDouble();
+    final stockDispInt = (stockDisponible as num).toInt();
 
-    return cantidadSolicitada <= stockDispDouble;
+    return cantidadSolicitada <= stockDispInt;
   }
 
   // Obtener la cantidad máxima disponible de un producto
-  double obtenerMaximaDisponible(int productoId) {
+  int obtenerMaximaDisponible(int productoId) {
     final item = _carrito.getItemByProductoId(productoId);
-    if (item == null) return 0.0;
+    if (item == null) return 0;
 
     final stockDisponible = item.producto.stockPrincipal?.cantidadDisponible ?? 0;
-    return (stockDisponible as num).toDouble();
+    return (stockDisponible as num).toInt();
   }
 
   // Verificar si un producto está en el carrito
@@ -327,9 +352,9 @@ class CarritoProvider with ChangeNotifier {
   }
 
   // Obtener cantidad de un producto en el carrito
-  double getCantidadProducto(int productoId) {
+  int getCantidadProducto(int productoId) {
     final item = _carrito.getItemByProductoId(productoId);
-    return item?.cantidad ?? 0.0;
+    return item?.cantidad ?? 0;
   }
 
   // Calcular costo de envío basado en dirección y cantidad de items
@@ -885,9 +910,42 @@ class CarritoProvider with ChangeNotifier {
     // El cálculo real se hace en los getters de _carrito
   }
 
-  /// Calcular carrito con rangos de precio
-  /// Llama a la API para obtener precios ajustados por cantidad
-  Future<bool> calcularCarritoConRangos() async {
+  /// 🔑 FASE 3: Calcular carrito CON DEBOUNCE
+  ///
+  /// Implementa debounce para evitar múltiples llamadas API:
+  /// - Si se llama múltiples veces rápidamente (ej: incrementar cantidad 5 veces)
+  /// - Solo hace 1 llamada API después de 500ms sin cambios
+  /// - Cancela el timer anterior si existe
+  ///
+  /// Ejemplo:
+  /// ```
+  /// incrementarCantidad(prod_id);           // Timer inicia
+  /// incrementarCantidad(prod_id);           // Timer se cancela y reinicia
+  /// incrementarCantidad(prod_id);           // Timer se cancela y reinicia
+  /// // (después de 500ms sin cambios)
+  /// // → Realiza UN SOLO llamado API ✨
+  /// ```
+  Future<bool> calcularCarritoConRangos({Duration? delay}) async {
+    // Cancelar timer anterior si existe
+    _detalleDebounce?.cancel();
+
+    // Usar delay personalizado o default
+    final finalDelay = delay ?? _detalleDebounceDelay;
+
+    debugPrint('⏱️  Debounce iniciado: esperando ${finalDelay.inMilliseconds}ms...');
+
+    // Crear nuevo timer
+    _detalleDebounce = Timer(finalDelay, () {
+      debugPrint('⏱️  Debounce completado - ejecutando cálculo...');
+      _ejecutarCalculoRangos();
+    });
+
+    return true;
+  }
+
+  /// Ejecutar el cálculo real (sin debounce)
+  /// Llamado después del debounce delay
+  Future<bool> _ejecutarCalculoRangos() async {
     try {
       _calculandoRangos = true;
       notifyListeners();
@@ -907,6 +965,7 @@ class CarritoProvider with ChangeNotifier {
 
         debugPrint('✅ Carrito calculado con éxito');
         debugPrint('   Ahorro disponible: ${carritoConRangos.ahorroDisponible.toStringAsFixed(2)} Bs');
+        debugPrint('   Items con rango: ${carritoConRangos.detalles.length}');
 
         notifyListeners();
         return true;
@@ -924,6 +983,14 @@ class CarritoProvider with ChangeNotifier {
       _calculandoRangos = false;
       notifyListeners();
     }
+  }
+
+  /// Calcular carrito INMEDIATAMENTE (sin debounce)
+  /// Útil para cuando necesitas el resultado ahora mismo
+  /// (ej: al finalizar la compra)
+  Future<bool> calcularCarritoConRangosAhora() async {
+    _detalleDebounce?.cancel(); // Cancelar debounce si hay uno pendiente
+    return _ejecutarCalculoRangos();
   }
 
   /// Agregar cantidad a un producto para alcanzar el próximo rango

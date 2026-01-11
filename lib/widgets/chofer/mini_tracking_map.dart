@@ -174,18 +174,29 @@ class _MiniTrackingMapState extends State<MiniTrackingMap> {
 
   @override
   Widget build(BuildContext context) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    final colorScheme = Theme.of(context).colorScheme;
+    final cardColor = isDarkMode ? Colors.grey[900] : Colors.white;
+    final backgroundColor = isDarkMode ? Colors.grey[800] : Colors.grey[100];
+
     if (_isLoading) {
       return Card(
-        elevation: 2,
+        elevation: 4,
         margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        color: cardColor,
+        shadowColor: isDarkMode
+            ? Colors.black.withAlpha((0.5 * 255).toInt())
+            : Colors.grey.withAlpha((0.3 * 255).toInt()),
         child: Container(
           height: 200,
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(8),
-            color: Colors.grey[100],
+            borderRadius: BorderRadius.circular(12),
+            color: backgroundColor,
           ),
-          child: const Center(
-            child: CircularProgressIndicator(),
+          child: Center(
+            child: CircularProgressIndicator(
+              valueColor: AlwaysStoppedAnimation<Color>(colorScheme.primary),
+            ),
           ),
         ),
       );
@@ -193,13 +204,17 @@ class _MiniTrackingMapState extends State<MiniTrackingMap> {
 
     if (_errorMessage != null) {
       return Card(
-        elevation: 2,
+        elevation: 4,
         margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        color: cardColor,
+        shadowColor: isDarkMode
+            ? Colors.black.withAlpha((0.5 * 255).toInt())
+            : Colors.grey.withAlpha((0.3 * 255).toInt()),
         child: Container(
           height: 200,
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(8),
-            color: Colors.red[50],
+            borderRadius: BorderRadius.circular(12),
+            color: isDarkMode ? Colors.red[900]?.withAlpha((0.2 * 255).toInt()) : Colors.red[50],
           ),
           child: Center(
             child: Padding(
@@ -207,7 +222,10 @@ class _MiniTrackingMapState extends State<MiniTrackingMap> {
               child: Text(
                 _errorMessage!,
                 textAlign: TextAlign.center,
-                style: TextStyle(color: Colors.red[700]),
+                style: TextStyle(
+                  color: isDarkMode ? Colors.red[300] : Colors.red[700],
+                  fontSize: 14,
+                ),
               ),
             ),
           ),
@@ -217,16 +235,26 @@ class _MiniTrackingMapState extends State<MiniTrackingMap> {
 
     if (_currentLocation == null) {
       return Card(
-        elevation: 2,
+        elevation: 4,
         margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        color: cardColor,
+        shadowColor: isDarkMode
+            ? Colors.black.withAlpha((0.5 * 255).toInt())
+            : Colors.grey.withAlpha((0.3 * 255).toInt()),
         child: Container(
           height: 200,
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(8),
-            color: Colors.grey[100],
+            borderRadius: BorderRadius.circular(12),
+            color: backgroundColor,
           ),
-          child: const Center(
-            child: Text('Ubicación no disponible'),
+          child: Center(
+            child: Text(
+              'Ubicación no disponible',
+              style: TextStyle(
+                color: isDarkMode ? Colors.grey[400] : Colors.grey[600],
+                fontSize: 14,
+              ),
+            ),
           ),
         ),
       );
@@ -235,15 +263,19 @@ class _MiniTrackingMapState extends State<MiniTrackingMap> {
     return GestureDetector(
       onTap: widget.onMapTap,
       child: Card(
-        elevation: 2,
+        elevation: 4,
         margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        color: cardColor,
+        shadowColor: isDarkMode
+            ? Colors.black.withAlpha((0.5 * 255).toInt())
+            : Colors.grey.withAlpha((0.3 * 255).toInt()),
         child: Stack(
           children: [
             // Mapa
             ClipRRect(
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: BorderRadius.circular(12),
               child: SizedBox(
-                height: 200,
+                height: 250,
                 child: GoogleMap(
                   onMapCreated: _onMapCreated,
                   initialCameraPosition: CameraPosition(
@@ -259,32 +291,37 @@ class _MiniTrackingMapState extends State<MiniTrackingMap> {
               ),
             ),
 
-            // Badge con información
+            // Badge con información mejorado
             Positioned(
-              top: 12,
-              left: 12,
+              top: 16,
+              left: 16,
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                 decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(6),
+                  color: isDarkMode ? Colors.grey[850] : Colors.white,
+                  borderRadius: BorderRadius.circular(8),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.1),
-                      blurRadius: 4,
-                      offset: const Offset(0, 2),
+                      color: Colors.black.withAlpha((0.3 * 255).toInt()),
+                      blurRadius: 8,
+                      offset: const Offset(0, 4),
                     ),
                   ],
                 ),
                 child: Row(
                   children: [
-                    const Icon(Icons.location_on, size: 16, color: Colors.green),
-                    const SizedBox(width: 6),
+                    const Icon(
+                      Icons.location_on,
+                      size: 16,
+                      color: Colors.green,
+                    ),
+                    const SizedBox(width: 8),
                     Text(
-                      '${widget.entregas.length} entregas cercanas',
-                      style: const TextStyle(
+                      '${widget.entregas.length} entregas asignadas',
+                      style: TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.w600,
+                        color: isDarkMode ? Colors.white : Colors.black87,
                       ),
                     ),
                   ],
@@ -292,14 +329,15 @@ class _MiniTrackingMapState extends State<MiniTrackingMap> {
               ),
             ),
 
-            // Botón para ampliar mapa
+            // Botón para ampliar mapa mejorado
             Positioned(
-              bottom: 12,
-              right: 12,
+              bottom: 16,
+              right: 16,
               child: FloatingActionButton.small(
                 onPressed: widget.onMapTap,
                 backgroundColor: Colors.blue,
-                child: const Icon(Icons.expand, size: 20),
+                elevation: 4,
+                child: const Icon(Icons.expand, size: 20, color: Colors.white),
               ),
             ),
           ],

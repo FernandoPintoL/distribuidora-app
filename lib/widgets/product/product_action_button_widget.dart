@@ -44,7 +44,7 @@ class ProductActionButtonWidget extends StatelessWidget {
     );
   }
 
-  Widget _buildCartCountBadge(double cantidad) {
+  Widget _buildCartCountBadge(int cantidad) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10),
       decoration: BoxDecoration(
@@ -62,7 +62,7 @@ class ProductActionButtonWidget extends StatelessWidget {
           ),
           const SizedBox(width: 4),
           Text(
-            '${cantidad.toInt()}',
+            '$cantidad',
             style: TextStyle(
               fontWeight: FontWeight.bold,
               color: Colors.green.shade700,

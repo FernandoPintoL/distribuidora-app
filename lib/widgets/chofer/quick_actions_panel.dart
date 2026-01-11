@@ -17,22 +17,47 @@ class QuickActionsPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    final cardColor = isDarkMode ? Colors.grey[900] : Colors.white;
+
     return Card(
-      elevation: 2,
+      elevation: 4,
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      color: cardColor,
+      shadowColor: isDarkMode
+          ? Colors.black.withAlpha((0.5 * 255).toInt())
+          : Colors.grey.withAlpha((0.3 * 255).toInt()),
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Título
-            Text(
-              '⚡ Acciones Rápidas',
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
+            // Título con icono
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Colors.green.withAlpha((0.15 * 255).toInt()),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Icon(
+                    Icons.flash_on,
+                    color: Colors.green,
+                    size: 24,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Text(
+                  'Acciones Rápidas',
+                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: isDarkMode ? Colors.white : Colors.black87,
+                  ),
+                ),
+              ],
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 20),
 
             // Grid de botones (3 columnas) con animaciones
             Row(
@@ -44,6 +69,7 @@ class QuickActionsPanel extends StatelessWidget {
                     label: 'Iniciar Ruta\nÓptima',
                     color: Colors.green,
                     onPressed: onInitializeRoute ?? () {},
+                    isDarkMode: isDarkMode,
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -55,6 +81,7 @@ class QuickActionsPanel extends StatelessWidget {
                     label: 'Ver Todas\nen Mapa',
                     color: Colors.blue,
                     onPressed: onViewAllDeliveriesMap ?? () {},
+                    isDarkMode: isDarkMode,
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -64,8 +91,9 @@ class QuickActionsPanel extends StatelessWidget {
                   child: AnimatedActionButton(
                     icon: Icons.qr_code_2,
                     label: 'Escanear\nQR',
-                    color: Colors.orange,
+                    color: Colors.purple,
                     onPressed: onScanQR ?? () {},
+                    isDarkMode: isDarkMode,
                   ),
                 ),
               ],

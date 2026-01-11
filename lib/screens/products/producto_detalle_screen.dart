@@ -22,7 +22,7 @@ class ProductoDetalleScreen extends StatefulWidget {
 class _ProductoDetalleScreenState extends State<ProductoDetalleScreen> {
   late TextEditingController _cantidadController;
   late TextEditingController _observacionesController;
-  double _cantidad = 1.0;
+  int _cantidad = 1;
   bool _agregandoAlCarrito = false;
 
   @override
@@ -42,7 +42,7 @@ class _ProductoDetalleScreenState extends State<ProductoDetalleScreen> {
   void _incrementarCantidad() {
     setState(() {
       _cantidad += 1;
-      _cantidadController.text = _cantidad.toStringAsFixed(0);
+      _cantidadController.text = _cantidad.toString();
     });
   }
 
@@ -50,7 +50,7 @@ class _ProductoDetalleScreenState extends State<ProductoDetalleScreen> {
     if (_cantidad > 1) {
       setState(() {
         _cantidad -= 1;
-        _cantidadController.text = _cantidad.toStringAsFixed(0);
+        _cantidadController.text = _cantidad.toString();
       });
     }
   }
@@ -61,7 +61,7 @@ class _ProductoDetalleScreenState extends State<ProductoDetalleScreen> {
       return;
     }
 
-    final nuevaCantidad = double.tryParse(valor) ?? 0;
+    final nuevaCantidad = int.tryParse(valor) ?? 0;
     if (nuevaCantidad > 0) {
       setState(() {
         _cantidad = nuevaCantidad;
@@ -106,7 +106,7 @@ class _ProductoDetalleScreenState extends State<ProductoDetalleScreen> {
       // Limpiar formulario
       _cantidadController.text = '1';
       _observacionesController.clear();
-      setState(() => _cantidad = 1.0);
+      setState(() => _cantidad = 1);
     } catch (e) {
       _mostrarError('Error al agregar al carrito: $e');
     } finally {
@@ -140,9 +140,9 @@ class _ProductoDetalleScreenState extends State<ProductoDetalleScreen> {
   Widget build(BuildContext context) {
     final stockDisponible =
         widget.producto.stockPrincipal?.cantidadDisponible ?? 0;
-    final stockDispDouble = (stockDisponible as num).toDouble();
-    final tieneStock = stockDispDouble > 0;
-    final cantidadMinima = (widget.producto.cantidadMinima ?? 1).toDouble();
+    final stockDispInt = (stockDisponible as num).toInt();
+    final tieneStock = stockDispInt > 0;
+    final cantidadMinima = widget.producto.cantidadMinima ?? 1;
 
     return Scaffold(
       appBar: CustomGradientAppBar(
@@ -169,7 +169,7 @@ class _ProductoDetalleScreenState extends State<ProductoDetalleScreen> {
                     const SizedBox(height: 16),
 
                     // Información de stock
-                    _buildStockInfo(tieneStock, stockDispDouble),
+                    _buildStockInfo(tieneStock, stockDispInt),
                     const SizedBox(height: 16),
 
                     // Descripción
@@ -192,7 +192,7 @@ class _ProductoDetalleScreenState extends State<ProductoDetalleScreen> {
               _buildSeccionAgregarAlCarrito(
                 tieneStock: tieneStock,
                 cantidadMinima: cantidadMinima,
-                stockDisponible: stockDispDouble,
+                stockDisponible: stockDispInt,
               ),
               SizedBox(height: 16,)
             ],
@@ -268,7 +268,7 @@ class _ProductoDetalleScreenState extends State<ProductoDetalleScreen> {
     );
   }
 
-  Widget _buildStockInfo(bool tieneStock, double stockDisponible) {
+  Widget _buildStockInfo(bool tieneStock, int stockDisponible) {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
@@ -411,8 +411,8 @@ class _ProductoDetalleScreenState extends State<ProductoDetalleScreen> {
 
   Widget _buildSeccionAgregarAlCarrito({
     required bool tieneStock,
-    required double cantidadMinima,
-    required double stockDisponible,
+    required int cantidadMinima,
+    required int stockDisponible,
   }) {
     return Container(
       color: Colors.grey.shade50,
@@ -438,7 +438,7 @@ class _ProductoDetalleScreenState extends State<ProductoDetalleScreen> {
               borderRadius: BorderRadius.circular(4),
             ),
             child: Text(
-              'Cantidad mínima: ${cantidadMinima.toStringAsFixed(0)} ${widget.producto.unidadMedida?.nombre ?? 'unidades'}',
+              'Cantidad mínima: $cantidadMinima ${widget.producto.unidadMedida?.nombre ?? 'unidades'}',
               style: Theme.of(context).textTheme.labelSmall?.copyWith(
                     color: Colors.amber.shade800,
                   ),

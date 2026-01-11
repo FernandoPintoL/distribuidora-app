@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
-import 'package:timezone/timezone.dart' as tz;
 
 /// Servicio centralizado para manejar notificaciones locales (push)
 /// Soporta notificaciones de nuevas entregas, cambios de estado, y recordatorios
@@ -23,8 +22,9 @@ class LocalNotificationService {
     _notificationsPlugin = FlutterLocalNotificationsPlugin();
 
     // Configuración para Android
+    // Usar 'ic_notification' - nuestro ícono personalizado copiado a res/drawable
     const AndroidInitializationSettings androidSettings =
-        AndroidInitializationSettings('@drawable/ic_notification');
+        AndroidInitializationSettings('ic_notification');
 
     // Configuración para iOS
     const DarwinInitializationSettings iOSSettings =
@@ -235,7 +235,8 @@ class LocalNotificationService {
         priority: priority,
         enableVibration: _shouldVibrate(channelId),
         playSound: true,
-        icon: '@drawable/ic_launcher_foreground',
+        // ✅ Usar null para que Android use el ícono de launcher por defecto
+        // Evita problemas de drawable no encontrado
         // Mostrar cuerpo completo en notificaciones grandes
         styleInformation: BigTextStyleInformation(
           body,

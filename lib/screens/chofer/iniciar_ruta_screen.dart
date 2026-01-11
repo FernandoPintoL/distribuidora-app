@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:provider/provider.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
 import '../../providers/entrega_provider.dart';
+import '../../models/venta.dart';
 import '../../widgets/widgets.dart';
 import '../../config/config.dart';
 
@@ -21,6 +23,12 @@ class _IniciarRutaScreenState extends State<IniciarRutaScreen> {
   Position? _posicionActual;
   bool _obtenienoPosicion = false;
   String? _errorPosicion;
+
+  late GoogleMapController _mapController;
+  Set<Marker> _marcadores = {};
+  bool _mostrarMapa = false;
+  MapType _mapType = MapType.normal;
+  int? _ventaSeleccionadaId;
 
   @override
   void initState() {
@@ -62,12 +70,93 @@ class _IniciarRutaScreenState extends State<IniciarRutaScreen> {
       setState(() {
         _posicionActual = posicion;
         _obtenienoPosicion = false;
+        _mostrarMapa = true;
       });
+
+      // Cargar marcadores de ventas
+      if (mounted) {
+        _cargarMarcadoresVentas();
+      }
     } catch (e) {
       setState(() {
         _errorPosicion = 'Error al obtener ubicación: ${e.toString()}';
         _obtenienoPosicion = false;
       });
+    }
+  }
+
+  void _cargarMarcadoresVentas() {
+    final provider = context.read<EntregaProvider>();
+
+    if (provider.entregaActual == null) {
+      debugPrint('❌ No hay entrega cargada');
+      return;
+    }
+
+    final entrega = provider.entregaActual!;
+    final marcadores = <Marker>{};
+
+    // Marcador de la ubicación actual (chofer)
+    if (_posicionActual != null) {
+      marcadores.add(
+        Marker(
+          markerId: const MarkerId('chofer_actual'),
+          position: LatLng(_posicionActual!.latitude, _posicionActual!.longitude),
+          infoWindow: const InfoWindow(
+            title: '📍 Tu Ubicación',
+            snippet: 'Ubicación actual del chofer',
+          ),
+          icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueBlue),
+        ),
+      );
+    }
+
+    // Marcadores para cada venta
+    for (int i = 0; i < entrega.ventas.length; i++) {
+      final venta = entrega.ventas[i];
+
+      if (venta.latitud != null && venta.longitud != null) {
+        marcadores.add(
+          Marker(
+            markerId: MarkerId('venta_${venta.id}'),
+            position: LatLng(venta.latitud!, venta.longitud!),
+            infoWindow: InfoWindow(
+              title: 'Venta #${venta.numero}',
+              snippet: '${venta.clienteNombre ?? "Cliente"}\nTotal: \$${venta.total.toStringAsFixed(2)}',
+            ),
+            icon: BitmapDescriptor.defaultMarkerWithHue(
+              i % 3 == 0
+                  ? BitmapDescriptor.hueRed
+                  : i % 3 == 1
+                      ? BitmapDescriptor.hueOrange
+                      : BitmapDescriptor.hueYellow,
+            ),
+            onTap: () {
+              setState(() {
+                _ventaSeleccionadaId = venta.id;
+              });
+            },
+          ),
+        );
+
+        debugPrint('[MAPA] Venta #${venta.numero}: (${venta.latitud}, ${venta.longitud})');
+      }
+    }
+
+    setState(() {
+      _marcadores = marcadores;
+    });
+
+    debugPrint('[MAPA] Cargados ${marcadores.length} marcadores');
+
+    // Centrar el mapa en la primera venta (si existe)
+    if (entrega.ventas.isNotEmpty && entrega.ventas.first.latitud != null) {
+      _mapController.animateCamera(
+        CameraUpdate.newLatLngZoom(
+          LatLng(entrega.ventas.first.latitud!, entrega.ventas.first.longitud!),
+          14,
+        ),
+      );
     }
   }
 
@@ -107,167 +196,225 @@ class _IniciarRutaScreenState extends State<IniciarRutaScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final provider = context.read<EntregaProvider>();
+    Venta? ventaSeleccionada;
+    if (_ventaSeleccionadaId != null && provider.entregaActual != null) {
+      try {
+        ventaSeleccionada = provider.entregaActual!.ventas
+            .firstWhere((v) => v.id == _ventaSeleccionadaId);
+      } catch (e) {
+        ventaSeleccionada = null;
+      }
+    }
+
     return Scaffold(
       appBar: CustomGradientAppBar(
         title: 'Iniciar Ruta',
         customGradient: AppGradients.green,
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Instrucción
-            Card(
-              color: Colors.blue[50],
-              child: Padding(
-                padding: const EdgeInsets.all(12),
-                child: Row(
-                  children: [
-                    Icon(Icons.info, color: Colors.blue[600]),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Text(
-                        'Se capturará tu ubicación GPS actual para iniciar la ruta',
-                        style: TextStyle(color: Colors.blue[900]),
-                      ),
-                    ),
-                  ],
+      body: Stack(
+        children: [
+          // Mapa full screen
+          if (_mostrarMapa && _posicionActual != null)
+            GoogleMap(
+              onMapCreated: (controller) {
+                _mapController = controller;
+                _mapController.animateCamera(
+                  CameraUpdate.newLatLngZoom(
+                    LatLng(_posicionActual!.latitude, _posicionActual!.longitude),
+                    14,
+                  ),
+                );
+              },
+              initialCameraPosition: CameraPosition(
+                target: LatLng(_posicionActual!.latitude, _posicionActual!.longitude),
+                zoom: 14,
+              ),
+              markers: _marcadores,
+              mapType: _mapType,
+              zoomControlsEnabled: true,
+              myLocationEnabled: true,
+              myLocationButtonEnabled: true,
+            )
+          else
+            Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  if (_obtenienoPosicion)
+                    const CircularProgressIndicator()
+                  else
+                    const Icon(Icons.location_off, size: 64, color: Colors.grey),
+                  const SizedBox(height: 16),
+                  Text(
+                    _obtenienoPosicion
+                        ? 'Obteniendo ubicación...'
+                        : _errorPosicion ?? 'No hay ubicación disponible',
+                    textAlign: TextAlign.center,
+                  ),
+                ],
+              ),
+            ),
+
+          // Botón para cambiar mapType (arriba a la derecha)
+          if (_mostrarMapa)
+            Positioned(
+              top: 16,
+              right: 16,
+              child: FloatingActionButton(
+                mini: true,
+                onPressed: () {
+                  setState(() {
+                    _mapType = _mapType == MapType.normal
+                        ? MapType.satellite
+                        : MapType.normal;
+                  });
+                },
+                tooltip: _mapType == MapType.normal ? 'Cambiar a Satélite' : 'Cambiar a Normal',
+                child: Icon(
+                  _mapType == MapType.normal ? Icons.satellite_alt : Icons.map,
                 ),
               ),
             ),
-            const SizedBox(height: 24),
 
-            // Estado de ubicación
-            if (_obtenienoPosicion) ...[
-              Center(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const CircularProgressIndicator(),
-                    const SizedBox(height: 16),
-                    const Text('Obteniendo ubicación...'),
-                  ],
-                ),
-              ),
-            ] else if (_errorPosicion != null) ...[
-              Card(
-                color: Colors.red[50],
+          // Panel de información de venta seleccionada (arriba)
+          if (_ventaSeleccionadaId != null && ventaSeleccionada != null)
+            Positioned(
+              top: 16,
+              left: 16,
+              right: 72,
+              child: Card(
+                elevation: 4,
                 child: Padding(
                   padding: const EdgeInsets.all(12),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
                     children: [
                       Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Icon(Icons.error_outline, color: Colors.red[600]),
-                          const SizedBox(width: 12),
                           Expanded(
-                            child: Text(
-                              _errorPosicion!,
-                              style: TextStyle(color: Colors.red[900]),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Venta #${ventaSeleccionada.numero}',
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 16,
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  ventaSeleccionada.clienteNombre ?? 'Cliente',
+                                  style: TextStyle(
+                                    color: Colors.grey[600],
+                                    fontSize: 13,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.close),
+                            padding: EdgeInsets.zero,
+                            constraints: const BoxConstraints(),
+                            onPressed: () {
+                              setState(() {
+                                _ventaSeleccionadaId = null;
+                              });
+                            },
+                          ),
+                        ],
+                      ),
+                      const Divider(height: 8),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            'Total:',
+                            style: TextStyle(color: Colors.grey[600]),
+                          ),
+                          Text(
+                            '\$${ventaSeleccionada.total.toStringAsFixed(2)}',
+                            style: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 14,
                             ),
                           ),
                         ],
                       ),
-                      const SizedBox(height: 12),
+                      const SizedBox(height: 8),
+                      if (ventaSeleccionada.latitud != null &&
+                          ventaSeleccionada.longitud != null)
+                        Text(
+                          '📍 ${ventaSeleccionada.latitud!.toStringAsFixed(4)}, ${ventaSeleccionada.longitud!.toStringAsFixed(4)}',
+                          style: TextStyle(
+                            color: Colors.grey[600],
+                            fontSize: 12,
+                            fontFamily: 'monospace',
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+
+          // Botones en la parte inferior
+          Positioned(
+            bottom: 0,
+            left: 0,
+            right: 0,
+            child: Consumer<EntregaProvider>(
+              builder: (context, provider, _) {
+                return Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.1),
+                        blurRadius: 4,
+                        offset: const Offset(0, -2),
+                      ),
+                    ],
+                  ),
+                  child: Column(
+                    spacing: 8,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
                       SizedBox(
                         width: double.infinity,
                         child: ElevatedButton.icon(
-                          onPressed: _obtenerPosicion,
-                          icon: const Icon(Icons.refresh),
-                          label: const Text('Reintentar'),
+                          onPressed: provider.isLoading ? null : _iniciarRuta,
+                          icon: const Icon(Icons.navigation),
+                          label: Text(
+                            provider.isLoading ? 'Iniciando...' : 'Iniciar Ruta',
+                          ),
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.red,
+                            backgroundColor: Colors.green,
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                            disabledBackgroundColor: Colors.grey,
                           ),
+                        ),
+                      ),
+                      SizedBox(
+                        width: double.infinity,
+                        child: OutlinedButton(
+                          onPressed: () => Navigator.of(context).pop(),
+                          child: const Text('Cancelar'),
                         ),
                       ),
                     ],
                   ),
-                ),
-              ),
-            ] else if (_posicionActual != null) ...[
-              Card(
-                color: Colors.green[50],
-                child: Padding(
-                  padding: const EdgeInsets.all(12),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Icon(Icons.location_on, color: Colors.green[600]),
-                          const SizedBox(width: 12),
-                          const Text(
-                            'Ubicación capturada',
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              color: Colors.green,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 12),
-                      _InfoFila(
-                        label: 'Latitud',
-                        valor: _posicionActual!.latitude.toStringAsFixed(6),
-                      ),
-                      const SizedBox(height: 8),
-                      _InfoFila(
-                        label: 'Longitud',
-                        valor: _posicionActual!.longitude.toStringAsFixed(6),
-                      ),
-                      const SizedBox(height: 8),
-                      _InfoFila(
-                        label: 'Precisión',
-                        valor: '${_posicionActual!.accuracy.toStringAsFixed(2)} m',
-                      ),
-                      const SizedBox(height: 8),
-                      _InfoFila(
-                        label: 'Altitud',
-                        valor: '${_posicionActual!.altitude.toStringAsFixed(2)} m',
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ],
-
-            const Spacer(),
-
-            // Botones
-            Consumer<EntregaProvider>(
-              builder: (context, provider, _) {
-                return Column(
-                  spacing: 8,
-                  children: [
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton.icon(
-                        onPressed: provider.isLoading ? null : _iniciarRuta,
-                        icon: const Icon(Icons.navigation),
-                        label: Text(provider.isLoading ? 'Iniciando...' : 'Iniciar Ruta'),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.green,
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(vertical: 12),
-                          disabledBackgroundColor: Colors.grey,
-                        ),
-                      ),
-                    ),
-                    SizedBox(
-                      width: double.infinity,
-                      child: OutlinedButton(
-                        onPressed: () => Navigator.of(context).pop(),
-                        child: const Text('Cancelar'),
-                      ),
-                    ),
-                  ],
                 );
               },
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

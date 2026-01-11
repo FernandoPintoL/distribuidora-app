@@ -1,0 +1,123 @@
+╔═════════════════════════════════════════════════════════════════════════════╗
+║           UBICACIÓN DE LOS DEBUG PRINTS EN EL CÓDIGO                         ║
+╚═════════════════════════════════════════════════════════════════════════════╝
+
+📁 ARCHIVO: D:\paucara\distribuidora-app\lib\widgets\loading_overlay.dart
+
+═════════════════════════════════════════════════════════════════════════════
+
+🔴 DEBUG PRINT #1 - Comentario de Verificación (líneas 3-17)
+   ├─ Tipo: Bloque de comentario ASCII
+   ├─ Objetivo: Identificar el archivo correcto
+   ├─ Ubicación: Al inicio del archivo, después de los imports
+   └─ Contenido:
+      ╔═══════════════════════════════════════════════════════════════════════╗
+      ║                   ✅ ARCHIVO CORRECTO DE LOADING OVERLAY             ║
+      ║                                                                        ║
+      ║  Ruta: lib/widgets/loading_overlay.dart                               ║
+      ║  Estado: MEJORADO Y OPTIMIZADO PARA MODO OSCURO                       ║
+      └─ Si ves este comentario en el código = ✅ ARCHIVO CORRECTO
+
+═════════════════════════════════════════════════════════════════════════════
+
+🟡 DEBUG PRINT #2 - show() (línea 40-44)
+   ├─ Clase: _LoadingOverlayState
+   ├─ Método: _show()
+   ├─ Se ejecuta: Cuando presionas el botón de login
+   └─ Imprime en consola:
+      ═══════════════════════════════════════════════════════════════════════
+      🔄 LOADING_OVERLAY.DART - show() LLAMADO
+      📝 Mensaje: "Iniciando sesión..."
+      🎯 Dismissible: false
+      ═══════════════════════════════════════════════════════════════════════
+
+═════════════════════════════════════════════════════════════════════════════
+
+🟢 DEBUG PRINT #3 - _LoadingWidgetState.initState() (línea 115-119)
+   ├─ Clase: _LoadingWidgetState
+   ├─ Método: initState()
+   ├─ Se ejecuta: Cuando se crea el widget de loading
+   └─ Imprime en consola:
+      ═══════════════════════════════════════════════════════════════════════
+      ✅ LOADING_OVERLAY.DART - _LoadingWidgetState INICIALIZADO
+      📝 Mensaje: "Iniciando sesión..."
+      🎨 Modo Oscuro: false
+      ═══════════════════════════════════════════════════════════════════════
+
+═════════════════════════════════════════════════════════════════════════════
+
+🔵 DEBUG PRINT #4 - _LoadingWidget.build() (línea 147)
+   ├─ Clase: _LoadingWidgetState
+   ├─ Método: build()
+   ├─ Se ejecuta: Cada vez que el widget se redibuja (muchas veces por segundo)
+   └─ Imprime en consola:
+      🎨 LOADING_OVERLAY.DART - _LoadingWidget.build() RENDERIZADO
+
+═════════════════════════════════════════════════════════════════════════════
+
+🟣 DEBUG PRINT #5 - hide() (línea 53-55)
+   ├─ Clase: _LoadingOverlayState
+   ├─ Método: _hide()
+   ├─ Se ejecuta: Cuando el login se completa exitosamente
+   └─ Imprime en consola:
+      ═══════════════════════════════════════════════════════════════════════
+      ✅ LOADING_OVERLAY.DART - hide() LLAMADO
+      ═══════════════════════════════════════════════════════════════════════
+
+═════════════════════════════════════════════════════════════════════════════
+
+📊 DIAGRAMA DE FLUJO DE DEBUG PRINTS:
+
+   Usuario presiona botón LOGIN
+          ↓
+   _LoadingOverlayState._show() 
+          ↓
+   Imprime: 🔄 LOADING_OVERLAY.DART - show() LLAMADO
+          ↓
+   Se crea _LoadingWidget
+          ↓
+   _LoadingWidgetState.initState()
+          ↓
+   Imprime: ✅ LOADING_OVERLAY.DART - _LoadingWidgetState INICIALIZADO
+          ↓
+   _LoadingWidget.build()
+          ↓
+   Imprime: 🎨 LOADING_OVERLAY.DART - _LoadingWidget.build() RENDERIZADO
+          ↓
+   (Se repite cada frame de animación)
+          ↓
+   El servidor responde (login completado)
+          ↓
+   _LoadingOverlayState._hide()
+          ↓
+   Imprime: ✅ LOADING_OVERLAY.DART - hide() LLAMADO
+          ↓
+   Se navega a pantalla siguiente
+
+═════════════════════════════════════════════════════════════════════════════
+
+🎯 CÓMO SABER SI ESTAMOS USANDO EL ARCHIVO CORRECTO:
+
+   ✅ SI VES AL MENOS UNO DE ESTOS MENSAJES EN LA CONSOLA:
+      "LOADING_OVERLAY.DART - show() LLAMADO"
+      "LOADING_OVERLAY.DART - _LoadingWidgetState INICIALIZADO"
+      "LOADING_OVERLAY.DART - build() RENDERIZADO"
+      "LOADING_OVERLAY.DART - hide() LLAMADO"
+
+      → ✅ ESTAMOS USANDO EL ARCHIVO CORRECTO
+
+   ❌ SI NO VES NINGUNO:
+      → ❌ Flutter está usando OTRO loading_overlay.dart
+      → Solución: flutter clean && flutter run
+
+═════════════════════════════════════════════════════════════════════════════
+
+💻 CÓDIGO EXACTO DE LOS DEBUG PRINTS:
+
+   debugPrint('═══════════════════════════════════════════════════════════');
+   debugPrint('🔄 LOADING_OVERLAY.DART - show() LLAMADO');
+   debugPrint('📝 Mensaje: "$message"');
+   debugPrint('🎯 Dismissible: $dismissible');
+   debugPrint('═══════════════════════════════════════════════════════════');
+
+═════════════════════════════════════════════════════════════════════════════

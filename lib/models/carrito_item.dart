@@ -2,7 +2,7 @@ import 'product.dart';
 
 class CarritoItem {
   final Product producto;
-  final double cantidad;
+  final int cantidad;
   final double precioUnitario;
   final String? observaciones;
 
@@ -21,22 +21,22 @@ class CarritoItem {
   /// Verificar si el producto tiene stock suficiente para la cantidad solicitada
   bool tieneStockSuficiente() {
     final stockDisponible = producto.stockPrincipal?.cantidadDisponible ?? 0;
-    return cantidad <= (stockDisponible as num).toDouble();
+    return cantidad <= (stockDisponible as num).toInt();
   }
 
   /// Obtener cantidad disponible del almacén principal
-  double get cantidadDisponible {
+  int get cantidadDisponible {
     final stock = producto.stockPrincipal?.cantidadDisponible ?? 0;
-    return (stock as num).toDouble();
+    return (stock as num).toInt();
   }
 
   /// Obtener cantidad máxima que se puede agregar
-  double get cantidadMaximaDisponible {
+  int get cantidadMaximaDisponible {
     return cantidadDisponible;
   }
 
   /// Obtener cantidad de unidades que exceden el stock
-  double get cantidadExcedida {
+  int get cantidadExcedida {
     final exceso = cantidad - cantidadDisponible;
     return exceso > 0 ? exceso : 0;
   }
@@ -49,7 +49,7 @@ class CarritoItem {
   // Crear copia con modificaciones
   CarritoItem copyWith({
     Product? producto,
-    double? cantidad,
+    int? cantidad,
     double? precioUnitario,
     String? observaciones,
   }) {
@@ -77,7 +77,7 @@ class CarritoItem {
   factory CarritoItem.fromJson(Map<String, dynamic> json) {
     return CarritoItem(
       producto: Product.fromJson(json['producto']),
-      cantidad: json['cantidad']?.toDouble() ?? 1.0,
+      cantidad: json['cantidad']?.toInt() ?? 1,
       precioUnitario: json['precio_unitario']?.toDouble(),
       observaciones: json['observaciones'],
     );

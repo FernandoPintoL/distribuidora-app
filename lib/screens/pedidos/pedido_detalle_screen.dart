@@ -8,6 +8,7 @@ import 'package:timeline_tile/timeline_tile.dart';
 import '../../widgets/widgets.dart';
 import '../../widgets/dialogs/renovacion_reservas_dialog.dart';
 import '../../config/config.dart';
+import '../../services/estados_helpers.dart'; // ✅ AGREGADO para estados dinámicos
 
 class PedidoDetalleScreen extends StatefulWidget {
   final int pedidoId;
@@ -25,6 +26,7 @@ class _PedidoDetalleScreenState extends State<PedidoDetalleScreen> {
   @override
   void initState() {
     super.initState();
+    print("Iniciando detalle de pedido ID: ${widget.pedidoId}");
     // Usar SchedulerBinding para posponer la carga después de que termine la construcción
     SchedulerBinding.instance.addPostFrameCallback((_) {
       _cargarPedido();
@@ -215,8 +217,9 @@ class _PedidoDetalleScreenState extends State<PedidoDetalleScreen> {
       bottomNavigationBar: Consumer<PedidoProvider>(
         builder: (context, pedidoProvider, _) {
           final pedido = pedidoProvider.pedidoActual;
-          final puedeConvertir = pedido?.estado == EstadoPedido.PENDIENTE ||
-              pedido?.estado == EstadoPedido.APROBADA;
+          // ✅ ACTUALIZADO: Usar códigos de estado String en lugar de enum
+          final puedeConvertir = pedido?.estadoCodigo == 'PENDIENTE' ||
+              pedido?.estadoCodigo == 'APROBADA';
 
           if (pedido == null) {
             return const SizedBox.shrink();
@@ -312,8 +315,9 @@ class _PedidoDetalleScreenState extends State<PedidoDetalleScreen> {
                       _buildHeader(pedido),
 
                       // Botón de tracking (si está en ruta)
-                      if (pedido.estado == EstadoPedido.EN_RUTA ||
-                          pedido.estado == EstadoPedido.LLEGO)
+                      // ✅ ACTUALIZADO: Usar códigos de estado String en lugar de enum
+                      if (pedido.estadoCodigo == 'EN_RUTA' ||
+                          pedido.estadoCodigo == 'LLEGO')
                         _buildSeccionTracking(pedido),
 
                       // Timeline de estados
@@ -383,15 +387,20 @@ class _PedidoDetalleScreenState extends State<PedidoDetalleScreen> {
   }
 
   Widget _buildHeader(Pedido pedido) {
-    final estadoInfo = pedido.estadoInfo;
+    // ✅ ACTUALIZADO: Usar datos dinámicos en lugar de enum EstadoInfo
+    final colorHex = EstadosHelper.getEstadoColor(
+      pedido.estadoCategoria,
+      pedido.estadoCodigo,
+    );
+    final estadoColor = _hexToColor(colorHex);
 
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: estadoInfo.color.withOpacity(0.1),
+        color: estadoColor.withOpacity(0.1),
         border: Border(
-          bottom: BorderSide(color: estadoInfo.color.withOpacity(0.3)),
+          bottom: BorderSide(color: estadoColor.withOpacity(0.3)),
         ),
       ),
       child: Column(
@@ -405,16 +414,25 @@ class _PedidoDetalleScreenState extends State<PedidoDetalleScreen> {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             decoration: BoxDecoration(
-              color: estadoInfo.color,
+              color: estadoColor,
               borderRadius: BorderRadius.circular(20),
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(estadoInfo.icono, size: 20, color: Colors.white),
+                // ✅ El icono puede ser un emoji (string) o nombre de icono
+                Text(
+                  EstadosHelper.getEstadoIcon(
+                    pedido.estadoCategoria,
+                    pedido.estadoCodigo,
+                  ),
+                  style: const TextStyle(
+                    fontSize: 20,
+                  ),
+                ),
                 const SizedBox(width: 8),
                 Text(
-                  estadoInfo.nombre,
+                  pedido.estadoNombre,
                   style: const TextStyle(
                     color: Colors.white,
                     fontWeight: FontWeight.w600,
@@ -423,11 +441,6 @@ class _PedidoDetalleScreenState extends State<PedidoDetalleScreen> {
                 ),
               ],
             ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            estadoInfo.descripcion,
-            style: TextStyle(color: Colors.grey.shade700, fontSize: 14),
           ),
         ],
       ),
@@ -475,7 +488,20 @@ class _PedidoDetalleScreenState extends State<PedidoDetalleScreen> {
             final historial = entry.value;
             final isFirst = index == 0;
             final isLast = index == pedido.historialEstados.length - 1;
-            final estadoInfo = EstadoInfo.getInfo(historial.estadoNuevo);
+            // ✅ ACTUALIZADO: Usar EstadosHelper en lugar de EstadoInfo enum
+            final colorHex = EstadosHelper.getEstadoColor(
+              pedido.estadoCategoria,
+              historial.estadoNuevo,
+            );
+            final estadoColor = _hexToColor(colorHex);
+            final estadoNombre = EstadosHelper.getEstadoLabel(
+              pedido.estadoCategoria,
+              historial.estadoNuevo,
+            );
+            final estadoIcon = EstadosHelper.getEstadoIcon(
+              pedido.estadoCategoria,
+              historial.estadoNuevo,
+            );
 
             return TimelineTile(
               isFirst: isFirst,
@@ -485,14 +511,14 @@ class _PedidoDetalleScreenState extends State<PedidoDetalleScreen> {
                 height: 32,
                 indicator: Container(
                   decoration: BoxDecoration(
-                    color: estadoInfo.color,
+                    color: estadoColor,
                     shape: BoxShape.circle,
                   ),
-                  child: Icon(estadoInfo.icono, color: Colors.white, size: 18),
+                  child: Icon(estadoIcon as IconData?, color: Colors.white, size: 18),
                 ),
               ),
               beforeLineStyle: LineStyle(
-                color: estadoInfo.color.withOpacity(0.3),
+                color: estadoColor.withOpacity(0.3),
                 thickness: 2,
               ),
               endChild: Container(
@@ -501,7 +527,7 @@ class _PedidoDetalleScreenState extends State<PedidoDetalleScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      estadoInfo.nombre,
+                      estadoNombre,
                       style: const TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
@@ -761,7 +787,7 @@ class _PedidoDetalleScreenState extends State<PedidoDetalleScreen> {
                           ),
                           const SizedBox(height: 4),
                           Text(
-                            'Cantidad: ${item.cantidad.toStringAsFixed(item.cantidad.truncateToDouble() == item.cantidad ? 0 : 2)}',
+                            'Cantidad: ${item.cantidad}',
                             style: const TextStyle(
                               color: Colors.grey,
                               fontSize: 14,
@@ -1013,5 +1039,19 @@ class _PedidoDetalleScreenState extends State<PedidoDetalleScreen> {
         ],
       ),
     );
+  }
+
+  /// ✅ HELPER: Convertir hex string (#RRGGBB) a Color
+  Color _hexToColor(String hexString) {
+    final buffer = StringBuffer();
+    if (hexString.length == 6 || hexString.length == 7) {
+      buffer.write('ff');
+      buffer.write(hexString.replaceFirst('#', ''));
+    } else if (hexString.length == 8 || hexString.length == 9) {
+      buffer.write(hexString.replaceFirst('#', ''));
+    } else {
+      return Colors.grey; // Fallback
+    }
+    return Color(int.parse(buffer.toString(), radix: 16));
   }
 }

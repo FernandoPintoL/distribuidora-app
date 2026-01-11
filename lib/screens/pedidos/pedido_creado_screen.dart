@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../models/models.dart';
+import '../../services/estados_helpers.dart'; // ✅ AGREGADO para estados dinámicos
+import '../../extensions/theme_extension.dart';
 
 class PedidoCreadoScreen extends StatelessWidget {
   final Pedido pedido;
@@ -8,7 +10,11 @@ class PedidoCreadoScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = context.colorScheme;
+    final isDark = context.isDark;
+
     return Scaffold(
+      backgroundColor: colorScheme.surface,
       body: SafeArea(
         child: SingleChildScrollView(
           child: Padding(
@@ -22,21 +28,25 @@ class PedidoCreadoScreen extends StatelessWidget {
                 height: 200,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: Colors.green.shade50,
+                  color: Color(0xFF4CAF50).withOpacity(isDark ? 0.15 : 0.1),
                 ),
                 child: Icon(
                   Icons.check_circle,
                   size: 120,
-                  color: Colors.green.shade600,
+                  color: Color(0xFF4CAF50),
                 ),
               ),
 
               const SizedBox(height: 32),
 
               // Título
-              const Text(
+              Text(
                 'Proforma Creada',
-                style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
+                style: TextStyle(
+                  fontSize: 28,
+                  fontWeight: FontWeight.bold,
+                  color: colorScheme.onSurface,
+                ),
                 textAlign: TextAlign.center,
               ),
 
@@ -45,7 +55,10 @@ class PedidoCreadoScreen extends StatelessWidget {
               // Mensaje
               Text(
                 'Tu pedido ha sido registrado exitosamente',
-                style: TextStyle(fontSize: 16, color: Colors.grey.shade600),
+                style: TextStyle(
+                  fontSize: 16,
+                  color: colorScheme.onSurfaceVariant,
+                ),
                 textAlign: TextAlign.center,
               ),
 
@@ -54,6 +67,7 @@ class PedidoCreadoScreen extends StatelessWidget {
               // Card con información del pedido
               Card(
                 elevation: 2,
+                color: colorScheme.surface,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
@@ -65,16 +79,20 @@ class PedidoCreadoScreen extends StatelessWidget {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          const Text(
+                          Text(
                             'Número de Proforma',
-                            style: TextStyle(color: Colors.grey, fontSize: 14),
+                            style: TextStyle(
+                              color: colorScheme.onSurfaceVariant,
+                              fontSize: 14,
+                            ),
                           ),
                           Flexible(
                             child: Text(
                               pedido.numero,
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontWeight: FontWeight.bold,
                                 fontSize: 16,
+                                color: colorScheme.onSurface,
                               ),
                               textAlign: TextAlign.right,
                               overflow: TextOverflow.ellipsis,
@@ -83,16 +101,23 @@ class PedidoCreadoScreen extends StatelessWidget {
                         ],
                       ),
 
-                      const Divider(height: 24),
+                      Divider(
+                        height: 24,
+                        color: colorScheme.outline.withAlpha(isDark ? 80 : 40),
+                      ),
 
                       // Estado
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          const Text(
+                          Text(
                             'Estado',
-                            style: TextStyle(color: Colors.grey, fontSize: 14),
+                            style: TextStyle(
+                              color: colorScheme.onSurfaceVariant,
+                              fontSize: 14,
+                            ),
                           ),
+                          // ✅ ACTUALIZADO: Badge dinámico usando datos del estado
                           Flexible(
                             child: Container(
                               padding: const EdgeInsets.symmetric(
@@ -100,23 +125,31 @@ class PedidoCreadoScreen extends StatelessWidget {
                                 vertical: 6,
                               ),
                               decoration: BoxDecoration(
-                                color: pedido.estadoInfo.color.withOpacity(0.1),
+                                // ✅ CORREGIDO: Convertir hex string a Color
+                                color: _hexToColor(EstadosHelper.getEstadoColor(
+                                  pedido.estadoCategoria,
+                                  pedido.estadoCodigo,
+                                )),
                                 borderRadius: BorderRadius.circular(20),
                               ),
                               child: Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
-                                  Icon(
-                                    pedido.estadoInfo.icono,
-                                    size: 16,
-                                    color: pedido.estadoInfo.color,
+                                  Text(
+                                    EstadosHelper.getEstadoIcon(
+                                      pedido.estadoCategoria,
+                                      pedido.estadoCodigo,
+                                    ),
+                                    style: const TextStyle(
+                                      fontSize: 16,
+                                    ),
                                   ),
                                   const SizedBox(width: 6),
                                   Flexible(
                                     child: Text(
-                                      pedido.estadoInfo.nombre,
-                                      style: TextStyle(
-                                        color: pedido.estadoInfo.color,
+                                      pedido.estadoNombre,
+                                      style: const TextStyle(
+                                        color: Colors.white,
                                         fontWeight: FontWeight.w600,
                                       ),
                                       overflow: TextOverflow.ellipsis,
@@ -129,17 +162,21 @@ class PedidoCreadoScreen extends StatelessWidget {
                         ],
                       ),
 
-                      const Divider(height: 24),
+                      Divider(
+                        height: 24,
+                        color: colorScheme.outline.withAlpha(isDark ? 80 : 40),
+                      ),
 
                       // Total
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          const Text(
+                          Text(
                             'Total',
                             style: TextStyle(
                               fontSize: 18,
                               fontWeight: FontWeight.w600,
+                              color: colorScheme.onSurface,
                             ),
                           ),
                           Flexible(
@@ -148,7 +185,7 @@ class PedidoCreadoScreen extends StatelessWidget {
                               style: const TextStyle(
                                 fontSize: 20,
                                 fontWeight: FontWeight.bold,
-                                color: Colors.green,
+                                color: Color(0xFF4CAF50),
                               ),
                               textAlign: TextAlign.right,
                               overflow: TextOverflow.ellipsis,
@@ -167,7 +204,7 @@ class PedidoCreadoScreen extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: Colors.blue.shade50,
+                  color: colorScheme.primary.withOpacity(isDark ? 0.15 : 0.08),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Row(
@@ -175,7 +212,7 @@ class PedidoCreadoScreen extends StatelessWidget {
                   children: [
                     Icon(
                       Icons.info_outline,
-                      color: Colors.blue.shade700,
+                      color: colorScheme.primary,
                       size: 24,
                     ),
                     const SizedBox(width: 12),
@@ -184,7 +221,7 @@ class PedidoCreadoScreen extends StatelessWidget {
                         'Tu proforma está pendiente de aprobación. Te notificaremos cuando sea aprobada y esté lista para entrega.',
                         style: TextStyle(
                           fontSize: 14,
-                          color: Colors.blue.shade900,
+                          color: colorScheme.onSurface,
                           height: 1.4,
                         ),
                       ),
@@ -259,5 +296,19 @@ class PedidoCreadoScreen extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  /// ✅ HELPER: Convertir hex string (#RRGGBB) a Color
+  Color _hexToColor(String hexString) {
+    final buffer = StringBuffer();
+    if (hexString.length == 6 || hexString.length == 7) {
+      buffer.write('ff');
+      buffer.write(hexString.replaceFirst('#', ''));
+    } else if (hexString.length == 8 || hexString.length == 9) {
+      buffer.write(hexString.replaceFirst('#', ''));
+    } else {
+      return Colors.grey; // Fallback
+    }
+    return Color(int.parse(buffer.toString(), radix: 16));
   }
 }

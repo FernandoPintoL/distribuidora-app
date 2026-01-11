@@ -1,5 +1,21 @@
 import 'package:flutter/material.dart';
 
+/*
+╔═══════════════════════════════════════════════════════════════════════════╗
+║                   ✅ ARCHIVO CORRECTO DE LOADING OVERLAY                 ║
+║                                                                            ║
+║  Ruta: lib/widgets/loading_overlay.dart                                   ║
+║  Estado: MEJORADO Y OPTIMIZADO PARA MODO OSCURO                           ║
+║                                                                            ║
+║  Si ves mensajes en la consola que dicen:                                 ║
+║  - "🔄 LOADING_OVERLAY.DART - show() LLAMADO"                            ║
+║  - "✅ LOADING_OVERLAY.DART - hide() LLAMADO"                            ║
+║  - "🎨 LOADING_OVERLAY.DART - _LoadingWidget.build() RENDERIZADO"        ║
+║                                                                            ║
+║  ✅ CONFIRMA QUE ESTAMOS USANDO EL ARCHIVO CORRECTO                      ║
+╚═══════════════════════════════════════════════════════════════════════════╝
+*/
+
 /// Widget que muestra un overlay de carga sobre el contenido actual
 /// Úsalo con LoadingOverlay.show() y LoadingOverlay.hide()
 class LoadingOverlay extends StatefulWidget {
@@ -17,10 +33,19 @@ class LoadingOverlay extends StatefulWidget {
     String message = 'Cargando...',
     bool dismissible = false,
   }) {
+    debugPrint('═══════════════════════════════════════════════════════════');
+    debugPrint('📞 LoadingOverlay.show() CALLED STATICALLY');
+    debugPrint('📝 Message: "$message"');
+    debugPrint('🔑 GlobalKey state: ${_key.currentState}');
+    debugPrint('═══════════════════════════════════════════════════════════');
     _key.currentState?._show(message: message, dismissible: dismissible);
   }
 
   static void hide() {
+    debugPrint('═══════════════════════════════════════════════════════════');
+    debugPrint('📞 LoadingOverlay.hide() CALLED STATICALLY');
+    debugPrint('🔑 GlobalKey state: ${_key.currentState}');
+    debugPrint('═══════════════════════════════════════════════════════════');
     _key.currentState?._hide();
   }
 
@@ -33,11 +58,24 @@ class _LoadingOverlayState extends State<LoadingOverlay> {
   String _message = 'Cargando...';
   bool _dismissible = false;
 
+  @override
+  void initState() {
+    super.initState();
+    debugPrint('═══════════════════════════════════════════════════════════');
+    debugPrint('🎬 _LoadingOverlayState INITIALIZED');
+    debugPrint('🔑 GlobalKey is ready for use');
+    debugPrint('═══════════════════════════════════════════════════════════');
+  }
+
   void _show({
     required String message,
     required bool dismissible,
   }) {
-    debugPrint('🔄 LoadingOverlay.show() called with message: "$message"');
+    debugPrint('═══════════════════════════════════════════════════════════');
+    debugPrint('🔄 LOADING_OVERLAY.DART - show() LLAMADO');
+    debugPrint('📝 Mensaje: "$message"');
+    debugPrint('🎯 Dismissible: $dismissible');
+    debugPrint('═══════════════════════════════════════════════════════════');
     setState(() {
       _isLoading = true;
       _message = message;
@@ -46,7 +84,9 @@ class _LoadingOverlayState extends State<LoadingOverlay> {
   }
 
   void _hide() {
-    debugPrint('✅ LoadingOverlay.hide() called');
+    debugPrint('═══════════════════════════════════════════════════════════');
+    debugPrint('✅ LOADING_OVERLAY.DART - hide() LLAMADO');
+    debugPrint('═══════════════════════════════════════════════════════════');
     if (mounted) {
       setState(() {
         _isLoading = false;
@@ -56,19 +96,27 @@ class _LoadingOverlayState extends State<LoadingOverlay> {
 
   @override
   Widget build(BuildContext context) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+
     return Stack(
       children: [
         widget.child,
         if (_isLoading)
-          GestureDetector(
-            onTap: _dismissible ? _hide : null,
-            child: Container(
-              color: Colors.black.withAlpha((0.3 * 255).toInt()),
-              child: Center(
-                child: _LoadingWidget(
-                  message: _message,
-                  dismissible: _dismissible,
-                  onDismiss: _hide,
+          // ✅ MEJORADO: Asegurar que el overlay ocupe toda la pantalla
+          Positioned.fill(
+            child: GestureDetector(
+              onTap: _dismissible ? _hide : null,
+              child: Container(
+                // ✅ MEJORADO: Adaptado a modo oscuro
+                color: isDarkMode
+                    ? Colors.black.withAlpha((0.4 * 255).toInt())
+                    : Colors.black.withAlpha((0.3 * 255).toInt()),
+                child: Center(
+                  child: _LoadingWidget(
+                    message: _message,
+                    dismissible: _dismissible,
+                    onDismiss: _hide,
+                  ),
                 ),
               ),
             ),
@@ -103,6 +151,13 @@ class _LoadingWidgetState extends State<_LoadingWidget>
   void initState() {
     super.initState();
 
+    // ✅ DEBUG: Verificar que estamos usando el archivo correcto
+    debugPrint('═══════════════════════════════════════════════════════════');
+    debugPrint('✅ LOADING_OVERLAY.DART - _LoadingWidgetState INICIALIZADO');
+    debugPrint('📝 Mensaje: "${widget.message}"');
+    debugPrint('🎨 Modo Oscuro: ${Theme.of(context).brightness == Brightness.dark}');
+    debugPrint('═══════════════════════════════════════════════════════════');
+
     _scaleController = AnimationController(
       duration: const Duration(milliseconds: 500),
       vsync: this,
@@ -123,87 +178,143 @@ class _LoadingWidgetState extends State<_LoadingWidget>
 
   @override
   Widget build(BuildContext context) {
-    // Usar colores del tema actual
+    debugPrint('🎨 LOADING_OVERLAY.DART - _LoadingWidget.build() RENDERIZADO');
+
+    // ✅ MEJORADO: Usar colores del tema actual
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
+    final colorScheme = theme.colorScheme;
 
     return ScaleTransition(
       scale: _scaleAnimation,
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          // Card contenedor
+          // ✅ MEJORADO: Card contenedor con mejor diseño
           Container(
-            padding: const EdgeInsets.all(32),
+            padding: const EdgeInsets.all(40),
             decoration: BoxDecoration(
+              // ✅ MEJORADO: Color adaptado al tema
               color: isDark ? theme.cardColor : Colors.white,
-              borderRadius: BorderRadius.circular(20),
+              borderRadius: BorderRadius.circular(24),
+              // ✅ MEJORADO: Sombras adaptadas al tema
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withAlpha((0.15 * 255).toInt()),
-                  blurRadius: 20,
-                  offset: const Offset(0, 10),
+                  color: isDark
+                      ? Colors.black.withAlpha((0.3 * 255).toInt())
+                      : Colors.black.withAlpha((0.15 * 255).toInt()),
+                  blurRadius: 30,
+                  offset: const Offset(0, 15),
+                  spreadRadius: 5,
                 ),
               ],
             ),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                // Logo con animación de rotación
+                // ✅ MEJORADO: Logo cuadrado con bordes curvos (no circular)
                 SizedBox(
-                  width: 80,
-                  height: 80,
+                  width: 120,
+                  height: 120,
                   child: Stack(
                     alignment: Alignment.center,
                     children: [
-                      // Círculo de fondo animado
-                      _RotatingCircle(),
-                      // Logo
-                      Image.asset(
-                        'assets/icons/icon.png',
-                        width: 60,
-                        height: 60,
-                        errorBuilder: (context, error, stackTrace) {
-                          return Icon(
-                            Icons.shopping_cart,
-                            size: 60,
-                            color: theme.primaryColor,
-                          );
-                        },
+                      // Borde giratorio cuadrado con bordes redondeados
+                      _RotatingSquare(
+                        size: 120,
+                        primaryColor: colorScheme.primary,
+                        isDarkMode: isDark,
+                      ),
+                      // Logo con efecto de sombra y bordes curvos
+                      Container(
+                        width: 85,
+                        height: 85,
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(18),
+                          boxShadow: [
+                            BoxShadow(
+                              color: colorScheme.primary.withAlpha((0.2 * 255).toInt()),
+                              blurRadius: 20,
+                              spreadRadius: 2,
+                            ),
+                          ],
+                        ),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(18),
+                          child: Image.asset(
+                            'assets/icons/icon.png',
+                            fit: BoxFit.contain,
+                            errorBuilder: (context, error, stackTrace) {
+                              return Container(
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(18),
+                                  color: colorScheme.primaryContainer,
+                                ),
+                                child: Icon(
+                                  Icons.shopping_bag,
+                                  size: 50,
+                                  color: colorScheme.primary,
+                                ),
+                              );
+                            },
+                          ),
+                        ),
                       ),
                     ],
                   ),
                 ),
 
-                const SizedBox(height: 24),
+                const SizedBox(height: 32),
 
-                // Indicador de progreso personalizado
-                _AnimatedLoadingBar(),
+                // ✅ MEJORADO: Indicador de progreso personalizado
+                _AnimatedLoadingBar(primaryColor: colorScheme.primary),
 
-                const SizedBox(height: 24),
+                const SizedBox(height: 28),
 
-                // Texto de mensaje - SIN especificar fontFamily para usar la fuente por defecto
+                // ✅ MEJORADO: Texto de mensaje con mejor tipografía
                 Text(
                   widget.message,
                   style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w500,
-                    color: theme.textTheme.bodyLarge?.color ??
-                           (isDark ? Colors.white : Colors.black87),
+                    fontSize: 18,
+                    fontWeight: FontWeight.w600,
+                    color: isDark ? Colors.white : Colors.black87,
+                    letterSpacing: 0.3,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+
+                // ✅ MEJORADO: Subtítulo informativo
+                const SizedBox(height: 8),
+                Text(
+                  'Por favor espera...',
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w400,
+                    color: isDark
+                        ? Colors.grey[400]
+                        : Colors.grey[600],
+                    letterSpacing: 0.2,
                   ),
                   textAlign: TextAlign.center,
                 ),
 
                 // Botón de cancelar (opcional)
                 if (widget.dismissible) ...[
-                  const SizedBox(height: 16),
-                  OutlinedButton.icon(
-                    onPressed: widget.onDismiss,
-                    icon: const Icon(Icons.close),
-                    label: const Text('Cancelar'),
-                    style: OutlinedButton.styleFrom(
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
+                  const SizedBox(height: 24),
+                  SizedBox(
+                    width: double.infinity,
+                    child: OutlinedButton.icon(
+                      onPressed: widget.onDismiss,
+                      icon: const Icon(Icons.close, size: 18),
+                      label: const Text('Cancelar'),
+                      style: OutlinedButton.styleFrom(
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        side: BorderSide(
+                          color: colorScheme.primary.withAlpha((0.5 * 255).toInt()),
+                        ),
+                        padding: const EdgeInsets.symmetric(vertical: 12),
                       ),
                     ),
                   ),
@@ -217,13 +328,23 @@ class _LoadingWidgetState extends State<_LoadingWidget>
   }
 }
 
-/// Círculo rotativo que sirve como fondo del logo
-class _RotatingCircle extends StatefulWidget {
+/// ✅ MEJORADO: Borde cuadrado con bordes curvos adaptado al tema
+class _RotatingSquare extends StatefulWidget {
+  final double size;
+  final Color primaryColor;
+  final bool isDarkMode;
+
+  const _RotatingSquare({
+    required this.size,
+    required this.primaryColor,
+    required this.isDarkMode,
+  });
+
   @override
-  State<_RotatingCircle> createState() => _RotatingCircleState();
+  State<_RotatingSquare> createState() => _RotatingSquareState();
 }
 
-class _RotatingCircleState extends State<_RotatingCircle>
+class _RotatingSquareState extends State<_RotatingSquare>
     with SingleTickerProviderStateMixin {
   late AnimationController _rotationController;
 
@@ -247,12 +368,13 @@ class _RotatingCircleState extends State<_RotatingCircle>
     return RotationTransition(
       turns: _rotationController,
       child: Container(
-        width: 80,
-        height: 80,
+        width: widget.size,
+        height: widget.size,
         decoration: BoxDecoration(
-          shape: BoxShape.circle,
+          // ✅ MEJORADO: Cuadrado con bordes redondeados (no circular)
+          borderRadius: BorderRadius.circular(28),
           border: Border.all(
-            color: Colors.blue[300]!,
+            color: widget.primaryColor.withAlpha((0.6 * 255).toInt()),
             width: 3,
           ),
         ),
@@ -261,8 +383,12 @@ class _RotatingCircleState extends State<_RotatingCircle>
   }
 }
 
-/// Barra de carga animada
+/// ✅ MEJORADO: Barra de carga animada adaptada al tema
 class _AnimatedLoadingBar extends StatefulWidget {
+  final Color primaryColor;
+
+  const _AnimatedLoadingBar({required this.primaryColor});
+
   @override
   State<_AnimatedLoadingBar> createState() => _AnimatedLoadingBarState();
 }
@@ -276,12 +402,12 @@ class _AnimatedLoadingBarState extends State<_AnimatedLoadingBar>
   void initState() {
     super.initState();
     _controller = AnimationController(
-      duration: const Duration(milliseconds: 1500),
+      duration: const Duration(milliseconds: 1600),
       vsync: this,
     )..repeat();
 
     _animation = Tween<double>(begin: 0, end: 1).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.ease),
+      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
     );
   }
 
@@ -293,13 +419,21 @@ class _AnimatedLoadingBarState extends State<_AnimatedLoadingBar>
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
+    // ✅ MEJORADO: Colores adaptados al tema
+    final backgroundColor = isDark
+        ? Colors.grey[700]!
+        : Colors.grey[200]!;
+
     return ClipRRect(
-      borderRadius: BorderRadius.circular(4),
+      borderRadius: BorderRadius.circular(6),
       child: SizedBox(
-        width: 150,
-        height: 6,
+        width: 180,
+        height: 8,
         child: Container(
-          color: Colors.grey[200],
+          color: backgroundColor,
           child: AnimatedBuilder(
             animation: _animation,
             builder: (context, child) {
@@ -307,9 +441,9 @@ class _AnimatedLoadingBarState extends State<_AnimatedLoadingBar>
                 children: [
                   // Barra de fondo
                   Container(
-                    color: Colors.grey[200],
+                    color: backgroundColor,
                   ),
-                  // Barra de progreso animada
+                  // ✅ MEJORADO: Barra de progreso con gradiente del tema
                   Align(
                     alignment: Alignment.centerLeft,
                     child: FractionallySizedBox(
@@ -318,8 +452,8 @@ class _AnimatedLoadingBarState extends State<_AnimatedLoadingBar>
                         decoration: BoxDecoration(
                           gradient: LinearGradient(
                             colors: [
-                              Colors.blue[400]!,
-                              Colors.blue[600]!,
+                              widget.primaryColor.withAlpha((0.6 * 255).toInt()),
+                              widget.primaryColor,
                             ],
                           ),
                         ),

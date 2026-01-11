@@ -1,26 +1,27 @@
 class Chofer {
   final int id;
-  final int userId;
-  final String nombres;
-  final String apellidos;
-  final String ci;
-  final String telefono;
+  final int? userId;  // FASE 3: Ahora opcional (puede ser null si solo viene el User)
+  final String? nombres;  // FASE 3: Ahora opcional (no viene en User response)
+  final String? apellidos;  // FASE 3: Ahora opcional (no viene en User response)
+  final String? ci;  // FASE 3: Ahora opcional (no viene en User response)
+  final String? telefono;  // FASE 3: Ahora opcional (no viene en User response)
   final String? licenciaConducir;
   final String? categoriaLicencia;
   final DateTime? fechaVencimientoLicencia;
   final String? fotoUrl;
   final bool activo;
   final DateTime? fechaContratacion;
-  final String? nombre; // Campo adicional que viene del API (nombre completo)
+  final String? nombre; // Campo adicional que viene del API (nombre completo o User.name)
   final String? email;
+  final String? usernick;  // FASE 3: Nuevo campo del User (usernick)
 
   Chofer({
     required this.id,
-    required this.userId,
-    required this.nombres,
-    required this.apellidos,
-    required this.ci,
-    required this.telefono,
+    this.userId,  // FASE 3: Ahora opcional
+    this.nombres,  // FASE 3: Ahora opcional
+    this.apellidos,  // FASE 3: Ahora opcional
+    this.ci,  // FASE 3: Ahora opcional
+    this.telefono,  // FASE 3: Ahora opcional
     this.licenciaConducir,
     this.categoriaLicencia,
     this.fechaVencimientoLicencia,
@@ -29,16 +30,20 @@ class Chofer {
     this.fechaContratacion,
     this.nombre,
     this.email,
+    this.usernick,  // FASE 3: Nuevo campo
   });
 
   factory Chofer.fromJson(Map<String, dynamic> json) {
+    // FASE 3: Manejar ambos casos - Empleado y User
+    // Si viene 'name' es un User (FASE 3), si viene 'nombre' es un Empleado (FASE 1-2)
+
     return Chofer(
       id: json['id'] as int,
-      userId: json['user_id'] as int,
-      nombres: json['nombres'] as String? ?? '',
-      apellidos: json['apellidos'] as String? ?? '',
-      ci: json['ci'] as String,
-      telefono: json['telefono'] as String,
+      userId: json['user_id'] as int?,  // Opcional en FASE 3
+      nombres: json['nombres'] as String?,  // Opcional en FASE 3
+      apellidos: json['apellidos'] as String?,  // Opcional en FASE 3
+      ci: json['ci'] as String?,  // Opcional en FASE 3
+      telefono: json['telefono'] as String?,  // Opcional en FASE 3
       licenciaConducir: json['licencia_conducir'] as String?,
       categoriaLicencia: json['categoria_licencia'] as String?,
       fechaVencimientoLicencia: json['fecha_vencimiento_licencia'] != null
@@ -49,8 +54,10 @@ class Chofer {
       fechaContratacion: json['fecha_contratacion'] != null
           ? DateTime.parse(json['fecha_contratacion'] as String)
           : null,
-      nombre: json['nombre'] as String?,
+      // Mapear nombre: primero intenta 'name' (User), luego 'nombre' (Empleado)
+      nombre: json['nombre'] as String? ?? json['name'] as String?,
       email: json['email'] as String?,
+      usernick: json['usernick'] as String?,  // Nuevo en FASE 3 (User)
     );
   }
 
@@ -69,7 +76,9 @@ class Chofer {
       'activo': activo,
       'fecha_contratacion': fechaContratacion?.toIso8601String(),
       'nombre': nombre,
+      'name': nombre,  // FASE 3: Incluir también como 'name' (User)
       'email': email,
+      'usernick': usernick,  // FASE 3: Nuevo campo
     };
   }
 
@@ -78,7 +87,8 @@ class Chofer {
     if (nombre != null && nombre!.isNotEmpty) {
       return nombre!;
     }
-    return '$nombres $apellidos'.trim();
+    final nom = (nombres ?? '') + (nombres != null && apellidos != null ? ' ' : '') + (apellidos ?? '');
+    return nom.trim();
   }
 
   bool get licenciaVigente {

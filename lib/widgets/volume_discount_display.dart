@@ -5,7 +5,7 @@ import 'package:flutter/material.dart';
 class VolumeDiscountDisplay extends StatelessWidget {
   final String nombreProducto;
   final double precioActual;
-  final double cantidadActual;
+  final int cantidadActual;
 
   /// Lista de tier de descuentos
   /// Ejemplo: [

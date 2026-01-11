@@ -6,14 +6,18 @@ import 'vehiculo.dart';
 
 class Entrega {
   final int id;
-  final int? proformaId;  // Ahora opcional, ya que el backend no siempre lo envía
+  final int?
+  proformaId; // Ahora opcional, ya que el backend no siempre lo envía
   final int? choferId;
   final int? vehiculoId;
   final int? direccionClienteId;
-  final String estado; // ASIGNADA, EN_CAMINO, LLEGO, ENTREGADO, NOVEDAD, CANCELADA (legacy ENUM)
+  final String
+  estado; // ASIGNADA, EN_CAMINO, LLEGO, ENTREGADO, NOVEDAD, CANCELADA (legacy ENUM)
   final int? estadoEntregaId; // FK a estados_logistica.id (normalizado)
-  final String? estadoEntregaCodigo; // Código del estado (PROGRAMADO, PREPARACION_CARGA, etc)
-  final String? estadoEntregaNombre; // Nombre del estado (ej: "Preparación de Carga")
+  final String?
+  estadoEntregaCodigo; // Código del estado (PROGRAMADO, PREPARACION_CARGA, etc)
+  final String?
+  estadoEntregaNombre; // Nombre del estado (ej: "Preparación de Carga")
   final String? estadoEntregaColor; // Color hex del estado
   final String? estadoEntregaIcono; // Ícono del estado
   final DateTime? fechaAsignacion;
@@ -25,7 +29,8 @@ class Entrega {
   final String? fotoEntregaUrl;
 
   // Campos adicionales del nuevo endpoint /api/chofer/trabajos
-  final String? trabajoType; // 'entrega' | 'envio' (opcional, para compatibilidad)
+  final String?
+  trabajoType; // 'entrega' | 'envio' (opcional, para compatibilidad)
   final String? numero; // Número de proforma o envío (opcional)
   final String? numeroEntrega; // Número de entrega (ej: ENT-20260108-12)
   final String? cliente; // Nombre del cliente (opcional)
@@ -42,7 +47,8 @@ class Entrega {
 
   // Campos de coordinación mejorada (NUEVOS)
   final int? numeroIntentosContacto;
-  final String? resultadoUltimoIntento; // 'Aceptado', 'No contactado', 'Rechazado', 'Reagendar'
+  final String?
+  resultadoUltimoIntento; // 'Aceptado', 'No contactado', 'Rechazado', 'Reagendar'
   final DateTime? entregadoEn;
   final String? entregadoA;
   final String? observacionesEntrega;
@@ -65,7 +71,7 @@ class Entrega {
 
   Entrega({
     required this.id,
-    this.proformaId,  // Ahora opcional
+    this.proformaId, // Ahora opcional
     this.choferId,
     this.vehiculoId,
     this.direccionClienteId,
@@ -151,7 +157,9 @@ class Entrega {
     List<EntregaEstadoHistorial> historial = [];
     if (json['historial_estados'] is List) {
       historial = (json['historial_estados'] as List)
-          .map((h) => EntregaEstadoHistorial.fromJson(h as Map<String, dynamic>))
+          .map(
+            (h) => EntregaEstadoHistorial.fromJson(h as Map<String, dynamic>),
+          )
           .toList();
     }
 
@@ -167,16 +175,16 @@ class Entrega {
     // buscar en la primera venta disponible
     if ((latDestino == null || lngDestino == null) && ventasList.isNotEmpty) {
       final primeraVenta = ventasList.first;
-      print('[ENTREGA_PARSE] Buscando coords en primera venta: venta.latitud=${primeraVenta.latitud}, venta.longitud=${primeraVenta.longitud}');
+      // print('[ENTREGA_PARSE] Buscando coords en primera venta: venta.latitud=${primeraVenta.latitud}, venta.longitud=${primeraVenta.longitud}');
       if (primeraVenta.latitud != null && primeraVenta.longitud != null) {
         latDestino = primeraVenta.latitud;
         lngDestino = primeraVenta.longitud;
         // También extraer dirección de la venta si no hay dirección en Entrega
         direccionValue = direccionValue ?? primeraVenta.direccion;
-        print('[ENTREGA_PARSE] Coordenadas extraídas de venta: lat=$latDestino, lng=$lngDestino, dir=$direccionValue');
+        // print('[ENTREGA_PARSE] Coordenadas extraídas de venta: lat=$latDestino, lng=$lngDestino, dir=$direccionValue');
       }
     } else {
-      print('[ENTREGA_PARSE] Coordenadas a nivel Entrega: lat=$latDestino, lng=$lngDestino');
+      // print('[ENTREGA_PARSE] Coordenadas a nivel Entrega: lat=$latDestino, lng=$lngDestino');
     }
 
     // Parsear chofer si existe en la respuesta
@@ -236,7 +244,7 @@ class Entrega {
 
     return Entrega(
       id: json['id'] as int,
-      proformaId: json['proforma_id'] as int?,  // Ahora opcional
+      proformaId: json['proforma_id'] as int?, // Ahora opcional
       choferId: json['chofer_id'] as int?,
       vehiculoId: json['vehiculo_id'] as int?,
       direccionClienteId: json['direccion_cliente_id'] as int?,
@@ -262,7 +270,8 @@ class Entrega {
       // Nuevos campos del endpoint /api/chofer/trabajos
       trabajoType: json['trabajoType'] as String? ?? json['type'] as String?,
       numero: json['numero'] as String?,
-      numeroEntrega: json['numero_entrega'] as String? ?? json['numeroEntrega'] as String?,
+      numeroEntrega:
+          json['numero_entrega'] as String? ?? json['numeroEntrega'] as String?,
       cliente: clienteName,
       direccion: direccionValue,
       // Totales agregados
@@ -335,7 +344,8 @@ class Entrega {
       'entregado_en': entregadoEn?.toIso8601String(),
       'entregado_a': entregadoA,
       'observaciones_entrega': observacionesEntrega,
-      'coordinacion_actualizada_en': coordinacionActualizadaEn?.toIso8601String(),
+      'coordinacion_actualizada_en': coordinacionActualizadaEn
+          ?.toIso8601String(),
       // SLA - FASE 5
       'fecha_entrega_comprometida': fechaEntregaComprometida?.toIso8601String(),
       'ventana_entrega_ini': ventanaEntregaIni != null
@@ -441,8 +451,7 @@ class Entrega {
   bool get puedeConfirmarEntrega =>
       estado == 'LLEGO' || estado == 'EN_CAMINO' || estado == 'EN_TRANSITO';
 
-  bool get puedeReportarNovedad =>
-      !['ENTREGADO', 'CANCELADA'].contains(estado);
+  bool get puedeReportarNovedad => !['ENTREGADO', 'CANCELADA'].contains(estado);
 
   String formatFecha(DateTime? fecha) {
     if (fecha == null) return 'N/A';
@@ -501,14 +510,18 @@ class Entrega {
       latitudeDestino: latitudeDestino ?? this.latitudeDestino,
       longitudeDestino: longitudeDestino ?? this.longitudeDestino,
       // Coordinación mejorada
-      numeroIntentosContacto: numeroIntentosContacto ?? this.numeroIntentosContacto,
-      resultadoUltimoIntento: resultadoUltimoIntento ?? this.resultadoUltimoIntento,
+      numeroIntentosContacto:
+          numeroIntentosContacto ?? this.numeroIntentosContacto,
+      resultadoUltimoIntento:
+          resultadoUltimoIntento ?? this.resultadoUltimoIntento,
       entregadoEn: entregadoEn ?? this.entregadoEn,
       entregadoA: entregadoA ?? this.entregadoA,
       observacionesEntrega: observacionesEntrega ?? this.observacionesEntrega,
-      coordinacionActualizadaEn: coordinacionActualizadaEn ?? this.coordinacionActualizadaEn,
+      coordinacionActualizadaEn:
+          coordinacionActualizadaEn ?? this.coordinacionActualizadaEn,
       // SLA - FASE 5
-      fechaEntregaComprometida: fechaEntregaComprometida ?? this.fechaEntregaComprometida,
+      fechaEntregaComprometida:
+          fechaEntregaComprometida ?? this.fechaEntregaComprometida,
       ventanaEntregaIni: ventanaEntregaIni ?? this.ventanaEntregaIni,
       ventanaEntregaFin: ventanaEntregaFin ?? this.ventanaEntregaFin,
     );

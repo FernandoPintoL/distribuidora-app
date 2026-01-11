@@ -81,12 +81,12 @@ class NavigationPanel extends StatelessWidget {
                           fontWeight: FontWeight.bold,
                         ),
                       ),
-                      Text(
+                      /* Text(
                         clientName,
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
                           color: Colors.grey[600],
                         ),
-                      ),
+                      ), */
                     ],
                   ),
                 ),
@@ -96,7 +96,7 @@ class NavigationPanel extends StatelessWidget {
             const SizedBox(height: 12),
 
             // Dirección
-            Container(
+            /* Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
                 color: Colors.blue[50],
@@ -122,34 +122,34 @@ class NavigationPanel extends StatelessWidget {
               ),
             ),
 
-            const SizedBox(height: 16),
+            const SizedBox(height: 16), */
 
             // Botones de acción
-            Column(
-              spacing: 8,
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
                 // Botón Google Maps
-                _NavigationButton(
+                _NavigationIconButton(
                   icon: Icons.map,
-                  label: 'Cómo llegar (Google Maps)',
+                  label: 'Google Maps',
                   color: Colors.blue,
                   onPressed: _openInGoogleMaps,
                 ),
 
                 // Botón Waze (solo si tenemos coordenadas)
                 if (destinationLatitude != null && destinationLongitude != null)
-                  _NavigationButton(
+                  _NavigationIconButton(
                     icon: Icons.navigation_rounded,
-                    label: 'Cómo llegar (Waze)',
+                    label: 'Waze',
                     color: Colors.amber[700]!,
                     onPressed: _openInWaze,
                   ),
 
                 // Botón navegación integrada (si está disponible)
                 if (onOpenInAppNavigation != null)
-                  _NavigationButton(
+                  _NavigationIconButton(
                     icon: Icons.location_on,
-                    label: 'Navegación en la App',
+                    label: 'App',
                     color: Colors.green,
                     onPressed: onOpenInAppNavigation!,
                   ),
@@ -187,14 +187,14 @@ class NavigationPanel extends StatelessWidget {
   }
 }
 
-/// Botón individual de navegación
-class _NavigationButton extends StatelessWidget {
+/// Botón individual de navegación con IconButton
+class _NavigationIconButton extends StatelessWidget {
   final IconData icon;
   final String label;
   final Color color;
   final VoidCallback onPressed;
 
-  const _NavigationButton({
+  const _NavigationIconButton({
     Key? key,
     required this.icon,
     required this.label,
@@ -204,19 +204,39 @@ class _NavigationButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      width: double.infinity,
-      child: ElevatedButton.icon(
-        onPressed: onPressed,
-        icon: Icon(icon),
-        label: Text(label),
-        style: ElevatedButton.styleFrom(
-          backgroundColor: color,
-          foregroundColor: Colors.white,
-          padding: const EdgeInsets.symmetric(vertical: 12),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+
+    return Column(
+      spacing: 4,
+      children: [
+        // IconButton con fondo circular
+        Container(
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: isDarkMode
+                ? color.withValues(alpha: 0.2)
+                : color.withValues(alpha: 0.1),
+          ),
+          child: IconButton(
+            icon: Icon(icon),
+            color: color,
+            onPressed: onPressed,
+            iconSize: 28,
+            splashRadius: 28,
+          ),
         ),
-      ),
+        // Label debajo del icono
+        Text(
+          label,
+          style: Theme.of(context).textTheme.labelSmall?.copyWith(
+            fontSize: 11,
+            fontWeight: FontWeight.w600,
+            color: isDarkMode ? Colors.grey[300] : Colors.grey[700],
+          ),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        ),
+      ],
     );
   }
 }

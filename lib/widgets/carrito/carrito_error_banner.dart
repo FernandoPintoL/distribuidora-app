@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../extensions/carrito_theme_extension.dart';
 
 /// Widget que muestra banner de error en el carrito
 class CarritoErrorBanner extends StatelessWidget {
@@ -16,9 +17,9 @@ class CarritoErrorBanner extends StatelessWidget {
     return Container(
       width: double.infinity,
       decoration: BoxDecoration(
-        color: Colors.orange.shade50,
+        color: context.carritoWarningBg,
         border: Border(
-          bottom: BorderSide(color: Colors.orange.shade300, width: 1),
+          bottom: BorderSide(color: context.carritoWarningBorder, width: 1),
         ),
       ),
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -26,7 +27,7 @@ class CarritoErrorBanner extends StatelessWidget {
         children: [
           Icon(
             Icons.warning_rounded,
-            color: Colors.orange.shade700,
+            color: context.carritoWarningIcon,
             size: 20,
           ),
           const SizedBox(width: 12),
@@ -34,7 +35,7 @@ class CarritoErrorBanner extends StatelessWidget {
             child: Text(
               message,
               style: TextStyle(
-                color: Colors.orange.shade800,
+                color: context.carritoWarningText,
                 fontSize: 13,
                 fontWeight: FontWeight.w500,
               ),
@@ -47,7 +48,7 @@ class CarritoErrorBanner extends StatelessWidget {
             onTap: onClose,
             child: Icon(
               Icons.close,
-              color: Colors.orange.shade700,
+              color: context.carritoWarningIcon,
               size: 18,
             ),
           ),

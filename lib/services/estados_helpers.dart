@@ -32,6 +32,16 @@ class EstadosHelper {
     }
   }
 
+  /// Obtiene un estado por ID (usa caché + fallback)
+  static Estado? getEstadoPorId(String categoria, int id) {
+    final estados = _getEstadosForCategoria(categoria);
+    try {
+      return estados.firstWhere((e) => e.id == id);
+    } catch (e) {
+      return null;
+    }
+  }
+
   /// Obtiene el label de un estado por código
   static String getEstadoLabel(String categoria, String codigo) {
     final estado = getEstadoPorCodigo(categoria, codigo);
@@ -69,6 +79,9 @@ class EstadosHelper {
         return FALLBACK_ESTADOS_ENTREGA;
       case 'proforma':
         return FALLBACK_ESTADOS_PROFORMA;
+      case 'venta_logistica':
+      case 'ventalogistica':
+        return FALLBACK_ESTADOS_VENTA_LOGISTICA;
       default:
         return [];
     }

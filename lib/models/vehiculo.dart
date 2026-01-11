@@ -58,6 +58,12 @@ class Vehiculo {
   }
 
   String get placaFormato => placa.toUpperCase();
-  String get descripcion => '$marca $modelo $anho';
-  String get infoCompleta => '$placaFormato - $descripcion ($capacidadKg kg)';
+  String get descripcion {
+    final year = anho != null ? anho.toString() : 'N/A';
+    return '$marca $modelo $year'.trim();
+  }
+  String get infoCompleta {
+    final cap = capacidadKg ?? 'N/A';
+    return '$placaFormato - $descripcion ($cap kg)';
+  }
 }

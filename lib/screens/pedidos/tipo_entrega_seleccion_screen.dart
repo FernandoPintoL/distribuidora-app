@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../config/config.dart';
+import '../../extensions/theme_extension.dart';
 import '../../widgets/widgets.dart';
 
 class TipoEntregaSeleccionScreen extends StatefulWidget {
@@ -33,6 +34,9 @@ class _TipoEntregaSeleccionScreenState
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = context.colorScheme;
+    final isDark = context.isDark;
+
     return Scaffold(
       appBar: CustomGradientAppBar(
         title: 'Tipo de Entrega',
@@ -52,26 +56,22 @@ class _TipoEntregaSeleccionScreenState
                     Icon(
                       Icons.local_shipping_outlined,
                       size: 60,
-                      color: AppGradients.blue.stops?.first == 0
-                          ? const Color(0xFF2196F3)
-                          : const Color(0xFF1565C0),
+                      color: colorScheme.primary,
                     ),
                     const SizedBox(height: 12),
-                    const Text(
+                    Text(
                       '¿Cómo deseas recibir tu pedido?',
-                      style: TextStyle(
-                        fontSize: 20,
+                      style: context.textTheme.headlineSmall?.copyWith(
                         fontWeight: FontWeight.bold,
-                        color: Colors.black87,
+                        color: colorScheme.onSurface,
                       ),
                       textAlign: TextAlign.center,
                     ),
                     const SizedBox(height: 8),
-                    const Text(
+                    Text(
                       'Elige la opción que mejor se ajuste a tus necesidades',
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: Colors.grey,
+                      style: context.textTheme.bodyMedium?.copyWith(
+                        color: colorScheme.onSurfaceVariant,
                       ),
                       textAlign: TextAlign.center,
                     ),
@@ -110,55 +110,59 @@ class _TipoEntregaSeleccionScreenState
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: Colors.blue.withOpacity(0.05),
+                  color: colorScheme.primary.withOpacity(isDark ? 0.1 : 0.05),
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(
-                    color: Colors.blue.withOpacity(0.2),
+                    color: colorScheme.primary.withOpacity(isDark ? 0.3 : 0.2),
                   ),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Row(
+                    Row(
                       children: [
                         Icon(
                           Icons.info_outline,
                           size: 20,
-                          color: Color(0xFF1976D2),
+                          color: colorScheme.primary,
                         ),
-                        SizedBox(width: 12),
+                        const SizedBox(width: 12),
                         Text(
                           'Información importante',
-                          style: TextStyle(
-                            fontSize: 14,
+                          style: context.textTheme.bodyLarge?.copyWith(
                             fontWeight: FontWeight.bold,
-                            color: Colors.black87,
+                            color: colorScheme.onSurface,
                           ),
                         ),
                       ],
                     ),
                     const SizedBox(height: 12),
                     RichText(
-                      text: const TextSpan(
-                        style: TextStyle(
-                          color: Colors.black54,
-                          fontSize: 13,
+                      text: TextSpan(
+                        style: context.textTheme.bodySmall?.copyWith(
+                          color: colorScheme.onSurfaceVariant,
                           height: 1.6,
                         ),
                         children: [
                           TextSpan(
                             text: '📦 Entrega a Domicilio: ',
-                            style: TextStyle(fontWeight: FontWeight.bold),
+                            style: context.textTheme.bodySmall?.copyWith(
+                              fontWeight: FontWeight.bold,
+                              color: colorScheme.onSurface,
+                            ),
                           ),
-                          TextSpan(
+                          const TextSpan(
                             text:
                                 'Selecciona una dirección y agenda la fecha y hora que mejor te convenga.\n\n',
                           ),
                           TextSpan(
                             text: '🏪 Retiro en Almacén: ',
-                            style: TextStyle(fontWeight: FontWeight.bold),
+                            style: context.textTheme.bodySmall?.copyWith(
+                              fontWeight: FontWeight.bold,
+                              color: colorScheme.onSurface,
+                            ),
                           ),
-                          TextSpan(
+                          const TextSpan(
                             text:
                                 'Agenda la fecha y hora preferida. Te notificaremos cuando el pedido esté listo.',
                           ),
@@ -184,27 +188,32 @@ class _TipoEntregaSeleccionScreenState
     required VoidCallback onTap,
     required bool isSelected,
   }) {
+    final colorScheme = context.colorScheme;
+    final isDark = context.isDark;
+
     return GestureDetector(
       onTap: onTap,
       child: Container(
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: isDark ? colorScheme.surface : colorScheme.surface,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: isSelected ? color : Colors.grey.withOpacity(0.3),
+            color: isSelected
+                ? color
+                : colorScheme.outline.withOpacity(isDark ? 0.3 : 0.2),
             width: isSelected ? 2.5 : 1.5,
           ),
           boxShadow: [
             if (isSelected)
               BoxShadow(
-                color: color.withOpacity(0.3),
+                color: color.withOpacity(isDark ? 0.2 : 0.3),
                 blurRadius: 12,
                 offset: const Offset(0, 4),
               )
             else
               BoxShadow(
-                color: Colors.black.withOpacity(0.05),
+                color: Colors.black.withOpacity(isDark ? 0.2 : 0.05),
                 blurRadius: 8,
                 offset: const Offset(0, 2),
               ),
@@ -217,7 +226,7 @@ class _TipoEntregaSeleccionScreenState
               width: 70,
               height: 70,
               decoration: BoxDecoration(
-                color: color.withOpacity(0.15),
+                color: color.withOpacity(isDark ? 0.2 : 0.15),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Icon(
@@ -234,18 +243,16 @@ class _TipoEntregaSeleccionScreenState
                 children: [
                   Text(
                     titulo,
-                    style: const TextStyle(
-                      fontSize: 16,
+                    style: context.textTheme.titleMedium?.copyWith(
                       fontWeight: FontWeight.bold,
-                      color: Colors.black87,
+                      color: colorScheme.onSurface,
                     ),
                   ),
                   const SizedBox(height: 6),
                   Text(
                     descripcion,
-                    style: const TextStyle(
-                      fontSize: 13,
-                      color: Colors.grey,
+                    style: context.textTheme.bodySmall?.copyWith(
+                      color: colorScheme.onSurfaceVariant,
                       height: 1.4,
                     ),
                   ),
@@ -260,15 +267,17 @@ class _TipoEntregaSeleccionScreenState
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 border: Border.all(
-                  color: isSelected ? color : Colors.grey.withOpacity(0.5),
+                  color: isSelected
+                      ? color
+                      : colorScheme.outline.withOpacity(isDark ? 0.5 : 0.4),
                   width: 2,
                 ),
                 color: isSelected ? color : Colors.transparent,
               ),
               child: isSelected
-                  ? const Icon(
+                  ? Icon(
                       Icons.check,
-                      color: Colors.white,
+                      color: color.computeLuminance() > 0.5 ? Colors.black : Colors.white,
                       size: 16,
                     )
                   : null,

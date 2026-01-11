@@ -5,7 +5,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../providers/estados_provider.dart';
+import '../providers/estado_riverpod_providers.dart';
 import '../services/estados_helpers.dart';
 
 /// Dropdown para filtrar por estado
@@ -84,7 +84,7 @@ class EstadoFilterDropdown extends ConsumerWidget {
   }
 
   Widget _buildErrorFallback(Object error) {
-    print('[EstadoFilterDropdown] Error: $error, using fallback');
+    debugPrint('[EstadoFilterDropdown] Error: $error, using fallback');
     final fallbackEstados = EstadosHelper.getEstados(categoria);
 
     final items = <DropdownMenuItem<String?>>[];
@@ -193,7 +193,7 @@ class EstadoFilterChips extends ConsumerWidget {
   }
 
   Widget _buildErrorFallback(Object error) {
-    print('[EstadoFilterChips] Error: $error, using fallback');
+    debugPrint('[EstadoFilterChips] Error: $error, using fallback');
     final fallbackEstados =
         EstadosHelper.getEstados(categoria).where((e) => e.activo).toList();
 
@@ -316,7 +316,7 @@ class EstadoFilterButtons extends ConsumerWidget {
   }
 
   Widget _buildErrorFallback(Object error, BuildContext context) {
-    print('[EstadoFilterButtons] Error: $error, using fallback');
+    debugPrint('[EstadoFilterButtons] Error: $error, using fallback');
     final fallbackEstados =
         EstadosHelper.getEstados(categoria).where((e) => e.activo).toList();
 

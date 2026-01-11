@@ -8,6 +8,7 @@ class AnimatedActionButton extends StatefulWidget {
   final Color color;
   final VoidCallback onPressed;
   final Duration animationDuration;
+  final bool isDarkMode;
 
   const AnimatedActionButton({
     Key? key,
@@ -16,6 +17,7 @@ class AnimatedActionButton extends StatefulWidget {
     required this.color,
     required this.onPressed,
     this.animationDuration = const Duration(milliseconds: 600),
+    this.isDarkMode = false,
   }) : super(key: key);
 
   @override
@@ -67,6 +69,9 @@ class _AnimatedActionButtonState extends State<AnimatedActionButton>
 
   @override
   Widget build(BuildContext context) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    final textColor = isDarkMode ? Colors.grey[200] : Colors.grey[800];
+
     return GestureDetector(
       onTapDown: _onTapDown,
       onTapUp: _onTapUp,
@@ -82,12 +87,15 @@ class _AnimatedActionButtonState extends State<AnimatedActionButton>
               child: Container(
                 padding: const EdgeInsets.symmetric(vertical: 16),
                 decoration: BoxDecoration(
-                  color: widget.color.withOpacity(0.1),
+                  color: widget.color.withAlpha((0.1 * 255).toInt()),
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: widget.color.withOpacity(0.3)),
+                  border: Border.all(
+                    color: widget.color.withAlpha((0.3 * 255).toInt()),
+                    width: 1.5,
+                  ),
                   boxShadow: [
                     BoxShadow(
-                      color: widget.color.withOpacity(0.2),
+                      color: widget.color.withAlpha((0.2 * 255).toInt()),
                       blurRadius: 8,
                       offset: const Offset(0, 4),
                     ),
@@ -125,7 +133,7 @@ class _AnimatedActionButtonState extends State<AnimatedActionButton>
                         widget.label,
                         textAlign: TextAlign.center,
                         style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                          color: Colors.grey[700],
+                          color: textColor,
                           fontWeight: FontWeight.w600,
                         ),
                       ),

@@ -73,35 +73,86 @@ class _HomeChoferScreenState extends BaseHomeScreenState<HomeChoferScreen> {
     }
   }
 }
-class _DashboardTab extends StatelessWidget {
+class _DashboardTab extends StatefulWidget {
   const _DashboardTab();
 
   @override
+  State<_DashboardTab> createState() => _DashboardTabState();
+}
+
+class _DashboardTabState extends State<_DashboardTab> {
+  bool _isMapVisible = false;
+
+  @override
   Widget build(BuildContext context) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    final colorScheme = Theme.of(context).colorScheme;
+
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // Bienvenida
+          // Bienvenida mejorada
           Consumer<AuthProvider>(
             builder: (context, authProvider, _) {
+              final cardColor = isDarkMode ? Colors.grey[900] : Colors.white;
               return Card(
+                color: cardColor,
+                elevation: 4,
+                shadowColor: isDarkMode
+                    ? Colors.black.withAlpha((0.5 * 255).toInt())
+                    : Colors.grey.withAlpha((0.3 * 255).toInt()),
                 child: Padding(
-                  padding: const EdgeInsets.all(16),
+                  padding: const EdgeInsets.all(20),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        '¡Bienvenido!',
-                        style: Theme.of(context).textTheme.titleLarge,
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        authProvider.user?.name ?? 'Chofer',
-                        style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                              fontWeight: FontWeight.bold,
+                      Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(10),
+                            decoration: BoxDecoration(
+                              color: Colors.blue.withAlpha((0.15 * 255).toInt()),
+                              borderRadius: BorderRadius.circular(10),
                             ),
+                            child: const Icon(
+                              Icons.waving_hand,
+                              color: Colors.blue,
+                              size: 24,
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  '¡Bienvenido!',
+                                  style: Theme.of(context)
+                                      .textTheme
+                                      .titleLarge
+                                      ?.copyWith(
+                                        color: isDarkMode
+                                            ? Colors.white
+                                            : Colors.black87,
+                                      ),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  authProvider.user?.name ?? 'Chofer',
+                                  style: Theme.of(context)
+                                      .textTheme
+                                      .bodyLarge
+                                      ?.copyWith(
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.blue,
+                                      ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
                       ),
                     ],
                   ),
@@ -109,9 +160,9 @@ class _DashboardTab extends StatelessWidget {
               );
             },
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 20),
 
-          // Card de Estadísticas Visuales con Gráfico Circular
+          // Card de Estadísticas Visuales
           Consumer<EntregaProvider>(
             builder: (context, entregaProvider, _) {
               final totalEntregas = entregaProvider.entregas.length;
@@ -127,25 +178,105 @@ class _DashboardTab extends StatelessWidget {
               );
             },
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 20),
 
-          // Mini Mapa de Tracking en Vivo
-          Consumer<EntregaProvider>(
-            builder: (context, entregaProvider, _) {
-              return MiniTrackingMap(
-                entregas: entregaProvider.entregas,
-                onMapTap: () {
-                  // TODO: Navegar a vista ampliada del mapa
-                },
-              );
-            },
+          // Botón para mostrar/ocultar mapa
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 300),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(12),
+                gradient: LinearGradient(
+                  colors: [
+                    Colors.blue,
+                    Colors.blue.withAlpha((0.8 * 255).toInt()),
+                  ],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.blue.withAlpha((0.3 * 255).toInt()),
+                    blurRadius: 8,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  onTap: () {
+                    setState(() {
+                      _isMapVisible = !_isMapVisible;
+                    });
+                  },
+                  borderRadius: BorderRadius.circular(12),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      vertical: 14,
+                      horizontal: 16,
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          _isMapVisible
+                              ? Icons.location_off_rounded
+                              : Icons.location_on_rounded,
+                          color: Colors.white,
+                          size: 22,
+                        ),
+                        const SizedBox(width: 10),
+                        Text(
+                          _isMapVisible ? 'Ocultar Mapa' : 'Mostrar Mapa',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w600,
+                            fontSize: 16,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        AnimatedRotation(
+                          turns: _isMapVisible ? 0.5 : 0,
+                          duration: const Duration(milliseconds: 300),
+                          child: const Icon(
+                            Icons.expand_more_rounded,
+                            color: Colors.white,
+                            size: 22,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
           ),
           const SizedBox(height: 16),
 
-          // Panel de Acciones Rápidas
+          // Mini Mapa de Tracking - Visible solo si está activado
+          if (_isMapVisible)
+            Consumer<EntregaProvider>(
+              builder: (context, entregaProvider, _) {
+                return MiniTrackingMap(
+                  entregas: entregaProvider.entregas,
+                  onMapTap: () {
+                    // Navegar a vista ampliada del mapa
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (context) => const TrackingScreen(),
+                      ),
+                    );
+                  },
+                );
+              },
+            ),
+          if (_isMapVisible) const SizedBox(height: 16),
+
+          // Panel de Acciones Rápidas mejorado
           QuickActionsPanel(
             onInitializeRoute: () {
-              // Navegar a pantalla de tracking en vivo
               Navigator.of(context).push(
                 MaterialPageRoute(
                   builder: (context) => const TrackingScreen(),
@@ -153,7 +284,6 @@ class _DashboardTab extends StatelessWidget {
               );
             },
             onViewAllDeliveriesMap: () {
-              // Navegar a vista completa del mapa con todas las entregas
               Navigator.of(context).push(
                 MaterialPageRoute(
                   builder: (context) => const TrackingScreen(),
@@ -161,7 +291,6 @@ class _DashboardTab extends StatelessWidget {
               );
             },
             onScanQR: () {
-              // TODO: Abrir escáner de QR
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(content: Text('Función de QR próximamente')),
               );

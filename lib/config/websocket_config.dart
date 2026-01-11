@@ -28,6 +28,13 @@ class WebSocketConfig {
   static const String eventProformaConverted = 'proforma.convertida';
   static const String eventProformaCoordinationUpdated = 'proforma.coordinacion.actualizada'; // NUEVO
 
+  // Eventos de Ventas (Tracking de estado logístico)
+  // ✅ Cliente recibe notificación de cambios en su venta
+  static const String eventVentaEstadoCambio = 'venta.estado_cambio';
+  static const String eventVentaEnTransito = 'venta.en_transito';
+  static const String eventVentaEntregada = 'venta.entregada';
+  static const String eventVentaProblema = 'venta.problema';
+
   // Eventos de Stock
   static const String eventStockReserved = 'stock_reserved';
   static const String eventStockExpiring = 'stock_reservation_expiring';

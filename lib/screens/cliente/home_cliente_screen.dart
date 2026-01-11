@@ -153,8 +153,9 @@ class _DashboardTab extends StatelessWidget {
     final pedidoProvider = context.watch<PedidoProvider>();
 
     // Calcular cantidad de pedidos en ruta (EN_RUTA + LLEGO)
+    // ✅ ACTUALIZADO: Usar códigos de estado String en lugar de enum
     final pedidosEnRuta = pedidoProvider.pedidosEnProceso.where((p) =>
-      p.estado == EstadoPedido.EN_RUTA || p.estado == EstadoPedido.LLEGO
+      p.estadoCodigo == 'EN_RUTA' || p.estadoCodigo == 'LLEGO'
     ).length;
 
     return Column(
@@ -214,8 +215,9 @@ class _DashboardTab extends StatelessWidget {
                 color: Colors.purple,
                 badgeCount: pedidosEnRuta, // Mostrar cantidad de pedidos en ruta
                 onTap: () {
+                  // ✅ ACTUALIZADO: Usar código de estado String en lugar de enum
                   // Aplicar filtro de pedidos EN_RUTA y navegar al tab
-                  context.read<PedidoProvider>().aplicarFiltroEstado(EstadoPedido.EN_RUTA);
+                  context.read<PedidoProvider>().aplicarFiltroEstado('EN_RUTA');
 
                   // Navegar al tab de Mis Pedidos (índice 2)
                   homeState?.navigateToIndex(2);
@@ -308,19 +310,41 @@ class _DashboardTab extends StatelessWidget {
                 children: [
                   Expanded(
                     child: _StatCard(
+                      icon: Icons.local_shipping,
+                      label: 'Convertidos',
+                      value: '${stats.porEstado.convertida}',
+                      color: Colors.teal,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: _StatCard(
                       icon: Icons.shopping_bag,
                       label: 'Total',
                       value: '${stats.total}',
                       color: Colors.blue,
                     ),
                   ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  Expanded(
+                    child: _StatCard(
+                      icon: Icons.attach_money,
+                      label: 'Monto Total',
+                      value: 'Bs. ${stats.montoTotal.toStringAsFixed(0)}',
+                      color: Colors.purple,
+                    ),
+                  ),
                   const SizedBox(width: 12),
                   Expanded(
                     child: _StatCard(
                       icon: Icons.attach_money,
-                      label: 'Monto',
-                      value: 'Bs. ${stats.montoTotal.toStringAsFixed(0)}',
-                      color: Colors.purple,
+                      label: 'Convertidos',
+                      value: 'Bs. ${stats.montosPorEstado.convertida.toStringAsFixed(0)}',
+                      color: Colors.teal.shade600,
                     ),
                   ),
                 ],

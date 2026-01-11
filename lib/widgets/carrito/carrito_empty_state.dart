@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../extensions/carrito_theme_extension.dart';
 
 /// Widget que muestra cuando el carrito está vacío
 class CarritoEmptyState extends StatelessWidget {
@@ -18,20 +19,20 @@ class CarritoEmptyState extends StatelessWidget {
           Icon(
             Icons.shopping_cart_outlined,
             size: 120,
-            color: Colors.grey.shade300,
+            color: context.carritoEmptyIconColor,
           ),
           const SizedBox(height: 24),
           Text(
             'Tu carrito está vacío',
             style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-              color: Colors.grey.shade600,
+              color: context.carritoSecondaryText,
             ),
           ),
           const SizedBox(height: 12),
           Text(
             'Agrega productos para continuar',
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: Colors.grey.shade500,
+              color: context.carritoSecondaryText.withAlpha(200),
             ),
           ),
           const SizedBox(height: 32),

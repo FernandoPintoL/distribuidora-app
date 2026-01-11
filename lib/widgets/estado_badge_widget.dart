@@ -9,7 +9,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../providers/estados_provider.dart';
+import '../providers/estado_riverpod_providers.dart';
 import '../services/estados_helpers.dart';
 
 /// Badge para mostrar estado - versión Riverpod (Recomendada)

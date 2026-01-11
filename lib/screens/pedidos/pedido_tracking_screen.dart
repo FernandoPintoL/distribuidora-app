@@ -5,6 +5,7 @@ import '../../models/models.dart';
 import '../../providers/providers.dart';
 import 'dart:async';
 import '../../widgets/widgets.dart';
+import '../../widgets/chofer/sla_status_widget.dart';
 import '../../config/config.dart';
 
 class PedidoTrackingScreen extends StatefulWidget {
@@ -40,8 +41,9 @@ class _PedidoTrackingScreenState extends State<PedidoTrackingScreen> {
 
   Future<void> _inicializarTracking() async {
     // Verificar que el pedido tenga tracking activo
-    if (widget.pedido.estado != EstadoPedido.EN_RUTA &&
-        widget.pedido.estado != EstadoPedido.LLEGO) {
+    // ✅ ACTUALIZADO: Usar códigos de estado String en lugar de enum
+    if (widget.pedido.estadoCodigo != 'EN_RUTA' &&
+        widget.pedido.estadoCodigo != 'LLEGO') {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -198,12 +200,14 @@ class _PedidoTrackingScreenState extends State<PedidoTrackingScreen> {
                   },
                 ),
 
-                // Panel de información superior
+                // Panel de información superior (con SLA si está disponible)
                 Positioned(
                   top: 0,
                   left: 0,
                   right: 0,
-                  child: _buildInfoPanel(distancia, ubicacion),
+                  child: SingleChildScrollView(
+                    child: _buildInfoPanel(distancia, ubicacion),
+                  ),
                 ),
 
                 // Panel de información del chofer y camión
@@ -300,22 +304,29 @@ class _PedidoTrackingScreenState extends State<PedidoTrackingScreen> {
   }
 
   Widget _buildInfoPanel(DistanciaEstimada? distancia, UbicacionTracking ubicacion) {
-    return Container(
-      margin: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.1),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
+    return Column(
+      children: [
+        // SLA Status Card - FASE 6 (si está disponible)
+        // Nota: Este es un placeholder para cuando tengamos acceso a datos de entrega con SLA
+        // En una implementación completa, el Pedido tendría acceso a la Entrega relacionada
+        _buildSlaInfoCard(),
+
+        Container(
+          margin: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(12),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.1),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
+              ),
+            ],
           ),
-        ],
-      ),
-      child: Column(
-        children: [
-          if (distancia != null) ...[
+          child: Column(
+            children: [
+              if (distancia != null) ...[
             Padding(
               padding: const EdgeInsets.all(16),
               child: Row(
@@ -486,6 +497,87 @@ class _PedidoTrackingScreenState extends State<PedidoTrackingScreen> {
           ],
         ],
       ),
+        ),
+      ],
+    );
+  }
+
+  /// Widget para mostrar información de SLA al cliente
+  /// Mostrará el estado de entrega, ventana de entrega, y si está en tiempo
+  Widget _buildSlaInfoCard() {
+    return Container(
+      margin: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.blue[50],
+        border: Border.all(color: Colors.blue[200]!),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              Icon(Icons.info_outline, color: Colors.blue[700], size: 20),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  'Tu entrega está en camino',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: Colors.blue[900],
+                    fontSize: 14,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if (widget.pedido.direccionEntrega?.ciudad != null)
+                  Row(
+                    children: [
+                      Icon(Icons.location_on, color: Colors.grey[600], size: 16),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          'Entrega en: ${widget.pedido.direccionEntrega?.ciudad}',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.grey[700],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    Icon(Icons.schedule, color: Colors.grey[600], size: 16),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'Recuerda estar atento a tu teléfono',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.grey[700],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -543,9 +635,9 @@ class _PedidoTrackingScreenState extends State<PedidoTrackingScreen> {
                           fontWeight: FontWeight.w600,
                         ),
                       ),
-                      if (widget.pedido.chofer!.telefono.isNotEmpty)
+                      if (widget.pedido.chofer!.telefono != null && widget.pedido.chofer!.telefono!.isNotEmpty)
                         Text(
-                          widget.pedido.chofer!.telefono,
+                          widget.pedido.chofer!.telefono ?? "N/A",
                           style: const TextStyle(
                             fontSize: 13,
                             color: Colors.grey,

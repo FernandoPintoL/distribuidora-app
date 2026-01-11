@@ -5,6 +5,7 @@ import '../../providers/providers.dart';
 import '../../services/services.dart';
 import '../../widgets/widgets.dart';
 import '../../config/config.dart';
+import '../../extensions/theme_extension.dart';
 
 class ResumenPedidoScreen extends StatefulWidget {
   final String tipoEntrega; // DELIVERY or PICKUP
@@ -160,6 +161,9 @@ class _ResumenPedidoScreenState extends State<ResumenPedidoScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = context.colorScheme;
+    final isDark = context.isDark;
+
     return Scaffold(
       appBar: CustomGradientAppBar(
         title: 'Resumen del Pedido',
@@ -176,8 +180,8 @@ class _ResumenPedidoScreenState extends State<ResumenPedidoScreen> {
                 Container(
                   width: double.infinity,
                   padding: const EdgeInsets.all(16),
-                  color: Theme.of(context).primaryColor.withOpacity(0.1),
-                  child: const Column(
+                  color: colorScheme.primary.withOpacity(isDark ? 0.15 : 0.1),
+                  child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
@@ -185,14 +189,15 @@ class _ResumenPedidoScreenState extends State<ResumenPedidoScreen> {
                         style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w500,
+                          color: colorScheme.onSurface,
                         ),
                       ),
-                      SizedBox(height: 4),
+                      const SizedBox(height: 4),
                       Text(
                         'Verifica que todo esté correcto antes de confirmar',
                         style: TextStyle(
                           fontSize: 14,
-                          color: Colors.grey,
+                          color: colorScheme.onSurfaceVariant,
                         ),
                       ),
                     ],
@@ -205,16 +210,18 @@ class _ResumenPedidoScreenState extends State<ResumenPedidoScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       // Productos
-                      const Text(
+                      Text(
                         'Productos',
                         style: TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
+                          color: colorScheme.onSurface,
                         ),
                       ),
                       const SizedBox(height: 12),
 
                       ...carrito.items.map((item) => Card(
+                        color: colorScheme.surface,
                         margin: const EdgeInsets.only(bottom: 8),
                         child: Padding(
                           padding: const EdgeInsets.all(12),
@@ -225,7 +232,7 @@ class _ResumenPedidoScreenState extends State<ResumenPedidoScreen> {
                                 width: 60,
                                 height: 60,
                                 decoration: BoxDecoration(
-                                  color: Colors.grey.shade200,
+                                  color: colorScheme.surfaceVariant,
                                   borderRadius: BorderRadius.circular(8),
                                 ),
                                 child: item.producto.imagenes != null && item.producto.imagenes!.isNotEmpty
@@ -250,15 +257,16 @@ class _ResumenPedidoScreenState extends State<ResumenPedidoScreen> {
                                   children: [
                                     Text(
                                       item.producto.nombre,
-                                      style: const TextStyle(
+                                      style: TextStyle(
                                         fontWeight: FontWeight.w600,
+                                        color: colorScheme.onSurface,
                                       ),
                                     ),
                                     const SizedBox(height: 4),
                                     Text(
-                                      'Cantidad: ${item.cantidad.toStringAsFixed(item.cantidad.truncateToDouble() == item.cantidad ? 0 : 2)}',
-                                      style: const TextStyle(
-                                        color: Colors.grey,
+                                      'Cantidad: ${item.cantidad}',
+                                      style: TextStyle(
+                                        color: colorScheme.onSurfaceVariant,
                                         fontSize: 14,
                                       ),
                                     ),
@@ -269,9 +277,10 @@ class _ResumenPedidoScreenState extends State<ResumenPedidoScreen> {
                               // Precio
                               Text(
                                 'Bs. ${item.subtotal.toStringAsFixed(2)}',
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontWeight: FontWeight.bold,
                                   fontSize: 16,
+                                  color: colorScheme.onSurface,
                                 ),
                               ),
                             ],
@@ -283,23 +292,25 @@ class _ResumenPedidoScreenState extends State<ResumenPedidoScreen> {
 
                       // Mostrar dirección SOLO si es DELIVERY
                       if (!esPickup) ...[
-                        const Text(
+                        Text(
                           'Dirección de entrega',
                           style: TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
+                            color: colorScheme.onSurface,
                           ),
                         ),
                         const SizedBox(height: 12),
 
                         Card(
+                          color: colorScheme.surface,
                           child: Padding(
                             padding: const EdgeInsets.all(16),
                             child: Row(
                               children: [
                                 Icon(
                                   Icons.location_on,
-                                  color: Theme.of(context).primaryColor,
+                                  color: colorScheme.primary,
                                   size: 28,
                                 ),
                                 const SizedBox(width: 12),
@@ -309,17 +320,18 @@ class _ResumenPedidoScreenState extends State<ResumenPedidoScreen> {
                                     children: [
                                       Text(
                                         widget.direccion!.direccion,
-                                        style: const TextStyle(
+                                        style: TextStyle(
                                           fontWeight: FontWeight.w600,
                                           fontSize: 16,
+                                          color: colorScheme.onSurface,
                                         ),
                                       ),
                                       if (widget.direccion!.ciudad != null) ...[
                                         const SizedBox(height: 4),
                                         Text(
                                           'Ciudad: ${widget.direccion!.ciudad}',
-                                          style: const TextStyle(
-                                            color: Colors.grey,
+                                          style: TextStyle(
+                                            color: colorScheme.onSurfaceVariant,
                                           ),
                                         ),
                                       ],
@@ -328,7 +340,7 @@ class _ResumenPedidoScreenState extends State<ResumenPedidoScreen> {
                                         Text(
                                           'Obs: ${widget.direccion!.observaciones}',
                                           style: TextStyle(
-                                            color: Colors.blue.shade700,
+                                            color: colorScheme.primary,
                                             fontSize: 13,
                                           ),
                                         ),
@@ -346,21 +358,24 @@ class _ResumenPedidoScreenState extends State<ResumenPedidoScreen> {
 
                       // Mostrar info de almacén SI es PICKUP
                       if (esPickup) ...[
-                        const Text(
+                        Text(
                           'Lugar de Retiro',
                           style: TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
+                            color: colorScheme.onSurface,
                           ),
                         ),
                         const SizedBox(height: 12),
 
                         Card(
-                          color: Colors.orange.withOpacity(0.05),
+                          color: isDark
+                              ? Color(0xFFFFC107).withOpacity(0.15)
+                              : Color(0xFFFFC107).withOpacity(0.08),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
                             side: BorderSide(
-                              color: Colors.orange.withOpacity(0.3),
+                              color: Color(0xFFFFC107).withOpacity(isDark ? 0.4 : 0.3),
                               width: 1.5,
                             ),
                           ),
@@ -370,7 +385,7 @@ class _ResumenPedidoScreenState extends State<ResumenPedidoScreen> {
                               children: [
                                 Icon(
                                   Icons.storefront_outlined,
-                                  color: Colors.orange.shade700,
+                                  color: Color(0xFFFFC107),
                                   size: 28,
                                 ),
                                 const SizedBox(width: 12),
@@ -378,18 +393,19 @@ class _ResumenPedidoScreenState extends State<ResumenPedidoScreen> {
                                   child: Column(
                                     crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
-                                      const Text(
+                                      Text(
                                         'Almacén Principal',
                                         style: TextStyle(
                                           fontWeight: FontWeight.w600,
                                           fontSize: 16,
+                                          color: colorScheme.onSurface,
                                         ),
                                       ),
                                       const SizedBox(height: 4),
                                       Text(
                                         'Retira tu pedido cuando esté listo',
                                         style: TextStyle(
-                                          color: Colors.orange.shade700,
+                                          color: Color(0xFFFFC107),
                                           fontSize: 13,
                                         ),
                                       ),
@@ -408,16 +424,18 @@ class _ResumenPedidoScreenState extends State<ResumenPedidoScreen> {
                       if (widget.fechaProgramada != null ||
                           widget.horaInicio != null ||
                           widget.horaFin != null) ...[
-                        const Text(
+                        Text(
                           'Fecha y hora programada',
                           style: TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
+                            color: colorScheme.onSurface,
                           ),
                         ),
                         const SizedBox(height: 12),
 
                         Card(
+                          color: colorScheme.surface,
                           child: Padding(
                             padding: const EdgeInsets.all(16),
                             child: Column(
@@ -425,11 +443,18 @@ class _ResumenPedidoScreenState extends State<ResumenPedidoScreen> {
                                 if (widget.fechaProgramada != null)
                                   Row(
                                     children: [
-                                      const Icon(Icons.calendar_today, size: 20),
+                                      Icon(
+                                        Icons.calendar_today,
+                                        size: 20,
+                                        color: colorScheme.onSurfaceVariant,
+                                      ),
                                       const SizedBox(width: 12),
                                       Text(
                                         _formatearFecha(widget.fechaProgramada!),
-                                        style: const TextStyle(fontSize: 16),
+                                        style: TextStyle(
+                                          fontSize: 16,
+                                          color: colorScheme.onSurface,
+                                        ),
                                       ),
                                     ],
                                   ),
@@ -438,11 +463,18 @@ class _ResumenPedidoScreenState extends State<ResumenPedidoScreen> {
                                   const SizedBox(height: 12),
                                   Row(
                                     children: [
-                                      const Icon(Icons.access_time, size: 20),
+                                      Icon(
+                                        Icons.access_time,
+                                        size: 20,
+                                        color: colorScheme.onSurfaceVariant,
+                                      ),
                                       const SizedBox(width: 12),
                                       Text(
                                         '${widget.horaInicio != null ? _formatearHora(widget.horaInicio!) : '--:--'} a ${widget.horaFin != null ? _formatearHora(widget.horaFin!) : '--:--'}',
-                                        style: const TextStyle(fontSize: 16),
+                                        style: TextStyle(
+                                          fontSize: 16,
+                                          color: colorScheme.onSurface,
+                                        ),
                                       ),
                                     ],
                                   ),
@@ -458,27 +490,36 @@ class _ResumenPedidoScreenState extends State<ResumenPedidoScreen> {
                       // Observaciones
                       if (widget.observaciones != null &&
                           widget.observaciones!.isNotEmpty) ...[
-                        const Text(
+                        Text(
                           'Observaciones',
                           style: TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
+                            color: colorScheme.onSurface,
                           ),
                         ),
                         const SizedBox(height: 12),
 
                         Card(
+                          color: colorScheme.surface,
                           child: Padding(
                             padding: const EdgeInsets.all(16),
                             child: Row(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                const Icon(Icons.note, size: 20),
+                                Icon(
+                                  Icons.note,
+                                  size: 20,
+                                  color: colorScheme.onSurfaceVariant,
+                                ),
                                 const SizedBox(width: 12),
                                 Expanded(
                                   child: Text(
                                     widget.observaciones!,
-                                    style: const TextStyle(fontSize: 15),
+                                    style: TextStyle(
+                                      fontSize: 15,
+                                      color: colorScheme.onSurface,
+                                    ),
                                   ),
                                 ),
                               ],
@@ -490,17 +531,18 @@ class _ResumenPedidoScreenState extends State<ResumenPedidoScreen> {
                       ],
 
                       // Resumen de montos
-                      const Text(
+                      Text(
                         'Resumen',
                         style: TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
+                          color: colorScheme.onSurface,
                         ),
                       ),
                       const SizedBox(height: 12),
 
                       Card(
-                        color: Colors.grey.shade50,
+                        color: colorScheme.surfaceVariant,
                         child: Padding(
                           padding: const EdgeInsets.all(16),
                           child: Column(
@@ -508,33 +550,43 @@ class _ResumenPedidoScreenState extends State<ResumenPedidoScreen> {
                               Row(
                                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                 children: [
-                                  const Text(
+                                  Text(
                                     'Subtotal',
-                                    style: TextStyle(fontSize: 16),
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      color: colorScheme.onSurface,
+                                    ),
                                   ),
                                   Text(
                                     'Bs. ${carrito.subtotal.toStringAsFixed(2)}',
-                                    style: const TextStyle(fontSize: 16),
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      color: colorScheme.onSurface,
+                                    ),
                                   ),
                                 ],
                               ),
-                              const Divider(height: 24),
+                              Divider(
+                                height: 24,
+                                color: colorScheme.outline.withAlpha(isDark ? 80 : 40),
+                              ),
                               Row(
                                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                 children: [
-                                  const Text(
+                                  Text(
                                     'Total',
                                     style: TextStyle(
                                       fontSize: 20,
                                       fontWeight: FontWeight.bold,
+                                      color: colorScheme.onSurface,
                                     ),
                                   ),
                                   Text(
                                     'Bs. ${carrito.total.toStringAsFixed(2)}',
-                                    style: const TextStyle(
+                                    style: TextStyle(
                                       fontSize: 20,
                                       fontWeight: FontWeight.bold,
-                                      color: Colors.green,
+                                      color: Color(0xFF4CAF50),
                                     ),
                                   ),
                                 ],
@@ -556,10 +608,10 @@ class _ResumenPedidoScreenState extends State<ResumenPedidoScreen> {
       bottomNavigationBar: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: colorScheme.surface,
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.05),
+              color: Colors.black.withOpacity(isDark ? 0.3 : 0.05),
               blurRadius: 10,
               offset: const Offset(0, -5),
             ),
@@ -575,7 +627,7 @@ class _ResumenPedidoScreenState extends State<ResumenPedidoScreen> {
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
-                backgroundColor: Colors.green,
+                backgroundColor: Color(0xFF4CAF50),
               ),
               child: _isCreandoPedido
                   ? const SizedBox(

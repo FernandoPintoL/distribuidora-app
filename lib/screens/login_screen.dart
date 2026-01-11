@@ -658,12 +658,18 @@ class _LoginScreenState extends State<LoginScreen>
   }
 
   void _login() async {
-    print('🤷‍♂️🤷‍♂️🤷‍♂️🤷‍♂️ Iniciando proceso de login...');
+    debugPrint('═══════════════════════════════════════════════════════════');
+    debugPrint('👆 BUTTON PRESSED: _login() METHOD CALLED');
+    debugPrint('═══════════════════════════════════════════════════════════');
+
     if (_formKey.currentState?.validate() ?? false) {
+      debugPrint('✅ Form validation passed');
       final authProvider = context.read<AuthProvider>();
 
+      debugPrint('📞 About to call LoadingOverlay.show()');
       // Mostrar el LoadingOverlay
       LoadingOverlay.show(context, message: 'Iniciando sesión...');
+      debugPrint('✅ LoadingOverlay.show() called');
 
       final success = await authProvider.login(
         _loginController.text.trim(),

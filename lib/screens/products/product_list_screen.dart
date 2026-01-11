@@ -151,16 +151,34 @@ class _ProductListScreenState extends State<ProductListScreen>
       context: context,
       builder: (context) {
         final TextEditingController manualController = TextEditingController();
+        final colorScheme = Theme.of(context).colorScheme;
+
         return AlertDialog(
-          title: const Text('Ingresar código de barras'),
+          backgroundColor: colorScheme.surface,
+          title: Text(
+            'Ingresar código de barras',
+            style: Theme.of(context).textTheme.titleLarge?.copyWith(
+              color: colorScheme.onSurface,
+            ),
+          ),
           content: TextField(
             controller: manualController,
             autofocus: true,
+            style: TextStyle(color: colorScheme.onSurface),
             decoration: InputDecoration(
               hintText: 'Escanea o ingresa el código',
-              prefixIcon: const Icon(Icons.qr_code),
+              hintStyle: TextStyle(color: colorScheme.onSurfaceVariant),
+              prefixIcon: Icon(Icons.qr_code, color: colorScheme.primary),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(8),
+                borderSide: BorderSide(color: colorScheme.outline),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+                borderSide: BorderSide(
+                  color: colorScheme.primary,
+                  width: 2,
+                ),
               ),
             ),
             onSubmitted: (value) {
@@ -173,6 +191,9 @@ class _ProductListScreenState extends State<ProductListScreen>
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
+              style: TextButton.styleFrom(
+                foregroundColor: colorScheme.onSurfaceVariant,
+              ),
               child: const Text('Cancelar'),
             ),
             ElevatedButton(
@@ -182,6 +203,10 @@ class _ProductListScreenState extends State<ProductListScreen>
                   _searchByBarcode(manualController.text);
                 }
               },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: colorScheme.primary,
+                foregroundColor: Colors.white,
+              ),
               child: const Text('Buscar'),
             ),
           ],
@@ -191,8 +216,12 @@ class _ProductListScreenState extends State<ProductListScreen>
   }
 
   Widget _buildBarcodeScannerDialog() {
+    final colorScheme = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Dialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      backgroundColor: colorScheme.surface,
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -202,27 +231,33 @@ class _ProductListScreenState extends State<ProductListScreen>
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text(
+                Text(
                   'Escanear código de barras',
-                  style: TextStyle(
-                    fontSize: 18,
+                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
                     fontWeight: FontWeight.bold,
+                    color: colorScheme.onSurface,
                   ),
                 ),
                 IconButton(
-                  icon: const Icon(Icons.close),
+                  icon: Icon(Icons.close, color: colorScheme.onSurfaceVariant),
                   onPressed: () => Navigator.pop(context),
                 ),
               ],
             ),
           ),
-          const Divider(height: 0),
+          Divider(
+            height: 0,
+            color: colorScheme.outline.withAlpha(30),
+          ),
           // Scanner
           SizedBox(
             height: 300,
             child: _buildScannerContent(),
           ),
-          const Divider(height: 0),
+          Divider(
+            height: 0,
+            color: colorScheme.outline.withAlpha(30),
+          ),
           // Pie de página con opción manual
           Padding(
             padding: const EdgeInsets.all(16),
@@ -230,9 +265,8 @@ class _ProductListScreenState extends State<ProductListScreen>
               children: [
                 Text(
                   'Apunta la cámara al código de barras',
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: Colors.grey[600],
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: colorScheme.onSurfaceVariant,
                   ),
                   textAlign: TextAlign.center,
                 ),
@@ -244,6 +278,9 @@ class _ProductListScreenState extends State<ProductListScreen>
                   },
                   icon: const Icon(Icons.edit),
                   label: const Text('Ingresar manualmente'),
+                  style: TextButton.styleFrom(
+                    foregroundColor: colorScheme.primary,
+                  ),
                 ),
               ],
             ),
@@ -280,22 +317,32 @@ class _ProductListScreenState extends State<ProductListScreen>
         }
       },
       errorBuilder: (context, error) {
+        final colorScheme = Theme.of(context).colorScheme;
+
         return Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Icon(Icons.camera_alt_outlined, size: 48, color: Colors.grey),
+              Icon(
+                Icons.camera_alt_outlined,
+                size: 48,
+                color: colorScheme.onSurfaceVariant,
+              ),
               const SizedBox(height: 16),
               Text(
                 'Error con la cámara',
-                style: Theme.of(context).textTheme.titleMedium,
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  color: colorScheme.onSurface,
+                ),
               ),
               const SizedBox(height: 8),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 32),
                 child: Text(
                   'Permiso denegado o dispositivo sin cámara',
-                  style: Theme.of(context).textTheme.bodySmall,
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: colorScheme.onSurfaceVariant,
+                  ),
                   textAlign: TextAlign.center,
                 ),
               ),
@@ -307,6 +354,9 @@ class _ProductListScreenState extends State<ProductListScreen>
                 },
                 icon: const Icon(Icons.edit),
                 label: const Text('Entrada manual'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: colorScheme.primary,
+                ),
               ),
             ],
           ),

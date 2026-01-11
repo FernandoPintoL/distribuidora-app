@@ -30,18 +30,16 @@ class EntregaService {
       );
 
       final data = response.data as Map<String, dynamic>;
-      final trabajos = (data['data'] as List)
-          .map((trabajo) {
-            // Convertir trabajos (entregas + envios) a modelo Entrega
-            // El nuevo endpoint incluye 'type' para distinguir entre 'entrega' y 'envio'
-            final trabajoMap = trabajo as Map<String, dynamic>;
+      final trabajos = (data['data'] as List).map((trabajo) {
+        // El backend envía directamente la entrega completa en el array
+        final trabajoMap = trabajo as Map<String, dynamic>;
 
-            // Normalizar para el modelo Entrega
-            trabajoMap['trabajoType'] = trabajoMap['type']; // Guardar el tipo original
+        debugPrint(
+          '[ENTREGA_SERVICE] Parseando entrega: ${trabajoMap['numero_entrega']} con ${(trabajoMap['ventas'] as List?)?.length ?? 0} ventas',
+        );
 
-            return Entrega.fromJson(trabajoMap);
-          })
-          .toList();
+        return Entrega.fromJson(trabajoMap);
+      }).toList();
 
       return ApiResponse(
         success: true,
@@ -64,20 +62,37 @@ class EntregaService {
   // Obtener una entrega por ID
   Future<ApiResponse<Entrega>> obtenerEntrega(int entregaId) async {
     try {
-      final response = await _apiService.get(
-        '/chofer/entregas/$entregaId',
+      final response = await _apiService.get('/chofer/entregas/$entregaId');
+
+      debugPrint(
+        '📍 [ENTREGA_SERVICE] Respuesta obtenerEntrega: ${response.data}',
       );
 
       final responseData = response.data as Map<String, dynamic>;
-      final entrega = Entrega.fromJson(
-        responseData['data'] as Map<String, dynamic>,
+
+      debugPrint(
+        '📍 [ENTREGA_SERVICE] Claves en responseData: ${responseData.keys.toList()}',
       );
 
-      return ApiResponse(
-        success: true,
-        data: entrega,
-        message: 'Entrega obtenida exitosamente',
-      );
+      try {
+        final entrega = Entrega.fromJson(
+          responseData['data'] as Map<String, dynamic>,
+        );
+
+        return ApiResponse(
+          success: true,
+          data: entrega,
+          message: 'Entrega obtenida exitosamente',
+        );
+      } catch (parseError) {
+        debugPrint('❌ Error parseando JSON de entrega: $parseError');
+        debugPrint('📦 Datos recibidos: ${responseData['data']}');
+        return ApiResponse(
+          success: false,
+          message:
+              'Error al parsear datos de entrega: ${parseError.toString()}',
+        );
+      }
     } on DioException catch (e) {
       return ApiResponse(
         success: false,
@@ -98,10 +113,7 @@ class EntregaService {
     required double longitud,
   }) async {
     try {
-      final data = {
-        'latitud': latitud,
-        'longitud': longitud,
-      };
+      final data = {'latitud': latitud, 'longitud': longitud};
 
       final response = await _apiService.post(
         '/chofer/entregas/$entregaId/iniciar-ruta',
@@ -178,10 +190,7 @@ class EntregaService {
     required double longitud,
   }) async {
     try {
-      final data = {
-        'latitud': latitud,
-        'longitud': longitud,
-      };
+      final data = {'latitud': latitud, 'longitud': longitud};
 
       final response = await _apiService.post(
         '/chofer/entregas/$entregaId/marcar-llegada',
@@ -194,13 +203,16 @@ class EntregaService {
       if (responseData['success'] == false) {
         return ApiResponse(
           success: false,
-          message: responseData['message'] as String? ?? 'Error al marcar llegada',
+          message:
+              responseData['message'] as String? ?? 'Error al marcar llegada',
         );
       }
 
       // Si no hay campo 'data', intentar recargar la entrega
       if (responseData['data'] == null) {
-        debugPrint('⚠️ Backend no retornó datos completos, recargando entrega...');
+        debugPrint(
+          '⚠️ Backend no retornó datos completos, recargando entrega...',
+        );
         final entregaResponse = await obtenerEntrega(entregaId);
         return entregaResponse;
       }
@@ -223,10 +235,7 @@ class EntregaService {
         errorMessage = errorData['message'] as String? ?? errorMessage;
       }
 
-      return ApiResponse(
-        success: false,
-        message: errorMessage,
-      );
+      return ApiResponse(success: false, message: errorMessage);
     } catch (e) {
       return ApiResponse(
         success: false,
@@ -236,25 +245,69 @@ class EntregaService {
   }
 
   // Confirmar entrega con firma y fotos
+  // Si ventaId viene, confirma UNA VENTA específica
+  // Si no viene, confirma TODA la entrega
   Future<ApiResponse<Entrega>> confirmarEntrega(
     int entregaId, {
+    int? ventaId,
     String? firmaBase64,
     List<String>? fotosBase64,
     String? observaciones,
+    // ✅ Contexto de entrega
+    bool? tiendaAbierta,
+    bool? clientePresente,
+    String? motivoRechazo,
+    // ✅ FASE 1: Confirmación de Pago
+    String? estadoPago, // PAGADO, PARCIAL, NO_PAGADO
+    double? montoRecibido, // Dinero recibido
+    int? tipoPagoId, // FK a tipos_pago
+    String? motivoNoPago, // Motivo si NO pagó
+    // ✅ FASE 2: Foto de comprobante
+    String? fotoComprobanteBase64, // Base64 foto del dinero o comprobante
   }) async {
     try {
       final data = {
-        if (firmaBase64 != null) 'firma_digital': firmaBase64,
+        if (firmaBase64 != null) 'firma_digital_base64': firmaBase64,
         if (observaciones != null) 'observaciones': observaciones,
         if (fotosBase64 != null) 'fotos': fotosBase64,
+        // ✅ Contexto de entrega
+        if (tiendaAbierta != null) 'tienda_abierta': tiendaAbierta,
+        if (clientePresente != null) 'cliente_presente': clientePresente,
+        if (motivoRechazo != null) 'motivo_rechazo': motivoRechazo,
+        // ✅ FASE 1: Pago
+        if (estadoPago != null) 'estado_pago': estadoPago,
+        if (montoRecibido != null) 'monto_recibido': montoRecibido,
+        if (tipoPagoId != null) 'tipo_pago_id': tipoPagoId,
+        if (motivoNoPago != null) 'motivo_no_pago': motivoNoPago,
+        // ✅ FASE 2: Foto de comprobante
+        if (fotoComprobanteBase64 != null)
+          'foto_comprobante': fotoComprobanteBase64,
       };
 
-      final response = await _apiService.post(
-        '/chofer/entregas/$entregaId/confirmar-entrega',
-        data: data,
-      );
+      // Construir ruta dinámicamente según si es venta específica o entrega completa
+      final endpoint = ventaId != null
+          ? '/chofer/entregas/$entregaId/ventas/$ventaId/confirmar-entrega'
+          : '/chofer/entregas/$entregaId/confirmar-entrega';
+
+      final response = await _apiService.post(endpoint, data: data);
 
       final responseData = response.data as Map<String, dynamic>;
+      debugPrint(
+        '📍 [ENTREGA_SERVICE] Respuesta confirmarEntrega: $responseData',
+      );
+
+      // ✅ Verificar si el backend retornó error (success: false)
+      final isSuccess = responseData['success'] as bool? ?? false;
+      if (!isSuccess) {
+        final errorMessage =
+            responseData['message'] as String? ??
+            (ventaId != null
+                ? 'Error al confirmar venta'
+                : 'Error al confirmar entrega');
+        return ApiResponse(success: false, message: errorMessage);
+      }
+
+      // ✅ Solo parsear entrega si success es true
       final entrega = Entrega.fromJson(
         responseData['data'] as Map<String, dynamic>,
       );
@@ -262,13 +315,20 @@ class EntregaService {
       return ApiResponse(
         success: true,
         data: entrega,
-        message: 'Entrega confirmada exitosamente',
+        message: ventaId != null
+            ? 'Venta confirmada exitosamente'
+            : 'Entrega confirmada exitosamente',
       );
     } on DioException catch (e) {
-      return ApiResponse(
-        success: false,
-        message: 'Error al confirmar entrega: ${e.message}',
-      );
+      // Intentar extraer el mensaje de error del backend
+      String errorMessage = e.message ?? 'Error desconocido';
+
+      if (e.response != null && e.response!.data is Map<String, dynamic>) {
+        final responseData = e.response!.data as Map<String, dynamic>;
+        errorMessage = responseData['message'] as String? ?? errorMessage;
+      }
+
+      return ApiResponse(success: false, message: errorMessage);
     } catch (e) {
       return ApiResponse(
         success: false,
@@ -342,7 +402,7 @@ class EntregaService {
       };
 
       final response = await _apiService.post(
-        '/chofer/entregas/$entregaId/registrar-ubicacion',
+        '/chofer/entregas/$entregaId/ubicacion',
         data: data,
       );
 
@@ -375,30 +435,57 @@ class EntregaService {
     int limite = 50,
   }) async {
     try {
-      final params = {
-        'limite': limite,
-      };
+      final params = {'limite': limite};
 
       final response = await _apiService.get(
         '/tracking/ubicaciones/$entregaId',
         queryParameters: params,
       );
 
-      final ubicaciones = (response.data['ubicaciones'] as List)
-          .map((u) => UbicacionTracking.fromJson(u as Map<String, dynamic>))
-          .toList();
+      // La respuesta de Dio tiene estructura: {success: true, data: {entrega_id, ubicaciones: []}}
+      final responseData = response.data as Map<String, dynamic>? ?? {};
+      final backendSuccess = responseData['success'] as bool? ?? false;
+      final backendData = responseData['data'] as Map<String, dynamic>? ?? {};
 
-      return ApiResponse(
-        success: true,
-        data: ubicaciones,
-        message: 'Ubicaciones obtenidas exitosamente',
+      debugPrint('📍 [ENTREGA_SERVICE] Backend success: $backendSuccess');
+      debugPrint(
+        '📍 [ENTREGA_SERVICE] Backend data keys: ${backendData.keys.toList()}',
       );
+
+      if (backendSuccess && backendData.isNotEmpty) {
+        final ubicacionesList = backendData['ubicaciones'] as List? ?? [];
+        debugPrint(
+          '📍 [ENTREGA_SERVICE] Ubicaciones encontradas: ${ubicacionesList.length}',
+        );
+
+        final ubicaciones = ubicacionesList
+            .map((u) => UbicacionTracking.fromJson(u as Map<String, dynamic>))
+            .toList();
+
+        return ApiResponse(
+          success: true,
+          data: ubicaciones,
+          message: 'Ubicaciones obtenidas exitosamente',
+        );
+      } else {
+        debugPrint(
+          '📍 [ENTREGA_SERVICE] Backend retornó sin datos o sin éxito',
+        );
+        return ApiResponse(
+          success:
+              true, // Devolvemos success=true aunque no hay datos (para no blocar el flujo)
+          data: [],
+          message: 'Sin ubicaciones disponibles',
+        );
+      }
     } on DioException catch (e) {
+      debugPrint('❌ [ENTREGA_SERVICE] DioException: ${e.message}');
       return ApiResponse(
         success: false,
         message: 'Error al obtener ubicaciones: ${e.message}',
       );
     } catch (e) {
+      debugPrint('❌ [ENTREGA_SERVICE] Error general: $e');
       return ApiResponse(
         success: false,
         message: 'Error inesperado: ${e.toString()}',
@@ -486,7 +573,9 @@ class EntregaService {
       );
 
       final historial = (response.data['data'] as List)
-          .map((h) => EntregaEstadoHistorial.fromJson(h as Map<String, dynamic>))
+          .map(
+            (h) => EntregaEstadoHistorial.fromJson(h as Map<String, dynamic>),
+          )
           .toList();
 
       return ApiResponse(
@@ -517,9 +606,7 @@ class EntregaService {
     String? notas,
   }) async {
     try {
-      final payload = {
-        if (notas != null) 'notas': notas,
-      };
+      final payload = {if (notas != null) 'notas': notas};
 
       final response = await _apiService.post(
         '/entregas/$entregaId/confirmar-venta/$ventaId',
@@ -573,9 +660,7 @@ class EntregaService {
     int entregaId,
   ) async {
     try {
-      final response = await _apiService.get(
-        '/entregas/$entregaId/progreso',
-      );
+      final response = await _apiService.get('/entregas/$entregaId/progreso');
 
       final progreso = response.data['data'] as Map<String, dynamic>;
       return ApiResponse(
@@ -597,9 +682,7 @@ class EntregaService {
   }
 
   /// Confirmar que la carga está lista (transición de EN_CARGA a LISTO_PARA_ENTREGA)
-  Future<ApiResponse<Entrega>> confirmarCargoCompleto(
-    int entregaId,
-  ) async {
+  Future<ApiResponse<Entrega>> confirmarCargoCompleto(int entregaId) async {
     try {
       final response = await _apiService.post(
         '/entregas/$entregaId/listo-para-entrega',
@@ -607,7 +690,9 @@ class EntregaService {
       );
 
       if (response.statusCode == 200 || response.statusCode == 201) {
-        final entrega = Entrega.fromJson(response.data['data'] as Map<String, dynamic>);
+        final entrega = Entrega.fromJson(
+          response.data['data'] as Map<String, dynamic>,
+        );
         return ApiResponse(
           success: true,
           data: entrega,
@@ -676,6 +761,53 @@ class EntregaService {
         message: 'Error al desmarcar venta: ${e.message}',
       );
     } catch (e) {
+      return ApiResponse(
+        success: false,
+        message: 'Error inesperado: ${e.toString()}',
+      );
+    }
+  }
+
+  // ✅ FASE 2: Obtener tipos de pago desde la API
+  Future<ApiResponse<List>> obtenerTiposPago() async {
+    try {
+      final response = await _apiService.get('/tipos-pago');
+
+      final responseData = response.data as Map<String, dynamic>;
+
+      final isSuccess = responseData['success'] as bool? ?? false;
+      if (!isSuccess) {
+        final errorMessage =
+            responseData['message'] as String? ??
+            'Error al obtener tipos de pago';
+        return ApiResponse(success: false, message: errorMessage);
+      }
+
+      // Parsear respuesta esperada: { success: true, data: [{id, codigo, nombre}, ...] }
+      final tiposPagoData = responseData['data'] as List? ?? [];
+      final tiposPago = tiposPagoData
+          .map(
+            (item) => {
+              'id': item['id'],
+              'codigo': item['codigo'],
+              'nombre': item['nombre'],
+            },
+          )
+          .toList();
+
+      return ApiResponse(
+        success: true,
+        message: 'Tipos de pago obtenidos',
+        data: tiposPago,
+      );
+    } on DioException catch (e) {
+      debugPrint('Error en obtenerTiposPago: ${e.message}');
+      return ApiResponse(
+        success: false,
+        message: 'Error al obtener tipos de pago: ${e.message}',
+      );
+    } catch (e) {
+      debugPrint('Error inesperado en obtenerTiposPago: $e');
       return ApiResponse(
         success: false,
         message: 'Error inesperado: ${e.toString()}',

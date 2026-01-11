@@ -1,10 +1,10 @@
-import 'estado_pedido.dart';
+// ✅ ACTUALIZADO: Usar String para códigos de estado en lugar de enum EstadoPedido
 
 class PedidoEstadoHistorial {
   final int id;
   final int pedidoId;
-  final EstadoPedido estadoAnterior;
-  final EstadoPedido estadoNuevo;
+  final String estadoAnterior;  // Código de estado, ej: 'PENDIENTE', 'APROBADA'
+  final String estadoNuevo;     // Código de estado, ej: 'EN_RUTA', 'ENTREGADO'
   final int? usuarioId;
   final String? nombreUsuario;
   final String? comentario;
@@ -27,8 +27,9 @@ class PedidoEstadoHistorial {
     return PedidoEstadoHistorial(
       id: json['id'] as int,
       pedidoId: json['pedido_id'] as int,
-      estadoAnterior: EstadoInfo.fromString(json['estado_anterior'] as String),
-      estadoNuevo: EstadoInfo.fromString(json['estado_nuevo'] as String),
+      // ✅ ACTUALIZADO: Usar String directamente
+      estadoAnterior: json['estado_anterior'] as String? ?? 'DESCONOCIDO',
+      estadoNuevo: json['estado_nuevo'] as String? ?? 'DESCONOCIDO',
       usuarioId: json['usuario_id'] as int?,
       nombreUsuario: json['nombre_usuario'] as String?,
       comentario: json['comentario'] as String?,
@@ -41,8 +42,9 @@ class PedidoEstadoHistorial {
     return {
       'id': id,
       'pedido_id': pedidoId,
-      'estado_anterior': EstadoInfo.enumToString(estadoAnterior),
-      'estado_nuevo': EstadoInfo.enumToString(estadoNuevo),
+      // ✅ ACTUALIZADO: Pasar String directamente
+      'estado_anterior': estadoAnterior,
+      'estado_nuevo': estadoNuevo,
       'usuario_id': usuarioId,
       'nombre_usuario': nombreUsuario,
       'comentario': comentario,

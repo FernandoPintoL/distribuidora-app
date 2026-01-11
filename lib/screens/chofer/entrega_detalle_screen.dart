@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:collection/collection.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../models/entrega.dart';
 import '../../models/venta.dart';
 import '../../providers/entrega_provider.dart';
@@ -9,6 +10,8 @@ import '../../widgets/chofer/entrega_timeline.dart';
 import '../../widgets/chofer/navigation_panel.dart';
 import '../../widgets/chofer/animated_navigation_card.dart';
 import '../../widgets/chofer/sla_status_widget.dart';
+import '../../widgets/chofer/gps_tracking_status_widget.dart';
+import '../../widgets/chofer/connection_health_widget.dart';
 import '../../config/config.dart';
 import '../../services/location_service.dart';
 
@@ -23,35 +26,158 @@ class EntregaDetalleScreen extends StatefulWidget {
 }
 
 class _EntregaDetalleScreenState extends State<EntregaDetalleScreen> {
-  late EntregaProvider _provider;
+  bool _isRetryingGps = false; // Estado para reintentos de GPS
+  bool _expandedTracking = false; // Estado para expandir/colapsar tracking
 
   @override
   void initState() {
     super.initState();
-    _provider = context.read<EntregaProvider>();
-    print('Iniciando detalle de entrega ID: ${widget.entregaId}');
-    _cargarDetalle();
-    // Iniciar escucha de WebSocket para actualizaciones en tiempo real
-    _provider.iniciarEscuchaWebSocket();
+    debugPrint('Iniciando detalle de entrega ID: ${widget.entregaId}');
+    // NOTA: El WebSocket ya está conectado globalmente desde el login
+    // NO necesitamos reconectarlo en cada pantalla
+    // La conexión se mantiene activa durante toda la sesión del usuario
+    // y solo se desconecta al hacer logout
   }
 
   @override
   void dispose() {
-    // Detener escucha de WebSocket
-    _provider.detenerEscuchaWebSocket();
+    // NOTA: NO desconectamos el WebSocket aquí porque es una conexión global
+    // Se mantiene activa para otras pantallas
     super.dispose();
   }
 
-  Future<void> _cargarDetalle() async {
-    if (!mounted) return;
-    // El loading se maneja automáticamente a través del isLoading del provider
-    // que se refleja en el Stack del build()
-    await _provider.obtenerEntrega(widget.entregaId);
+  /// Llamar al cliente
+  Future<void> _llamarCliente(String? telefono) async {
+    if (telefono == null || telefono.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('No hay teléfono disponible'),
+          backgroundColor: Colors.orange,
+          duration: Duration(seconds: 2),
+        ),
+      );
+      return;
+    }
+
+    final Uri phoneUri = Uri(scheme: 'tel', path: telefono);
+    try {
+      if (await canLaunchUrl(phoneUri)) {
+        await launchUrl(phoneUri);
+      } else {
+        debugPrint('No se pudo abrir teléfono');
+      }
+    } catch (e) {
+      debugPrint('Error al llamar: $e');
+    }
+  }
+
+  /// Enviar WhatsApp al cliente
+  Future<void> _enviarWhatsApp(String? telefono) async {
+    if (telefono == null || telefono.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('No hay teléfono disponible'),
+          backgroundColor: Colors.orange,
+          duration: Duration(seconds: 2),
+        ),
+      );
+      return;
+    }
+
+    // Limpiar teléfono (remover espacios, caracteres especiales)
+    final telefonoLimpio = telefono.replaceAll(RegExp(r'[^\d+]'), '');
+
+    final Uri whatsappUri = Uri.parse(
+      'https://wa.me/$telefonoLimpio',
+    );
+
+    try {
+      if (await canLaunchUrl(whatsappUri)) {
+        await launchUrl(whatsappUri, mode: LaunchMode.externalApplication);
+      } else {
+        debugPrint('WhatsApp no disponible');
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('WhatsApp no está instalado'),
+            backgroundColor: Colors.orange,
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
+    } catch (e) {
+      debugPrint('Error al enviar WhatsApp: $e');
+    }
+  }
+
+  /// Reintentar iniciar el tracking GPS
+  Future<void> _reintentarGpsTracking(
+    EntregaProvider provider,
+    Entrega entrega,
+  ) async {
+    setState(() => _isRetryingGps = true);
+
+    try {
+      debugPrint('🔄 Reintentando iniciar tracking GPS...');
+
+      final success = await provider.reintentarTracking(
+        onSuccess: (mensaje) {
+          debugPrint('✅ Tracking reiniciado: $mensaje');
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('✅ GPS Tracking reiniciado. $mensaje'),
+                backgroundColor: Colors.green,
+                duration: const Duration(seconds: 2),
+              ),
+            );
+          }
+        },
+        onError: (error) {
+          debugPrint('❌ Error al reintentar: $error');
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('Error al reintentar: $error'),
+                backgroundColor: Colors.red,
+                duration: const Duration(seconds: 3),
+              ),
+            );
+          }
+        },
+      );
+
+      if (mounted && !success) {
+        debugPrint('❌ Fallo al reiniciar GPS Tracking');
+      }
+    } catch (e) {
+      debugPrint('❌ Excepción al reintentar: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error inesperado: ${e.toString()}'),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isRetryingGps = false);
+      }
+    }
+  }
+
+  Future<void> _cargarDetalle(EntregaProvider provider) async {
+    debugPrint(
+      '🔄 [RECARGAR] Recargando detalle de entrega ID: ${widget.entregaId}...',
+    );
+    await provider.obtenerEntrega(widget.entregaId);
   }
 
   Future<void> _mostrarDialogoMarcarLlegada(
     BuildContext context,
     Entrega entrega,
+    EntregaProvider provider,
   ) async {
     if (!mounted) return;
 
@@ -136,7 +262,7 @@ class _EntregaDetalleScreenState extends State<EntregaDetalleScreen> {
 
         // Hacer API call sin mostrar dialog
         debugPrint('📤 Llamando API para marcar llegada...');
-        final success = await _provider.marcarLlegada(
+        final success = await provider.marcarLlegada(
           entrega.id,
           latitud: position.latitude,
           longitud: position.longitude,
@@ -154,13 +280,13 @@ class _EntregaDetalleScreenState extends State<EntregaDetalleScreen> {
             ),
           );
           // Recargar detalle
-          await _cargarDetalle();
+          await _cargarDetalle(provider);
         } else {
-          debugPrint('❌ Error: ${_provider.errorMessage}');
+          debugPrint('❌ Error: ${provider.errorMessage}');
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(
-                'Error: ${_provider.errorMessage ?? 'Error desconocido'}',
+                'Error: ${provider.errorMessage ?? 'Error desconocido'}',
               ),
               backgroundColor: Colors.red,
               duration: const Duration(seconds: 3),
@@ -182,9 +308,159 @@ class _EntregaDetalleScreenState extends State<EntregaDetalleScreen> {
     }
   }
 
+  /// FASE 4: Mostrar dialog para iniciar entrega
+  /// Se muestra solo cuando estado = LISTO_PARA_ENTREGA
+  Future<void> _mostrarDialogoIniciarEntrega(
+    BuildContext context,
+    Entrega entrega,
+    EntregaProvider provider,
+  ) async {
+    if (!mounted) return;
+
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    final resultado = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Iniciar Entrega'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.play_circle, size: 48, color: Colors.green),
+            const SizedBox(height: 16),
+            const Text('¿Confirmas que deseas iniciar la entrega?'),
+            const SizedBox(height: 12),
+            Text(
+              'Se cambiar el estado a EN_RUTA y se iniciará el tracking de GPS.',
+              style: TextStyle(
+                fontSize: 12,
+                color: isDarkMode ? Colors.grey[400] : Colors.grey[600],
+                fontStyle: FontStyle.italic,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            if (entrega.cliente != null) ...[
+              const SizedBox(height: 16),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: isDarkMode
+                      ? Colors.blue[900]?.withOpacity(0.3)
+                      : Colors.blue[50],
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(
+                    color: isDarkMode ? Colors.blue[700]! : Colors.blue[200]!,
+                  ),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Cliente',
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: isDarkMode ? Colors.grey[400] : Colors.grey[600],
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      entrega.cliente!,
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.bold,
+                        color: isDarkMode ? Colors.grey[100] : Colors.grey[900],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancelar'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
+            child: const Text('Iniciar Entrega'),
+          ),
+        ],
+      ),
+    );
+
+    if (resultado == true && mounted) {
+      // Mostrar loading dialog mientras se procesa
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => const Center(child: CircularProgressIndicator()),
+      );
+
+      try {
+        debugPrint('🚀 Iniciando entrega #${entrega.id}...');
+
+        final success = await provider.iniciarEntrega(
+          entrega.id,
+          onSuccess: (mensaje) {
+            debugPrint('✅ Entrega iniciada: $mensaje');
+          },
+          onError: (error) {
+            debugPrint('❌ Error: $error');
+          },
+        );
+
+        if (mounted) {
+          Navigator.pop(context); // Cerrar loading
+
+          if (success) {
+            debugPrint('✅ Entrega iniciada correctamente');
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: const Text(
+                  '✅ Entrega iniciada correctamente. GPS tracking activo.',
+                ),
+                backgroundColor: Colors.green,
+                duration: const Duration(seconds: 3),
+              ),
+            );
+
+            // Recargar detalle
+            await _cargarDetalle(provider);
+          } else {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(
+                  'Error: ${provider.errorMessage ?? 'Error desconocido'}',
+                ),
+                backgroundColor: Colors.red,
+                duration: const Duration(seconds: 3),
+              ),
+            );
+          }
+        }
+      } catch (e) {
+        debugPrint('❌ Excepción: $e');
+        if (mounted) {
+          Navigator.pop(context); // Cerrar loading
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Error inesperado: ${e.toString()}'),
+              backgroundColor: Colors.red,
+              duration: const Duration(seconds: 3),
+            ),
+          );
+        }
+      }
+    }
+  }
+
   Future<void> _mostrarDialogoReportarNovedad(
     BuildContext context,
     Entrega entrega,
+    EntregaProvider provider,
   ) async {
     if (!mounted) return;
 
@@ -254,7 +530,7 @@ class _EntregaDetalleScreenState extends State<EntregaDetalleScreen> {
       );
 
       try {
-        final success = await _provider.reportarNovedad(
+        final success = await provider.reportarNovedad(
           entrega.id,
           motivo: motivoController.text,
           descripcion: descripcionController.text.isNotEmpty
@@ -274,11 +550,11 @@ class _EntregaDetalleScreenState extends State<EntregaDetalleScreen> {
               ),
             );
             // Recargar detalle
-            await _cargarDetalle();
+            await _cargarDetalle(provider);
           } else {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
-                content: Text('Error: ${_provider.errorMessage}'),
+                content: Text('Error: ${provider.errorMessage}'),
                 backgroundColor: Colors.red,
               ),
             );
@@ -314,81 +590,108 @@ class _EntregaDetalleScreenState extends State<EntregaDetalleScreen> {
         title: 'Detalle de Entregas',
         customGradient: AppGradients.green,
       ),
-      body: Consumer<EntregaProvider>(
-        builder: (context, provider, _) {
-          return Stack(
-            children: [
-              // Contenido principal
-              if (provider.entregaActual == null)
-                _buildErrorContent()
-              else
-                _buildContent(provider),
-              // Loading overlay modal
-              if (provider.isLoading)
+      body: FutureBuilder<bool>(
+        future: context.read<EntregaProvider>().obtenerEntrega(
+          widget.entregaId,
+        ),
+        builder: (context, snapshot) {
+          debugPrint(
+            '🏗️ [FUTUREBUILDER] connectionState=${snapshot.connectionState}, hasData=${snapshot.hasData}',
+          );
+
+          // Mientras carga
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return Stack(
+              children: [
+                // Placeholder vacío
+                Container(
+                  color: isDarkMode ? Colors.grey[900] : Colors.grey[50],
+                ),
+                // Loading overlay modal
                 Positioned.fill(
                   child: Container(
                     color: Colors.black.withValues(alpha: 0.3),
                     child: Center(
-                      child: Builder(
-                        builder: (ctx) {
-                          final isDark = Theme.of(ctx).brightness == Brightness.dark;
-                          return Container(
-                            padding: const EdgeInsets.all(32),
-                            decoration: BoxDecoration(
-                              color: isDark ? Colors.grey[850] : Colors.white,
-                              borderRadius: BorderRadius.circular(16),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.black.withValues(alpha: 0.2),
-                                  blurRadius: 20,
-                                  spreadRadius: 5,
-                                ),
-                              ],
+                      child: Container(
+                        padding: const EdgeInsets.all(32),
+                        decoration: BoxDecoration(
+                          color: isDarkMode ? Colors.grey[850] : Colors.white,
+                          borderRadius: BorderRadius.circular(16),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.2),
+                              blurRadius: 20,
+                              spreadRadius: 5,
                             ),
-                            child: Column(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                SizedBox(
-                                  width: 60,
-                                  height: 60,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 3,
-                                    valueColor: AlwaysStoppedAnimation<Color>(
-                                      Theme.of(ctx).primaryColor,
-                                    ),
+                          ],
+                        ),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            SizedBox(
+                              width: 60,
+                              height: 60,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 3,
+                                valueColor: AlwaysStoppedAnimation<Color>(
+                                  Theme.of(context).primaryColor,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 24),
+                            Text(
+                              'Cargando detalles de entrega...',
+                              style: Theme.of(context).textTheme.titleMedium
+                                  ?.copyWith(fontWeight: FontWeight.w600),
+                              textAlign: TextAlign.center,
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              'Por favor espera',
+                              style: Theme.of(context).textTheme.bodySmall
+                                  ?.copyWith(
+                                    color: isDarkMode
+                                        ? Colors.grey[400]
+                                        : Colors.grey[600],
                                   ),
-                                ),
-                                const SizedBox(height: 24),
-                                Text(
-                                  'Cargando detalles de entrega...',
-                                  style: Theme.of(ctx).textTheme.titleMedium?.copyWith(
-                                        fontWeight: FontWeight.w600,
-                                      ),
-                                  textAlign: TextAlign.center,
-                                ),
-                                const SizedBox(height: 8),
-                                Text(
-                                  'Por favor espera',
-                                  style: Theme.of(ctx).textTheme.bodySmall?.copyWith(
-                                        color: isDark ? Colors.grey[400] : Colors.grey[600],
-                                      ),
-                                ),
-                              ],
                             ),
-                          );
-                        },
+                          ],
+                        ),
                       ),
                     ),
                   ),
                 ),
-            ],
+              ],
+            );
+          }
+
+          // Si hay error o la carga falló
+          if (snapshot.hasError || snapshot.data == false) {
+            final provider = context.read<EntregaProvider>();
+            return _buildErrorContentWithDebug(provider);
+          }
+
+          // Datos cargados correctamente
+          return Consumer<EntregaProvider>(
+            builder: (context, provider, _) {
+              debugPrint(
+                '🏗️ [CONSUMER_BUILD] entregaActual=${provider.entregaActual?.id}, provider_id=${provider.hashCode}',
+              );
+
+              if (provider.entregaActual == null) {
+                return _buildErrorContentWithDebug(provider);
+              }
+
+              return _buildContent(provider);
+            },
           );
         },
       ),
     );
   }
 
-  Widget _buildErrorContent() {
+  Widget _buildErrorContentWithDebug(EntregaProvider provider) {
+    debugPrint('❌ [BUILD_ERROR] _buildErrorContent está siendo renderizada');
     return Builder(
       builder: (context) {
         final isDarkMode = Theme.of(context).brightness == Brightness.dark;
@@ -411,27 +714,121 @@ class _EntregaDetalleScreenState extends State<EntregaDetalleScreen> {
               ),
               const SizedBox(height: 16),
               ElevatedButton(
-                onPressed: _cargarDetalle,
+                onPressed: () => _cargarDetalle(provider),
                 child: const Text('Reintentar'),
               ),
             ],
           ),
         );
-      }
+      },
     );
   }
 
   Widget _buildContent(EntregaProvider provider) {
     final entrega = provider.entregaActual!;
+    debugPrint(
+      '✅ [BUILD_CONTENT] Renderizando contenido de entrega ${entrega.id}',
+    );
 
     return RefreshIndicator(
-      onRefresh: _cargarDetalle,
+      onRefresh: () => _cargarDetalle(provider),
       child: ListView(
         padding: const EdgeInsets.all(16),
         children: [
           // Estado
           _EstadoCard(entrega: entrega),
           const SizedBox(height: 16),
+
+          // GPS Tracking Status - Solo si tracking activo o estado es EN_TRANSITO
+          if (provider.isTracking ||
+              entrega.estadoEntregaCodigo == 'EN_TRANSITO') ...[
+            Card(
+              elevation: 2,
+              child: ExpansionTile(
+                title: Row(
+                  children: [
+                    Icon(
+                      Icons.gps_fixed,
+                      color: provider.isTracking ? Colors.green : Colors.grey,
+                      size: 20,
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Información de Rastreo',
+                            style: Theme.of(context)
+                                .textTheme
+                                .titleSmall
+                                ?.copyWith(fontWeight: FontWeight.bold),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            provider.isTracking
+                                ? '✅ GPS Activo'
+                                : '⏸️ GPS Inactivo',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: provider.isTracking
+                                  ? Colors.green
+                                  : Colors.orange,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                initiallyExpanded: _expandedTracking,
+                onExpansionChanged: (expanded) {
+                  setState(() => _expandedTracking = expanded);
+                },
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      spacing: 16,
+                      children: [
+                        // GPS Tracking Status Details
+                        GpsTrackingStatusWidget(
+                          isTracking: provider.isTracking,
+                          ultimaUbicacion: provider.ultimaUbicacion,
+                          destinoLatitud: entrega.latitudeDestino,
+                          destinoLongitud: entrega.longitudeDestino,
+                          distanciaRecorrida: provider.distanciaRecorrida,
+                          compact: false,
+                          onRetry: () =>
+                              _reintentarGpsTracking(provider, entrega),
+                          isRetrying: _isRetryingGps,
+                        ),
+                        // Connection Health - Solo si tracking activo
+                        if (provider.isTracking)
+                          ConnectionHealthWidget(
+                            isTracking: provider.isTracking,
+                            ultimaUbicacion: provider.ultimaUbicacion,
+                            onRetryGps: () =>
+                                _reintentarGpsTracking(provider, entrega),
+                          ),
+                        // Divider antes de navegación
+                        const Divider(),
+                        // Panel de navegación
+                        NavigationPanel(
+                          clientName: entrega.cliente ?? 'Cliente',
+                          address: entrega.direccion ?? 'Dirección no disponible',
+                          destinationLatitude: entrega.latitudeDestino,
+                          destinationLongitude: entrega.longitudeDestino,
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+          ],
+
           // SLA Status - FASE 6
           if (entrega.fechaEntregaComprometida != null) ...[
             SlaStatusWidget(
@@ -450,21 +847,14 @@ class _EntregaDetalleScreenState extends State<EntregaDetalleScreen> {
           _FechasCard(entrega: entrega),
           const SizedBox(height: 16),
           // Timeline visual de estados
-          EntregaTimeline(entrega: entrega),
-          const SizedBox(height: 16),
+          /* EntregaTimeline(entrega: entrega),
+          const SizedBox(height: 16), */
           // Sección de Ventas Asignadas
-          _VentasAsignadasCard(entrega: entrega, provider: provider),
-          const SizedBox(height: 16),
-          // Panel de navegación con animación de entrada
-          AnimatedNavigationCard(
-            clientName: entrega.cliente ?? 'Cliente',
-            address: entrega.direccion ?? 'Dirección no disponible',
-            child: NavigationPanel(
-              clientName: entrega.cliente ?? 'Cliente',
-              address: entrega.direccion ?? 'Dirección no disponible',
-              destinationLatitude: entrega.latitudeDestino,
-              destinationLongitude: entrega.longitudeDestino,
-            ),
+          _VentasAsignadasCard(
+            entrega: entrega,
+            provider: provider,
+            onLlamarCliente: _llamarCliente,
+            onEnviarWhatsApp: _enviarWhatsApp,
           ),
           const SizedBox(height: 16),
           // Historial de estados
@@ -475,9 +865,13 @@ class _EntregaDetalleScreenState extends State<EntregaDetalleScreen> {
           // Botones de acción
           _BotonesAccion(
             entrega: entrega,
+            provider: provider,
+            onIniciarEntrega: _mostrarDialogoIniciarEntrega,
             onMarcarLlegada: _mostrarDialogoMarcarLlegada,
             onReportarNovedad: _mostrarDialogoReportarNovedad,
+            onReintentarGps: () => _reintentarGpsTracking(provider, entrega),
           ),
+          const SizedBox(height: 42),
         ],
       ),
     );
@@ -532,6 +926,18 @@ class _EstadoCard extends StatelessWidget {
   }
 
   Color _getColorEstado() {
+    // Usar primero el color del estado desde la BD (estado_entrega.color)
+    final colorHex = entrega.estadoEntregaColor;
+
+    if (colorHex != null && colorHex.isNotEmpty && colorHex.startsWith('#')) {
+      try {
+        return Color(int.parse('0xff${colorHex.substring(1)}'));
+      } catch (e) {
+        debugPrint('❌ Error parseando color: $colorHex - $e');
+      }
+    }
+
+    // Fallback: usar colores hardcodeados si no viene desde la BD
     const colores = {
       'PROGRAMADO': Color(0xFFeab308),
       'ASIGNADA': Color(0xFF3b82f6),
@@ -747,8 +1153,12 @@ class _HistorialEstadosCard extends StatelessWidget {
               separatorBuilder: (_, __) => const Divider(),
               itemBuilder: (context, index) {
                 final estado = estados[index];
-                final bgColor = isDarkMode ? Colors.blue[900] : Colors.blue[100];
-                final textColor = isDarkMode ? Colors.blue[300] : Colors.blue[900];
+                final bgColor = isDarkMode
+                    ? Colors.blue[900]
+                    : Colors.blue[100];
+                final textColor = isDarkMode
+                    ? Colors.blue[300]
+                    : Colors.blue[900];
 
                 return Padding(
                   padding: const EdgeInsets.symmetric(vertical: 8),
@@ -781,9 +1191,10 @@ class _HistorialEstadosCard extends StatelessWidget {
                       Text(
                         estado.createdAt.toString(),
                         style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                              color:
-                                  isDarkMode ? Colors.grey[500] : Colors.grey[600],
-                            ),
+                          color: isDarkMode
+                              ? Colors.grey[500]
+                              : Colors.grey[600],
+                        ),
                       ),
                       if (estado.comentario != null &&
                           estado.comentario!.isNotEmpty) ...[
@@ -792,7 +1203,9 @@ class _HistorialEstadosCard extends StatelessWidget {
                           estado.comentario!,
                           style: TextStyle(
                             fontSize: 12,
-                            color: isDarkMode ? Colors.grey[300] : Colors.grey[800],
+                            color: isDarkMode
+                                ? Colors.grey[300]
+                                : Colors.grey[800],
                           ),
                         ),
                       ],
@@ -810,22 +1223,45 @@ class _HistorialEstadosCard extends StatelessWidget {
 
 class _BotonesAccion extends StatelessWidget {
   final Entrega entrega;
-  final Function(BuildContext, Entrega) onMarcarLlegada;
-  final Function(BuildContext, Entrega) onReportarNovedad;
+  final EntregaProvider provider;
+  final Function(BuildContext, Entrega, EntregaProvider) onIniciarEntrega;
+  final Function(BuildContext, Entrega, EntregaProvider) onMarcarLlegada;
+  final Function(BuildContext, Entrega, EntregaProvider) onReportarNovedad;
+  final VoidCallback? onReintentarGps; // Callback para reintentar GPS
 
   const _BotonesAccion({
     Key? key,
     required this.entrega,
+    required this.provider,
+    required this.onIniciarEntrega,
     required this.onMarcarLlegada,
     required this.onReportarNovedad,
+    this.onReintentarGps,
   }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
+    // Verificar si el estado es LISTO_PARA_ENTREGA
+    final esListoParaEntrega =
+        entrega.estadoEntregaCodigo == 'LISTO_PARA_ENTREGA' ||
+        (entrega.estadoEntregaCodigo == null &&
+            entrega.estado == 'LISTO_PARA_ENTREGA');
+
     return Column(
       spacing: 8,
       children: [
-        if (entrega.puedeIniciarRuta)
+        // FASE 4: Botón "Iniciar Entrega" - Se muestra SOLO cuando estado = LISTO_PARA_ENTREGA
+        if (esListoParaEntrega)
+          _BotonAccion(
+            label: 'Iniciar Entrega',
+            icon: Icons.play_circle,
+            color: Colors.green,
+            onPressed: () {
+              onIniciarEntrega(context, entrega, provider);
+            },
+          ),
+        // Botón original "Iniciar Ruta" - para compatibilidad con otros estados
+        if (entrega.puedeIniciarRuta && !esListoParaEntrega)
           _BotonAccion(
             label: 'Iniciar Ruta',
             icon: Icons.navigation,
@@ -842,18 +1278,7 @@ class _BotonesAccion extends StatelessWidget {
             icon: Icons.location_on,
             color: Colors.orange,
             onPressed: () async {
-              await onMarcarLlegada(context, entrega);
-            },
-          ),
-        if (entrega.puedeConfirmarEntrega)
-          _BotonAccion(
-            label: 'Confirmar Entrega',
-            icon: Icons.check_circle,
-            color: Colors.green,
-            onPressed: () {
-              Navigator.of(
-                context,
-              ).pushNamed('/chofer/confirmar-entrega', arguments: entrega.id);
+              await onMarcarLlegada(context, entrega, provider);
             },
           ),
         /* if (entrega.puedeReportarNovedad)
@@ -862,9 +1287,22 @@ class _BotonesAccion extends StatelessWidget {
             icon: Icons.warning,
             color: Colors.red,
             onPressed: () async {
-              await onReportarNovedad(context, entrega);
+              await onReportarNovedad(context, entrega, provider);
             },
           ), */
+
+        // Botón para reintentar GPS si no está activo
+        if (onReintentarGps != null &&
+            !provider.isTracking &&
+            (entrega.estadoEntregaCodigo == 'EN_TRANSITO' ||
+                entrega.estado == 'EN_CAMINO' ||
+                entrega.estado == 'LLEGO'))
+          _BotonAccion(
+            label: 'Reintentar GPS',
+            icon: Icons.gps_fixed,
+            color: Colors.blue,
+            onPressed: onReintentarGps!,
+          ),
       ],
     );
   }
@@ -896,25 +1334,32 @@ class _InfoItem extends StatelessWidget {
             color: isDarkMode ? Colors.grey[500] : Colors.grey[600],
           ),
           const SizedBox(width: 12),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                label,
-                style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                      color: isDarkMode ? Colors.grey[400] : Colors.grey[600],
-                    ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                value,
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                  color: isDarkMode ? Colors.grey[100] : Colors.grey[900],
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                    color: isDarkMode ? Colors.grey[400] : Colors.grey[600],
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  maxLines: 1,
+                  softWrap: false,
                 ),
-              ),
-            ],
+                const SizedBox(height: 4),
+                Text(
+                  value,
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: isDarkMode ? Colors.grey[100] : Colors.grey[900],
+                  ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+            ),
           ),
         ],
       ),
@@ -960,11 +1405,15 @@ class _BotonAccion extends StatelessWidget {
 class _VentasAsignadasCard extends StatefulWidget {
   final Entrega entrega;
   final EntregaProvider provider;
+  final Function(String?) onLlamarCliente;
+  final Function(String?) onEnviarWhatsApp;
 
   const _VentasAsignadasCard({
     Key? key,
     required this.entrega,
     required this.provider,
+    required this.onLlamarCliente,
+    required this.onEnviarWhatsApp,
   }) : super(key: key);
 
   @override
@@ -985,8 +1434,9 @@ class _VentasAsignadasCardState extends State<_VentasAsignadasCard> {
     // Inicializar estado de confirmación de ventas basándose en el estado logístico
     for (var venta in widget.entrega.ventas) {
       // Una venta está confirmada si su código de estado es PENDIENTE_ENVIO
-      _ventasConfirmadas[venta.id] = (venta.estadoLogisticoCodigo == 'PENDIENTE_ENVIO');
-      debugPrint('[INIT_SYNC] Venta #${venta.numero}: ${_ventasConfirmadas[venta.id]} (estado: ${venta.estadoLogisticoCodigo})');
+      _ventasConfirmadas[venta.id] =
+          (venta.estadoLogisticoCodigo == 'PENDIENTE_ENVIO');
+      // debugPrint('[INIT_SYNC] Venta #${venta.numero}: ${_ventasConfirmadas[venta.id]} (estado: ${venta.estadoLogisticoCodigo})');
     }
   }
 
@@ -1037,7 +1487,9 @@ class _VentasAsignadasCardState extends State<_VentasAsignadasCard> {
                           '$ventasConfirmadas/$totalVentas cargadas ($porcentaje%)',
                           style: TextStyle(
                             fontSize: 12,
-                            color: isDarkMode ? Colors.grey[400] : Colors.grey[600],
+                            color: isDarkMode
+                                ? Colors.grey[400]
+                                : Colors.grey[600],
                             fontWeight: FontWeight.w500,
                           ),
                         ),
@@ -1054,7 +1506,9 @@ class _VentasAsignadasCardState extends State<_VentasAsignadasCard> {
                     decoration: BoxDecoration(
                       color: ventasConfirmadas == totalVentas
                           ? (isDarkMode ? Colors.green[900] : Colors.green[100])
-                          : (isDarkMode ? Colors.orange[900] : Colors.orange[100]),
+                          : (isDarkMode
+                                ? Colors.orange[900]
+                                : Colors.orange[100]),
                       borderRadius: BorderRadius.circular(4),
                     ),
                     child: Text(
@@ -1065,10 +1519,12 @@ class _VentasAsignadasCardState extends State<_VentasAsignadasCard> {
                         fontSize: 11,
                         fontWeight: FontWeight.bold,
                         color: ventasConfirmadas == totalVentas
-                            ? (isDarkMode ? Colors.green[300] : Colors.green[900])
+                            ? (isDarkMode
+                                  ? Colors.green[300]
+                                  : Colors.green[900])
                             : (isDarkMode
-                                ? Colors.orange[300]
-                                : Colors.orange[900]),
+                                  ? Colors.orange[300]
+                                  : Colors.orange[900]),
                       ),
                     ),
                   ),
@@ -1083,8 +1539,9 @@ class _VentasAsignadasCardState extends State<_VentasAsignadasCard> {
                 child: LinearProgressIndicator(
                   value: totalVentas > 0 ? ventasConfirmadas / totalVentas : 0,
                   minHeight: 6,
-                  backgroundColor:
-                      isDarkMode ? Colors.grey[700] : Colors.grey[300],
+                  backgroundColor: isDarkMode
+                      ? Colors.grey[700]
+                      : Colors.grey[300],
                   valueColor: AlwaysStoppedAnimation<Color>(
                     ventasConfirmadas == totalVentas
                         ? Colors.green
@@ -1146,16 +1603,81 @@ class _VentasAsignadasCardState extends State<_VentasAsignadasCard> {
                           style: TextStyle(
                             fontWeight: FontWeight.bold,
                             fontSize: 13,
-                            color: isDarkMode ? Colors.grey[100] : Colors.grey[900],
+                            color: isDarkMode
+                                ? Colors.grey[100]
+                                : Colors.grey[900],
                           ),
                         ),
-                        const SizedBox(height: 4),
-                        Text(
-                          venta.clienteNombre ?? 'Cliente',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: isDarkMode ? Colors.grey[400] : Colors.grey[600],
-                          ),
+                        const SizedBox(height: 8),
+                        // Cliente con botones de contacto
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    venta.clienteNombre ?? 'Cliente',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w600,
+                                      color: isDarkMode
+                                          ? Colors.grey[300]
+                                          : Colors.grey[700],
+                                    ),
+                                  ),
+                                  // Teléfono si está disponible
+                                  if (venta.clienteTelefono != null &&
+                                      venta.clienteTelefono!.isNotEmpty) ...[
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      venta.clienteTelefono!,
+                                      style: TextStyle(
+                                        fontSize: 11,
+                                        color: isDarkMode
+                                            ? Colors.grey[500]
+                                            : Colors.grey[600],
+                                      ),
+                                    ),
+                                  ],
+                                ],
+                              ),
+                            ),
+                            // Botones de contacto
+                            if (venta.clienteTelefono != null &&
+                                venta.clienteTelefono!.isNotEmpty) ...[
+                              const SizedBox(width: 8),
+                              SizedBox(
+                                width: 32,
+                                height: 32,
+                                child: IconButton(
+                                  padding: EdgeInsets.zero,
+                                  constraints: const BoxConstraints(),
+                                  icon: const Icon(Icons.phone),
+                                  iconSize: 16,
+                                  color: Colors.green,
+                                  tooltip: 'Llamar',
+                                  onPressed: () =>
+                                      widget.onLlamarCliente(venta.clienteTelefono),
+                                ),
+                              ),
+                              const SizedBox(width: 4),
+                              SizedBox(
+                                width: 32,
+                                height: 32,
+                                child: IconButton(
+                                  padding: EdgeInsets.zero,
+                                  constraints: const BoxConstraints(),
+                                  icon: const Icon(Icons.chat),
+                                  iconSize: 16,
+                                  color: Colors.green[600],
+                                  tooltip: 'WhatsApp',
+                                  onPressed: () =>
+                                      widget.onEnviarWhatsApp(venta.clienteTelefono),
+                                ),
+                              ),
+                            ],
+                          ],
                         ),
                         const SizedBox(height: 6),
                         _buildUbicacionBadge(widget.entrega),
@@ -1173,7 +1695,9 @@ class _VentasAsignadasCardState extends State<_VentasAsignadasCard> {
                             style: TextStyle(
                               fontWeight: FontWeight.bold,
                               fontSize: 11,
-                              color: isDarkMode ? Colors.grey[100] : Colors.grey[900],
+                              color: isDarkMode
+                                  ? Colors.grey[100]
+                                  : Colors.grey[900],
                             ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
@@ -1199,11 +1723,14 @@ class _VentasAsignadasCardState extends State<_VentasAsignadasCard> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             // SLA Info para la venta - FASE 6
-                            if (widget.entrega.fechaEntregaComprometida != null) ...[
+                            if (widget.entrega.fechaEntregaComprometida !=
+                                null) ...[
                               Container(
                                 padding: const EdgeInsets.all(12),
                                 decoration: BoxDecoration(
-                                  color: isDarkMode ? Colors.blue[900] : Colors.blue[50],
+                                  color: isDarkMode
+                                      ? Colors.blue[900]
+                                      : Colors.blue[50],
                                   border: Border.all(
                                     color: isDarkMode
                                         ? Colors.blue[700]!
@@ -1236,8 +1763,10 @@ class _VentasAsignadasCardState extends State<_VentasAsignadasCard> {
                                       ],
                                     ),
                                     const SizedBox(height: 8),
-                                    if (widget.entrega.ventanaEntregaIni != null &&
-                                        widget.entrega.ventanaEntregaFin != null)
+                                    if (widget.entrega.ventanaEntregaIni !=
+                                            null &&
+                                        widget.entrega.ventanaEntregaFin !=
+                                            null)
                                       Text(
                                         'Ventana: ${widget.entrega.ventanaEntregaIni!.hour.toString().padLeft(2, '0')}:${widget.entrega.ventanaEntregaIni!.minute.toString().padLeft(2, '0')} - ${widget.entrega.ventanaEntregaFin!.hour.toString().padLeft(2, '0')}:${widget.entrega.ventanaEntregaFin!.minute.toString().padLeft(2, '0')}',
                                         style: TextStyle(
@@ -1443,6 +1972,35 @@ class _VentasAsignadasCardState extends State<_VentasAsignadasCard> {
                                 ],
                               ), */
                             ],
+                            // Botón de confirmación de entrega para esta venta
+                            const SizedBox(height: 16),
+                            SizedBox(
+                              width: double.infinity,
+                              child: ElevatedButton.icon(
+                                onPressed: () async {
+                                  // Detener tracking de GPS antes de navegar
+                                  await widget.provider.detenerTracking();
+                                  if (context.mounted) {
+                                    Navigator.of(context).pushNamed(
+                                      '/chofer/confirmar-entrega',
+                                      arguments: {
+                                        'entrega_id': widget.entrega.id,
+                                        'venta_id': venta.id,
+                                      },
+                                    );
+                                  }
+                                },
+                                icon: const Icon(Icons.check_circle),
+                                label: const Text('Confirmar Esta Entrega'),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Colors.green,
+                                  foregroundColor: Colors.white,
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 12,
+                                  ),
+                                ),
+                              ),
+                            ),
                           ],
                         ),
                       ),
@@ -1584,8 +2142,10 @@ class _VentasAsignadasCardState extends State<_VentasAsignadasCard> {
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text(config['icon'] as String,
-                  style: const TextStyle(fontSize: 9)),
+              Text(
+                config['icon'] as String,
+                style: const TextStyle(fontSize: 9),
+              ),
               const SizedBox(width: 2),
               Flexible(
                 child: Text(
@@ -1663,10 +2223,13 @@ class _VentasAsignadasCardState extends State<_VentasAsignadasCard> {
   /// Widget para mostrar el indicador de ubicación de entrega
   Widget _buildUbicacionBadge(Entrega entrega) {
     // Verificar si hay ubicación desde coordenadas o desde dirección
-    final tieneUbicacion = (entrega.latitudeDestino != null && entrega.longitudeDestino != null) ||
+    final tieneUbicacion =
+        (entrega.latitudeDestino != null && entrega.longitudeDestino != null) ||
         (entrega.direccion != null && entrega.direccion!.isNotEmpty);
 
-    print('[UI_UBICACION] lat=${entrega.latitudeDestino}, lng=${entrega.longitudeDestino}, dir=${entrega.direccion}, tieneUbicacion=$tieneUbicacion');
+    print(
+      '[UI_UBICACION] lat=${entrega.latitudeDestino}, lng=${entrega.longitudeDestino}, dir=${entrega.direccion}, tieneUbicacion=$tieneUbicacion',
+    );
 
     return Builder(
       builder: (context) {
@@ -1689,10 +2252,7 @@ class _VentasAsignadasCardState extends State<_VentasAsignadasCard> {
           decoration: BoxDecoration(
             color: bgColor,
             borderRadius: BorderRadius.circular(4),
-            border: Border.all(
-              color: borderColor!,
-              width: 0.5,
-            ),
+            border: Border.all(color: borderColor!, width: 0.5),
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
@@ -1733,11 +2293,17 @@ class _VentasAsignadasCardState extends State<_VentasAsignadasCard> {
     );
 
     // Log detallado de IDs siendo usados
-    debugPrint('[CONFIRM_DEBUG] entrega.id=${widget.entrega.id}, venta.id=${venta.id}, venta.numero=${venta.numero}');
-    debugPrint('[CONFIRM_DEBUG] Todas las ventas en la entrega: ${widget.entrega.ventas.map((v) => 'ID:${v.id}(#${v.numero})').join(', ')}');
+    debugPrint(
+      '[CONFIRM_DEBUG] entrega.id=${widget.entrega.id}, venta.id=${venta.id}, venta.numero=${venta.numero}',
+    );
+    debugPrint(
+      '[CONFIRM_DEBUG] Todas las ventas en la entrega: ${widget.entrega.ventas.map((v) => 'ID:${v.id}(#${v.numero})').join(', ')}',
+    );
 
     // Log del estado logístico actual
-    debugPrint('[CONFIRM_DEBUG] Estado logístico actual de venta: ${venta.estadoLogistico} (ID: ${venta.estadoLogisticoId})');
+    debugPrint(
+      '[CONFIRM_DEBUG] Estado logístico actual de venta: ${venta.estadoLogistico} (ID: ${venta.estadoLogisticoId})',
+    );
 
     // Verificar que el widget aún está montado
     if (!mounted) {
@@ -1787,7 +2353,9 @@ class _VentasAsignadasCardState extends State<_VentasAsignadasCard> {
           final ventaActualizada = widget.provider.entregaActual!.ventas
               .firstWhereOrNull((v) => v.id == venta.id);
           if (ventaActualizada != null) {
-            debugPrint('[CONFIRM_DEBUG] ✅ Estado logístico actualizado: ${ventaActualizada.estadoLogistico} (ID: ${ventaActualizada.estadoLogisticoId})');
+            debugPrint(
+              '[CONFIRM_DEBUG] ✅ Estado logístico actualizado: ${ventaActualizada.estadoLogistico} (ID: ${ventaActualizada.estadoLogisticoId})',
+            );
           }
 
           // Sincronizar estado de confirmación de todas las ventas basándose en el estado logístico
@@ -1795,8 +2363,11 @@ class _VentasAsignadasCardState extends State<_VentasAsignadasCard> {
           setState(() {
             for (var v in widget.provider.entregaActual!.ventas) {
               // Si el código del estado logístico es PENDIENTE_ENVIO, la venta fue confirmada
-              _ventasConfirmadas[v.id] = (v.estadoLogisticoCodigo == 'PENDIENTE_ENVIO');
-              debugPrint('[CHECKBOX_SYNC] Venta #${v.numero}: ${_ventasConfirmadas[v.id]} (estado: ${v.estadoLogisticoCodigo})');
+              _ventasConfirmadas[v.id] =
+                  (v.estadoLogisticoCodigo == 'PENDIENTE_ENVIO');
+              debugPrint(
+                '[CHECKBOX_SYNC] Venta #${v.numero}: ${_ventasConfirmadas[v.id]} (estado: ${v.estadoLogisticoCodigo})',
+              );
             }
           });
         }
@@ -1889,15 +2460,20 @@ class _VentasAsignadasCardState extends State<_VentasAsignadasCard> {
                     if (mounted) {
                       // Log de estados de las ventas después de la confirmación
                       if (widget.provider.entregaActual != null) {
-                        debugPrint('[CARGO_DEBUG] Todos los estados de ventas después de confirmar carga:');
+                        debugPrint(
+                          '[CARGO_DEBUG] Todos los estados de ventas después de confirmar carga:',
+                        );
                         for (var v in widget.provider.entregaActual!.ventas) {
-                          debugPrint('[CARGO_DEBUG] Venta #${v.numero}: ${v.estadoLogistico} (ID: ${v.estadoLogisticoId})');
+                          debugPrint(
+                            '[CARGO_DEBUG] Venta #${v.numero}: ${v.estadoLogistico} (ID: ${v.estadoLogisticoId})',
+                          );
                         }
 
                         // Sincronizar estado de confirmación de todas las ventas basándose en el estado logístico
                         setState(() {
                           for (var v in widget.provider.entregaActual!.ventas) {
-                            _ventasConfirmadas[v.id] = (v.estadoLogisticoCodigo == 'PENDIENTE_ENVIO');
+                            _ventasConfirmadas[v.id] =
+                                (v.estadoLogisticoCodigo == 'PENDIENTE_ENVIO');
                           }
                         });
                       }

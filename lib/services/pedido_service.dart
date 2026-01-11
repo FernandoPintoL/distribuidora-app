@@ -118,7 +118,8 @@ class PedidoService {
   Future<PaginatedResponse<Pedido>> getPedidosCliente({
     int page = 1,
     int perPage = 15,
-    EstadoPedido? estado,
+    // ✅ ACTUALIZADO: Cambiar a String en lugar de enum EstadoPedido
+    String? estado,
     DateTime? fechaDesde,
     DateTime? fechaHasta,
     String? busqueda,
@@ -127,7 +128,8 @@ class PedidoService {
       final queryParams = <String, dynamic>{'page': page, 'per_page': perPage};
 
       if (estado != null) {
-        queryParams['estado'] = EstadoInfo.enumToString(estado);
+        // ✅ ACTUALIZADO: Usar String directamente sin conversión de enum
+        queryParams['estado'] = estado;
       }
 
       if (fechaDesde != null) {

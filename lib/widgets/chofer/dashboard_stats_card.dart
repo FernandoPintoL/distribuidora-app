@@ -24,22 +24,48 @@ class DashboardStatsCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    final colorScheme = Theme.of(context).colorScheme;
+    final cardColor = isDarkMode ? Colors.grey[900] : Colors.white;
+
     return Card(
-      elevation: 2,
+      elevation: 4,
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      color: cardColor,
+      shadowColor: isDarkMode
+          ? Colors.black.withAlpha((0.5 * 255).toInt())
+          : Colors.grey.withAlpha((0.3 * 255).toInt()),
       child: Padding(
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.all(24),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Título
-            Text(
-              '📊 Estadísticas de Hoy',
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
+            // Título con decoración
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Colors.blue.withAlpha((0.15 * 255).toInt()),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Icon(
+                    Icons.analytics,
+                    color: Colors.blue,
+                    size: 24,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Text(
+                  'Estadísticas de Hoy',
+                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: isDarkMode ? Colors.white : Colors.black87,
+                  ),
+                ),
+              ],
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 24),
 
             // Contenido: Gráfico y números
             Row(
@@ -48,37 +74,37 @@ class DashboardStatsCard extends StatelessWidget {
                 Expanded(
                   flex: 2,
                   child: SizedBox(
-                    height: 200,
+                    height: 140,
                     child: PieChart(
                       PieChartData(
                         sections: [
-                          // Entregas Completadas (Verde)
+                          // Entregas Completadas
                           PieChartSectionData(
                             value: entregasCompletadas.toDouble(),
                             title: '${entregasCompletadas.toString()}\n✅',
-                            titleStyle: const TextStyle(
+                            titleStyle: TextStyle(
                               color: Colors.white,
                               fontWeight: FontWeight.bold,
-                              fontSize: 14,
+                              fontSize: 12,
                             ),
                             color: Colors.green,
-                            radius: 80,
+                            radius: 55,
                           ),
-                          // Entregas Pendientes (Gris)
+                          // Entregas Pendientes
                           PieChartSectionData(
                             value: entregasPendientes.toDouble(),
                             title: '${entregasPendientes.toString()}\n⏳',
-                            titleStyle: const TextStyle(
+                            titleStyle: TextStyle(
                               color: Colors.white,
                               fontWeight: FontWeight.bold,
-                              fontSize: 14,
+                              fontSize: 12,
                             ),
-                            color: Colors.grey[400],
-                            radius: 80,
+                            color: Colors.amber[600],
+                            radius: 55,
                           ),
                         ],
                         sectionsSpace: 2,
-                        centerSpaceRadius: 60,
+                        centerSpaceRadius: 40,
                       ),
                     ),
                   ),
@@ -97,8 +123,9 @@ class DashboardStatsCard extends StatelessWidget {
                         label: 'Total',
                         value: totalEntregas,
                         color: Colors.blue,
-                        icon: '📦',
+                        icon: Icons.inbox_rounded,
                         isAnimated: true,
+                        isDarkMode: isDarkMode,
                       ),
                       const SizedBox(height: 12),
 
@@ -107,8 +134,9 @@ class DashboardStatsCard extends StatelessWidget {
                         label: 'Completadas',
                         value: entregasCompletadas,
                         color: Colors.green,
-                        icon: '✅',
+                        icon: Icons.check_circle,
                         isAnimated: true,
+                        isDarkMode: isDarkMode,
                       ),
                       const SizedBox(height: 12),
 
@@ -116,9 +144,10 @@ class DashboardStatsCard extends StatelessWidget {
                       _StatItem(
                         label: 'Pendientes',
                         value: entregasPendientes,
-                        color: Colors.orange,
-                        icon: '⏳',
+                        color: Colors.amber,
+                        icon: Icons.schedule,
                         isAnimated: true,
+                        isDarkMode: isDarkMode,
                       ),
                     ],
                   ),
@@ -126,33 +155,48 @@ class DashboardStatsCard extends StatelessWidget {
               ],
             ),
 
-            const SizedBox(height: 20),
+            const SizedBox(height: 24),
 
-            // Barra de progreso
-            ClipRRect(
-              borderRadius: BorderRadius.circular(8),
-              child: LinearProgressIndicator(
-                value: totalEntregas == 0 ? 0 : porcentajeCompletado / 100,
-                minHeight: 10,
-                backgroundColor: Colors.grey[300],
-                valueColor: AlwaysStoppedAnimation<Color>(
-                  porcentajeCompletado > 75
-                      ? Colors.green
-                      : porcentajeCompletado > 50
-                          ? Colors.orange
-                          : Colors.red,
+            // Barra de progreso mejorada
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Progreso Diario',
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: isDarkMode ? Colors.grey[300] : Colors.grey[700],
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
-              ),
+                const SizedBox(height: 8),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(8),
+                  child: LinearProgressIndicator(
+                    value: totalEntregas == 0 ? 0 : porcentajeCompletado / 100,
+                    minHeight: 12,
+                    backgroundColor: isDarkMode
+                        ? Colors.grey[700]
+                        : Colors.grey[200],
+                    valueColor: AlwaysStoppedAnimation<Color>(
+                      porcentajeCompletado > 75
+                          ? Colors.green
+                          : porcentajeCompletado > 50
+                              ? Colors.amber
+                              : Colors.red,
+                    ),
+                  ),
+                ),
+              ],
             ),
 
-            const SizedBox(height: 8),
+            const SizedBox(height: 12),
 
             // Porcentaje
             Center(
               child: Text(
                 '${porcentajeCompletado.toStringAsFixed(1)}% Completado',
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: Colors.grey[600],
+                  color: isDarkMode ? Colors.grey[300] : Colors.grey[700],
                   fontWeight: FontWeight.w600,
                 ),
               ),
@@ -169,8 +213,9 @@ class _StatItem extends StatelessWidget {
   final String label;
   final dynamic value;
   final Color color;
-  final String icon;
+  final IconData icon;
   final bool isAnimated;
+  final bool isDarkMode;
 
   const _StatItem({
     Key? key,
@@ -179,6 +224,7 @@ class _StatItem extends StatelessWidget {
     required this.color,
     required this.icon,
     this.isAnimated = false,
+    this.isDarkMode = false,
   }) : super(key: key);
 
   @override
@@ -186,26 +232,42 @@ class _StatItem extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: color.withOpacity(0.3)),
+        color: color.withAlpha((0.1 * 255).toInt()),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: color.withAlpha((0.3 * 255).toInt()),
+          width: 1.5,
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            '$icon $label',
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              color: Colors.grey[600],
-            ),
+          Row(
+            children: [
+              Icon(icon, size: 14, color: color),
+              const SizedBox(width: 4),
+              Expanded(
+                child: Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: isDarkMode ? Colors.grey[300] : Colors.grey[700],
+                    fontWeight: FontWeight.w500,
+                    fontSize: 11,
+                  ),
+                ),
+              ),
+            ],
           ),
-          const SizedBox(height: 4),
+          const SizedBox(height: 8),
           if (isAnimated && value is int)
             AnimatedCounter(
               endValue: value as int,
               textStyle: Theme.of(context).textTheme.headlineSmall?.copyWith(
                 color: color,
                 fontWeight: FontWeight.bold,
+                fontSize: 18,
               ) ?? const TextStyle(),
             )
           else
@@ -214,6 +276,7 @@ class _StatItem extends StatelessWidget {
               style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                 color: color,
                 fontWeight: FontWeight.bold,
+                fontSize: 18,
               ),
             ),
         ],

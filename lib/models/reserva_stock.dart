@@ -12,7 +12,7 @@ class ReservaStock {
   final int pedidoId;
   final int productoId;
   final Product? producto;
-  final double cantidad;
+  final int cantidad;
   final EstadoReserva estado;
   final DateTime fechaCreacion;
   final DateTime fechaExpiracion;
@@ -38,7 +38,7 @@ class ReservaStock {
       producto: json['producto'] != null
           ? Product.fromJson(json['producto'] as Map<String, dynamic>)
           : null,
-      cantidad: (json['cantidad'] as num).toDouble(),
+      cantidad: (json['cantidad'] as num).toInt(),
       estado: _estadoFromString(json['estado'] as String),
       fechaCreacion: DateTime.parse(json['fecha_creacion'] as String),
       fechaExpiracion: DateTime.parse(json['fecha_expiracion'] as String),

@@ -37,7 +37,7 @@ class PedidoProvider with ChangeNotifier {
   final int _perPage = 15;
 
   // Filtros
-  EstadoPedido? _filtroEstado;
+  String? _filtroEstado;  // ✅ Cambio: De EstadoPedido? a String?
   DateTime? _filtroFechaDesde;
   DateTime? _filtroFechaHasta;
   String? _filtroBusqueda;
@@ -56,14 +56,15 @@ class PedidoProvider with ChangeNotifier {
   Map<String, dynamic>? get errorData => _errorData;
   bool get hasMorePages => _hasMorePages;
   int get totalItems => _totalItems;
-  EstadoPedido? get filtroEstado => _filtroEstado;
+  String? get filtroEstado => _filtroEstado;  // ✅ Cambio: Devuelve String? en lugar de EstadoPedido?
   DateTime? get filtroFechaDesde => _filtroFechaDesde;
   DateTime? get filtroFechaHasta => _filtroFechaHasta;
   String? get filtroBusqueda => _filtroBusqueda;
 
   /// Cargar historial de pedidos (página 1)
+  /// ✅ ACTUALIZADO: Parámetro estado es ahora String? (código del estado)
   Future<void> loadPedidos({
-    EstadoPedido? estado,
+    String? estado,  // Cambio de EstadoPedido? a String?
     DateTime? fechaDesde,
     DateTime? fechaHasta,
     String? busqueda,
@@ -196,12 +197,16 @@ class PedidoProvider with ChangeNotifier {
 
   /// Obtener detalle completo de un pedido
   Future<void> loadPedido(int id) async {
+    print("Cargando detalle de pedido ID: $id");
+
     _isLoading = true;
     _errorMessage = null;
     notifyListeners();
 
     try {
       final response = await _pedidoService.getPedido(id);
+
+      print(response.data);
 
       if (response.success && response.data != null) {
         _pedidoActual = response.data;
@@ -227,24 +232,43 @@ class PedidoProvider with ChangeNotifier {
   }
 
   /// Refrescar solo el estado de un pedido (lightweight)
+  /// ✅ ACTUALIZADO: Usar códigos de estado String en lugar de enum
   Future<void> refreshEstadoPedido(int id) async {
     try {
       final response = await _pedidoService.getEstadoPedido(id);
 
       if (response.success && response.data != null) {
-        final nuevoEstado = EstadoInfo.fromString(
-          response.data!['estado'] as String,
-        );
+        // ✅ ACTUALIZADO: Extraer códigos String del estado
+        final estadoObj = response.data!['estado'];
+        String nuevoEstadoCodigo = 'PENDIENTE';
+        String nuevoEstadoCategoria = 'proforma';
+        Map<String, dynamic>? nuevoEstadoData;
+
+        if (estadoObj is Map<String, dynamic>) {
+          nuevoEstadoCodigo = estadoObj['codigo'] as String? ?? 'PENDIENTE';
+          nuevoEstadoCategoria = estadoObj['categoria'] as String? ?? 'proforma';
+          nuevoEstadoData = estadoObj;
+        } else if (estadoObj is String) {
+          nuevoEstadoCodigo = estadoObj;
+        }
 
         // Actualizar en la lista
         final index = _pedidos.indexWhere((p) => p.id == id);
         if (index != -1) {
-          _pedidos[index] = _pedidos[index].copyWith(estado: nuevoEstado);
+          _pedidos[index] = _pedidos[index].copyWith(
+            estadoCodigo: nuevoEstadoCodigo,
+            estadoCategoria: nuevoEstadoCategoria,
+            estadoData: nuevoEstadoData,
+          );
         }
 
         // Actualizar pedido actual si es el mismo
         if (_pedidoActual?.id == id) {
-          _pedidoActual = _pedidoActual!.copyWith(estado: nuevoEstado);
+          _pedidoActual = _pedidoActual!.copyWith(
+            estadoCodigo: nuevoEstadoCodigo,
+            estadoCategoria: nuevoEstadoCategoria,
+            estadoData: nuevoEstadoData,
+          );
         }
 
         notifyListeners();
@@ -278,19 +302,19 @@ class PedidoProvider with ChangeNotifier {
     }
   }
 
-  /// Filtrar pedidos localmente por estado
-  List<Pedido> getPedidosPorEstado(EstadoPedido estado) {
-    return _pedidos.where((p) => p.estado == estado).toList();
+  /// Filtrar pedidos localmente por estado (usando código string)
+  List<Pedido> getPedidosPorEstado(String estadoCodigo) {
+    return _pedidos.where((p) => p.estadoCodigo == estadoCodigo).toList();
   }
 
   /// Obtener pedidos pendientes
   List<Pedido> get pedidosPendientes {
-    return getPedidosPorEstado(EstadoPedido.PENDIENTE);
+    return getPedidosPorEstado('PENDIENTE');
   }
 
   /// Obtener pedidos aprobados
   List<Pedido> get pedidosAprobados {
-    return getPedidosPorEstado(EstadoPedido.APROBADA);
+    return getPedidosPorEstado('APROBADA');
   }
 
   /// Obtener pedidos en proceso (preparando, en camión, en ruta)
@@ -298,28 +322,28 @@ class PedidoProvider with ChangeNotifier {
     return _pedidos
         .where(
           (p) =>
-              p.estado == EstadoPedido.PREPARANDO ||
-              p.estado == EstadoPedido.EN_CAMION ||
-              p.estado == EstadoPedido.EN_RUTA ||
-              p.estado == EstadoPedido.LLEGO,
+              p.estadoCodigo == 'PREPARANDO' ||
+              p.estadoCodigo == 'EN_CAMION' ||
+              p.estadoCodigo == 'EN_RUTA' ||
+              p.estadoCodigo == 'LLEGO',
         )
         .toList();
   }
 
   /// Obtener pedidos entregados
   List<Pedido> get pedidosEntregados {
-    return getPedidosPorEstado(EstadoPedido.ENTREGADO);
+    return getPedidosPorEstado('ENTREGADO');
   }
 
   /// Obtener pedidos con novedad
   List<Pedido> get pedidosConNovedad {
-    return getPedidosPorEstado(EstadoPedido.NOVEDAD);
+    return getPedidosPorEstado('NOVEDAD');
   }
 
   /// Aplicar filtro de estado
-  Future<void> aplicarFiltroEstado(EstadoPedido? estado) async {
+  Future<void> aplicarFiltroEstado(String? estadoCodigo) async {
     await loadPedidos(
-      estado: estado,
+      estado: estadoCodigo,
       fechaDesde: _filtroFechaDesde,
       fechaHasta: _filtroFechaHasta,
     );
@@ -544,7 +568,33 @@ class PedidoProvider with ChangeNotifier {
         _handleUbicacionActualizada(data);
       }
     });
+
+    // ✅ Escuchar eventos de ventas (estado logístico cambió)
+    _ventaSubscription = _webSocketService.ventaStream.listen((event) {
+      final type = event['type'] as String;
+      final data = event['data'] as Map<String, dynamic>;
+
+      debugPrint('📊 PedidoProvider: Evento venta recibido: $type');
+
+      switch (type) {
+        case 'estado_cambio':
+          _handleVentaEstadoCambio(data);
+          break;
+        case 'en_transito':
+          _handleVentaEnTransito(data);
+          break;
+        case 'entregada':
+          _handleVentaEntregada(data);
+          break;
+        case 'problema':
+          _handleVentaProblema(data);
+          break;
+      }
+    });
   }
+
+  // Suscripción para eventos de venta
+  StreamSubscription? _ventaSubscription;
 
   /// Detener escucha de eventos WebSocket
   void detenerEscuchaWebSocket() {
@@ -552,6 +602,7 @@ class PedidoProvider with ChangeNotifier {
     _proformaSubscription?.cancel();
     _envioSubscription?.cancel();
     _ubicacionSubscription?.cancel();
+    _ventaSubscription?.cancel();
   }
 
   // Handlers de eventos WebSocket
@@ -568,15 +619,16 @@ class PedidoProvider with ChangeNotifier {
     debugPrint('✅ Proforma #$proformaId aprobada');
 
     // Actualizar estado si el pedido está en la lista
+    // ✅ ACTUALIZADO: Usar código de estado String en lugar de enum
     final index = _pedidos.indexWhere((p) => p.id == proformaId);
     if (index != -1) {
-      _pedidos[index] = _pedidos[index].copyWith(estado: EstadoPedido.APROBADA);
+      _pedidos[index] = _pedidos[index].copyWith(estadoCodigo: 'APROBADA');
       notifyListeners();
     }
 
     // Actualizar pedido actual si es el mismo
     if (_pedidoActual?.id == proformaId) {
-      _pedidoActual = _pedidoActual!.copyWith(estado: EstadoPedido.APROBADA);
+      _pedidoActual = _pedidoActual!.copyWith(estadoCodigo: 'APROBADA');
       notifyListeners();
     }
   }
@@ -587,11 +639,12 @@ class PedidoProvider with ChangeNotifier {
     final motivo = data['motivo_rechazo'] as String?;
     debugPrint('❌ Proforma #$proformaId rechazada: $motivo');
 
+    // ✅ ACTUALIZADO: Usar códigos de estado String
     // Actualizar estado
     final index = _pedidos.indexWhere((p) => p.id == proformaId);
     if (index != -1) {
       _pedidos[index] = _pedidos[index].copyWith(
-        estado: EstadoPedido.RECHAZADA,
+        estadoCodigo: 'RECHAZADA',
         comentariosAprobacion: motivo,
       );
       notifyListeners();
@@ -599,7 +652,7 @@ class PedidoProvider with ChangeNotifier {
 
     if (_pedidoActual?.id == proformaId) {
       _pedidoActual = _pedidoActual!.copyWith(
-        estado: EstadoPedido.RECHAZADA,
+        estadoCodigo: 'RECHAZADA',
         comentariosAprobacion: motivo,
       );
       notifyListeners();
@@ -624,12 +677,14 @@ class PedidoProvider with ChangeNotifier {
     final fechaProgramada = data['fecha_programada'] as String?;
     debugPrint('📅 Envío programado: $ventaId para $fechaProgramada');
 
+    // ✅ ACTUALIZADO: Usar código correcto para venta_logistica
     // Actualizar pedido relacionado
     if (ventaId != null) {
       final index = _pedidos.indexWhere((p) => p.id == ventaId);
       if (index != -1) {
         _pedidos[index] = _pedidos[index].copyWith(
-          estado: EstadoPedido.PREPARANDO,
+          estadoCodigo: 'PROGRAMADO',
+          estadoCategoria: 'venta_logistica',
         );
         notifyListeners();
       }
@@ -637,7 +692,8 @@ class PedidoProvider with ChangeNotifier {
       // Actualizar pedido actual si es el mismo
       if (_pedidoActual?.id == ventaId) {
         _pedidoActual = _pedidoActual!.copyWith(
-          estado: EstadoPedido.PREPARANDO,
+          estadoCodigo: 'PROGRAMADO',
+          estadoCategoria: 'venta_logistica',
         );
         notifyListeners();
       }
@@ -648,19 +704,22 @@ class PedidoProvider with ChangeNotifier {
     final ventaId = data['venta_id'] ?? data['proforma_id'] ?? data['envio_id'];
     debugPrint('📦 Envío en preparación: $ventaId');
 
+    // ✅ ACTUALIZADO: Usar código correcto EN_PREPARACION (no PREPARANDO)
     // Actualizar estado del pedido
     if (ventaId != null) {
       final index = _pedidos.indexWhere((p) => p.id == ventaId);
       if (index != -1) {
         _pedidos[index] = _pedidos[index].copyWith(
-          estado: EstadoPedido.PREPARANDO,
+          estadoCodigo: 'EN_PREPARACION',
+          estadoCategoria: 'venta_logistica',
         );
         notifyListeners();
       }
 
       if (_pedidoActual?.id == ventaId) {
         _pedidoActual = _pedidoActual!.copyWith(
-          estado: EstadoPedido.PREPARANDO,
+          estadoCodigo: 'EN_PREPARACION',
+          estadoCategoria: 'venta_logistica',
         );
         notifyListeners();
       }
@@ -673,12 +732,14 @@ class PedidoProvider with ChangeNotifier {
     final vehiculoPlaca = data['vehiculo_placa'] as String?;
     debugPrint('🚛 Envío en ruta: $ventaId');
 
-    // Actualizar estado del pedido a EN_RUTA
+    // ✅ ACTUALIZADO: Usar código correcto EN_TRANSITO (no EN_RUTA)
+    // Actualizar estado del pedido a EN_TRANSITO
     if (ventaId != null) {
       final index = _pedidos.indexWhere((p) => p.id == ventaId);
       if (index != -1) {
         _pedidos[index] = _pedidos[index].copyWith(
-          estado: EstadoPedido.EN_RUTA,
+          estadoCodigo: 'EN_TRANSITO',
+          estadoCategoria: 'venta_logistica',
           choferId: choferId,
         );
         notifyListeners();
@@ -686,7 +747,8 @@ class PedidoProvider with ChangeNotifier {
 
       if (_pedidoActual?.id == ventaId) {
         _pedidoActual = _pedidoActual!.copyWith(
-          estado: EstadoPedido.EN_RUTA,
+          estadoCodigo: 'EN_TRANSITO',
+          estadoCategoria: 'venta_logistica',
           choferId: choferId,
         );
         notifyListeners();
@@ -698,19 +760,22 @@ class PedidoProvider with ChangeNotifier {
     final ventaId = data['venta_id'] ?? data['proforma_id'] ?? data['envio_id'];
     debugPrint('📍 Chofer llegó: $ventaId');
 
+    // ✅ ACTUALIZADO: Usar estado EN_TRANSITO para venta (LLEGO es para entrega)
     // Actualizar estado - el chofer llegó al destino
     if (ventaId != null) {
       final index = _pedidos.indexWhere((p) => p.id == ventaId);
       if (index != -1) {
         _pedidos[index] = _pedidos[index].copyWith(
-          estado: EstadoPedido.LLEGO,
+          estadoCodigo: 'EN_TRANSITO',
+          estadoCategoria: 'venta_logistica',
         );
         notifyListeners();
       }
 
       if (_pedidoActual?.id == ventaId) {
         _pedidoActual = _pedidoActual!.copyWith(
-          estado: EstadoPedido.LLEGO,
+          estadoCodigo: 'EN_TRANSITO',
+          estadoCategoria: 'venta_logistica',
         );
         notifyListeners();
       }
@@ -738,19 +803,22 @@ class PedidoProvider with ChangeNotifier {
     final ventaId = data['venta_id'] ?? data['proforma_id'] ?? data['envio_id'];
     debugPrint('✅ Envío entregado: $ventaId');
 
-    // Actualizar estado del pedido a ENTREGADO
+    // ✅ ACTUALIZADO: Usar código correcto ENTREGADA (no ENTREGADO)
+    // Actualizar estado del pedido a ENTREGADA
     if (ventaId != null) {
       final index = _pedidos.indexWhere((p) => p.id == ventaId);
       if (index != -1) {
         _pedidos[index] = _pedidos[index].copyWith(
-          estado: EstadoPedido.ENTREGADO,
+          estadoCodigo: 'ENTREGADA',
+          estadoCategoria: 'venta_logistica',
         );
         notifyListeners();
       }
 
       if (_pedidoActual?.id == ventaId) {
         _pedidoActual = _pedidoActual!.copyWith(
-          estado: EstadoPedido.ENTREGADO,
+          estadoCodigo: 'ENTREGADA',
+          estadoCategoria: 'venta_logistica',
         );
         notifyListeners();
       }
@@ -762,12 +830,14 @@ class PedidoProvider with ChangeNotifier {
     final motivo = data['motivo'] as String?;
     debugPrint('❌ Entrega rechazada: $ventaId - $motivo');
 
-    // Actualizar estado del pedido con la novedad
+    // ✅ ACTUALIZADO: Usar código correcto PROBLEMAS (no NOVEDAD)
+    // Actualizar estado del pedido con problemas
     if (ventaId != null) {
       final index = _pedidos.indexWhere((p) => p.id == ventaId);
       if (index != -1) {
         _pedidos[index] = _pedidos[index].copyWith(
-          estado: EstadoPedido.NOVEDAD,
+          estadoCodigo: 'PROBLEMAS',
+          estadoCategoria: 'venta_logistica',
           comentariosAprobacion: motivo,
         );
         notifyListeners();
@@ -775,7 +845,8 @@ class PedidoProvider with ChangeNotifier {
 
       if (_pedidoActual?.id == ventaId) {
         _pedidoActual = _pedidoActual!.copyWith(
-          estado: EstadoPedido.NOVEDAD,
+          estadoCodigo: 'PROBLEMAS',
+          estadoCategoria: 'venta_logistica',
           comentariosAprobacion: motivo,
         );
         notifyListeners();
@@ -793,6 +864,125 @@ class PedidoProvider with ChangeNotifier {
     // Sincronización adicional si es necesario
     // Por ahora solo registramos el evento
     notifyListeners();
+  }
+
+  void _handleVentaEstadoCambio(Map<String, dynamic> data) {
+    // La venta cambió de estado logístico
+    final ventaId = data['venta_id'] ?? data['venta_numero'];
+    final estadoNuevo = data['estado_nuevo'] as Map<String, dynamic>?;
+    final codigo = estadoNuevo?['codigo'] as String? ?? 'DESCONOCIDO';
+    final nombre = estadoNuevo?['nombre'] as String? ?? 'Estado desconocido';
+
+    debugPrint('📊 Venta #$ventaId cambió estado: $codigo - $nombre');
+
+    // Actualizar estado del pedido en la lista
+    if (ventaId != null) {
+      final index = _pedidos.indexWhere((p) => p.id == ventaId);
+      if (index != -1) {
+        // ✅ Usar datos dinámicos del estado directamente
+        _pedidos[index] = _pedidos[index].copyWith(
+          estadoCodigo: codigo,
+          estadoCategoria: estadoNuevo?['categoria'] ?? 'venta_logistica',
+          estadoData: estadoNuevo,
+        );
+        notifyListeners();
+      }
+
+      // Actualizar pedido actual si es el mismo
+      if (_pedidoActual?.id == ventaId) {
+        _pedidoActual = _pedidoActual!.copyWith(
+          estadoCodigo: codigo,
+          estadoCategoria: estadoNuevo?['categoria'] ?? 'venta_logistica',
+          estadoData: estadoNuevo,
+        );
+        notifyListeners();
+      }
+    }
+  }
+
+  void _handleVentaEnTransito(Map<String, dynamic> data) {
+    // La venta está en tránsito (chofer en ruta)
+    final ventaId = data['venta_id'] ?? data['venta_numero'];
+    final choferId = data['chofer_id'] as int?;
+    final vehiculoPlaca = data['vehiculo']?['placa'] as String?;
+
+    debugPrint('🚛 Venta #$ventaId en tránsito - Chofer: $choferId, Placa: $vehiculoPlaca');
+
+    // ✅ Actualizar estado del pedido a EN_RUTA (usando estadoCodigo)
+    if (ventaId != null) {
+      final index = _pedidos.indexWhere((p) => p.id == ventaId);
+      if (index != -1) {
+        _pedidos[index] = _pedidos[index].copyWith(
+          estadoCodigo: 'EN_RUTA',
+          choferId: choferId,
+        );
+        notifyListeners();
+      }
+
+      if (_pedidoActual?.id == ventaId) {
+        _pedidoActual = _pedidoActual!.copyWith(
+          estadoCodigo: 'EN_RUTA',
+          choferId: choferId,
+        );
+        notifyListeners();
+      }
+    }
+  }
+
+  void _handleVentaEntregada(Map<String, dynamic> data) {
+    // La venta fue entregada al cliente
+    final ventaId = data['venta_id'] ?? data['venta_numero'];
+    final fechaEntrega = data['fecha_entrega'] as String?;
+    final recibidoPor = data['recibido_por'] as String?;
+
+    debugPrint('✅ Venta #$ventaId entregada - Recibido por: $recibidoPor en $fechaEntrega');
+
+    // ✅ Actualizar estado del pedido a ENTREGADO (usando estadoCodigo)
+    if (ventaId != null) {
+      final index = _pedidos.indexWhere((p) => p.id == ventaId);
+      if (index != -1) {
+        _pedidos[index] = _pedidos[index].copyWith(
+          estadoCodigo: 'ENTREGADO',
+        );
+        notifyListeners();
+      }
+
+      if (_pedidoActual?.id == ventaId) {
+        _pedidoActual = _pedidoActual!.copyWith(
+          estadoCodigo: 'ENTREGADO',
+        );
+        notifyListeners();
+      }
+    }
+  }
+
+  void _handleVentaProblema(Map<String, dynamic> data) {
+    // Hubo un problema con la entrega
+    final ventaId = data['venta_id'] ?? data['venta_numero'];
+    final tipoProblema = data['tipo_problema'] as String? ?? 'Problema desconocido';
+    final descripcion = data['descripcion'] as String?;
+
+    debugPrint('❌ Venta #$ventaId con problema: $tipoProblema - $descripcion');
+
+    // ✅ Actualizar estado del pedido a NOVEDAD (usando estadoCodigo)
+    if (ventaId != null) {
+      final index = _pedidos.indexWhere((p) => p.id == ventaId);
+      if (index != -1) {
+        _pedidos[index] = _pedidos[index].copyWith(
+          estadoCodigo: 'NOVEDAD',
+          comentariosAprobacion: '$tipoProblema: $descripcion',
+        );
+        notifyListeners();
+      }
+
+      if (_pedidoActual?.id == ventaId) {
+        _pedidoActual = _pedidoActual!.copyWith(
+          estadoCodigo: 'NOVEDAD',
+          comentariosAprobacion: '$tipoProblema: $descripcion',
+        );
+        notifyListeners();
+      }
+    }
   }
 
   /// Resetear provider

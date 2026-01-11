@@ -665,6 +665,7 @@ class _EntregaCardState extends State<_EntregaCard> {
 
   @override
   Widget build(BuildContext context) {
+    debugPrint('Building EntregaCard for Entrega ID: ${entrega.id}');
     final cardColor = isDarkMode ? Colors.grey[850] : Colors.white;
 
     return Card(
@@ -1204,8 +1205,20 @@ class _EntregaCardState extends State<_EntregaCard> {
   }
 
   Color _getColorEstado() {
-    final colorHex = entrega.estadoColor;
-    return Color(int.parse('0xff${colorHex.substring(1)}'));
+    // Usar primero el color del estado desde la BD (estado_entrega.color)
+    final colorHex = entrega.estadoEntregaColor ?? entrega.estadoColor;
+
+    // Validar que el color tenga el formato correcto
+    if (colorHex.isEmpty || !colorHex.startsWith('#')) {
+      return Colors.blue; // Color por defecto si hay error
+    }
+
+    try {
+      return Color(int.parse('0xff${colorHex.substring(1)}'));
+    } catch (e) {
+      debugPrint('❌ Error parseando color: $colorHex - $e');
+      return Colors.blue;
+    }
   }
 
   String _getTituloTrabajo(Entrega entrega) {

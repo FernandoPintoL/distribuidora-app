@@ -1,11 +1,11 @@
 import 'package:flutter/foundation.dart';
 import 'client.dart';
-import 'estado_pedido.dart';
 import 'pedido_item.dart';
 import 'pedido_estado_historial.dart';
 import 'reserva_stock.dart';
 import 'chofer.dart';
 import 'camion.dart';
+import '../services/estados_helpers.dart';
 
 class Pedido {
   final int id;
@@ -15,11 +15,26 @@ class Pedido {
   final int? direccionId;
   final ClientAddress? direccionEntrega;
 
-  // Estados del pedido
-  final EstadoPedido estado;
+  // Estados del pedido - AHORA DINÁMICOS desde estados_logistica
+  final String estadoCodigo;              // Ej: 'PENDIENTE', 'APROBADA', 'EN_RUTA'
+  final String estadoCategoria;           // Ej: 'proforma', 'venta_logistica'
+  final Map<String, dynamic>? estadoData; // Datos completos: id, codigo, nombre, color, icono
   final DateTime? fechaProgramada;
   final DateTime? horaInicioPreferida;
   final DateTime? horaFinPreferida;
+
+  // Getters para información visual (usando EstadosHelper como fallback)
+  String get estadoNombre =>
+      estadoData?['nombre'] ??
+      EstadosHelper.getEstadoLabel(estadoCategoria, estadoCodigo);
+
+  String get estadoColor =>
+      estadoData?['color'] ??
+      EstadosHelper.getEstadoColor(estadoCategoria, estadoCodigo);
+
+  String get estadoIcono =>
+      estadoData?['icono'] ??
+      EstadosHelper.getEstadoIcon(estadoCategoria, estadoCodigo);
 
   // Montos
   final double subtotal;
@@ -65,7 +80,9 @@ class Pedido {
     this.cliente,
     this.direccionId,
     this.direccionEntrega,
-    required this.estado,
+    required this.estadoCodigo,
+    required this.estadoCategoria,
+    this.estadoData,
     this.fechaProgramada,
     this.horaInicioPreferida,
     this.horaFinPreferida,
@@ -102,6 +119,34 @@ class Pedido {
           ? DateTime.parse(createdAtString as String)
           : DateTime.now();
 
+      // ✅ NUEVO: Parsear objeto estado dinámico desde backend
+      // El backend puede enviar:
+      // 1. Formato app: { 'estado': { id, codigo, nombre, color, icono, categoria } }
+      // 2. Formato snake_case: { 'estado_logistica': { id, codigo, nombre, ... } }
+      // 3. Formato camelCase: { 'estadoLogistica': { ... } }
+      // 4. Legacy: { 'estado': 'CODIGO_STRING' }
+      final estadoObj = json['estado'] ??
+                        json['estado_logistica'] ??
+                        json['estadoLogistica'];
+      String estadoCodigo = 'PENDIENTE';
+      String estadoCategoria = 'proforma';
+      Map<String, dynamic>? estadoData;
+
+      if (estadoObj is Map<String, dynamic>) {
+        // Objeto completo con datos dinámicos
+        estadoCodigo = estadoObj['codigo'] as String? ?? 'PENDIENTE';
+        estadoCategoria = estadoObj['categoria'] as String? ?? 'proforma';
+        estadoData = estadoObj;
+        debugPrint('✅ Pedido.fromJson - Estado parseado: $estadoCodigo ($estadoCategoria)');
+      } else if (estadoObj is String) {
+        // Solo código string (legacy)
+        estadoCodigo = estadoObj;
+        estadoData = null;
+        debugPrint('✅ Pedido.fromJson - Estado string legacy: $estadoCodigo');
+      } else {
+        debugPrint('⚠️ Pedido.fromJson - No se encontró estado, usando default: $estadoCodigo');
+      }
+
       return Pedido(
         id: json['id'] as int,
         numero: json['numero'] as String,
@@ -113,10 +158,9 @@ class Pedido {
         direccionEntrega: json['direccion_entrega'] != null
             ? ClientAddress.fromJson(json['direccion_entrega'] as Map<String, dynamic>)
             : null,
-        // Obtener estado del código devuelto por estadoLogistica o del campo estado antiguo
-        estado: json['estadoLogistica'] != null
-            ? EstadoInfo.fromString((json['estadoLogistica'] as Map<String, dynamic>)['codigo'] as String?)
-            : EstadoInfo.fromString(json['estado'] as String?),
+        estadoCodigo: estadoCodigo,
+        estadoCategoria: estadoCategoria,
+        estadoData: estadoData,
         // Backend can use fecha_programada, fecha_entrega_solicitada, or fecha
         fechaProgramada: json['fecha_programada'] != null
             ? DateTime.parse(json['fecha_programada'] as String)
@@ -216,7 +260,10 @@ class Pedido {
       'cliente': cliente?.toJson(),
       'direccion_id': direccionId,
       'direccion_entrega': direccionEntrega?.toJson(),
-      'estado': EstadoInfo.enumToString(estado),
+      // ✅ NUEVO: Devolver objeto estado completo si está disponible
+      'estado': estadoData ?? estadoCodigo,
+      'estado_codigo': estadoCodigo,
+      'estado_categoria': estadoCategoria,
       'fecha_programada': fechaProgramada?.toIso8601String(),
       'hora_inicio_preferida': horaInicioPreferida?.toIso8601String(),
       'hora_fin_preferida': horaFinPreferida?.toIso8601String(),
@@ -253,7 +300,9 @@ class Pedido {
     Client? cliente,
     int? direccionId,
     ClientAddress? direccionEntrega,
-    EstadoPedido? estado,
+    String? estadoCodigo,
+    String? estadoCategoria,
+    Map<String, dynamic>? estadoData,
     DateTime? fechaProgramada,
     DateTime? horaInicioPreferida,
     DateTime? horaFinPreferida,
@@ -288,7 +337,9 @@ class Pedido {
       cliente: cliente ?? this.cliente,
       direccionId: direccionId ?? this.direccionId,
       direccionEntrega: direccionEntrega ?? this.direccionEntrega,
-      estado: estado ?? this.estado,
+      estadoCodigo: estadoCodigo ?? this.estadoCodigo,
+      estadoCategoria: estadoCategoria ?? this.estadoCategoria,
+      estadoData: estadoData ?? this.estadoData,
       fechaProgramada: fechaProgramada ?? this.fechaProgramada,
       horaInicioPreferida: horaInicioPreferida ?? this.horaInicioPreferida,
       horaFinPreferida: horaFinPreferida ?? this.horaFinPreferida,
@@ -319,8 +370,6 @@ class Pedido {
   }
 
   // Helpers
-  EstadoInfo get estadoInfo => EstadoInfo.getInfo(estado);
-
   bool get tieneReservasActivas {
     return reservas.any((r) => r.estado == EstadoReserva.ACTIVA);
   }
@@ -344,7 +393,8 @@ class Pedido {
   }
 
   bool get puedeExtenderReservas {
-    return estado == EstadoPedido.PENDIENTE && tieneReservasActivas;
+    // ✅ Actualizado: Comparar con código string en lugar de enum
+    return estadoCodigo == 'PENDIENTE' && tieneReservasActivas;
   }
 
   int get cantidadItems {

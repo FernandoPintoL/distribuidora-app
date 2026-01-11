@@ -397,7 +397,7 @@ class _CarritoAbandonadoListScreenState
                                   .bodySmall,
                             ),
                             Text(
-                              'Qty: ${item.cantidad.toStringAsFixed(1)}',
+                              'Qty: ${item.cantidad}',
                               style: Theme.of(context)
                                   .textTheme
                                   .labelSmall

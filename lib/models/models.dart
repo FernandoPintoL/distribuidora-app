@@ -12,7 +12,8 @@ export 'rango_aplicado.dart';
 export 'proximo_rango.dart';
 export 'detalle_carrito_con_rango.dart';
 export 'carrito_con_rangos.dart';
-export 'estado_pedido.dart';
+// ✅ REMOVIDO: export 'estado_pedido.dart'; - Archivo eliminado en migración a estados dinámicos
+export 'estado.dart'; // ✅ Estados dinámicos desde API
 export 'pedido.dart';
 export 'pedido_item.dart';
 export 'pedido_estado_historial.dart';

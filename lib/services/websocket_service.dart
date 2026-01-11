@@ -24,6 +24,7 @@ class WebSocketService {
   final _rutaController = StreamController<Map<String, dynamic>>.broadcast();
   final _entregaController = StreamController<Map<String, dynamic>>.broadcast(); // NUEVO para entregas
   final _cargoController = StreamController<Map<String, dynamic>>.broadcast(); // NUEVO para cargas
+  final _ventaController = StreamController<Map<String, dynamic>>.broadcast(); // ✅ NUEVO para ventas
   final _connectionController = StreamController<bool>.broadcast();
 
   // Getters de streams
@@ -35,6 +36,7 @@ class WebSocketService {
   Stream<Map<String, dynamic>> get rutaStream => _rutaController.stream;
   Stream<Map<String, dynamic>> get entregaStream => _entregaController.stream; // NUEVO para entregas
   Stream<Map<String, dynamic>> get cargoStream => _cargoController.stream; // NUEVO para cargas
+  Stream<Map<String, dynamic>> get ventaStream => _ventaController.stream; // ✅ NUEVO para ventas
   Stream<bool> get connectionStream => _connectionController.stream;
 
   bool get isConnected => _isConnected;
@@ -493,6 +495,44 @@ class WebSocketService {
         'data': data,
       });
       _handleEvent(WebSocketConfig.eventCargoConfirmado, data);
+    });
+
+    // ✅ Eventos de Ventas (Tracking de estado logístico)
+    // Cliente recibe notificación de cambios en su venta
+    _socket!.on(WebSocketConfig.eventVentaEstadoCambio, (data) {
+      debugPrint('📊 Venta estado cambió: #${data['venta_numero']} → ${data['estado_nuevo']['codigo']}');
+      _ventaController.add({
+        'type': 'estado_cambio',
+        'data': data,
+      });
+      _handleEvent(WebSocketConfig.eventVentaEstadoCambio, data);
+    });
+
+    _socket!.on(WebSocketConfig.eventVentaEnTransito, (data) {
+      debugPrint('🚚 Venta en tránsito: #${data['venta_numero']}');
+      _ventaController.add({
+        'type': 'en_transito',
+        'data': data,
+      });
+      _handleEvent(WebSocketConfig.eventVentaEnTransito, data);
+    });
+
+    _socket!.on(WebSocketConfig.eventVentaEntregada, (data) {
+      debugPrint('✅ Venta entregada: #${data['venta_numero']}');
+      _ventaController.add({
+        'type': 'entregada',
+        'data': data,
+      });
+      _handleEvent(WebSocketConfig.eventVentaEntregada, data);
+    });
+
+    _socket!.on(WebSocketConfig.eventVentaProblema, (data) {
+      debugPrint('❌ Problema en venta: #${data['venta_numero']} - ${data['motivo']}');
+      _ventaController.add({
+        'type': 'problema',
+        'data': data,
+      });
+      _handleEvent(WebSocketConfig.eventVentaProblema, data);
     });
   }
 

@@ -3,30 +3,33 @@ class Venta {
   final String numero;
   final String? cliente;
   final String? clienteNombre;
+  final String? clienteTelefono; // Nuevo: Teléfono del cliente
   final double total;
   final double subtotal;
-  final double descuento;
+  final double descuento; // Puede venir del backend o calcularse
   final double impuesto;
   final String? observaciones;
-  final int? estadoLogisticoId;        // ID del estado logístico
-  final String? estadoLogisticoCodigo; // Código del estado (PENDIENTE_ENVIO, EN_TRANSITO, etc)
-  final String estadoLogistico;        // Nombre del estado logístico
-  final String? estadoLogisticoColor;  // Color del estado (hex)
-  final String? estadoLogisticoIcon;   // Icono del estado
+  final int? estadoLogisticoId; // ID del estado logístico
+  final String?
+  estadoLogisticoCodigo; // Código del estado (PENDIENTE_ENVIO, EN_TRANSITO, etc)
+  final String estadoLogistico; // Nombre del estado logístico
+  final String? estadoLogisticoColor; // Color del estado (hex)
+  final String? estadoLogisticoIcon; // Icono del estado
   final String estadoPago;
   final DateTime fecha;
   final List<VentaDetalle> detalles;
 
   // Ubicación de entrega desde direccionCliente
-  final double? latitud;               // Latitud de entrega
-  final double? longitud;              // Longitud de entrega
-  final String? direccion;             // Dirección de entrega completa
+  final double? latitud; // Latitud de entrega
+  final double? longitud; // Longitud de entrega
+  final String? direccion; // Dirección de entrega completa
 
   Venta({
     required this.id,
     required this.numero,
     this.cliente,
     this.clienteNombre,
+    this.clienteTelefono,
     required this.total,
     required this.subtotal,
     required this.descuento,
@@ -46,11 +49,13 @@ class Venta {
   });
 
   factory Venta.fromJson(Map<String, dynamic> json) {
-    // Extraer nombre del cliente si es un objeto
+    // Extraer nombre y teléfono del cliente si es un objeto
     String? clienteNom;
+    String? clienteTel;
     if (json['cliente'] is Map<String, dynamic>) {
       final clienteObj = json['cliente'] as Map<String, dynamic>;
       clienteNom = clienteObj['nombre'] as String?;
+      clienteTel = clienteObj['telefono'] as String?;
     } else {
       clienteNom = json['cliente'] as String?;
     }
@@ -83,13 +88,15 @@ class Venta {
     if (estadoObj != null) {
       // Viene como objeto completo del backend (eager-loaded desde tabla estados_logistica)
       estadoLogisticoId = estadoObj['id'] as int?;
-      estadoLogisticoCodigo = estadoObj['codigo'] as String?; // Capturar el código del estado
+      estadoLogisticoCodigo =
+          estadoObj['codigo'] as String?; // Capturar el código del estado
       estadoLogisticoNombre = estadoObj['nombre'] as String? ?? 'EN_TRANSITO';
       estadoLogisticoColor = estadoObj['color'] as String?;
       estadoLogisticoIcon = estadoObj['icono'] as String?;
     } else {
       // Fallback: parsear como string o id
-      estadoLogisticoNombre = json['estado_logistico'] as String? ?? 'EN_TRANSITO';
+      estadoLogisticoNombre =
+          json['estado_logistico'] as String? ?? 'EN_TRANSITO';
       estadoLogisticoId = json['estado_logistico_id'] as int?;
       estadoLogisticoCodigo = null; // No disponible en fallback
     }
@@ -114,9 +121,15 @@ class Venta {
       latEntrega = (dirCliente['latitud'] as num?)?.toDouble();
       lngEntrega = (dirCliente['longitud'] as num?)?.toDouble();
       direccionEntrega = dirCliente['direccion'] as String?;
-      print('[VENTA_PARSE] direccionCliente encontrada: lat=$latEntrega, lng=$lngEntrega, dir=$direccionEntrega');
+      // print('[VENTA_PARSE] direccionCliente encontrada: lat=$latEntrega, lng=$lngEntrega, dir=$direccionEntrega');
     } else {
-      print('[VENTA_PARSE] NO se encontró direccionCliente en JSON. Keys: ${json.keys.toList()}');
+      // print('[VENTA_PARSE] NO se encontró direccionCliente en JSON. Keys: ${json.keys.toList()}');
+    }
+
+    // Calcular descuento si no viene en el JSON
+    double descuentoValue = 0.0;
+    if (json['descuento'] != null) {
+      descuentoValue = double.parse(json['descuento'].toString());
     }
 
     return Venta(
@@ -124,9 +137,10 @@ class Venta {
       numero: json['numero'] as String,
       cliente: json['cliente'] is String ? json['cliente'] as String? : null,
       clienteNombre: clienteNom,
+      clienteTelefono: clienteTel,
       total: double.parse(json['total'].toString()),
       subtotal: double.parse(json['subtotal'].toString()),
-      descuento: double.parse(json['descuento'].toString()),
+      descuento: descuentoValue,
       impuesto: double.parse(json['impuesto'].toString()),
       observaciones: json['observaciones'] as String?,
       estadoLogisticoId: estadoLogisticoId,
@@ -150,6 +164,7 @@ class Venta {
       'id': id,
       'numero': numero,
       'cliente': cliente,
+      'cliente_telefono': clienteTelefono,
       'total': total,
       'subtotal': subtotal,
       'descuento': descuento,
@@ -178,7 +193,7 @@ class VentaDetalle {
   final int id;
   final int ventaId;
   final int productoId;
-  final double cantidad;  // Cambiar a double para soportar decimales del backend
+  final double cantidad; // Cambiar a double para soportar decimales del backend
   final double precioUnitario;
   final double descuento;
   final double subtotal;

@@ -6,7 +6,7 @@ class PedidoItem {
   final int pedidoId;
   final int productoId;
   final Product? producto;
-  final double cantidad;
+  final int cantidad;
   final double precioUnitario;
   final double subtotal;
   final String? observaciones;
@@ -33,7 +33,7 @@ class PedidoItem {
         producto: json['producto'] != null
             ? Product.fromJson(json['producto'] as Map<String, dynamic>)
             : null,
-        cantidad: _parseDouble(json['cantidad']),
+        cantidad: _parseInt(json['cantidad']),
         precioUnitario: _parseDouble(json['precio_unitario']),
         subtotal: _parseDouble(json['subtotal']),
         observaciones: json['observaciones'] as String?,
@@ -44,6 +44,22 @@ class PedidoItem {
       debugPrint('   JSON: $json');
       rethrow;
     }
+  }
+
+  // Helper to safely parse int from string or number
+  static int _parseInt(dynamic value) {
+    if (value == null) return 0;
+    if (value is int) return value;
+    if (value is double) return value.toInt();
+    if (value is String) {
+      try {
+        return int.parse(value);
+      } catch (e) {
+        debugPrint('⚠️  Could not parse "$value" as int, defaulting to 0');
+        return 0;
+      }
+    }
+    return 0;
   }
 
   // Helper to safely parse double from string or number
@@ -81,7 +97,7 @@ class PedidoItem {
     int? pedidoId,
     int? productoId,
     Product? producto,
-    double? cantidad,
+    int? cantidad,
     double? precioUnitario,
     double? subtotal,
     String? observaciones,

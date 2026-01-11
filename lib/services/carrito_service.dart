@@ -327,7 +327,7 @@ class CarritoService {
   /// - Próximo rango y oportunidad de ahorro
   Future<Map<String, dynamic>?> calcularPrecioProducto(
     int productoId,
-    double cantidad,
+    int cantidad,
   ) async {
     try {
       debugPrint('💰 Calculando precio de producto...');

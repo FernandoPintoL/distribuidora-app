@@ -360,3 +360,71 @@ final List<Estado> FALLBACK_ESTADOS_PROFORMA = [
     updatedAt: DateTime.now(),
   ),
 ];
+
+/// Fallback estados para Venta Logística (cuando API no está disponible)
+final List<Estado> FALLBACK_ESTADOS_VENTA_LOGISTICA = [
+  Estado(
+    id: 1,
+    categoria: 'venta_logistica',
+    codigo: 'EN_TRANSITO',
+    nombre: 'En Tránsito',
+    descripcion: 'Venta en tránsito hacia destino',
+    color: '#f97316', // orange
+    icono: '🚚',
+    orden: 1,
+    esEstadoFinal: false,
+    permiteEdicion: true,
+    requiereAprobacion: false,
+    activo: true,
+    createdAt: DateTime.now(),
+    updatedAt: DateTime.now(),
+  ),
+  Estado(
+    id: 2,
+    categoria: 'venta_logistica',
+    codigo: 'ENTREGADA',
+    nombre: 'Entregada',
+    descripcion: 'Venta entregada al cliente',
+    color: '#22c55e', // green
+    icono: '✅',
+    orden: 2,
+    esEstadoFinal: true,
+    permiteEdicion: false,
+    requiereAprobacion: false,
+    activo: true,
+    createdAt: DateTime.now(),
+    updatedAt: DateTime.now(),
+  ),
+  Estado(
+    id: 3,
+    categoria: 'venta_logistica',
+    codigo: 'PENDIENTE',
+    nombre: 'Pendiente',
+    descripcion: 'Venta pendiente de entrega',
+    color: '#eab308', // yellow
+    icono: '⏳',
+    orden: 3,
+    esEstadoFinal: false,
+    permiteEdicion: true,
+    requiereAprobacion: false,
+    activo: true,
+    createdAt: DateTime.now(),
+    updatedAt: DateTime.now(),
+  ),
+  Estado(
+    id: 4,
+    categoria: 'venta_logistica',
+    codigo: 'NO_ENTREGADA',
+    nombre: 'No Entregada',
+    descripcion: 'Venta no entregada por diversos motivos',
+    color: '#ef4444', // red
+    icono: '❌',
+    orden: 4,
+    esEstadoFinal: true,
+    permiteEdicion: true,
+    requiereAprobacion: false,
+    activo: true,
+    createdAt: DateTime.now(),
+    updatedAt: DateTime.now(),
+  ),
+];

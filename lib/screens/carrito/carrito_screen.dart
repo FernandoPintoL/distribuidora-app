@@ -18,11 +18,13 @@ class _CarritoScreenState extends State<CarritoScreen> {
   @override
   void initState() {
     super.initState();
-    // Calcular precios con rangos cuando se abre la pantalla
+    // 🔑 FASE 3: Calcular precios CON RANGOS cuando se abre la pantalla
+    // Usamos calcularCarritoConRangosAhora() porque es la PRIMERA vez
+    // (no usamos debounce para la carga inicial)
     Future.delayed(Duration.zero, () {
       final carritoProvider = context.read<CarritoProvider>();
       if (carritoProvider.isNotEmpty) {
-        carritoProvider.calcularCarritoConRangos();
+        carritoProvider.calcularCarritoConRangosAhora();
       }
     });
   }
@@ -68,7 +70,12 @@ class _CarritoScreenState extends State<CarritoScreen> {
               Expanded(
                 child: ListView.builder(
                   itemCount: carritoProvider.items.length,
-                  padding: const EdgeInsets.symmetric(vertical: 8),
+                  padding: const EdgeInsets.only(
+                    top: 8,
+                    bottom: 90, // 🔑 NUEVO: Espacio para el CarritoTotalBar
+                    left: 0,
+                    right: 0,
+                  ),
                   itemBuilder: (context, index) {
                     final item = carritoProvider.items[index];
                     final detalleConRango = carritoProvider.obtenerDetalleConRango(item.producto.id);

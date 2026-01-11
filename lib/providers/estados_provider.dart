@@ -1,231 +1,125 @@
-/// Riverpod Providers para Estados centralizados
+import 'package:flutter/foundation.dart';
+import '../models/models.dart';
+import '../services/services.dart';
+import '../services/estados_helpers.dart';
+
+/// Provider para gestionar estados de proformas dinámicamente
 ///
-/// Implementa una estrategia cache-first con fallback a hardcoded values.
-/// Los providers son responsables de obtener datos desde cache o API.
+/// Carga los estados desde el backend y mantiene contadores actualizados
+class EstadosProvider with ChangeNotifier {
+  final ProformaService _proformaService = ProformaService();
 
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import 'package:http/http.dart' as http;
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+  // Estado
+  List<Estado> _estados = [];
+  ProformaStats? _stats;
+  bool _isLoading = false;
+  String? _errorMessage;
 
-import '../models/estado.dart';
-import '../models/estado_event.dart';
-import '../services/estados_cache_service.dart';
-import '../services/estados_api_service.dart';
-import '../services/estados_realtime_cache_sync.dart';
+  // Getters
+  List<Estado> get estados => _estados;
+  ProformaStats? get stats => _stats;
+  bool get isLoading => _isLoading;
+  String? get errorMessage => _errorMessage;
 
-// ==========================================
-// BASE PROVIDERS (Dependencies)
-// ==========================================
+  /// Obtener el contador de un estado específico
+  int getContadorEstado(String codigo) {
+    if (_stats == null) return 0;
 
-/// SharedPreferences provider
-final sharedPreferencesProvider = FutureProvider<SharedPreferences>((ref) async {
-  return await SharedPreferences.getInstance();
-});
-
-/// HTTP Client provider
-final httpClientProvider = Provider<http.Client>((ref) {
-  return http.Client();
-});
-
-/// Secure Storage provider
-final secureStorageProvider = Provider<FlutterSecureStorage>((ref) {
-  return const FlutterSecureStorage();
-});
-
-/// Cache Service provider
-final estadosCacheServiceProvider = FutureProvider<EstadosCacheService>((ref) async {
-  final prefs = await ref.watch(sharedPreferencesProvider.future);
-  return EstadosCacheService(prefs);
-});
-
-/// API Service provider
-final estadosApiServiceProvider = FutureProvider<EstadosApiService>((ref) async {
-  final httpClient = ref.watch(httpClientProvider);
-  final secureStorage = ref.watch(secureStorageProvider);
-
-  return EstadosApiService(
-    httpClient: httpClient,
-    secureStorage: secureStorage,
-  );
-});
-
-// ==========================================
-// MAIN PROVIDERS (Estados por categoría)
-// ==========================================
-
-/// Estados para una categoría específica - implementa cache-first
-///
-/// Flujo:
-/// 1. Intenta obtener del cache (si válido)
-/// 2. Si cache inválido, obtiene de API
-/// 3. Si API falla, usa fallback hardcodeado
-final estadosPorCategoriaProvider = FutureProvider.family<List<Estado>, String>(
-  (ref, categoria) async {
-    try {
-      final cacheService = await ref.watch(estadosCacheServiceProvider.future);
-      final apiService = await ref.watch(estadosApiServiceProvider.future);
-
-      // Intento 1: Caché
-      final cachedEstados = cacheService.getEstados(categoria);
-      if (cachedEstados != null && cachedEstados.isNotEmpty) {
-        print('[EstadosProvider] Using cached estados for $categoria');
-        return cachedEstados;
-      }
-
-      // Intento 2: API
-      print('[EstadosProvider] Fetching estados from API for $categoria');
-      final apiEstados = await apiService.getEstadosPorCategoria(categoria);
-
-      if (apiEstados.isNotEmpty) {
-        // Guardar en caché para usos futuros
-        await cacheService.saveEstados(categoria, apiEstados);
-        return apiEstados;
-      }
-
-      // Intento 3: Fallback hardcodeado
-      print('[EstadosProvider] Using fallback estados for $categoria');
-      switch (categoria.toLowerCase()) {
-        case 'entrega':
-          return FALLBACK_ESTADOS_ENTREGA;
-        case 'proforma':
-          return FALLBACK_ESTADOS_PROFORMA;
-        default:
-          return [];
-      }
-    } catch (e) {
-      print('[EstadosProvider] Error fetching estados for $categoria: $e');
-      // Si hay error, intentar usar fallback
-      switch (categoria.toLowerCase()) {
-        case 'entrega':
-          print('[EstadosProvider] Error caught, using fallback for entrega');
-          return FALLBACK_ESTADOS_ENTREGA;
-        case 'proforma':
-          print('[EstadosProvider] Error caught, using fallback for proforma');
-          return FALLBACK_ESTADOS_PROFORMA;
-        default:
-          return [];
-      }
+    switch (codigo.toUpperCase()) {
+      case 'PENDIENTE':
+        return _stats!.porEstado.pendiente;
+      case 'APROBADA':
+        return _stats!.porEstado.aprobada;
+      case 'RECHAZADA':
+        return _stats!.porEstado.rechazada;
+      case 'CONVERTIDA':
+        return _stats!.porEstado.convertida;
+      case 'VENCIDA':
+        return _stats!.porEstado.vencida;
+      default:
+        return 0;
     }
-  },
-);
+  }
 
-/// Obtiene un estado específico por código
-final estadoPorCodigoProvider = FutureProvider.family<Estado?, (String, String)>(
-  (ref, params) async {
-    final (categoria, codigo) = params;
-    final estados = await ref.watch(estadosPorCategoriaProvider(categoria).future);
+  /// Obtener el monto de un estado específico
+  double getMontoEstado(String codigo) {
+    if (_stats == null) return 0;
 
+    switch (codigo.toUpperCase()) {
+      case 'PENDIENTE':
+        return _stats!.montosPorEstado.pendiente;
+      case 'APROBADA':
+        return _stats!.montosPorEstado.aprobada;
+      case 'RECHAZADA':
+        return _stats!.montosPorEstado.rechazada;
+      case 'CONVERTIDA':
+        return _stats!.montosPorEstado.convertida;
+      case 'VENCIDA':
+        return _stats!.montosPorEstado.vencida;
+      default:
+        return 0;
+    }
+  }
+
+  /// Obtener estado por código
+  Estado? getEstado(String codigo) {
     try {
-      return estados.firstWhere((e) => e.codigo == codigo);
+      return EstadosHelper.getEstadoPorCodigo('proforma', codigo);
     } catch (e) {
-      print('[EstadosProvider] Estado not found: $codigo in $categoria');
       return null;
     }
-  },
-);
+  }
 
-// ==========================================
-// HELPER PROVIDERS (Computed values)
-// ==========================================
+  /// Cargar estados y estadísticas dinámicamente
+  Future<void> loadEstadosYEstadisticas({bool refresh = false}) async {
+    if (_isLoading && !refresh) return;
 
-/// Retorna el label de un estado por código
-final estadoLabelProvider = FutureProvider.family<String, (String, String)>(
-  (ref, params) async {
-    final (categoria, codigo) = params;
-    final estado = await ref.watch(estadoPorCodigoProvider((categoria, codigo)).future);
-    return estado?.nombre ?? codigo;
-  },
-);
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
 
-/// Retorna el color de un estado por código (como hex string)
-final estadoColorProvider = FutureProvider.family<String, (String, String)>(
-  (ref, params) async {
-    final (categoria, codigo) = params;
-    final estado = await ref.watch(estadoPorCodigoProvider((categoria, codigo)).future);
-    return estado?.color ?? '#000000';
-  },
-);
+    try {
+      // Cargar estadísticas que incluye contador por estado
+      final statsResponse = await _proformaService.getStats();
 
-/// Retorna el ícono de un estado por código
-final estadoIconProvider = FutureProvider.family<String, (String, String)>(
-  (ref, params) async {
-    final (categoria, codigo) = params;
-    final estado = await ref.watch(estadoPorCodigoProvider((categoria, codigo)).future);
-    return estado?.icono ?? '❓';
-  },
-);
+      if (statsResponse.success && statsResponse.data != null) {
+        _stats = statsResponse.data;
 
-// ==========================================
-// UTILITY PROVIDERS
-// ==========================================
+        // Obtener los estados activos desde EstadosHelper
+        _estados = EstadosHelper.getEstadosActivos('proforma');
 
-/// Información del caché para debugging
-final estadosCacheInfoProvider = FutureProvider.family<Map<String, dynamic>, String>(
-  (ref, categoria) async {
-    final cacheService = await ref.watch(estadosCacheServiceProvider.future);
-    return cacheService.getCacheInfo(categoria);
-  },
-);
+        debugPrint('✅ Estados cargados: ${_estados.length}');
+        debugPrint('✅ Estadísticas cargadas: Total=${_stats!.total}');
+        _errorMessage = null;
+      } else {
+        _errorMessage = statsResponse.message ?? 'Error al cargar estados';
+        _stats = null;
+        _estados = [];
+        debugPrint('❌ Error: $_errorMessage');
+      }
+    } catch (e) {
+      _errorMessage = 'Error inesperado: ${e.toString()}';
+      _stats = null;
+      _estados = [];
+      debugPrint('❌ Error loading estados: $e');
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
 
-/// Refresca todos los estados de todas las categorías
-final refreshEstadosProvider = FutureProvider<void>((ref) async {
-  final cacheService = await ref.watch(estadosCacheServiceProvider.future);
-  await cacheService.clearAllEstados();
+  /// Refrescar solo las estadísticas (más rápido que recargar todo)
+  Future<void> refreshEstadisticas() async {
+    try {
+      final statsResponse = await _proformaService.getStats();
 
-  // Re-fetch todas las categorías
-  await ref.refresh(estadosPorCategoriaProvider('entrega').future);
-  await ref.refresh(estadosPorCategoriaProvider('proforma').future);
-
-  print('[EstadosProvider] Refreshed all estados');
-});
-
-/// Provider para limpiar caché de una categoría
-final clearCategoriaProvider = FutureProvider.family<void, String>(
-  (ref, categoria) async {
-    final cacheService = await ref.watch(estadosCacheServiceProvider.future);
-    await cacheService.clearEstados(categoria);
-    print('[EstadosProvider] Cleared cache for $categoria');
-  },
-);
-
-// ==========================================
-// REAL-TIME INTEGRATION (WebSocket)
-// ==========================================
-
-/// Realtime Cache Sync Service provider
-final estadosRealtimeCacheSyncProvider =
-    FutureProvider<EstadosRealtimeCacheSync>((ref) async {
-  final cacheService = await ref.watch(estadosCacheServiceProvider.future);
-  final apiService = await ref.watch(estadosApiServiceProvider.future);
-
-  return EstadosRealtimeCacheSync(
-    providerContainer: ref.container,
-    cacheService: cacheService,
-    apiService: apiService,
-  );
-});
-
-/// Escucha eventos de WebSocket y sincroniza caché automáticamente
-///
-/// Cuando se recibe un evento de cambio de estado:
-/// 1. Invalida el caché local
-/// 2. Refetcha desde API
-/// 3. Guarda en caché
-/// 4. Notifica a componentes interesados
-final estadosWebSocketSyncProvider = StreamProvider<EstadoEvent>((ref) async* {
-  // Importar el provider realtime (evitar circular imports)
-  // Por ahora este provider escucha eventos pero no los maneja aquí
-  // Los maneja directamente EstadosBadgeWidget y otros consumers
-  print('[EstadosProvider] WebSocket sync provider initialized');
-  yield* const Stream.empty(); // Placeholder
-});
-
-/// Provider que invalida estados cuando cambios de WebSocket se detectan
-/// Los consumers pueden usar ref.watch() en este para suscribirse a cambios
-final estadosCategoryInvalidateProvider =
-    StreamProvider<String>((ref) async* {
-  // Este provider emitiría el nombre de la categoría que cambió
-  // Los consumers pueden luego llamar ref.refresh() en los providers relevantes
-  yield* const Stream.empty(); // Placeholder
-});
+      if (statsResponse.success && statsResponse.data != null) {
+        _stats = statsResponse.data;
+        debugPrint('✅ Estadísticas actualizadas');
+        notifyListeners();
+      }
+    } catch (e) {
+      debugPrint('❌ Error refreshing stats: $e');
+    }
+  }
+}

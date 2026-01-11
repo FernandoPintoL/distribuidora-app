@@ -211,7 +211,20 @@ class MyApp extends StatelessWidget {
                 );
 
               case '/chofer/confirmar-entrega':
-                final entregaId = settings.arguments as int?;
+                // Manejar tanto argumentos antiguos (int) como nuevos (Map)
+                int? entregaId;
+                int? ventaId;
+
+                if (settings.arguments is Map<String, dynamic>) {
+                  // Nuevos argumentos: diccionario con entrega_id y venta_id
+                  final args = settings.arguments as Map<String, dynamic>;
+                  entregaId = args['entrega_id'] as int?;
+                  ventaId = args['venta_id'] as int?;
+                } else if (settings.arguments is int) {
+                  // Argumentos antiguos: solo int (entrega_id)
+                  entregaId = settings.arguments as int?;
+                }
+
                 if (entregaId == null) {
                   return MaterialPageRoute(
                     builder: (context) => const Scaffold(
@@ -220,7 +233,10 @@ class MyApp extends StatelessWidget {
                   );
                 }
                 return MaterialPageRoute(
-                  builder: (context) => ConfirmacionEntregaScreen(entregaId: entregaId),
+                  builder: (context) => ConfirmacionEntregaScreen(
+                    entregaId: entregaId!,
+                    ventaId: ventaId,
+                  ),
                 );
 
               case '/chofer/iniciar-ruta':

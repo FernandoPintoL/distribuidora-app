@@ -4,6 +4,7 @@ import 'dart:convert';
 import '../models/models.dart';
 import '../models/permissions_response.dart';
 import '../services/services.dart';
+import '../services/background_notification_service.dart';
 
 class AuthProvider with ChangeNotifier {
   final AuthService _authService = AuthService();
@@ -85,6 +86,12 @@ class AuthProvider with ChangeNotifier {
 
         // Conectar al WebSocket después de login exitoso
         _connectWebSocket(response.data!.token);
+
+        // ✅ NUEVO: Iniciar servicio de background si es chofer
+        if (_user != null && _user!.roles != null && _user!.roles!.contains('chofer')) {
+          debugPrint('👷 Chofer detectado, iniciando servicio de background');
+          await BackgroundNotificationService.startForChofer();
+        }
 
         _isLoading = false;
         notifyListeners();
@@ -194,6 +201,12 @@ class AuthProvider with ChangeNotifier {
           _connectWebSocket(token);
         }
 
+        // ✅ NUEVO: Iniciar servicio de background si es chofer
+        if (_user != null && _user!.roles != null && _user!.roles!.contains('chofer')) {
+          debugPrint('👷 Chofer detectado al cargar usuario, iniciando servicio de background');
+          await BackgroundNotificationService.startForChofer();
+        }
+
         // ✅ NUEVO: Refrescar permisos si es necesario
         await refreshPermissionsIfNeeded();
 
@@ -249,6 +262,9 @@ class AuthProvider with ChangeNotifier {
     try {
       // Desconectar del WebSocket antes de hacer logout
       _wsService.disconnect();
+
+      // ✅ NUEVO: Detener servicio de background si está activo
+      await BackgroundNotificationService.stop();
 
       await _authService.logout();
     } catch (e) {

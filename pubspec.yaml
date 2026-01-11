@@ -101,9 +101,11 @@ dependencies:
 
   # Notificaciones
   flutter_local_notifications: ^19.4.0
+  flutter_background_service: ^5.0.1
 
   # Utilidades
   permission_handler: ^12.0.1
+  battery_plus: ^6.0.0
   image_picker: ^1.1.2
   path_provider: ^2.1.5
   url_launcher: ^6.3.2
@@ -138,22 +140,31 @@ executables:
   cobrador_mcp:
 
 flutter_launcher_icons:
+  # Imagen principal del ícono de la aplicación
+  image_path: "assets/icons/icon.png"
+
+  # Android
   android: "launcher_icon"
-  ios: true
-  image_path: "assets/icons/icon.jpg"
   min_sdk_android: 21 # android min sdk min:16, default 21
+
+  # iOS
+  ios: true
+  remove_alpha_ios: true # Evitar warning de App Store
+
+  # Web
   web:
     generate: true
-    image_path: "assets/icons/icon.jpg"
-    background_color: "#hexcode"
-    theme_color: "#hexcode"
+    background_color: "#FFFFFF"
+    theme_color: "#1976D2"
+
+  # Windows
   windows:
     generate: true
-    image_path: "assets/icons/icon.jpg"
     icon_size: 48 # min:48, max:256, default: 48
+
+  # macOS
   macos:
     generate: true
-    image_path: "assets/icons/icon.jpg"
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
