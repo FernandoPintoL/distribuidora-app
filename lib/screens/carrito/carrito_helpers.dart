@@ -66,6 +66,26 @@ void continuarCompra(BuildContext context) {
     return;
   }
 
+  // ✅ NUEVO: Verificar que preventista haya seleccionado cliente
+  try {
+    final authProvider = context.read<AuthProvider>();
+    final userRoles = authProvider.user?.roles ?? [];
+    final isPreventista = userRoles.any((role) =>
+        role.toLowerCase() == 'preventista');
+
+    if (isPreventista && !carritoProvider.tieneClienteSeleccionado) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Debes seleccionar un cliente para continuar'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+  } catch (e) {
+    debugPrint('❌ Error verificando rol de preventista: $e');
+  }
+
   // Navegar a la selección del tipo de entrega (DELIVERY o PICKUP)
   // Luego el usuario elegirá el tipo y será dirigido a direcciones (para DELIVERY) o fecha/hora (para PICKUP)
   Navigator.pushNamed(context, '/tipo-entrega-seleccion');

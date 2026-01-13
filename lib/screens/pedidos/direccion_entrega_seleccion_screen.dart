@@ -6,7 +6,10 @@ import '../../widgets/widgets.dart';
 import '../../config/config.dart';
 
 class DireccionEntregaSeleccionScreen extends StatefulWidget {
-  const DireccionEntregaSeleccionScreen({super.key});
+  // ✅ Aceptar clienteId opcional para cuando accesa un preventista
+  final int? clienteId;
+
+  const DireccionEntregaSeleccionScreen({super.key, this.clienteId});
 
   @override
   State<DireccionEntregaSeleccionScreen> createState() =>
@@ -19,6 +22,7 @@ class _DireccionEntregaSeleccionScreenState
   bool _isLoading = true;
   Client? _cliente;
   String? _errorMessage;
+  bool _esPreventista = false;
 
   @override
   void initState() {
@@ -29,11 +33,45 @@ class _DireccionEntregaSeleccionScreenState
   Future<void> _cargarDirecciones() async {
     final authProvider = context.read<AuthProvider>();
     final clientProvider = context.read<ClientProvider>();
+    final carritoProvider = context.read<CarritoProvider>();
+
+    debugPrint(
+      '🚚 Cargando direcciones cliente ${carritoProvider.getClienteSeleccionadoId()}',
+    );
+
+    // print("🔄 Cargando direcciones de entrega... ${clientProvider)}");
+    debugPrint('🔄 Auth User Roles: ${authProvider.user?.roles}');
+    debugPrint('🔄 Auth User ID: ${authProvider.user?.id}');
 
     if (authProvider.user?.id != null) {
-      // Obtener el perfil completo del cliente autenticado usando /api/clientes/mi-perfil
-      // Este endpoint no requiere permisos especiales y retorna todas las direcciones
-      final cliente = await clientProvider.getClientPerfil();
+      Client? cliente;
+
+      debugPrint('🔄 Usuario autenticado ID: ${authProvider.user?.id}');
+
+      // ✅ Verificar si es preventista o cliente
+      final roles = authProvider.user?.roles ?? [];
+      final esPreventista = roles.any(
+        (role) => role.toLowerCase().contains('preventista'),
+      );
+      _esPreventista = esPreventista;
+
+      if (esPreventista && carritoProvider.getClienteSeleccionadoId() != null) {
+        // ✅ PREVENTISTA: Obtener direcciones del cliente específico
+        debugPrint(
+          '👤 [PREVENTISTA] Cargando direcciones del cliente #${carritoProvider.getClienteSeleccionadoId()}',
+        );
+        debugPrint('🔄 Auth User Roles: ${authProvider.user?.roles}');
+        cliente = await clientProvider.getClient(
+          carritoProvider.getClienteSeleccionadoId()!,
+        );
+      } else if (!esPreventista) {
+        // ✅ CLIENTE: Obtener su propio perfil
+        debugPrint('👥 [CLIENTE] Cargando mi perfil con mis direcciones');
+        cliente = await clientProvider.getClientPerfil();
+      } else {
+        // ❌ Preventista pero sin clienteId
+        _errorMessage = 'No se proporcionó el cliente a consultar';
+      }
 
       setState(() {
         _cliente = cliente;
@@ -74,28 +112,32 @@ class _DireccionEntregaSeleccionScreenState
         title: 'Dirección de Entregas',
         customGradient: AppGradients.blue,
         actions: [
-          IconButton(
-            icon: const Icon(Icons.settings),
-            tooltip: 'Gestionar direcciones',
-            onPressed: () {
-              Navigator.pushNamed(context, '/mis-direcciones').then((_) {
-                // Recargar direcciones al volver
-                _cargarDirecciones();
-              });
-            },
-          ),
+          // ✅ Solo mostrar botón de gestión si es cliente (no preventista)
+          if (!_esPreventista)
+            IconButton(
+              icon: const Icon(Icons.settings),
+              tooltip: 'Gestionar direcciones',
+              onPressed: () {
+                Navigator.pushNamed(context, '/mis-direcciones').then((_) {
+                  // Recargar direcciones al volver
+                  _cargarDirecciones();
+                });
+              },
+            ),
         ],
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : _cliente == null
-              ? Center(
-                  child: Text(_errorMessage ?? 'No se pudo cargar la información del cliente'),
-                )
-              : Builder(
-                  builder: (context) {
-                    final cliente = _cliente!;
-                    final direcciones = cliente.direcciones ?? [];
+          ? Center(
+              child: Text(
+                _errorMessage ?? 'No se pudo cargar la información del cliente',
+              ),
+            )
+          : Builder(
+              builder: (context) {
+                final cliente = _cliente!;
+                final direcciones = cliente.direcciones ?? [];
 
                 if (direcciones.isEmpty) {
                   return Center(
@@ -108,31 +150,44 @@ class _DireccionEntregaSeleccionScreenState
                           color: Colors.grey,
                         ),
                         const SizedBox(height: 16),
-                        const Text(
-                          'No tienes direcciones registradas',
-                          style: TextStyle(fontSize: 16),
+                        Text(
+                          _esPreventista
+                              ? 'El cliente no tiene direcciones registradas'
+                              : 'No tienes direcciones registradas',
+                          style: const TextStyle(fontSize: 16),
                         ),
                         const SizedBox(height: 8),
-                        const Text(
-                          'Agrega una dirección para continuar',
-                          style: TextStyle(fontSize: 14, color: Colors.grey),
-                        ),
-                        const SizedBox(height: 24),
-                        ElevatedButton.icon(
-                          onPressed: () {
-                            Navigator.pushNamed(context, '/direccion-form').then((_) {
-                              _cargarDirecciones();
-                            });
-                          },
-                          icon: const Icon(Icons.add_location),
-                          label: const Text('Agregar Dirección'),
-                          style: ElevatedButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 32,
-                              vertical: 16,
-                            ),
+                        Text(
+                          _esPreventista
+                              ? 'El cliente debe agregar una dirección para continuar'
+                              : 'Agrega una dirección para continuar',
+                          style: const TextStyle(
+                            fontSize: 14,
+                            color: Colors.grey,
                           ),
                         ),
+                        // ✅ Solo mostrar botón si es CLIENTE (no preventista)
+                        if (!_esPreventista) ...[
+                          const SizedBox(height: 24),
+                          ElevatedButton.icon(
+                            onPressed: () {
+                              Navigator.pushNamed(
+                                context,
+                                '/direccion-form',
+                              ).then((_) {
+                                _cargarDirecciones();
+                              });
+                            },
+                            icon: const Icon(Icons.add_location),
+                            label: const Text('Agregar Dirección'),
+                            style: ElevatedButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 32,
+                                vertical: 16,
+                              ),
+                            ),
+                          ),
+                        ],
                       ],
                     ),
                   );
@@ -140,29 +195,67 @@ class _DireccionEntregaSeleccionScreenState
 
                 return Column(
                   children: [
-                    // Header con información
+                    // Header con información (dinámico según rol)
                     Container(
                       width: double.infinity,
                       padding: const EdgeInsets.all(16),
                       color: Theme.of(context).primaryColor.withOpacity(0.1),
-                      child: const Column(
+                      child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'Selecciona dónde deseas recibir tu pedido',
-                            style: TextStyle(
+                            _esPreventista
+                                ? 'Selecciona dirección de entrega para ${cliente.nombre ?? 'el cliente'}'
+                                : 'Selecciona dónde deseas recibir tu pedido',
+                            style: const TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.w500,
                             ),
                           ),
-                          SizedBox(height: 4),
+                          const SizedBox(height: 4),
                           Text(
-                            'Elige una de tus direcciones guardadas',
-                            style: TextStyle(
+                            _esPreventista
+                                ? 'Elige una dirección del cliente para entregar el pedido'
+                                : 'Elige una de tus direcciones guardadas',
+                            style: const TextStyle(
                               fontSize: 14,
                               color: Colors.grey,
                             ),
                           ),
+                          // ✅ Mostrar badge si es preventista
+                          if (_esPreventista) ...[
+                            const SizedBox(height: 12),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 6,
+                              ),
+                              decoration: BoxDecoration(
+                                color: Colors.orange.withOpacity(0.2),
+                                border: Border.all(color: Colors.orange),
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  const Icon(
+                                    Icons.person_outline,
+                                    size: 16,
+                                    color: Colors.orange,
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    'Modo Preventista',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w600,
+                                      color: Colors.orange[700],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
                         ],
                       ),
                     ),
@@ -174,7 +267,8 @@ class _DireccionEntregaSeleccionScreenState
                         itemCount: direcciones.length,
                         itemBuilder: (context, index) {
                           final direccion = direcciones[index];
-                          final isSelected = _direccionSeleccionada?.id == direccion.id;
+                          final isSelected =
+                              _direccionSeleccionada?.id == direccion.id;
 
                           return Card(
                             margin: const EdgeInsets.only(bottom: 12),
@@ -229,7 +323,8 @@ class _DireccionEntregaSeleccionScreenState
                                     // Información de la dirección
                                     Expanded(
                                       child: Column(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
                                         children: [
                                           Row(
                                             children: [
@@ -254,19 +349,24 @@ class _DireccionEntregaSeleccionScreenState
                                               ),
                                               if (direccion.esPrincipal)
                                                 Container(
-                                                  padding: const EdgeInsets.symmetric(
-                                                    horizontal: 8,
-                                                    vertical: 4,
-                                                  ),
+                                                  padding:
+                                                      const EdgeInsets.symmetric(
+                                                        horizontal: 8,
+                                                        vertical: 4,
+                                                      ),
                                                   decoration: BoxDecoration(
                                                     color: Colors.blue.shade100,
-                                                    borderRadius: BorderRadius.circular(12),
+                                                    borderRadius:
+                                                        BorderRadius.circular(
+                                                          12,
+                                                        ),
                                                   ),
                                                   child: const Text(
                                                     'Principal',
                                                     style: TextStyle(
                                                       fontSize: 11,
-                                                      fontWeight: FontWeight.w600,
+                                                      fontWeight:
+                                                          FontWeight.w600,
                                                       color: Colors.blue,
                                                     ),
                                                   ),
@@ -298,16 +398,20 @@ class _DireccionEntregaSeleccionScreenState
                                           ],
 
                                           if (direccion.observaciones != null &&
-                                              direccion.observaciones!.isNotEmpty) ...[
+                                              direccion
+                                                  .observaciones!
+                                                  .isNotEmpty) ...[
                                             const SizedBox(height: 8),
                                             Container(
-                                              padding: const EdgeInsets.symmetric(
-                                                horizontal: 8,
-                                                vertical: 4,
-                                              ),
+                                              padding:
+                                                  const EdgeInsets.symmetric(
+                                                    horizontal: 8,
+                                                    vertical: 4,
+                                                  ),
                                               decoration: BoxDecoration(
                                                 color: Colors.blue.shade50,
-                                                borderRadius: BorderRadius.circular(4),
+                                                borderRadius:
+                                                    BorderRadius.circular(4),
                                               ),
                                               child: Text(
                                                 'Obs: ${direccion.observaciones}',

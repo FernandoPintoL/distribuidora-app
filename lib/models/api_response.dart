@@ -14,19 +14,21 @@ class PaginatedResponse<T> {
     Map<String, dynamic> json,
     T Function(Map<String, dynamic>) fromJson,
   ) {
-    debugPrint('📦 PaginatedResponse.fromJson - json type: ${json.runtimeType}');
+    /* debugPrint('📦 PaginatedResponse.fromJson - json type: ${json.runtimeType}');
     debugPrint('📦 PaginatedResponse.fromJson - json keys: ${json.keys}');
-    debugPrint('📦 PaginatedResponse.fromJson - data type: ${json['data']?.runtimeType}');
-    
+    debugPrint('📦 PaginatedResponse.fromJson - data type: ${json['data']?.runtimeType}'); */
+
     PaginatedData<T>? paginatedData;
-    
+
     if (json['data'] != null) {
       if (json['data'] is Map<String, dynamic>) {
         // Formato estándar paginado
         paginatedData = PaginatedData.fromJson(json['data'], fromJson);
       } else if (json['data'] is List) {
         // Formato de lista directa (sin paginación)
-        debugPrint('⚠️ Data es una lista directa, creando PaginatedData simple');
+        /* debugPrint(
+          '⚠️ Data es una lista directa, creando PaginatedData simple',
+        ); */
         final dataList = json['data'] as List;
         paginatedData = PaginatedData(
           currentPage: 1,
@@ -44,7 +46,7 @@ class PaginatedResponse<T> {
         );
       }
     }
-    
+
     return PaginatedResponse(
       success: json['success'] ?? false,
       message: json['message'] ?? '',
@@ -83,9 +85,11 @@ class PaginatedData<T> {
     Map<String, dynamic> json,
     T Function(Map<String, dynamic>) fromJson,
   ) {
-    debugPrint('📊 PaginatedData.fromJson - json type: ${json.runtimeType}');
+    /* debugPrint('📊 PaginatedData.fromJson - json type: ${json.runtimeType}');
     debugPrint('📊 PaginatedData.fromJson - json keys: ${json.keys}');
-    debugPrint('📊 PaginatedData.fromJson - data type: ${json['data']?.runtimeType}');
+    debugPrint(
+      '📊 PaginatedData.fromJson - data type: ${json['data']?.runtimeType}',
+    ); */
 
     // Check if this is the custom pedidos format with 'pedidos' and 'paginacion'
     if (json.containsKey('pedidos') && json.containsKey('paginacion')) {
@@ -120,7 +124,9 @@ class PaginatedData<T> {
 
     debugPrint('📊 PaginatedData.fromJson - list length: ${dataList.length}');
     if (dataList.isNotEmpty) {
-      debugPrint('📊 PaginatedData.fromJson - first item type: ${dataList.first.runtimeType}');
+      debugPrint(
+        '📊 PaginatedData.fromJson - first item type: ${dataList.first.runtimeType}',
+      );
     }
 
     try {
@@ -187,11 +193,7 @@ class ApiResponse<T> {
 
       // Si la respuesta no fue exitosa, retornar sin intentar parsear data
       if (!success) {
-        return ApiResponse<T>(
-          success: false,
-          message: message,
-          data: null,
-        );
+        return ApiResponse<T>(success: false, message: message, data: null);
       }
 
       if (json.containsKey('data')) {

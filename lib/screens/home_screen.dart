@@ -55,14 +55,22 @@ class _HomeScreenState extends BaseHomeScreenState<HomeScreen> {
       final authProvider = context.read<AuthProvider>();
       final clientProvider = context.read<ClientProvider>();
 
-      // Si el preventista tiene estadísticas desde el login, cargarlas
-      if (authProvider.preventistaStats != null) {
-        debugPrint('📊 Cargando datos del preventista desde login...');
-        clientProvider.loadClientsFromPreventistaStats(authProvider.preventistaStats!);
-        debugPrint('✅ Datos del preventista cargados en el dashboard');
-      } else {
-        debugPrint('ℹ️ No hay estadísticas del preventista disponibles en login');
-      }
+      // ✅ IMPORTANTE: Cargar clientes desde /clientes en lugar del login
+      // El endpoint /login devuelve datos básicos sin campos de crédito
+      // El endpoint /clientes retorna los datos COMPLETOS incluyendo puede_tener_credito
+      debugPrint('📊 Cargando lista completa de clientes desde API...');
+      clientProvider.loadClients(perPage: 100).then((_) {
+        debugPrint('✅ Clientes cargados desde /clientes (con datos de crédito)');
+      }).catchError((e) {
+        debugPrint('❌ Error cargando clientes: $e');
+        // Si falla, usar los datos del login como fallback
+        if (authProvider.preventistaStats != null) {
+          debugPrint('📊 Usando datos del preventista del login como fallback...');
+          clientProvider.loadClientsFromPreventistaStats(
+            authProvider.preventistaStats!,
+          );
+        }
+      });
     } catch (e) {
       debugPrint('❌ Error cargando datos iniciales: $e');
     }
@@ -260,13 +268,25 @@ class _DashboardPreventistaState extends State<DashboardPreventista>
                       children: [
                         _buildGradientCard(
                           context,
+                          title: 'Crear Pedido',
+                          subtitle: 'Productos',
+                          icon: Icons.shopping_cart_outlined,
+                          gradient: AppGradients.orange,
+                          onTap: () {
+                            // ✅ NUEVO: Navegar a la lista de productos para crear pedido
+                            Navigator.pushNamed(context, '/products');
+                          },
+                        ),
+                        _buildGradientCard(
+                          context,
                           title: 'Clientes',
                           subtitle: 'Gestionar',
                           icon: Icons.people_outline,
                           gradient: AppGradients.blue,
                           onTap: () {
                             // Cambiar a pestaña de Clientes sin abrir nueva ventana
-                            final homeState = context.findAncestorStateOfType<_HomeScreenState>();
+                            final homeState = context
+                                .findAncestorStateOfType<_HomeScreenState>();
                             homeState?.navigateToIndex(1); // Index 1 = Clientes
                           },
                         ),

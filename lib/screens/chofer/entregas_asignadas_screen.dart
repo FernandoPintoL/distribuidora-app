@@ -26,14 +26,14 @@ class _EntregasAsignadasScreenState extends State<EntregasAsignadasScreen> {
   DateTime? _fechaFin;
   bool _filtrosExpandidos = false;
   final TextEditingController _searchController = TextEditingController();
+  late Future<void> _cargarFuture;
 
   @override
   void initState() {
     super.initState();
-    // Defer loading until after build phase to avoid setState during build
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _cargarDatos();
-    });
+    // ✅ Cargar datos inmediatamente (sin addPostFrameCallback aquí)
+    // El provider maneja addPostFrameCallback en su notifyListeners()
+    _cargarFuture = _cargarDatos();
   }
 
   @override
@@ -95,9 +95,18 @@ class _EntregasAsignadasScreenState extends State<EntregasAsignadasScreen> {
             // Búsqueda en datos del cliente dentro de la venta
             if (venta.cliente is Map) {
               final clienteMap = venta.cliente as Map;
-              if ((clienteMap['nombre']?.toString().toLowerCase().contains(search) ?? false) ||
-                  (clienteMap['ci']?.toString().toLowerCase().contains(search) ?? false) ||
-                  (clienteMap['telefono']?.toString().toLowerCase().contains(search) ?? false)) {
+              if ((clienteMap['nombre']?.toString().toLowerCase().contains(
+                        search,
+                      ) ??
+                      false) ||
+                  (clienteMap['ci']?.toString().toLowerCase().contains(
+                        search,
+                      ) ??
+                      false) ||
+                  (clienteMap['telefono']?.toString().toLowerCase().contains(
+                        search,
+                      ) ??
+                      false)) {
                 coincide = true;
                 break;
               }
@@ -115,7 +124,9 @@ class _EntregasAsignadasScreenState extends State<EntregasAsignadasScreen> {
         final fecha = entrega.fechaAsignacion;
         if (fecha != null) {
           if (_fechaInicio != null &&
-              fecha.isBefore(_fechaInicio!.subtract(const Duration(hours: 1)))) {
+              fecha.isBefore(
+                _fechaInicio!.subtract(const Duration(hours: 1)),
+              )) {
             return false;
           }
           if (_fechaFin != null &&
@@ -145,19 +156,46 @@ class _EntregasAsignadasScreenState extends State<EntregasAsignadasScreen> {
 
     return Scaffold(
       backgroundColor: isDarkMode ? Colors.grey[900] : Colors.grey[50],
-      body: Consumer<EntregaProvider>(
-        builder: (context, provider, _) {
-          final entregasFiltradas = _getEntregasFiltradas(provider.entregas);
+      // ✅ FutureBuilder espera a que se completen los datos iniciales
+      // LUEGO Consumer escucha cambios posteriores
+      body: FutureBuilder<void>(
+        future: _cargarFuture,
+        builder: (context, snapshot) {
+          // Una vez que se completa (éxito o error), mostrar Consumer
+          // El Consumer escuchará cambios posteriores del provider
+          return Consumer<EntregaProvider>(
+            builder: (context, provider, _) {
+              // Mostrar loading solo si aún se está cargando
+              if (snapshot.connectionState == ConnectionState.waiting &&
+                  provider.entregas.isEmpty) {
+                return Center(
+                  child: CircularProgressIndicator(
+                    valueColor: AlwaysStoppedAnimation<Color>(
+                      isDarkMode ? Colors.blue : Colors.blue,
+                    ),
+                  ),
+                );
+              }
 
-          return Column(
-            children: [
-              // Filtros y búsqueda mejorados
-              _buildFiltrosModernos(isDarkMode),
-              // Lista de entregas
-              Expanded(
-                child: _buildListado(provider, entregasFiltradas, isDarkMode),
-              ),
-            ],
+              final entregasFiltradas = _getEntregasFiltradas(
+                provider.entregas,
+              );
+
+              return Column(
+                children: [
+                  // Filtros y búsqueda mejorados
+                  _buildFiltrosModernos(isDarkMode),
+                  // Lista de entregas
+                  Expanded(
+                    child: _buildListado(
+                      provider,
+                      entregasFiltradas,
+                      isDarkMode,
+                    ),
+                  ),
+                ],
+              );
+            },
           );
         },
       ),
@@ -165,7 +203,8 @@ class _EntregasAsignadasScreenState extends State<EntregasAsignadasScreen> {
   }
 
   Widget _buildFiltrosModernos(bool isDarkMode) {
-    final hasFilters = _busqueda.isNotEmpty ||
+    final hasFilters =
+        _busqueda.isNotEmpty ||
         _filtroEstado != null ||
         _fechaInicio != null ||
         _fechaFin != null;
@@ -200,7 +239,10 @@ class _EntregasAsignadasScreenState extends State<EntregasAsignadasScreen> {
                       if (hasFilters) ...[
                         const SizedBox(width: 8),
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 6,
+                            vertical: 2,
+                          ),
                           decoration: BoxDecoration(
                             color: Colors.blue,
                             borderRadius: BorderRadius.circular(12),
@@ -224,7 +266,9 @@ class _EntregasAsignadasScreenState extends State<EntregasAsignadasScreen> {
                       });
                     },
                     child: Icon(
-                      _filtrosExpandidos ? Icons.expand_less : Icons.expand_more,
+                      _filtrosExpandidos
+                          ? Icons.expand_less
+                          : Icons.expand_more,
                       color: isDarkMode ? Colors.grey[400] : Colors.grey[600],
                     ),
                   ),
@@ -238,112 +282,172 @@ class _EntregasAsignadasScreenState extends State<EntregasAsignadasScreen> {
               Padding(
                 padding: const EdgeInsets.all(16),
                 child: TextField(
-                controller: _searchController,
-                onChanged: (value) {
-                  setState(() {
-                    _busqueda = value;
-                  });
-                },
-                decoration: InputDecoration(
-                  hintText:
-                      'Buscar: ID, cliente, CI, teléfono, venta, fecha...',
-                  hintStyle: TextStyle(
-                    color: isDarkMode ? Colors.grey[400] : Colors.grey[600],
-                  ),
-                  prefixIcon:
-                      Icon(Icons.search,
-                          color: isDarkMode ? Colors.grey[400] : Colors.grey),
-                  suffixIcon: _busqueda.isNotEmpty
-                      ? IconButton(
-                          icon: Icon(Icons.clear,
+                  controller: _searchController,
+                  onChanged: (value) {
+                    setState(() {
+                      _busqueda = value;
+                    });
+                  },
+                  decoration: InputDecoration(
+                    hintText:
+                        'Buscar: ID, cliente, CI, teléfono, venta, fecha...',
+                    hintStyle: TextStyle(
+                      color: isDarkMode ? Colors.grey[400] : Colors.grey[600],
+                    ),
+                    prefixIcon: Icon(
+                      Icons.search,
+                      color: isDarkMode ? Colors.grey[400] : Colors.grey,
+                    ),
+                    suffixIcon: _busqueda.isNotEmpty
+                        ? IconButton(
+                            icon: Icon(
+                              Icons.clear,
                               color: isDarkMode
                                   ? Colors.grey[400]
-                                  : Colors.grey),
-                          onPressed: () {
-                            _searchController.clear();
-                            setState(() {
-                              _busqueda = '';
-                            });
-                          },
-                        )
-                      : null,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(
-                      color: isDarkMode ? Colors.grey[700]! : Colors.grey[300]!,
+                                  : Colors.grey,
+                            ),
+                            onPressed: () {
+                              _searchController.clear();
+                              setState(() {
+                                _busqueda = '';
+                              });
+                            },
+                          )
+                        : null,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(
+                        color: isDarkMode
+                            ? Colors.grey[700]!
+                            : Colors.grey[300]!,
+                      ),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(
+                        color: isDarkMode
+                            ? Colors.grey[700]!
+                            : Colors.grey[300]!,
+                      ),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(
+                        color: Colors.blue,
+                        width: 2,
+                      ),
+                    ),
+                    filled: true,
+                    fillColor: isDarkMode ? Colors.grey[800] : Colors.grey[50],
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 14,
                     ),
                   ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(
-                      color: isDarkMode ? Colors.grey[700]! : Colors.grey[300]!,
-                    ),
+                  style: TextStyle(
+                    color: isDarkMode ? Colors.white : Colors.black87,
                   ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: const BorderSide(color: Colors.blue, width: 2),
-                  ),
-                  filled: true,
-                  fillColor: isDarkMode ? Colors.grey[800] : Colors.grey[50],
-                  contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 14,
-                  ),
-                ),
-                style: TextStyle(
-                  color: isDarkMode ? Colors.white : Colors.black87,
                 ),
               ),
-            ),
 
-            // Filtros de estado y fechas
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Filtro de estados - DINÁMICO desde la BD
-                  Consumer<EntregaEstadosProvider>(
-                    builder: (context, estadosProvider, _) {
-                      final estadosFiltro =
-                          estadosProvider.getEstadosParaFiltrado();
+              // Filtros de estado y fechas
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Filtro de estados - DINÁMICO desde la BD
+                    Consumer<EntregaEstadosProvider>(
+                      builder: (context, estadosProvider, _) {
+                        final estadosFiltro = estadosProvider
+                            .getEstadosParaFiltrado();
 
-                      return Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Estados',
-                            style: TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600,
-                              color: isDarkMode
-                                  ? Colors.grey[300]
-                                  : Colors.grey[700],
+                        return Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Estados',
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                                color: isDarkMode
+                                    ? Colors.grey[300]
+                                    : Colors.grey[700],
+                              ),
                             ),
-                          ),
-                          const SizedBox(height: 8),
-                          SizedBox(
-                            height: 44,
-                            child: ListView.builder(
-                              scrollDirection: Axis.horizontal,
-                              padding: const EdgeInsets.symmetric(horizontal: 0),
-                              clipBehavior: Clip.hardEdge,
-                              itemCount: estadosFiltro.length + 1,
-                              itemBuilder: (context, index) {
-                                // Primera opción es "Todas"
-                                if (index == 0) {
-                                  final isSelected = _filtroEstado == null;
+                            const SizedBox(height: 8),
+                            SizedBox(
+                              height: 44,
+                              child: ListView.builder(
+                                scrollDirection: Axis.horizontal,
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 0,
+                                ),
+                                clipBehavior: Clip.hardEdge,
+                                itemCount: estadosFiltro.length + 1,
+                                itemBuilder: (context, index) {
+                                  // Primera opción es "Todas"
+                                  if (index == 0) {
+                                    final isSelected = _filtroEstado == null;
+                                    return Padding(
+                                      padding: const EdgeInsets.only(
+                                        left: 0,
+                                        right: 8,
+                                      ),
+                                      child: FilterChip(
+                                        label: Text(
+                                          'Todas',
+                                          style: TextStyle(
+                                            color: isSelected
+                                                ? Colors.white
+                                                : (isDarkMode
+                                                      ? Colors.grey[300]
+                                                      : Colors.grey[700]),
+                                            fontWeight: FontWeight.w500,
+                                            fontSize: 12,
+                                          ),
+                                        ),
+                                        selected: isSelected,
+                                        onSelected: (selected) {
+                                          setState(() {
+                                            _filtroEstado = null;
+                                          });
+                                          _cargarEntregas();
+                                        },
+                                        backgroundColor: isDarkMode
+                                            ? Colors.grey[700]
+                                            : Colors.grey[200],
+                                        selectedColor: Colors.blue,
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(
+                                            20,
+                                          ),
+                                          side: BorderSide(
+                                            color: isSelected
+                                                ? Colors.blue
+                                                : Colors.transparent,
+                                          ),
+                                        ),
+                                      ),
+                                    );
+                                  }
+
+                                  // Estados dinámicos desde la BD
+                                  final estado = estadosFiltro[index - 1];
+                                  final isSelected =
+                                      _filtroEstado == estado.codigo;
+
                                   return Padding(
-                                    padding: const EdgeInsets.only(left: 0, right: 8),
+                                    padding: const EdgeInsets.only(right: 8),
                                     child: FilterChip(
                                       label: Text(
-                                        'Todas',
+                                        estado.nombre,
                                         style: TextStyle(
                                           color: isSelected
                                               ? Colors.white
                                               : (isDarkMode
-                                                  ? Colors.grey[300]
-                                                  : Colors.grey[700]),
+                                                    ? Colors.grey[300]
+                                                    : Colors.grey[700]),
                                           fontWeight: FontWeight.w500,
                                           fontSize: 12,
                                         ),
@@ -351,7 +455,7 @@ class _EntregasAsignadasScreenState extends State<EntregasAsignadasScreen> {
                                       selected: isSelected,
                                       onSelected: (selected) {
                                         setState(() {
-                                          _filtroEstado = null;
+                                          _filtroEstado = estado.codigo;
                                         });
                                         _cargarEntregas();
                                       },
@@ -360,8 +464,7 @@ class _EntregasAsignadasScreenState extends State<EntregasAsignadasScreen> {
                                           : Colors.grey[200],
                                       selectedColor: Colors.blue,
                                       shape: RoundedRectangleBorder(
-                                        borderRadius:
-                                            BorderRadius.circular(20),
+                                        borderRadius: BorderRadius.circular(20),
                                         side: BorderSide(
                                           color: isSelected
                                               ? Colors.blue
@@ -370,123 +473,79 @@ class _EntregasAsignadasScreenState extends State<EntregasAsignadasScreen> {
                                       ),
                                     ),
                                   );
-                                }
+                                },
+                              ),
+                            ),
+                          ],
+                        );
+                      },
+                    ),
+                    const SizedBox(height: 16),
 
-                                // Estados dinámicos desde la BD
-                                final estado = estadosFiltro[index - 1];
-                                final isSelected =
-                                    _filtroEstado == estado.codigo;
+                    // Filtro de fechas
+                    Text(
+                      'Rango de fechas',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: isDarkMode ? Colors.grey[300] : Colors.grey[700],
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _buildDatePicker(
+                            label: 'Desde',
+                            date: _fechaInicio,
+                            onDateSelected: (date) {
+                              setState(() {
+                                _fechaInicio = date;
+                              });
+                            },
+                            isDarkMode: isDarkMode,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: _buildDatePicker(
+                            label: 'Hasta',
+                            date: _fechaFin,
+                            onDateSelected: (date) {
+                              setState(() {
+                                _fechaFin = date;
+                              });
+                            },
+                            isDarkMode: isDarkMode,
+                          ),
+                        ),
+                      ],
+                    ),
 
-                                return Padding(
-                                  padding: const EdgeInsets.only(right: 8),
-                                  child: FilterChip(
-                                    label: Text(
-                                      estado.nombre,
-                                      style: TextStyle(
-                                        color: isSelected
-                                            ? Colors.white
-                                            : (isDarkMode
-                                                ? Colors.grey[300]
-                                                : Colors.grey[700]),
-                                        fontWeight: FontWeight.w500,
-                                        fontSize: 12,
-                                      ),
-                                    ),
-                                    selected: isSelected,
-                                    onSelected: (selected) {
-                                      setState(() {
-                                        _filtroEstado = estado.codigo;
-                                      });
-                                      _cargarEntregas();
-                                    },
-                                    backgroundColor: isDarkMode
-                                        ? Colors.grey[700]
-                                        : Colors.grey[200],
-                                    selectedColor: Colors.blue,
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius:
-                                          BorderRadius.circular(20),
-                                      side: BorderSide(
-                                        color: isSelected
-                                            ? Colors.blue
-                                            : Colors.transparent,
-                                      ),
-                                    ),
-                                  ),
-                                );
-                              },
+                    // Botón de limpiar filtros
+                    if (hasFilters) ...[
+                      const SizedBox(height: 12),
+                      SizedBox(
+                        width: double.infinity,
+                        child: OutlinedButton.icon(
+                          onPressed: _limpiarFiltros,
+                          icon: const Icon(Icons.clear_all, size: 18),
+                          label: const Text('Limpiar filtros'),
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: Colors.blue,
+                            side: const BorderSide(color: Colors.blue),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
                             ),
                           ),
-                        ],
-                      );
-                    },
-                  ),
-                  const SizedBox(height: 16),
-
-                  // Filtro de fechas
-                  Text(
-                    'Rango de fechas',
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                      color: isDarkMode ? Colors.grey[300] : Colors.grey[700],
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _buildDatePicker(
-                          label: 'Desde',
-                          date: _fechaInicio,
-                          onDateSelected: (date) {
-                            setState(() {
-                              _fechaInicio = date;
-                            });
-                          },
-                          isDarkMode: isDarkMode,
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: _buildDatePicker(
-                          label: 'Hasta',
-                          date: _fechaFin,
-                          onDateSelected: (date) {
-                            setState(() {
-                              _fechaFin = date;
-                            });
-                          },
-                          isDarkMode: isDarkMode,
                         ),
                       ),
                     ],
-                  ),
 
-                  // Botón de limpiar filtros
-                  if (hasFilters) ...[
-                    const SizedBox(height: 12),
-                    SizedBox(
-                      width: double.infinity,
-                      child: OutlinedButton.icon(
-                        onPressed: _limpiarFiltros,
-                        icon: const Icon(Icons.clear_all, size: 18),
-                        label: const Text('Limpiar filtros'),
-                        style: OutlinedButton.styleFrom(
-                          foregroundColor: Colors.blue,
-                          side: const BorderSide(color: Colors.blue),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                        ),
-                      ),
-                    ),
+                    const SizedBox(height: 16),
                   ],
-
-                  const SizedBox(height: 16),
-                ],
+                ),
               ),
-            ),
             ],
           ],
         ),
@@ -560,8 +619,11 @@ class _EntregasAsignadasScreenState extends State<EntregasAsignadasScreen> {
     );
   }
 
-  Widget _buildListado(EntregaProvider provider, List<Entrega> entregas,
-      bool isDarkMode) {
+  Widget _buildListado(
+    EntregaProvider provider,
+    List<Entrega> entregas,
+    bool isDarkMode,
+  ) {
     if (provider.isLoading) {
       return Center(
         child: CircularProgressIndicator(
@@ -615,10 +677,7 @@ class _EntregasAsignadasScreenState extends State<EntregasAsignadasScreen> {
         itemCount: entregas.length,
         itemBuilder: (context, index) {
           final entrega = entregas[index];
-          return _EntregaCard(
-            entrega: entrega,
-            isDarkMode: isDarkMode,
-          );
+          return _EntregaCard(entrega: entrega, isDarkMode: isDarkMode);
         },
       ),
     );
@@ -665,7 +724,7 @@ class _EntregaCardState extends State<_EntregaCard> {
 
   @override
   Widget build(BuildContext context) {
-    debugPrint('Building EntregaCard for Entrega ID: ${entrega.id}');
+    // debugPrint('Building EntregaCard for Entrega ID: ${entrega.id}');
     final cardColor = isDarkMode ? Colors.grey[850] : Colors.white;
 
     return Card(
@@ -847,7 +906,9 @@ class _EntregaCardState extends State<_EntregaCard> {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
               decoration: BoxDecoration(
-                color: isDarkMode ? Colors.blue[900]?.withAlpha((0.3 * 255).toInt()) : Colors.blue[50],
+                color: isDarkMode
+                    ? Colors.blue[900]?.withAlpha((0.3 * 255).toInt())
+                    : Colors.blue[50],
                 border: Border(
                   bottom: BorderSide(
                     color: isDarkMode ? Colors.grey[700]! : Colors.grey[200]!,
@@ -924,10 +985,16 @@ class _EntregaCardState extends State<_EntregaCard> {
                           padding: const EdgeInsets.only(bottom: 12),
                           child: Container(
                             decoration: BoxDecoration(
-                              color: isDarkMode ? Colors.grey[900]?.withAlpha((0.3 * 255).toInt()) : Colors.white,
+                              color: isDarkMode
+                                  ? Colors.grey[900]?.withAlpha(
+                                      (0.3 * 255).toInt(),
+                                    )
+                                  : Colors.white,
                               borderRadius: BorderRadius.circular(8),
                               border: Border.all(
-                                color: isDarkMode ? Colors.grey[700]! : Colors.grey[200]!,
+                                color: isDarkMode
+                                    ? Colors.grey[700]!
+                                    : Colors.grey[200]!,
                               ),
                             ),
                             padding: const EdgeInsets.all(8),
@@ -949,21 +1016,27 @@ class _EntregaCardState extends State<_EntregaCard> {
                                     const SizedBox(width: 8),
                                     Expanded(
                                       child: Column(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
                                         children: [
                                           Row(
-                                            crossAxisAlignment: CrossAxisAlignment.center,
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.center,
                                             children: [
                                               Expanded(
                                                 child: Column(
-                                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                                  crossAxisAlignment:
+                                                      CrossAxisAlignment.start,
                                                   children: [
                                                     Text(
                                                       venta.numero,
                                                       style: TextStyle(
                                                         fontSize: 12,
-                                                        fontWeight: FontWeight.w600,
-                                                        color: isDarkMode ? Colors.white : Colors.black87,
+                                                        fontWeight:
+                                                            FontWeight.w600,
+                                                        color: isDarkMode
+                                                            ? Colors.white
+                                                            : Colors.black87,
                                                       ),
                                                     ),
                                                     Text(
@@ -971,7 +1044,8 @@ class _EntregaCardState extends State<_EntregaCard> {
                                                           venta.cliente ??
                                                           'Cliente desconocido',
                                                       maxLines: 1,
-                                                      overflow: TextOverflow.ellipsis,
+                                                      overflow:
+                                                          TextOverflow.ellipsis,
                                                       style: TextStyle(
                                                         fontSize: 11,
                                                         color: isDarkMode
@@ -1001,18 +1075,22 @@ class _EntregaCardState extends State<_EntregaCard> {
                                 const SizedBox(height: 8),
                                 // Fila de montos: Subtotal y Total
                                 Row(
-                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
                                   children: [
                                     // Subtotal
                                     Expanded(
                                       child: Column(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
                                         children: [
                                           Text(
                                             'Total',
                                             style: TextStyle(
                                               fontSize: 10,
-                                              color: isDarkMode ? Colors.grey[500] : Colors.grey[600],
+                                              color: isDarkMode
+                                                  ? Colors.grey[500]
+                                                  : Colors.grey[600],
                                             ),
                                           ),
                                           Text(
@@ -1020,7 +1098,9 @@ class _EntregaCardState extends State<_EntregaCard> {
                                             style: TextStyle(
                                               fontSize: 11,
                                               fontWeight: FontWeight.w600,
-                                              color: isDarkMode ? Colors.grey[300] : Colors.black87,
+                                              color: isDarkMode
+                                                  ? Colors.grey[300]
+                                                  : Colors.black87,
                                             ),
                                           ),
                                         ],
@@ -1116,7 +1196,9 @@ class _EntregaCardState extends State<_EntregaCard> {
                         Icon(
                           Icons.calendar_today,
                           size: 14,
-                          color: isDarkMode ? Colors.grey[400] : Colors.grey[600],
+                          color: isDarkMode
+                              ? Colors.grey[400]
+                              : Colors.grey[600],
                         ),
                         const SizedBox(width: 6),
                         Expanded(
@@ -1124,7 +1206,9 @@ class _EntregaCardState extends State<_EntregaCard> {
                             entrega.formatFecha(entrega.fechaAsignacion),
                             style: TextStyle(
                               fontSize: 11,
-                              color: isDarkMode ? Colors.grey[300] : Colors.grey[700],
+                              color: isDarkMode
+                                  ? Colors.grey[300]
+                                  : Colors.grey[700],
                             ),
                             overflow: TextOverflow.ellipsis,
                           ),
@@ -1222,12 +1306,13 @@ class _EntregaCardState extends State<_EntregaCard> {
   }
 
   String _getTituloTrabajo(Entrega entrega) {
+    print('[ENTREGA_CARD] Tipo de trabajo: ${entrega.estadoEntregaCodigo}');
     if (entrega.trabajoType == 'entrega') {
       return 'Entrega #${entrega.id}';
     } else if (entrega.trabajoType == 'envio') {
       return 'Envío #${entrega.id}';
     }
-    return 'Trabajo #${entrega.id}';
+    return 'Entrega #${entrega.id}';
   }
 
   Widget _buildEstadoVentaBadge(
@@ -1243,8 +1328,12 @@ class _EntregaCardState extends State<_EntregaCard> {
     String colorHex = estadoLogisticoColor ?? '#000000';
 
     // Si no tenemos color/icon del backend, intentar buscar en el caché
-    if ((estadoLogisticoColor == null || estadoLogisticoIcon == null) && estadoLogisticoId != null) {
-      final estado = EstadosHelper.getEstadoPorId('venta_logistica', estadoLogisticoId);
+    if ((estadoLogisticoColor == null || estadoLogisticoIcon == null) &&
+        estadoLogisticoId != null) {
+      final estado = EstadosHelper.getEstadoPorId(
+        'venta_logistica',
+        estadoLogisticoId,
+      );
       if (estado != null) {
         nombre = estado.nombre;
         icono = estado.icono ?? '📦';
@@ -1265,10 +1354,7 @@ class _EntregaCardState extends State<_EntregaCard> {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Text(
-            icono,
-            style: const TextStyle(fontSize: 10),
-          ),
+          Text(icono, style: const TextStyle(fontSize: 10)),
           const SizedBox(width: 4),
           Text(
             nombre,
@@ -1286,15 +1372,13 @@ class _EntregaCardState extends State<_EntregaCard> {
   Future<void> _openInGoogleMaps(BuildContext context) async {
     final address = entrega.direccion ?? '';
     if (address.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Dirección no disponible')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Dirección no disponible')));
       return;
     }
 
-    final url = Uri.parse(
-      'https://www.google.com/maps/search/$address',
-    );
+    final url = Uri.parse('https://www.google.com/maps/search/$address');
 
     if (await canLaunchUrl(url)) {
       await launchUrl(url, mode: LaunchMode.externalApplication);
@@ -1345,4 +1429,3 @@ class _InfoRow extends StatelessWidget {
     );
   }
 }
-

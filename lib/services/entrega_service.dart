@@ -2,11 +2,52 @@ import 'package:flutter/foundation.dart';
 import 'package:dio/dio.dart';
 import '../models/api_response.dart';
 import '../models/entrega.dart';
+import '../models/estadisticas_chofer.dart';
 import '../models/ubicacion_tracking.dart';
 import 'api_service.dart';
 
 class EntregaService {
   final ApiService _apiService = ApiService();
+
+  // ✅ NUEVO: Obtener estadísticas rápidas del chofer (optimizado para dashboard)
+  Future<ApiResponse<EstadisticasChofer>> obtenerEstadisticas() async {
+    try {
+      final response = await _apiService.get('/chofer/estadisticas');
+
+      final data = response.data as Map<String, dynamic>;
+
+      if (data['data'] == null) {
+        return ApiResponse(
+          success: false,
+          message: 'Sin datos de estadísticas',
+        );
+      }
+
+      final estadisticas = EstadisticasChofer.fromJson(
+        data['data'] as Map<String, dynamic>,
+      );
+
+      debugPrint(
+        '📊 [ENTREGA_SERVICE] Estadísticas obtenidas: ${estadisticas.totalEntregas} entregas',
+      );
+
+      return ApiResponse(
+        success: true,
+        data: estadisticas,
+        message: 'Estadísticas obtenidas exitosamente',
+      );
+    } on DioException catch (e) {
+      return ApiResponse(
+        success: false,
+        message: 'Error al obtener estadísticas: ${e.message}',
+      );
+    } catch (e) {
+      return ApiResponse(
+        success: false,
+        message: 'Error inesperado: ${e.toString()}',
+      );
+    }
+  }
 
   // Obtener entregas + envios asignados al chofer (combinados)
   Future<ApiResponse<List<Entrega>>> obtenerEntregasAsignadas({
@@ -253,10 +294,8 @@ class EntregaService {
     String? firmaBase64,
     List<String>? fotosBase64,
     String? observaciones,
-    // ✅ Contexto de entrega
-    bool? tiendaAbierta,
-    bool? clientePresente,
-    String? motivoRechazo,
+    // ✅ Estado de venta (ENTREGADA o CANCELADA)
+    String? estadoVenta,
     // ✅ FASE 1: Confirmación de Pago
     String? estadoPago, // PAGADO, PARCIAL, NO_PAGADO
     double? montoRecibido, // Dinero recibido
@@ -270,10 +309,8 @@ class EntregaService {
         if (firmaBase64 != null) 'firma_digital_base64': firmaBase64,
         if (observaciones != null) 'observaciones': observaciones,
         if (fotosBase64 != null) 'fotos': fotosBase64,
-        // ✅ Contexto de entrega
-        if (tiendaAbierta != null) 'tienda_abierta': tiendaAbierta,
-        if (clientePresente != null) 'cliente_presente': clientePresente,
-        if (motivoRechazo != null) 'motivo_rechazo': motivoRechazo,
+        // ✅ Estado de venta
+        if (estadoVenta != null) 'estado_venta': estadoVenta,
         // ✅ FASE 1: Pago
         if (estadoPago != null) 'estado_pago': estadoPago,
         if (montoRecibido != null) 'monto_recibido': montoRecibido,

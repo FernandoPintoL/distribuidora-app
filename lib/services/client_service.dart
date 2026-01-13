@@ -35,9 +35,6 @@ class ClientService {
         queryParameters: queryParams,
       );
 
-      debugPrint('📥 Response data type: ${response.data.runtimeType}');
-      debugPrint('📥 Response data: ${response.data}');
-
       return PaginatedResponse<Client>.fromJson(
         response.data,
         (json) => Client.fromJson(json),

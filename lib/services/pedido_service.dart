@@ -26,6 +26,7 @@ class PedidoService {
     TimeOfDay? horaInicio,
     TimeOfDay? horaFin,
     String? observaciones,
+    String politicaPago = 'CONTRA_ENTREGA', // ✅ Política de pago
   }) async {
     try {
       // Preparar el cuerpo de la petición
@@ -55,6 +56,10 @@ class PedidoService {
       if (observaciones != null && observaciones.isNotEmpty) {
         requestBody['observaciones'] = observaciones;
       }
+
+      // ✅ Agregar política de pago
+      requestBody['politica_pago'] = politicaPago;
+      debugPrint('💳 Política de pago: $politicaPago');
 
       debugPrint('📋 Creando proforma con ${items.length} productos');
       debugPrint('   Cliente ID: $clienteId');

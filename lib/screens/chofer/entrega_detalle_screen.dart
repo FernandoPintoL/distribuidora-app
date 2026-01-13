@@ -87,9 +87,7 @@ class _EntregaDetalleScreenState extends State<EntregaDetalleScreen> {
     // Limpiar teléfono (remover espacios, caracteres especiales)
     final telefonoLimpio = telefono.replaceAll(RegExp(r'[^\d+]'), '');
 
-    final Uri whatsappUri = Uri.parse(
-      'https://wa.me/$telefonoLimpio',
-    );
+    final Uri whatsappUri = Uri.parse('https://wa.me/$telefonoLimpio');
 
     try {
       if (await canLaunchUrl(whatsappUri)) {
@@ -587,7 +585,7 @@ class _EntregaDetalleScreenState extends State<EntregaDetalleScreen> {
     return Scaffold(
       backgroundColor: isDarkMode ? Colors.grey[900] : Colors.grey[50],
       appBar: CustomGradientAppBar(
-        title: 'Detalle de Entregas',
+        title: 'Detalle de Entrega # ${widget.entregaId}',
         customGradient: AppGradients.green,
       ),
       body: FutureBuilder<bool>(
@@ -759,9 +757,7 @@ class _EntregaDetalleScreenState extends State<EntregaDetalleScreen> {
                         children: [
                           Text(
                             'Información de Rastreo',
-                            style: Theme.of(context)
-                                .textTheme
-                                .titleSmall
+                            style: Theme.of(context).textTheme.titleSmall
                                 ?.copyWith(fontWeight: FontWeight.bold),
                           ),
                           const SizedBox(height: 4),
@@ -816,7 +812,8 @@ class _EntregaDetalleScreenState extends State<EntregaDetalleScreen> {
                         // Panel de navegación
                         NavigationPanel(
                           clientName: entrega.cliente ?? 'Cliente',
-                          address: entrega.direccion ?? 'Dirección no disponible',
+                          address:
+                              entrega.direccion ?? 'Dirección no disponible',
                           destinationLatitude: entrega.latitudeDestino,
                           destinationLongitude: entrega.longitudeDestino,
                         ),
@@ -840,11 +837,8 @@ class _EntregaDetalleScreenState extends State<EntregaDetalleScreen> {
             ),
             const SizedBox(height: 16),
           ],
-          // Información general
+          // Información general (incluye fechas y tiempos)
           _InformacionGeneralCard(entrega: entrega),
-          const SizedBox(height: 16),
-          // Fecha y tiempos
-          _FechasCard(entrega: entrega),
           const SizedBox(height: 16),
           // Timeline visual de estados
           /* EntregaTimeline(entrega: entrega),
@@ -956,99 +950,283 @@ class _EstadoCard extends StatelessWidget {
   }
 }
 
-class _InformacionGeneralCard extends StatelessWidget {
+class _InformacionGeneralCard extends StatefulWidget {
   final Entrega entrega;
 
   const _InformacionGeneralCard({Key? key, required this.entrega})
     : super(key: key);
 
   @override
+  State<_InformacionGeneralCard> createState() =>
+      _InformacionGeneralCardState();
+}
+
+class _InformacionGeneralCardState extends State<_InformacionGeneralCard> {
+  bool _expandirDetalles = false;
+
+  @override
   Widget build(BuildContext context) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    final colorScheme = Theme.of(context).colorScheme;
+
     return Card(
-      elevation: 2,
+      elevation: 1,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+      ),
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(12),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              'Información General',
-              style: Theme.of(
-                context,
-              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+            // Encabezado compacto
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Row(
+                  children: [
+                    Icon(
+                      Icons.info_outline,
+                      size: 18,
+                      color: colorScheme.primary,
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      'Detalles de Entrega',
+                      style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                            fontWeight: FontWeight.w600,
+                          ),
+                    ),
+                  ],
+                ),
+                if (widget.entrega.observaciones != null &&
+                    widget.entrega.observaciones!.isNotEmpty)
+                  GestureDetector(
+                    onTap: () {
+                      setState(() {
+                        _expandirDetalles = !_expandirDetalles;
+                      });
+                    },
+                    child: Icon(
+                      _expandirDetalles
+                          ? Icons.expand_less
+                          : Icons.expand_more,
+                      size: 18,
+                      color: colorScheme.primary,
+                    ),
+                  ),
+              ],
             ),
-            const SizedBox(height: 16),
-            _InfoItem(
-              icon: Icons.confirmation_number,
-              label: 'ID Entrega',
-              value: '#${entrega.id} - ${entrega.numeroEntrega}',
+            const SizedBox(height: 12),
+
+            // Grid de información compacta
+            LayoutBuilder(
+              builder: (context, constraints) {
+                // Determinar cantidad de columnas según ancho disponible
+                final numCols = constraints.maxWidth > 500 ? 3 : 2;
+
+                return Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    // ID Entrega
+                    _CompactInfoChip(
+                      icon: Icons.confirmation_number,
+                      label: '#${widget.entrega.id}',
+                      value: widget.entrega.numeroEntrega ?? 'N/A',
+                      isDarkMode: isDarkMode,
+                      colorScheme: colorScheme,
+                    ),
+
+                    // Chofer
+                    if (widget.entrega.chofer != null)
+                      _CompactInfoChip(
+                        icon: Icons.person,
+                        label: 'Chofer',
+                        value: widget.entrega.chofer!.nombreCompleto,
+                        isDarkMode: isDarkMode,
+                        colorScheme: colorScheme,
+                      )
+                    else
+                      _CompactInfoChip(
+                        icon: Icons.person_off,
+                        label: 'Chofer',
+                        value: 'No asignado',
+                        isDarkMode: isDarkMode,
+                        colorScheme: colorScheme,
+                      ),
+
+                    // Vehículo
+                    if (widget.entrega.vehiculo != null)
+                      _CompactInfoChip(
+                        icon: Icons.directions_car,
+                        label: 'Auto',
+                        value: widget.entrega.vehiculo!.placaFormato,
+                        isDarkMode: isDarkMode,
+                        colorScheme: colorScheme,
+                      )
+                    else
+                      _CompactInfoChip(
+                        icon: Icons.directions_car,
+                        label: 'Auto',
+                        value: 'No asignado',
+                        isDarkMode: isDarkMode,
+                        colorScheme: colorScheme,
+                      ),
+
+                    // Capacidad (si existe)
+                    if (widget.entrega.vehiculo != null &&
+                        widget.entrega.vehiculo!.capacidadKg != null)
+                      _CompactInfoChip(
+                        icon: Icons.balance,
+                        label: 'Capacidad',
+                        value:
+                            '${widget.entrega.vehiculo!.capacidadKg.toString()} kg',
+                        isDarkMode: isDarkMode,
+                        colorScheme: colorScheme,
+                      ),
+
+                    // Teléfono del chofer (si existe)
+                    if (widget.entrega.chofer != null &&
+                        widget.entrega.chofer!.telefono != null &&
+                        widget.entrega.chofer!.telefono!.isNotEmpty)
+                      _CompactInfoChip(
+                        icon: Icons.phone,
+                        label: 'Teléfono',
+                        value: widget.entrega.chofer!.telefono ?? 'N/A',
+                        isDarkMode: isDarkMode,
+                        colorScheme: colorScheme,
+                      ),
+                  ],
+                );
+              },
             ),
-            const Divider(),
-            if (entrega.chofer != null)
-              _InfoItem(
-                icon: Icons.local_shipping,
-                label: 'Chofer',
-                value: entrega.chofer!.nombreCompleto,
-              )
-            else if (entrega.choferId != null)
-              _InfoItem(
-                icon: Icons.local_shipping,
-                label: 'Chofer',
-                value: '#${entrega.choferId}',
-              )
-            else
-              _InfoItem(
-                icon: Icons.local_shipping,
-                label: 'Chofer',
-                value: 'No asignado',
+
+            // Sección de Fechas y Tiempos
+            if (widget.entrega.fechaAsignacion != null ||
+                widget.entrega.fechaInicio != null ||
+                widget.entrega.fechaEntrega != null) ...[
+              const SizedBox(height: 16),
+              Divider(
+                color: colorScheme.outline.withValues(alpha: 0.2),
+                height: 1,
               ),
-            if (entrega.chofer != null &&
-                entrega.chofer!.telefono != null &&
-                entrega.chofer!.telefono!.isNotEmpty) ...[
-              const Divider(),
-              _InfoItem(
-                icon: Icons.phone,
-                label: 'Teléfono Chofer',
-                value: entrega.chofer!.telefono ?? 'N/A',
+              const SizedBox(height: 12),
+              Text(
+                'Cronograma',
+                style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                      fontWeight: FontWeight.w600,
+                      color: colorScheme.primary,
+                    ),
+              ),
+              const SizedBox(height: 10),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  if (widget.entrega.fechaAsignacion != null)
+                    _CompactDateChip(
+                      icon: Icons.calendar_today,
+                      label: 'Asignada',
+                      date: widget.entrega.fechaAsignacion!,
+                      isDarkMode: isDarkMode,
+                      colorScheme: colorScheme,
+                    ),
+                  if (widget.entrega.fechaInicio != null)
+                    _CompactDateChip(
+                      icon: Icons.play_circle,
+                      label: 'Inicio',
+                      date: widget.entrega.fechaInicio!,
+                      isDarkMode: isDarkMode,
+                      colorScheme: colorScheme,
+                    ),
+                  if (widget.entrega.fechaEntrega != null)
+                    _CompactDateChip(
+                      icon: Icons.check_circle,
+                      label: 'Entregada',
+                      date: widget.entrega.fechaEntrega!,
+                      isDarkMode: isDarkMode,
+                      colorScheme: colorScheme,
+                      isSuccess: true,
+                    ),
+                ],
               ),
             ],
-            const Divider(),
-            if (entrega.vehiculo != null)
-              _InfoItem(
-                icon: Icons.directions_car,
-                label: 'Vehículo',
-                value:
-                    '${entrega.vehiculo!.placaFormato} - ${entrega.vehiculo!.descripcion}',
-              )
-            else if (entrega.vehiculoId != null)
-              _InfoItem(
-                icon: Icons.directions_car,
-                label: 'Vehículo',
-                value: '#${entrega.vehiculoId}',
-              )
-            else
-              _InfoItem(
-                icon: Icons.directions_car,
-                label: 'Vehículo',
-                value: 'No asignado',
+
+            // Observaciones expandibles
+            if (widget.entrega.observaciones != null &&
+                widget.entrega.observaciones!.isNotEmpty) ...[
+              const SizedBox(height: 12),
+              Divider(
+                color: colorScheme.outline.withValues(alpha: 0.2),
+                height: 1,
               ),
-            if (entrega.vehiculo != null &&
-                entrega.vehiculo!.capacidadKg != null) ...[
-              const Divider(),
-              _InfoItem(
-                icon: Icons.balance,
-                label: 'Capacidad',
-                value: '${entrega.vehiculo!.capacidadKg} kg',
+              const SizedBox(height: 12),
+              GestureDetector(
+                onTap: () {
+                  setState(() {
+                    _expandirDetalles = !_expandirDetalles;
+                  });
+                },
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.notes,
+                          size: 16,
+                          color: colorScheme.primary,
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          'Observaciones',
+                          style: Theme.of(context)
+                              .textTheme
+                              .labelLarge
+                              ?.copyWith(
+                                fontWeight: FontWeight.w600,
+                                color: colorScheme.primary,
+                              ),
+                        ),
+                      ],
+                    ),
+                    Icon(
+                      _expandirDetalles
+                          ? Icons.expand_less
+                          : Icons.expand_more,
+                      size: 18,
+                      color: colorScheme.primary,
+                    ),
+                  ],
+                ),
               ),
-            ],
-            if (entrega.observaciones != null &&
-                entrega.observaciones!.isNotEmpty) ...[
-              const Divider(),
-              _InfoItem(
-                icon: Icons.notes,
-                label: 'Observaciones',
-                value: entrega.observaciones!,
-              ),
+              if (_expandirDetalles) ...[
+                const SizedBox(height: 10),
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: isDarkMode
+                        ? colorScheme.surfaceContainerHigh
+                        : colorScheme.primaryContainer.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                      color: isDarkMode
+                          ? colorScheme.outline.withValues(alpha: 0.2)
+                          : colorScheme.outline.withValues(alpha: 0.1),
+                    ),
+                  ),
+                  child: Text(
+                    widget.entrega.observaciones!,
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: isDarkMode
+                              ? Colors.grey[300]
+                              : Colors.grey[700],
+                        ),
+                  ),
+                ),
+              ],
             ],
           ],
         ),
@@ -1057,66 +1235,174 @@ class _InformacionGeneralCard extends StatelessWidget {
   }
 }
 
-class _FechasCard extends StatelessWidget {
-  final Entrega entrega;
+/// Widget compacto para mostrar información clave
+class _CompactInfoChip extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final String value;
+  final bool isDarkMode;
+  final ColorScheme colorScheme;
 
-  const _FechasCard({Key? key, required this.entrega}) : super(key: key);
+  const _CompactInfoChip({
+    Key? key,
+    required this.icon,
+    required this.label,
+    required this.value,
+    required this.isDarkMode,
+    required this.colorScheme,
+  }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
-    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
-
-    return Card(
-      elevation: 2,
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Fechas y Tiempos',
-              style: Theme.of(
-                context,
-              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 16),
-            if (entrega.fechaAsignacion != null) ...[
-              _InfoItem(
-                icon: Icons.calendar_today,
-                label: 'Asignada',
-                value: entrega.formatFecha(entrega.fechaAsignacion),
-              ),
-              const Divider(),
-            ],
-            if (entrega.fechaInicio != null) ...[
-              _InfoItem(
-                icon: Icons.play_circle,
-                label: 'Inicio de Ruta',
-                value: entrega.formatFecha(entrega.fechaInicio),
-              ),
-              const Divider(),
-            ],
-            if (entrega.fechaEntrega != null) ...[
-              _InfoItem(
-                icon: Icons.check_circle,
-                label: 'Entregado',
-                value: entrega.formatFecha(entrega.fechaEntrega),
-              ),
-            ],
-            if (entrega.fechaAsignacion == null &&
-                entrega.fechaInicio == null &&
-                entrega.fechaEntrega == null)
-              Padding(
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                child: Text(
-                  'Sin fechas registradas',
-                  style: TextStyle(
-                    color: isDarkMode ? Colors.grey[500] : Colors.grey[400],
-                  ),
-                ),
-              ),
-          ],
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      decoration: BoxDecoration(
+        color: isDarkMode
+            ? colorScheme.surface.withValues(alpha: 0.5)
+            : colorScheme.primaryContainer.withValues(alpha: 0.08),
+        border: Border.all(
+          color: isDarkMode
+              ? colorScheme.outline.withValues(alpha: 0.15)
+              : colorScheme.outline.withValues(alpha: 0.1),
         ),
+        borderRadius: BorderRadius.circular(6),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                icon,
+                size: 14,
+                color: colorScheme.primary,
+              ),
+              const SizedBox(width: 4),
+              Text(
+                label,
+                style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                      color: colorScheme.primary,
+                      fontWeight: FontWeight.w500,
+                    ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          Text(
+            value,
+            style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                  fontWeight: FontWeight.w600,
+                  color: isDarkMode ? Colors.grey[100] : Colors.grey[900],
+                ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Widget compacto para mostrar fechas
+class _CompactDateChip extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final DateTime date;
+  final bool isDarkMode;
+  final ColorScheme colorScheme;
+  final bool isSuccess;
+
+  const _CompactDateChip({
+    Key? key,
+    required this.icon,
+    required this.label,
+    required this.date,
+    required this.isDarkMode,
+    required this.colorScheme,
+    this.isSuccess = false,
+  }) : super(key: key);
+
+  String _formatDate(DateTime date) {
+    // Formato: "15 Dic, 14:30"
+    const months = [
+      'Ene',
+      'Feb',
+      'Mar',
+      'Abr',
+      'May',
+      'Jun',
+      'Jul',
+      'Ago',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dic'
+    ];
+    final month = months[date.month - 1];
+    final hour = date.hour.toString().padLeft(2, '0');
+    final minute = date.minute.toString().padLeft(2, '0');
+    return '${date.day} $month, $hour:$minute';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final bgColor = isSuccess
+        ? (isDarkMode ? Colors.green[900] : Colors.green[100])
+        : (isDarkMode
+            ? colorScheme.surface.withValues(alpha: 0.5)
+            : colorScheme.primaryContainer.withValues(alpha: 0.08));
+
+    final borderColor = isSuccess
+        ? (isDarkMode ? Colors.green[600]! : Colors.green[300]!)
+        : (isDarkMode
+            ? colorScheme.outline.withValues(alpha: 0.15)
+            : colorScheme.outline.withValues(alpha: 0.1));
+
+    final accentColor = isSuccess
+        ? (isDarkMode ? Colors.green[400] : Colors.green[700])
+        : colorScheme.primary;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      decoration: BoxDecoration(
+        color: bgColor,
+        border: Border.all(color: borderColor),
+        borderRadius: BorderRadius.circular(6),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                icon,
+                size: 14,
+                color: accentColor,
+              ),
+              const SizedBox(width: 4),
+              Text(
+                label,
+                style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                      color: accentColor,
+                      fontWeight: FontWeight.w500,
+                    ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          Text(
+            _formatDate(date),
+            style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                  fontWeight: FontWeight.w600,
+                  color: isDarkMode ? Colors.grey[100] : Colors.grey[900],
+                  fontSize: 11,
+                ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ],
       ),
     );
   }
@@ -1443,15 +1729,20 @@ class _VentasAsignadasCardState extends State<_VentasAsignadasCard> {
   @override
   Widget build(BuildContext context) {
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
-    final esPreparacion = widget.entrega.estado == 'PREPARACION_CARGA';
-    final esEnCarga = widget.entrega.estado == 'EN_CARGA';
+
+    // ✅ IMPORTANTE: Usar siempre los datos más recientes del provider
+    // para que se actualice el UI cuando se confirme una venta
+    final entregaActual = widget.provider.entregaActual ?? widget.entrega;
+
+    final esPreparacion = entregaActual.estado == 'PREPARACION_CARGA';
+    final esEnCarga = entregaActual.estado == 'EN_CARGA';
     final esModoCarga = esPreparacion || esEnCarga;
 
-    if (widget.entrega.ventas.isEmpty) {
+    if (entregaActual.ventas.isEmpty) {
       return const SizedBox.shrink();
     }
 
-    final totalVentas = widget.entrega.ventas.length;
+    final totalVentas = entregaActual.ventas.length;
     final ventasConfirmadas = _ventasConfirmadas.values.where((v) => v).length;
     final porcentaje = (ventasConfirmadas / totalVentas * 100).toStringAsFixed(
       0,
@@ -1554,18 +1845,30 @@ class _VentasAsignadasCardState extends State<_VentasAsignadasCard> {
             const SizedBox(height: 16),
 
             // Lista de ventas con productos colapsables
+            // ✅ Usar entregaActual para obtener datos más recientes
             ListView.builder(
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
-              itemCount: widget.entrega.ventas.length,
+              itemCount: entregaActual.ventas.length,
               itemBuilder: (context, index) {
-                final venta = widget.entrega.ventas[index];
+                final venta = entregaActual.ventas[index];
                 final confirmada = _ventasConfirmadas[venta.id] ?? false;
                 final cargando = _cargandoVenta[venta.id] ?? false;
 
+                // Determinar color del borde según estado
+                final isEnRuta = venta.estadoLogisticoCodigo == 'EN_RUTA';
+                final borderColor = isEnRuta
+                    ? (isDarkMode ? Colors.green[600]! : Colors.green[200]!)
+                    : (isDarkMode ? Colors.grey[600]! : Colors.grey[300]!);
+                final borderWidth = isEnRuta ? 2.0 : 1.0;
+
                 return Card(
-                  margin: const EdgeInsets.symmetric(vertical: 8),
-                  elevation: 1,
+                  margin: const EdgeInsets.symmetric(vertical: 10),
+                  elevation: isEnRuta ? 3 : 1,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                    side: BorderSide(color: borderColor, width: borderWidth),
+                  ),
                   child: ExpansionTile(
                     leading: esModoCarga
                         ? cargando
@@ -1598,15 +1901,63 @@ class _VentasAsignadasCardState extends State<_VentasAsignadasCard> {
                     title: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          'Venta #${venta.numero}',
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 13,
-                            color: isDarkMode
-                                ? Colors.grey[100]
-                                : Colors.grey[900],
-                          ),
+                        // Título y estado EN_RUTA si aplica
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                'Venta #${venta.numero}',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 13,
+                                  color: isDarkMode
+                                      ? Colors.grey[100]
+                                      : Colors.grey[900],
+                                ),
+                              ),
+                            ),
+                            if (isEnRuta)
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                  vertical: 2,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: isDarkMode
+                                      ? Colors.green[900]
+                                      : Colors.green[100],
+                                  borderRadius: BorderRadius.circular(4),
+                                  border: Border.all(
+                                    color: isDarkMode
+                                        ? Colors.green[600]!
+                                        : Colors.green[400]!,
+                                  ),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(
+                                      Icons.directions_run,
+                                      size: 12,
+                                      color: isDarkMode
+                                          ? Colors.green[400]
+                                          : Colors.green[700],
+                                    ),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      'En Ruta',
+                                      style: TextStyle(
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.bold,
+                                        color: isDarkMode
+                                            ? Colors.green[400]
+                                            : Colors.green[700],
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                          ],
                         ),
                         const SizedBox(height: 8),
                         // Cliente con botones de contacto
@@ -1657,8 +2008,9 @@ class _VentasAsignadasCardState extends State<_VentasAsignadasCard> {
                                   iconSize: 16,
                                   color: Colors.green,
                                   tooltip: 'Llamar',
-                                  onPressed: () =>
-                                      widget.onLlamarCliente(venta.clienteTelefono),
+                                  onPressed: () => widget.onLlamarCliente(
+                                    venta.clienteTelefono,
+                                  ),
                                 ),
                               ),
                               const SizedBox(width: 4),
@@ -1672,18 +2024,19 @@ class _VentasAsignadasCardState extends State<_VentasAsignadasCard> {
                                   iconSize: 16,
                                   color: Colors.green[600],
                                   tooltip: 'WhatsApp',
-                                  onPressed: () =>
-                                      widget.onEnviarWhatsApp(venta.clienteTelefono),
+                                  onPressed: () => widget.onEnviarWhatsApp(
+                                    venta.clienteTelefono,
+                                  ),
                                 ),
                               ),
                             ],
                           ],
                         ),
                         const SizedBox(height: 6),
-                        _buildUbicacionBadge(widget.entrega),
+                        _buildUbicacionBadge(entregaActual),
                       ],
                     ),
-                    trailing: SizedBox(
+                    subtitle: SizedBox(
                       width: 135,
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.end,
@@ -1691,7 +2044,7 @@ class _VentasAsignadasCardState extends State<_VentasAsignadasCard> {
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           Text(
-                            'BS ${venta.total.toStringAsFixed(2)}',
+                            'BS ${venta.subtotal.toStringAsFixed(2)}',
                             style: TextStyle(
                               fontWeight: FontWeight.bold,
                               fontSize: 11,
@@ -1723,7 +2076,7 @@ class _VentasAsignadasCardState extends State<_VentasAsignadasCard> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             // SLA Info para la venta - FASE 6
-                            if (widget.entrega.fechaEntregaComprometida !=
+                            if (entregaActual.fechaEntregaComprometida !=
                                 null) ...[
                               Container(
                                 padding: const EdgeInsets.all(12),
@@ -1763,12 +2116,12 @@ class _VentasAsignadasCardState extends State<_VentasAsignadasCard> {
                                       ],
                                     ),
                                     const SizedBox(height: 8),
-                                    if (widget.entrega.ventanaEntregaIni !=
+                                    if (entregaActual.ventanaEntregaIni !=
                                             null &&
-                                        widget.entrega.ventanaEntregaFin !=
+                                        entregaActual.ventanaEntregaFin !=
                                             null)
                                       Text(
-                                        'Ventana: ${widget.entrega.ventanaEntregaIni!.hour.toString().padLeft(2, '0')}:${widget.entrega.ventanaEntregaIni!.minute.toString().padLeft(2, '0')} - ${widget.entrega.ventanaEntregaFin!.hour.toString().padLeft(2, '0')}:${widget.entrega.ventanaEntregaFin!.minute.toString().padLeft(2, '0')}',
+                                        'Ventana: ${entregaActual.ventanaEntregaIni!.hour.toString().padLeft(2, '0')}:${entregaActual.ventanaEntregaIni!.minute.toString().padLeft(2, '0')} - ${entregaActual.ventanaEntregaFin!.hour.toString().padLeft(2, '0')}:${entregaActual.ventanaEntregaFin!.minute.toString().padLeft(2, '0')}',
                                         style: TextStyle(
                                           fontSize: 12,
                                           color: isDarkMode
@@ -1973,34 +2326,38 @@ class _VentasAsignadasCardState extends State<_VentasAsignadasCard> {
                               ), */
                             ],
                             // Botón de confirmación de entrega para esta venta
+                            // ✅ Solo mostrar si entrega y venta están EN_RUTA
                             const SizedBox(height: 16),
-                            SizedBox(
-                              width: double.infinity,
-                              child: ElevatedButton.icon(
-                                onPressed: () async {
-                                  // Detener tracking de GPS antes de navegar
-                                  await widget.provider.detenerTracking();
-                                  if (context.mounted) {
-                                    Navigator.of(context).pushNamed(
-                                      '/chofer/confirmar-entrega',
-                                      arguments: {
-                                        'entrega_id': widget.entrega.id,
-                                        'venta_id': venta.id,
-                                      },
-                                    );
-                                  }
-                                },
-                                icon: const Icon(Icons.check_circle),
-                                label: const Text('Confirmar Esta Entrega'),
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: Colors.green,
-                                  foregroundColor: Colors.white,
-                                  padding: const EdgeInsets.symmetric(
-                                    vertical: 12,
+                            if (entregaActual.estadoEntregaCodigo ==
+                                    'EN_RUTA' &&
+                                venta.estadoLogisticoCodigo == 'EN_RUTA')
+                              SizedBox(
+                                width: double.infinity,
+                                child: ElevatedButton.icon(
+                                  onPressed: () async {
+                                    // Detener tracking de GPS antes de navegar
+                                    await widget.provider.detenerTracking();
+                                    if (context.mounted) {
+                                      Navigator.of(context).pushNamed(
+                                        '/chofer/confirmar-entrega',
+                                        arguments: {
+                                          'entrega_id': entregaActual.id,
+                                          'venta_id': venta.id,
+                                        },
+                                      );
+                                    }
+                                  },
+                                  icon: const Icon(Icons.check_circle),
+                                  label: const Text('Confirmar Esta Entrega'),
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: Colors.green,
+                                    foregroundColor: Colors.white,
+                                    padding: const EdgeInsets.symmetric(
+                                      vertical: 12,
+                                    ),
                                   ),
                                 ),
                               ),
-                            ),
                           ],
                         ),
                       ),
@@ -2033,7 +2390,7 @@ class _VentasAsignadasCardState extends State<_VentasAsignadasCard> {
             ],
 
             // Resumen de totales
-            if (widget.entrega.ventas.isNotEmpty) ...[
+            if (entregaActual.ventas.isNotEmpty) ...[
               const SizedBox(height: 16),
               Container(
                 padding: const EdgeInsets.all(12),
@@ -2058,7 +2415,7 @@ class _VentasAsignadasCardState extends State<_VentasAsignadasCard> {
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          'BS ${widget.entrega.ventas.fold<double>(0, (sum, v) => sum + v.total).toStringAsFixed(2)}',
+                          'BS ${entregaActual.ventas.fold<double>(0, (sum, v) => sum + v.total).toStringAsFixed(2)}',
                           style: TextStyle(
                             fontWeight: FontWeight.bold,
                             fontSize: 16,
@@ -2083,7 +2440,7 @@ class _VentasAsignadasCardState extends State<_VentasAsignadasCard> {
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          '${widget.entrega.ventas.length}',
+                          '${entregaActual.ventas.length}',
                           style: TextStyle(
                             fontWeight: FontWeight.bold,
                             fontSize: 16,

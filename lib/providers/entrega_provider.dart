@@ -1,6 +1,7 @@
 import 'package:flutter/widgets.dart';
 import 'dart:async';
 import '../models/entrega.dart';
+import '../models/estadisticas_chofer.dart';
 import '../models/ubicacion_tracking.dart';
 import '../models/api_response.dart';
 import '../services/entrega_service.dart';
@@ -31,10 +32,12 @@ class EntregaProvider with ChangeNotifier, EntregaTrackingMixin {
 
   List<Entrega> _entregas = [];
   Entrega? _entregaActual;
+  EstadisticasChofer? _estadisticas; // ✅ NUEVO: Estadísticas del chofer
   List<UbicacionTracking> _ubicaciones = [];
   UbicacionTracking? _ubicacionActual;
   List<EntregaEstadoHistorial> _historialEstados = [];
   int _previousEntregasCount = 0;
+  bool _isFirstLoad = true; // ✅ NUEVO: Evitar notificaciones en primera carga
 
   bool _isLoading = false;
   String? _errorMessage;
@@ -58,6 +61,7 @@ class EntregaProvider with ChangeNotifier, EntregaTrackingMixin {
   // Getters
   List<Entrega> get entregas => _entregas;
   Entrega? get entregaActual => _entregaActual;
+  EstadisticasChofer? get estadisticas => _estadisticas; // ✅ NUEVO: Getter para estadísticas
   List<UbicacionTracking> get ubicaciones => _ubicaciones;
   UbicacionTracking? get ubicacionActual => _ubicacionActual;
   List<EntregaEstadoHistorial> get historialEstados => _historialEstados;
@@ -89,8 +93,10 @@ class EntregaProvider with ChangeNotifier, EntregaTrackingMixin {
       if (response.success && response.data != null) {
         final newEntregas = response.data!;
 
-        // Detectar nuevas entregas y mostrar notificaciones
-        if (newEntregas.length > _previousEntregasCount) {
+        // ✅ OPTIMIZADO: Detectar nuevas entregas y mostrar notificaciones
+        // PERO: No mostrar notificaciones en la PRIMERA carga
+        // Esto evita que lleguen 11 notificaciones de golpe al abrir entregas_asignadas_screen
+        if (!_isFirstLoad && newEntregas.length > _previousEntregasCount) {
           final nuevasEntregas = newEntregas.length - _previousEntregasCount;
           for (int i = 0; i < nuevasEntregas && i < newEntregas.length; i++) {
             final entrega = newEntregas[i];
@@ -104,6 +110,7 @@ class EntregaProvider with ChangeNotifier, EntregaTrackingMixin {
 
         _entregas = newEntregas;
         _previousEntregasCount = newEntregas.length;
+        _isFirstLoad = false; // ✅ Marcar que ya se cargó la primera vez
         _errorMessage = null;
 
         WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -129,6 +136,71 @@ class EntregaProvider with ChangeNotifier, EntregaTrackingMixin {
         notifyListeners();
       });
     }
+  }
+
+  // ✅ NUEVO: Obtener estadísticas rápidas (optimizado para dashboard)
+  Future<bool> obtenerEstadisticas() async {
+    try {
+      debugPrint('📊 [ESTADISTICAS] Iniciando carga de estadísticas');
+
+      final response = await _entregaService.obtenerEstadisticas();
+
+      if (response.success && response.data != null) {
+        _estadisticas = response.data;
+        _errorMessage = null;
+
+        debugPrint(
+          '✅ [ESTADISTICAS] Estadísticas cargadas: ${_estadisticas?.totalEntregas} entregas',
+        );
+        debugPrint(
+          '✅ [ESTADISTICAS] Valores: preparacion=${_estadisticas?.entregasEnPreparacion}, listas=${_estadisticas?.entregasListasEntrega}, ruta=${_estadisticas?.entregasEnRuta}, entregadas=${_estadisticas?.entregasEntregadas}',
+        );
+
+        // ✅ Llamar notifyListeners() directamente SIN postFrameCallback
+        debugPrint('📢 [ESTADISTICAS] Llamando notifyListeners() ahora mismo');
+        notifyListeners();
+        debugPrint('📢 [ESTADISTICAS] notifyListeners() completado');
+
+        // Configurar listener de WebSocket para actualizaciones en tiempo real
+        _setupStatsWebSocketListener();
+
+        return true;
+      } else {
+        _errorMessage = response.message;
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          notifyListeners();
+        });
+        return false;
+      }
+    } catch (e) {
+      _errorMessage = 'Error al obtener estadísticas: ${e.toString()}';
+      debugPrint('❌ [ESTADISTICAS] Error: $_errorMessage');
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        notifyListeners();
+      });
+      return false;
+    }
+  }
+
+  // ✅ NUEVO: Escuchar eventos de WebSocket para actualizaciones de estadísticas
+  void _setupStatsWebSocketListener() {
+    // Escuchar evento de estadísticas actualizadas
+    _webSocketService.on('estadisticas:actualizadas', (data) {
+      debugPrint('📊 [WS_STATS] Evento recibido: $data');
+
+      if (data is Map<String, dynamic>) {
+        // Actualizar estadísticas locales
+        _estadisticas = EstadisticasChofer.fromJson(data);
+
+        debugPrint(
+          '✅ [WS_STATS] Estadísticas actualizadas: ${_estadisticas?.totalEntregas} entregas',
+        );
+
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          notifyListeners();
+        });
+      }
+    });
   }
 
   // Obtener detalle de una entrega
@@ -307,10 +379,8 @@ class EntregaProvider with ChangeNotifier, EntregaTrackingMixin {
     String? firmaBase64,
     List<String>? fotosBase64,
     String? observaciones,
-    // ✅ Contexto de entrega
-    bool? tiendaAbierta,
-    bool? clientePresente,
-    String? motivoRechazo,
+    // ✅ Estado de venta (ENTREGADA o CANCELADA)
+    String? estadoVenta,
     // ✅ FASE 1: Confirmación de Pago
     String? estadoPago,
     double? montoRecibido,
@@ -333,10 +403,8 @@ class EntregaProvider with ChangeNotifier, EntregaTrackingMixin {
         firmaBase64: firmaBase64,
         fotosBase64: fotosBase64,
         observaciones: observaciones,
-        // ✅ Contexto de entrega
-        tiendaAbierta: tiendaAbierta,
-        clientePresente: clientePresente,
-        motivoRechazo: motivoRechazo,
+        // ✅ Estado de venta
+        estadoVenta: estadoVenta,
         // ✅ FASE 1: Pago
         estadoPago: estadoPago,
         montoRecibido: montoRecibido,

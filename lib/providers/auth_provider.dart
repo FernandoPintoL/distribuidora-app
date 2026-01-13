@@ -1,3 +1,4 @@
+import 'package:distribuidora/providers/carrito_provider.dart';
 import 'package:flutter/widgets.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
@@ -50,7 +51,11 @@ class AuthProvider with ChangeNotifier {
     return (diferencia.inSeconds / 60).ceil();
   }
 
-  Future<bool> login(String login, String password) async {
+  Future<bool> login(
+    String login,
+    String password, {
+    CarritoProvider? carritoProvider,
+  }) async {
     _isLoading = true;
     _errorMessage = null;
     notifyListeners();
@@ -70,7 +75,9 @@ class AuthProvider with ChangeNotifier {
         // ✅ NUEVO: Guardar cache TTL desde la respuesta
         _cacheTTL = response.data!.cacheTtl;
         _permissionsUpdatedAt = DateTime.now();
-        debugPrint('✅ Cache TTL guardado: ${_cacheTTL} segundos (${minutosRestantesCache} minutos)');
+        debugPrint(
+          '✅ Cache TTL guardado: ${_cacheTTL} segundos (${minutosRestantesCache} minutos)',
+        );
 
         // ✅ NUEVO: Guardar estadísticas del preventista si existen
         if (response.data!.preventistaStats != null) {
@@ -79,16 +86,55 @@ class AuthProvider with ChangeNotifier {
           await _savePreventistaStats(_preventistaStats!);
           debugPrint('📊 Estadísticas del preventista guardadas');
           debugPrint('   Total clientes: ${_preventistaStats!.totalClientes}');
-          debugPrint('   Clientes activos: ${_preventistaStats!.clientesActivos}');
-          debugPrint('   Clientes inactivos: ${_preventistaStats!.clientesInactivos}');
+          debugPrint(
+            '   Clientes activos: ${_preventistaStats!.clientesActivos}',
+          );
+          debugPrint(
+            '   Clientes inactivos: ${_preventistaStats!.clientesInactivos}',
+          );
           debugPrint('✅ Stats guardados en SharedPreferences');
+        }
+
+        // ✅ NUEVO: Si es cliente logueado, cargar su información en el carrito
+        if (carritoProvider != null &&
+            _user != null &&
+            _user!.roles != null &&
+            _user!.roles!.contains('cliente')) {
+          debugPrint(
+            '👤 Cliente logueado detectado, cargando datos en carritoProvider...',
+          );
+          if (_user!.clienteId != null) {
+            try {
+              final apiService = ApiService();
+              final clientResponse = await apiService.get(
+                '/api/clientes/${_user!.clienteId}',
+              );
+              if (clientResponse.statusCode == 200) {
+                final cliente = Client.fromJson(
+                  clientResponse.data as Map<String, dynamic>,
+                );
+                carritoProvider.setClienteSeleccionado(cliente);
+                debugPrint(
+                  '👤 Cliente logueado cargado en carrito: ${cliente.nombre} (ID: ${cliente.id})',
+                );
+              } else {
+                debugPrint(
+                  '⚠️ Error al cargar cliente: ${clientResponse.statusCode}',
+                );
+              }
+            } catch (e) {
+              debugPrint('⚠️ Error cargando cliente en carrito: $e');
+            }
+          }
         }
 
         // Conectar al WebSocket después de login exitoso
         _connectWebSocket(response.data!.token);
 
         // ✅ NUEVO: Iniciar servicio de background si es chofer
-        if (_user != null && _user!.roles != null && _user!.roles!.contains('chofer')) {
+        if (_user != null &&
+            _user!.roles != null &&
+            _user!.roles!.contains('chofer')) {
           debugPrint('👷 Chofer detectado, iniciando servicio de background');
           await BackgroundNotificationService.startForChofer();
         }
@@ -138,7 +184,9 @@ class AuthProvider with ChangeNotifier {
         // ✅ NUEVO: Guardar cache TTL desde la respuesta
         _cacheTTL = response.data!.cacheTtl;
         _permissionsUpdatedAt = DateTime.now();
-        debugPrint('✅ Cache TTL guardado en registro: ${_cacheTTL} segundos (${minutosRestantesCache} minutos)');
+        debugPrint(
+          '✅ Cache TTL guardado en registro: ${_cacheTTL} segundos (${minutosRestantesCache} minutos)',
+        );
 
         // Conectar al WebSocket después de registro exitoso
         _connectWebSocket(response.data!.token);
@@ -183,11 +231,16 @@ class AuthProvider with ChangeNotifier {
 
         // ✅ NUEVO: Obtener estadísticas desde la respuesta de /user
         final userWithStats = await _authService.getUserWithStats();
-        if (userWithStats != null && userWithStats.containsKey('preventista_stats')) {
+        if (userWithStats != null &&
+            userWithStats.containsKey('preventista_stats')) {
           try {
-            _preventistaStats = PreventistStats.fromJson(userWithStats['preventista_stats']);
+            _preventistaStats = PreventistStats.fromJson(
+              userWithStats['preventista_stats'],
+            );
             debugPrint('📊 PreventistaStats obtenidos desde API /user');
-            debugPrint('   Total clientes: ${_preventistaStats!.totalClientes}');
+            debugPrint(
+              '   Total clientes: ${_preventistaStats!.totalClientes}',
+            );
           } catch (e) {
             debugPrint('❌ Error parseando preventistaStats: $e');
           }
@@ -202,8 +255,12 @@ class AuthProvider with ChangeNotifier {
         }
 
         // ✅ NUEVO: Iniciar servicio de background si es chofer
-        if (_user != null && _user!.roles != null && _user!.roles!.contains('chofer')) {
-          debugPrint('👷 Chofer detectado al cargar usuario, iniciando servicio de background');
+        if (_user != null &&
+            _user!.roles != null &&
+            _user!.roles!.contains('chofer')) {
+          debugPrint(
+            '👷 Chofer detectado al cargar usuario, iniciando servicio de background',
+          );
           await BackgroundNotificationService.startForChofer();
         }
 
@@ -449,7 +506,8 @@ class AuthProvider with ChangeNotifier {
 
     if (_biometricAvailable) {
       _hasFaceRecognition = await _biometricService.hasFaceRecognition();
-      _hasFingerprintRecognition = await _biometricService.hasFingerprintRecognition();
+      _hasFingerprintRecognition = await _biometricService
+          .hasFingerprintRecognition();
 
       debugPrint('✅ Biometría disponible:');
       debugPrint('   - Face ID/Facial: $_hasFaceRecognition');

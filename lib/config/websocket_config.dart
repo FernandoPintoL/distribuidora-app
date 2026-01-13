@@ -54,6 +54,7 @@ class WebSocketConfig {
 
   // Eventos de Entregas/Cargas (flujo de preparación y carga)
   // ✅ Sincronizados con Laravel Broadcast EntregaWebSocketService
+  static const String eventEntregaAsignada = 'entrega:asignada'; // ✅ NUEVO: Entrega consolidada asignada al chofer
   static const String eventEntregaProgramada = 'entrega.programada';
   static const String eventEntregaEnPreparacionCarga = 'entrega.preparacion_carga';
   static const String eventEntregaEnCarga = 'entrega.en_carga';

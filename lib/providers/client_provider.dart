@@ -64,6 +64,8 @@ class ClientProvider with ChangeNotifier {
         active: active,
       );
 
+      debugPrint('🔄 loadClients ${response.data}');
+
       if (response.success && response.data != null) {
         if (append) {
           _clients.addAll(response.data!.data);
@@ -183,24 +185,27 @@ class ClientProvider with ChangeNotifier {
   void loadClientsFromPreventistaStats(PreventistStats stats) {
     try {
       // Convertir ClienteBasico a Client
-      // Nota: Esto crea clientes con datos básicos del login
+      // Nota: Esto crea clientes con datos básicos del login incluyendo crédito
       _clients = stats.clientesParaReactivar
-          .map((clienteBasico) => Client(
-            id: clienteBasico.id,
-            nombre: clienteBasico.nombre,
-            razonSocial: clienteBasico.razonSocial,
-            telefono: clienteBasico.telefono,
-            email: clienteBasico.email,
-            activo: clienteBasico.activo,
-            nit: null,
-            fotoPerfil: null,
-            limiteCredito: null,
-            fechaRegistro: null,
-            localidad: null,
-            direcciones: [],
-            ventanasEntrega: [],
-            categorias: [],
-          ))
+          .map(
+            (clienteBasico) => Client(
+              id: clienteBasico.id,
+              nombre: clienteBasico.nombre,
+              razonSocial: clienteBasico.razonSocial,
+              telefono: clienteBasico.telefono,
+              email: clienteBasico.email,
+              activo: clienteBasico.activo,
+              nit: null,
+              fotoPerfil: null,
+              limiteCredito: clienteBasico.limiteCredito,
+              puedeAtenerCredito: clienteBasico.puedeAtenerCredito,
+              fechaRegistro: null,
+              localidad: null,
+              direcciones: [],
+              ventanasEntrega: [],
+              categorias: [],
+            ),
+          )
           .toList();
 
       _totalItems = stats.totalClientes;
@@ -311,7 +316,7 @@ class ClientProvider with ChangeNotifier {
     double? longitud,
     bool? activo,
     String? observaciones,
-        List<ClientAddress>? direcciones,
+    List<ClientAddress>? direcciones,
     List<VentanaEntregaCliente>? ventanasEntrega,
     List<int>? categoriasIds,
     bool? crearUsuario,

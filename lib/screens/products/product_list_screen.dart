@@ -381,7 +381,33 @@ class _ProductListScreenState extends State<ProductListScreen>
     final colorScheme = context.colorScheme;
     final isDark = context.isDark;
 
+    // ✅ NUEVO: Verificar si el usuario es preventista para mostrar AppBar
+    bool isPreventista = false;
+    try {
+      final authProvider = context.read<AuthProvider>();
+      final userRoles = authProvider.user?.roles ?? [];
+      isPreventista = userRoles.any((role) =>
+          role.toLowerCase() == 'preventista' ||
+          role.toLowerCase() == 'preventista');
+      debugPrint('👤 [ProductListScreen] Roles del usuario: $userRoles, isPreventista: $isPreventista');
+    } catch (e) {
+      debugPrint('❌ [ProductListScreen] Error al verificar rol: $e');
+    }
+
     return Scaffold(
+      appBar: isPreventista
+          ? AppBar(
+              title: const Text('Crear Pedido'),
+              elevation: 0,
+              backgroundColor: colorScheme.surface,
+              foregroundColor: colorScheme.onSurface,
+              centerTitle: false,
+              leading: IconButton(
+                icon: const Icon(Icons.arrow_back),
+                onPressed: () => Navigator.pop(context),
+              ),
+            )
+          : null,
       body: Column(
         children: [
           // Barra de búsqueda moderna

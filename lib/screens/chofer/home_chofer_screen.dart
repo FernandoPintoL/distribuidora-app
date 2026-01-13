@@ -65,9 +65,16 @@ class _HomeChoferScreenState extends BaseHomeScreenState<HomeChoferScreen> {
 
     try {
       final entregaProvider = context.read<EntregaProvider>();
+      final notificationProvider = context.read<NotificationProvider>();
 
-      // Cargar entregas asignadas
-      await entregaProvider.obtenerEntregasAsignadas();
+      // ✅ OPTIMIZADO: Cargar solo estadísticas (ligero y rápido)
+      // Las entregas detalladas se cargarán cuando el usuario abra la pestaña "Entregas"
+      await entregaProvider.obtenerEstadisticas();
+
+      // ✅ OPTIMIZADO: Sincronizar contador de notificaciones al iniciar
+      // Esto evita que las notificaciones se acumulen y lleguen de golpe
+      // Las notificaciones nuevas llegarán gradualmente a través del WebSocket
+      await notificationProvider.loadStats();
     } catch (e) {
       debugPrint('❌ Error cargando datos iniciales: $e');
     }
@@ -162,22 +169,8 @@ class _DashboardTabState extends State<_DashboardTab> {
           ),
           const SizedBox(height: 20),
 
-          // Card de Estadísticas Visuales
-          Consumer<EntregaProvider>(
-            builder: (context, entregaProvider, _) {
-              final totalEntregas = entregaProvider.entregas.length;
-              final entregasCompletadas = entregaProvider.entregas
-                  .where((e) => e.estado == 'ENTREGADO')
-                  .length;
-              final entregasPendientes = totalEntregas - entregasCompletadas;
-
-              return DashboardStatsCard(
-                totalEntregas: totalEntregas,
-                entregasCompletadas: entregasCompletadas,
-                entregasPendientes: entregasPendientes,
-              );
-            },
-          ),
+          // ✅ OPTIMIZADO: Estados principales del chofer (USANDO context.watch)
+          _BuildEstadisticasWidget(),
           const SizedBox(height: 20),
 
           // Botón para mostrar/ocultar mapa
@@ -298,6 +291,213 @@ class _DashboardTabState extends State<_DashboardTab> {
           ),
           const SizedBox(height: 16),
         ],
+      ),
+    );
+  }
+}
+
+// ✅ NUEVO: Widget que usa FutureBuilder + Consumer (MÁS CONFIABLE)
+class _BuildEstadisticasWidget extends StatefulWidget {
+  const _BuildEstadisticasWidget();
+
+  @override
+  State<_BuildEstadisticasWidget> createState() =>
+      _BuildEstadisticasWidgetState();
+}
+
+class _BuildEstadisticasWidgetState extends State<_BuildEstadisticasWidget> {
+  late Future<bool> _future;
+
+  @override
+  void initState() {
+    super.initState();
+    debugPrint('🔄 [_BuildEstadisticasWidget] initState - cargando estadísticas');
+    // Ejecutar obtenerEstadisticas() una sola vez
+    _future = context.read<EntregaProvider>().obtenerEstadisticas();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<bool>(
+      future: _future,
+      builder: (context, snapshot) {
+        // Mostrar las estadísticas actualizadas en tiempo real (con Consumer)
+        return Consumer<EntregaProvider>(
+          builder: (context, entregaProvider, _) {
+            final estadisticas = entregaProvider.estadisticas;
+
+            debugPrint('🔄 [_BuildEstadisticasWidget] Consumer rebuild');
+            debugPrint(
+              '   estadisticas: ${estadisticas != null ? "LOADED (${estadisticas.totalEntregas})" : "NULL"}',
+            );
+
+            if (estadisticas == null) {
+              return Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Text(
+                  'Cargando estadísticas...',
+                  style: Theme.of(context).textTheme.bodyMedium,
+                ),
+              );
+            }
+
+            return Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Estado de Entregas',
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
+                  ),
+                  const SizedBox(height: 12),
+                  // Grid de 2x2 con los 4 estados principales
+                  GridView.count(
+                    crossAxisCount: 2,
+                    mainAxisSpacing: 12,
+                    crossAxisSpacing: 12,
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    children: [
+                      // En Preparación
+                      _BuildEstadoCard(
+                        titulo: 'En Preparación',
+                        cantidad: estadisticas.entregasEnPreparacion,
+                        icono: Icons.inventory_2_outlined,
+                        color: const Color(0xFFFF9800),
+                      ),
+                      // Listo para Entrega
+                      _BuildEstadoCard(
+                        titulo: 'Listo',
+                        cantidad: estadisticas.entregasListasEntrega,
+                        icono: Icons.check_circle_outline,
+                        color: const Color(0xFF4CAF50),
+                      ),
+                      // En Ruta
+                      _BuildEstadoCard(
+                        titulo: 'En Ruta',
+                        cantidad: estadisticas.entregasEnRuta,
+                        icono: Icons.local_shipping_outlined,
+                        color: const Color(0xFF2196F3),
+                      ),
+                      // Entregada
+                      _BuildEstadoCard(
+                        titulo: 'Entregadas',
+                        cantidad: estadisticas.entregasEntregadas,
+                        icono: Icons.done_all_outlined,
+                        color: const Color(0xFF1976D2),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  // Barra de progreso
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(8),
+                    child: LinearProgressIndicator(
+                      value: estadisticas.totalEntregas > 0
+                          ? estadisticas.entregasCompletadas /
+                              estadisticas.totalEntregas
+                          : 0,
+                      minHeight: 8,
+                      backgroundColor:
+                          Colors.grey.withAlpha((0.3 * 255).toInt()),
+                      valueColor: AlwaysStoppedAnimation<Color>(
+                        Colors.blue.shade600,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    '${estadisticas.entregasCompletadas}/${estadisticas.totalEntregas} completadas (${estadisticas.progresoPorcentaje}%)',
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: Colors.grey,
+                        ),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+}
+
+// ✅ Widget helper para mostrar tarjetas de estado
+class _BuildEstadoCard extends StatelessWidget {
+  final String titulo;
+  final int cantidad;
+  final IconData icono;
+  final Color color;
+
+  const _BuildEstadoCard({
+    required this.titulo,
+    required this.cantidad,
+    required this.icono,
+    required this.color,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+
+    return Container(
+      decoration: BoxDecoration(
+        color: isDarkMode ? Colors.grey[900] : Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: color.withAlpha((0.2 * 255).toInt()),
+          width: 2,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: color.withAlpha((0.1 * 255).toInt()),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            // Icono circular
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: color.withAlpha((0.15 * 255).toInt()),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                icono,
+                color: color,
+                size: 28,
+              ),
+            ),
+            const SizedBox(height: 12),
+            // Cantidad (grande)
+            Text(
+              cantidad.toString(),
+              style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: color,
+                  ),
+            ),
+            const SizedBox(height: 4),
+            // Título (pequeño)
+            Text(
+              titulo,
+              textAlign: TextAlign.center,
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: isDarkMode ? Colors.grey[300] : Colors.grey[600],
+                    fontWeight: FontWeight.w500,
+                  ),
+            ),
+          ],
+        ),
       ),
     );
   }

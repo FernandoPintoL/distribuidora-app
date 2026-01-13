@@ -63,8 +63,8 @@ class Product {
         unidadMedida: json['unidad'] != null
             ? UnitMeasure.fromJson(json['unidad'])
             : (json['unidad_medida'] != null
-                ? UnitMeasure.fromJson(json['unidad_medida'])
-                : null),
+                  ? UnitMeasure.fromJson(json['unidad_medida'])
+                  : null),
         activo: json['activo'] ?? true,
         precioCompra: json['precio_compra']?.toDouble(),
         // Map both 'precio_venta' and 'precio' (from list endpoint)
@@ -77,20 +77,22 @@ class Product {
                   .map((i) => ProductImage.fromJson(i))
                   .toList()
             : null,
-        codigosBarra: json['codigos_barra'] != null && json['codigos_barra'] is List
+        codigosBarra:
+            json['codigos_barra'] != null && json['codigos_barra'] is List
             ? List<String>.from(json['codigos_barra'])
             : null,
         // Map stock_principal or create one from cantidad_disponible at root level
         stockPrincipal: json['stock_principal'] != null
             ? StockWarehouse.fromJson(json['stock_principal'])
             : (json['cantidad_disponible'] != null
-                ? StockWarehouse(
-                    almacenId: 3, // Default to almacén 3 (main warehouse)
-                    almacenNombre: 'Principal',
-                    cantidad: (json['cantidad_disponible'] as num?)?.toInt() ?? 0,
-                    cantidadDisponible: json['cantidad_disponible'],
-                  )
-                : null),
+                  ? StockWarehouse(
+                      almacenId: 3, // Default to almacén 3 (main warehouse)
+                      almacenNombre: 'Principal',
+                      cantidad:
+                          (json['cantidad_disponible'] as num?)?.toInt() ?? 0,
+                      cantidadDisponible: json['cantidad_disponible'],
+                    )
+                  : null),
         stockPorAlmacenes: json['stock_por_almacenes'] != null
             ? (json['stock_por_almacenes'] as List)
                   .map((i) => StockWarehouse.fromJson(i))
@@ -98,7 +100,7 @@ class Product {
             : null,
       );
 
-      debugPrint('✅ Product.fromJson - ${product.nombre} (stock: ${product.stockPrincipal?.cantidad})');
+      // debugPrint('✅ Product.fromJson - ${product.nombre} (stock: ${product.stockPrincipal?.cantidad})');
       return product;
     } catch (e) {
       debugPrint('❌ Error parsing Product.fromJson: $e');

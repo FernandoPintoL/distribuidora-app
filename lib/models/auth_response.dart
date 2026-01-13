@@ -44,7 +44,8 @@ class AuthData {
   final List<String>? permissions;
   final int? cacheTtl; // En segundos
   final int? permissionsUpdatedAt; // Unix timestamp
-  final PreventistStats? preventistaStats; // ✅ NUEVO: Estadísticas del preventista
+  final PreventistStats?
+  preventistaStats; // ✅ NUEVO: Estadísticas del preventista
 
   AuthData({
     required this.user,
@@ -151,7 +152,9 @@ class PreventistStats {
       'clientes_inactivos': clientesInactivos,
       'porcentaje_activos': porcentajeActivos,
       'porcentaje_inactivos': porcentajeInactivos,
-      'clientes_para_reactivar': clientesParaReactivar.map((c) => c.toJson()).toList(),
+      'clientes_para_reactivar': clientesParaReactivar
+          .map((c) => c.toJson())
+          .toList(),
       'clientes_para_reactivar_count': clientesParaReactivarCount,
     };
   }
@@ -166,6 +169,8 @@ class ClienteBasico {
   final String? email;
   final String? localidad;
   final bool activo;
+  final double? limiteCredito;
+  final bool puedeAtenerCredito;
 
   ClienteBasico({
     required this.id,
@@ -175,6 +180,8 @@ class ClienteBasico {
     this.email,
     this.localidad,
     required this.activo,
+    this.limiteCredito,
+    this.puedeAtenerCredito = false,
   });
 
   factory ClienteBasico.fromJson(Map<String, dynamic> json) {
@@ -186,6 +193,12 @@ class ClienteBasico {
       email: json['email'],
       localidad: json['localidad'],
       activo: json['activo'] ?? false,
+      limiteCredito: json['limite_credito'] != null
+          ? double.tryParse(json['limite_credito'].toString())
+          : null,
+      // ✅ Aceptar ambas variantes: puede_tener_credito y puede_atener_credito
+      puedeAtenerCredito:
+          json['puede_tener_credito'] ?? json['puede_atener_credito'] ?? false,
     );
   }
 
@@ -198,6 +211,8 @@ class ClienteBasico {
       'email': email,
       'localidad': localidad,
       'activo': activo,
+      'limite_credito': limiteCredito,
+      'puede_tener_credito': puedeAtenerCredito,
     };
   }
 }

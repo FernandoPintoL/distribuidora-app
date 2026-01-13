@@ -26,14 +26,14 @@ void main() async {
   // Initialize SharedPreferences BEFORE any service that uses it
   try {
     await SharedPreferences.getInstance();
-    debugPrint('✅ SharedPreferences initialized');
+    // debugPrint('✅ SharedPreferences initialized');
   } catch (e) {
     debugPrint('⚠️ Error initializing SharedPreferences: $e');
   }
 
   // Load environment variables before initializing services/UI
   await dotenv.load(fileName: ".env");
-  debugPrint('✅ .env loaded');
+  // debugPrint('✅ .env loaded');
 
   final themeProvider = ThemeProvider();
   await themeProvider.init();
@@ -105,9 +105,12 @@ class MyApp extends StatelessWidget {
             '/products': (context) => const ProductListScreen(),
             '/clients': (context) => const ClientListScreen(),
             '/carrito': (context) => const CarritoScreen(),
-            '/carrito-abandonados': (context) => const CarritoAbandonadoListScreen(),
-            '/tipo-entrega-seleccion': (context) => const TipoEntregaSeleccionScreen(),
-            '/direccion-entrega-seleccion': (context) => const DireccionEntregaSeleccionScreen(),
+            '/carrito-abandonados': (context) =>
+                const CarritoAbandonadoListScreen(),
+            '/tipo-entrega-seleccion': (context) =>
+                const TipoEntregaSeleccionScreen(),
+            '/direccion-entrega-seleccion': (context) =>
+                const DireccionEntregaSeleccionScreen(),
             '/mis-pedidos': (context) => const PedidosHistorialScreen(),
             '/mis-direcciones': (context) => const MisDireccionesScreen(),
             '/notifications': (context) => const NotificationsScreen(),
@@ -124,14 +127,16 @@ class MyApp extends StatelessWidget {
               case '/direccion-form':
                 final direccion = settings.arguments as ClientAddress?;
                 return MaterialPageRoute(
-                  builder: (context) => DireccionFormScreen(direccion: direccion),
+                  builder: (context) =>
+                      DireccionFormScreen(direccion: direccion),
                 );
 
               case '/fecha-hora-entrega':
                 // La dirección puede ser null para PICKUP, o ClientAddress para DELIVERY
                 final direccion = settings.arguments as ClientAddress?;
                 return MaterialPageRoute(
-                  builder: (context) => FechaHoraEntregaScreen(direccion: direccion),
+                  builder: (context) =>
+                      FechaHoraEntregaScreen(direccion: direccion),
                 );
 
               case '/resumen-pedido':
@@ -139,18 +144,23 @@ class MyApp extends StatelessWidget {
                 if (args == null) {
                   return MaterialPageRoute(
                     builder: (context) => const Scaffold(
-                      body: Center(child: Text('Error: Parámetros no encontrados')),
+                      body: Center(
+                        child: Text('Error: Parámetros no encontrados'),
+                      ),
                     ),
                   );
                 }
 
                 // Extraer tipoEntrega (requerido)
-                final tipoEntrega = args['tipoEntrega'] as String? ?? 'DELIVERY';
+                final tipoEntrega =
+                    args['tipoEntrega'] as String? ?? 'DELIVERY';
 
                 return MaterialPageRoute(
                   builder: (context) => ResumenPedidoScreen(
                     tipoEntrega: tipoEntrega,
-                    direccion: args['direccion'] as ClientAddress?, // Nullable para PICKUP
+                    direccion:
+                        args['direccion']
+                            as ClientAddress?, // Nullable para PICKUP
                     fechaProgramada: args['fechaProgramada'] as DateTime?,
                     horaInicio: args['horaInicio'] as TimeOfDay?,
                     horaFin: args['horaFin'] as TimeOfDay?,
@@ -176,7 +186,9 @@ class MyApp extends StatelessWidget {
                 if (pedidoId == null) {
                   return MaterialPageRoute(
                     builder: (context) => const Scaffold(
-                      body: Center(child: Text('Error: ID de pedido no encontrado')),
+                      body: Center(
+                        child: Text('Error: ID de pedido no encontrado'),
+                      ),
                     ),
                   );
                 }
@@ -202,12 +214,15 @@ class MyApp extends StatelessWidget {
                 if (entregaId == null) {
                   return MaterialPageRoute(
                     builder: (context) => const Scaffold(
-                      body: Center(child: Text('Error: ID de entrega no encontrado')),
+                      body: Center(
+                        child: Text('Error: ID de entrega no encontrado'),
+                      ),
                     ),
                   );
                 }
                 return MaterialPageRoute(
-                  builder: (context) => EntregaDetalleScreen(entregaId: entregaId),
+                  builder: (context) =>
+                      EntregaDetalleScreen(entregaId: entregaId),
                 );
 
               case '/chofer/confirmar-entrega':
@@ -228,7 +243,9 @@ class MyApp extends StatelessWidget {
                 if (entregaId == null) {
                   return MaterialPageRoute(
                     builder: (context) => const Scaffold(
-                      body: Center(child: Text('Error: ID de entrega no encontrado')),
+                      body: Center(
+                        child: Text('Error: ID de entrega no encontrado'),
+                      ),
                     ),
                   );
                 }
@@ -244,7 +261,9 @@ class MyApp extends StatelessWidget {
                 if (entregaId == null) {
                   return MaterialPageRoute(
                     builder: (context) => const Scaffold(
-                      body: Center(child: Text('Error: ID de entrega no encontrado')),
+                      body: Center(
+                        child: Text('Error: ID de entrega no encontrado'),
+                      ),
                     ),
                   );
                 }
@@ -288,7 +307,7 @@ class _AuthWrapperState extends State<AuthWrapper> with WidgetsBindingObserver {
     if (state == AppLifecycleState.paused) {
       // App se va al fondo - auto-guardar carrito
       debugPrint('📱 App paused - auto-saving cart...');
-      _autoGuardarCarrito();
+      // _autoGuardarCarrito();
     } else if (state == AppLifecycleState.resumed) {
       // App vuelve al frente
       debugPrint('📱 App resumed');
@@ -466,7 +485,9 @@ class _AuthWrapperState extends State<AuthWrapper> with WidgetsBindingObserver {
                                   decoration: BoxDecoration(
                                     borderRadius: BorderRadius.circular(28),
                                     border: Border.all(
-                                      color: colorScheme.primary.withAlpha((0.6 * 255).toInt()),
+                                      color: colorScheme.primary.withAlpha(
+                                        (0.6 * 255).toInt(),
+                                      ),
                                       width: 3,
                                     ),
                                   ),
@@ -482,7 +503,9 @@ class _AuthWrapperState extends State<AuthWrapper> with WidgetsBindingObserver {
                               borderRadius: BorderRadius.circular(18),
                               boxShadow: [
                                 BoxShadow(
-                                  color: colorScheme.primary.withAlpha((0.2 * 255).toInt()),
+                                  color: colorScheme.primary.withAlpha(
+                                    (0.2 * 255).toInt(),
+                                  ),
                                   blurRadius: 20,
                                   spreadRadius: 2,
                                 ),
@@ -524,7 +547,9 @@ class _AuthWrapperState extends State<AuthWrapper> with WidgetsBindingObserver {
                             width: 180,
                             height: 8,
                             child: Container(
-                              color: isDark ? Colors.grey[700] : Colors.grey[200],
+                              color: isDark
+                                  ? Colors.grey[700]
+                                  : Colors.grey[200],
                               child: Align(
                                 alignment: Alignment.centerLeft,
                                 child: FractionallySizedBox(
@@ -533,7 +558,9 @@ class _AuthWrapperState extends State<AuthWrapper> with WidgetsBindingObserver {
                                     decoration: BoxDecoration(
                                       gradient: LinearGradient(
                                         colors: [
-                                          colorScheme.primary.withAlpha((0.6 * 255).toInt()),
+                                          colorScheme.primary.withAlpha(
+                                            (0.6 * 255).toInt(),
+                                          ),
                                           colorScheme.primary,
                                         ],
                                       ),
@@ -591,9 +618,7 @@ class _AuthWrapperState extends State<AuthWrapper> with WidgetsBindingObserver {
         }
 
         // Wrap with Material and ensure it renders
-        return Scaffold(
-          body: screen,
-        );
+        return Scaffold(body: screen);
       },
     );
   }

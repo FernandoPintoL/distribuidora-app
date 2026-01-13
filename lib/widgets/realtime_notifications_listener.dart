@@ -32,6 +32,7 @@ class _RealtimeNotificationsListenerState
   final LocalNotificationService _notificationService = LocalNotificationService();
   StreamSubscription? _proformaSubscription;
   StreamSubscription? _envioSubscription;
+  StreamSubscription? _entregaSubscription; // ✅ NUEVO para entregas consolidadas
 
   @override
   void initState() {
@@ -43,6 +44,7 @@ class _RealtimeNotificationsListenerState
   void dispose() {
     _proformaSubscription?.cancel();
     _envioSubscription?.cancel();
+    _entregaSubscription?.cancel(); // ✅ Cancelar suscripción de entregas
     super.dispose();
   }
 
@@ -88,6 +90,18 @@ class _RealtimeNotificationsListenerState
           break;
         case 'rechazada':
           _mostrarNotificacionEntregaRechazada(data);
+          break;
+      }
+    });
+
+    // ✅ NUEVO: Escuchar eventos de entregas consolidadas
+    _entregaSubscription = _webSocketService.entregaStream.listen((event) {
+      final type = event['type'] as String;
+      final data = event['data'] as Map<String, dynamic>;
+
+      switch (type) {
+        case 'asignada':
+          _mostrarNotificacionEntregaAsignada(data);
           break;
       }
     });
@@ -491,6 +505,75 @@ class _RealtimeNotificationsListenerState
         backgroundColor: Colors.deepOrange,
         duration: const Duration(seconds: 8),
         behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
+
+  /// ✅ NUEVO: Mostrar notificación de entrega consolidada asignada al chofer
+  void _mostrarNotificacionEntregaAsignada(Map<String, dynamic> data) {
+    final entregaId = data['entrega_id'] as int?;
+    final numeroEntrega = data['numero_entrega'] as String?;
+    final pesoKg = data['peso_kg'] as num?;
+    final vehiculoPlaca = data['vehiculo']?['placa'] as String?;
+
+    if (!mounted) return;
+
+    // ✅ Mostrar notificación NATIVA del sistema
+    if (entregaId != null && numeroEntrega != null) {
+      _notificationService.showNewDeliveryNotification(
+        deliveryId: entregaId,
+        clientName: numeroEntrega,
+        address: vehiculoPlaca ?? 'Vehículo asignado',
+      );
+    }
+
+    // ✅ Recargar estadísticas
+    context.read<NotificationProvider>().loadStats();
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            const Icon(Icons.local_shipping, color: Colors.white, size: 24),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Text(
+                    '🚚 ¡Nueva Entrega Asignada!',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                    ),
+                  ),
+                  if (numeroEntrega != null)
+                    Text('Entrega: $numeroEntrega'),
+                  if (pesoKg != null)
+                    Text('Peso: ${pesoKg.toStringAsFixed(1)} kg'),
+                  if (vehiculoPlaca != null)
+                    Text('Vehículo: $vehiculoPlaca'),
+                  const SizedBox(height: 4),
+                  const Text(
+                    'Por favor inicia la carga de mercadería',
+                    style: TextStyle(fontSize: 12),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        backgroundColor: Colors.green,
+        duration: const Duration(seconds: 7),
+        behavior: SnackBarBehavior.floating,
+        action: SnackBarAction(
+          label: 'VER',
+          textColor: Colors.white,
+          onPressed: () {
+            // TODO: Navegar a pantalla de carga de entrega
+          },
+        ),
       ),
     );
   }

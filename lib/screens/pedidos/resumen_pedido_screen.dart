@@ -31,6 +31,16 @@ class ResumenPedidoScreen extends StatefulWidget {
 
 class _ResumenPedidoScreenState extends State<ResumenPedidoScreen> {
   bool _isCreandoPedido = false;
+
+  // ✅ Política de pago (antes era _solicitarCredito)
+  String _politicaPago = 'CONTRA_ENTREGA'; // Default
+
+  // Constantes de políticas
+  static const String POLITICA_ANTICIPADO = 'ANTICIPADO_100';
+  static const String POLITICA_MEDIO_MEDIO = 'MEDIO_MEDIO';
+  static const String POLITICA_CONTRA_ENTREGA = 'CONTRA_ENTREGA';
+  static const String POLITICA_CREDITO = 'CREDITO';
+
   final PedidoService _pedidoService = PedidoService();
 
   // Detectar si es PICKUP o DELIVERY
@@ -38,6 +48,10 @@ class _ResumenPedidoScreenState extends State<ResumenPedidoScreen> {
 
   Future<void> _confirmarPedido() async {
     final carritoProvider = context.read<CarritoProvider>();
+
+    debugPrint(
+      '🚀 cliente cargado ${carritoProvider.getClienteSeleccionadoId()}',
+    );
 
     if (carritoProvider.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -57,10 +71,10 @@ class _ResumenPedidoScreenState extends State<ResumenPedidoScreen> {
       // Obtener items del carrito
       final items = carritoProvider.getItemsParaPedido();
 
-      // Validar que el cliente esté autenticado
+      // Validar que el usuario esté autenticado
       final authProvider = Provider.of<AuthProvider>(context, listen: false);
       if (authProvider.user == null) {
-        throw Exception('Cliente no autenticado');
+        throw Exception('Usuario no autenticado');
       }
 
       // Validación condicional según tipo de entrega
@@ -68,27 +82,126 @@ class _ResumenPedidoScreenState extends State<ResumenPedidoScreen> {
       if (!esPickup) {
         // Para DELIVERY: la dirección es REQUERIDA
         if (widget.direccion == null || widget.direccion!.id == null) {
-          throw Exception('La dirección de entrega es requerida para pedidos de tipo DELIVERY');
+          throw Exception(
+            'La dirección de entrega es requerida para pedidos de tipo DELIVERY',
+          );
         }
         direccionId = widget.direccion!.id;
       }
       // Para PICKUP: direccionId puede ser null
 
-      // Validar que el cliente esté asociado al usuario
-      // IMPORTANTE: Solo clientes pueden crear proformas
-      // Choferes, preventistas y otros roles no tienen cliente_id
-      final clienteId = authProvider.user!.clienteId;
-      if (clienteId == null) {
+      // Determinar si es cliente o preventista y obtener cliente_id para la proforma
+      final clienteIdUsuario = authProvider.user!.clienteId;
+      final carritoClienteId = carritoProvider.getClienteSeleccionadoId();
+
+      late int clienteIdParaPedido;
+      bool esClienteLogueado = false;
+      bool esPreventista = false;
+
+      // Si es cliente logueado (tiene clienteId en su perfil)
+      if (clienteIdUsuario != null) {
+        clienteIdParaPedido = clienteIdUsuario;
+        esClienteLogueado = true;
+        debugPrint('👤 Creador: CLIENTE logueado (ID: $clienteIdUsuario)');
+      }
+      // Si es preventista (no tiene clienteId pero seleccionó un cliente)
+      else if (carritoClienteId != null) {
+        clienteIdParaPedido = carritoClienteId;
+        esPreventista = true;
+        debugPrint(
+          '👨‍💼 Creador: PREVENTISTA para cliente (ID: $carritoClienteId)',
+        );
+      }
+      // Si ninguno de los dos casos se cumple, error
+      else {
         throw Exception(
-          'No tienes permisos para crear pedidos. Solo clientes pueden crear pedidos. '
-          'Si eres un cliente, asegúrate de estar correctamente autenticado.'
+          'No se pudo identificar al cliente. Asegúrate de estar correctamente autenticado.',
         );
       }
 
-      // Crear proforma con tipoEntrega
-      // IMPORTANTE: Usar clienteId, NO userId (que es el user.id)
+      // Obtener el cliente para verificar permisos de crédito
+      // ✅ Dos formas de obtener al cliente según el tipo de usuario:
+      // 1. Si es CLIENTE LOGUEADO: cargar desde API usando clienteId
+      // 2. Si es PREVENTISTA: obtener desde carritoProvider (ya seleccionado)
+      late Client clienteSeleccionado;
+
+      if (esClienteLogueado) {
+        // Para cliente logueado: cargar desde API
+        debugPrint(
+          '👤 Cargando datos del cliente logueado (ID: ${carritoProvider.getClienteSeleccionadoId()})...',
+        );
+      } else if (esPreventista) {
+        // Para preventista: obtener del carrito (ya fue seleccionado)
+        clienteSeleccionado = carritoProvider.getClienteSeleccionado();
+        if (clienteSeleccionado == null) {
+          throw Exception(
+            'No se pudo obtener el cliente seleccionado. Por favor, intenta de nuevo.',
+          );
+        }
+        debugPrint(
+          '👨‍💼 Cliente seleccionado por preventista: ${clienteSeleccionado.nombre} (ID: ${clienteSeleccionado.id})',
+        );
+      } else {
+        throw Exception('No se pudo identificar el tipo de usuario.');
+      }
+
+      // ✅ Validar política de pago seleccionada
+      debugPrint('💳 Política de pago seleccionada: $_politicaPago');
+
+      // Si solicita crédito, validar permisos
+      if (_politicaPago == POLITICA_CREDITO) {
+        debugPrint(
+          '💳 Verificando permisos de crédito para ${clienteSeleccionado.nombre}',
+        );
+        debugPrint('   ID Cliente: ${clienteSeleccionado.id}');
+        debugPrint(
+          '   puedeAtenerCredito: ${clienteSeleccionado.puedeAtenerCredito}',
+        );
+        debugPrint('   limiteCredito: ${clienteSeleccionado.limiteCredito}');
+
+        if (!clienteSeleccionado.puedeAtenerCredito) {
+          debugPrint('⚠️  Cliente NO tiene permisos de crédito');
+
+          // Mostrar advertencia pero permitir que continúe
+          if (!mounted) return;
+          final shouldContinue = await showDialog<bool>(
+            context: context,
+            builder: (BuildContext context) => AlertDialog(
+              title: const Text('Sin Permisos de Crédito'),
+              content: Text(
+                'El cliente "${clienteSeleccionado.nombre}" no tiene permisos para solicitar crédito.\n\n'
+                '¿Deseas continuar con otra forma de pago?',
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context, false),
+                  child: const Text('Volver'),
+                ),
+                TextButton(
+                  onPressed: () => Navigator.pop(context, true),
+                  child: const Text('Continuar'),
+                ),
+              ],
+            ),
+          );
+
+          if (shouldContinue != true) {
+            setState(() {
+              _isCreandoPedido = false;
+            });
+            return;
+          }
+        } else {
+          debugPrint(
+            '✅ Cliente tiene permisos de crédito. Límite: Bs. ${clienteSeleccionado.limiteCredito?.toStringAsFixed(2) ?? 'N/A'}',
+          );
+        }
+      }
+
+      // Crear pedido con tipoEntrega y política de pago
+      // IMPORTANTE: Usar clienteIdParaPedido como cliente_id
       final response = await _pedidoService.crearPedido(
-        clienteId: clienteId,
+        clienteId: clienteIdParaPedido,
         items: items,
         tipoEntrega: widget.tipoEntrega, // DELIVERY o PICKUP
         fechaProgramada: widget.fechaProgramada ?? DateTime.now(),
@@ -96,7 +209,10 @@ class _ResumenPedidoScreenState extends State<ResumenPedidoScreen> {
         horaInicio: widget.horaInicio,
         horaFin: widget.horaFin,
         observaciones: widget.observaciones,
+        politicaPago: _politicaPago, // ✅ Política de pago seleccionada
       );
+
+      debugPrint('✅ Pedido creado - Política de pago: $_politicaPago');
 
       setState(() {
         _isCreandoPedido = false;
@@ -120,9 +236,11 @@ class _ResumenPedidoScreenState extends State<ResumenPedidoScreen> {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text(response.message.isNotEmpty
-                  ? response.message
-                  : 'Error al crear el pedido'),
+              content: Text(
+                response.message.isNotEmpty
+                    ? response.message
+                    : 'Error al crear el pedido',
+              ),
               backgroundColor: Colors.red,
             ),
           );
@@ -146,8 +264,18 @@ class _ResumenPedidoScreenState extends State<ResumenPedidoScreen> {
 
   String _formatearFecha(DateTime fecha) {
     final meses = [
-      'Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun',
-      'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'
+      'Ene',
+      'Feb',
+      'Mar',
+      'Abr',
+      'May',
+      'Jun',
+      'Jul',
+      'Ago',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dic',
     ];
 
     return '${fecha.day} ${meses[fecha.month - 1]} ${fecha.year}';
@@ -220,73 +348,80 @@ class _ResumenPedidoScreenState extends State<ResumenPedidoScreen> {
                       ),
                       const SizedBox(height: 12),
 
-                      ...carrito.items.map((item) => Card(
-                        color: colorScheme.surface,
-                        margin: const EdgeInsets.only(bottom: 8),
-                        child: Padding(
-                          padding: const EdgeInsets.all(12),
-                          child: Row(
-                            children: [
-                              // Imagen del producto
-                              Container(
-                                width: 60,
-                                height: 60,
-                                decoration: BoxDecoration(
-                                  color: colorScheme.surfaceVariant,
-                                  borderRadius: BorderRadius.circular(8),
+                      ...carrito.items.map(
+                        (item) => Card(
+                          color: colorScheme.surface,
+                          margin: const EdgeInsets.only(bottom: 8),
+                          child: Padding(
+                            padding: const EdgeInsets.all(12),
+                            child: Row(
+                              children: [
+                                // Imagen del producto
+                                Container(
+                                  width: 60,
+                                  height: 60,
+                                  decoration: BoxDecoration(
+                                    color: colorScheme.surfaceVariant,
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child:
+                                      item.producto.imagenes != null &&
+                                          item.producto.imagenes!.isNotEmpty
+                                      ? ClipRRect(
+                                          borderRadius: BorderRadius.circular(
+                                            8,
+                                          ),
+                                          child: Image.network(
+                                            item.producto.imagenes!.first.url,
+                                            fit: BoxFit.cover,
+                                            errorBuilder: (_, __, ___) =>
+                                                const Icon(Icons.image),
+                                          ),
+                                        )
+                                      : const Icon(Icons.image, size: 32),
                                 ),
-                                child: item.producto.imagenes != null && item.producto.imagenes!.isNotEmpty
-                                    ? ClipRRect(
-                                        borderRadius: BorderRadius.circular(8),
-                                        child: Image.network(
-                                          item.producto.imagenes!.first.url,
-                                          fit: BoxFit.cover,
-                                          errorBuilder: (_, __, ___) =>
-                                              const Icon(Icons.image),
+
+                                const SizedBox(width: 12),
+
+                                // Información del producto
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        item.producto.nombre,
+                                        style: TextStyle(
+                                          fontWeight: FontWeight.w600,
+                                          color: colorScheme.onSurface,
                                         ),
-                                      )
-                                    : const Icon(Icons.image, size: 32),
-                              ),
-
-                              const SizedBox(width: 12),
-
-                              // Información del producto
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      item.producto.nombre,
-                                      style: TextStyle(
-                                        fontWeight: FontWeight.w600,
-                                        color: colorScheme.onSurface,
                                       ),
-                                    ),
-                                    const SizedBox(height: 4),
-                                    Text(
-                                      'Cantidad: ${item.cantidad}',
-                                      style: TextStyle(
-                                        color: colorScheme.onSurfaceVariant,
-                                        fontSize: 14,
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        'Cantidad: ${item.cantidad}',
+                                        style: TextStyle(
+                                          color: colorScheme.onSurfaceVariant,
+                                          fontSize: 14,
+                                        ),
                                       ),
-                                    ),
-                                  ],
+                                    ],
+                                  ),
                                 ),
-                              ),
 
-                              // Precio
-                              Text(
-                                'Bs. ${item.subtotal.toStringAsFixed(2)}',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 16,
-                                  color: colorScheme.onSurface,
+                                // Precio
+                                Text(
+                                  'Bs. ${item.subtotal.toStringAsFixed(2)}',
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 16,
+                                    color: colorScheme.onSurface,
+                                  ),
                                 ),
-                              ),
-                            ],
+                              ],
+                            ),
                           ),
                         ),
-                      )),
+                      ),
 
                       const SizedBox(height: 24),
 
@@ -316,7 +451,8 @@ class _ResumenPedidoScreenState extends State<ResumenPedidoScreen> {
                                 const SizedBox(width: 12),
                                 Expanded(
                                   child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
                                       Text(
                                         widget.direccion!.direccion,
@@ -335,7 +471,8 @@ class _ResumenPedidoScreenState extends State<ResumenPedidoScreen> {
                                           ),
                                         ),
                                       ],
-                                      if (widget.direccion!.observaciones != null) ...[
+                                      if (widget.direccion!.observaciones !=
+                                          null) ...[
                                         const SizedBox(height: 4),
                                         Text(
                                           'Obs: ${widget.direccion!.observaciones}',
@@ -375,7 +512,9 @@ class _ResumenPedidoScreenState extends State<ResumenPedidoScreen> {
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
                             side: BorderSide(
-                              color: Color(0xFFFFC107).withOpacity(isDark ? 0.4 : 0.3),
+                              color: Color(
+                                0xFFFFC107,
+                              ).withOpacity(isDark ? 0.4 : 0.3),
                               width: 1.5,
                             ),
                           ),
@@ -391,7 +530,8 @@ class _ResumenPedidoScreenState extends State<ResumenPedidoScreen> {
                                 const SizedBox(width: 12),
                                 Expanded(
                                   child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
                                       Text(
                                         'Almacén Principal',
@@ -450,7 +590,9 @@ class _ResumenPedidoScreenState extends State<ResumenPedidoScreen> {
                                       ),
                                       const SizedBox(width: 12),
                                       Text(
-                                        _formatearFecha(widget.fechaProgramada!),
+                                        _formatearFecha(
+                                          widget.fechaProgramada!,
+                                        ),
                                         style: TextStyle(
                                           fontSize: 16,
                                           color: colorScheme.onSurface,
@@ -459,7 +601,8 @@ class _ResumenPedidoScreenState extends State<ResumenPedidoScreen> {
                                     ],
                                   ),
 
-                                if (widget.horaInicio != null || widget.horaFin != null) ...[
+                                if (widget.horaInicio != null ||
+                                    widget.horaFin != null) ...[
                                   const SizedBox(height: 12),
                                   Row(
                                     children: [
@@ -530,6 +673,127 @@ class _ResumenPedidoScreenState extends State<ResumenPedidoScreen> {
                         const SizedBox(height: 24),
                       ],
 
+                      // ✅ Sección de Política de Pago
+                      Consumer<CarritoProvider>(
+                        builder: (context, carritoProvider, _) {
+                          final clienteSeleccionado = carritoProvider
+                              .getClienteSeleccionado();
+
+                          return Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Política de Pago',
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                  color: colorScheme.onSurface,
+                                ),
+                              ),
+                              const SizedBox(height: 12),
+                              Card(
+                                color: colorScheme.surface,
+                                child: Padding(
+                                  padding: const EdgeInsets.all(16),
+                                  child: Column(
+                                    children: [
+                                      // Opción 1: Pago Anticipado 100%
+                                      _buildPoliticaPagoOption(
+                                        context,
+                                        value: POLITICA_ANTICIPADO,
+                                        titulo: 'Pago Anticipado (100%)',
+                                        descripcion:
+                                            'Pagar antes de la preparación del pedido',
+                                        icono: Icons.money,
+                                        colorScheme: colorScheme,
+                                      ),
+                                      const Divider(height: 24),
+
+                                      // Opción 2: Pago Mitad-Mitad
+                                      _buildPoliticaPagoOption(
+                                        context,
+                                        value: POLITICA_MEDIO_MEDIO,
+                                        titulo: 'Pago Mitad-Mitad (50%-50%)',
+                                        descripcion:
+                                            '50% anticipado + 50% contra entrega',
+                                        icono: Icons.balance,
+                                        colorScheme: colorScheme,
+                                      ),
+                                      const Divider(height: 24),
+
+                                      // Opción 3: Contra Entrega
+                                      _buildPoliticaPagoOption(
+                                        context,
+                                        value: POLITICA_CONTRA_ENTREGA,
+                                        titulo: 'Contra Entrega',
+                                        descripcion:
+                                            'Pagar al recibir el pedido',
+                                        icono: Icons.local_shipping,
+                                        colorScheme: colorScheme,
+                                      ),
+                                      const Divider(height: 24),
+
+                                      // Opción 4: Crédito (solo si tiene permisos)
+                                      if (clienteSeleccionado != null &&
+                                          clienteSeleccionado
+                                              .puedeAtenerCredito)
+                                        _buildPoliticaPagoOption(
+                                          context,
+                                          value: POLITICA_CREDITO,
+                                          titulo: 'Solicitar Crédito',
+                                          descripcion:
+                                              'Límite disponible: Bs. ${clienteSeleccionado.limiteCredito?.toStringAsFixed(2) ?? '0.00'}',
+                                          icono: Icons.credit_card,
+                                          color: Colors.green.shade500,
+                                          colorScheme: colorScheme,
+                                        )
+                                      else if (clienteSeleccionado != null)
+                                        Container(
+                                          padding: const EdgeInsets.all(12),
+                                          decoration: BoxDecoration(
+                                            color: Colors.orange.withOpacity(
+                                              isDark ? 0.15 : 0.08,
+                                            ),
+                                            borderRadius: BorderRadius.circular(
+                                              8,
+                                            ),
+                                            border: Border.all(
+                                              color: Colors.orange.withOpacity(
+                                                isDark ? 0.4 : 0.2,
+                                              ),
+                                            ),
+                                          ),
+                                          child: Row(
+                                            children: [
+                                              Icon(
+                                                Icons.info_outline,
+                                                size: 18,
+                                                color: Colors.orange.shade500,
+                                              ),
+                                              const SizedBox(width: 8),
+                                              Expanded(
+                                                child: Text(
+                                                  'El cliente no tiene permisos para solicitar crédito',
+                                                  style: TextStyle(
+                                                    fontSize: 12,
+                                                    color:
+                                                        Colors.orange.shade500,
+                                                  ),
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(height: 24),
+                            ],
+                          );
+                        },
+                      ),
+
                       // Resumen de montos
                       Text(
                         'Resumen',
@@ -548,7 +812,8 @@ class _ResumenPedidoScreenState extends State<ResumenPedidoScreen> {
                           child: Column(
                             children: [
                               Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
                                 children: [
                                   Text(
                                     'Subtotal',
@@ -568,10 +833,13 @@ class _ResumenPedidoScreenState extends State<ResumenPedidoScreen> {
                               ),
                               Divider(
                                 height: 24,
-                                color: colorScheme.outline.withAlpha(isDark ? 80 : 40),
+                                color: colorScheme.outline.withAlpha(
+                                  isDark ? 80 : 40,
+                                ),
                               ),
                               Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
                                 children: [
                                   Text(
                                     'Total',
@@ -648,6 +916,88 @@ class _ResumenPedidoScreenState extends State<ResumenPedidoScreen> {
             ),
           ),
         ),
+      ),
+    );
+  }
+
+  /// ✅ Widget auxiliar para construir opciones de política de pago
+  Widget _buildPoliticaPagoOption(
+    BuildContext context, {
+    required String value,
+    required String titulo,
+    required String descripcion,
+    required IconData icono,
+    Color? color,
+    required ColorScheme colorScheme,
+  }) {
+    final isDark = context.isDark;
+    final isSelected = _politicaPago == value;
+    final displayColor = color ?? colorScheme.primary;
+
+    return GestureDetector(
+      onTap: () {
+        setState(() {
+          _politicaPago = value;
+        });
+      },
+      child: Row(
+        children: [
+          Radio<String>(
+            value: value,
+            groupValue: _politicaPago,
+            onChanged: (newValue) {
+              if (newValue != null) {
+                setState(() {
+                  _politicaPago = newValue;
+                });
+              }
+            },
+            activeColor: displayColor,
+          ),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Row(
+                  children: [
+                    Icon(
+                      icono,
+                      size: 18,
+                      color: isSelected
+                          ? displayColor
+                          : colorScheme.onSurfaceVariant,
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        titulo,
+                        style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w600,
+                          color: isSelected
+                              ? displayColor
+                              : colorScheme.onSurface,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 4),
+                Padding(
+                  padding: const EdgeInsets.only(left: 26),
+                  child: Text(
+                    descripcion,
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }

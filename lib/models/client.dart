@@ -1,3 +1,5 @@
+import 'package:flutter/widgets.dart';
+
 import 'localidad.dart';
 import 'ventana_entrega_cliente.dart';
 import 'categoria_cliente.dart';
@@ -57,10 +59,16 @@ class Client {
   });
 
   factory Client.fromJson(Map<String, dynamic> json) {
+    // debugPrint('🔍 Parsing Client from JSON: $json');
+    debugPrint("limite_credito: ${json['limite_credito']}");
     return Client(
-      id: json['id'] is int ? json['id'] : int.tryParse(json['id'].toString()) ?? 0,
+      id: json['id'] is int
+          ? json['id']
+          : int.tryParse(json['id'].toString()) ?? 0,
       userId: json['user_id'] != null
-          ? (json['user_id'] is int ? json['user_id'] : int.tryParse(json['user_id'].toString()))
+          ? (json['user_id'] is int
+                ? json['user_id']
+                : int.tryParse(json['user_id'].toString()))
           : null,
       nombre: json['nombre'],
       razonSocial: json['razon_social'],
@@ -73,9 +81,13 @@ class Client {
       limiteCredito: json['limite_credito'] != null
           ? double.tryParse(json['limite_credito'].toString()) ?? 0.0
           : null,
-      puedeAtenerCredito: json['puede_atener_credito'] ?? false,
+      // ✅ Aceptar ambas variantes: puede_tener_credito y puede_atener_credito
+      puedeAtenerCredito:
+          json['puede_tener_credito'] ?? json['puede_atener_credito'] ?? false,
       localidadId: json['localidad_id'] != null
-          ? (json['localidad_id'] is int ? json['localidad_id'] : int.tryParse(json['localidad_id'].toString()))
+          ? (json['localidad_id'] is int
+                ? json['localidad_id']
+                : int.tryParse(json['localidad_id'].toString()))
           : null,
       latitud: json['latitud'] != null
           ? double.tryParse(json['latitud'].toString())
@@ -104,13 +116,13 @@ class Client {
           : json['localidad'],
       ventanasEntrega: json['ventanas_entrega'] is List
           ? (json['ventanas_entrega'] as List)
-              .map((v) => VentanaEntregaCliente.fromJson(v))
-              .toList()
+                .map((v) => VentanaEntregaCliente.fromJson(v))
+                .toList()
           : null,
       categorias: json['categorias'] is List
           ? (json['categorias'] as List)
-              .map((c) => CategoriaCliente.fromJson(c))
-              .toList()
+                .map((c) => CategoriaCliente.fromJson(c))
+                .toList()
           : null,
     );
   }
@@ -128,7 +140,7 @@ class Client {
       'fecha_nacimiento': fechaNacimiento,
       'genero': genero, */
       'limite_credito': limiteCredito,
-      'puede_atener_credito': puedeAtenerCredito,
+      'puede_tener_credito': puedeAtenerCredito,
       'localidad_id': localidadId,
       'latitud': latitud,
       'longitud': longitud,
@@ -185,10 +197,14 @@ class ClientAddress {
   factory ClientAddress.fromJson(Map<String, dynamic> json) {
     return ClientAddress(
       id: json['id'] != null
-          ? (json['id'] is int ? json['id'] : int.tryParse(json['id'].toString()))
+          ? (json['id'] is int
+                ? json['id']
+                : int.tryParse(json['id'].toString()))
           : null,
       clienteId: json['cliente_id'] != null
-          ? (json['cliente_id'] is int ? json['cliente_id'] : int.tryParse(json['cliente_id'].toString()))
+          ? (json['cliente_id'] is int
+                ? json['cliente_id']
+                : int.tryParse(json['cliente_id'].toString()))
           : null,
       direccion: json['direccion'],
       observaciones: json['observaciones'],
@@ -202,7 +218,9 @@ class ClientAddress {
           ? double.tryParse(json['longitud'].toString())
           : null,
       localidadId: json['localidad_id'] != null
-          ? (json['localidad_id'] is int ? json['localidad_id'] : int.tryParse(json['localidad_id'].toString()))
+          ? (json['localidad_id'] is int
+                ? json['localidad_id']
+                : int.tryParse(json['localidad_id'].toString()))
           : null,
       localidad: json['localidad'] != null
           ? Localidad.fromJson(json['localidad'])

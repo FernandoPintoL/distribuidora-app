@@ -396,6 +396,19 @@ class WebSocketService {
       _handleEvent(WebSocketConfig.eventRutaDetalleActualizado, data);
     });
 
+    // ✅ NUEVO: Evento de entrega consolidada asignada al chofer
+    _socket!.on(WebSocketConfig.eventEntregaAsignada, (data) {
+      debugPrint('🚚 ENTREGA CONSOLIDADA ASIGNADA: #${data['numero_entrega']}');
+      debugPrint('   Chofer: ${data['chofer']?['nombre'] ?? 'N/A'}');
+      debugPrint('   Vehículo: ${data['vehiculo']?['placa'] ?? 'N/A'}');
+      debugPrint('   Peso Total: ${data['peso_kg']} kg');
+      _entregaController.add({
+        'type': 'asignada',
+        'data': data,
+      });
+      _handleEvent(WebSocketConfig.eventEntregaAsignada, data);
+    });
+
     // Eventos de Entregas/Cargas (flujo de preparación y carga)
     _socket!.on(WebSocketConfig.eventEntregaProgramada, (data) {
       debugPrint('📅 Entrega programada: #${data['numero']}');
