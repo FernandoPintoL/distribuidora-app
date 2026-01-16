@@ -69,6 +69,13 @@ class AppNotification {
         return 'Proforma Rechazada';
       case 'proforma.convertida':
         return '¡Pedido Confirmado!';
+      // ✅ NUEVA FASE 3: Créditos
+      case 'creditos.vencido':
+        return '⚠️ Crédito Vencido';
+      case 'creditos.critico':
+        return '🔴 Crédito Crítico';
+      case 'creditos.pago_registrado':
+        return '✅ Pago Registrado';
       default:
         return 'Notificación';
     }
@@ -106,6 +113,37 @@ class AppNotification {
             ? 'Pedido $ventaNumero confirmado exitosamente'
             : 'Tu pedido ha sido confirmado';
 
+      // ✅ NUEVA FASE 3: Créditos
+      case 'creditos.vencido':
+        final clienteNombre = data['cliente_nombre'] as String?;
+        final diasVencido = data['dias_vencido'] as int?;
+        String msg = clienteNombre ?? 'Tu crédito';
+        msg += ' está vencido';
+        if (diasVencido != null && diasVencido > 0) {
+          msg += ' hace $diasVencido días';
+        }
+        return msg;
+
+      case 'creditos.critico':
+        final clienteNombre = data['cliente_nombre'] as String?;
+        final porcentaje = data['porcentaje_utilizado'] as num?;
+        String msg = clienteNombre ?? 'Tu crédito';
+        if (porcentaje != null) {
+          msg += ' está al ${porcentaje.toStringAsFixed(0)}%';
+        } else {
+          msg += ' está crítico';
+        }
+        return msg;
+
+      case 'creditos.pago_registrado':
+        final clienteNombre = data['cliente_nombre'] as String?;
+        final monto = data['monto'] as num?;
+        String msg = 'Pago de Bs. ${monto?.toStringAsFixed(2) ?? "0.00"}';
+        if (clienteNombre != null) {
+          msg += ' registrado para $clienteNombre';
+        }
+        return msg;
+
       default:
         return 'Nueva notificación';
     }
@@ -122,6 +160,13 @@ class AppNotification {
         return Icons.cancel;
       case 'proforma.convertida':
         return Icons.shopping_cart;
+      // ✅ NUEVA FASE 3: Créditos
+      case 'creditos.vencido':
+        return Icons.warning;
+      case 'creditos.critico':
+        return Icons.error;
+      case 'creditos.pago_registrado':
+        return Icons.check_circle;
       default:
         return Icons.notifications;
     }
@@ -138,6 +183,13 @@ class AppNotification {
         return Colors.blue;
       case 'proforma.creada':
         return Colors.orange;
+      // ✅ NUEVA FASE 3: Créditos
+      case 'creditos.vencido':
+        return Colors.orange;
+      case 'creditos.critico':
+        return Colors.red;
+      case 'creditos.pago_registrado':
+        return Colors.green;
       default:
         return Colors.grey;
     }

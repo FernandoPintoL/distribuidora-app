@@ -9,3 +9,4 @@ export 'entrega_estados_provider.dart';
 export 'notification_provider.dart';
 export 'ruta_provider.dart';
 export 'estados_provider.dart';
+export 'visita_provider.dart';

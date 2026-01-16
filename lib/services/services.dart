@@ -8,3 +8,4 @@ export 'tracking_service.dart';
 export 'websocket_service.dart';
 export 'biometric_auth_service.dart';
 export 'notification_service.dart';
+export 'visita_service.dart';

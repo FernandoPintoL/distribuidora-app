@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:intl/intl.dart';
 import '../../models/models.dart';
 import '../../providers/providers.dart';
 import '../../utils/utils.dart';
@@ -10,6 +11,8 @@ import '../../config/config.dart';
 import '../../services/url_launcher_service.dart';
 import 'client_form_screen.dart';
 import 'direccion_form_screen_for_client.dart';
+import '../chofer/marcar_visita_screen.dart';
+import 'client_map_screen.dart';
 
 class ClientDetailScreen extends StatefulWidget {
   final Client client;
@@ -25,7 +28,9 @@ class _ClientDetailScreenState extends State<ClientDetailScreen>
   late TabController _tabController;
   Client? _client;
   List<ClientAddress>? _addresses;
+  List<VisitaPreventistaCliente>? _visitas;
   bool _isLoading = false;
+  bool _isLoadingVisitas = false;
   late ClientProvider _clientProvider;
 
   @override
@@ -34,9 +39,11 @@ class _ClientDetailScreenState extends State<ClientDetailScreen>
 
     try {
       debugPrint('📱 Initializing ClientDetailScreen state...');
-      debugPrint('📋 Client ID: ${widget.client.id}, Name: ${widget.client.nombre}');
+      debugPrint(
+        '📋 Client ID: ${widget.client.id}, Name: ${widget.client.nombre}',
+      );
 
-      _tabController = TabController(length: 2, vsync: this);
+      _tabController = TabController(length: 3, vsync: this);
       _client = widget.client;
 
       // Agregar listener al TabController para detectar cambios de tab
@@ -49,6 +56,12 @@ class _ClientDetailScreenState extends State<ClientDetailScreen>
         if (_tabController.index == 1 && _addresses == null) {
           debugPrint('🔄 Cargando direcciones por primera vez...');
           _loadDirecciones();
+        }
+
+        // Si cambiamos al tab de visitas (índice 2) y aún no hemos cargado visitas
+        if (_tabController.index == 2 && _visitas == null) {
+          debugPrint('🔄 Cargando visitas por primera vez...');
+          _loadVisitas();
         }
 
         // Usar addPostFrameCallback para evitar setState durante build
@@ -121,7 +134,9 @@ class _ClientDetailScreenState extends State<ClientDetailScreen>
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error al cargar direcciones: ${addressError.toString()}'),
+            content: Text(
+              'Error al cargar direcciones: ${addressError.toString()}',
+            ),
             backgroundColor: Theme.of(context).colorScheme.error,
             duration: const Duration(seconds: 3),
           ),
@@ -131,6 +146,90 @@ class _ClientDetailScreenState extends State<ClientDetailScreen>
       if (mounted) {
         setState(() => _isLoading = false);
         debugPrint('✅ Carga de direcciones finalizada');
+      }
+    }
+  }
+
+  /// Carga las visitas del cliente de forma lazy (solo cuando se necesitan)
+  Future<void> _loadVisitas() async {
+    if (!mounted) {
+      debugPrint('⚠️ Widget no montado, cancelando carga de visitas');
+      return;
+    }
+
+    // Si ya estamos cargando, no hacer nada (evitar llamadas concurrentes)
+    if (_isLoadingVisitas) {
+      debugPrint('⚠️ Ya se está cargando visitas, omitiendo...');
+      return;
+    }
+
+    // Si ya tenemos visitas cargadas, solo continuar si _visitas es null
+    if (_visitas != null) {
+      debugPrint('✅ Visitas ya cargadas, omitiendo...');
+      return;
+    }
+
+    setState(() => _isLoadingVisitas = true);
+
+    try {
+      debugPrint('🔄 Cargando visitas del cliente ID: ${_client!.id}');
+
+      final visitaProvider = context.read<VisitaProvider>();
+
+      // Log antes de la llamada
+      debugPrint(
+        '📤 Llamando a cargarVisitas(refresh: true, clienteId: ${_client!.id})',
+      );
+
+      await visitaProvider.cargarVisitas(refresh: true, clienteId: _client!.id);
+
+      // Verificar si hay error en el provider
+      if (visitaProvider.errorMessage != null) {
+        debugPrint('⚠️ Error del provider: ${visitaProvider.errorMessage}');
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Error: ${visitaProvider.errorMessage}'),
+              backgroundColor: Theme.of(context).colorScheme.error,
+              duration: const Duration(seconds: 4),
+            ),
+          );
+        }
+      }
+
+      _visitas = visitaProvider.visitas;
+
+      // Log detallado después de la llamada
+      debugPrint('✅ Respuesta del provider:');
+      debugPrint('   - Visitas cargadas: ${_visitas?.length ?? 0}');
+      debugPrint('   - isLoading: ${visitaProvider.isLoading}');
+      debugPrint('   - errorMessage: ${visitaProvider.errorMessage}');
+      if (_visitas != null && _visitas!.isNotEmpty) {
+        debugPrint(
+          '   - Primera visita: ${_visitas!.first.id} - ${_visitas!.first.tipoVisita.label}',
+        );
+      } else if (_visitas != null) {
+        debugPrint(
+          '   - La lista de visitas está vacía (posiblemente no hay visitas para este cliente)',
+        );
+      }
+    } catch (visitaError) {
+      debugPrint('❌ Error cargando visitas: $visitaError');
+      _visitas = [];
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error al cargar visitas: ${visitaError.toString()}'),
+            backgroundColor: Theme.of(context).colorScheme.error,
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isLoadingVisitas = false);
+        debugPrint('✅ Carga de visitas finalizada');
       }
     }
   }
@@ -180,7 +279,11 @@ class _ClientDetailScreenState extends State<ClientDetailScreen>
       appBar: CustomGradientAppBar(
         titleWidget: Text(
           _client!.nombre,
-          style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white, fontSize: 18),
+          style: const TextStyle(
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
+            fontSize: 18,
+          ),
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
         ),
@@ -193,47 +296,89 @@ class _ClientDetailScreenState extends State<ClientDetailScreen>
                 // Barra de acciones (Editar/Eliminar)
                 Container(
                   color: Theme.of(context).colorScheme.surface,
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 12,
+                  ),
                   child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    mainAxisSize: MainAxisSize.min,
                     children: [
-                      // Espacio vacío a la izquierda para balance
-                      const SizedBox(width: 48),
-                      // Botones de acción
-                      Row(
-                        children: [
-                          Tooltip(
-                            message: 'Editar cliente',
-                            child: ElevatedButton.icon(
-                              onPressed: () => _navigateToEditClient(),
-                              icon: const Icon(Icons.edit, size: 18),
-                              label: const Text('Editar'),
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Theme.of(context).colorScheme.primary,
-                                foregroundColor: Theme.of(context).colorScheme.onPrimary,
-                                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                                elevation: 2,
-                              ),
+                      Tooltip(
+                        message: 'Editar cliente',
+                        child: ElevatedButton.icon(
+                          onPressed: () => _navigateToEditClient(),
+                          icon: const Icon(Icons.edit, size: 18),
+                          label: const Text('Editar'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Theme.of(
+                              context,
+                            ).colorScheme.primary,
+                            foregroundColor: Theme.of(
+                              context,
+                            ).colorScheme.onPrimary,
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 12,
                             ),
+                            elevation: 2,
                           ),
-                          const SizedBox(width: 12),
-                          Tooltip(
-                            message: 'Eliminar cliente',
-                            child: ElevatedButton.icon(
-                              onPressed: _showDeleteDialog,
-                              icon: const Icon(Icons.delete, size: 18),
-                              label: const Text('Eliminar'),
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Theme.of(context).colorScheme.error,
-                                foregroundColor: Theme.of(context).colorScheme.onError,
-                                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                                elevation: 2,
-                              ),
-                            ),
-                          ),
-                        ],
+                        ),
                       ),
-                      const SizedBox(width: 48),
+                      const SizedBox(width: 12),
+                      // Mostrar botón Ver en Mapa solo en tab de Direcciones
+                      if (_tabController.index == 1)
+                        Tooltip(
+                          message: 'Ver ubicaciones en mapa',
+                          child: ElevatedButton.icon(
+                            onPressed: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) =>
+                                      ClientMapScreen(client: _client!),
+                                ),
+                              );
+                            },
+                            icon: const Icon(Icons.map, size: 18),
+                            label: const Text('Ver en Mapa'),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Theme.of(
+                                context,
+                              ).colorScheme.secondary,
+                              foregroundColor: Theme.of(
+                                context,
+                              ).colorScheme.onSecondary,
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                                vertical: 12,
+                              ),
+                              elevation: 2,
+                            ),
+                          ),
+                        ),
+                      if (_tabController.index == 1) const SizedBox(width: 12),
+                      Tooltip(
+                        message: 'Eliminar cliente',
+                        child: ElevatedButton.icon(
+                          onPressed: _showDeleteDialog,
+                          icon: const Icon(Icons.delete, size: 18),
+                          label: const Text('Eliminar'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Theme.of(
+                              context,
+                            ).colorScheme.error,
+                            foregroundColor: Theme.of(
+                              context,
+                            ).colorScheme.onError,
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 12,
+                            ),
+                            elevation: 2,
+                          ),
+                        ),
+                      ),
                     ],
                   ),
                 ),
@@ -248,13 +393,25 @@ class _ClientDetailScreenState extends State<ClientDetailScreen>
                   child: TabBar(
                     controller: _tabController,
                     labelColor: Theme.of(context).colorScheme.primary,
-                    unselectedLabelColor: Theme.of(context).colorScheme.onSurfaceVariant,
+                    unselectedLabelColor: Theme.of(
+                      context,
+                    ).colorScheme.onSurfaceVariant,
                     indicatorColor: Theme.of(context).colorScheme.primary,
                     indicatorWeight: 3,
-                    labelStyle: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+                    labelStyle: const TextStyle(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 14,
+                    ),
                     tabs: const [
-                      Tab(text: 'Información', icon: Icon(Icons.info_outline, size: 20)),
-                      Tab(text: 'Direcciones', icon: Icon(Icons.location_on_outlined, size: 20)),
+                      Tab(
+                        text: 'Información',
+                        icon: Icon(Icons.info_outline, size: 20),
+                      ),
+                      Tab(
+                        text: 'Direcciones',
+                        icon: Icon(Icons.location_on_outlined, size: 20),
+                      ),
+                      Tab(text: 'Visitas', icon: Icon(Icons.history, size: 20)),
                     ],
                   ),
                 ),
@@ -265,6 +422,7 @@ class _ClientDetailScreenState extends State<ClientDetailScreen>
                     children: [
                       _buildInfoTab(),
                       _buildDireccionesTab(),
+                      _buildVisitasTab(),
                     ],
                   ),
                 ),
@@ -286,10 +444,7 @@ class _ClientDetailScreenState extends State<ClientDetailScreen>
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(16),
         gradient: LinearGradient(
-          colors: [
-            colorScheme.primary,
-            colorScheme.primary.withOpacity(0.8),
-          ],
+          colors: [colorScheme.primary, colorScheme.primary.withOpacity(0.8)],
         ),
         boxShadow: [
           BoxShadow(
@@ -337,7 +492,9 @@ class _ClientDetailScreenState extends State<ClientDetailScreen>
                       shape: BoxShape.circle,
                       boxShadow: [
                         BoxShadow(
-                          color: Theme.of(context).colorScheme.shadow.withOpacity(0.2),
+                          color: Theme.of(
+                            context,
+                          ).colorScheme.shadow.withOpacity(0.2),
                           blurRadius: 15,
                           offset: const Offset(0, 8),
                         ),
@@ -353,7 +510,9 @@ class _ClientDetailScreenState extends State<ClientDetailScreen>
                       gradient: LinearGradient(
                         colors: [
                           Theme.of(context).colorScheme.primary,
-                          Theme.of(context).colorScheme.primary.withOpacity(0.7),
+                          Theme.of(
+                            context,
+                          ).colorScheme.primary.withOpacity(0.7),
                           Theme.of(context).colorScheme.primaryContainer,
                         ],
                         begin: Alignment.topLeft,
@@ -371,7 +530,9 @@ class _ClientDetailScreenState extends State<ClientDetailScreen>
                           padding: const EdgeInsets.all(2),
                           child: CircleAvatar(
                             radius: 58,
-                            backgroundColor: Theme.of(context).colorScheme.primaryContainer,
+                            backgroundColor: Theme.of(
+                              context,
+                            ).colorScheme.primaryContainer,
                             child: _buildSafeProfileImage(),
                           ),
                         ),
@@ -385,7 +546,9 @@ class _ClientDetailScreenState extends State<ClientDetailScreen>
                       height: 128,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        color: Theme.of(context).colorScheme.shadow.withOpacity(0.3),
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.shadow.withOpacity(0.3),
                       ),
                       child: Icon(
                         Icons.hourglass_empty,
@@ -418,7 +581,7 @@ class _ClientDetailScreenState extends State<ClientDetailScreen>
             _buildInfoRow('Activo', _client!.activo ? 'Sí' : 'No'),
           ]),
           const SizedBox(height: 16),
-          if (_hasValidCoordinates()) _buildMapCard(),
+          // if (_hasValidCoordinates()) _buildMapCard(),
           const SizedBox(height: 16),
           if (_client!.categorias != null && _client!.categorias!.isNotEmpty)
             _buildInfoCard('Categorías', [
@@ -429,9 +592,13 @@ class _ClientDetailScreenState extends State<ClientDetailScreen>
                     .map(
                       (c) => Chip(
                         label: Text(c.nombre ?? c.clave ?? 'Categoría'),
-                        backgroundColor: Theme.of(context).colorScheme.primaryContainer,
+                        backgroundColor: Theme.of(
+                          context,
+                        ).colorScheme.primaryContainer,
                         side: BorderSide(
-                          color: Theme.of(context).colorScheme.outline.withOpacity(0.3),
+                          color: Theme.of(
+                            context,
+                          ).colorScheme.outline.withOpacity(0.3),
                         ),
                       ),
                     )
@@ -440,7 +607,7 @@ class _ClientDetailScreenState extends State<ClientDetailScreen>
             ]),
           if (_client!.ventanasEntrega != null &&
               _client!.ventanasEntrega!.isNotEmpty)
-            _buildInfoCard('Ventanas de entrega', [
+            _buildInfoCard('Días de visitas', [
               Column(
                 children: _client!.ventanasEntrega!
                     .map((v) => _buildDeliveryWindowRow(v))
@@ -657,10 +824,12 @@ class _ClientDetailScreenState extends State<ClientDetailScreen>
   String _getClientAddressString() {
     // Primero intentar usar dirección del cliente principal
     if (_client!.direcciones != null && _client!.direcciones!.isNotEmpty) {
-      final principalAddress = _client!.direcciones!.cast<ClientAddress?>().firstWhere(
-        (address) => address?.esPrincipal == true,
-        orElse: () => null,
-      );
+      final principalAddress = _client!.direcciones!
+          .cast<ClientAddress?>()
+          .firstWhere(
+            (address) => address?.esPrincipal == true,
+            orElse: () => null,
+          );
 
       if (principalAddress != null) {
         return principalAddress.direccion;
@@ -910,7 +1079,9 @@ class _ClientDetailScreenState extends State<ClientDetailScreen>
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('❌ No se pudo realizar la llamada. Intenta de nuevo o verifica el número.'),
+          content: Text(
+            '❌ No se pudo realizar la llamada. Intenta de nuevo o verifica el número.',
+          ),
           duration: Duration(seconds: 3),
         ),
       );
@@ -933,22 +1104,14 @@ class _ClientDetailScreenState extends State<ClientDetailScreen>
   Widget _buildSafeProfileImage() {
     try {
       if (_client?.fotoPerfil == null || _client!.fotoPerfil!.isEmpty) {
-        return const Icon(
-          Icons.person,
-          size: 58,
-          color: Colors.green,
-        );
+        return const Icon(Icons.person, size: 58, color: Colors.green);
       }
       return _buildProfileImage(_client!.fotoPerfil!);
     } catch (e, stackTrace) {
       debugPrint('❌ Error crítico al construir imagen de perfil: $e');
       debugPrint('Stack trace: $stackTrace');
       // En caso de cualquier error, mostrar el ícono por defecto
-      return const Icon(
-        Icons.person,
-        size: 58,
-        color: Colors.green,
-      );
+      return const Icon(Icons.person, size: 58, color: Colors.green);
     }
   }
 
@@ -1012,11 +1175,7 @@ class _ClientDetailScreenState extends State<ClientDetailScreen>
         color: Colors.green.shade50,
         borderRadius: BorderRadius.circular(56),
       ),
-      child: const Icon(
-        Icons.person_outline,
-        size: 56,
-        color: Colors.green,
-      ),
+      child: const Icon(Icons.person_outline, size: 56, color: Colors.green),
     );
   }
 
@@ -1084,6 +1243,8 @@ class _ClientDetailScreenState extends State<ClientDetailScreen>
   }
 
   Widget _buildDireccionesTab() {
+    final colorScheme = Theme.of(context).colorScheme;
+
     // Si aún no hemos intentado cargar las direcciones
     if (_addresses == null) {
       return Center(
@@ -1095,7 +1256,7 @@ class _ClientDetailScreenState extends State<ClientDetailScreen>
             Text(
               'Cargando direcciones...',
               style: TextStyle(
-                color: Colors.grey.shade600,
+                color: colorScheme.onSurface.withOpacity(0.6),
                 fontSize: 14,
               ),
             ),
@@ -1121,7 +1282,1181 @@ class _ClientDetailScreenState extends State<ClientDetailScreen>
     );
   }
 
+  Widget _buildVisitasTab() {
+    // Si aún no hemos intentado cargar las visitas
+    if (_visitas == null) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const CircularProgressIndicator(),
+            const SizedBox(height: 16),
+            Text(
+              'Cargando visitas...',
+              style: TextStyle(color: Colors.grey.shade600, fontSize: 14),
+            ),
+          ],
+        ),
+      );
+    }
+
+    // Verificar si hay ventanas_entrega configuradas
+    final tieneVentanasEntrega = _client?.ventanasEntrega?.isNotEmpty ?? false;
+
+    // Si no hay ventanas y no hay visitas
+    if (!tieneVentanasEntrega && _visitas!.isEmpty) {
+      return _buildEmptyVisitasState();
+    }
+
+    return RefreshIndicator(
+      onRefresh: () async {
+        setState(() => _visitas = null);
+        await _loadVisitas();
+      },
+      child: ListView(
+        padding: const EdgeInsets.all(16),
+        children: [
+          // Sección de plan de visitas de ESTA SEMANA (SIEMPRE mostrar si hay ventanas)
+          if (tieneVentanasEntrega) _buildPlanSemanal(),
+
+          // Si no hay ventanas pero hay visitas, mostrar solo historial
+          if (!tieneVentanasEntrega && _visitas!.isNotEmpty) ...[
+            Padding(
+              padding: const EdgeInsets.only(bottom: 16),
+              child: Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.primary.withOpacity(0.2),
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.primary.withOpacity(0.15),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Icon(
+                        Icons.info_outline,
+                        color: Theme.of(context).colorScheme.primary,
+                        size: 20,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        'No hay días de visita programados para este cliente',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Theme.of(context).colorScheme.onSurface,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+
+          // Separador solo si hay ventanas y visitas
+          if (tieneVentanasEntrega && _visitas!.isNotEmpty) ...[
+            const SizedBox(height: 24),
+            Container(
+              height: 1,
+              color: Theme.of(context).dividerColor,
+              margin: const EdgeInsets.symmetric(vertical: 8),
+            ),
+            const SizedBox(height: 16),
+          ],
+
+          // Título del historial (solo si hay visitas)
+          if (_visitas!.isNotEmpty) ...[
+            Padding(
+              padding: const EdgeInsets.only(bottom: 16),
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.primary.withOpacity(0.15),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Icon(
+                      Icons.history,
+                      color: Theme.of(context).colorScheme.primary,
+                      size: 20,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Text(
+                    'Historial Completo de Visitas',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: Theme.of(context).colorScheme.onSurface,
+                    ),
+                  ),
+                  const Spacer(),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.primary.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.primary.withOpacity(0.2),
+                      ),
+                    ),
+                    child: Text(
+                      '${_visitas!.length}',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                        color: Theme.of(context).colorScheme.primary,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            // Historial de todas las visitas
+            ..._visitas!.map((visita) => _buildVisitaCard(visita)),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildResumenCumplimiento(
+    int visitasCumplidas,
+    int visitasProgramadas,
+    int porcentajeCumplimiento,
+    List<String> diasVisitados,
+    List<String> diasPendientes,
+  ) {
+    final cumplido = porcentajeCumplimiento >= 100;
+    final alerta = porcentajeCumplimiento < 50 && visitasProgramadas > 0;
+    final color = cumplido
+        ? Colors.green
+        : alerta
+        ? Colors.red
+        : Colors.orange;
+
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: color.withOpacity(0.3), width: 1.5),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Barra de progreso y porcentaje
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Cumplimiento Semanal',
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  color: color,
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 4,
+                ),
+                decoration: BoxDecoration(
+                  color: color.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  '$porcentajeCumplimiento%',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                    color: color,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+
+          // Barra de progreso
+          ClipRRect(
+            borderRadius: BorderRadius.circular(6),
+            child: LinearProgressIndicator(
+              value: visitasProgramadas > 0
+                  ? visitasCumplidas / visitasProgramadas
+                  : 0,
+              minHeight: 6,
+              backgroundColor: color.withOpacity(0.2),
+              valueColor: AlwaysStoppedAnimation<Color>(color),
+            ),
+          ),
+          const SizedBox(height: 10),
+
+          // Estadísticas
+          Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      '$visitasCumplidas de $visitasProgramadas días',
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.grey.shade800,
+                      ),
+                    ),
+                    Text(
+                      'visitados esta semana',
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: Colors.grey.shade600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+
+          // Alerta si hay días pendientes
+          if (diasPendientes.isNotEmpty) ...[
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: Colors.orange.shade50,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.info_outline,
+                        size: 16,
+                        color: Colors.orange.shade700,
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Días pendientes:',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.orange.shade700,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 6),
+                  ...diasPendientes.map((dia) {
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 4),
+                      child: Text(
+                        '• $dia',
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: Colors.orange.shade700,
+                        ),
+                      ),
+                    );
+                  }),
+                ],
+              ),
+            ),
+          ],
+
+          // Resumen de visitados
+          if (diasVisitados.isNotEmpty) ...[
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: Colors.green.shade50,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.check_circle_outline,
+                        size: 16,
+                        color: Colors.green.shade700,
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Visitados:',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.green.shade700,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 6),
+                  Wrap(
+                    spacing: 6,
+                    runSpacing: 4,
+                    children: diasVisitados.map((dia) {
+                      return Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.green.shade100,
+                          borderRadius: BorderRadius.circular(6),
+                          border: Border.all(color: Colors.green.shade300),
+                        ),
+                        child: Text(
+                          dia,
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w500,
+                            color: Colors.green.shade700,
+                          ),
+                        ),
+                      );
+                    }).toList(),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPlanSemanal() {
+    final colorScheme = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    final days = [
+      'Domingo',
+      'Lunes',
+      'Martes',
+      'Miércoles',
+      'Jueves',
+      'Viernes',
+      'Sábado',
+    ];
+
+    // Obtener información de la semana actual
+    final ahora = DateTime.now();
+    final inicioSemana = ahora.subtract(Duration(days: ahora.weekday % 7));
+    final finSemana = inicioSemana.add(const Duration(days: 6));
+
+    debugPrint(
+      '📅 Semana actual: ${inicioSemana.toLocal().toIso8601String()} a ${finSemana.toLocal().toIso8601String()}',
+    );
+
+    // Obtener días visitados EN ESTA SEMANA
+    final ventanasActivas = _client!.ventanasEntrega!
+        .where((v) => v.activo)
+        .toList();
+
+    // Mapeo: para cada ventana, encontrar si hay visita exitosa ESTA SEMANA
+    final Map<int, VisitaPreventistaCliente?> visitasPorDia = {};
+
+    for (final ventana in ventanasActivas) {
+      // Buscar visita exitosa para este día EN ESTA SEMANA
+      final visita = _visitas!.where((visita) {
+        final visitDate = visita.fechaHoraVisita;
+        final visitDayIndex = visitDate.weekday % 7;
+
+        // Verificar que sea:
+        // 1. El día correcto (lunes, martes, etc.)
+        // 2. Esta semana (entre inicioSemana y finSemana)
+        // 3. Estado exitoso
+        final esEseDia = visitDayIndex == ventana.diaSemana;
+        final esEsaSemana =
+            visitDate.isAfter(inicioSemana) &&
+            visitDate.isBefore(finSemana.add(const Duration(days: 1)));
+        final esExitoso =
+            visita.estadoVisita == EstadoVisitaPreventista.EXITOSA;
+
+        return esEseDia && esEsaSemana && esExitoso;
+      }).firstOrNull;
+
+      if (visita != null) {
+        debugPrint('   ✓ Visitado el día ${ventana.diaSemana} esta semana');
+      } else {
+        debugPrint('   ✗ Pendiente el día ${ventana.diaSemana} esta semana');
+      }
+
+      visitasPorDia[ventana.diaSemana] = visita;
+    }
+
+    // Calcular cumplimiento
+    int visitasCumplidas = visitasPorDia.values.where((v) => v != null).length;
+    int visitasProgramadas = ventanasActivas.length;
+    final porcentajeCumplimiento = visitasProgramadas > 0
+        ? ((visitasCumplidas / visitasProgramadas) * 100).toInt()
+        : 0;
+
+    final cumplido = porcentajeCumplimiento >= 100;
+    final alerta = porcentajeCumplimiento < 50 && visitasProgramadas > 0;
+    final color = cumplido
+        ? Colors.green
+        : alerta
+        ? Colors.red
+        : Colors.orange;
+
+    // Ordenar ventanas por día de semana
+    final ventanasOrdenadas = [...ventanasActivas]
+      ..sort((a, b) => a.diaSemana.compareTo(b.diaSemana));
+
+    return Column(
+      children: [
+        // Encabezado con título
+        Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: colorScheme.primary.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: colorScheme.primary.withOpacity(0.2)),
+          ),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: colorScheme.primary.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Icon(
+                  Icons.event_repeat,
+                  color: colorScheme.primary,
+                  size: 20,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Plan de Visitas - Esta Semana',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: colorScheme.onSurface,
+                      ),
+                    ),
+                    Text(
+                      'Cumplimiento: $visitasCumplidas de $visitasProgramadas días',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: colorScheme.onSurface.withOpacity(0.6),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 8,
+                ),
+                decoration: BoxDecoration(
+                  color: color.withOpacity(isDark ? 0.3 : 0.2),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  '$porcentajeCumplimiento%',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: color,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 16),
+
+        // Barra de progreso
+        ClipRRect(
+          borderRadius: BorderRadius.circular(8),
+          child: LinearProgressIndicator(
+            value: visitasProgramadas > 0
+                ? visitasCumplidas / visitasProgramadas
+                : 0,
+            minHeight: 10,
+            backgroundColor: isDark
+                ? Colors.grey.shade700
+                : Colors.grey.shade200,
+            valueColor: AlwaysStoppedAnimation<Color>(color),
+          ),
+        ),
+        const SizedBox(height: 20),
+
+        // Botón para marcar nueva visita
+        SizedBox(
+          width: double.infinity,
+          child: ElevatedButton.icon(
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => MarcarVisitaScreen(cliente: _client!),
+                ),
+              ).then((_) {
+                // Al volver, recargar las visitas
+                setState(() => _visitas = null);
+                _loadVisitas();
+              });
+            },
+            icon: const Icon(Icons.add_location),
+            label: const Text('Marcar Nueva Visita'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: colorScheme.primary,
+              foregroundColor: colorScheme.onPrimary,
+              padding: const EdgeInsets.symmetric(vertical: 12),
+            ),
+          ),
+        ),
+        const SizedBox(height: 20),
+
+        // Lista de días de esta semana
+        ...ventanasOrdenadas.map((ventana) {
+          final visita = visitasPorDia[ventana.diaSemana];
+          final visitado = visita != null;
+          final dateFormat = DateFormat('dd/MM/yyyy HH:mm');
+
+          // Colores adaptativos para modo oscuro
+          final bgColor = isDark
+              ? (visitado
+                    ? Colors.green.withOpacity(0.15)
+                    : Colors.orange.withOpacity(0.15))
+              : (visitado ? Colors.green.shade50 : Colors.orange.shade50);
+
+          final borderColor = isDark
+              ? (visitado
+                    ? Colors.green.withOpacity(0.4)
+                    : Colors.orange.withOpacity(0.4))
+              : (visitado ? Colors.green.shade200 : Colors.orange.shade200);
+
+          final statusBgColor = isDark
+              ? (visitado
+                    ? Colors.green.withOpacity(0.25)
+                    : Colors.orange.withOpacity(0.25))
+              : (visitado ? Colors.green.shade100 : Colors.orange.shade100);
+
+          final statusTextColor = isDark
+              ? (visitado ? Colors.green.shade300 : Colors.orange.shade300)
+              : (visitado ? Colors.green.shade700 : Colors.orange.shade700);
+
+          final detailBgColor = isDark
+              ? colorScheme.surface
+              : Colors.white.withOpacity(0.7);
+
+          return Container(
+            margin: const EdgeInsets.only(bottom: 10),
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: bgColor,
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: borderColor, width: 1),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      width: 40,
+                      height: 40,
+                      decoration: BoxDecoration(
+                        color: visitado ? Colors.green : Colors.orange,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Center(
+                        child: Icon(
+                          visitado ? Icons.check_circle : Icons.schedule,
+                          color: Colors.white,
+                          size: 20,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                days[ventana.diaSemana],
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.bold,
+                                  color: colorScheme.onSurface,
+                                ),
+                              ),
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                  vertical: 4,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: statusBgColor,
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: Text(
+                                  visitado ? 'Visitado' : 'Pendiente',
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.bold,
+                                    color: statusTextColor,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            '${ventana.horaInicio} - ${ventana.horaFin}',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: colorScheme.onSurface.withOpacity(0.6),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                if (visitado && visita != null) ...[
+                  const SizedBox(height: 10),
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: detailBgColor,
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.calendar_today,
+                              size: 14,
+                              color: visitado
+                                  ? Colors.green
+                                  : colorScheme.primary,
+                            ),
+                            const SizedBox(width: 6),
+                            Expanded(
+                              child: Text(
+                                'Visitado: ${dateFormat.format(visita.fechaHoraVisita)}',
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  color: colorScheme.onSurface,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        if (visita.tipoVisita != null) ...[
+                          const SizedBox(height: 4),
+                          Row(
+                            children: [
+                              Icon(
+                                _getTipoVisitaIcon(visita.tipoVisita),
+                                size: 14,
+                                color: colorScheme.primary,
+                              ),
+                              const SizedBox(width: 6),
+                              Expanded(
+                                child: Text(
+                                  'Tipo: ${visita.tipoVisita.label}',
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    color: colorScheme.onSurface.withOpacity(
+                                      0.7,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          );
+        }),
+      ],
+    );
+  }
+
+  Widget _buildVentanasEntregaSection() {
+    final days = [
+      'Domingo',
+      'Lunes',
+      'Martes',
+      'Miércoles',
+      'Jueves',
+      'Viernes',
+      'Sábado',
+    ];
+
+    // Obtener días visitados en esta semana
+    final ventanasActivas = _client!.ventanasEntrega!
+        .where((v) => v.activo)
+        .toList();
+
+    // Mapeo: para cada ventana, encontrar si hay visita exitosa
+    final Map<int, VisitaPreventistaCliente?> visitasPorDia = {};
+
+    debugPrint(
+      '🔍 Buscando visitas para ${ventanasActivas.length} días programados',
+    );
+    debugPrint('📊 Total de visitas cargadas: ${_visitas!.length}');
+
+    for (final ventana in ventanasActivas) {
+      // Buscar visita exitosa para este día
+      // Nota: En BD, dia_semana es 0=domingo a 6=sábado
+      // En Dart, DateTime.weekday es 1=lunes a 7=domingo
+      // Entonces weekday % 7 convierte a: 0=domingo, 1=lunes, ..., 6=sábado ✓
+      final visita = _visitas!.where((visita) {
+        final visitDate = visita.fechaHoraVisita;
+        final visitDayIndex = visitDate.weekday % 7;
+        return visitDayIndex == ventana.diaSemana &&
+            visita.estadoVisita == EstadoVisitaPreventista.EXITOSA;
+      }).firstOrNull;
+
+      if (visita != null) {
+        debugPrint(
+          '   ✓ Encontrada visita para día ${ventana.diaSemana}: ${visita.fechaHoraVisita.toLocal()}',
+        );
+      } else {
+        debugPrint(
+          '   ✗ Sin visita exitosa para día programado ${ventana.diaSemana}',
+        );
+      }
+
+      visitasPorDia[ventana.diaSemana] = visita;
+    }
+
+    // Calcular estadísticas
+    int visitasCumplidas = visitasPorDia.values.where((v) => v != null).length;
+    int visitasProgramadas = ventanasActivas.length;
+    final porcentajeCumplimiento = visitasProgramadas > 0
+        ? ((visitasCumplidas / visitasProgramadas) * 100).toInt()
+        : 0;
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 20),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(16),
+        gradient: LinearGradient(
+          colors: [Colors.blue.shade50, Colors.purple.shade50],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        border: Border.all(color: Colors.blue.shade200, width: 1),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.blue.withOpacity(0.1),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Título
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.blue.shade100,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Icon(
+                  Icons.calendar_month,
+                  color: Colors.blue.shade600,
+                  size: 20,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Text(
+                'Días Programados para Visita',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.blue.shade900,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+
+          // Tarjeta de Resumen de Cumplimiento
+          _buildResumenVisitasCliente(ventanasActivas, visitasPorDia, days),
+          const SizedBox(height: 16),
+
+          // Leyenda
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.5),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 12,
+                        height: 12,
+                        decoration: BoxDecoration(
+                          color: Colors.green.shade100,
+                          border: Border.all(color: Colors.green.shade400),
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      const Text('Visitado', style: TextStyle(fontSize: 12)),
+                    ],
+                  ),
+                ),
+                Expanded(
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 12,
+                        height: 12,
+                        decoration: BoxDecoration(
+                          color: Colors.orange.shade100,
+                          border: Border.all(color: Colors.orange.shade400),
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      const Text('Pendiente', style: TextStyle(fontSize: 12)),
+                    ],
+                  ),
+                ),
+                Expanded(
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 12,
+                        height: 12,
+                        decoration: BoxDecoration(
+                          color: Colors.grey.shade200,
+                          border: Border.all(color: Colors.grey.shade300),
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      const Text('No prog.', style: TextStyle(fontSize: 12)),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildResumenVisitasCliente(
+    List<VentanaEntregaCliente> ventanasActivas,
+    Map<int, VisitaPreventistaCliente?> visitasPorDia,
+    List<String> days,
+  ) {
+    // Calcular estadísticas
+    int visitasCumplidas = visitasPorDia.values.where((v) => v != null).length;
+    int visitasProgramadas = ventanasActivas.length;
+    final porcentajeCumplimiento = visitasProgramadas > 0
+        ? ((visitasCumplidas / visitasProgramadas) * 100).toInt()
+        : 0;
+
+    final cumplido = porcentajeCumplimiento >= 100;
+    final alerta = porcentajeCumplimiento < 50 && visitasProgramadas > 0;
+    final color = cumplido
+        ? Colors.green
+        : alerta
+        ? Colors.red
+        : Colors.orange;
+
+    // Ordenar ventanas por día de semana
+    final ventanasOrdenadas = [...ventanasActivas]
+      ..sort((a, b) => a.diaSemana.compareTo(b.diaSemana));
+
+    return Column(
+      children: [
+        // Título
+        Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Colors.blue.shade100,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Icon(
+                Icons.calendar_month,
+                color: Colors.blue.shade600,
+                size: 20,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Plan de Visitas',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.blue.shade900,
+                    ),
+                  ),
+                  Text(
+                    'Cumplimiento: $visitasCumplidas de $visitasProgramadas días ($porcentajeCumplimiento%)',
+                    style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                  ),
+                ],
+              ),
+            ),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              decoration: BoxDecoration(
+                color: color.withOpacity(0.2),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Text(
+                '$porcentajeCumplimiento%',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: color,
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 16),
+
+        // Barra de progreso
+        ClipRRect(
+          borderRadius: BorderRadius.circular(8),
+          child: LinearProgressIndicator(
+            value: visitasProgramadas > 0
+                ? visitasCumplidas / visitasProgramadas
+                : 0,
+            minHeight: 10,
+            backgroundColor: Colors.grey.shade200,
+            valueColor: AlwaysStoppedAnimation<Color>(color),
+          ),
+        ),
+        const SizedBox(height: 20),
+
+        // Lista de días - ENFOQUE PRINCIPAL
+        ...ventanasOrdenadas.map((ventana) {
+          final visita = visitasPorDia[ventana.diaSemana];
+          final visitado = visita != null;
+          final dateFormat = DateFormat('dd/MM/yyyy HH:mm');
+
+          return Container(
+            margin: const EdgeInsets.only(bottom: 10),
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: visitado ? Colors.green.shade50 : Colors.orange.shade50,
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(
+                color: visitado
+                    ? Colors.green.shade200
+                    : Colors.orange.shade200,
+                width: 1,
+              ),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      width: 40,
+                      height: 40,
+                      decoration: BoxDecoration(
+                        color: visitado ? Colors.green : Colors.orange,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Center(
+                        child: Icon(
+                          visitado ? Icons.check_circle : Icons.schedule,
+                          color: Colors.white,
+                          size: 20,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                days[ventana.diaSemana],
+                                style: const TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                  vertical: 4,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: visitado
+                                      ? Colors.green.shade100
+                                      : Colors.orange.shade100,
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: Text(
+                                  visitado ? 'Visitado' : 'Pendiente',
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.bold,
+                                    color: visitado
+                                        ? Colors.green.shade700
+                                        : Colors.orange.shade700,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            '${ventana.horaInicio} - ${ventana.horaFin}',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.grey.shade600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                if (visitado && visita != null) ...[
+                  const SizedBox(height: 10),
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.7),
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.calendar_today,
+                              size: 14,
+                              color: Colors.green.shade600,
+                            ),
+                            const SizedBox(width: 6),
+                            Text(
+                              'Visitado: ${dateFormat.format(visita.fechaHoraVisita)}',
+                              style: TextStyle(
+                                fontSize: 11,
+                                color: Colors.green.shade700,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
+                        ),
+                        if (visita.tipoVisita != null) ...[
+                          const SizedBox(height: 4),
+                          Row(
+                            children: [
+                              Icon(
+                                _getTipoVisitaIcon(visita.tipoVisita),
+                                size: 14,
+                                color: Colors.blue.shade600,
+                              ),
+                              const SizedBox(width: 6),
+                              Text(
+                                'Tipo: ${visita.tipoVisita.label}',
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  color: Colors.blue.shade700,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          );
+        }),
+      ],
+    );
+  }
+
   Widget _buildEmptyDireccionesState() {
+    final colorScheme = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(24.0),
@@ -1131,14 +2466,15 @@ class _ClientDetailScreenState extends State<ClientDetailScreen>
             Icon(
               Icons.location_off,
               size: 80,
-              color: Colors.grey.shade300,
+              color: colorScheme.onSurface.withOpacity(0.2),
             ),
             const SizedBox(height: 24),
-            const Text(
+            Text(
               'No hay direcciones registradas',
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.w500,
+                color: colorScheme.onSurface,
               ),
             ),
             const SizedBox(height: 8),
@@ -1146,7 +2482,7 @@ class _ClientDetailScreenState extends State<ClientDetailScreen>
               'Agrega la primera dirección para este cliente',
               style: TextStyle(
                 fontSize: 14,
-                color: Colors.grey.shade600,
+                color: colorScheme.onSurface.withOpacity(0.6),
               ),
               textAlign: TextAlign.center,
             ),
@@ -1160,6 +2496,8 @@ class _ClientDetailScreenState extends State<ClientDetailScreen>
                   horizontal: 32,
                   vertical: 16,
                 ),
+                backgroundColor: colorScheme.primary,
+                foregroundColor: colorScheme.onPrimary,
               ),
             ),
           ],
@@ -1168,28 +2506,113 @@ class _ClientDetailScreenState extends State<ClientDetailScreen>
     );
   }
 
+  Widget _buildEmptyVisitasState() {
+    final tieneVentanasEntrega = _client?.ventanasEntrega?.isNotEmpty ?? false;
+    final diasProgramados =
+        _client?.ventanasEntrega?.where((v) => v.activo).length ?? 0;
+
+    return RefreshIndicator(
+      onRefresh: () async {
+        setState(() => _visitas = null);
+        await _loadVisitas();
+      },
+      child: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24.0),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.assignment_outlined,
+                size: 80,
+                color: Colors.grey.shade300,
+              ),
+              const SizedBox(height: 24),
+              const Text(
+                'No hay visitas registradas',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w500),
+              ),
+              const SizedBox(height: 8),
+              if (tieneVentanasEntrega)
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: Column(
+                    children: [
+                      Text(
+                        'Este cliente tiene $diasProgramados día(s) de visita programado(s), pero aún no hay registros de visitas.',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Colors.grey.shade600,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 16),
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: Colors.orange.shade50,
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: Colors.orange.shade200),
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(
+                              Icons.info_outline,
+                              color: Colors.orange.shade600,
+                              size: 20,
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Text(
+                                'El preventista aún no ha registrado visitas para este cliente en los días programados.',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.orange.shade700,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                )
+              else
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: Text(
+                    'No hay visitas registradas y no hay días de visita programados para este cliente.',
+                    style: TextStyle(fontSize: 14, color: Colors.grey.shade600),
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _buildDireccionCard(ClientAddress direccion) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(16),
-        gradient: LinearGradient(
-          colors: [Colors.white, Colors.grey.shade50],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
+        color: isDark ? colorScheme.surface : Colors.white,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.08),
+            color: isDark
+                ? Colors.black.withOpacity(0.3)
+                : Colors.black.withOpacity(0.08),
             blurRadius: 12,
             offset: const Offset(0, 4),
           ),
         ],
         border: direccion.esPrincipal
-            ? Border.all(
-                color: Colors.green.shade300,
-                width: 2,
-              )
+            ? Border.all(color: Colors.green.shade400, width: 2)
             : null,
       ),
       child: Material(
@@ -1208,18 +2631,17 @@ class _ClientDetailScreenState extends State<ClientDetailScreen>
                     Container(
                       padding: const EdgeInsets.all(10),
                       decoration: BoxDecoration(
-                        gradient: direccion.esPrincipal
-                            ? LinearGradient(
-                                colors: [Colors.green.shade400, Colors.green.shade600],
-                              )
-                            : LinearGradient(
-                                colors: [Colors.grey.shade300, Colors.grey.shade400],
-                              ),
+                        color: direccion.esPrincipal
+                            ? Colors.green
+                            : colorScheme.primary,
                         borderRadius: BorderRadius.circular(12),
                         boxShadow: [
                           BoxShadow(
-                            color: (direccion.esPrincipal ? Colors.green : Colors.grey)
-                                .withOpacity(0.3),
+                            color:
+                                (direccion.esPrincipal
+                                        ? Colors.green
+                                        : colorScheme.primary)
+                                    .withOpacity(0.3),
                             blurRadius: 6,
                             offset: const Offset(0, 3),
                           ),
@@ -1235,10 +2657,10 @@ class _ClientDetailScreenState extends State<ClientDetailScreen>
                     Expanded(
                       child: Text(
                         direccion.direccion,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w600,
-                          color: Colors.black87,
+                          color: colorScheme.onSurface,
                         ),
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
@@ -1251,9 +2673,7 @@ class _ClientDetailScreenState extends State<ClientDetailScreen>
                           vertical: 6,
                         ),
                         decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            colors: [Colors.green.shade400, Colors.green.shade600],
-                          ),
+                          color: Colors.green,
                           borderRadius: BorderRadius.circular(12),
                           boxShadow: [
                             BoxShadow(
@@ -1266,7 +2686,11 @@ class _ClientDetailScreenState extends State<ClientDetailScreen>
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Icon(Icons.star, size: 12, color: Colors.white),
+                            const Icon(
+                              Icons.star,
+                              size: 12,
+                              color: Colors.white,
+                            ),
                             const SizedBox(width: 4),
                             Text(
                               'Principal',
@@ -1286,87 +2710,92 @@ class _ClientDetailScreenState extends State<ClientDetailScreen>
                 // Detalles de ubicación
                 if (direccion.ciudad != null || direccion.departamento != null)
                   Padding(
-                  padding: const EdgeInsets.only(bottom: 8),
-                  child: Row(
-                    children: [
-                      Icon(Icons.map, size: 16, color: Colors.grey.shade600),
-                      const SizedBox(width: 8),
-                      Text(
-                        [
-                          if (direccion.ciudad != null) direccion.ciudad,
-                          if (direccion.departamento != null)
-                            direccion.departamento,
-                        ].join(', '),
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: Colors.grey.shade700,
+                    padding: const EdgeInsets.only(bottom: 8),
+                    child: Row(
+                      children: [
+                        Icon(Icons.map, size: 16, color: colorScheme.primary),
+                        const SizedBox(width: 8),
+                        Text(
+                          [
+                            if (direccion.ciudad != null) direccion.ciudad,
+                            if (direccion.departamento != null)
+                              direccion.departamento,
+                          ].join(', '),
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: colorScheme.onSurface.withOpacity(0.8),
+                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
-                ),
 
                 // Coordenadas GPS
                 if (direccion.latitud != null && direccion.longitud != null)
                   Padding(
-                  padding: const EdgeInsets.only(bottom: 8),
-                  child: Row(
-                    children: [
-                      Icon(Icons.gps_fixed,
-                          size: 16, color: Colors.grey.shade600),
-                      const SizedBox(width: 8),
-                      Text(
-                        'GPS: ${direccion.latitud!.toStringAsFixed(6)}, ${direccion.longitud!.toStringAsFixed(6)}',
-                        style: TextStyle(
-                          fontSize: 13,
-                          color: Colors.grey.shade600,
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      InkWell(
-                        onTap: () => _abrirEnMaps(
-                            direccion.latitud!, direccion.longitud!),
-                        child: Icon(
-                          Icons.open_in_new,
+                    padding: const EdgeInsets.only(bottom: 8),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.gps_fixed,
                           size: 16,
-                          color: Colors.blue.shade600,
+                          color: colorScheme.primary,
                         ),
-                      ),
-                    ],
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            'GPS: ${direccion.latitud!.toStringAsFixed(6)}, ${direccion.longitud!.toStringAsFixed(6)}',
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: colorScheme.onSurface.withOpacity(0.7),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        InkWell(
+                          onTap: () => _abrirEnMaps(
+                            direccion.latitud!,
+                            direccion.longitud!,
+                          ),
+                          child: Icon(
+                            Icons.open_in_new,
+                            size: 16,
+                            color: colorScheme.primary,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                ),
 
                 // Observaciones
                 if (direccion.observaciones != null &&
                     direccion.observaciones!.isNotEmpty)
                   Padding(
-                  padding: const EdgeInsets.only(bottom: 8),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Icon(Icons.notes, size: 16, color: Colors.grey.shade600),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          direccion.observaciones!,
-                          style: TextStyle(
-                            fontSize: 13,
-                            color: Colors.grey.shade600,
-                            fontStyle: FontStyle.italic,
+                    padding: const EdgeInsets.only(bottom: 8),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Icon(Icons.notes, size: 16, color: colorScheme.primary),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            direccion.observaciones!,
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: colorScheme.onSurface.withOpacity(0.7),
+                            ),
                           ),
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
-                ),
 
-                const Divider(height: 24),
+                Divider(height: 24, color: Theme.of(context).dividerColor),
 
                 // Acciones
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.end,
+                Wrap(
+                  alignment: WrapAlignment.end,
+                  spacing: 8,
                   children: [
                     if (!direccion.esPrincipal)
                       TextButton.icon(
@@ -1374,23 +2803,22 @@ class _ClientDetailScreenState extends State<ClientDetailScreen>
                         icon: const Icon(Icons.star_border, size: 18),
                         label: const Text('Marcar como principal'),
                         style: TextButton.styleFrom(
-                          foregroundColor: Theme.of(context).primaryColor,
+                          foregroundColor: colorScheme.primary,
                         ),
                       ),
-                    const SizedBox(width: 8),
                     TextButton.icon(
                       onPressed: () => _editarDireccion(direccion),
                       icon: const Icon(Icons.edit, size: 18),
                       label: const Text('Editar'),
+                      style: TextButton.styleFrom(
+                        foregroundColor: colorScheme.primary,
+                      ),
                     ),
-                    const SizedBox(width: 8),
                     TextButton.icon(
                       onPressed: () => _eliminarDireccion(direccion),
                       icon: const Icon(Icons.delete_outline, size: 18),
                       label: const Text('Eliminar'),
-                      style: TextButton.styleFrom(
-                        foregroundColor: Colors.red,
-                      ),
+                      style: TextButton.styleFrom(foregroundColor: Colors.red),
                     ),
                   ],
                 ),
@@ -1408,9 +2836,8 @@ class _ClientDetailScreenState extends State<ClientDetailScreen>
     final result = await Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => DireccionFormScreenForClient(
-          clientId: _client!.id,
-        ),
+        builder: (context) =>
+            DireccionFormScreenForClient(clientId: _client!.id),
       ),
     );
 
@@ -1573,14 +3000,331 @@ class _ClientDetailScreenState extends State<ClientDetailScreen>
   }
 
   Future<void> _abrirEnMaps(double lat, double lng) async {
-    final url =
-        'https://www.google.com/maps/search/?api=1&query=$lat,$lng';
+    final url = 'https://www.google.com/maps/search/?api=1&query=$lat,$lng';
     if (await canLaunchUrl(Uri.parse(url))) {
-      await launchUrl(
-        Uri.parse(url),
-        mode: LaunchMode.externalApplication,
-      );
+      await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
     }
+  }
+
+  Widget _buildVisitaCard(VisitaPreventistaCliente visita) {
+    final dateFormat = DateFormat('dd/MM/yyyy HH:mm');
+    final colorScheme = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(16),
+        color: isDark ? colorScheme.surface : Colors.white,
+        boxShadow: [
+          BoxShadow(
+            color: isDark
+                ? Colors.black.withOpacity(0.3)
+                : Colors.black.withOpacity(0.08),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Header: Fecha y Estado
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: colorScheme.primary,
+                          borderRadius: BorderRadius.circular(12),
+                          boxShadow: [
+                            BoxShadow(
+                              color: colorScheme.primary.withOpacity(0.3),
+                              blurRadius: 6,
+                              offset: const Offset(0, 3),
+                            ),
+                          ],
+                        ),
+                        child: Icon(
+                          Icons.calendar_today,
+                          color: colorScheme.onPrimary,
+                          size: 20,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Text(
+                        dateFormat.format(visita.fechaHoraVisita),
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: colorScheme.onSurface,
+                        ),
+                      ),
+                    ],
+                  ),
+                  _buildEstadoBadge(visita.estadoVisita),
+                ],
+              ),
+              const SizedBox(height: 16),
+
+              // Tipo de visita
+              Row(
+                children: [
+                  Icon(
+                    _getTipoVisitaIcon(visita.tipoVisita),
+                    size: 18,
+                    color: colorScheme.onSurface.withOpacity(0.7),
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    'Tipo: ${visita.tipoVisita.label}',
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: colorScheme.onSurface.withOpacity(0.8),
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+
+              // Ventana horaria
+              Row(
+                children: [
+                  Icon(
+                    visita.dentroVentanaHoraria
+                        ? Icons.check_circle
+                        : Icons.warning,
+                    size: 18,
+                    color: visita.dentroVentanaHoraria
+                        ? Colors.green
+                        : Colors.orange,
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    visita.dentroVentanaHoraria
+                        ? 'Dentro de ventana horaria'
+                        : 'Fuera de ventana horaria',
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: visita.dentroVentanaHoraria
+                          ? Colors.green
+                          : Colors.orange,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
+              ),
+
+              // Observaciones
+              if (visita.observaciones != null &&
+                  visita.observaciones!.isNotEmpty) ...[
+                const SizedBox(height: 12),
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: colorScheme.primary.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                      color: colorScheme.primary.withOpacity(0.2),
+                    ),
+                  ),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Icon(Icons.notes, size: 16, color: colorScheme.primary),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          visita.observaciones!,
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: colorScheme.onSurface.withOpacity(0.8),
+                            fontStyle: FontStyle.italic,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+
+              Divider(height: 24, color: Theme.of(context).dividerColor),
+
+              // Acciones
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  // Botón ver ubicación
+                  TextButton.icon(
+                    onPressed: () =>
+                        _abrirEnMaps(visita.latitud, visita.longitud),
+                    icon: const Icon(Icons.map, size: 18),
+                    label: const Text('Ver ubicación'),
+                    style: TextButton.styleFrom(
+                      foregroundColor: colorScheme.primary,
+                    ),
+                  ),
+
+                  // Botón ver foto (si existe)
+                  if (visita.fotoLocal != null) ...[
+                    const SizedBox(width: 8),
+                    TextButton.icon(
+                      onPressed: () => _mostrarFotoVisita(visita.fotoLocal!),
+                      icon: const Icon(Icons.photo, size: 18),
+                      label: const Text('Ver foto'),
+                      style: TextButton.styleFrom(
+                        foregroundColor: Colors.green,
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildEstadoBadge(EstadoVisitaPreventista estado) {
+    final color = estado == EstadoVisitaPreventista.EXITOSA
+        ? Colors.green
+        : Colors.red;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(colors: [color, color.withOpacity(0.8)]),
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: color.withOpacity(0.3),
+            blurRadius: 6,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            estado == EstadoVisitaPreventista.EXITOSA
+                ? Icons.check_circle
+                : Icons.cancel,
+            size: 14,
+            color: Colors.white,
+          ),
+          const SizedBox(width: 4),
+          Text(
+            estado.label,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 12,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  IconData _getTipoVisitaIcon(TipoVisitaPreventista tipo) {
+    switch (tipo) {
+      case TipoVisitaPreventista.COBRO:
+        return Icons.payment;
+      case TipoVisitaPreventista.TOMA_PEDIDO:
+        return Icons.shopping_cart;
+      case TipoVisitaPreventista.ENTREGA:
+        return Icons.local_shipping;
+      case TipoVisitaPreventista.SUPERVISION:
+        return Icons.visibility;
+      case TipoVisitaPreventista.OTRO:
+        return Icons.more_horiz;
+    }
+  }
+
+  void _mostrarFotoVisita(String fotoUrl) {
+    // Construir URL completa de la imagen
+    final imageUrls = ImageUtils.buildMultipleImageUrls(fotoUrl);
+
+    if (imageUrls.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('No se pudo cargar la imagen'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
+    }
+
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return Dialog(
+          backgroundColor: Colors.transparent,
+          insetPadding: EdgeInsets.zero,
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              // Imagen de fondo
+              InteractiveViewer(
+                minScale: 0.5,
+                maxScale: 3.0,
+                child: Image.network(
+                  imageUrls.first,
+                  fit: BoxFit.contain,
+                  loadingBuilder: (context, child, loadingProgress) {
+                    if (loadingProgress == null) return child;
+                    return Container(
+                      color: Colors.black,
+                      child: const Center(
+                        child: CircularProgressIndicator(color: Colors.white),
+                      ),
+                    );
+                  },
+                  errorBuilder: (context, error, stackTrace) {
+                    return Container(
+                      color: Colors.black,
+                      child: const Center(
+                        child: Icon(Icons.error, color: Colors.white, size: 64),
+                      ),
+                    );
+                  },
+                ),
+              ),
+              // Botón de cerrar
+              Positioned(
+                top: 40,
+                right: 20,
+                child: IconButton(
+                  icon: Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: Colors.black.withOpacity(0.5),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.close,
+                      color: Colors.white,
+                      size: 24,
+                    ),
+                  ),
+                  onPressed: () => Navigator.of(context).pop(),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
   }
 }
 
@@ -1615,7 +3359,9 @@ class _ImageWithFallbackState extends State<_ImageWithFallback> {
   @override
   void initState() {
     super.initState();
-    debugPrint('🖼️ Inicializando _ImageWithFallback con ${widget.urls.length} URLs');
+    debugPrint(
+      '🖼️ Inicializando _ImageWithFallback con ${widget.urls.length} URLs',
+    );
   }
 
   void _tryNextUrl() {
@@ -1624,7 +3370,9 @@ class _ImageWithFallbackState extends State<_ImageWithFallback> {
     if (_currentUrlIndex < widget.urls.length - 1) {
       setState(() {
         _currentUrlIndex++;
-        debugPrint('🔄 Intentando URL ${_currentUrlIndex + 1}/${widget.urls.length}: ${widget.urls[_currentUrlIndex]}');
+        debugPrint(
+          '🔄 Intentando URL ${_currentUrlIndex + 1}/${widget.urls.length}: ${widget.urls[_currentUrlIndex]}',
+        );
       });
     } else {
       setState(() {
@@ -1662,7 +3410,9 @@ class _ImageWithFallbackState extends State<_ImageWithFallback> {
                 WidgetsBinding.instance.addPostFrameCallback((_) {
                   if (mounted) {
                     setState(() => _imageLoaded = true);
-                    debugPrint('✅ Imagen cargada exitosamente desde: ${widget.urls[_currentUrlIndex]}');
+                    debugPrint(
+                      '✅ Imagen cargada exitosamente desde: ${widget.urls[_currentUrlIndex]}',
+                    );
                   }
                 });
               }
@@ -1672,7 +3422,9 @@ class _ImageWithFallbackState extends State<_ImageWithFallback> {
             return widget.loadingWidget;
           },
           errorBuilder: (context, error, stackTrace) {
-            debugPrint('❌ Error cargando imagen desde: ${widget.urls[_currentUrlIndex]}');
+            debugPrint(
+              '❌ Error cargando imagen desde: ${widget.urls[_currentUrlIndex]}',
+            );
             debugPrint('❌ Error: $error');
 
             // Intentar siguiente URL en el siguiente frame

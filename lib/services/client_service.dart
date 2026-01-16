@@ -172,7 +172,10 @@ class ClientService {
               .toList(),
         if (categoriasIds != null) 'categorias_ids': categoriasIds,
         if (crearUsuario != null) 'crear_usuario': crearUsuario,
-        if (password != null) 'password': password,
+        if (password != null) ...<String, dynamic>{
+          'password': password,
+          'password_confirmation': password,
+        },
       };
 
       dynamic requestData = data;
@@ -213,6 +216,7 @@ class ClientService {
         }
         if (password != null) {
           formData.fields.add(MapEntry('password', password));
+          formData.fields.add(MapEntry('password_confirmation', password));
         }
 
         // Booleans en multipart: enviar como '1'/'0' para compatibilidad con Laravel boolean
@@ -334,10 +338,10 @@ class ClientService {
               ),
             );
             formData.fields.add(
-              MapEntry('ventanas_entrega[$i][hora_inicio]', v.horaInicio),
+              MapEntry('ventanas_entrega[$i][hora_inicio]', _formatHoraAlBackend(v.horaInicio)),
             );
             formData.fields.add(
-              MapEntry('ventanas_entrega[$i][hora_fin]', v.horaFin),
+              MapEntry('ventanas_entrega[$i][hora_fin]', _formatHoraAlBackend(v.horaFin)),
             );
             formData.fields.add(
               MapEntry('ventanas_entrega[$i][activo]', v.activo ? '1' : '0'),
@@ -361,21 +365,31 @@ class ClientService {
       );
       print('📤 Enviando datos al backend: $requestData');
 
+      debugPrint('📨 Response raw data: ${response.data}');
+      debugPrint('📨 Response status: ${response.statusCode}');
+
       return ApiResponse<Client>.fromJson(response.data, (data) {
         // Handle nested structure: {cliente: {...}}
         if (data.containsKey('cliente')) {
+          debugPrint('✅ Parsing cliente from nested structure');
           return Client.fromJson(data['cliente']);
         }
         // Handle direct structure: {...}
+        debugPrint('✅ Parsing cliente from direct structure');
         return Client.fromJson(data);
       });
     } on DioException catch (e) {
+      debugPrint('❌ DioException en createClient: ${e.message}');
+      debugPrint('   Status Code: ${e.response?.statusCode}');
+      debugPrint('   Response Data: ${e.response?.data}');
       return ApiResponse<Client>(
         success: false,
         message: _getErrorMessage(e),
         data: null,
       );
-    } catch (e) {
+    } catch (e, stackTrace) {
+      debugPrint('❌ Error inesperado en createClient: ${e.toString()}');
+      debugPrint('   Stack trace: $stackTrace');
       return ApiResponse<Client>(
         success: false,
         message: 'Error inesperado: ${e.toString()}',
@@ -464,8 +478,8 @@ class ClientService {
             .map(
               (v) => {
                 'dia_semana': v.diaSemana,
-                'hora_inicio': v.horaInicio,
-                'hora_fin': v.horaFin,
+                'hora_inicio': _formatHoraAlBackend(v.horaInicio),
+                'hora_fin': _formatHoraAlBackend(v.horaFin),
                 'activo': v.activo,
               },
             )
@@ -646,10 +660,10 @@ class ClientService {
               ),
             );
             formData.fields.add(
-              MapEntry('ventanas_entrega[$i][hora_inicio]', v.horaInicio),
+              MapEntry('ventanas_entrega[$i][hora_inicio]', _formatHoraAlBackend(v.horaInicio)),
             );
             formData.fields.add(
-              MapEntry('ventanas_entrega[$i][hora_fin]', v.horaFin),
+              MapEntry('ventanas_entrega[$i][hora_fin]', _formatHoraAlBackend(v.horaFin)),
             );
             formData.fields.add(
               MapEntry('ventanas_entrega[$i][activo]', v.activo ? '1' : '0'),
@@ -687,21 +701,31 @@ class ClientService {
       }
       print('📤 Enviando datos al backend (update): $requestData');
 
+      debugPrint('📨 Response raw data: ${response.data}');
+      debugPrint('📨 Response status: ${response.statusCode}');
+
       return ApiResponse<Client>.fromJson(response.data, (data) {
         // Handle nested structure: {cliente: {...}}
         if (data.containsKey('cliente')) {
+          debugPrint('✅ Parsing cliente from nested structure');
           return Client.fromJson(data['cliente']);
         }
         // Handle direct structure: {...}
+        debugPrint('✅ Parsing cliente from direct structure');
         return Client.fromJson(data);
       });
     } on DioException catch (e) {
+      debugPrint('❌ DioException en updateClient: ${e.message}');
+      debugPrint('   Status Code: ${e.response?.statusCode}');
+      debugPrint('   Response Data: ${e.response?.data}');
       return ApiResponse<Client>(
         success: false,
         message: _getErrorMessage(e),
         data: null,
       );
-    } catch (e) {
+    } catch (e, stackTrace) {
+      debugPrint('❌ Error inesperado en updateClient: ${e.toString()}');
+      debugPrint('   Stack trace: $stackTrace');
       return ApiResponse<Client>(
         success: false,
         message: 'Error inesperado: ${e.toString()}',
@@ -1236,5 +1260,27 @@ class ClientService {
         data: null,
       );
     }
+  }
+
+  /// Convierte hora en formato "HH:MM:SS" a "HH:MM"
+  /// Acepta ambos formatos y siempre devuelve "HH:MM"
+  String _formatHoraAlBackend(String hora) {
+    if (hora.isEmpty) return hora;
+
+    // Si ya está en formato correcto "HH:MM", devolverlo tal cual
+    if (hora.length == 5 && hora[2] == ':') {
+      return hora;
+    }
+
+    // Si tiene formato "HH:MM:SS", extraer solo "HH:MM"
+    if (hora.contains(':')) {
+      final parts = hora.split(':');
+      if (parts.length >= 2) {
+        return '${parts[0].padLeft(2, '0')}:${parts[1].padLeft(2, '0')}';
+      }
+    }
+
+    // Si no se puede parsear, devolver tal cual
+    return hora;
   }
 }

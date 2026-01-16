@@ -76,6 +76,12 @@ class WebSocketConfig {
   static const String eventRutaModificada = 'ruta.modificada';
   static const String eventRutaDetalleActualizado = 'ruta.detalle.actualizado';
 
+  // Eventos de Créditos (NUEVA FASE 3)
+  // ✅ Sincronizados con Laravel CreditoWebSocketService
+  static const String eventCreditoVencido = 'notify/credito-vencido';
+  static const String eventCreditoCritico = 'notify/credito-critico';
+  static const String eventCreditoPagoRegistrado = 'notify/credito-pago-registrado';
+
   // Eventos del Sistema
   static const String eventConnect = 'connect';
   static const String eventDisconnect = 'disconnect';

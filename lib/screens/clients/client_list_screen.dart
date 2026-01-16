@@ -11,6 +11,7 @@ import '../../services/url_launcher_service.dart';
 import 'client_detail_screen.dart';
 import 'client_form_screen.dart';
 import '../login_screen.dart';
+import '../chofer/marcar_visita_screen.dart';
 
 class ClientListScreen extends StatefulWidget {
   const ClientListScreen({super.key});
@@ -472,6 +473,7 @@ class _ClientListScreenState extends State<ClientListScreen> {
                                 ? () => _sendWhatsAppMessage(client.telefono!)
                                 : null,
                             onEdit: () => _navigateToEditClient(client),
+                            onMarcarVisita: () => _navigateToMarcarVisita(client),
                           );
                         },
                       ),
@@ -716,6 +718,16 @@ class _ClientListScreenState extends State<ClientListScreen> {
       context,
     ).push(MaterialPageRoute(builder: (context) => const ClientFormScreen()));
   }
+
+  void _navigateToMarcarVisita(Client client) {
+    if (!mounted) return;
+    debugPrint('📍 Navegando a MarcarVisitaScreen para cliente: ${client.nombre}');
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => MarcarVisitaScreen(cliente: client),
+      ),
+    );
+  }
 }
 
 class ClientListItem extends StatelessWidget {
@@ -724,6 +736,7 @@ class ClientListItem extends StatelessWidget {
   final VoidCallback? onCall;
   final VoidCallback? onWhatsApp;
   final VoidCallback? onEdit;
+  final VoidCallback? onMarcarVisita;
 
   const ClientListItem({
     super.key,
@@ -732,6 +745,7 @@ class ClientListItem extends StatelessWidget {
     this.onCall,
     this.onWhatsApp,
     this.onEdit,
+    this.onMarcarVisita,
   });
 
   @override
@@ -1015,31 +1029,71 @@ class ClientListItem extends StatelessWidget {
 
         const SizedBox(height: 8),
 
-        // Botón de edición rápida
-        Container(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [
-                colorScheme.tertiary,
-                colorScheme.tertiary.withOpacity(0.8),
-              ],
-            ),
-            shape: BoxShape.circle,
-            boxShadow: [
-              BoxShadow(
-                color: colorScheme.tertiary.withOpacity(0.3),
-                blurRadius: 6,
-                offset: const Offset(0, 2),
+        // Botones de acción rápida
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Botón de edición rápida
+            Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    colorScheme.tertiary,
+                    colorScheme.tertiary.withOpacity(0.8),
+                  ],
+                ),
+                shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(
+                    color: colorScheme.tertiary.withOpacity(0.3),
+                    blurRadius: 6,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
               ),
-            ],
-          ),
-          child: IconButton(
-            icon: Icon(Icons.edit, color: colorScheme.onTertiary, size: 18),
-            onPressed: onEdit,
-            tooltip: 'Editar',
-            padding: const EdgeInsets.all(8),
-            constraints: const BoxConstraints(),
-          ),
+              child: IconButton(
+                icon: Icon(Icons.edit, color: colorScheme.onTertiary, size: 18),
+                onPressed: onEdit,
+                tooltip: 'Editar',
+                padding: const EdgeInsets.all(8),
+                constraints: const BoxConstraints(),
+              ),
+            ),
+
+            const SizedBox(width: 6),
+
+            // Botón de marcar visita
+            if (onMarcarVisita != null)
+              Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      Colors.purple,
+                      Colors.purple.withOpacity(0.8),
+                    ],
+                  ),
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.purple.withOpacity(0.3),
+                      blurRadius: 6,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: IconButton(
+                  icon: Icon(
+                    Icons.assignment_turned_in,
+                    color: Colors.white,
+                    size: 18,
+                  ),
+                  onPressed: onMarcarVisita,
+                  tooltip: 'Marcar Visita',
+                  padding: const EdgeInsets.all(8),
+                  constraints: const BoxConstraints(),
+                ),
+              ),
+          ],
         ),
 
         // Acciones (llamar y WhatsApp)

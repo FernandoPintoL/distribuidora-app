@@ -281,6 +281,11 @@ class ClientProvider with ChangeNotifier {
         ciReverso: ciReverso,
       );
 
+      debugPrint('✅ createClient response:');
+      debugPrint('   Success: ${response.success}');
+      debugPrint('   Message: ${response.message}');
+      debugPrint('   Data: ${response.data}');
+
       if (response.success && response.data != null) {
         _clients.insert(0, response.data!);
         _errorMessage = null;
@@ -288,11 +293,14 @@ class ClientProvider with ChangeNotifier {
         return true;
       } else {
         _errorMessage = response.message;
+        debugPrint('❌ Error en createClient: ${response.message}');
         // No notificar aquí, se hará en finally
         return false;
       }
-    } catch (e) {
+    } catch (e, stackTrace) {
       _errorMessage = 'Error inesperado: ${e.toString()}';
+      debugPrint('❌ Exception en createClient: ${e.toString()}');
+      debugPrint('Stack trace: $stackTrace');
       // No notificar aquí, se hará en finally
       return false;
     } finally {
@@ -353,6 +361,11 @@ class ClientProvider with ChangeNotifier {
         ciReverso: ciReverso,
       );
 
+      debugPrint('✅ updateClient response:');
+      debugPrint('   Success: ${response.success}');
+      debugPrint('   Message: ${response.message}');
+      debugPrint('   Data: ${response.data}');
+
       if (response.success && response.data != null) {
         final index = _clients.indexWhere((c) => c.id == id);
         if (index != -1) {
@@ -363,11 +376,14 @@ class ClientProvider with ChangeNotifier {
         return true;
       } else {
         _errorMessage = response.message;
+        debugPrint('❌ Error en updateClient: ${response.message}');
         // No notificar aquí, se hará en finally
         return false;
       }
-    } catch (e) {
+    } catch (e, stackTrace) {
       _errorMessage = 'Error inesperado: ${e.toString()}';
+      debugPrint('❌ Exception en updateClient: ${e.toString()}');
+      debugPrint('Stack trace: $stackTrace');
       // No notificar aquí, se hará en finally
       return false;
     } finally {

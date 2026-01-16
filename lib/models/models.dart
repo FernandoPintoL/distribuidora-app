@@ -27,3 +27,4 @@ export 'ruta.dart';
 export 'ruta_detalle.dart';
 export 'entrega.dart';
 export 'venta.dart';
+export 'visita_preventista_cliente.dart';

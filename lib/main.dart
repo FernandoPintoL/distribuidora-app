@@ -9,6 +9,7 @@ import 'models/models.dart';
 import 'providers/providers.dart';
 import 'providers/theme_provider.dart';
 import 'providers/estados_provider.dart';
+import 'providers/visita_provider.dart';
 import 'screens/screens.dart';
 import 'screens/carrito/carrito_abandonado_list_screen.dart';
 import 'screens/cliente/mis_direcciones_screen.dart';
@@ -65,6 +66,7 @@ void main() async {
           ChangeNotifierProvider(create: (_) => EntregaEstadosProvider()),
           ChangeNotifierProvider(create: (_) => NotificationProvider()),
           ChangeNotifierProvider(create: (_) => EstadosProvider()),
+          ChangeNotifierProvider(create: (_) => VisitaProvider()),
         ],
         child: const MyApp(),
       ),

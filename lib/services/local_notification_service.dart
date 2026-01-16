@@ -95,6 +95,17 @@ class LocalNotificationService {
       enableLights: true,
     );
 
+    // ✅ NUEVA FASE 3: Canal para notificaciones de créditos
+    const AndroidNotificationChannel creditosChannel =
+        AndroidNotificationChannel(
+      'creditos',
+      'Notificaciones de Crédito',
+      description: 'Créditos vencidos, críticos y pagos registrados',
+      importance: Importance.high,
+      enableVibration: true,
+      enableLights: true,
+    );
+
     await _notificationsPlugin
         .resolvePlatformSpecificImplementation<
             AndroidFlutterLocalNotificationsPlugin>()
@@ -114,6 +125,11 @@ class LocalNotificationService {
         .resolvePlatformSpecificImplementation<
             AndroidFlutterLocalNotificationsPlugin>()
         ?.createNotificationChannel(proformasChannel);
+
+    await _notificationsPlugin
+        .resolvePlatformSpecificImplementation<
+            AndroidFlutterLocalNotificationsPlugin>()
+        ?.createNotificationChannel(creditosChannel);
   }
 
   /// Solicitar permisos en iOS y Android 13+
@@ -281,6 +297,7 @@ class LocalNotificationService {
       case 'proformas':
         return Importance.max;
       case 'cambio_estados':
+      case 'creditos':  // ✅ NUEVA FASE 3
         return Importance.high;
       case 'recordatorios':
       default:
@@ -295,6 +312,7 @@ class LocalNotificationService {
       case 'proformas':
         return Priority.high;
       case 'cambio_estados':
+      case 'creditos':  // ✅ NUEVA FASE 3
         return Priority.high;
       case 'recordatorios':
       default:
@@ -308,6 +326,7 @@ class LocalNotificationService {
       case 'entregas_nuevas':
       case 'cambio_estados':
       case 'proformas':
+      case 'creditos':  // ✅ NUEVA FASE 3
         return true;
       case 'recordatorios':
       default:
@@ -326,6 +345,8 @@ class LocalNotificationService {
         return 'Recordatorios';
       case 'proformas':
         return 'Proformas';
+      case 'creditos':  // ✅ NUEVA FASE 3
+        return 'Notificaciones de Crédito';
       default:
         return 'Notificaciones';
     }
@@ -342,6 +363,8 @@ class LocalNotificationService {
         return 'Recordatorios de entregas pendientes';
       case 'proformas':
         return 'Notificaciones de proformas (aprobadas, rechazadas, convertidas)';
+      case 'creditos':  // ✅ NUEVA FASE 3
+        return 'Notificaciones de créditos vencidos, críticos y pagos';
       default:
         return 'Notificaciones de la aplicación';
     }
@@ -521,6 +544,57 @@ class LocalNotificationService {
     );
   }
 
+  // ✅ NUEVA FASE 3: Notificaciones de Créditos
+
+  /// Mostrar notificación de crédito vencido
+  Future<void> showCreditoVencidoNotification({
+    required int cuentaId,
+    required String clienteNombre,
+    required double saldoPendiente,
+    required int diasVencido,
+  }) async {
+    await _showNotification(
+      id: cuentaId,
+      title: '⚠️ Crédito Vencido',
+      body: 'Cliente $clienteNombre - Deuda: Bs. ${saldoPendiente.toStringAsFixed(2)} - Vencido hace $diasVencido días',
+      channelId: 'creditos',
+      payload: 'credito_vencido_$cuentaId',
+    );
+  }
+
+  /// Mostrar notificación de crédito crítico (>80% utilización)
+  Future<void> showCreditoCriticoNotification({
+    required int clienteId,
+    required String clienteNombre,
+    required double porcentajeUtilizado,
+    required double saldoDisponible,
+  }) async {
+    await _showNotification(
+      id: clienteId,
+      title: '🔴 Crédito Crítico',
+      body: 'Cliente $clienteNombre - Utilización: ${porcentajeUtilizado.toStringAsFixed(0)}% - Disponible: Bs. ${saldoDisponible.toStringAsFixed(2)}',
+      channelId: 'creditos',
+      payload: 'credito_critico_$clienteId',
+    );
+  }
+
+  /// Mostrar notificación de pago registrado en crédito
+  Future<void> showCreditoPagoRegistradoNotification({
+    required int pagoId,
+    required String clienteNombre,
+    required double monto,
+    required double saldoRestante,
+    required String metodoPago,
+  }) async {
+    await _showNotification(
+      id: pagoId,
+      title: '✅ Pago de Crédito Registrado',
+      body: 'Cliente $clienteNombre - Pagó: Bs. ${monto.toStringAsFixed(2)} via $metodoPago - Saldo: Bs. ${saldoRestante.toStringAsFixed(2)}',
+      channelId: 'creditos',
+      payload: 'credito_pago_$pagoId',
+    );
+  }
+
   /// Cancelar notificación
   Future<void> cancelNotification(int id) async {
     try {
@@ -582,7 +656,7 @@ class LocalNotificationService {
     debugPrint('═══════════════════════════════════════');
     debugPrint('✅ Inicializado: $_isInitialized');
     debugPrint('✅ Plugin: ${_notificationsPlugin.runtimeType}');
-    debugPrint('✅ Canales Android: entregas_nuevas, cambio_estados, recordatorios, proformas');
+    debugPrint('✅ Canales Android: entregas_nuevas, cambio_estados, recordatorios, proformas, creditos');
     debugPrint('✅ Permisos iOS: Alert, Badge, Sound');
     debugPrint('✅ Permisos Android: POST_NOTIFICATIONS, VIBRATE');
     debugPrint('═══════════════════════════════════════\n');

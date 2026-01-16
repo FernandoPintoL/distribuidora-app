@@ -25,6 +25,7 @@ class WebSocketService {
   final _entregaController = StreamController<Map<String, dynamic>>.broadcast(); // NUEVO para entregas
   final _cargoController = StreamController<Map<String, dynamic>>.broadcast(); // NUEVO para cargas
   final _ventaController = StreamController<Map<String, dynamic>>.broadcast(); // ✅ NUEVO para ventas
+  final _creditoController = StreamController<Map<String, dynamic>>.broadcast(); // ✅ NUEVO para créditos FASE 3
   final _connectionController = StreamController<bool>.broadcast();
 
   // Getters de streams
@@ -37,6 +38,7 @@ class WebSocketService {
   Stream<Map<String, dynamic>> get entregaStream => _entregaController.stream; // NUEVO para entregas
   Stream<Map<String, dynamic>> get cargoStream => _cargoController.stream; // NUEVO para cargas
   Stream<Map<String, dynamic>> get ventaStream => _ventaController.stream; // ✅ NUEVO para ventas
+  Stream<Map<String, dynamic>> get creditoStream => _creditoController.stream; // ✅ NUEVO para créditos FASE 3
   Stream<bool> get connectionStream => _connectionController.stream;
 
   bool get isConnected => _isConnected;
@@ -547,6 +549,44 @@ class WebSocketService {
       });
       _handleEvent(WebSocketConfig.eventVentaProblema, data);
     });
+
+    // ✅ NUEVA FASE 3: Eventos de Créditos
+    // Notificación de crédito vencido
+    _socket!.on(WebSocketConfig.eventCreditoVencido, (data) {
+      debugPrint('⚠️ CRÉDITO VENCIDO: Cliente #${data['cliente_id']} - ${data['cliente_nombre']}');
+      debugPrint('   Saldo Pendiente: Bs. ${data['saldo_pendiente']}');
+      debugPrint('   Días Vencido: ${data['dias_vencido']}');
+      _creditoController.add({
+        'type': 'vencido',
+        'data': data,
+      });
+      _handleEvent(WebSocketConfig.eventCreditoVencido, data);
+    });
+
+    // Notificación de crédito crítico (>80% utilización)
+    _socket!.on(WebSocketConfig.eventCreditoCritico, (data) {
+      debugPrint('🔴 CRÉDITO CRÍTICO: Cliente #${data['cliente_id']} - ${data['cliente_nombre']}');
+      debugPrint('   Porcentaje Utilizado: ${data['porcentaje_utilizado']}%');
+      debugPrint('   Saldo Disponible: Bs. ${data['saldo_disponible']}');
+      _creditoController.add({
+        'type': 'critico',
+        'data': data,
+      });
+      _handleEvent(WebSocketConfig.eventCreditoCritico, data);
+    });
+
+    // Notificación de pago registrado en crédito
+    _socket!.on(WebSocketConfig.eventCreditoPagoRegistrado, (data) {
+      debugPrint('✅ PAGO DE CRÉDITO REGISTRADO: Cliente #${data['cliente_id']} - ${data['cliente_nombre']}');
+      debugPrint('   Monto Pagado: Bs. ${data['monto']}');
+      debugPrint('   Saldo Restante: Bs. ${data['saldo_restante']}');
+      debugPrint('   Método: ${data['metodo_pago']}');
+      _creditoController.add({
+        'type': 'pago_registrado',
+        'data': data,
+      });
+      _handleEvent(WebSocketConfig.eventCreditoPagoRegistrado, data);
+    });
   }
 
   /// Registrar callback para evento específico
@@ -588,6 +628,8 @@ class WebSocketService {
     _rutaController.close();
     _entregaController.close();
     _cargoController.close();
+    _ventaController.close();
+    _creditoController.close();
     _connectionController.close();
     _eventHandlers.clear();
   }

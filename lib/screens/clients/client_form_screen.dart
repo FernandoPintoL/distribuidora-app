@@ -9,6 +9,7 @@ import '../../widgets/location_selector.dart';
 import '../../widgets/custom_time_picker_dialog.dart';
 import '../../widgets/widgets.dart';
 import '../../config/config.dart';
+import '../../services/image_compression_service.dart';
 import 'dart:io';
 
 class ClientFormScreen extends StatefulWidget {
@@ -120,19 +121,25 @@ class _ClientFormScreenState extends State<ClientFormScreen> {
         }
 
         // Cargar categorías seleccionadas del cliente
-        if (clientCompleto.categorias != null && clientCompleto.categorias!.isNotEmpty) {
+        if (clientCompleto.categorias != null &&
+            clientCompleto.categorias!.isNotEmpty) {
           _selectedCategoriasIds
             ..clear()
             ..addAll(clientCompleto.categorias!.map((c) => c.id));
-          debugPrint('🏷️ Categorías del cliente cargadas: ${_selectedCategoriasIds.length}');
+          debugPrint(
+            '🏷️ Categorías del cliente cargadas: ${_selectedCategoriasIds.length}',
+          );
         } else {
           debugPrint('📝 El cliente no tiene categorías asignadas');
         }
 
         // Cargar ventanas de entrega del cliente
-        if (clientCompleto.ventanasEntrega != null && clientCompleto.ventanasEntrega!.isNotEmpty) {
+        if (clientCompleto.ventanasEntrega != null &&
+            clientCompleto.ventanasEntrega!.isNotEmpty) {
           _ventanasEntrega = List.from(clientCompleto.ventanasEntrega!);
-          debugPrint('⏰ Ventanas de entrega cargadas: ${_ventanasEntrega.length}');
+          debugPrint(
+            '⏰ Ventanas de entrega cargadas: ${_ventanasEntrega.length}',
+          );
         } else {
           debugPrint('📝 El cliente no tiene ventanas de entrega configuradas');
         }
@@ -158,7 +165,9 @@ class _ClientFormScreenState extends State<ClientFormScreen> {
           });
         }
 
-        debugPrint('✅ Datos del cliente cargados exitosamente con TODAS las relaciones');
+        debugPrint(
+          '✅ Datos del cliente cargados exitosamente con TODAS las relaciones',
+        );
       });
     } catch (e, stackTrace) {
       debugPrint('❌ Error al cargar datos del cliente: $e');
@@ -230,12 +239,14 @@ class _ClientFormScreenState extends State<ClientFormScreen> {
         // Seleccionar por defecto la categoría APP al crear (no editar)
         if (!_isEditing && _selectedCategoriasIds.isEmpty) {
           try {
-            final appCat = _categoriasCatalogo.cast<CategoriaCliente?>().firstWhere(
-              (c) =>
-                  (c?.clave?.toUpperCase() == 'APP') ||
-                  (c?.nombre?.toUpperCase() == 'APP'),
-              orElse: () => null,
-            );
+            final appCat = _categoriasCatalogo
+                .cast<CategoriaCliente?>()
+                .firstWhere(
+                  (c) =>
+                      (c?.clave?.toUpperCase() == 'APP') ||
+                      (c?.nombre?.toUpperCase() == 'APP'),
+                  orElse: () => null,
+                );
             if (appCat != null) {
               _selectedCategoriasIds.add(appCat.id);
               debugPrint('✅ Categoría APP seleccionada por defecto');
@@ -311,12 +322,21 @@ class _ClientFormScreenState extends State<ClientFormScreen> {
                           ),
                         ),
                       )
-                    : Icon(Icons.save, color: _isEditing ? Colors.orange.shade700 : Colors.green.shade700),
+                    : Icon(
+                        Icons.save,
+                        color: _isEditing
+                            ? Colors.orange.shade700
+                            : Colors.green.shade700,
+                      ),
                 label: Text(
                   _isSavingClient ? 'Guardando...' : 'Guardar',
                   style: TextStyle(
                     fontWeight: FontWeight.w600,
-                    color: _isSavingClient ? Colors.white : (_isEditing ? Colors.orange.shade700 : Colors.green.shade700),
+                    color: _isSavingClient
+                        ? Colors.white
+                        : (_isEditing
+                              ? Colors.orange.shade700
+                              : Colors.green.shade700),
                   ),
                 ),
                 style: ElevatedButton.styleFrom(
@@ -333,519 +353,594 @@ class _ClientFormScreenState extends State<ClientFormScreen> {
         ),
         backgroundColor: Theme.of(context).colorScheme.surface,
         body: _isInitialized
-              ? Form(
-                  key: _formKey,
-                  child: SingleChildScrollView(
-                    padding: const EdgeInsets.all(20),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // Foto de perfil
-                        Center(
-                          child: Container(
-                            margin: const EdgeInsets.only(bottom: 32),
-                            child: ProfilePhotoSelector(
-                              currentPhotoUrl: widget.client?.fotoPerfil,
-                              onPhotoSelected: (file) {
+            ? Form(
+                key: _formKey,
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.all(20),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Foto de perfil
+                      Center(
+                        child: Container(
+                          margin: const EdgeInsets.only(bottom: 32),
+                          child: ProfilePhotoSelector(
+                            currentPhotoUrl: widget.client?.fotoPerfil,
+                            onPhotoSelected: (file) async {
+                              if (file == null) return;
+
+                              try {
+                                debugPrint('📸 Comprimiendo foto de perfil...');
+                                final comprimida =
+                                    await ImageCompressionService.comprimirYValidarImagen(file);
                                 setState(() {
-                                  _selectedProfilePhoto = file;
+                                  _selectedProfilePhoto = comprimida;
                                 });
-                              },
-                            ),
-                          ),
-                        ),
-
-                        // Información básica
-                        _buildSection(
-                          title: 'Información Básica',
-                          icon: Icons.person,
-                          children: [
-                            TextFormField(
-                              controller: _nameController,
-                              decoration: _buildInputDecoration(
-                                labelText: 'Nombre *',
-                                hintText: 'Ingrese el nombre completo',
-                                prefixIcon: Icons.person_outline,
-                              ),
-                              validator: (value) {
-                                if (value == null || value.isEmpty) {
-                                  return 'El nombre es obligatorio';
-                                }
-                                return null;
-                              },
-                            ),
-                            const SizedBox(height: 16),
-                            TextFormField(
-                              controller: _businessNameController,
-                              decoration: _buildInputDecoration(
-                                labelText: 'Razón Social',
-                                hintText: 'Ingrese la razón social (opcional)',
-                                prefixIcon: Icons.business,
-                              ),
-                            ),
-                          ],
-                        ),
-
-                        const SizedBox(height: 24),
-
-                        // Información de contacto
-                        _buildSection(
-                          title: 'Información de Contacto',
-                          icon: Icons.contact_phone,
-                          children: [
-                            TextFormField(
-                              controller: _emailController,
-                              decoration: _buildInputDecoration(
-                                labelText: 'Correo Electrónico',
-                                hintText: 'correo@ejemplo.com',
-                                prefixIcon: Icons.email,
-                              ),
-                              keyboardType: TextInputType.emailAddress,
-                            ),
-                            const SizedBox(height: 16),
-                            TextFormField(
-                              controller: _phoneController,
-                              decoration: _buildInputDecoration(
-                                labelText: 'Teléfono',
-                                hintText: '+1234567890',
-                                prefixIcon: Icons.phone,
-                              ),
-                              keyboardType: TextInputType.phone,
-                              inputFormatters: [
-                                FilteringTextInputFormatter.digitsOnly,
-                              ],
-                            ),
-                          ],
-                        ),
-
-                        const SizedBox(height: 24),
-
-                        // Ubicación
-                        _buildSection(
-                          title: 'Ubicación',
-                          icon: Icons.location_on,
-                          children: [
-                            // Location Selector con GPS
-                            LocationSelector(
-                              initialLatitude: _latitude,
-                              initialLongitude: _longitude,
-                              onLocationSelected: (lat, lng, address) {
-                                setState(() {
-                                  _latitude = lat;
-                                  _longitude = lng;
-                                  // Cargar la dirección obtenida del GPS en el campo de dirección
-                                  if (address != null &&
-                                      address.isNotEmpty &&
-                                      address != 'Dirección no disponible' &&
-                                      _addressController.text.isEmpty) {
-                                    _addressController.text = address;
-                                  }
-                                });
-                              },
-                              autoGetLocation: true,
-                            ),
-                            const SizedBox(height: 16),
-                            // Localidad selector (mejorado)
-                            Container(
-                              decoration: BoxDecoration(
-                                color: Theme.of(context).colorScheme.surface,
-                                borderRadius: BorderRadius.circular(12),
-                                border: Border.all(
-                                  color: Theme.of(
-                                    context,
-                                  ).colorScheme.outline.withOpacity(0.3),
-                                ),
-                              ),
-                              child: _isLoadingLocalidades
-                                  ? Padding(
-                                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                                      child: Row(
-                                        children: [
-                                          const SizedBox(
-                                            width: 20,
-                                            height: 20,
-                                            child: CircularProgressIndicator(strokeWidth: 2),
-                                          ),
-                                          const SizedBox(width: 12),
-                                          Text(
-                                            'Cargando localidades...',
-                                            style: TextStyle(
-                                              color: Theme.of(context).colorScheme.onSurfaceVariant,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    )
-                                  : SelectSearch<Localidad>(
-                                      label: 'Localidad',
-                                      items: _localidades.where((l) => l.nombre.trim().isNotEmpty).toList(),
-                                      value: _selectedLocationId != null
-                                          ? _localidades.where((l) => l.nombre.trim().isNotEmpty).cast<Localidad?>().firstWhere(
-                                              (localidad) =>
-                                                  localidad?.id == _selectedLocationId,
-                                              orElse: () => null,
-                                            )
-                                          : null,
-                                      displayString: (localidad) => localidad.nombre,
-                                      onChanged: (localidad) {
-                                        setState(() {
-                                          _selectedLocationId = localidad?.id;
-                                        });
-                                      },
-                                      hintText: 'Buscar localidad...',
-                                      prefixIcon: const Icon(Icons.location_city),
-                                    ),
-                            ),
-                            const SizedBox(height: 16),
-                            TextFormField(
-                              controller: _addressController,
-                              decoration: _buildInputDecoration(
-                                labelText: 'Dirección',
-                                hintText: 'Ingrese la dirección completa',
-                                prefixIcon: Icons.home,
-                              ),
-                              maxLines: 3,
-                            ),
-                            const SizedBox(height: 16),
-                            // Campo para observaciones del lugar
-                            TextFormField(
-                              controller: _locationObservationsController,
-                              decoration: _buildInputDecoration(
-                                labelText: 'Observaciones del lugar',
-                                hintText: 'Ingrese observaciones sobre la ubicación del cliente',
-                                prefixIcon: Icons.note,
-                              ),
-                              maxLines: 3,
-                            ),
-                          ],
-                        ),
-
-                        const SizedBox(height: 24),
-
-                        // Preferencias de entrega
-                        _buildSection(
-                          title: 'Dias de Visitas',
-                          icon: Icons.access_time,
-                          children: [
-                            if (_ventanasEntrega.isNotEmpty)
-                              Column(
-                                children: _ventanasEntrega.asMap().entries.map((
-                                  entry,
-                                ) {
-                                  final i = entry.key;
-                                  final v = entry.value;
-                                  final days = [
-                                    'Dom',
-                                    'Lun',
-                                    'Mar',
-                                    'Mié',
-                                    'Jue',
-                                    'Vie',
-                                    'Sáb',
-                                  ];
-                                  final day =
-                                      (v.diaSemana >= 0 && v.diaSemana <= 6)
-                                      ? days[v.diaSemana]
-                                      : 'Día ${v.diaSemana}';
-                                  return Card(
-                                    margin: const EdgeInsets.only(bottom: 8),
-                                    child: ListTile(
-                                      leading: Icon(
-                                        Icons.calendar_today,
-                                        color: v.activo
-                                            ? Colors.green
-                                            : Colors.grey,
-                                      ),
-                                      title: Text(
-                                        '$day: ${v.horaInicio} - ${v.horaFin}',
-                                      ),
-                                      subtitle: v.activo
-                                          ? null
-                                          : const Text(
-                                              'Inactivo',
-                                              style: TextStyle(
-                                                color: Colors.grey,
-                                              ),
-                                            ),
-                                      trailing: IconButton(
-                                        icon: const Icon(
-                                          Icons.delete,
-                                          color: Colors.red,
-                                        ),
-                                        onPressed: () {
-                                          setState(() {
-                                            _ventanasEntrega.removeAt(i);
-                                          });
-                                        },
-                                      ),
-                                      onTap: () => _showVentanaDialog(
-                                        initial: v,
-                                        index: i,
-                                      ),
+                                debugPrint('✅ Foto de perfil comprimida');
+                              } catch (e) {
+                                if (mounted) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content:
+                                          Text('Error al procesar imagen: ${e.toString()}'),
+                                      backgroundColor: Theme.of(context).colorScheme.error,
+                                      duration: const Duration(seconds: 5),
                                     ),
                                   );
-                                }).toList(),
-                              )
-                            else
-                              const Text(
-                                'Agrega los días y horarios preferidos para visitas.',
-                                style: TextStyle(color: Colors.grey),
-                              ),
-                            const SizedBox(height: 8),
-                            Align(
-                              alignment: Alignment.centerRight,
-                              child: OutlinedButton.icon(
-                                onPressed: () => _showVentanaDialog(),
-                                icon: const Icon(Icons.add),
-                                label: const Text('Agregar dia de visita'),
-                              ),
-                            ),
-                          ],
-                        ),
-
-                        // ✅ Solo mostrar Categorías y Configuración cuando se está EDITANDO
-                        if (_isEditing) ...[
-                          const SizedBox(height: 24),
-
-                          // Categorías del cliente (solo en modo edición)
-                          _buildSection(
-                            title: 'Categorías',
-                            icon: Icons.category,
-                            children: [
-                              if (_categoriasCatalogo.isEmpty)
-                                const Text(
-                                  'No hay categorías disponibles',
-                                  style: TextStyle(color: Colors.grey),
-                                )
-                              else
-                                Wrap(
-                                  spacing: 8,
-                                  runSpacing: 8,
-                                  children: _categoriasCatalogo.map((cat) {
-                                    final selected = _selectedCategoriasIds
-                                        .contains(cat.id);
-                                    return FilterChip(
-                                      label: Text(
-                                        cat.nombre ??
-                                            cat.clave ??
-                                            'Cat ${cat.id}',
-                                      ),
-                                      selected: selected,
-                                      onSelected: (val) {
-                                        setState(() {
-                                          if (val) {
-                                            _selectedCategoriasIds.add(cat.id);
-                                          } else {
-                                            _selectedCategoriasIds.remove(cat.id);
-                                          }
-                                        });
-                                      },
-                                    );
-                                  }).toList(),
-                                ),
-                            ],
+                                }
+                              }
+                            },
                           ),
+                        ),
+                      ),
 
-                          const SizedBox(height: 24),
-                          // Configuración (solo en modo edición)
-                          _buildSection(
-                            title: 'Configuración',
-                            icon: Icons.settings,
-                            children: [
-                              Container(
-                                padding: const EdgeInsets.all(16),
-                                decoration: BoxDecoration(
-                                  color: _isActive ? Colors.green.shade50 : Colors.red.shade50,
-                                  borderRadius: BorderRadius.circular(12),
-                                  border: Border.all(
-                                    color: _isActive ? Colors.green.shade200 : Colors.red.shade200,
-                                    width: 1.5,
-                                  ),
-                                ),
-                                child: Row(
-                                  children: [
-                                    Container(
-                                      padding: const EdgeInsets.all(8),
-                                      decoration: BoxDecoration(
-                                        gradient: LinearGradient(
-                                          colors: _isActive
-                                              ? [Colors.green.shade400, Colors.green.shade600]
-                                              : [Colors.red.shade400, Colors.red.shade600],
-                                        ),
-                                        borderRadius: BorderRadius.circular(8),
-                                      ),
-                                      child: Icon(
-                                        _isActive ? Icons.check_circle : Icons.cancel,
-                                        color: Colors.white,
-                                        size: 20,
-                                      ),
-                                    ),
-                                    const SizedBox(width: 12),
-                                    Expanded(
-                                      child: Column(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
-                                        children: [
-                                          Text(
-                                            'Estado del Cliente',
-                                            style: TextStyle(
-                                              fontSize: 14,
-                                              color: Colors.grey.shade700,
-                                              fontWeight: FontWeight.w500,
-                                            ),
-                                          ),
-                                          const SizedBox(height: 4),
-                                          Text(
-                                            _isActive ? 'Activo' : 'Inactivo',
-                                            style: TextStyle(
-                                              fontSize: 16,
-                                              fontWeight: FontWeight.bold,
-                                              color: _isActive ? Colors.green.shade700 : Colors.red.shade700,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                    Switch(
-                                      value: _isActive,
-                                      onChanged: (value) => setState(() => _isActive = value),
-                                      activeColor: Colors.green.shade600,
-                                      inactiveThumbColor: Colors.red.shade400,
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              const SizedBox(height: 16),
-                              Row(
-                                children: [
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                          'Crear Usuario',
-                                          style: TextStyle(
-                                            fontSize: 16,
-                                            fontWeight: FontWeight.w500,
-                                            color: Theme.of(
-                                              context,
-                                            ).colorScheme.onSurface,
-                                          ),
-                                        ),
-                                        Text(
-                                          'Crear cuenta de usuario para acceso a la app',
-                                          style: TextStyle(
-                                            fontSize: 14,
-                                            color: Theme.of(
-                                              context,
-                                            ).colorScheme.onSurfaceVariant,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                  Switch(
-                                    value: _createUser,
-                                    onChanged: (value) =>
-                                        setState(() => _createUser = value),
-                                    activeThumbColor: Theme.of(
-                                      context,
-                                    ).colorScheme.primary,
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 24),
-                              // 💳 Configuración de Crédito
-                              Row(
-                                children: [
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                          'Habilitar Crédito',
-                                          style: TextStyle(
-                                            fontSize: 16,
-                                            fontWeight: FontWeight.w500,
-                                            color: Theme.of(
-                                              context,
-                                            ).colorScheme.onSurface,
-                                          ),
-                                        ),
-                                        Text(
-                                          'Permite que el cliente use crédito',
-                                          style: TextStyle(
-                                            fontSize: 14,
-                                            color: Theme.of(
-                                              context,
-                                            ).colorScheme.onSurfaceVariant,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                  Switch(
-                                    value: _puedeAtenerCredito,
-                                    onChanged: (value) =>
-                                        setState(() => _puedeAtenerCredito = value),
-                                    activeThumbColor: Colors.blue.shade600,
-                                  ),
-                                ],
-                              ),
-                              // Límite de Crédito (solo visible si está habilitado)
-                              if (_puedeAtenerCredito) ...[
-                                const SizedBox(height: 16),
-                                TextFormField(
-                                  initialValue: _limiteCredito > 0 ? _limiteCredito.toString() : '',
-                                  decoration: _buildInputDecoration(
-                                    labelText: 'Límite de Crédito (BOB)',
-                                    hintText: '0.00',
-                                    prefixIcon: Icons.attach_money,
-                                  ),
-                                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                                  inputFormatters: [
-                                    FilteringTextInputFormatter.allow(
-                                      RegExp(r'^\d+\.?\d{0,2}'),
-                                    ),
-                                  ],
-                                  onChanged: (value) {
-                                    setState(() {
-                                      _limiteCredito = double.tryParse(value) ?? 0.0;
-                                    });
-                                  },
-                                ),
-                              ],
+                      // Información básica
+                      _buildSection(
+                        title: 'Información Básica',
+                        icon: Icons.person,
+                        children: [
+                          TextFormField(
+                            controller: _nameController,
+                            decoration: _buildInputDecoration(
+                              labelText: 'Nombre *',
+                              hintText: 'Ingrese el nombre completo',
+                              prefixIcon: Icons.person_outline,
+                            ),
+                            validator: (value) {
+                              if (value == null || value.isEmpty) {
+                                return 'El nombre es obligatorio';
+                              }
+                              return null;
+                            },
+                          ),
+                          const SizedBox(height: 16),
+                          TextFormField(
+                            controller: _businessNameController,
+                            decoration: _buildInputDecoration(
+                              labelText: 'Razón Social',
+                              hintText: 'Ingrese la razón social (opcional)',
+                              prefixIcon: Icons.business,
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                          TextFormField(
+                            controller: _nitController,
+                            decoration: _buildInputDecoration(
+                              labelText: 'NIT / CI',
+                              hintText: 'Ingrese el NIT o Cédula de Identidad',
+                              prefixIcon: Icons.badge,
+                            ),
+                            keyboardType: TextInputType.number,
+                            inputFormatters: [
+                              FilteringTextInputFormatter.digitsOnly,
                             ],
                           ),
                         ],
-
-                        const SizedBox(height: 32),
-                      ],
-                    ),
-                  ),
-                )
-              : Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const CircularProgressIndicator(),
-                      const SizedBox(height: 16),
-                      Text(
-                        'Cargando datos del formulario...',
-                        style: Theme.of(context).textTheme.titleMedium,
                       ),
-                      if (_isLoadingLocalidades)
-                        const Padding(
-                          padding: EdgeInsets.only(top: 8),
-                          child: Text(
-                            'Cargando localidades...',
-                            style: TextStyle(fontSize: 14, color: Colors.grey),
+
+                      const SizedBox(height: 24),
+
+                      // Información de contacto
+                      _buildSection(
+                        title: 'Información de Contacto',
+                        icon: Icons.contact_phone,
+                        children: [
+                          TextFormField(
+                            controller: _emailController,
+                            decoration: _buildInputDecoration(
+                              labelText: 'Correo Electrónico',
+                              hintText: 'correo@ejemplo.com',
+                              prefixIcon: Icons.email,
+                            ),
+                            keyboardType: TextInputType.emailAddress,
                           ),
+                          const SizedBox(height: 16),
+                          TextFormField(
+                            controller: _phoneController,
+                            decoration: _buildInputDecoration(
+                              labelText: 'Teléfono',
+                              hintText: '+1234567890',
+                              prefixIcon: Icons.phone,
+                            ),
+                            keyboardType: TextInputType.phone,
+                            inputFormatters: [
+                              FilteringTextInputFormatter.digitsOnly,
+                            ],
+                          ),
+                        ],
+                      ),
+
+                      const SizedBox(height: 24),
+
+                      // Ubicación
+                      _buildSection(
+                        title: 'Ubicación',
+                        icon: Icons.location_on,
+                        children: [
+                          // Location Selector con GPS
+                          LocationSelector(
+                            initialLatitude: _latitude,
+                            initialLongitude: _longitude,
+                            onLocationSelected: (lat, lng, address) {
+                              setState(() {
+                                _latitude = lat;
+                                _longitude = lng;
+                                // Cargar la dirección obtenida del GPS en el campo de dirección
+                                if (address != null &&
+                                    address.isNotEmpty &&
+                                    address != 'Dirección no disponible' &&
+                                    _addressController.text.isEmpty) {
+                                  _addressController.text = address;
+                                }
+                              });
+                            },
+                            autoGetLocation: true,
+                          ),
+                          const SizedBox(height: 16),
+                          // Localidad selector (mejorado)
+                          Container(
+                            decoration: BoxDecoration(
+                              color: Theme.of(context).colorScheme.surface,
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                color: Theme.of(
+                                  context,
+                                ).colorScheme.outline.withOpacity(0.3),
+                              ),
+                            ),
+                            child: _isLoadingLocalidades
+                                ? Padding(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 16,
+                                      vertical: 12,
+                                    ),
+                                    child: Row(
+                                      children: [
+                                        const SizedBox(
+                                          width: 20,
+                                          height: 20,
+                                          child: CircularProgressIndicator(
+                                            strokeWidth: 2,
+                                          ),
+                                        ),
+                                        const SizedBox(width: 12),
+                                        Text(
+                                          'Cargando localidades...',
+                                          style: TextStyle(
+                                            color: Theme.of(
+                                              context,
+                                            ).colorScheme.onSurfaceVariant,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  )
+                                : SelectSearch<Localidad>(
+                                    label: 'Localidad',
+                                    items: _localidades
+                                        .where(
+                                          (l) => l.nombre.trim().isNotEmpty,
+                                        )
+                                        .toList(),
+                                    value: _selectedLocationId != null
+                                        ? _localidades
+                                              .where(
+                                                (l) =>
+                                                    l.nombre.trim().isNotEmpty,
+                                              )
+                                              .cast<Localidad?>()
+                                              .firstWhere(
+                                                (localidad) =>
+                                                    localidad?.id ==
+                                                    _selectedLocationId,
+                                                orElse: () => null,
+                                              )
+                                        : null,
+                                    displayString: (localidad) =>
+                                        localidad.nombre,
+                                    onChanged: (localidad) {
+                                      setState(() {
+                                        _selectedLocationId = localidad?.id;
+                                      });
+                                    },
+                                    hintText: 'Buscar localidad...',
+                                    prefixIcon: const Icon(Icons.location_city),
+                                  ),
+                          ),
+                          const SizedBox(height: 16),
+                          TextFormField(
+                            controller: _addressController,
+                            decoration: _buildInputDecoration(
+                              labelText: 'Dirección',
+                              hintText: 'Ingrese la dirección completa',
+                              prefixIcon: Icons.home,
+                            ),
+                            maxLines: 3,
+                          ),
+                          const SizedBox(height: 16),
+                          // Campo para observaciones del lugar
+                          TextFormField(
+                            controller: _locationObservationsController,
+                            decoration: _buildInputDecoration(
+                              labelText: 'Observaciones del lugar',
+                              hintText:
+                                  'Ingrese observaciones sobre la ubicación del cliente',
+                              prefixIcon: Icons.note,
+                            ),
+                            maxLines: 3,
+                          ),
+                        ],
+                      ),
+
+                      const SizedBox(height: 24),
+
+                      // Preferencias de entrega
+                      _buildSection(
+                        title: 'Dias de Visitas',
+                        icon: Icons.access_time,
+                        children: [
+                          if (_ventanasEntrega.isNotEmpty)
+                            Column(
+                              children: _ventanasEntrega.asMap().entries.map((
+                                entry,
+                              ) {
+                                final i = entry.key;
+                                final v = entry.value;
+                                final days = [
+                                  'Dom',
+                                  'Lun',
+                                  'Mar',
+                                  'Mié',
+                                  'Jue',
+                                  'Vie',
+                                  'Sáb',
+                                ];
+                                final day =
+                                    (v.diaSemana >= 0 && v.diaSemana <= 6)
+                                    ? days[v.diaSemana]
+                                    : 'Día ${v.diaSemana}';
+                                return Card(
+                                  margin: const EdgeInsets.only(bottom: 8),
+                                  child: ListTile(
+                                    leading: Icon(
+                                      Icons.calendar_today,
+                                      color: v.activo
+                                          ? Colors.green
+                                          : Colors.grey,
+                                    ),
+                                    title: Text(
+                                      '$day: ${v.horaInicio} - ${v.horaFin}',
+                                    ),
+                                    subtitle: v.activo
+                                        ? null
+                                        : const Text(
+                                            'Inactivo',
+                                            style: TextStyle(
+                                              color: Colors.grey,
+                                            ),
+                                          ),
+                                    trailing: IconButton(
+                                      icon: const Icon(
+                                        Icons.delete,
+                                        color: Colors.red,
+                                      ),
+                                      onPressed: () {
+                                        setState(() {
+                                          _ventanasEntrega.removeAt(i);
+                                        });
+                                      },
+                                    ),
+                                    onTap: () => _showVentanaDialog(
+                                      initial: v,
+                                      index: i,
+                                    ),
+                                  ),
+                                );
+                              }).toList(),
+                            )
+                          else
+                            const Text(
+                              'Agrega los días y horarios preferidos para visitas.',
+                              style: TextStyle(color: Colors.grey),
+                            ),
+                          const SizedBox(height: 8),
+                          Align(
+                            alignment: Alignment.centerRight,
+                            child: OutlinedButton.icon(
+                              onPressed: () => _showVentanaDialog(),
+                              icon: const Icon(Icons.add),
+                              label: const Text('Agregar dia de visita'),
+                            ),
+                          ),
+                        ],
+                      ),
+
+                      // ✅ Solo mostrar Categorías y Configuración cuando se está EDITANDO
+                      if (_isEditing) ...[
+                        const SizedBox(height: 24),
+
+                        // Categorías del cliente (solo en modo edición)
+                        _buildSection(
+                          title: 'Categorías',
+                          icon: Icons.category,
+                          children: [
+                            if (_categoriasCatalogo.isEmpty)
+                              const Text(
+                                'No hay categorías disponibles',
+                                style: TextStyle(color: Colors.grey),
+                              )
+                            else
+                              Wrap(
+                                spacing: 8,
+                                runSpacing: 8,
+                                children: _categoriasCatalogo.map((cat) {
+                                  final selected = _selectedCategoriasIds
+                                      .contains(cat.id);
+                                  return FilterChip(
+                                    label: Text(
+                                      cat.nombre ??
+                                          cat.clave ??
+                                          'Cat ${cat.id}',
+                                    ),
+                                    selected: selected,
+                                    onSelected: (val) {
+                                      setState(() {
+                                        if (val) {
+                                          _selectedCategoriasIds.add(cat.id);
+                                        } else {
+                                          _selectedCategoriasIds.remove(cat.id);
+                                        }
+                                      });
+                                    },
+                                  );
+                                }).toList(),
+                              ),
+                          ],
                         ),
+
+                        const SizedBox(height: 24),
+                        // Configuración (solo en modo edición)
+                        _buildSection(
+                          title: 'Configuración',
+                          icon: Icons.settings,
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(16),
+                              decoration: BoxDecoration(
+                                color: _isActive
+                                    ? Colors.green.shade50
+                                    : Colors.red.shade50,
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(
+                                  color: _isActive
+                                      ? Colors.green.shade200
+                                      : Colors.red.shade200,
+                                  width: 1.5,
+                                ),
+                              ),
+                              child: Row(
+                                children: [
+                                  Container(
+                                    padding: const EdgeInsets.all(8),
+                                    decoration: BoxDecoration(
+                                      gradient: LinearGradient(
+                                        colors: _isActive
+                                            ? [
+                                                Colors.green.shade400,
+                                                Colors.green.shade600,
+                                              ]
+                                            : [
+                                                Colors.red.shade400,
+                                                Colors.red.shade600,
+                                              ],
+                                      ),
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    child: Icon(
+                                      _isActive
+                                          ? Icons.check_circle
+                                          : Icons.cancel,
+                                      color: Colors.white,
+                                      size: 20,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          'Estado del Cliente',
+                                          style: TextStyle(
+                                            fontSize: 14,
+                                            color: Colors.grey.shade700,
+                                            fontWeight: FontWeight.w500,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 4),
+                                        Text(
+                                          _isActive ? 'Activo' : 'Inactivo',
+                                          style: TextStyle(
+                                            fontSize: 16,
+                                            fontWeight: FontWeight.bold,
+                                            color: _isActive
+                                                ? Colors.green.shade700
+                                                : Colors.red.shade700,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  Switch(
+                                    value: _isActive,
+                                    onChanged: (value) =>
+                                        setState(() => _isActive = value),
+                                    activeColor: Colors.green.shade600,
+                                    inactiveThumbColor: Colors.red.shade400,
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(height: 16),
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        'Crear Usuario',
+                                        style: TextStyle(
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.w500,
+                                          color: Theme.of(
+                                            context,
+                                          ).colorScheme.onSurface,
+                                        ),
+                                      ),
+                                      Text(
+                                        'Crear cuenta de usuario para acceso a la app',
+                                        style: TextStyle(
+                                          fontSize: 14,
+                                          color: Theme.of(
+                                            context,
+                                          ).colorScheme.onSurfaceVariant,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                Switch(
+                                  value: _createUser,
+                                  onChanged: (value) =>
+                                      setState(() => _createUser = value),
+                                  activeThumbColor: Theme.of(
+                                    context,
+                                  ).colorScheme.primary,
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 24),
+                            // 💳 Configuración de Crédito
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        'Habilitar Crédito',
+                                        style: TextStyle(
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.w500,
+                                          color: Theme.of(
+                                            context,
+                                          ).colorScheme.onSurface,
+                                        ),
+                                      ),
+                                      Text(
+                                        'Permite que el cliente use crédito',
+                                        style: TextStyle(
+                                          fontSize: 14,
+                                          color: Theme.of(
+                                            context,
+                                          ).colorScheme.onSurfaceVariant,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                Switch(
+                                  value: _puedeAtenerCredito,
+                                  onChanged: (value) => setState(
+                                    () => _puedeAtenerCredito = value,
+                                  ),
+                                  activeThumbColor: Colors.blue.shade600,
+                                ),
+                              ],
+                            ),
+                            // Límite de Crédito (solo visible si está habilitado)
+                            if (_puedeAtenerCredito) ...[
+                              const SizedBox(height: 16),
+                              TextFormField(
+                                initialValue: _limiteCredito > 0
+                                    ? _limiteCredito.toString()
+                                    : '',
+                                decoration: _buildInputDecoration(
+                                  labelText: 'Límite de Crédito (BOB)',
+                                  hintText: '0.00',
+                                  prefixIcon: Icons.attach_money,
+                                ),
+                                keyboardType:
+                                    const TextInputType.numberWithOptions(
+                                      decimal: true,
+                                    ),
+                                inputFormatters: [
+                                  FilteringTextInputFormatter.allow(
+                                    RegExp(r'^\d+\.?\d{0,2}'),
+                                  ),
+                                ],
+                                onChanged: (value) {
+                                  setState(() {
+                                    _limiteCredito =
+                                        double.tryParse(value) ?? 0.0;
+                                  });
+                                },
+                              ),
+                            ],
+                          ],
+                        ),
+                      ],
+
+                      const SizedBox(height: 32),
                     ],
                   ),
                 ),
+              )
+            : Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const CircularProgressIndicator(),
+                    const SizedBox(height: 16),
+                    Text(
+                      'Cargando datos del formulario...',
+                      style: Theme.of(context).textTheme.titleMedium,
+                    ),
+                    if (_isLoadingLocalidades)
+                      const Padding(
+                        padding: EdgeInsets.only(top: 8),
+                        child: Text(
+                          'Cargando localidades...',
+                          style: TextStyle(fontSize: 14, color: Colors.grey),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
       ),
     );
   }
@@ -863,10 +958,7 @@ class _ClientFormScreenState extends State<ClientFormScreen> {
       labelText: labelText,
       hintText: hintText,
       prefixIcon: prefixIcon != null
-          ? Icon(
-              prefixIcon,
-              color: accentColor,
-            )
+          ? Icon(prefixIcon, color: accentColor)
           : null,
       suffixIcon: suffixIcon,
       filled: true,
@@ -881,10 +973,7 @@ class _ClientFormScreenState extends State<ClientFormScreen> {
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
-        borderSide: BorderSide(
-          color: accentColor,
-          width: 2,
-        ),
+        borderSide: BorderSide(color: accentColor, width: 2),
       ),
       errorBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
@@ -895,10 +984,7 @@ class _ClientFormScreenState extends State<ClientFormScreen> {
         borderSide: BorderSide(color: colorScheme.error, width: 2),
       ),
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-      labelStyle: TextStyle(
-        color: accentColor,
-        fontWeight: FontWeight.w500,
-      ),
+      labelStyle: TextStyle(color: accentColor, fontWeight: FontWeight.w500),
     );
   }
 
@@ -941,10 +1027,7 @@ class _ClientFormScreenState extends State<ClientFormScreen> {
                   padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
-                      colors: [
-                        accentColor,
-                        accentColor.withOpacity(0.7),
-                      ],
+                      colors: [accentColor, accentColor.withOpacity(0.7)],
                     ),
                     borderRadius: BorderRadius.circular(12),
                     boxShadow: [
@@ -955,11 +1038,7 @@ class _ClientFormScreenState extends State<ClientFormScreen> {
                       ),
                     ],
                   ),
-                  child: Icon(
-                    icon,
-                    color: colorScheme.onPrimary,
-                    size: 24,
-                  ),
+                  child: Icon(icon, color: colorScheme.onPrimary, size: 24),
                 ),
                 const SizedBox(width: 16),
                 Text(
@@ -1052,6 +1131,7 @@ class _ClientFormScreenState extends State<ClientFormScreen> {
               : [],
         );
         // Obtener mensaje de error si falló
+
         if (!success) {
           errorMessage = _clientProvider.errorMessage;
         }
@@ -1347,10 +1427,17 @@ class _ClientFormScreenState extends State<ClientFormScreen> {
   TimeOfDay? _parseTime(String? hhmm) {
     if (hhmm == null || hhmm.isEmpty) return null;
     final parts = hhmm.split(':');
-    if (parts.length != 2) return null;
+    if (parts.isEmpty) return null;
+
+    // Permitir "HH:MM" o "HH:MM:SS"
     final h = int.tryParse(parts[0]);
-    final m = int.tryParse(parts[1]);
-    if (h == null || m == null) return null;
+    final m = int.tryParse(parts.length > 1 ? parts[1] : '0');
+
+    if (h == null || m == null || h < 0 || h > 23 || m < 0 || m > 59) {
+      debugPrint('❌ Error parseando hora: $hhmm (h=$h, m=$m)');
+      return null;
+    }
+
     return TimeOfDay(hour: h, minute: m);
   }
 
