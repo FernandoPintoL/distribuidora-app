@@ -36,7 +36,7 @@ class _DireccionEntregaSeleccionScreenState
     final carritoProvider = context.read<CarritoProvider>();
 
     debugPrint(
-      '🚚 Cargando direcciones cliente ${carritoProvider.getClienteSeleccionadoId()}',
+      '🚚 Cargando direcciones cliente en carrito ${carritoProvider.getClienteSeleccionadoId()} | ${authProvider.user?.id}',
     );
 
     // print("🔄 Cargando direcciones de entrega... ${clientProvider)}");
@@ -68,6 +68,16 @@ class _DireccionEntregaSeleccionScreenState
         // ✅ CLIENTE: Obtener su propio perfil
         debugPrint('👥 [CLIENTE] Cargando mi perfil con mis direcciones');
         cliente = await clientProvider.getClientPerfil();
+        carritoProvider.setClienteSeleccionado(cliente);
+        debugPrint('✅ Cliente cargado: ${cliente?.nombre}');
+        debugPrint('🔄 Cliente ID: ${cliente?.id}');
+        debugPrint('puede tener credito ?: ${cliente?.puedeAtenerCredito}');
+        debugPrint(
+          '🔄 Cliente direcciones: ${cliente?.direcciones?.length ?? 0}',
+        );
+        debugPrint(
+          '🔄 id direccion : ${cliente?.direcciones?.isNotEmpty == true ? cliente?.direcciones?.first.id : 'N/A'}',
+        );
       } else {
         // ❌ Preventista pero sin clienteId
         _errorMessage = 'No se proporcionó el cliente a consultar';

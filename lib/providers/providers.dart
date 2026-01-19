@@ -10,3 +10,5 @@ export 'notification_provider.dart';
 export 'ruta_provider.dart';
 export 'estados_provider.dart';
 export 'visita_provider.dart';
+export 'caja_provider.dart';
+export 'gasto_provider.dart';

@@ -6,6 +6,7 @@ import '../../providers/providers.dart';
 import 'entregas_asignadas_screen.dart';
 import 'tracking_screen.dart';
 import 'mis_visitas_historial_screen.dart';
+import 'caja_screen.dart';
 import '../perfil/perfil_screen.dart';
 import '../../widgets/widgets.dart';
 import '../../widgets/chofer/dashboard_stats_card.dart';
@@ -39,6 +40,10 @@ class _HomeChoferScreenState extends BaseHomeScreenState<HomeChoferScreen> {
       label: 'Entregas',
     ),
     NavigationItem(
+      icon: Icons.attach_money,
+      label: 'Caja',
+    ),
+    NavigationItem(
       icon: Icons.person,
       label: 'Perfil',
     ),
@@ -48,6 +53,7 @@ class _HomeChoferScreenState extends BaseHomeScreenState<HomeChoferScreen> {
   List<Widget> get screens => [
     const _DashboardTab(),
     const EntregasAsignadasScreen(),
+    const CajaScreen(),
     const PerfilScreen(),
   ];
 
@@ -67,6 +73,8 @@ class _HomeChoferScreenState extends BaseHomeScreenState<HomeChoferScreen> {
     try {
       final entregaProvider = context.read<EntregaProvider>();
       final notificationProvider = context.read<NotificationProvider>();
+      final cajaProvider = context.read<CajaProvider>();
+      final gastoProvider = context.read<GastoProvider>();
 
       // ✅ OPTIMIZADO: Cargar solo estadísticas (ligero y rápido)
       // Las entregas detalladas se cargarán cuando el usuario abra la pestaña "Entregas"
@@ -76,6 +84,12 @@ class _HomeChoferScreenState extends BaseHomeScreenState<HomeChoferScreen> {
       // Esto evita que las notificaciones se acumulen y lleguen de golpe
       // Las notificaciones nuevas llegarán gradualmente a través del WebSocket
       await notificationProvider.loadStats();
+
+      // ✅ NUEVO: Cargar estado de caja (para saber si está abierta)
+      await cajaProvider.cargarEstadoCaja();
+
+      // ✅ NUEVO: Cargar gastos del día
+      await gastoProvider.cargarGastos();
     } catch (e) {
       debugPrint('❌ Error cargando datos iniciales: $e');
     }

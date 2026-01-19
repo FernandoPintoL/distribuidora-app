@@ -48,7 +48,6 @@ class _ResumenPedidoScreenState extends State<ResumenPedidoScreen> {
 
   Future<void> _confirmarPedido() async {
     final carritoProvider = context.read<CarritoProvider>();
-
     debugPrint(
       '🚀 cliente cargado ${carritoProvider.getClienteSeleccionadoId()}',
     );
@@ -123,12 +122,30 @@ class _ResumenPedidoScreenState extends State<ResumenPedidoScreen> {
       // ✅ Dos formas de obtener al cliente según el tipo de usuario:
       // 1. Si es CLIENTE LOGUEADO: cargar desde API usando clienteId
       // 2. Si es PREVENTISTA: obtener desde carritoProvider (ya seleccionado)
-      late Client clienteSeleccionado;
+      Client? clienteSeleccionado;
 
       if (esClienteLogueado) {
-        // Para cliente logueado: cargar desde API
+        // Para cliente logueado: cargar desde API usando ClientProvider
         debugPrint(
-          '👤 Cargando datos del cliente logueado (ID: ${carritoProvider.getClienteSeleccionadoId()})...',
+          '👤 Cargando datos del cliente logueado (ID: $clienteIdParaPedido)...',
+        );
+
+        final clientProvider = Provider.of<ClientProvider>(
+          context,
+          listen: false,
+        );
+        clienteSeleccionado = await clientProvider.getClient(
+          clienteIdParaPedido,
+        );
+
+        if (clienteSeleccionado == null) {
+          throw Exception(
+            'No se pudieron cargar los datos del cliente. Por favor, intenta de nuevo.',
+          );
+        }
+
+        debugPrint(
+          '👤 Cliente logueado cargado: ${clienteSeleccionado.nombre} (ID: ${clienteSeleccionado.id})',
         );
       } else if (esPreventista) {
         // Para preventista: obtener del carrito (ya fue seleccionado)
@@ -169,7 +186,7 @@ class _ResumenPedidoScreenState extends State<ResumenPedidoScreen> {
             builder: (BuildContext context) => AlertDialog(
               title: const Text('Sin Permisos de Crédito'),
               content: Text(
-                'El cliente "${clienteSeleccionado.nombre}" no tiene permisos para solicitar crédito.\n\n'
+                'El cliente "${clienteSeleccionado!.nombre}" no tiene permisos para solicitar crédito.\n\n'
                 '¿Deseas continuar con otra forma de pago?',
               ),
               actions: [

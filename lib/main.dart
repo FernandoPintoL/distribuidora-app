@@ -67,6 +67,8 @@ void main() async {
           ChangeNotifierProvider(create: (_) => NotificationProvider()),
           ChangeNotifierProvider(create: (_) => EstadosProvider()),
           ChangeNotifierProvider(create: (_) => VisitaProvider()),
+          ChangeNotifierProvider(create: (_) => CajaProvider()),
+          ChangeNotifierProvider(create: (_) => GastoProvider()),
         ],
         child: const MyApp(),
       ),
