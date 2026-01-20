@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<paths xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- ✅ CORREGIDO: Permite compartir archivos desde rutas externas privadas de la app -->
+    <!-- Ruta: /storage/emulated/0/Android/data/package_name/files/downloads -->
+    <!-- Obtenida de: getExternalFilesDir("downloads") -->
+    <external-files-path
+        name="external_app_downloads"
+        path="downloads/" />
+
+    <!-- ✅ Raíz de external files/ -->
+    <external-files-path
+        name="external_app_files"
+        path="." />
+
+    <!-- ✅ Para rutas internas (por si acaso) -->
+    <files-path
+        name="app_files"
+        path="." />
+
+    <!-- ✅ Para caché (si es necesario) -->
+    <cache-path
+        name="cache_dir"
+        path="." />
+</paths>
