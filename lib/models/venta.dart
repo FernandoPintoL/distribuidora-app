@@ -129,7 +129,7 @@ class Venta {
     // Calcular descuento si no viene en el JSON
     double descuentoValue = 0.0;
     if (json['descuento'] != null) {
-      descuentoValue = double.parse(json['descuento'].toString());
+      descuentoValue = _parseDouble(json['descuento']);
     }
 
     return Venta(
@@ -138,10 +138,10 @@ class Venta {
       cliente: json['cliente'] is String ? json['cliente'] as String? : null,
       clienteNombre: clienteNom,
       clienteTelefono: clienteTel,
-      total: double.parse(json['total'].toString()),
-      subtotal: double.parse(json['subtotal'].toString()),
+      total: _parseDouble(json['total']),
+      subtotal: _parseDouble(json['subtotal']),
       descuento: descuentoValue,
-      impuesto: double.parse(json['impuesto'].toString()),
+      impuesto: _parseDouble(json['impuesto']),
       observaciones: json['observaciones'] as String?,
       estadoLogisticoId: estadoLogisticoId,
       estadoLogisticoCodigo: estadoLogisticoCodigo,
@@ -157,6 +157,22 @@ class Venta {
       longitud: lngEntrega,
       direccion: direccionEntrega,
     );
+  }
+
+  // Helper to safely parse double from string or number
+  static double _parseDouble(dynamic value) {
+    if (value == null) return 0.0;
+    if (value is double) return value;
+    if (value is int) return value.toDouble();
+    if (value is String) {
+      try {
+        return double.parse(value);
+      } catch (e) {
+        return 0.0;
+      }
+    }
+    if (value is num) return value.toDouble();
+    return 0.0;
   }
 
   Map<String, dynamic> toJson() {
@@ -235,11 +251,27 @@ class VentaDetalle {
       ventaId: json['venta_id'] as int,
       productoId: json['producto_id'] as int,
       cantidad: cantidadDouble,
-      precioUnitario: double.parse(json['precio_unitario'].toString()),
-      descuento: double.parse(json['descuento'].toString()),
-      subtotal: double.parse(json['subtotal'].toString()),
+      precioUnitario: _parseDouble(json['precio_unitario']),
+      descuento: _parseDouble(json['descuento']),
+      subtotal: _parseDouble(json['subtotal']),
       producto: productoObj,
     );
+  }
+
+  // Helper to safely parse double from string or number
+  static double _parseDouble(dynamic value) {
+    if (value == null) return 0.0;
+    if (value is double) return value;
+    if (value is int) return value.toDouble();
+    if (value is String) {
+      try {
+        return double.parse(value);
+      } catch (e) {
+        return 0.0;
+      }
+    }
+    if (value is num) return value.toDouble();
+    return 0.0;
   }
 
   Map<String, dynamic> toJson() {

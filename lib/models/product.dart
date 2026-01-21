@@ -16,6 +16,7 @@ class Product {
   final int? stockMinimo;
   final int? stockMaximo;
   final int? cantidadMinima;
+  final int? limiteVenta;
   final List<ProductImage>? imagenes;
   final List<String>? codigosBarra;
   final StockWarehouse? stockPrincipal;
@@ -37,6 +38,7 @@ class Product {
     this.stockMinimo,
     this.stockMaximo,
     this.cantidadMinima,
+    this.limiteVenta,
     this.imagenes,
     this.codigosBarra,
     this.stockPrincipal,
@@ -66,12 +68,13 @@ class Product {
                   ? UnitMeasure.fromJson(json['unidad_medida'])
                   : null),
         activo: json['activo'] ?? true,
-        precioCompra: json['precio_compra']?.toDouble(),
+        precioCompra: _parseDouble(json['precio_compra']),
         // Map both 'precio_venta' and 'precio' (from list endpoint)
-        precioVenta: (json['precio_venta'] ?? json['precio'])?.toDouble(),
+        precioVenta: _parseDouble(json['precio_venta'] ?? json['precio']),
         stockMinimo: json['stock_minimo'],
         stockMaximo: json['stock_maximo'],
         cantidadMinima: json['cantidad_minima'],
+        limiteVenta: json['limite_venta'],
         imagenes: json['imagenes'] != null
             ? (json['imagenes'] as List)
                   .map((i) => ProductImage.fromJson(i))
@@ -125,9 +128,22 @@ class Product {
       'stock_minimo': stockMinimo,
       'stock_maximo': stockMaximo,
       'cantidad_minima': cantidadMinima,
+      'limite_venta': limiteVenta,
       'imagenes': imagenes?.map((i) => i.toJson()).toList(),
       'codigos_barra': codigosBarra,
     };
+  }
+
+  /// Helper para parsear doubles desde JSON (pueden venir como string o num)
+  static double? _parseDouble(dynamic value) {
+    if (value == null) return null;
+    if (value is double) return value;
+    if (value is int) return value.toDouble();
+    if (value is String) {
+      return double.tryParse(value);
+    }
+    if (value is num) return value.toDouble();
+    return null;
   }
 }
 

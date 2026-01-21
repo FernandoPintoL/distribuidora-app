@@ -7,6 +7,23 @@ import 'chofer.dart';
 import 'camion.dart';
 import '../services/estados_helpers.dart';
 
+// ✅ NUEVO: Evento de timeline para visualizar el ciclo completo del pedido
+class PedidoTimelineEvent {
+  final String categoria;      // proforma, venta, logistica
+  final String estado;         // PENDIENTE, APROBADA, etc
+  final String label;          // Texto para mostrar
+  final DateTime timestamp;    // Cuándo ocurrió
+  final String icono;          // Emoji o ícono
+
+  PedidoTimelineEvent({
+    required this.categoria,
+    required this.estado,
+    required this.label,
+    required this.timestamp,
+    required this.icono,
+  });
+}
+
 class Pedido {
   final int id;
   final String numero;
@@ -403,5 +420,139 @@ class Pedido {
 
   int get cantidadTotalProductos {
     return items.fold(0, (sum, item) => sum + item.cantidad.toInt());
+  }
+
+  // ✅ NUEVOS HELPERS PARA TIMELINE UNIFICADO
+  /// Obtener si este pedido ya se convirtió de proforma a venta
+  bool get esVenta {
+    return estadoCategoria.contains('venta');
+  }
+
+  /// Obtener el estado de pago si es venta (historial)
+  String? get estadoPagoFromHistorial {
+    // Buscar en el historial un evento de pago
+    final pagoPendiente = historialEstados.where((h) =>
+      h.estadoNuevo.toUpperCase().contains('PAGO') ||
+      h.estadoNuevo.toUpperCase().contains('PENDIENTE')
+    ).toList();
+
+    if (pagoPendiente.isNotEmpty) {
+      return pagoPendiente.last.estadoNuevo;
+    }
+    return null;
+  }
+
+  /// Obtener el estado logístico si es venta (por categoría)
+  bool get tieneEstadoLogistico {
+    return estadoCategoria.contains('logistica') ||
+           estadoCategoria.contains('entrega');
+  }
+
+  /// Para display: categoría humanizada
+  String get categoriaHumanizada {
+    switch (estadoCategoria.toLowerCase()) {
+      case 'proforma':
+        return '📋 Proforma';
+      case 'venta':
+        return '💳 Venta';
+      case 'venta_logistica':
+      case 'venta_logísticas':
+        return '🚚 Envío';
+      default:
+        return estadoCategoria;
+    }
+  }
+
+  /// Timeline visual: retorna lista de eventos en orden cronológico
+  List<PedidoTimelineEvent> get timelineEvents {
+    final events = <PedidoTimelineEvent>[];
+
+    // Agregar evento de creación (proforma inicial)
+    events.add(PedidoTimelineEvent(
+      categoria: 'proforma',
+      estado: 'PENDIENTE',
+      label: 'Proforma Creada',
+      timestamp: fechaCreacion,
+      icono: '📋',
+    ));
+
+    // Agregar eventos del historial en orden
+    for (final evento in historialEstados) {
+      // ✅ ACTUALIZADO: Usar estadoNuevo en lugar de estadoCodigo
+      final esConversion = evento.estadoNuevo.toUpperCase() == 'CONVERTIDA';
+
+      // Detectar si es un evento de proforma (estado anterior/nuevo contiene palabras clave)
+      final esProformaEvent = evento.estadoNuevo.toUpperCase().contains('PENDIENTE') ||
+                              evento.estadoNuevo.toUpperCase().contains('APROBADA') ||
+                              evento.estadoNuevo.toUpperCase().contains('CONVERTIDA') ||
+                              evento.estadoNuevo.toUpperCase().contains('RECHAZADA') ||
+                              evento.estadoNuevo.toUpperCase().contains('VENCIDA');
+
+      if (esProformaEvent) {
+        events.add(PedidoTimelineEvent(
+          categoria: 'proforma',
+          estado: evento.estadoNuevo,
+          label: 'Proforma ${evento.estadoNuevo}',
+          timestamp: evento.fecha,
+          icono: _getIconoParaEstadoProforma(evento.estadoNuevo),
+        ));
+      }
+
+      // Si se convirtió, agregar venta
+      if (esConversion) {
+        events.add(PedidoTimelineEvent(
+          categoria: 'venta',
+          estado: 'CREADA',
+          label: 'Convertida a Venta',
+          timestamp: evento.fecha,
+          icono: '💳',
+        ));
+      }
+    }
+
+    // Agregar evento actual si es logística
+    if (tieneEstadoLogistico) {
+      events.add(PedidoTimelineEvent(
+        categoria: 'logistica',
+        estado: estadoCodigo,
+        label: estadoNombre,
+        timestamp: DateTime.now(),
+        icono: _getIconoParaEstadoLogistica(estadoCodigo),
+      ));
+    }
+
+    return events;
+  }
+
+  String _getIconoParaEstadoProforma(String codigo) {
+    switch (codigo.toUpperCase()) {
+      case 'PENDIENTE':
+        return '⏳';
+      case 'APROBADA':
+        return '✅';
+      case 'CONVERTIDA':
+        return '🔄';
+      case 'RECHAZADA':
+        return '❌';
+      case 'VENCIDA':
+        return '⏰';
+      default:
+        return '📋';
+    }
+  }
+
+  String _getIconoParaEstadoLogistica(String codigo) {
+    switch (codigo.toUpperCase()) {
+      case 'PENDIENTE_ENVIO':
+        return '📦';
+      case 'EN_TRANSITO':
+        return '🚚';
+      case 'ENTREGADO':
+        return '✅';
+      case 'ENTREGADA':
+        return '✅';
+      default:
+        return '🚚';
+    }
   }
 }

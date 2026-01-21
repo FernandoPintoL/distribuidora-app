@@ -22,6 +22,10 @@ class ProductProvider with ChangeNotifier {
   int get totalItems => _totalItems;
   bool get hasMorePages => _hasMorePages;
 
+  /// Carga lista de productos disponibles para venta
+  ///
+  /// ✅ El almacén se obtiene automáticamente del servidor
+  /// basado en: auth()->user()->empresa->almacen_id
   Future<bool> loadProducts({
     int page = 1,
     int perPage = 20,
@@ -31,8 +35,8 @@ class ProductProvider with ChangeNotifier {
     int? supplierId,
     bool? active,
     bool append = false,
-    int almacenId = 2,
-    bool withStock = true,
+    // ❌ REMOVIDO: int almacenId - Se obtiene del servidor
+    // ❌ REMOVIDO: bool withStock - Siempre se filtra
   }) async {
     debugPrint('📥 loadProducts() - INICIO: append=$append, page=$page, search=$search');
 
@@ -63,8 +67,7 @@ class ProductProvider with ChangeNotifier {
         brandId: brandId,
         supplierId: supplierId,
         active: active,
-        almacenId: almacenId,
-        withStock: withStock,
+        // ❌ NO PASAR: almacenId, withStock
       );
 
       if (response.success && response.data != null) {
@@ -113,14 +116,15 @@ class ProductProvider with ChangeNotifier {
     }
   }
 
+  /// Carga más productos (página siguiente)
   Future<bool> loadMoreProducts({
     String? search,
     int? categoryId,
     int? brandId,
     int? supplierId,
     bool? active,
-    int almacenId = 2,
-    bool withStock = true,
+    // ❌ REMOVIDO: int almacenId - Se obtiene del servidor
+    // ❌ REMOVIDO: bool withStock - Siempre se filtra
   }) async {
     debugPrint('📄 loadMoreProducts() CALLED');
     debugPrint('   Estado: hasMorePages=$_hasMorePages, isLoading=$_isLoading');
@@ -140,8 +144,7 @@ class ProductProvider with ChangeNotifier {
       brandId: brandId,
       supplierId: supplierId,
       active: active,
-      almacenId: almacenId,
-      withStock: withStock,
+      // ❌ NO PASAR: almacenId, withStock
       append: true,
     );
   }

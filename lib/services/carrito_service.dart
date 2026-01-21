@@ -9,6 +9,13 @@ import 'api_service.dart';
 class CarritoService {
   final ApiService _apiService;
 
+  // Para capturar y pasar mensajes de error al provider
+  String? _lastErrorMessage;
+
+  String? get lastErrorMessage => _lastErrorMessage;
+
+  void clearErrorMessage() => _lastErrorMessage = null;
+
   CarritoService(this._apiService);
 
   /// Guardar carrito en la base de datos
@@ -278,10 +285,14 @@ class CarritoService {
   /// - Información del rango actual aplicado
   /// - Información del próximo rango disponible
   /// - Monto de ahorro potencial
+  ///
+  /// Si hay validación de límite de venta, retorna null y guarda el mensaje en [lastErrorMessage]
   Future<CarritoConRangos?> calcularCarritoConRangos(
     List<CarritoItem> items,
   ) async {
     try {
+      _lastErrorMessage = null; // Limpiar error anterior
+
       debugPrint('📊 Calculando carrito con rangos de precio...');
       debugPrint('   Items: ${items.length}');
 
@@ -307,12 +318,23 @@ class CarritoService {
         return carritoConRangos;
       }
 
+      // Manejar respuesta con error (ej: límite de venta excedido)
+      if (response.statusCode == 422 && response.data['error'] != null) {
+        _lastErrorMessage = response.data['error'];
+        debugPrint('⚠️  Validación fallida: $_lastErrorMessage');
+        return null;
+      }
+
       debugPrint('❌ Error: Status ${response.statusCode}');
       return null;
     } on DioException catch (e) {
-      debugPrint('❌ Error al calcular carrito: ${_getErrorMessage(e)}');
+      final errorMessage = _getErrorMessage(e);
+      _lastErrorMessage = errorMessage;
+
+      debugPrint('❌ Error al calcular carrito: $errorMessage');
       return null;
     } catch (e) {
+      _lastErrorMessage = 'Error inesperado: $e';
       debugPrint('❌ Error inesperado al calcular carrito: $e');
       return null;
     }

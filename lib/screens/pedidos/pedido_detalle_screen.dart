@@ -6,9 +6,14 @@ import '../../providers/providers.dart';
 import 'package:intl/intl.dart';
 import 'package:timeline_tile/timeline_tile.dart';
 import '../../widgets/widgets.dart';
+import '../../widgets/venta/venta_info_card.dart';
 import '../../widgets/dialogs/renovacion_reservas_dialog.dart';
+import '../../widgets/dialogs/print_format_dialog.dart';
+import '../../widgets/dialogs/payment_registration_dialog.dart';
 import '../../config/config.dart';
 import '../../services/estados_helpers.dart'; // ✅ AGREGADO para estados dinámicos
+import '../../services/print_service.dart';
+import '../../extensions/theme_extension.dart'; // ✅ AGREGADO para dark mode
 
 class PedidoDetalleScreen extends StatefulWidget {
   final int pedidoId;
@@ -191,6 +196,114 @@ class _PedidoDetalleScreenState extends State<PedidoDetalleScreen> {
     }
   }
 
+  /// Imprimir ticket de venta
+  Future<void> _printTicket(int ventaId) async {
+    try {
+      // 1. Mostrar diálogo de selección de formato
+      final selectedFormat = await showPrintFormatDialog(context);
+      if (selectedFormat == null) {
+        // Usuario canceló
+        return;
+      }
+
+      if (!mounted) return;
+
+      // 2. Mostrar loading
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Abriendo ticket...'),
+          backgroundColor: Colors.blue,
+          duration: Duration(seconds: 1),
+        ),
+      );
+
+      // 3. Llamar PrintService
+      final printService = PrintService();
+      final success = await printService.printTicket(
+        ventaId: ventaId,
+        format: selectedFormat,
+      );
+
+      if (!mounted) return;
+
+      // 4. Mostrar feedback
+      if (success) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Abriendo ticket en ${selectedFormat.label}...',
+            ),
+            backgroundColor: Colors.green,
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'No se pudo abrir el navegador. Verifica tu conexión.',
+            ),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  /// Registrar pago rápido
+  Future<void> _registerPayment(Venta venta) async {
+    try {
+      // Mostrar diálogo de registración de pago
+      final result = await showDialog<bool>(
+        context: context,
+        builder: (context) => PaymentRegistrationDialog(
+          venta: venta,
+          onPaymentSuccess: _onPaymentSuccess,
+        ),
+      );
+
+      // Si el pago fue registrado exitosamente, recargar la venta
+      if (result == true && mounted) {
+        await _cargarPedido();
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  /// Callback cuando el pago se registra exitosamente
+  void _onPaymentSuccess() {
+    // Recargar datos cuando se registra un pago
+    // El diálogo ya muestra el mensaje de éxito
+  }
+
+  /// Mostrar menú de más opciones
+  Future<void> _showMoreOptions(Venta venta) async {
+    // TODO: Implementar después de crear diálogos adicionales
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Más opciones próximamente disponibles'),
+        backgroundColor: Colors.blue,
+      ),
+    );
+  }
+
   String _formatearFecha(DateTime fecha) {
     final formatter = DateFormat('dd MMM yyyy, HH:mm', 'es_ES');
     return formatter.format(fecha);
@@ -203,6 +316,9 @@ class _PedidoDetalleScreenState extends State<PedidoDetalleScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = context.colorScheme;
+    final isDark = context.isDark;
+
     return Scaffold(
       appBar: CustomGradientAppBar(
         title: 'Detalle del Pedido',
@@ -228,10 +344,10 @@ class _PedidoDetalleScreenState extends State<PedidoDetalleScreen> {
           return Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: colorScheme.surface,
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.05),
+                  color: Colors.black.withOpacity(isDark ? 0.15 : 0.05),
                   blurRadius: 10,
                   offset: const Offset(0, -5),
                 ),
@@ -313,6 +429,47 @@ class _PedidoDetalleScreenState extends State<PedidoDetalleScreen> {
                     children: [
                       // Header con estado
                       _buildHeader(pedido),
+
+                      // ✅ NUEVO: Información de venta (si es una venta convertida)
+                      Consumer<PedidoProvider>(
+                        builder: (context, provider, _) {
+                          debugPrint(
+                            '🔍 PedidoDetalle Debug: estadoCategoria=${pedido.estadoCategoria}, '
+                            'ventaActual=${provider.ventaActual != null}, '
+                            'isLoadingVenta=${provider.isLoadingVenta}',
+                          );
+
+                          if (provider.isLoadingVenta) {
+                            return const Padding(
+                              padding: EdgeInsets.all(16),
+                              child: Center(
+                                child: CircularProgressIndicator(),
+                              ),
+                            );
+                          }
+
+                          final venta = provider.ventaActual;
+                          if (venta != null && pedido.estadoCategoria == 'venta') {
+                            debugPrint(
+                              '✅ Mostrando VentaInfoCard: ${venta.numero}',
+                            );
+                            return VentaInfoCard(
+                              venta: venta,
+                              onPrintTicket: () => _printTicket(venta.id),
+                              onRegisterPayment: () => _registerPayment(venta),
+                              onMoreOptions: () => _showMoreOptions(venta),
+                            );
+                          }
+
+                          if (pedido.estadoCategoria != 'venta') {
+                            debugPrint(
+                              '⚠️ No es una venta, es: ${pedido.estadoCategoria}',
+                            );
+                          }
+
+                          return const SizedBox.shrink();
+                        },
+                      ),
 
                       // Botón de tracking (si está en ruta)
                       // ✅ ACTUALIZADO: Usar códigos de estado String en lugar de enum
@@ -538,7 +695,7 @@ class _PedidoDetalleScreenState extends State<PedidoDetalleScreen> {
                       _formatearFecha(historial.fecha),
                       style: TextStyle(
                         fontSize: 13,
-                        color: Colors.grey.shade600,
+                        color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
                       ),
                     ),
                     if (historial.nombreUsuario != null) ...[
@@ -547,7 +704,7 @@ class _PedidoDetalleScreenState extends State<PedidoDetalleScreen> {
                         'Por: ${historial.nombreUsuario}',
                         style: TextStyle(
                           fontSize: 12,
-                          color: Colors.grey.shade500,
+                          color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
                         ),
                       ),
                     ],
@@ -557,7 +714,7 @@ class _PedidoDetalleScreenState extends State<PedidoDetalleScreen> {
                       Container(
                         padding: const EdgeInsets.all(8),
                         decoration: BoxDecoration(
-                          color: Colors.grey.shade100,
+                          color: Theme.of(context).colorScheme.surfaceContainerHighest.withOpacity(0.3),
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Text(
@@ -656,14 +813,14 @@ class _PedidoDetalleScreenState extends State<PedidoDetalleScreen> {
                           const SizedBox(height: 4),
                           Text(
                             'Ciudad: ${direccion.ciudad}',
-                            style: const TextStyle(color: Colors.grey),
+                            style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6)),
                           ),
                         ],
                         if (direccion.departamento != null) ...[
                           const SizedBox(height: 2),
                           Text(
                             direccion.departamento!,
-                            style: const TextStyle(color: Colors.grey),
+                            style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6)),
                           ),
                         ],
                         if (direccion.observaciones != null &&
@@ -675,14 +832,14 @@ class _PedidoDetalleScreenState extends State<PedidoDetalleScreen> {
                               vertical: 4,
                             ),
                             decoration: BoxDecoration(
-                              color: Colors.blue.shade50,
+                              color: Theme.of(context).colorScheme.primary.withOpacity(context.isDark ? 0.15 : 0.1),
                               borderRadius: BorderRadius.circular(4),
                             ),
                             child: Text(
                               'Obs: ${direccion.observaciones}',
                               style: TextStyle(
                                 fontSize: 12,
-                                color: Colors.blue.shade900,
+                                color: Theme.of(context).colorScheme.primary,
                               ),
                             ),
                           ),
@@ -757,7 +914,7 @@ class _PedidoDetalleScreenState extends State<PedidoDetalleScreen> {
                       width: 60,
                       height: 60,
                       decoration: BoxDecoration(
-                        color: Colors.grey.shade200,
+                        color: Theme.of(context).colorScheme.surfaceContainerHighest.withOpacity(0.5),
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child:
@@ -788,8 +945,8 @@ class _PedidoDetalleScreenState extends State<PedidoDetalleScreen> {
                           const SizedBox(height: 4),
                           Text(
                             'Cantidad: ${item.cantidad}',
-                            style: const TextStyle(
-                              color: Colors.grey,
+                            style: TextStyle(
+                              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
                               fontSize: 14,
                             ),
                           ),
@@ -797,7 +954,7 @@ class _PedidoDetalleScreenState extends State<PedidoDetalleScreen> {
                           Text(
                             'Bs. ${item.precioUnitario.toStringAsFixed(2)} c/u',
                             style: TextStyle(
-                              color: Colors.grey.shade600,
+                              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
                               fontSize: 13,
                             ),
                           ),
@@ -841,24 +998,33 @@ class _PedidoDetalleScreenState extends State<PedidoDetalleScreen> {
                 final isActiva = reserva.estado == EstadoReserva.ACTIVA;
                 final estaVencida = reserva.estaVencida;
 
+                // Determinar colores según estado
+                Color bgColor;
+                Color borderColor;
+                Color statusColor;
+
+                if (estaVencida) {
+                  bgColor = Theme.of(context).colorScheme.error.withOpacity(context.isDark ? 0.15 : 0.1);
+                  borderColor = Theme.of(context).colorScheme.error.withOpacity(0.3);
+                  statusColor = Theme.of(context).colorScheme.error;
+                } else if (isActiva) {
+                  bgColor = Colors.green.withOpacity(context.isDark ? 0.15 : 0.1);
+                  borderColor = Colors.green.withOpacity(0.3);
+                  statusColor = Colors.green;
+                } else {
+                  bgColor = Theme.of(context).colorScheme.surfaceContainerHighest.withOpacity(0.3);
+                  borderColor = Theme.of(context).colorScheme.outline.withOpacity(0.2);
+                  statusColor = Theme.of(context).colorScheme.onSurface.withOpacity(0.6);
+                }
+
                 return Padding(
                   padding: const EdgeInsets.only(bottom: 12),
                   child: Container(
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: estaVencida
-                          ? Colors.red.shade50
-                          : isActiva
-                          ? Colors.green.shade50
-                          : Colors.grey.shade50,
+                      color: bgColor,
                       borderRadius: BorderRadius.circular(8),
-                      border: Border.all(
-                        color: estaVencida
-                            ? Colors.red.shade200
-                            : isActiva
-                            ? Colors.green.shade200
-                            : Colors.grey.shade200,
-                      ),
+                      border: Border.all(color: borderColor),
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -879,11 +1045,7 @@ class _PedidoDetalleScreenState extends State<PedidoDetalleScreen> {
                               : 'Expira en: ${reserva.tiempoRestanteFormateado}',
                           style: TextStyle(
                             fontSize: 12,
-                            color: estaVencida
-                                ? Colors.red.shade700
-                                : isActiva
-                                ? Colors.green.shade700
-                                : Colors.grey.shade700,
+                            color: statusColor,
                             fontWeight: FontWeight.w500,
                           ),
                         ),
@@ -900,10 +1062,13 @@ class _PedidoDetalleScreenState extends State<PedidoDetalleScreen> {
   }
 
   Widget _buildSeccionResumen(Pedido pedido) {
+    final isDark = context.isDark;
+    final colorScheme = context.colorScheme;
+
     return Padding(
       padding: const EdgeInsets.all(16),
       child: Card(
-        color: Colors.grey.shade50,
+        color: colorScheme.surfaceContainerHighest.withOpacity(isDark ? 0.4 : 0.2),
         child: Padding(
           padding: const EdgeInsets.all(16),
           child: Column(
@@ -945,10 +1110,10 @@ class _PedidoDetalleScreenState extends State<PedidoDetalleScreen> {
                   ),
                   Text(
                     'Bs. ${pedido.total.toStringAsFixed(2)}',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 24,
                       fontWeight: FontWeight.bold,
-                      color: Colors.green,
+                      color: Colors.green.shade400,
                     ),
                   ),
                 ],
@@ -985,7 +1150,7 @@ class _PedidoDetalleScreenState extends State<PedidoDetalleScreen> {
   Widget _buildInfoRow(IconData icon, String label, String value) {
     return Row(
       children: [
-        Icon(icon, size: 20, color: Colors.grey.shade600),
+        Icon(icon, size: 20, color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6)),
         const SizedBox(width: 12),
         Expanded(
           child: Column(
@@ -993,7 +1158,7 @@ class _PedidoDetalleScreenState extends State<PedidoDetalleScreen> {
             children: [
               Text(
                 label,
-                style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6)),
               ),
               const SizedBox(height: 2),
               Text(
@@ -1015,7 +1180,7 @@ class _PedidoDetalleScreenState extends State<PedidoDetalleScreen> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Icon(Icons.error_outline, size: 80, color: Colors.red),
+          Icon(Icons.error_outline, size: 80, color: Theme.of(context).colorScheme.error),
           const SizedBox(height: 24),
           Text(
             'Error al cargar pedido',
@@ -1027,7 +1192,7 @@ class _PedidoDetalleScreenState extends State<PedidoDetalleScreen> {
             child: Text(
               error,
               textAlign: TextAlign.center,
-              style: TextStyle(color: Colors.grey.shade600),
+              style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6)),
             ),
           ),
           const SizedBox(height: 32),

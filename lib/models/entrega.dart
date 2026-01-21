@@ -65,6 +65,9 @@ class Entrega {
   // Ventas asignadas a esta entrega
   final List<Venta> ventas;
 
+  // ✅ NUEVO: Productos genéricos consolidados de todas las ventas
+  final List<Map<String, dynamic>> productosGenerico;
+
   // Relaciones con objetos completos del backend
   final Chofer? chofer;
   final Vehiculo? vehiculo;
@@ -113,6 +116,8 @@ class Entrega {
     this.historialEstados = const [],
     // Ventas
     this.ventas = const [],
+    // ✅ NUEVO: Productos genéricos
+    this.productosGenerico = const [],
     // Relaciones
     this.chofer,
     this.vehiculo,
@@ -242,6 +247,14 @@ class Entrega {
       estadoEntregaId = json['estado_entrega_id'] as int?;
     }
 
+    // ✅ NUEVO: Parsear productos genéricos si vienen en la respuesta
+    List<Map<String, dynamic>> productosGenericoList = [];
+    if (json['productos'] is List) {
+      productosGenericoList = (json['productos'] as List)
+          .map((p) => p as Map<String, dynamic>)
+          .toList();
+    }
+
     return Entrega(
       id: json['id'] as int,
       proformaId: json['proforma_id'] as int?, // Ahora opcional
@@ -302,6 +315,8 @@ class Entrega {
       historialEstados: historial,
       // Ventas
       ventas: ventasList,
+      // ✅ NUEVO: Productos genéricos
+      productosGenerico: productosGenericoList,
       // Relaciones
       chofer: choferObj,
       vehiculo: vehiculoObj,
@@ -337,6 +352,7 @@ class Entrega {
       'impuesto_total': impuestoTotal,
       'total_general': totalGeneral,
       'latitud_destino': latitudeDestino,
+      'productos': productosGenerico,
       'longitud_destino': longitudeDestino,
       // Coordinación mejorada
       'numero_intentos_contacto': numeroIntentosContacto,

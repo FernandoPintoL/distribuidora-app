@@ -15,6 +15,7 @@ import 'screens/carrito/carrito_abandonado_list_screen.dart';
 import 'screens/cliente/mis_direcciones_screen.dart';
 import 'screens/cliente/direccion_form_screen.dart';
 import 'screens/chofer/iniciar_ruta_screen.dart';
+import 'screens/ventas/mis_ventas_screen.dart';
 import 'widgets/realtime_notifications_listener.dart';
 import 'config/app_themes.dart';
 import 'services/local_notification_service.dart';
@@ -61,6 +62,7 @@ void main() async {
           ChangeNotifierProvider(create: (_) => ClientProvider()),
           ChangeNotifierProvider(create: (_) => CarritoProvider()),
           ChangeNotifierProvider(create: (_) => PedidoProvider()),
+          ChangeNotifierProvider(create: (_) => VentasProvider()),
           ChangeNotifierProvider(create: (_) => TrackingProvider()),
           ChangeNotifierProvider(create: (_) => EntregaProvider()),
           ChangeNotifierProvider(create: (_) => EntregaEstadosProvider()),
@@ -116,6 +118,7 @@ class MyApp extends StatelessWidget {
             '/direccion-entrega-seleccion': (context) =>
                 const DireccionEntregaSeleccionScreen(),
             '/mis-pedidos': (context) => const PedidosHistorialScreen(),
+            '/mis-ventas': (context) => const MisVentasScreen(),
             '/mis-direcciones': (context) => const MisDireccionesScreen(),
             '/notifications': (context) => const NotificationsScreen(),
           },

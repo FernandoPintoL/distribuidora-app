@@ -30,6 +30,7 @@ class CarritoItemCard extends StatefulWidget {
 
 class _CarritoItemCardState extends State<CarritoItemCard> {
   late TextEditingController _observacionesController;
+  late TextEditingController _cantidadController;
   bool _editandoObservaciones = false;
   bool _guardandoObservaciones = false;
 
@@ -38,12 +39,51 @@ class _CarritoItemCardState extends State<CarritoItemCard> {
     super.initState();
     _observacionesController =
         TextEditingController(text: widget.item.observaciones ?? '');
+    _cantidadController =
+        TextEditingController(text: widget.item.cantidad.toString());
+  }
+
+  @override
+  void didUpdateWidget(CarritoItemCard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // Actualizar el controller si la cantidad cambió desde otro lugar
+    if (oldWidget.item.cantidad != widget.item.cantidad) {
+      _cantidadController.text = widget.item.cantidad.toString();
+    }
   }
 
   @override
   void dispose() {
     _observacionesController.dispose();
+    _cantidadController.dispose();
     super.dispose();
+  }
+
+  void _actualizarCantidadDesdeInput() {
+    final input = _cantidadController.text.trim();
+    if (input.isEmpty) {
+      // Si está vacío, revertir al valor anterior
+      _cantidadController.text = widget.item.cantidad.toString();
+      return;
+    }
+
+    try {
+      final nuevaCantidad = int.parse(input);
+
+      if (nuevaCantidad <= 0) {
+        // Si es 0 o negativo, eliminar el producto
+        widget.onRemove();
+        return;
+      }
+
+      // Actualizar la cantidad
+      widget.onUpdateCantidad(nuevaCantidad);
+      _cantidadController.text = nuevaCantidad.toString();
+    } catch (e) {
+      // Si no es un número válido, revertir
+      debugPrint('❌ Entrada inválida para cantidad: $input');
+      _cantidadController.text = widget.item.cantidad.toString();
+    }
   }
 
   Future<void> _guardarObservaciones() async {
@@ -157,10 +197,23 @@ class _CarritoItemCardState extends State<CarritoItemCard> {
                                     minHeight: 32,
                                   ),
                                 ),
-                                Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 8),
-                                  child: Text(
-                                    widget.item.cantidad.toString(),
+                                SizedBox(
+                                  width: 60,
+                                  height: 32,
+                                  child: TextFormField(
+                                    controller: _cantidadController,
+                                    textAlign: TextAlign.center,
+                                    keyboardType: TextInputType.number,
+                                    maxLength: 4,
+                                    decoration: InputDecoration(
+                                      counterText: '',
+                                      border: InputBorder.none,
+                                      contentPadding: EdgeInsets.zero,
+                                      hintText: '0',
+                                      hintStyle: TextStyle(
+                                        color: context.carritoQuantityText.withAlpha(100),
+                                      ),
+                                    ),
                                     style: TextStyle(
                                       fontSize: 16,
                                       fontWeight: FontWeight.bold,
@@ -168,6 +221,8 @@ class _CarritoItemCardState extends State<CarritoItemCard> {
                                           ? context.carritoQuantityText
                                           : context.carritoErrorIcon,
                                     ),
+                                    onFieldSubmitted: (_) => _actualizarCantidadDesdeInput(),
+                                    onTapOutside: (_) => _actualizarCantidadDesdeInput(),
                                   ),
                                 ),
                                 IconButton(

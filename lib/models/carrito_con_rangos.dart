@@ -49,12 +49,28 @@ class CarritoConRangos {
 
     return CarritoConRangos(
       cantidadItems: json['cantidad_items'] ?? 0,
-      subtotal: (json['subtotal'] ?? json['total'] ?? 0).toDouble(),
-      ahorroTotal: (json['ahorro_total'] ?? 0).toDouble(),
-      ahorroDisponibleDelBackend: (json['ahorro_disponible'] ?? 0).toDouble(),
+      subtotal: _parseDouble(json['subtotal'] ?? json['total']),
+      ahorroTotal: _parseDouble(json['ahorro_total']),
+      ahorroDisponibleDelBackend: _parseDouble(json['ahorro_disponible']),
       tieneAhorroDisponible: json['tiene_ahorro_disponible'] ?? false,
       detalles: detallesList,
     );
+  }
+
+  // Helper to safely parse double from string or number
+  static double _parseDouble(dynamic value) {
+    if (value == null) return 0.0;
+    if (value is double) return value;
+    if (value is int) return value.toDouble();
+    if (value is String) {
+      try {
+        return double.parse(value);
+      } catch (e) {
+        return 0.0;
+      }
+    }
+    if (value is num) return value.toDouble();
+    return 0.0;
   }
 
   Map<String, dynamic> toJson() {

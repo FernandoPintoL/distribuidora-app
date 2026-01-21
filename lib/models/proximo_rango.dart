@@ -16,16 +16,35 @@ class ProximoRango {
   });
 
   factory ProximoRango.fromJson(Map<String, dynamic> json) {
+    final cantidadMinima = _parseInt(json['cantidad_minima']);
+    final cantidadMaxima = _parseInt(json['cantidad_maxima']);
+
     return ProximoRango(
-      cantidadMinima: json['cantidad_minima'] ?? 0,
-      cantidadMaxima: json['cantidad_maxima'],
+      cantidadMinima: cantidadMinima,
+      cantidadMaxima: cantidadMaxima > 0 ? cantidadMaxima : null,
       rangoTexto: json['rango_texto'] ?? _generarRangoTexto(
-        json['cantidad_minima'] as int?,
-        json['cantidad_maxima'] as int?,
+        cantidadMinima > 0 ? cantidadMinima : null,
+        cantidadMaxima > 0 ? cantidadMaxima : null,
       ),
-      faltaCantidad: json['falta_cantidad'] ?? 0,
+      faltaCantidad: _parseInt(json['falta_cantidad']),
       tipoPrecioNombre: json['tipo_precio_nombre'] as String?,
     );
+  }
+
+  // Helper to safely parse int from string or number
+  static int _parseInt(dynamic value) {
+    if (value == null) return 0;
+    if (value is int) return value;
+    if (value is double) return value.toInt();
+    if (value is String) {
+      try {
+        return double.parse(value).toInt();
+      } catch (e) {
+        return 0;
+      }
+    }
+    if (value is num) return value.toInt();
+    return 0;
   }
 
   Map<String, dynamic> toJson() {

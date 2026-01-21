@@ -9,6 +9,8 @@ import '../../extensions/theme_extension.dart';
 import '../../services/estados_helpers.dart';
 import 'package:intl/intl.dart';
 
+/// ✅ REFACTORIZADO: Antes era solo "Proformas", ahora es "Mis Pedidos" unificado
+/// Muestra todo el ciclo: Proforma → Venta → Logística
 class PedidosHistorialScreen extends StatefulWidget {
   const PedidosHistorialScreen({super.key});
 
@@ -350,9 +352,10 @@ class _PedidosHistorialScreenState extends State<PedidosHistorialScreen> {
     );
   }
 
-  /// Obtener ícono según código de estado
+  /// Obtener ícono según código de estado (Proforma, Venta, Logística)
   IconData _getIconoParaEstado(String codigo) {
     switch (codigo.toUpperCase()) {
+      // Estados de Proforma
       case 'PENDIENTE':
         return Icons.hourglass_empty;
       case 'APROBADA':
@@ -363,6 +366,19 @@ class _PedidosHistorialScreenState extends State<PedidosHistorialScreen> {
         return Icons.schedule;
       case 'RECHAZADA':
         return Icons.cancel;
+
+      // Estados de Logística/Venta
+      case 'PENDIENTE_ENVIO':
+      case 'PENDIENTE_RETIRO':
+        return Icons.inventory_2_outlined;
+      case 'EN_TRANSITO':
+        return Icons.local_shipping;
+      case 'ENTREGADO':
+      case 'ENTREGADA':
+        return Icons.done_all;
+      case 'PAGADO':
+        return Icons.paid_outlined;
+
       default:
         return Icons.circle;
     }
@@ -491,7 +507,7 @@ class _PedidosHistorialScreenState extends State<PedidosHistorialScreen> {
 
     return Scaffold(
       appBar: CustomGradientAppBar(
-        title: 'Mis Pedidos',
+        title: 'Mi Historial de Pedidos',
         customGradient: AppGradients.getRoleGradient('cliente'),
         actions: [
           // Icono de búsqueda que expande el campo
@@ -719,33 +735,40 @@ class _PedidosHistorialScreenState extends State<PedidosHistorialScreen> {
     final List<String> filtros = [];
 
     if (_searchController.text.isNotEmpty) {
-      filtros.add('Búsqueda: "${_searchController.text}"');
+      filtros.add('🔍 "${_searchController.text}"');
     }
 
     if (_filtroEstadoSeleccionado != null) {
+      // Detectar si es estado de proforma o de venta/logística
+      final esProforma = ['PENDIENTE', 'APROBADA', 'CONVERTIDA', 'RECHAZADA', 'VENCIDA']
+          .contains(_filtroEstadoSeleccionado?.toUpperCase());
+
+      final categoria = esProforma ? 'proforma' : 'venta_logistica';
+      final icono = esProforma ? '📋' : '🚚';
+
       filtros.add(
-        'Estado: ${EstadosHelper.getEstadoLabel('proforma', _filtroEstadoSeleccionado!)}',
+        '$icono ${EstadosHelper.getEstadoLabel(categoria, _filtroEstadoSeleccionado!)}',
       );
     }
 
     if (_filtroFechaDesde != null || _filtroFechaHasta != null) {
       final desdeText = _filtroFechaDesde != null
-          ? DateFormat('dd/MM/yyyy').format(_filtroFechaDesde!)
+          ? DateFormat('dd/MM').format(_filtroFechaDesde!)
           : '';
       final hastaText = _filtroFechaHasta != null
-          ? DateFormat('dd/MM/yyyy').format(_filtroFechaHasta!)
+          ? DateFormat('dd/MM').format(_filtroFechaHasta!)
           : '';
 
       if (_filtroFechaDesde != null && _filtroFechaHasta != null) {
-        filtros.add('Fechas: $desdeText - $hastaText');
+        filtros.add('📅 $desdeText - $hastaText');
       } else if (_filtroFechaDesde != null) {
-        filtros.add('Desde: $desdeText');
+        filtros.add('📅 Desde: $desdeText');
       } else if (_filtroFechaHasta != null) {
-        filtros.add('Hasta: $hastaText');
+        filtros.add('📅 Hasta: $hastaText');
       }
     }
 
-    return filtros.join(' • ');
+    return filtros.isEmpty ? 'Sin filtros aplicados' : filtros.join(' • ');
   }
 
   Widget _buildEmptyState() {
@@ -863,6 +886,8 @@ class _PedidosHistorialScreenState extends State<PedidosHistorialScreen> {
   }
 }
 
+/// ✅ REFACTORIZADA: Nueva card con Timeline unificado
+/// Muestra: Proforma → Venta → Logística en paralelo
 class _PedidoCard extends StatelessWidget {
   final Pedido pedido;
   final VoidCallback onTap;
@@ -870,7 +895,12 @@ class _PedidoCard extends StatelessWidget {
   const _PedidoCard({required this.pedido, required this.onTap});
 
   String _formatearFecha(DateTime fecha) {
-    final formatter = DateFormat('dd MMM yyyy, HH:mm', 'es_ES');
+    final formatter = DateFormat('dd MMM yyyy', 'es_ES');
+    return formatter.format(fecha);
+  }
+
+  String _formatearHora(DateTime fecha) {
+    final formatter = DateFormat('HH:mm', 'es_ES');
     return formatter.format(fecha);
   }
 
@@ -883,9 +913,101 @@ class _PedidoCard extends StatelessWidget {
     } else if (hexString.length == 8 || hexString.length == 9) {
       buffer.write(hexString.replaceFirst('#', ''));
     } else {
-      return Colors.grey; // Fallback
+      return Colors.grey;
     }
     return Color(int.parse(buffer.toString(), radix: 16));
+  }
+
+  /// Widget para mostrar una línea de timeline con 3 estados posibles
+  Widget _buildTimelineLine(
+    BuildContext context,
+    String titulo,
+    String estado,
+    String icono,
+    Color color, {
+    bool esUltimo = false,
+  }) {
+    final isDark = context.isDark;
+    final colorScheme = context.colorScheme;
+
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Ícono + línea vertical
+        Column(
+          children: [
+            // Ícono del estado
+            Container(
+              width: 36,
+              height: 36,
+              decoration: BoxDecoration(
+                color: color.withOpacity(0.2),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(
+                  color: color,
+                  width: 2,
+                ),
+              ),
+              child: Center(
+                child: Text(icono, style: const TextStyle(fontSize: 18)),
+              ),
+            ),
+            // Línea vertical (si no es el último)
+            if (!esUltimo)
+              Container(
+                width: 2,
+                height: 24,
+                color: colorScheme.outline.withOpacity(0.2),
+                margin: const EdgeInsets.symmetric(vertical: 4),
+              ),
+          ],
+        ),
+        const SizedBox(width: 12),
+
+        // Información del estado
+        Expanded(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 4),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Título de la línea
+                Text(
+                  titulo,
+                  style: context.textTheme.labelSmall?.copyWith(
+                    color: colorScheme.onSurface.withOpacity(0.6),
+                    fontSize: 11,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                // Estado actual
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
+                  decoration: BoxDecoration(
+                    color: color.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(6),
+                    border: Border.all(
+                      color: color.withOpacity(0.3),
+                    ),
+                  ),
+                  child: Text(
+                    estado,
+                    style: context.textTheme.labelSmall?.copyWith(
+                      color: color,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 12,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
   }
 
   @override
@@ -908,22 +1030,18 @@ class _PedidoCard extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Header: Número y estado
+              // ═══════════════════════════════════════════════════════════════
+              // 1️⃣ HEADER: Número, Cliente, Fecha
+              // ═══════════════════════════════════════════════════════════════
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Número de pedido
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          'Proforma',
-                          style: context.textTheme.bodySmall?.copyWith(
-                            color: context.textTheme.bodySmall?.color,
-                          ),
-                        ),
-                        const SizedBox(height: 2),
+                        // Número de pedido
                         Text(
                           pedido.numero,
                           style: context.textTheme.titleMedium?.copyWith(
@@ -931,208 +1049,218 @@ class _PedidoCard extends StatelessWidget {
                             color: colorScheme.onSurface,
                           ),
                         ),
+                        const SizedBox(height: 4),
+                        // Cliente
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.person_outline,
+                              size: 12,
+                              color: colorScheme.onSurface.withOpacity(0.6),
+                            ),
+                            const SizedBox(width: 4),
+                            Expanded(
+                              child: Text(
+                                pedido.cliente?.nombre ?? 'Cliente desconocido',
+                                style: context.textTheme.bodySmall?.copyWith(
+                                  color: colorScheme.onSurface.withOpacity(0.7),
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
+                        ),
                       ],
                     ),
                   ),
+                  const SizedBox(width: 8),
+                  // Monto total
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Text(
+                        'Bs. ${pedido.total.toStringAsFixed(2)}',
+                        style: context.textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: isDark
+                              ? const Color(0xFF4ADE80)
+                              : const Color(0xFF16A34A),
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        _formatearFecha(pedido.fechaCreacion),
+                        style: context.textTheme.labelSmall?.copyWith(
+                          color: colorScheme.onSurface.withOpacity(0.6),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
 
-                  // ✅ ACTUALIZADO: Badge dinámico con datos del estado - Obtiene estado real desde EstadosHelper
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 8,
+              const SizedBox(height: 16),
+              Divider(
+                height: 1,
+                color: colorScheme.outline.withOpacity(0.2),
+              ),
+              const SizedBox(height: 16),
+
+              // ═══════════════════════════════════════════════════════════════
+              // 2️⃣ TIMELINE: Proforma → Venta → Logística
+              // ═══════════════════════════════════════════════════════════════
+              Column(
+                children: [
+                  // 📋 PROFORMA
+                  _buildTimelineLine(
+                    context,
+                    'Proforma',
+                    pedido.estadoCodigo,
+                    '📋',
+                    _hexToColor(EstadosHelper.getEstadoColor(
+                      'proforma',
+                      pedido.estadoCodigo,
+                    )),
+                  ),
+                  const SizedBox(height: 12),
+
+                  // 💳 VENTA (Si ya se convirtió)
+                  if (pedido.esVenta) ...[
+                    _buildTimelineLine(
+                      context,
+                      'Venta',
+                      'Convertida ✅',
+                      '💳',
+                      colorScheme.primary,
                     ),
-                    decoration: BoxDecoration(
-                      color: _hexToColor(EstadosHelper.getEstadoColor(
+                    const SizedBox(height: 12),
+                  ],
+
+                  // 🚚 LOGÍSTICA (Si tiene estado de envío)
+                  if (pedido.tieneEstadoLogistico)
+                    _buildTimelineLine(
+                      context,
+                      'Envío',
+                      pedido.estadoNombre,
+                      '🚚',
+                      _hexToColor(EstadosHelper.getEstadoColor(
                         pedido.estadoCategoria,
                         pedido.estadoCodigo,
                       )),
-                      borderRadius: BorderRadius.circular(20),
+                      esUltimo: true,
+                    )
+                  else
+                    _buildTimelineLine(
+                      context,
+                      'Envío',
+                      'Pendiente',
+                      '📦',
+                      colorScheme.outline.withOpacity(0.5),
+                      esUltimo: true,
                     ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          EstadosHelper.getEstadoIcon(
-                            pedido.estadoCategoria,
-                            pedido.estadoCodigo,
+                ],
+              ),
+
+              // ═══════════════════════════════════════════════════════════════
+              // 3️⃣ INFORMACIÓN ADICIONAL
+              // ═══════════════════════════════════════════════════════════════
+              if (pedido.cantidadItems > 0 ||
+                  pedido.direccionEntrega != null ||
+                  pedido.tieneReservasProximasAVencer) ...[
+                const SizedBox(height: 16),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 12,
+                  ),
+                  decoration: BoxDecoration(
+                    color: colorScheme.surfaceContainerHighest.withOpacity(0.3),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Cantidad de productos
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.shopping_bag_outlined,
+                            size: 14,
+                            color: colorScheme.onSurface.withOpacity(0.6),
                           ),
-                          style: const TextStyle(
-                            fontSize: 16,
+                          const SizedBox(width: 8),
+                          Text(
+                            '${pedido.cantidadItems} productos',
+                            style: context.textTheme.labelSmall?.copyWith(
+                              color: colorScheme.onSurface.withOpacity(0.7),
+                            ),
                           ),
+                        ],
+                      ),
+
+                      // Dirección de entrega
+                      if (pedido.direccionEntrega != null) ...[
+                        const SizedBox(height: 8),
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Icon(
+                              Icons.location_on_outlined,
+                              size: 14,
+                              color: colorScheme.onSurface.withOpacity(0.6),
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                pedido.direccionEntrega!.direccion,
+                                style: context.textTheme.labelSmall?.copyWith(
+                                  color: colorScheme.onSurface.withOpacity(0.7),
+                                ),
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
                         ),
-                        const SizedBox(width: 6),
-                        Text(
-                          // ✅ Obtener nombre dinámico desde EstadosHelper
-                          EstadosHelper.getEstadoLabel(
-                            pedido.estadoCategoria,
-                            pedido.estadoCodigo,
+                      ],
+
+                      // Alerta de reserva próxima a vencer
+                      if (pedido.tieneReservasProximasAVencer) ...[
+                        const SizedBox(height: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 6,
                           ),
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.w600,
-                            fontSize: 14,
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFFB923C).withOpacity(0.15),
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: Row(
+                            children: [
+                              Icon(
+                                Icons.warning_amber_rounded,
+                                size: 14,
+                                color: const Color(0xFFC2410C),
+                              ),
+                              const SizedBox(width: 6),
+                              Expanded(
+                                child: Text(
+                                  '⏰ Reserva expira ${pedido.reservaMasProximaAVencer?.tiempoRestanteFormateado ?? 'pronto'}',
+                                  style:
+                                      context.textTheme.labelSmall?.copyWith(
+                                    color: const Color(0xFFC2410C),
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                       ],
-                    ),
-                  ),
-                ],
-              ),
-
-              Divider(height: 24, color: colorScheme.outline.withOpacity(0.2)),
-
-              // Información del pedido - Cliente
-              Row(
-                children: [
-                  Icon(
-                    Icons.person_outline,
-                    size: 16,
-                    color: context.textTheme.bodySmall?.color,
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      pedido.cliente?.nombre ?? 'Cliente desconocido',
-                      style: context.textTheme.bodyMedium?.copyWith(
-                        color: colorScheme.onSurface.withOpacity(0.8),
-                        fontWeight: FontWeight.w500,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                ],
-              ),
-
-              const SizedBox(height: 8),
-
-              // Fecha de creación
-              Row(
-                children: [
-                  Icon(
-                    Icons.calendar_today,
-                    size: 16,
-                    color: context.textTheme.bodySmall?.color,
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      _formatearFecha(pedido.fechaCreacion),
-                      style: context.textTheme.bodyMedium?.copyWith(
-                        color: colorScheme.onSurface.withOpacity(0.8),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-
-              const SizedBox(height: 8),
-
-              // Cantidad de productos
-              Row(
-                children: [
-                  Icon(
-                    Icons.shopping_bag_outlined,
-                    size: 16,
-                    color: context.textTheme.bodySmall?.color,
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    '${pedido.cantidadItems} ${pedido.cantidadItems == 1 ? 'producto' : 'productos'}',
-                    style: context.textTheme.bodyMedium?.copyWith(
-                      color: colorScheme.onSurface.withOpacity(0.8),
-                    ),
-                  ),
-                ],
-              ),
-
-              if (pedido.direccionEntrega != null) ...[
-                const SizedBox(height: 8),
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Icon(
-                      Icons.location_on_outlined,
-                      size: 16,
-                      color: context.textTheme.bodySmall?.color,
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        pedido.direccionEntrega!.direccion,
-                        style: context.textTheme.bodyMedium?.copyWith(
-                          color: colorScheme.onSurface.withOpacity(0.8),
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-
-              const SizedBox(height: 12),
-
-              // Total
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    'Total',
-                    style: context.textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w600,
-                      color: colorScheme.onSurface,
-                    ),
-                  ),
-                  Text(
-                    'Bs. ${pedido.total.toStringAsFixed(2)}',
-                    style: context.textTheme.titleLarge?.copyWith(
-                      fontWeight: FontWeight.bold,
-                      color: isDark
-                          ? const Color(0xFF4ADE80)
-                          : const Color(0xFF16A34A),
-                    ),
-                  ),
-                ],
-              ),
-
-              // Alerta de reserva próxima a vencer
-              if (pedido.tieneReservasProximasAVencer) ...[
-                const SizedBox(height: 12),
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: isDark
-                        ? const Color(0xFFFB923C).withOpacity(0.15)
-                        : const Color(0xFFFFF7ED),
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(
-                      color: isDark
-                          ? const Color(0xFFFB923C).withOpacity(0.3)
-                          : const Color(0xFFFED7AA),
-                    ),
-                  ),
-                  child: Row(
-                    children: [
-                      Icon(
-                        Icons.warning_amber_rounded,
-                        size: 20,
-                        color: isDark
-                            ? const Color(0xFFFB923C)
-                            : const Color(0xFFC2410C),
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          'Reserva expira en ${pedido.reservaMasProximaAVencer?.tiempoRestanteFormateado ?? ''}',
-                          style: context.textTheme.bodySmall?.copyWith(
-                            color: isDark
-                                ? const Color(0xFFFB923C)
-                                : const Color(0xFFC2410C),
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ),
                     ],
                   ),
                 ),

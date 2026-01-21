@@ -116,8 +116,21 @@ class EntregaService {
       );
 
       try {
-        final entrega = Entrega.fromJson(
-          responseData['data'] as Map<String, dynamic>,
+        // ✅ NUEVO: Obtener datos de entrega
+        final entregaData = responseData['data'] as Map<String, dynamic>;
+
+        // ✅ NUEVO: Agregar productos si vienen en la respuesta
+        if (responseData['productos'] is List) {
+          entregaData['productos'] = responseData['productos'];
+          debugPrint(
+            '🛍️ [ENTREGA_SERVICE] Productos agregados: ${(responseData['productos'] as List).length} items',
+          );
+        }
+
+        final entrega = Entrega.fromJson(entregaData);
+
+        debugPrint(
+          '🛍️ [ENTREGA_SERVICE] Entrega parseada con ${entrega.productosGenerico.length} productos',
         );
 
         return ApiResponse(

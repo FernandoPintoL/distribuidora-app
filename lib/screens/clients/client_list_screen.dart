@@ -29,6 +29,10 @@ class _ClientListScreenState extends State<ClientListScreen> {
   bool _isLoadingClients = false; // Flag para prevenir llamadas simultáneas
   bool _isLoadingMore = false; // Flag para carga de más clientes
 
+  // ✅ CONFIGURACIÓN DE PAGINACIÓN
+  static const int PER_PAGE = 20; // Aumentado de 5 a 20 items por página
+  static const int SCROLL_THRESHOLD = 300; // Distancia en px para trigger de carga
+
   @override
   void initState() {
     super.initState();
@@ -52,11 +56,15 @@ class _ClientListScreenState extends State<ClientListScreen> {
   }
 
   void _onScroll() {
-    if (_scrollController.position.pixels >=
-        _scrollController.position.maxScrollExtent - 200) {
-      // Cuando está a 200px del final, cargar más
+    // ✅ MEJORADO: Detector de scroll adaptable y más sensible
+    final scrollPosition = _scrollController.position;
+    final distanceFromBottom = scrollPosition.maxScrollExtent - scrollPosition.pixels;
+
+    // Trigger cuando estamos a menos de SCROLL_THRESHOLD del final
+    if (distanceFromBottom <= SCROLL_THRESHOLD) {
       if (!_isLoadingMore && _clientProvider.hasMorePages) {
-        _loadMoreClients();
+        debugPrint('📍 Scroll trigger: ${distanceFromBottom.toStringAsFixed(0)}px del final');
+        _loadMoreClientes();
       }
     }
   }
@@ -90,13 +98,14 @@ class _ClientListScreenState extends State<ClientListScreen> {
 
     try {
       await _clientProvider.loadClients(
-        perPage: 5, // Cargar solo 5 clientes por página
+        perPage: PER_PAGE, // ✅ Usar constante configurable
         search: _searchQuery.isNotEmpty ? _searchQuery : null,
         active: _activeFilterValue(),
       );
       debugPrint(
         '✅ Clientes cargados: ${_clientProvider.clients.length} de ${_clientProvider.totalItems}',
       );
+      _logPaginationInfo();
     } catch (e) {
       debugPrint('❌ Error al cargar clientes: $e');
       // El error será manejado por el provider y mostrado en la UI
@@ -133,15 +142,15 @@ class _ClientListScreenState extends State<ClientListScreen> {
     }
   }
 
-  Future<void> _loadMoreClients() async {
+  Future<void> _loadMoreClientes() async {
     if (!mounted) {
-      debugPrint('⚠️ _loadMoreClients: Widget no está montado, cancelando');
+      debugPrint('⚠️ _loadMoreClientes: Widget no está montado, cancelando');
       return;
     }
 
     if (_isLoadingMore || _isLoadingClients) {
       debugPrint(
-        '⚠️ _loadMoreClients: Ya hay una carga en progreso, cancelando',
+        '⚠️ _loadMoreClientes: Ya hay una carga en progreso, cancelando',
       );
       return;
     }
@@ -154,18 +163,21 @@ class _ClientListScreenState extends State<ClientListScreen> {
     setState(() {
       _isLoadingMore = true;
     });
+
+    final nextPage = _clientProvider.currentPage + 1;
     debugPrint(
-      '📋 Cargando más clientes (página ${_clientProvider.currentPage + 1})...',
+      '📋 Cargando más clientes (página $nextPage)...',
     );
 
     try {
       await _clientProvider.loadClients(
-        page: _clientProvider.currentPage + 1,
-        perPage: 5, // Cargar solo 5 clientes por página
+        page: nextPage,
+        perPage: PER_PAGE, // ✅ Usar constante configurable
         append: true,
         search: _searchQuery.isNotEmpty ? _searchQuery : null,
         active: _activeFilterValue(),
       );
+      _logPaginationInfo();
       debugPrint(
         '✅ Más clientes cargados: ${_clientProvider.clients.length} de ${_clientProvider.totalItems}',
       );
@@ -197,16 +209,82 @@ class _ClientListScreenState extends State<ClientListScreen> {
 
     return Scaffold(
       backgroundColor: colorScheme.surface,
-      /* appBar: CustomGradientAppBar(
-        title: 'Clientes',
-        customGradient: AppGradients.blue,
+      // ✅ AppBar con botones de acción
+      appBar: AppBar(
+        title: Text(
+          'Clientes',
+          style: TextStyle(
+            fontWeight: FontWeight.w700,
+            fontSize: 20,
+            color: colorScheme.onSurface,
+          ),
+        ),
+        backgroundColor: colorScheme.surface,
+        elevation: 0,
         actions: [
-          RefreshAction(
-            isLoading: _isLoadingClients,
-            onRefresh: _safeLoadClients,
+          // Botón de refrescar
+          IconButton(
+            icon: _isLoadingClients
+                ? SizedBox(
+                    width: 24,
+                    height: 24,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      valueColor: AlwaysStoppedAnimation<Color>(colorScheme.primary),
+                    ),
+                  )
+                : Icon(Icons.refresh, color: colorScheme.primary),
+            onPressed: _isLoadingClients ? null : _safeLoadClients,
+            tooltip: 'Actualizar',
+          ),
+          // ✅ Botón de nuevo cliente (en AppBar, no flotante)
+          Padding(
+            padding: const EdgeInsets.only(right: 8.0),
+            child: Center(
+              child: Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      colorScheme.primary,
+                      colorScheme.primary.withOpacity(0.8),
+                    ],
+                  ),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    onTap: _isLoadingClients ? null : _navigateToCreateClient,
+                    borderRadius: BorderRadius.circular(12),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.add,
+                            color: colorScheme.onPrimary,
+                            size: 20,
+                          ),
+                          const SizedBox(width: 6),
+                          Text(
+                            'Nuevo',
+                            style: TextStyle(
+                              color: colorScheme.onPrimary,
+                              fontWeight: FontWeight.w600,
+                              fontSize: 14,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
           ),
         ],
-      ), */
+      ),
       body: Container(
         color: colorScheme.surface,
         child: Column(
@@ -423,8 +501,42 @@ class _ClientListScreenState extends State<ClientListScreen> {
                         controller: _scrollController,
                         itemCount:
                             clientProvider.clients.length +
-                            (_isLoadingMore ? 1 : 0),
+                            (_isLoadingMore ? 1 : 0) +
+                            (clientProvider.clients.isNotEmpty && !_isLoadingMore && clientProvider.hasMorePages ? 1 : 0),
                         itemBuilder: (context, index) {
+                          // ✅ NUEVO: Mostrar footer de paginación
+                          if (index == clientProvider.clients.length && !_isLoadingMore && clientProvider.hasMorePages) {
+                            final currentPage = clientProvider.currentPage;
+                            final totalPages = (clientProvider.totalItems / PER_PAGE).ceil();
+                            return Container(
+                              padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
+                              child: Center(
+                                child: Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Text(
+                                      'Página $currentPage de $totalPages',
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        color: Colors.grey.shade600,
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 8),
+                                    Text(
+                                      '⬇️ Desliza para cargar más clientes',
+                                      style: TextStyle(
+                                        fontSize: 11,
+                                        color: Colors.grey.shade500,
+                                        fontStyle: FontStyle.italic,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            );
+                          }
+
                           // Mostrar indicador de carga al final
                           if (index == clientProvider.clients.length) {
                             return Container(
@@ -484,48 +596,7 @@ class _ClientListScreenState extends State<ClientListScreen> {
           ],
         ),
       ),
-      floatingActionButton: Container(
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(16),
-          gradient: LinearGradient(
-            colors: [
-              colorScheme.primary,
-              colorScheme.primary.withOpacity(0.8),
-            ],
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: colorScheme.primary.withOpacity(0.4),
-              blurRadius: 12,
-              offset: const Offset(0, 6),
-            ),
-          ],
-        ),
-        child: FloatingActionButton.extended(
-          onPressed: _isLoadingClients ? null : () => _navigateToCreateClient(),
-          backgroundColor: Colors.transparent,
-          elevation: 0,
-          tooltip: _isLoadingClients ? 'Cargando...' : 'Nuevo cliente',
-          icon: _isLoadingClients
-              ? SizedBox(
-                  width: 20,
-                  height: 20,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    valueColor: AlwaysStoppedAnimation<Color>(colorScheme.onPrimary),
-                  ),
-                )
-              : Icon(Icons.add, size: 24, color: colorScheme.onPrimary),
-          label: Text(
-            'Nuevo Cliente',
-            style: TextStyle(
-              fontWeight: FontWeight.w600,
-              fontSize: 16,
-              color: colorScheme.onPrimary,
-            ),
-          ),
-        ),
-      ),
+      // ✅ FAB removido, botón "Nuevo Cliente" ahora está en AppBar
     );
   }
 
@@ -607,11 +678,26 @@ class _ClientListScreenState extends State<ClientListScreen> {
     // - Código de cliente
     if (mounted) {
       _clientProvider.loadClients(
-        perPage: 5, // Cargar solo 5 clientes por página
+        perPage: PER_PAGE, // ✅ Usar constante configurable
         search: _searchQuery.isNotEmpty ? _searchQuery : null,
         active: _activeFilterValue(),
       );
+      _logPaginationInfo();
     }
+  }
+
+  /// ✅ NUEVO: Registra información de paginación en los logs
+  void _logPaginationInfo() {
+    final currentPage = _clientProvider.currentPage;
+    final totalItems = _clientProvider.totalItems;
+    final totalPages = (totalItems / PER_PAGE).ceil();
+    final hasMore = _clientProvider.hasMorePages;
+
+    debugPrint(
+      '📊 PAGINACIÓN: Página $currentPage de $totalPages | '
+      'Items: ${_clientProvider.clients.length}/$totalItems | '
+      'Hay más: ${hasMore ? 'SÍ ✅' : 'NO ⛔'}',
+    );
   }
 
   void _onClientTap(Client client) {

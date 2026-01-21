@@ -291,6 +291,17 @@ class CarritoProvider with ChangeNotifier {
     final stockDispInt = (stockDisponible as num).toInt();
     final nuevaCantidadTotal = itemExistente.cantidad + incremento;
 
+    // ✅ VALIDAR LÍMITE DE VENTA
+    if (producto.limiteVenta != null && nuevaCantidadTotal > producto.limiteVenta!) {
+      _errorMessage = 'El producto "${producto.nombre}" tiene un límite máximo de venta de ${producto.limiteVenta} unidades.';
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        notifyListeners();
+      });
+      debugPrint('⛔ Límite de venta excedido: $_errorMessage');
+      return;
+    }
+
+    // ✅ VALIDAR STOCK
     if (nuevaCantidadTotal > stockDispInt) {
       _errorMessage =
           'No hay stock suficiente para agregar más. Disponible: $stockDispInt, en carrito: ${itemExistente.cantidad}';
@@ -1040,11 +1051,20 @@ class CarritoProvider with ChangeNotifier {
         );
         debugPrint('   Items con rango: ${carritoConRangos.detalles.length}');
 
+        _errorMessage = null; // Limpiar error anterior si el cálculo fue exitoso
         notifyListeners();
         return true;
       }
 
-      _errorMessage = 'No fue posible calcular los precios con rangos';
+      // ✅ Usar el mensaje de error del servicio (incluye límite de venta)
+      _errorMessage = _carritoService.lastErrorMessage ?? 'No fue posible calcular los precios con rangos';
+      debugPrint('⚠️  Error en cálculo de carrito: $_errorMessage');
+
+      // ✅ DETECTAR Y MANEJAR LÍMITE DE VENTA
+      if (_errorMessage!.contains('límite máximo de venta')) {
+        _revertirCantidadPorLimiteVenta(_errorMessage!);
+      }
+
       notifyListeners();
       return false;
     } catch (e) {
@@ -1055,6 +1075,31 @@ class CarritoProvider with ChangeNotifier {
     } finally {
       _calculandoRangos = false;
       notifyListeners();
+    }
+  }
+
+  /// Revertir cantidad de un producto cuando se excede el límite de venta
+  void _revertirCantidadPorLimiteVenta(String mensajeError) {
+    try {
+      // Extraer el límite del mensaje: "...límite máximo de venta de X unidades..."
+      final regexLimit = RegExp(r'límite máximo de venta de (\d+) unidades');
+      final matchLimit = regexLimit.firstMatch(mensajeError);
+
+      if (matchLimit != null) {
+        final limiteMax = int.parse(matchLimit.group(1)!);
+
+        // Encontrar cuál producto excede el límite
+        for (final item in _carrito.items) {
+          if (item.cantidad > limiteMax && item.producto.limiteVenta == limiteMax) {
+            debugPrint('🔄 Revirtiendo cantidad de "${item.producto.nombre}" a $limiteMax');
+            actualizarCantidad(item.producto.id, limiteMax);
+            _errorMessage = 'Cantidad revertida al límite máximo: $limiteMax unidades';
+            return;
+          }
+        }
+      }
+    } catch (e) {
+      debugPrint('❌ Error al revertir cantidad: $e');
     }
   }
 

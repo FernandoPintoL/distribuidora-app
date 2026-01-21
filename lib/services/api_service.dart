@@ -27,6 +27,12 @@ class ApiService {
     return url;
   }
 
+  // ✅ NUEVO: Getter público para acceder a Dio directamente (necesario para descargas con autenticación)
+  Dio get dio {
+    _initializeDio();
+    return _dio;
+  }
+
   void _initializeDio() {
     _dio = Dio(
       BaseOptions(

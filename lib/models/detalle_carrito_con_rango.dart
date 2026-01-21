@@ -40,11 +40,11 @@ class DetalleCarritoConRango {
       productoId: json['producto_id'] ?? 0,
       nombreProducto: json['nombre_producto'] ?? json['producto_nombre'] ?? '',
       skuProducto: json['producto_sku'] ?? json['sku'] ?? '',
-      cantidad: ((json['cantidad'] ?? 0) as num).toInt(),
+      cantidad: _parseInt(json['cantidad']),
       tipoPrecioId: json['tipo_precio_id'] ?? 2, // Default a VENTA (ID 2)
       tipoPrecioNombre: json['tipo_precio_nombre'] ?? 'Precio de Venta',
-      precioUnitario: (json['precio_unitario'] ?? 0).toDouble(),
-      subtotal: (json['subtotal'] ?? 0).toDouble(),
+      precioUnitario: _parseDouble(json['precio_unitario']),
+      subtotal: _parseDouble(json['subtotal']),
       rangoAplicado: json['rango_aplicado'] != null
           ? RangoAplicado.fromJson(json['rango_aplicado'])
           : null,
@@ -52,9 +52,41 @@ class DetalleCarritoConRango {
           ? ProximoRango.fromJson(json['proximo_rango'])
           : null,
       ahorroProximo: json['ahorro_proximo'] != null
-          ? (json['ahorro_proximo'] as num).toDouble()
+          ? _parseDouble(json['ahorro_proximo'])
           : null,
     );
+  }
+
+  // Helper to safely parse int from string or number
+  static int _parseInt(dynamic value) {
+    if (value == null) return 0;
+    if (value is int) return value;
+    if (value is double) return value.toInt();
+    if (value is String) {
+      try {
+        return double.parse(value).toInt();
+      } catch (e) {
+        return 0;
+      }
+    }
+    if (value is num) return value.toInt();
+    return 0;
+  }
+
+  // Helper to safely parse double from string or number
+  static double _parseDouble(dynamic value) {
+    if (value == null) return 0.0;
+    if (value is double) return value;
+    if (value is int) return value.toDouble();
+    if (value is String) {
+      try {
+        return double.parse(value);
+      } catch (e) {
+        return 0.0;
+      }
+    }
+    if (value is num) return value.toDouble();
+    return 0.0;
   }
 
   Map<String, dynamic> toJson() {

@@ -53,12 +53,14 @@ class PedidoItem {
     if (value is double) return value.toInt();
     if (value is String) {
       try {
-        return int.parse(value);
+        // Try to parse as double first (handles "2.000000"), then convert to int
+        return double.parse(value).toInt();
       } catch (e) {
         debugPrint('⚠️  Could not parse "$value" as int, defaulting to 0');
         return 0;
       }
     }
+    if (value is num) return value.toInt();
     return 0;
   }
 

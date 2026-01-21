@@ -719,9 +719,9 @@ class _ProductListScreenState extends State<ProductListScreen>
     final spacing = 16.0;
     final padding = 16.0;
     final availableWidth = screenSize.width - (padding * 2) - (spacing * (crossAxisCount - 1));
-    final itemWidth = availableWidth / crossAxisCount;
-    // Use mainAxisExtent to let items be their natural height
-    final mainAxisExtent = itemWidth * 1.4;
+    final maxItemWidth = availableWidth / crossAxisCount;
+    // Altura compacta: ajustada al contenido
+    final mainAxisExtent = maxItemWidth * 1.0;
 
     return Stack(
       children: [

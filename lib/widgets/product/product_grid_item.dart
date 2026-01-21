@@ -119,13 +119,13 @@ class _ProductGridItemState extends State<ProductGridItem>
         final cantidad = carritoProvider.obtenerCantidadProducto(widget.product.id);
 
         return Card(
-          elevation: 4,
+          elevation: 3,
           color: cantidad > 0
               ? brownColorLight
               : (isDark ? colorScheme.surface : Colors.white),
           shadowColor: brownShadow,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(12),
             side: BorderSide(
               color: cantidad > 0 ? brownBorder : colorScheme.outline.withAlpha(20),
               width: cantidad > 0 ? 2 : 1,
@@ -133,14 +133,14 @@ class _ProductGridItemState extends State<ProductGridItem>
           ),
       child: InkWell(
         onTap: widget.onTap,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(12),
         splashColor: colorScheme.primary.withAlpha(30),
         highlightColor: colorScheme.primary.withAlpha(15),
         onTapDown: (_) => _scaleController.forward(),
         onTapUp: (_) => _scaleController.reverse(),
         onTapCancel: () => _scaleController.reverse(),
         child: Padding(
-          padding: const EdgeInsets.all(8.0),
+          padding: const EdgeInsets.all(6.0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
@@ -180,71 +180,58 @@ class _ProductGridItemState extends State<ProductGridItem>
                   ),
                 ),
 
-              // Imagen grande
+              // Imagen compacta
               Center(
-                child: ProductImageWidget(product: widget.product, size: 80),
+                child: ProductImageWidget(product: widget.product, size: 70),
               ),
-              const SizedBox(height: 6),
+              const SizedBox(height: 4),
 
-              // Nombre y detalles (compacto) - SIN Expanded, usa FlexFit para mejor responsive
+              // Nombre y detalles (compacto)
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  // 🔑 COMPACTO: Nombre en 1 línea, fuente más pequeña
+                  // Nombre en 1 línea, fuente más pequeña
                   Text(
                     widget.product.nombre,
-                    style: context.textTheme.titleSmall?.copyWith(
-                      fontWeight: FontWeight.w700,
-                      fontSize: 12,
-                      height: 1.1,
+                    style: context.textTheme.bodySmall?.copyWith(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 11,
+                      height: 1.0,
                       letterSpacing: 0,
                       color: colorScheme.onSurface,
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
-                  const SizedBox(height: 2),
+                  const SizedBox(height: 1),
 
-                  // SKU y Marca en una línea compacta
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Flexible(
-                        child: Text(
-                          'SKU: ${widget.product.sku}',
-                          style: context.textTheme.bodySmall?.copyWith(
-                            fontSize: 8,
-                            color: context.textTheme.bodySmall?.color,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                      if (widget.product.marca != null) ...[
-                        const SizedBox(width: 4),
-                        Text(
-                          '•',
-                          style: context.textTheme.bodySmall?.copyWith(fontSize: 8),
-                        ),
-                        const SizedBox(width: 4),
-                        Flexible(
-                          child: Text(
-                            widget.product.marca!.nombre,
-                            style: context.textTheme.bodySmall?.copyWith(
-                              fontSize: 8,
-                              fontWeight: FontWeight.w600,
-                              color: colorScheme.secondary,
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                      ],
-                    ],
+                  // SKU en una línea compacta
+                  Text(
+                    'SKU: ${widget.product.sku}',
+                    style: context.textTheme.bodySmall?.copyWith(
+                      fontSize: 7,
+                      color: colorScheme.outline,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
+                  if (widget.product.marca != null) ...[
+                    const SizedBox(height: 1),
+                    Text(
+                      widget.product.marca!.nombre,
+                      style: context.textTheme.bodySmall?.copyWith(
+                        fontSize: 7,
+                        fontWeight: FontWeight.w500,
+                        color: colorScheme.secondary,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
                 ],
               ),
+              const SizedBox(height: 4),
 
               // Precio y acciones
               Row(
@@ -256,116 +243,110 @@ class _ProductGridItemState extends State<ProductGridItem>
                     Flexible(
                       child: Text(
                         'Bs ${widget.product.precioVenta!.toStringAsFixed(2)}',
-                        style: context.textTheme.titleMedium?.copyWith(
+                        style: context.textTheme.bodySmall?.copyWith(
                           color: brownColor,
-                          fontWeight: FontWeight.w800,
-                          fontSize: 14,
-                          letterSpacing: 0.2,
+                          fontWeight: FontWeight.w700,
+                          fontSize: 12,
+                          letterSpacing: 0.1,
                         ),
                       ),
                     ),
 
-                    // Stock y botón/cantidad
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.end,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        if (canAddToCart) ...[
-                          if (cantidad == 0)
-                            ScaleTransition(
-                              scale: _bounceAnimation,
-                              child: SizedBox(
-                                width: 36,
-                                height: 36,
-                                child: IconButton(
-                                  onPressed: _incrementQuantity,
-                                  icon: const Icon(
-                                    Icons.add_shopping_cart,
-                                    size: 16,
-                                  ),
-                                  style: IconButton.styleFrom(
-                                    backgroundColor: brownColor,
-                                    foregroundColor: Colors.white,
-                                    elevation: 2,
-                                    shadowColor: brownColor.withAlpha(40),
-                                    padding: EdgeInsets.zero,
-                                  ),
-                                  tooltip: 'Agregar al carrito',
+                  // Stock y botón/cantidad
+                  if (canAddToCart) ...[
+                    if (cantidad == 0)
+                      ScaleTransition(
+                        scale: _bounceAnimation,
+                        child: SizedBox(
+                          width: 32,
+                          height: 32,
+                          child: IconButton(
+                            onPressed: _incrementQuantity,
+                            icon: const Icon(
+                              Icons.add_shopping_cart,
+                              size: 14,
+                            ),
+                            style: IconButton.styleFrom(
+                              backgroundColor: brownColor,
+                              foregroundColor: Colors.white,
+                              elevation: 2,
+                              shadowColor: brownColor.withAlpha(40),
+                              padding: EdgeInsets.zero,
+                            ),
+                            tooltip: 'Agregar',
+                          ),
+                        ),
+                      )
+                    else
+                      Container(
+                        decoration: BoxDecoration(
+                          color: brownColor.withAlpha(20),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(
+                            color: brownColor,
+                            width: 1,
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            SizedBox(
+                              width: 24,
+                              height: 24,
+                              child: IconButton(
+                                onPressed: _decrementQuantity,
+                                icon: const Icon(Icons.remove, size: 10),
+                                padding: EdgeInsets.zero,
+                                style: IconButton.styleFrom(
+                                  foregroundColor: brownColor,
                                 ),
-                              ),
-                            )
-                          else
-                            Container(
-                              decoration: BoxDecoration(
-                                color: brownColor.withAlpha(20),
-                                borderRadius: BorderRadius.circular(10),
-                                border: Border.all(
-                                  color: brownColor,
-                                  width: 1.2,
-                                ),
-                              ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  SizedBox(
-                                    width: 28,
-                                    height: 28,
-                                    child: IconButton(
-                                      onPressed: _decrementQuantity,
-                                      icon: const Icon(Icons.remove, size: 12),
-                                      padding: EdgeInsets.zero,
-                                      style: IconButton.styleFrom(
-                                        foregroundColor: brownColor,
-                                      ),
-                                    ),
-                                  ),
-                                  SizedBox(
-                                    width: 28,
-                                    child: Center(
-                                      child: AnimatedSwitcher(
-                                        duration: const Duration(milliseconds: 200),
-                                        transitionBuilder: (child, animation) {
-                                          return ScaleTransition(
-                                            scale: Tween<double>(begin: 0.8, end: 1.0).animate(
-                                              CurvedAnimation(
-                                                parent: animation,
-                                                curve: Curves.elasticOut,
-                                              ),
-                                            ),
-                                            child: child,
-                                          );
-                                        },
-                                        child: Text(
-                                          '$cantidad',
-                                          key: ValueKey(cantidad),
-                                          style: context.textTheme.labelSmall
-                                              ?.copyWith(
-                                                fontWeight: FontWeight.bold,
-                                                fontSize: 13,
-                                                color: brownColor,
-                                              ),
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                  SizedBox(
-                                    width: 28,
-                                    height: 28,
-                                    child: IconButton(
-                                      onPressed: _incrementQuantity,
-                                      icon: const Icon(Icons.add, size: 12),
-                                      padding: EdgeInsets.zero,
-                                      style: IconButton.styleFrom(
-                                        foregroundColor: brownColor,
-                                      ),
-                                    ),
-                                  ),
-                                ],
                               ),
                             ),
-                        ],
-                      ],
-                    ),
+                            SizedBox(
+                              width: 24,
+                              child: Center(
+                                child: AnimatedSwitcher(
+                                  duration: const Duration(milliseconds: 200),
+                                  transitionBuilder: (child, animation) {
+                                    return ScaleTransition(
+                                      scale: Tween<double>(begin: 0.8, end: 1.0).animate(
+                                        CurvedAnimation(
+                                          parent: animation,
+                                          curve: Curves.elasticOut,
+                                        ),
+                                      ),
+                                      child: child,
+                                    );
+                                  },
+                                  child: Text(
+                                    '$cantidad',
+                                    key: ValueKey(cantidad),
+                                    style: context.textTheme.labelSmall
+                                        ?.copyWith(
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 11,
+                                          color: brownColor,
+                                        ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                            SizedBox(
+                              width: 24,
+                              height: 24,
+                              child: IconButton(
+                                onPressed: _incrementQuantity,
+                                icon: const Icon(Icons.add, size: 10),
+                                padding: EdgeInsets.zero,
+                                style: IconButton.styleFrom(
+                                  foregroundColor: brownColor,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                  ],
                 ],
               ),
             ],

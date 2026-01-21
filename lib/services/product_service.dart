@@ -5,6 +5,19 @@ import 'api_service.dart';
 class ProductService {
   final ApiService _apiService = ApiService();
 
+  /// Obtiene lista de productos disponibles para venta
+  ///
+  /// ✅ IMPORTANTE: El almacén se obtiene AUTOMÁTICAMENTE del servidor
+  /// NO enviar 'almacen_id' en el request
+  ///
+  /// El servidor valida que:
+  /// 1. Usuario tenga rol permitido (Preventista, Cliente, Chofer, Super Admin)
+  /// 2. Usuario tenga empresa asignada
+  /// 3. Empresa tenga almacén de venta asignado
+  /// 4. Solo lista productos con:
+  ///    - Stock disponible > 0 en el almacén de la empresa
+  ///    - Precio de venta válido (tipo_precio_id = 2, precio > 0)
+  ///    - Producto activo
   Future<PaginatedResponse<Product>> getProducts({
     int page = 1,
     int perPage = 20,
@@ -13,12 +26,16 @@ class ProductService {
     int? brandId,
     int? supplierId,
     bool? active,
-    int? almacenId,
-    bool withStock = true,
+    // ❌ REMOVIDO: int? almacenId - El almacén se obtiene del servidor
+    // ❌ REMOVIDO: bool withStock - Siempre se filtra por stock
   }) async {
     try {
-      final queryParams = <String, dynamic>{'page': page, 'per_page': perPage};
+      final queryParams = <String, dynamic>{
+        'page': page,
+        'per_page': perPage,
+      };
 
+      // ✅ Parámetros opcionales de búsqueda y filtro
       if (search != null && search.isNotEmpty) {
         queryParams['q'] = search;
       }
@@ -34,11 +51,9 @@ class ProductService {
       if (active != null) {
         queryParams['activo'] = active;
       }
-      if (almacenId != null) {
-        queryParams['almacen_id'] = almacenId;
-      }
-      // Agregar filtro de stock disponible
-      queryParams['con_stock'] = withStock ? 'true' : 'false';
+      // ❌ NO ENVIAR: almacen_id
+      // ❌ NO ENVIAR: con_stock
+      // El servidor maneja esto automáticamente basado en auth()->user()->empresa->almacen_id
 
       final response = await _apiService.get(
         '/productos',

@@ -6,6 +6,7 @@ import '../services/services.dart';
 class PedidoProvider with ChangeNotifier {
   final PedidoService _pedidoService = PedidoService();
   final ProformaService _proformaService = ProformaService();
+  final VentaService _ventaService = VentaService();
   final WebSocketService _webSocketService = WebSocketService();
   StreamSubscription? _proformaSubscription;
   StreamSubscription? _envioSubscription;
@@ -20,10 +21,12 @@ class PedidoProvider with ChangeNotifier {
   // Estado
   List<Pedido> _pedidos = [];
   Pedido? _pedidoActual;
+  Venta? _ventaActual;
   ProformaStats? _stats;
   bool _isLoading = false;
   bool _isLoadingMore = false;
   bool _isLoadingStats = false;
+  bool _isLoadingVenta = false;
   bool _isConverting = false;
   bool _isRenovandoReservas = false;
   String? _errorMessage;
@@ -45,10 +48,12 @@ class PedidoProvider with ChangeNotifier {
   // Getters
   List<Pedido> get pedidos => _pedidos;
   Pedido? get pedidoActual => _pedidoActual;
+  Venta? get ventaActual => _ventaActual;
   ProformaStats? get stats => _stats;
   bool get isLoading => _isLoading;
   bool get isLoadingMore => _isLoadingMore;
   bool get isLoadingStats => _isLoadingStats;
+  bool get isLoadingVenta => _isLoadingVenta;
   bool get isConverting => _isConverting;
   bool get isRenovandoReservas => _isRenovandoReservas;
   String? get errorMessage => _errorMessage;
@@ -217,6 +222,11 @@ class PedidoProvider with ChangeNotifier {
         if (index != -1) {
           _pedidos[index] = response.data!;
         }
+
+        // ✅ Si es una venta, cargar datos completos de la venta
+        if (_pedidoActual!.estadoCategoria == 'venta') {
+          await loadVentaForPedido(id);
+        }
       } else {
         _errorMessage = response.message;
         _pedidoActual = null;
@@ -227,6 +237,47 @@ class PedidoProvider with ChangeNotifier {
       debugPrint('Error loading pedido detail: $e');
     } finally {
       _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  /// Cargar datos completos de la venta asociada a un pedido
+  ///
+  /// Este método obtiene la información completa de la venta incluida:
+  /// - Estado de pago (PAGADO, PARCIAL, PENDIENTE)
+  /// - Montos pagado y pendiente
+  /// - Estado logístico actualizado
+  /// - Datos de entrega
+  ///
+  /// Parámetros:
+  /// - pedidoId: ID del pedido (que es una venta)
+  Future<void> loadVentaForPedido(int pedidoId) async {
+    try {
+      // Solo cargar si el pedido actual es una venta
+      if (_pedidoActual?.estadoCategoria != 'venta') {
+        return;
+      }
+
+      _isLoadingVenta = true;
+      notifyListeners();
+
+      debugPrint('📦 Cargando datos de venta para pedido #$pedidoId');
+
+      final response = await _ventaService.getVentaByProformaId(pedidoId);
+
+      if (response.success && response.data != null) {
+        _ventaActual = response.data;
+        debugPrint(
+            '✅ Venta cargada: ${_ventaActual!.numero} - Estado pago: ${_ventaActual!.estadoPago}');
+      } else {
+        debugPrint('❌ Error cargando venta: ${response.message}');
+        _ventaActual = null;
+      }
+    } catch (e) {
+      debugPrint('Error loading venta data: $e');
+      _ventaActual = null;
+    } finally {
+      _isLoadingVenta = false;
       notifyListeners();
     }
   }
@@ -990,8 +1041,10 @@ class PedidoProvider with ChangeNotifier {
     detenerEscuchaWebSocket();
     _pedidos = [];
     _pedidoActual = null;
+    _ventaActual = null;
     _isLoading = false;
     _isLoadingMore = false;
+    _isLoadingVenta = false;
     _errorMessage = null;
     _currentPage = 1;
     _hasMorePages = true;

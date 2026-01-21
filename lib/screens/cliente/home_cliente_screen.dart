@@ -98,6 +98,11 @@ class _DashboardTab extends StatelessWidget {
 
             const SizedBox(height: 24),
 
+            // ✅ NUEVO: Botón de Mis Ventas
+            _buildMisVentasButton(context),
+
+            const SizedBox(height: 24),
+
             // Estadísticas de mis pedidos
             _buildProformasStats(context, pedidoProvider),
 
@@ -149,14 +154,15 @@ class _DashboardTab extends StatelessWidget {
 
   Widget _buildQuickActions(BuildContext context) {
     // Obtener acceso al estado del BaseHomeScreen para navegar entre tabs
-    final homeState = context.findAncestorStateOfType<_HomeClienteScreenState>();
+    final homeState = context
+        .findAncestorStateOfType<_HomeClienteScreenState>();
     final pedidoProvider = context.watch<PedidoProvider>();
 
     // Calcular cantidad de pedidos en ruta (EN_RUTA + LLEGO)
     // ✅ ACTUALIZADO: Usar códigos de estado String en lugar de enum
-    final pedidosEnRuta = pedidoProvider.pedidosEnProceso.where((p) =>
-      p.estadoCodigo == 'EN_RUTA' || p.estadoCodigo == 'LLEGO'
-    ).length;
+    final pedidosEnRuta = pedidoProvider.pedidosEnProceso
+        .where((p) => p.estadoCodigo == 'EN_RUTA' || p.estadoCodigo == 'LLEGO')
+        .length;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -213,7 +219,8 @@ class _DashboardTab extends StatelessWidget {
                 icon: Icons.local_shipping,
                 title: 'Seguimiento',
                 color: Colors.purple,
-                badgeCount: pedidosEnRuta, // Mostrar cantidad de pedidos en ruta
+                badgeCount:
+                    pedidosEnRuta, // Mostrar cantidad de pedidos en ruta
                 onTap: () {
                   // ✅ ACTUALIZADO: Usar código de estado String en lugar de enum
                   // Aplicar filtro de pedidos EN_RUTA y navegar al tab
@@ -225,6 +232,74 @@ class _DashboardTab extends StatelessWidget {
               ),
             ),
           ],
+        ),
+      ],
+    );
+  }
+
+  /// ✅ NUEVO: Widget para mostrar botón de Mis Ventas
+  Widget _buildMisVentasButton(BuildContext context) {
+    final ventasProvider = context.watch<VentasProvider>();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('Mis Ventas', style: Theme.of(context).textTheme.headlineSmall),
+        const SizedBox(height: 12),
+        GestureDetector(
+          onTap: () {
+            Navigator.pushNamed(context, '/mis-ventas');
+          },
+          child: Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [Colors.green.shade600, Colors.green.shade800],
+              ),
+              borderRadius: BorderRadius.circular(12),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.green.withOpacity(0.3),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Ver mis compras confirmadas',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Pagos, logística y más',
+                      style: TextStyle(
+                        color: Colors.white.withOpacity(0.8),
+                        fontSize: 13,
+                      ),
+                    ),
+                  ],
+                ),
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.2),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(Icons.arrow_forward, color: Colors.white),
+                ),
+              ],
+            ),
+          ),
         ),
       ],
     );
@@ -343,7 +418,8 @@ class _DashboardTab extends StatelessWidget {
                     child: _StatCard(
                       icon: Icons.attach_money,
                       label: 'Convertidos',
-                      value: 'Bs. ${stats.montosPorEstado.convertida.toStringAsFixed(0)}',
+                      value:
+                          'Bs. ${stats.montosPorEstado.convertida.toStringAsFixed(0)}',
                       color: Colors.teal.shade600,
                     ),
                   ),
@@ -392,7 +468,8 @@ class _DashboardTab extends StatelessWidget {
 
   Widget _buildViewAllPedidosButton(BuildContext context) {
     // Obtener acceso al estado del BaseHomeScreen para navegar entre tabs
-    final homeState = context.findAncestorStateOfType<_HomeClienteScreenState>();
+    final homeState = context
+        .findAncestorStateOfType<_HomeClienteScreenState>();
 
     return SizedBox(
       width: double.infinity,

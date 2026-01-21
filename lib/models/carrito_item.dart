@@ -77,10 +77,42 @@ class CarritoItem {
   factory CarritoItem.fromJson(Map<String, dynamic> json) {
     return CarritoItem(
       producto: Product.fromJson(json['producto']),
-      cantidad: json['cantidad']?.toInt() ?? 1,
-      precioUnitario: json['precio_unitario']?.toDouble(),
+      cantidad: _parseInt(json['cantidad']),
+      precioUnitario: _parseDouble(json['precio_unitario']),
       observaciones: json['observaciones'],
     );
+  }
+
+  // Helper to safely parse int from string or number
+  static int _parseInt(dynamic value) {
+    if (value == null) return 1;
+    if (value is int) return value;
+    if (value is double) return value.toInt();
+    if (value is String) {
+      try {
+        return double.parse(value).toInt();
+      } catch (e) {
+        return 1;
+      }
+    }
+    if (value is num) return value.toInt();
+    return 1;
+  }
+
+  // Helper to safely parse double from string or number
+  static double _parseDouble(dynamic value) {
+    if (value == null) return 0.0;
+    if (value is double) return value;
+    if (value is int) return value.toDouble();
+    if (value is String) {
+      try {
+        return double.parse(value);
+      } catch (e) {
+        return 0.0;
+      }
+    }
+    if (value is num) return value.toDouble();
+    return 0.0;
   }
 
   @override
