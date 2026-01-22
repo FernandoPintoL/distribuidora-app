@@ -150,14 +150,15 @@ class _DireccionEntregaSeleccionScreenState
                 final direcciones = cliente.direcciones ?? [];
 
                 if (direcciones.isEmpty) {
+                  final isDarkMode = Theme.of(context).brightness == Brightness.dark;
                   return Center(
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        const Icon(
+                        Icon(
                           Icons.location_off,
                           size: 64,
-                          color: Colors.grey,
+                          color: isDarkMode ? Colors.grey[500] : Colors.grey[400],
                         ),
                         const SizedBox(height: 16),
                         Text(
@@ -171,9 +172,9 @@ class _DireccionEntregaSeleccionScreenState
                           _esPreventista
                               ? 'El cliente debe agregar una dirección para continuar'
                               : 'Agrega una dirección para continuar',
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 14,
-                            color: Colors.grey,
+                            color: isDarkMode ? Colors.grey[400] : Colors.grey[600],
                           ),
                         ),
                         // ✅ Solo mostrar botón si es CLIENTE (no preventista)
@@ -209,7 +210,9 @@ class _DireccionEntregaSeleccionScreenState
                     Container(
                       width: double.infinity,
                       padding: const EdgeInsets.all(16),
-                      color: Theme.of(context).primaryColor.withOpacity(0.1),
+                      color: Theme.of(context).primaryColor.withOpacity(
+                        Theme.of(context).brightness == Brightness.dark ? 0.15 : 0.1,
+                      ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
@@ -227,44 +230,56 @@ class _DireccionEntregaSeleccionScreenState
                             _esPreventista
                                 ? 'Elige una dirección del cliente para entregar el pedido'
                                 : 'Elige una de tus direcciones guardadas',
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 14,
-                              color: Colors.grey,
+                              color: Theme.of(context).brightness == Brightness.dark
+                                  ? Colors.grey[400]
+                                  : Colors.grey[600],
                             ),
                           ),
                           // ✅ Mostrar badge si es preventista
                           if (_esPreventista) ...[
                             const SizedBox(height: 12),
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 12,
-                                vertical: 6,
-                              ),
-                              decoration: BoxDecoration(
-                                color: Colors.orange.withOpacity(0.2),
-                                border: Border.all(color: Colors.orange),
-                                borderRadius: BorderRadius.circular(6),
-                              ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  const Icon(
-                                    Icons.person_outline,
-                                    size: 16,
-                                    color: Colors.orange,
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Text(
-                                    'Modo Preventista',
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.w600,
-                                      color: Colors.orange[700],
+                            Builder(builder: (context) {
+                              final isDarkMode =
+                                  Theme.of(context).brightness == Brightness.dark;
+                              final orangeColor =
+                                  isDarkMode ? Colors.orange[400] : Colors.orange;
+                              final orangeBackgroundColor = isDarkMode
+                                  ? Colors.orange.withOpacity(0.3)
+                                  : Colors.orange.withOpacity(0.2);
+
+                              return Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                  vertical: 6,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: orangeBackgroundColor,
+                                  border: Border.all(color: orangeColor!),
+                                  borderRadius: BorderRadius.circular(6),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(
+                                      Icons.person_outline,
+                                      size: 16,
+                                      color: orangeColor,
                                     ),
-                                  ),
-                                ],
-                              ),
-                            ),
+                                    const SizedBox(width: 8),
+                                    Text(
+                                      'Modo Preventista',
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w600,
+                                        color: orangeColor,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              );
+                            }),
                           ],
                         ],
                       ),
@@ -357,30 +372,42 @@ class _DireccionEntregaSeleccionScreenState
                                                   ),
                                                 ),
                                               ),
-                                              if (direccion.esPrincipal)
-                                                Container(
-                                                  padding:
-                                                      const EdgeInsets.symmetric(
-                                                        horizontal: 8,
-                                                        vertical: 4,
-                                                      ),
-                                                  decoration: BoxDecoration(
-                                                    color: Colors.blue.shade100,
-                                                    borderRadius:
-                                                        BorderRadius.circular(
-                                                          12,
-                                                        ),
-                                                  ),
-                                                  child: const Text(
-                                                    'Principal',
-                                                    style: TextStyle(
-                                                      fontSize: 11,
-                                                      fontWeight:
-                                                          FontWeight.w600,
-                                                      color: Colors.blue,
+                              if (direccion.esPrincipal)
+                                                Builder(builder: (context) {
+                                                  final isDarkMode =
+                                                      Theme.of(context)
+                                                              .brightness ==
+                                                          Brightness.dark;
+                                                  return Container(
+                                                    padding:
+                                                        const EdgeInsets
+                                                            .symmetric(
+                                                      horizontal: 8,
+                                                      vertical: 4,
                                                     ),
-                                                  ),
-                                                ),
+                                                    decoration: BoxDecoration(
+                                                      color: isDarkMode
+                                                          ? Colors.blue
+                                                              .withOpacity(0.3)
+                                                          : Colors.blue.shade100,
+                                                      borderRadius:
+                                                          BorderRadius.circular(
+                                                            12,
+                                                          ),
+                                                    ),
+                                                    child: Text(
+                                                      'Principal',
+                                                      style: TextStyle(
+                                                        fontSize: 11,
+                                                        fontWeight:
+                                                            FontWeight.w600,
+                                                        color: isDarkMode
+                                                            ? Colors.blue[300]
+                                                            : Colors.blue,
+                                                      ),
+                                                    ),
+                                                  );
+                                                }),
                                             ],
                                           ),
 
@@ -390,16 +417,24 @@ class _DireccionEntregaSeleccionScreenState
                                             const SizedBox(height: 4),
                                             Row(
                                               children: [
-                                                const Icon(
+                                                Icon(
                                                   Icons.gps_fixed,
                                                   size: 14,
-                                                  color: Colors.grey,
+                                                  color: Theme.of(context)
+                                                              .brightness ==
+                                                          Brightness.dark
+                                                      ? Colors.grey[500]
+                                                      : Colors.grey[600],
                                                 ),
                                                 const SizedBox(width: 4),
                                                 Text(
                                                   'Ubicación GPS registrada',
-                                                  style: const TextStyle(
-                                                    color: Colors.grey,
+                                                  style: TextStyle(
+                                                    color: Theme.of(context)
+                                                                .brightness ==
+                                                            Brightness.dark
+                                                        ? Colors.grey[400]
+                                                        : Colors.grey[600],
                                                     fontSize: 12,
                                                   ),
                                                 ),
@@ -412,25 +447,36 @@ class _DireccionEntregaSeleccionScreenState
                                                   .observaciones!
                                                   .isNotEmpty) ...[
                                             const SizedBox(height: 8),
-                                            Container(
-                                              padding:
-                                                  const EdgeInsets.symmetric(
-                                                    horizontal: 8,
-                                                    vertical: 4,
-                                                  ),
-                                              decoration: BoxDecoration(
-                                                color: Colors.blue.shade50,
-                                                borderRadius:
-                                                    BorderRadius.circular(4),
-                                              ),
-                                              child: Text(
-                                                'Obs: ${direccion.observaciones}',
-                                                style: TextStyle(
-                                                  fontSize: 12,
-                                                  color: Colors.blue.shade900,
+                                            Builder(builder: (context) {
+                                              final isDarkMode =
+                                                  Theme.of(context)
+                                                          .brightness ==
+                                                      Brightness.dark;
+                                              return Container(
+                                                padding:
+                                                    const EdgeInsets.symmetric(
+                                                      horizontal: 8,
+                                                      vertical: 4,
+                                                    ),
+                                                decoration: BoxDecoration(
+                                                  color: isDarkMode
+                                                      ? Colors.blue
+                                                          .withOpacity(0.2)
+                                                      : Colors.blue.shade50,
+                                                  borderRadius:
+                                                      BorderRadius.circular(4),
                                                 ),
-                                              ),
-                                            ),
+                                                child: Text(
+                                                  'Obs: ${direccion.observaciones}',
+                                                  style: TextStyle(
+                                                    fontSize: 12,
+                                                    color: isDarkMode
+                                                        ? Colors.blue[300]
+                                                        : Colors.blue.shade900,
+                                                  ),
+                                                ),
+                                              );
+                                            }),
                                           ],
                                         ],
                                       ),
@@ -448,10 +494,16 @@ class _DireccionEntregaSeleccionScreenState
                     Container(
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
-                        color: Colors.white,
+                        color: Theme.of(context).brightness == Brightness.dark
+                            ? Theme.of(context).scaffoldBackgroundColor
+                            : Colors.white,
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withOpacity(0.05),
+                            color: Colors.black.withOpacity(
+                              Theme.of(context).brightness == Brightness.dark
+                                  ? 0.3
+                                  : 0.05,
+                            ),
                             blurRadius: 10,
                             offset: const Offset(0, -5),
                           ),

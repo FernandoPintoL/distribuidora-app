@@ -763,43 +763,6 @@ class _ResumenPedidoScreenState extends State<ResumenPedidoScreen> {
                                           icono: Icons.credit_card,
                                           color: Colors.green.shade500,
                                           colorScheme: colorScheme,
-                                        )
-                                      else if (clienteSeleccionado != null)
-                                        Container(
-                                          padding: const EdgeInsets.all(12),
-                                          decoration: BoxDecoration(
-                                            color: Colors.orange.withOpacity(
-                                              isDark ? 0.15 : 0.08,
-                                            ),
-                                            borderRadius: BorderRadius.circular(
-                                              8,
-                                            ),
-                                            border: Border.all(
-                                              color: Colors.orange.withOpacity(
-                                                isDark ? 0.4 : 0.2,
-                                              ),
-                                            ),
-                                          ),
-                                          child: Row(
-                                            children: [
-                                              Icon(
-                                                Icons.info_outline,
-                                                size: 18,
-                                                color: Colors.orange.shade500,
-                                              ),
-                                              const SizedBox(width: 8),
-                                              Expanded(
-                                                child: Text(
-                                                  'El cliente no tiene permisos para solicitar crédito',
-                                                  style: TextStyle(
-                                                    fontSize: 12,
-                                                    color:
-                                                        Colors.orange.shade500,
-                                                  ),
-                                                ),
-                                              ),
-                                            ],
-                                          ),
                                         ),
                                     ],
                                   ),
