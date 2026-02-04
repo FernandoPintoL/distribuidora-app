@@ -54,23 +54,35 @@ class _HomeScreenState extends BaseHomeScreenState<HomeScreen> {
     try {
       final authProvider = context.read<AuthProvider>();
       final clientProvider = context.read<ClientProvider>();
+      final pedidoProvider = context.read<PedidoProvider>();
+
+      // ✅ NUEVO: Cargar estadísticas de pedidos (ligero ~100ms)
+      debugPrint('📊 Cargando estadísticas de pedidos...');
+      await pedidoProvider.loadStats();
 
       // ✅ IMPORTANTE: Cargar clientes desde /clientes en lugar del login
       // El endpoint /login devuelve datos básicos sin campos de crédito
       // El endpoint /clientes retorna los datos COMPLETOS incluyendo puede_tener_credito
       debugPrint('📊 Cargando lista completa de clientes desde API...');
-      clientProvider.loadClients(perPage: 100).then((_) {
-        debugPrint('✅ Clientes cargados desde /clientes (con datos de crédito)');
-      }).catchError((e) {
-        debugPrint('❌ Error cargando clientes: $e');
-        // Si falla, usar los datos del login como fallback
-        if (authProvider.preventistaStats != null) {
-          debugPrint('📊 Usando datos del preventista del login como fallback...');
-          clientProvider.loadClientsFromPreventistaStats(
-            authProvider.preventistaStats!,
-          );
-        }
-      });
+      clientProvider
+          .loadClients(perPage: 100)
+          .then((_) {
+            debugPrint(
+              '✅ Clientes cargados desde /clientes (con datos de crédito)',
+            );
+          })
+          .catchError((e) {
+            debugPrint('❌ Error cargando clientes: $e');
+            // Si falla, usar los datos del login como fallback
+            if (authProvider.preventistaStats != null) {
+              debugPrint(
+                '📊 Usando datos del preventista del login como fallback...',
+              );
+              clientProvider.loadClientsFromPreventistaStats(
+                authProvider.preventistaStats!,
+              );
+            }
+          });
     } catch (e) {
       debugPrint('❌ Error cargando datos iniciales: $e');
     }
@@ -300,6 +312,28 @@ class _DashboardPreventistaState extends State<DashboardPreventista>
                             Navigator.pushNamed(context, '/client-form');
                           },
                         ),
+                        // dirigir a la pantalla de pedidos
+                        _buildGradientCard(
+                          context,
+                          title: 'Mis Pedidos',
+                          subtitle: 'Ver Todos',
+                          icon: Icons.receipt_long_outlined,
+                          gradient: AppGradients.greenDark,
+                          onTap: () {
+                            Navigator.pushNamed(context, '/mis-pedidos');
+                          },
+                        ),
+                        // ✅ NUEVO: Orden del día
+                        _buildGradientCard(
+                          context,
+                          title: 'Orden del Día',
+                          subtitle: 'Clientes Hoy',
+                          icon: Icons.checklist_rtl,
+                          gradient: AppGradients.teal,
+                          onTap: () {
+                            Navigator.pushNamed(context, '/orden-del-dia');
+                          },
+                        ),
                       ],
                     ),
                     const SizedBox(height: 32),
@@ -453,6 +487,146 @@ class _DashboardPreventistaState extends State<DashboardPreventista>
                                     style: const TextStyle(
                                       fontWeight: FontWeight.w600,
                                     ),
+                                  ),
+                                ),
+                              ),
+                          ],
+                        );
+                      },
+                    ),
+                    const SizedBox(height: 32),
+
+                    // ✅ NUEVO: Sección de Mis Pedidos
+                    const Text(
+                      'Pedidos de mis clientes',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+
+                    Consumer<PedidoProvider>(
+                      builder: (context, pedidoProvider, child) {
+                        final stats = pedidoProvider.stats;
+
+                        // Si no hay stats, mostrar loading
+                        if (stats == null) {
+                          return const Center(
+                            child: CircularProgressIndicator(),
+                          );
+                        }
+
+                        return Column(
+                          children: [
+                            // Fila 1: Pendientes y Aprobados
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: _buildStatCard(
+                                    context,
+                                    title: 'Pendientes',
+                                    value: stats.porEstado.pendiente.toString(),
+                                    icon: Icons.pending_outlined,
+                                    color: Colors.orange,
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: _buildStatCard(
+                                    context,
+                                    title: 'Aprobados',
+                                    value: stats.porEstado.aprobada.toString(),
+                                    icon: Icons.check_circle_outlined,
+                                    color: Colors.green,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 12),
+
+                            // Fila 2: Convertidos y Total
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: _buildStatCard(
+                                    context,
+                                    title: 'Convertidos',
+                                    value: stats.porEstado.convertida
+                                        .toString(),
+                                    icon: Icons.shopping_bag_outlined,
+                                    color: Colors.teal,
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: _buildStatCard(
+                                    context,
+                                    title: 'Total',
+                                    value: stats.total.toString(),
+                                    icon: Icons.receipt_long_outlined,
+                                    color: Colors.blue,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 16),
+
+                            // Botón para ver todos los pedidos
+                            SizedBox(
+                              width: double.infinity,
+                              child: OutlinedButton.icon(
+                                onPressed: () {
+                                  Navigator.pushNamed(context, '/mis-pedidos');
+                                },
+                                icon: const Icon(Icons.visibility_outlined),
+                                label: const Text('Ver Todos los Pedidos'),
+                                style: OutlinedButton.styleFrom(
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 14,
+                                  ),
+                                  side: BorderSide(
+                                    color: Theme.of(context).primaryColor,
+                                  ),
+                                ),
+                              ),
+                            ),
+
+                            // ✅ NUEVO: Alertas si hay pedidos vencidos o por vencer
+                            if (stats.alertas.vencidas > 0 ||
+                                stats.alertas.porVencer > 0)
+                              Padding(
+                                padding: const EdgeInsets.only(top: 12),
+                                child: Container(
+                                  padding: const EdgeInsets.all(12),
+                                  decoration: BoxDecoration(
+                                    color: Colors.red.shade50,
+                                    borderRadius: BorderRadius.circular(8),
+                                    border: Border.all(
+                                      color: Colors.red.shade200,
+                                    ),
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      Icon(
+                                        Icons.warning_amber_rounded,
+                                        color: Colors.red.shade700,
+                                        size: 20,
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Expanded(
+                                        child: Text(
+                                          stats.alertas.vencidas > 0
+                                              ? '${stats.alertas.vencidas} pedido(s) vencido(s)'
+                                              : '${stats.alertas.porVencer} pedido(s) por vencer',
+                                          style: TextStyle(
+                                            color: Colors.red.shade700,
+                                            fontSize: 13,
+                                            fontWeight: FontWeight.w500,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
                                   ),
                                 ),
                               ),
@@ -760,6 +934,51 @@ class _DashboardPreventistaState extends State<DashboardPreventista>
             Icon(Icons.chevron_right, color: Colors.grey.shade400),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildStatCard(
+    BuildContext context, {
+    required String title,
+    required String value,
+    required IconData icon,
+    required Color color,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: color.withOpacity(0.3), width: 1),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Icon(icon, color: color, size: 24),
+              Text(
+                value,
+                style: TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                  color: color,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            title,
+            style: TextStyle(
+              fontSize: 13,
+              color: Theme.of(context).textTheme.bodySmall?.color,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ],
       ),
     );
   }

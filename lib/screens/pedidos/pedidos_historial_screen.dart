@@ -886,6 +886,98 @@ class _PedidosHistorialScreenState extends State<PedidosHistorialScreen> {
   }
 }
 
+/// ✅ NUEVO: Helper para mostrar diálogo de anulación de proforma
+void _mostrarDialogoAnularProforma(
+  BuildContext context,
+  Pedido proforma,
+) {
+  final TextEditingController motivoController = TextEditingController();
+
+  showDialog(
+    context: context,
+    builder: (dialogContext) => AlertDialog(
+      title: const Text('Anular Proforma'),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            '¿Estás seguro que deseas anular la proforma #${proforma.numero}?',
+            style: Theme.of(dialogContext).textTheme.bodyMedium,
+          ),
+          const SizedBox(height: 16),
+          TextField(
+            controller: motivoController,
+            decoration: InputDecoration(
+              hintText: 'Motivo de anulación (requerido)',
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+              prefixIcon: const Icon(Icons.info_outlined),
+            ),
+            maxLines: 2,
+            minLines: 1,
+          ),
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(dialogContext),
+          child: const Text('Cancelar'),
+        ),
+        ElevatedButton.icon(
+          onPressed: () async {
+            final motivo = motivoController.text.trim();
+
+            if (motivo.isEmpty) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('El motivo de anulación es requerido'),
+                ),
+              );
+              return;
+            }
+
+            Navigator.pop(dialogContext);
+
+            // ✅ NUEVO: Anular proforma
+            final pedidoProvider = context.read<PedidoProvider>();
+            final result = await pedidoProvider.anularProforma(
+              proforma.id,
+              motivo,
+            );
+
+            if (result) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(
+                    'Proforma #${proforma.numero} anulada exitosamente',
+                  ),
+                  backgroundColor: Colors.green,
+                ),
+              );
+            } else {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(
+                    'Error: ${pedidoProvider.errorMessage ?? "No se pudo anular la proforma"}',
+                  ),
+                  backgroundColor: Colors.red,
+                ),
+              );
+            }
+          },
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Colors.red,
+            foregroundColor: Colors.white,
+          ),
+          icon: const Icon(Icons.delete_outline),
+          label: const Text('Anular'),
+        ),
+      ],
+    ),
+  );
+}
+
 /// ✅ REFACTORIZADA: Nueva card con Timeline unificado
 /// Muestra: Proforma → Venta → Logística en paralelo
 class _PedidoCard extends StatelessWidget {
@@ -1263,6 +1355,91 @@ class _PedidoCard extends StatelessWidget {
                       ],
                     ],
                   ),
+                ),
+              ],
+
+              // ✅ NUEVO: Botones de acción (Editar y Anular)
+              if ((pedido.estadoCodigo == 'PENDIENTE' ||
+                      pedido.estadoCodigo == 'APROBADA') &&
+                  pedido.estadoCategoria == 'proforma') ...[
+                const SizedBox(height: 16),
+                Divider(
+                  height: 1,
+                  color: colorScheme.outline.withOpacity(0.2),
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    // Botón Editar (solo para PENDIENTE)
+                    if (pedido.estadoCodigo == 'PENDIENTE')
+                      Expanded(
+                        child: ElevatedButton.icon(
+                          onPressed: () async {
+                            // ✅ NUEVO: Mostrar loading mientras se cargan stocks
+                            showDialog(
+                              context: context,
+                              barrierDismissible: false,
+                              builder: (loadingContext) => const AlertDialog(
+                                content: Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    CircularProgressIndicator(),
+                                    SizedBox(height: 16),
+                                    Text('Cargando datos actualizados...'),
+                                  ],
+                                ),
+                              ),
+                            );
+
+                            final carritoProvider = context.read<CarritoProvider>();
+                            final success = await carritoProvider.cargarProformaEnCarrito(pedido);
+
+                            // Cerrar diálogo de loading
+                            if (context.mounted) {
+                              Navigator.pop(context);
+
+                              if (success) {
+                                Navigator.pushNamed(context, '/carrito');
+                              } else {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text(
+                                      'Error: ${carritoProvider.errorMessage ?? "No se pudo cargar la proforma"}',
+                                    ),
+                                    backgroundColor: Colors.red,
+                                  ),
+                                );
+                              }
+                            }
+                          },
+                          icon: const Icon(Icons.edit_outlined),
+                          label: const Text('Editar'),
+                          style: ElevatedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                            backgroundColor: colorScheme.primary,
+                            foregroundColor: colorScheme.onPrimary,
+                          ),
+                        ),
+                      ),
+                    // Espaciador
+                    if (pedido.estadoCodigo == 'PENDIENTE')
+                      const SizedBox(width: 12),
+                    // Botón Anular
+                    Expanded(
+                      child: ElevatedButton.icon(
+                        onPressed: () {
+                          _mostrarDialogoAnularProforma(context, pedido);
+                        },
+                        icon: const Icon(Icons.cancel_outlined),
+                        label: const Text('Anular'),
+                        style: ElevatedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          backgroundColor: Colors.red,
+                          foregroundColor: Colors.white,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ],

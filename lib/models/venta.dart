@@ -1,3 +1,5 @@
+import 'credito_cliente.dart'; // Para importar TipoPago
+
 class Venta {
   final int id;
   final String numero;
@@ -24,6 +26,11 @@ class Venta {
   final double? longitud; // Longitud de entrega
   final String? direccion; // Dirección de entrega completa
 
+  // ✅ NUEVO: Campos de pago y origen
+  final String? canalOrigen; // Canal de venta: PRESENCIAL, ONLINE, etc.
+  final String? politicaPago; // Política de pago
+  final TipoPago? tipoPago; // Tipo de pago relacionado
+
   Venta({
     required this.id,
     required this.numero,
@@ -46,6 +53,9 @@ class Venta {
     this.latitud,
     this.longitud,
     this.direccion,
+    this.canalOrigen,
+    this.politicaPago,
+    this.tipoPago,
   });
 
   factory Venta.fromJson(Map<String, dynamic> json) {
@@ -132,9 +142,17 @@ class Venta {
       descuentoValue = _parseDouble(json['descuento']);
     }
 
+    // ✅ NUEVO: Parsear tipoPago si existe
+    TipoPago? tipoPago;
+    if (json['tipo_pago'] is Map<String, dynamic>) {
+      tipoPago = TipoPago.fromJson(json['tipo_pago'] as Map<String, dynamic>);
+    } else if (json['tipoPago'] is Map<String, dynamic>) {
+      tipoPago = TipoPago.fromJson(json['tipoPago'] as Map<String, dynamic>);
+    }
+
     return Venta(
-      id: json['id'] as int,
-      numero: json['numero'] as String,
+      id: _parseInt(json['id']),
+      numero: json['numero'] as String? ?? '',
       cliente: json['cliente'] is String ? json['cliente'] as String? : null,
       clienteNombre: clienteNom,
       clienteTelefono: clienteTel,
@@ -156,6 +174,9 @@ class Venta {
       latitud: latEntrega,
       longitud: lngEntrega,
       direccion: direccionEntrega,
+      canalOrigen: json['canal_origen'] as String?,
+      politicaPago: json['politica_pago'] as String?,
+      tipoPago: tipoPago,
     );
   }
 
@@ -173,6 +194,22 @@ class Venta {
     }
     if (value is num) return value.toDouble();
     return 0.0;
+  }
+
+  // Helper to safely parse int from string or number
+  static int _parseInt(dynamic value) {
+    if (value == null) return 0;
+    if (value is int) return value;
+    if (value is double) return value.toInt();
+    if (value is String) {
+      try {
+        return int.parse(value);
+      } catch (e) {
+        return 0;
+      }
+    }
+    if (value is num) return value.toInt();
+    return 0;
   }
 
   Map<String, dynamic> toJson() {
@@ -196,6 +233,9 @@ class Venta {
       'latitud': latitud,
       'longitud': longitud,
       'direccion': direccion,
+      'canal_origen': canalOrigen,
+      'politica_pago': politicaPago,
+      'tipo_pago': tipoPago?.toJson(),
     };
   }
 
@@ -247,9 +287,9 @@ class VentaDetalle {
     }
 
     return VentaDetalle(
-      id: json['id'] as int,
-      ventaId: json['venta_id'] as int,
-      productoId: json['producto_id'] as int,
+      id: _parseInt(json['id']),
+      ventaId: _parseInt(json['venta_id']),
+      productoId: _parseInt(json['producto_id']),
       cantidad: cantidadDouble,
       precioUnitario: _parseDouble(json['precio_unitario']),
       descuento: _parseDouble(json['descuento']),
@@ -272,6 +312,22 @@ class VentaDetalle {
     }
     if (value is num) return value.toDouble();
     return 0.0;
+  }
+
+  // Helper to safely parse int from string or number
+  static int _parseInt(dynamic value) {
+    if (value == null) return 0;
+    if (value is int) return value;
+    if (value is double) return value.toInt();
+    if (value is String) {
+      try {
+        return int.parse(value);
+      } catch (e) {
+        return 0;
+      }
+    }
+    if (value is num) return value.toInt();
+    return 0;
   }
 
   Map<String, dynamic> toJson() {

@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 import '../models/models.dart';
+import '../models/orden_del_dia.dart';
 import '../services/visita_service.dart';
 
 class VisitaProvider with ChangeNotifier {
@@ -156,6 +157,26 @@ class VisitaProvider with ChangeNotifier {
       return null;
     } catch (e) {
       debugPrint('Error al validar horario: $e');
+      return null;
+    }
+  }
+
+  /// ✅ NUEVO: Obtener orden del día
+  Future<OrdenDelDia?> obtenerOrdenDelDia() async {
+    try {
+      final response = await _visitaService.obtenerOrdenDelDia();
+
+      if (response.success && response.data != null) {
+        return response.data;
+      } else {
+        _errorMessage = response.message ?? 'Error al cargar orden del día';
+        notifyListeners();
+        return null;
+      }
+    } catch (e) {
+      _errorMessage = 'Error inesperado: ${e.toString()}';
+      notifyListeners();
+      debugPrint('Error al obtener orden del día: $e');
       return null;
     }
   }

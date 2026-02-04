@@ -342,6 +342,134 @@ class ProformaService {
     }
   }
 
+  /// ✅ NUEVO: Actualizar una proforma pendiente
+  ///
+  /// Este endpoint actualiza una proforma PENDIENTE con nuevos items.
+  /// Solo se puede actualizar si está en estado PENDIENTE.
+  ///
+  /// Parámetros:
+  /// - proformaId: ID de la proforma a actualizar
+  /// - items: Lista de items (productos con cantidades)
+  /// - clienteId: ID del cliente (requerido)
+  /// - observaciones: Observaciones adicionales (opcional)
+  ///
+  /// Retorna:
+  /// - Success: La proforma actualizada
+  /// - Otros errores: Mensajes de validación
+  Future<ApiResponse<Pedido>> actualizarProforma({
+    required int proformaId,
+    required int clienteId,
+    required List<Map<String, dynamic>> items,
+    String? observaciones,
+  }) async {
+    try {
+      debugPrint('📝 Actualizando proforma #$proformaId');
+
+      final response = await _apiService.put(
+        '/proformas/$proformaId',
+        data: {
+          'cliente_id': clienteId,
+          'items': items,
+          'observaciones': observaciones,
+        },
+      );
+
+      final Map<String, dynamic> responseData = response.data as Map<String, dynamic>;
+
+      if (responseData['success'] == true && responseData['data'] != null) {
+        final proforma = Pedido.fromJson(responseData['data'] as Map<String, dynamic>);
+
+        debugPrint('✅ Proforma actualizada: ${proforma.numero}');
+        return ApiResponse<Pedido>(
+          success: true,
+          message: 'Proforma actualizada exitosamente',
+          data: proforma,
+        );
+      } else {
+        return ApiResponse<Pedido>(
+          success: false,
+          message: responseData['message'] as String? ?? 'Error al actualizar proforma',
+          data: null,
+        );
+      }
+    } on DioException catch (e) {
+      debugPrint('❌ Error actualizando proforma: ${_getErrorMessage(e)}');
+      return ApiResponse<Pedido>(
+        success: false,
+        message: _getErrorMessage(e),
+        data: null,
+      );
+    } catch (e) {
+      debugPrint('❌ Error inesperado: $e');
+      return ApiResponse<Pedido>(
+        success: false,
+        message: 'Error inesperado al actualizar proforma: ${e.toString()}',
+        data: null,
+      );
+    }
+  }
+
+  /// ✅ NUEVO: Anular una proforma
+  ///
+  /// Este endpoint anula una proforma PENDIENTE o APROBADA.
+  /// No se pueden anular proformas que ya fueron convertidas a venta.
+  ///
+  /// Parámetros:
+  /// - proformaId: ID de la proforma a anular
+  /// - motivo: Motivo de la anulación (requerido)
+  ///
+  /// Retorna:
+  /// - Success: La proforma anulada (con estado = 'ANULADA')
+  /// - Otros errores: Mensajes de validación
+  Future<ApiResponse<Pedido>> anularProforma({
+    required int proformaId,
+    required String motivo,
+  }) async {
+    try {
+      debugPrint('🚫 Anulando proforma #$proformaId - Motivo: $motivo');
+
+      final response = await _apiService.post(
+        '/proformas/$proformaId/anular',
+        data: {
+          'motivo_anulacion': motivo,
+        },
+      );
+
+      final Map<String, dynamic> responseData = response.data as Map<String, dynamic>;
+
+      if (responseData['success'] == true && responseData['data'] != null) {
+        final proforma = Pedido.fromJson(responseData['data'] as Map<String, dynamic>);
+
+        debugPrint('✅ Proforma anulada: ${proforma.numero}');
+        return ApiResponse<Pedido>(
+          success: true,
+          message: 'Proforma anulada exitosamente',
+          data: proforma,
+        );
+      } else {
+        return ApiResponse<Pedido>(
+          success: false,
+          message: responseData['message'] as String? ?? 'Error al anular proforma',
+          data: null,
+        );
+      }
+    } on DioException catch (e) {
+      debugPrint('❌ Error anulando proforma: ${_getErrorMessage(e)}');
+      return ApiResponse<Pedido>(
+        success: false,
+        message: _getErrorMessage(e),
+        data: null,
+      );
+    } catch (e) {
+      debugPrint('❌ Error inesperado: $e');
+      return ApiResponse<Pedido>(
+        success: false,
+        message: 'Error inesperado al anular proforma: ${e.toString()}',
+        data: null,
+      );
+    }
+  }
+
   // Helper para extraer mensaje de error de DioException
   String _getErrorMessage(DioException e) {
     if (e.response != null) {

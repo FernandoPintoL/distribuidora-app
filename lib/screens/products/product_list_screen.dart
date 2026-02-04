@@ -23,9 +23,9 @@ class _ProductListScreenState extends State<ProductListScreen>
   final _scrollController = ScrollController();
   final _searchFocusNode = FocusNode();
   Timer? _debounceTimer;
-  bool _isGridView = true;
+  bool _isGridView = false; // ✅ MEJORADO: Abre en formato lista por defecto
   bool _isSearchFocused = false;
-  bool _isLoadingMore = false;  // Flag para prevenir race conditions en scroll
+  bool _isLoadingMore = false; // Flag para prevenir race conditions en scroll
   late AnimationController _listAnimationController;
 
   @override
@@ -73,7 +73,9 @@ class _ProductListScreenState extends State<ProductListScreen>
       debugPrint('📍 SCROLL LISTENER TRIGGERED');
       debugPrint('   isLoading: ${productProvider.isLoading}');
       debugPrint('   hasMorePages: ${productProvider.hasMorePages}');
-      debugPrint('   currentPage: ${productProvider.currentPage}/${productProvider.totalPages}');
+      debugPrint(
+        '   currentPage: ${productProvider.currentPage}/${productProvider.totalPages}',
+      );
       debugPrint('   totalProducts: ${productProvider.products.length}');
       debugPrint('   _isLoadingMore flag: $_isLoadingMore');
 
@@ -87,15 +89,20 @@ class _ProductListScreenState extends State<ProductListScreen>
         _isLoadingMore = true;
         debugPrint('📍 ✅ Cargando más productos...');
 
-        productProvider.loadMoreProducts(search: _searchController.text).then((_) {
-          _isLoadingMore = false;
-          debugPrint('📍 ✅ Carga completada, flag reseteado');
-        }).catchError((e) {
-          _isLoadingMore = false;
-          debugPrint('📍 ❌ Error en carga, flag reseteado');
-        });
+        productProvider
+            .loadMoreProducts(search: _searchController.text)
+            .then((_) {
+              _isLoadingMore = false;
+              debugPrint('📍 ✅ Carga completada, flag reseteado');
+            })
+            .catchError((e) {
+              _isLoadingMore = false;
+              debugPrint('📍 ❌ Error en carga, flag reseteado');
+            });
       } else if (!productProvider.hasMorePages) {
-        debugPrint('📍 ℹ️ No hay más productos. totalPages: ${productProvider.totalPages}, currentPage: ${productProvider.currentPage}');
+        debugPrint(
+          '📍 ℹ️ No hay más productos. totalPages: ${productProvider.totalPages}, currentPage: ${productProvider.currentPage}',
+        );
       } else if (productProvider.isLoading) {
         debugPrint('📍 ℹ️ Provider aún cargando...');
       }
@@ -157,9 +164,9 @@ class _ProductListScreenState extends State<ProductListScreen>
           backgroundColor: colorScheme.surface,
           title: Text(
             'Ingresar código de barras',
-            style: Theme.of(context).textTheme.titleLarge?.copyWith(
-              color: colorScheme.onSurface,
-            ),
+            style: Theme.of(
+              context,
+            ).textTheme.titleLarge?.copyWith(color: colorScheme.onSurface),
           ),
           content: TextField(
             controller: manualController,
@@ -175,10 +182,7 @@ class _ProductListScreenState extends State<ProductListScreen>
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(8),
-                borderSide: BorderSide(
-                  color: colorScheme.primary,
-                  width: 2,
-                ),
+                borderSide: BorderSide(color: colorScheme.primary, width: 2),
               ),
             ),
             onSubmitted: (value) {
@@ -245,19 +249,10 @@ class _ProductListScreenState extends State<ProductListScreen>
               ],
             ),
           ),
-          Divider(
-            height: 0,
-            color: colorScheme.outline.withAlpha(30),
-          ),
+          Divider(height: 0, color: colorScheme.outline.withAlpha(30)),
           // Scanner
-          SizedBox(
-            height: 300,
-            child: _buildScannerContent(),
-          ),
-          Divider(
-            height: 0,
-            color: colorScheme.outline.withAlpha(30),
-          ),
+          SizedBox(height: 300, child: _buildScannerContent()),
+          Divider(height: 0, color: colorScheme.outline.withAlpha(30)),
           // Pie de página con opción manual
           Padding(
             padding: const EdgeInsets.all(16),
@@ -331,9 +326,9 @@ class _ProductListScreenState extends State<ProductListScreen>
               const SizedBox(height: 16),
               Text(
                 'Error con la cámara',
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  color: colorScheme.onSurface,
-                ),
+                style: Theme.of(
+                  context,
+                ).textTheme.titleMedium?.copyWith(color: colorScheme.onSurface),
               ),
               const SizedBox(height: 8),
               Padding(
@@ -386,10 +381,14 @@ class _ProductListScreenState extends State<ProductListScreen>
     try {
       final authProvider = context.read<AuthProvider>();
       final userRoles = authProvider.user?.roles ?? [];
-      isPreventista = userRoles.any((role) =>
-          role.toLowerCase() == 'preventista' ||
-          role.toLowerCase() == 'preventista');
-      debugPrint('👤 [ProductListScreen] Roles del usuario: $userRoles, isPreventista: $isPreventista');
+      isPreventista = userRoles.any(
+        (role) =>
+            role.toLowerCase() == 'preventista' ||
+            role.toLowerCase() == 'preventista',
+      );
+      debugPrint(
+        '👤 [ProductListScreen] Roles del usuario: $userRoles, isPreventista: $isPreventista',
+      );
     } catch (e) {
       debugPrint('❌ [ProductListScreen] Error al verificar rol: $e');
     }
@@ -536,10 +535,14 @@ class _ProductListScreenState extends State<ProductListScreen>
                       duration: const Duration(milliseconds: 200),
                       transitionBuilder: (child, animation) {
                         return RotationTransition(
-                          turns: Tween<double>(begin: 0.0, end: 0.5)
-                              .animate(animation),
+                          turns: Tween<double>(
+                            begin: 0.0,
+                            end: 0.5,
+                          ).animate(animation),
                           child: FadeTransition(
-                              opacity: animation, child: child),
+                            opacity: animation,
+                            child: child,
+                          ),
                         );
                       },
                       child: Icon(
@@ -577,7 +580,9 @@ class _ProductListScreenState extends State<ProductListScreen>
           Expanded(
             child: Consumer<ProductProvider>(
               builder: (context, productProvider, child) {
-                debugPrint('🔍 Consumer rebuild - isLoading: ${productProvider.isLoading}, productos: ${productProvider.products.length}');
+                debugPrint(
+                  '🔍 Consumer rebuild - isLoading: ${productProvider.isLoading}, productos: ${productProvider.products.length}',
+                );
 
                 // Estado de carga - Mostrar simple loading
                 if (productProvider.isLoading) {
@@ -585,9 +590,7 @@ class _ProductListScreenState extends State<ProductListScreen>
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        CircularProgressIndicator(
-                          color: colorScheme.primary,
-                        ),
+                        CircularProgressIndicator(color: colorScheme.primary),
                         const SizedBox(height: 16),
                         Text(
                           'Cargando productos...',
@@ -649,7 +652,9 @@ class _ProductListScreenState extends State<ProductListScreen>
                 }
 
                 // Grid o Lista de productos
-                debugPrint('✅ Construyendo ${_isGridView ? "GRID" : "LIST"} con ${productProvider.products.length} productos');
+                debugPrint(
+                  '✅ Construyendo ${_isGridView ? "GRID" : "LIST"} con ${productProvider.products.length} productos',
+                );
                 try {
                   return RefreshIndicator(
                     onRefresh: _loadProducts,
@@ -660,9 +665,7 @@ class _ProductListScreenState extends State<ProductListScreen>
                   );
                 } catch (e) {
                   debugPrint('❌ ERROR construyendo lista/grid: $e');
-                  return Center(
-                    child: Text('Error: $e'),
-                  );
+                  return Center(child: Text('Error: $e'));
                 }
               },
             ),
@@ -692,7 +695,8 @@ class _ProductListScreenState extends State<ProductListScreen>
     final crossAxisCount = isLandscape ? 3 : 2;
     final spacing = 16.0;
     final padding = 16.0;
-    final availableWidth = screenSize.width - (padding * 2) - (spacing * (crossAxisCount - 1));
+    final availableWidth =
+        screenSize.width - (padding * 2) - (spacing * (crossAxisCount - 1));
     final itemWidth = availableWidth / crossAxisCount;
     final mainAxisExtent = itemWidth * 1.4;
 
@@ -718,7 +722,8 @@ class _ProductListScreenState extends State<ProductListScreen>
     final crossAxisCount = isLandscape ? 3 : 2;
     final spacing = 16.0;
     final padding = 16.0;
-    final availableWidth = screenSize.width - (padding * 2) - (spacing * (crossAxisCount - 1));
+    final availableWidth =
+        screenSize.width - (padding * 2) - (spacing * (crossAxisCount - 1));
     final maxItemWidth = availableWidth / crossAxisCount;
     // Altura compacta: ajustada al contenido
     final mainAxisExtent = maxItemWidth * 1.0;
@@ -765,7 +770,7 @@ class _ProductListScreenState extends State<ProductListScreen>
         ListView.builder(
           controller: _scrollController,
           itemCount: productProvider.products.length,
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 12),
           itemBuilder: (context, index) {
             final product = productProvider.products[index];
             return ProductListItem(

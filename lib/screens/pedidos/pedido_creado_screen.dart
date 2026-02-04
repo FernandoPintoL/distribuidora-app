@@ -5,8 +5,14 @@ import '../../extensions/theme_extension.dart';
 
 class PedidoCreadoScreen extends StatelessWidget {
   final Pedido pedido;
+  // ✅ NUEVO: Parámetro para detectar si es creación o actualización
+  final bool esActualizacion;
 
-  const PedidoCreadoScreen({super.key, required this.pedido});
+  const PedidoCreadoScreen({
+    super.key,
+    required this.pedido,
+    this.esActualizacion = false,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -39,9 +45,11 @@ class PedidoCreadoScreen extends StatelessWidget {
 
               const SizedBox(height: 32),
 
-              // Título
+              // ✅ NUEVO: Título dinámico según sea creación o actualización
               Text(
-                'Proforma Creada',
+                esActualizacion
+                    ? 'Proforma Actualizada'
+                    : 'Proforma Creada',
                 style: TextStyle(
                   fontSize: 28,
                   fontWeight: FontWeight.bold,
@@ -52,9 +60,11 @@ class PedidoCreadoScreen extends StatelessWidget {
 
               const SizedBox(height: 16),
 
-              // Mensaje
+              // ✅ NUEVO: Mensaje dinámico según sea creación o actualización
               Text(
-                'Tu pedido ha sido registrado exitosamente',
+                esActualizacion
+                    ? 'Los cambios han sido guardados exitosamente'
+                    : 'Tu pedido ha sido registrado exitosamente',
                 style: TextStyle(
                   fontSize: 16,
                   color: colorScheme.onSurfaceVariant,
@@ -200,7 +210,7 @@ class PedidoCreadoScreen extends StatelessWidget {
 
               const SizedBox(height: 24),
 
-              // Información adicional
+              // ✅ NUEVO: Información adicional dinámica según sea creación o actualización
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
@@ -218,7 +228,9 @@ class PedidoCreadoScreen extends StatelessWidget {
                     const SizedBox(width: 12),
                     Expanded(
                       child: Text(
-                        'Tu proforma está pendiente de aprobación. Te notificaremos cuando sea aprobada y esté lista para entrega.',
+                        esActualizacion
+                            ? 'Tu proforma ha sido actualizada correctamente. Los cambios serán revisados por nuestro equipo.'
+                            : 'Tu proforma está pendiente de aprobación. Te notificaremos cuando sea aprobada y esté lista para entrega.',
                         style: TextStyle(
                           fontSize: 14,
                           color: colorScheme.onSurface,

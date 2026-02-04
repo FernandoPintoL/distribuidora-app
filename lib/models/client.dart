@@ -13,6 +13,8 @@ class Client {
   final String? email;
   final String? telefono;
   final double? limiteCredito;
+  // ✅ NUEVO: Crédito utilizado (del backend: credito_utilizado)
+  final double? creditoUtilizado;
   final bool puedeAtenerCredito;
   final int? localidadId;
   final double? latitud;
@@ -41,6 +43,7 @@ class Client {
     this.fechaNacimiento,
     this.genero, */
     this.limiteCredito,
+    this.creditoUtilizado,
     this.puedeAtenerCredito = false,
     this.localidadId,
     this.latitud,
@@ -80,6 +83,10 @@ class Client {
       // genero: json['genero'],
       limiteCredito: json['limite_credito'] != null
           ? double.tryParse(json['limite_credito'].toString()) ?? 0.0
+          : null,
+      // ✅ NUEVO: Parsear crédito utilizado (campo que retorna el backend)
+      creditoUtilizado: json['credito_utilizado'] != null
+          ? double.tryParse(json['credito_utilizado'].toString()) ?? 0.0
           : null,
       // ✅ Aceptar ambas variantes: puede_tener_credito y puede_atener_credito
       puedeAtenerCredito:

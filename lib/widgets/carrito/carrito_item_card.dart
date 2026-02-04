@@ -12,6 +12,7 @@ class CarritoItemCard extends StatefulWidget {
   final Function(int) onUpdateCantidad;
   final DetalleCarritoConRango? detalleConRango;
   final VoidCallback? onAgregarParaAhorrar;
+  final bool isPreventista;
 
   const CarritoItemCard({
     super.key,
@@ -22,6 +23,7 @@ class CarritoItemCard extends StatefulWidget {
     required this.onUpdateCantidad,
     this.detalleConRango,
     this.onAgregarParaAhorrar,
+    this.isPreventista = false,
   });
 
   @override
@@ -152,8 +154,10 @@ class _CarritoItemCardState extends State<CarritoItemCard> {
                               overflow: TextOverflow.ellipsis,
                             ),
                           ),
-                          const SizedBox(width: 8),
-                          _buildStockBadge(context, stockDispInt),
+                          if (widget.isPreventista)
+                            const SizedBox(width: 8),
+                          if (widget.isPreventista)
+                            _buildStockBadge(context, stockDispInt),
                         ],
                       ),
                       const SizedBox(height: 4),

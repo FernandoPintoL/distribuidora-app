@@ -53,6 +53,7 @@ class _HomeClienteScreenState extends BaseHomeScreenState<HomeClienteScreen> {
     try {
       final pedidoProvider = context.read<PedidoProvider>();
       final notificationProvider = context.read<NotificationProvider>();
+      final clientProvider = context.read<ClientProvider>();
 
       // ✅ Solo cargar estadísticas de notificaciones (contador), no las notificaciones completas
       await notificationProvider.loadStats();
@@ -60,6 +61,10 @@ class _HomeClienteScreenState extends BaseHomeScreenState<HomeClienteScreen> {
       // ✅ Solo cargar estadísticas de pedidos al iniciar (ligero y rápido)
       // Las proformas completas se cargarán cuando el usuario navegue al tab
       await pedidoProvider.loadStats();
+
+      // ✅ NUEVO: Cargar perfil del cliente actual para mostrar información de crédito
+      // getClientPerfil() obtiene SOLO los datos del cliente autenticado (no requiere permisos especiales)
+      await clientProvider.getClientPerfil();
 
       // Los productos se cargarán cuando el usuario navegue a la pestaña de Productos
 
@@ -100,6 +105,11 @@ class _DashboardTab extends StatelessWidget {
 
             // ✅ NUEVO: Botón de Mis Ventas
             _buildMisVentasButton(context),
+
+            const SizedBox(height: 24),
+
+            // ✅ NUEVO: Widget de Crédito (si aplica)
+            _buildCreditoResumenSection(context, authProvider),
 
             const SizedBox(height: 24),
 
@@ -244,7 +254,7 @@ class _DashboardTab extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Mis Ventas', style: Theme.of(context).textTheme.headlineSmall),
+        Text('Mis Compras', style: Theme.of(context).textTheme.headlineSmall),
         const SizedBox(height: 12),
         GestureDetector(
           onTap: () {
@@ -298,6 +308,136 @@ class _DashboardTab extends StatelessWidget {
                   child: const Icon(Icons.arrow_forward, color: Colors.white),
                 ),
               ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// ✅ NUEVO: Widget para mostrar resumen de crédito
+  Widget _buildCreditoResumenSection(
+    BuildContext context,
+    AuthProvider authProvider,
+  ) {
+    final clientProvider = context.watch<ClientProvider>();
+    final clienteActual = clientProvider.clientePerfil;
+
+    // Solo mostrar si el cliente está disponible
+    if (clienteActual == null) {
+      debugPrint('❌ [Crédito] ClientePerfil es null');
+      return const SizedBox.shrink();
+    }
+
+    // Solo mostrar si el cliente tiene crédito habilitado
+    if (!clienteActual.puedeAtenerCredito) {
+      debugPrint('❌ [Crédito] Cliente no puede tener crédito');
+      return const SizedBox.shrink();
+    }
+
+    debugPrint(
+      '✅ [Crédito] Mostrando widget de crédito para ${clienteActual.nombre}',
+    );
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('Mi Crédito', style: Theme.of(context).textTheme.headlineSmall),
+        const SizedBox(height: 12),
+        Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [Colors.teal.shade600, Colors.teal.shade800],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: () {
+                if (clienteActual != null) {
+                  Navigator.pushNamed(
+                    context,
+                    '/credito',
+                    arguments: {
+                      'clienteId': clienteActual.id,
+                      'clienteNombre': clienteActual.nombre,
+                    },
+                  );
+                }
+              },
+              borderRadius: BorderRadius.circular(16),
+              splashColor: Colors.white.withOpacity(0.2),
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Ver detalles de mi crédito',
+                                style: Theme.of(context).textTheme.bodyLarge
+                                    ?.copyWith(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                'Saldo, pagos y cuentas vencidas',
+                                style: TextStyle(
+                                  color: Colors.white.withOpacity(0.8),
+                                  fontSize: 13,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.2),
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(
+                            Icons.credit_card,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          'Límite: Bs. ${(clienteActual.limiteCredito ?? 0).toStringAsFixed(2)}',
+                          style: const TextStyle(
+                            color: Colors.white70,
+                            fontSize: 12,
+                          ),
+                        ),
+                        if (clienteActual.creditoUtilizado != null)
+                          Text(
+                            'Utilizado: Bs. ${clienteActual.creditoUtilizado!.toStringAsFixed(2)}',
+                            style: const TextStyle(
+                              color: Colors.white70,
+                              fontSize: 12,
+                            ),
+                          ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
             ),
           ),
         ),

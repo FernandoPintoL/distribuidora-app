@@ -111,6 +111,104 @@ class PedidoService {
     }
   }
 
+  /// ✅ NUEVO: Actualizar una proforma existente (para edición)
+  ///
+  /// Parámetros:
+  /// - proformaId: ID de la proforma a actualizar
+  /// - clienteId: ID del cliente
+  /// - items: Lista de items actualizados con formato {producto_id, cantidad, precio_unitario}
+  /// - tipoEntrega: Tipo de entrega (DELIVERY o PICKUP)
+  /// - fechaProgramada: Fecha programada de entrega
+  /// - direccionId: ID de la dirección de entrega (REQUERIDO para DELIVERY, NULL para PICKUP)
+  /// - horaInicio: Hora de inicio preferida (opcional)
+  /// - horaFin: Hora de fin preferida (opcional)
+  /// - observaciones: Observaciones adicionales (opcional)
+  /// - politicaPago: Política de pago seleccionada
+  Future<ApiResponse<Pedido>> actualizarProforma({
+    required int proformaId,
+    required int clienteId,
+    required List<Map<String, dynamic>> items,
+    required String tipoEntrega,
+    required DateTime fechaProgramada,
+    int? direccionId,
+    TimeOfDay? horaInicio,
+    TimeOfDay? horaFin,
+    String? observaciones,
+    String politicaPago = 'CONTRA_ENTREGA',
+  }) async {
+    try {
+      // Preparar el cuerpo de la petición
+      final Map<String, dynamic> requestBody = {
+        'cliente_id': clienteId,
+        'productos': items,
+        'tipo_entrega': tipoEntrega,
+        'fecha_programada': fechaProgramada.toIso8601String(),
+      };
+
+      // Agregar dirección SOLO si es DELIVERY
+      if (tipoEntrega == 'DELIVERY' && direccionId != null) {
+        requestBody['direccion_entrega_solicitada_id'] = direccionId;
+      }
+
+      // Agregar campos opcionales si están presentes
+      if (horaInicio != null) {
+        requestBody['hora_inicio_preferida'] =
+            '${horaInicio.hour.toString().padLeft(2, '0')}:${horaInicio.minute.toString().padLeft(2, '0')}';
+      }
+
+      if (horaFin != null) {
+        requestBody['hora_fin_preferida'] =
+            '${horaFin.hour.toString().padLeft(2, '0')}:${horaFin.minute.toString().padLeft(2, '0')}';
+      }
+
+      if (observaciones != null && observaciones.isNotEmpty) {
+        requestBody['observaciones'] = observaciones;
+      }
+
+      requestBody['politica_pago'] = politicaPago;
+
+      debugPrint('📝 Actualizando proforma #$proformaId con ${items.length} productos');
+      debugPrint('   Cliente ID: $clienteId');
+      debugPrint('   Tipo de entrega: $tipoEntrega');
+      debugPrint('   Fecha programada: ${fechaProgramada.toIso8601String()}');
+      if (direccionId != null && tipoEntrega == 'DELIVERY') {
+        debugPrint('   Dirección ID: $direccionId');
+      }
+      debugPrint('   Política de pago: $politicaPago');
+
+      final response = await _apiService.put(
+        '/proformas/$proformaId',
+        data: requestBody,
+      );
+
+      // Backend wraps proforma data inside data.proforma
+      final apiResponse = ApiResponse<Pedido>.fromJson(
+        response.data,
+        (data) {
+          // Extract proforma from nested structure if present
+          final proformaData = data is Map<String, dynamic> && data.containsKey('proforma')
+              ? data['proforma'] as Map<String, dynamic>
+              : data as Map<String, dynamic>;
+          return Pedido.fromJson(proformaData);
+        },
+      );
+
+      return apiResponse;
+    } on DioException catch (e) {
+      return ApiResponse<Pedido>(
+        success: false,
+        message: _getErrorMessage(e),
+        data: null,
+      );
+    } catch (e) {
+      return ApiResponse<Pedido>(
+        success: false,
+        message: 'Error inesperado al actualizar proforma: ${e.toString()}',
+        data: null,
+      );
+    }
+  }
+
   /// Obtener historial de pedidos del cliente autenticado
   ///
   /// Parámetros:

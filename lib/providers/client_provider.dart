@@ -8,6 +8,7 @@ class ClientProvider with ChangeNotifier {
   final ClientService _clientService = ClientService();
 
   List<Client> _clients = [];
+  Client? _clientePerfil; // ✅ NUEVO: Almacenar el perfil del cliente autenticado
   bool _isLoading = false;
   String? _errorMessage;
   int _currentPage = 1;
@@ -17,6 +18,7 @@ class ClientProvider with ChangeNotifier {
 
   // Getters
   List<Client> get clients => _clients;
+  Client? get clientePerfil => _clientePerfil; // ✅ NUEVO: Getter para acceder al perfil del cliente
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
   int get currentPage => _currentPage;
@@ -165,7 +167,9 @@ class ClientProvider with ChangeNotifier {
       final response = await _clientService.getClientPerfil();
 
       if (response.success && response.data != null) {
+        _clientePerfil = response.data; // ✅ NUEVO: Guardar en _clientePerfil
         _errorMessage = null;
+        debugPrint('✅ [ClientProvider] Perfil del cliente cargado: ${response.data!.nombre}');
         return response.data;
       } else {
         _errorMessage = response.message;
@@ -173,6 +177,7 @@ class ClientProvider with ChangeNotifier {
       }
     } catch (e) {
       _errorMessage = 'Error inesperado: ${e.toString()}';
+      debugPrint('❌ [ClientProvider] Error al obtener perfil: $e');
       return null;
     } finally {
       _isLoading = false;

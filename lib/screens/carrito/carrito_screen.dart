@@ -60,8 +60,69 @@ class _CarritoScreenState extends State<CarritoScreen> {
             );
           }
 
+          // Verificar si el usuario es preventista
+          bool isPreventista = false;
+          try {
+            final authProvider = context.read<AuthProvider>();
+            final userRoles = authProvider.user?.roles ?? [];
+            isPreventista = userRoles.any((role) =>
+                role.toLowerCase() == 'preventista');
+          } catch (e) {
+            debugPrint('❌ Error al verificar rol en CarritoScreen: $e');
+          }
+
           return Column(
             children: [
+              // ✅ NUEVO: Banner cuando se está editando una proforma
+              if (carritoProvider.editandoProforma)
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF2196F3).withOpacity(0.1),
+                    border: Border(
+                      left: BorderSide(
+                        color: const Color(0xFF2196F3),
+                        width: 4,
+                      ),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.edit_document,
+                        color: const Color(0xFF2196F3),
+                        size: 20,
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              'Editando Proforma',
+                              style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                                color: Color(0xFF2196F3),
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              '#${carritoProvider.proformaEditando?.numero ?? 'N/A'} (ID: ${carritoProvider.proformaEditandoId ?? 'N/A'})',
+                              style: const TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w500,
+                                color: Color(0xFF2196F3),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
               // ✅ NUEVO: Selector de cliente (solo para preventista)
               _buildClienteSelectorSection(
                 context,
@@ -94,6 +155,7 @@ class _CarritoScreenState extends State<CarritoScreen> {
                     return CarritoItemCard(
                       item: item,
                       detalleConRango: detalleConRango,
+                      isPreventista: isPreventista,
                       onIncrement: () {
                         carritoProvider.incrementarCantidad(item.producto.id);
                         mostrarErrorSiExiste(
@@ -162,6 +224,22 @@ class _CarritoScreenState extends State<CarritoScreen> {
           );
         },
       ),
+      // ✅ NUEVO: FloatingActionButton para agregar más productos
+      floatingActionButton: Consumer<CarritoProvider>(
+        builder: (context, carritoProvider, _) {
+          // Solo mostrar FAB si el carrito no está vacío
+          if (carritoProvider.isEmpty) return const SizedBox.shrink();
+
+          return FloatingActionButton(
+            onPressed: () {
+              debugPrint('➕ Abriendo pantalla de productos para agregar más items');
+              Navigator.pushNamed(context, '/products');
+            },
+            tooltip: 'Agregar más productos',
+            child: const Icon(Icons.add),
+          );
+        },
+      ),
     );
   }
 
@@ -226,30 +304,73 @@ class _CarritoScreenState extends State<CarritoScreen> {
             ],
           ),
           const SizedBox(height: 8),
-          // ✅ Dropdown con búsqueda usando dropdown_search
-          DropdownSearch<Client>(
-            items: clientProvider.clients.where((c) => c.activo).toList(),
-            selectedItem: carritoProvider.clienteSeleccionado,
-            itemAsString: (client) {
-              final creditBadge = client.puedeAtenerCredito
-                  ? ' ✅ Crédito'
-                  : ' ❌ Sin crédito';
-              final phone =
-                  client.telefono != null && client.telefono!.isNotEmpty
-                  ? ' (${client.telefono})'
-                  : '';
-              return '${client.nombre}$phone$creditBadge';
-            },
-            onChanged: (cliente) {
-              if (cliente != null) {
-                carritoProvider.setClienteSeleccionado(cliente);
-                debugPrint('✅ Cliente seleccionado: ${cliente.nombre}');
-                debugPrint('✅ Cliente seleccionado: ${cliente.id}');
-                debugPrint(
-                  '✅ Puede atender crédito: ${cliente.puedeAtenerCredito}',
-                );
-              }
-            },
+          // ✅ NUEVO: Deshabilitar dropdown cuando se está editando una proforma
+          if (carritoProvider.editandoProforma)
+            // Mostrar cliente de forma read-only cuando se edita
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+              decoration: BoxDecoration(
+                border: Border.all(
+                  color: colorScheme.primary.withOpacity(0.3),
+                  width: 1,
+                ),
+                borderRadius: BorderRadius.circular(8),
+                color: colorScheme.surfaceVariant.withOpacity(0.5),
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.lock_outline,
+                    size: 16,
+                    color: colorScheme.primary.withOpacity(0.6),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      carritoProvider.clienteSeleccionado?.nombre ?? 'Cliente no especificado',
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: colorScheme.onSurface,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                  Tooltip(
+                    message: 'No se puede cambiar el cliente en modo edición',
+                    child: Icon(
+                      Icons.info_outline,
+                      size: 16,
+                      color: colorScheme.primary.withOpacity(0.5),
+                    ),
+                  ),
+                ],
+              ),
+            )
+          else
+            // Dropdown normal cuando se crea una nueva proforma
+            DropdownSearch<Client>(
+              items: clientProvider.clients.where((c) => c.activo).toList(),
+              selectedItem: carritoProvider.clienteSeleccionado,
+              itemAsString: (client) {
+                final creditBadge = client.puedeAtenerCredito
+                    ? ' ✅ Crédito'
+                    : ' ❌ Sin crédito';
+                final phone =
+                    client.telefono != null && client.telefono!.isNotEmpty
+                    ? ' (${client.telefono})'
+                    : '';
+                return '${client.nombre}$phone$creditBadge';
+              },
+              onChanged: (cliente) {
+                if (cliente != null) {
+                  carritoProvider.setClienteSeleccionado(cliente);
+                  debugPrint('✅ Cliente seleccionado: ${cliente.nombre}');
+                  debugPrint('✅ Cliente seleccionado: ${cliente.id}');
+                  debugPrint(
+                    '✅ Puede atender crédito: ${cliente.puedeAtenerCredito}',
+                  );
+                }
+              },
             popupProps: PopupProps.menu(
               showSearchBox: true,
               searchFieldProps: TextFieldProps(
@@ -448,19 +569,14 @@ class _CarritoScreenState extends State<CarritoScreen> {
                               fontWeight: FontWeight.w600,
                             ),
                           ),
-                          // ✅ Mostrar estado de crédito
+                          // ✅ NUEVO: Tarjeta mejorada de información de crédito
                           if (carritoProvider
                               .clienteSeleccionado!
                               .puedeAtenerCredito)
                             Padding(
-                              padding: const EdgeInsets.only(top: 4),
-                              child: Text(
-                                'Con crédito disponible - Límite: Bs. ${carritoProvider.clienteSeleccionado!.limiteCredito?.toStringAsFixed(2) ?? 'N/A'}',
-                                style: TextStyle(
-                                  fontSize: 11,
-                                  color: Colors.green.shade400,
-                                  fontWeight: FontWeight.w500,
-                                ),
+                              padding: const EdgeInsets.only(top: 8),
+                              child: _buildCreditInfoCard(
+                                carritoProvider.clienteSeleccionado!,
                               ),
                             )
                           else
@@ -482,6 +598,125 @@ class _CarritoScreenState extends State<CarritoScreen> {
                 ),
               ),
             ),
+        ],
+      ),
+    );
+  }
+
+  // ✅ NUEVO: Widget para mostrar información de crédito de forma mejorada
+  Widget _buildCreditInfoCard(Client cliente) {
+    final limiteCredito = cliente.limiteCredito ?? 0.0;
+    // ✅ CORRECTO: Usar creditoUtilizado (campo que retorna el backend)
+    final creditoUtilizado = cliente.creditoUtilizado ?? 0.0;
+    final creditoDisponible = limiteCredito - creditoUtilizado;
+    final porcentajeUsado = limiteCredito > 0 ? (creditoUtilizado / limiteCredito) * 100 : 0.0;
+
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.green.shade50,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color: Colors.green.shade200,
+          width: 1,
+        ),
+      ),
+      padding: const EdgeInsets.all(8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Fila 1: Límite de crédito
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Límite de Crédito',
+                style: TextStyle(
+                  fontSize: 11,
+                  color: Colors.green.shade700,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              Text(
+                'Bs. ${limiteCredito.toStringAsFixed(2)}',
+                style: TextStyle(
+                  fontSize: 11,
+                  color: Colors.green.shade700,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+
+          // ✅ NUEVO: Mostrar crédito utilizado si está disponible
+          if (cliente.creditoUtilizado != null) ...[
+            const SizedBox(height: 4),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'Crédito Utilizado',
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: Colors.orange.shade600,
+                  ),
+                ),
+                Text(
+                  'Bs. ${creditoUtilizado.toStringAsFixed(2)}',
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: Colors.orange.shade600,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
+
+            // Barra de progreso visual
+            const SizedBox(height: 6),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(4),
+              child: LinearProgressIndicator(
+                value: porcentajeUsado / 100,
+                minHeight: 6,
+                backgroundColor: Colors.green.shade200,
+                valueColor: AlwaysStoppedAnimation<Color>(
+                  porcentajeUsado > 80
+                      ? Colors.red.shade500
+                      : porcentajeUsado > 50
+                      ? Colors.orange.shade500
+                      : Colors.green.shade500,
+                ),
+              ),
+            ),
+          ],
+
+          // Fila 3: Disponible
+          const SizedBox(height: 4),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Disponible',
+                style: TextStyle(
+                  fontSize: 11,
+                  color: creditoDisponible > 0
+                      ? Colors.green.shade600
+                      : Colors.red.shade600,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              Text(
+                'Bs. ${creditoDisponible.toStringAsFixed(2)}',
+                style: TextStyle(
+                  fontSize: 11,
+                  color: creditoDisponible > 0
+                      ? Colors.green.shade600
+                      : Colors.red.shade600,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
         ],
       ),
     );

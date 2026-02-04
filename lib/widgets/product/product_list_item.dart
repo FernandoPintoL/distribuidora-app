@@ -47,13 +47,13 @@ class _ProductListItemState extends State<ProductListItem>
       duration: const Duration(milliseconds: 300),
       vsync: this,
     );
-    _bounceAnimation = TweenSequence<double>([
-      TweenSequenceItem(tween: Tween(begin: 1.0, end: 1.2), weight: 50),
-      TweenSequenceItem(tween: Tween(begin: 1.2, end: 1.0), weight: 50),
-    ]).animate(CurvedAnimation(
-      parent: _bounceController,
-      curve: Curves.elasticOut,
-    ));
+    _bounceAnimation =
+        TweenSequence<double>([
+          TweenSequenceItem(tween: Tween(begin: 1.0, end: 1.2), weight: 50),
+          TweenSequenceItem(tween: Tween(begin: 1.2, end: 1.0), weight: 50),
+        ]).animate(
+          CurvedAnimation(parent: _bounceController, curve: Curves.elasticOut),
+        );
   }
 
   @override
@@ -109,6 +109,24 @@ class _ProductListItemState extends State<ProductListItem>
         widget.product.precioVenta != null &&
         stock > 0;
 
+    // Verificar si el usuario es preventista
+    bool isPreventista = false;
+    try {
+      final authProvider = context.read<AuthProvider>();
+      final userRoles = authProvider.user?.roles ?? [];
+      isPreventista = userRoles.any(
+        (role) => role.toLowerCase() == 'preventista',
+      );
+    } catch (e) {
+      debugPrint('❌ Error al verificar rol en ProductListItem: $e');
+    }
+
+    // Obtener cantidad disponible
+    final cantidadDisponible =
+        widget.product.stockPrincipal?.cantidadDisponible != null
+        ? (widget.product.stockPrincipal!.cantidadDisponible as num).toInt()
+        : 0;
+
     // Color marrón fijo para botones, precios y categoría
     const brownColor = Color(0xFF795548);
     final brownColorLight = brownColor.withAlpha(isDark ? 100 : 40);
@@ -116,135 +134,177 @@ class _ProductListItemState extends State<ProductListItem>
     final brownBorder = brownColor.withAlpha(120);
 
     return Card(
-        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        elevation: 4,
-        color: _quantity > 0
-            ? brownColorLight
-            : (isDark ? colorScheme.surface : Colors.white),
-        shadowColor: brownShadow,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-          side: BorderSide(
-            color: _quantity > 0 ? brownBorder : colorScheme.outline.withAlpha(20),
-            width: _quantity > 0 ? 2 : 1,
-          ),
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      elevation: 4,
+      color: _quantity > 0
+          ? brownColorLight
+          : (isDark ? colorScheme.surface : Colors.white),
+      shadowColor: brownShadow,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: BorderSide(
+          color: _quantity > 0
+              ? brownBorder
+              : colorScheme.outline.withAlpha(20),
+          width: _quantity > 0 ? 2 : 1,
         ),
-        child: InkWell(
-          onTap: widget.onTap,
-          borderRadius: BorderRadius.circular(16),
-          splashColor: colorScheme.primary.withAlpha(30),
-          highlightColor: colorScheme.primary.withAlpha(15),
-          onTapDown: (_) => _scaleController.forward(),
-          onTapUp: (_) => _scaleController.reverse(),
-          onTapCancel: () => _scaleController.reverse(),
-          child: Padding(
-            padding: const EdgeInsets.all(16.0),
+      ),
+      child: InkWell(
+        onTap: widget.onTap,
+        borderRadius: BorderRadius.circular(16),
+        splashColor: colorScheme.primary.withAlpha(30),
+        highlightColor: colorScheme.primary.withAlpha(15),
+        onTapDown: (_) => _scaleController.forward(),
+        onTapUp: (_) => _scaleController.reverse(),
+        onTapCancel: () => _scaleController.reverse(),
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: IntrinsicHeight(
             child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              ProductImageWidget(product: widget.product),
-              const SizedBox(width: 12),
-              ProductInfoWidget(product: widget.product),
-              // Stock badge y botón/cantidad
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  /* ProductStockBadgeWidget(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                ProductImageWidget(product: widget.product),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      ProductInfoWidget(product: widget.product),
+                      // Badge de cantidad disponible para preventistas
+                      if (isPreventista)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 6.0),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 4,
+                            ),
+                            decoration: BoxDecoration(
+                              color: colorScheme.primaryContainer.withAlpha(
+                                200,
+                              ),
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(
+                                color: colorScheme.primary.withAlpha(150),
+                                width: 0.5,
+                              ),
+                            ),
+                            child: Text(
+                              '📦 Disp.: $cantidadDisponible ${widget.product.unidadMedida?.nombre ?? ""}',
+                              style: context.textTheme.bodySmall?.copyWith(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w600,
+                                color: colorScheme.onPrimaryContainer,
+                              ),
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 8),
+                // Stock badge y botón/cantidad
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    /* ProductStockBadgeWidget(
                     stock: stock,
                     status: stockStatus,
                   ),
                   const SizedBox(height: 6), */
-                  if (canAddToCart)
-                    if (_quantity == 0)
-                      ScaleTransition(
-                        scale: _bounceAnimation,
-                        child: SizedBox(
-                          width: 44,
-                          height: 44,
-                          child: IconButton(
-                            onPressed: _incrementQuantity,
-                            icon: const Icon(Icons.add_shopping_cart),
-                            style: IconButton.styleFrom(
-                              backgroundColor: brownColor,
-                              foregroundColor: Colors.white,
-                              elevation: 3,
-                              shadowColor: brownColor.withAlpha(40),
-                            ),
-                            tooltip: 'Agregar al carrito',
-                          ),
-                        ),
-                      )
-                    else
-                      Container(
-                        decoration: BoxDecoration(
-                          color: brownColor.withAlpha(20),
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(
-                            color: brownColor,
-                            width: 1.5,
-                          ),
-                        ),
-                        child: Row(
-                          children: [
-                            SizedBox(
-                              width: 32,
-                              height: 32,
-                              child: IconButton(
-                                onPressed: _decrementQuantity,
-                                icon: const Icon(Icons.remove, size: 16),
-                                padding: EdgeInsets.zero,
-                                style: IconButton.styleFrom(
-                                  foregroundColor: brownColor,
-                                ),
+                    if (canAddToCart)
+                      if (_quantity == 0)
+                        ScaleTransition(
+                          scale: _bounceAnimation,
+                          child: SizedBox(
+                            width: 44,
+                            height: 44,
+                            child: IconButton(
+                              onPressed: _incrementQuantity,
+                              icon: const Icon(Icons.add_shopping_cart),
+                              style: IconButton.styleFrom(
+                                backgroundColor: brownColor,
+                                foregroundColor: Colors.white,
+                                elevation: 3,
+                                shadowColor: brownColor.withAlpha(40),
                               ),
+                              tooltip: 'Agregar al carrito',
                             ),
-                            SizedBox(
-                              width: 32,
-                              child: Center(
-                                child: AnimatedSwitcher(
-                                  duration: const Duration(milliseconds: 200),
-                                  transitionBuilder: (child, animation) {
-                                    return ScaleTransition(
-                                      scale: Tween<double>(begin: 0.8, end: 1.0).animate(
-                                        CurvedAnimation(
-                                          parent: animation,
-                                          curve: Curves.elasticOut,
-                                        ),
-                                      ),
-                                      child: child,
-                                    );
-                                  },
-                                  child: Text(
-                                    '$_quantity',
-                                    key: ValueKey(_quantity),
-                                    style: context.textTheme.labelMedium
-                                        ?.copyWith(
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 15,
-                                          color: brownColor,
-                                        ),
+                          ),
+                        )
+                      else
+                        Container(
+                          decoration: BoxDecoration(
+                            color: brownColor.withAlpha(20),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: brownColor, width: 1.5),
+                          ),
+                          child: Row(
+                            children: [
+                              SizedBox(
+                                width: 32,
+                                height: 32,
+                                child: IconButton(
+                                  onPressed: _decrementQuantity,
+                                  icon: const Icon(Icons.remove, size: 16),
+                                  padding: EdgeInsets.zero,
+                                  style: IconButton.styleFrom(
+                                    foregroundColor: brownColor,
                                   ),
                                 ),
                               ),
-                            ),
-                            SizedBox(
-                              width: 32,
-                              height: 32,
-                              child: IconButton(
-                                onPressed: _incrementQuantity,
-                                icon: const Icon(Icons.add, size: 16),
-                                padding: EdgeInsets.zero,
-                                style: IconButton.styleFrom(
-                                  foregroundColor: brownColor,
+                              SizedBox(
+                                width: 32,
+                                child: Center(
+                                  child: AnimatedSwitcher(
+                                    duration: const Duration(milliseconds: 200),
+                                    transitionBuilder: (child, animation) {
+                                      return ScaleTransition(
+                                        scale:
+                                            Tween<double>(
+                                              begin: 0.8,
+                                              end: 1.0,
+                                            ).animate(
+                                              CurvedAnimation(
+                                                parent: animation,
+                                                curve: Curves.elasticOut,
+                                              ),
+                                            ),
+                                        child: child,
+                                      );
+                                    },
+                                    child: Text(
+                                      '$_quantity',
+                                      key: ValueKey(_quantity),
+                                      style: context.textTheme.labelMedium
+                                          ?.copyWith(
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 15,
+                                            color: brownColor,
+                                          ),
+                                    ),
+                                  ),
                                 ),
                               ),
-                            ),
-                          ],
+                              SizedBox(
+                                width: 32,
+                                height: 32,
+                                child: IconButton(
+                                  onPressed: _incrementQuantity,
+                                  icon: const Icon(Icons.add, size: 16),
+                                  padding: EdgeInsets.zero,
+                                  style: IconButton.styleFrom(
+                                    foregroundColor: brownColor,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
-                      ),
-                ],
-              ),
-            ],
+                  ],
+                ),
+              ],
+            ),
           ),
         ),
       ),

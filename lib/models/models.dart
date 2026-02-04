@@ -28,6 +28,8 @@ export 'ruta_detalle.dart';
 export 'entrega.dart';
 export 'venta.dart';
 export 'visita_preventista_cliente.dart';
+export 'orden_del_dia.dart';
+export 'credito_cliente.dart';
 export 'caja.dart';
 export 'movimiento_caja.dart';
 export 'gasto.dart';

@@ -293,6 +293,7 @@ class ClientService {
 
         // Agregar archivo de foto (si existe)
         if (fotoPerfil != null) {
+          debugPrint('📎 CREAR: Agregando foto_perfil al FormData: ${fotoPerfil.path}');
           formData.files.add(
             MapEntry(
               'foto_perfil',
@@ -302,9 +303,14 @@ class ClientService {
               ),
             ),
           );
+          debugPrint('✅ CREAR: foto_perfil agregado correctamente');
+        } else {
+          debugPrint('⚠️ CREAR: fotoPerfil es NULL - no se agregará imagen');
         }
+
         // Agregar archivos de CI (si existen)
         if (ciAnverso != null) {
+          debugPrint('📎 CREAR: Agregando ci_anverso al FormData: ${ciAnverso.path}');
           formData.files.add(
             MapEntry(
               'ci_anverso',
@@ -314,8 +320,13 @@ class ClientService {
               ),
             ),
           );
+          debugPrint('✅ CREAR: ci_anverso agregado correctamente');
+        } else {
+          debugPrint('⚠️ CREAR: ciAnverso es NULL');
         }
+
         if (ciReverso != null) {
+          debugPrint('📎 CREAR: Agregando ci_reverso al FormData: ${ciReverso.path}');
           formData.files.add(
             MapEntry(
               'ci_reverso',
@@ -325,6 +336,9 @@ class ClientService {
               ),
             ),
           );
+          debugPrint('✅ CREAR: ci_reverso agregado correctamente');
+        } else {
+          debugPrint('⚠️ CREAR: ciReverso es NULL');
         }
 
         // Agregar ventanas_entrega como campos con índices si vienen
@@ -355,7 +369,15 @@ class ClientService {
           }
         }
 
+        debugPrint('📤 FormData CREAR completo con ${formData.files.length} archivos y ${formData.fields.length} campos');
         requestData = formData;
+      }
+
+      debugPrint('📤 createClient: Iniciando POST a /clientes');
+      debugPrint('   - isFormData: ${requestData is FormData}');
+      if (requestData is FormData) {
+        debugPrint('   - Archivos: ${requestData.files.length}');
+        debugPrint('   - Campos: ${requestData.fields.length}');
       }
 
       final response = await _apiService.post(
@@ -612,9 +634,7 @@ class ClientService {
 
         // Agregar archivo de foto (si existe)
         if (fotoPerfil != null) {
-          debugPrint(
-            'Agregando foto de perfil al FormData..................🤢',
-          );
+          debugPrint('📎 UPDATE: Agregando foto_perfil al FormData: ${fotoPerfil.path}');
           formData.files.add(
             MapEntry(
               'foto_perfil',
@@ -624,9 +644,14 @@ class ClientService {
               ),
             ),
           );
+          debugPrint('✅ UPDATE: foto_perfil agregado correctamente');
+        } else {
+          debugPrint('⚠️ UPDATE: fotoPerfil es NULL - no se actualizará imagen');
         }
+
         // Agregar archivos de CI (si existen)
         if (ciAnverso != null) {
+          debugPrint('📎 UPDATE: Agregando ci_anverso al FormData: ${ciAnverso.path}');
           formData.files.add(
             MapEntry(
               'ci_anverso',
@@ -636,8 +661,13 @@ class ClientService {
               ),
             ),
           );
+          debugPrint('✅ UPDATE: ci_anverso agregado correctamente');
+        } else {
+          debugPrint('⚠️ UPDATE: ciAnverso es NULL');
         }
+
         if (ciReverso != null) {
+          debugPrint('📎 UPDATE: Agregando ci_reverso al FormData: ${ciReverso.path}');
           formData.files.add(
             MapEntry(
               'ci_reverso',
@@ -647,6 +677,9 @@ class ClientService {
               ),
             ),
           );
+          debugPrint('✅ UPDATE: ci_reverso agregado correctamente');
+        } else {
+          debugPrint('⚠️ UPDATE: ciReverso es NULL');
         }
 
         // Agregar ventanas_entrega como campos con índices si vienen
@@ -679,20 +712,24 @@ class ClientService {
 
         // Agregar override _method=PUT para que Laravel interprete la petición correctamente
         formData.fields.add(MapEntry('_method', 'PUT'));
+        debugPrint('📤 FormData UPDATE completo con ${formData.files.length} archivos y ${formData.fields.length} campos');
+        debugPrint('   - _method=PUT agregado');
         requestData = formData;
-        debugPrint(
-          '📤 Enviando FormData con archivos y campos (override _method=PUT)',
-        );
       }
+
       // Si estamos enviando FormData, usar POST con _method=PUT (multipart + PUT puede fallar en algunos servidores)
       final Response response;
       if (requestData is FormData) {
+        debugPrint('📤 updateClient ID=$id: Usando POST con FormData');
+        debugPrint('   - Archivos: ${requestData.files.length}');
+        debugPrint('   - Campos: ${requestData.fields.length}');
         response = await _apiService.post(
           '/clientes/$id',
           data: requestData,
           isFormData: true,
         );
       } else {
+        debugPrint('📤 updateClient ID=$id: Usando PUT con JSON');
         response = await _apiService.put(
           '/clientes/$id',
           data: requestData,

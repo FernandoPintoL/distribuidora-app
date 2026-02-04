@@ -22,7 +22,8 @@ class VentaService {
     try {
       debugPrint('📦 Obteniendo venta #$ventaId');
 
-      final response = await _apiService.get('/app/ventas/$ventaId');
+      // ✅ CORREGIDO: Usar ruta correcta /ventas/{id} (no /app/ventas)
+      final response = await _apiService.get('/ventas/$ventaId');
 
       final Map<String, dynamic> responseData =
           response.data as Map<String, dynamic>;
@@ -239,10 +240,10 @@ class VentaService {
   ///
   /// Parámetros:
   /// - page: Número de página (default: 1)
-  /// - perPage: Items por página (default: 15)
+  /// - perPage: Items por página (default: 20)
   /// - estado: Filtrar por estado de pago (opcional): PAGADO, PARCIAL, PENDIENTE
   /// - estadoLogistico: Filtrar por estado logístico (opcional)
-  /// - busqueda: Búsqueda por número de venta (opcional)
+  /// - busqueda: Búsqueda por ID, número de venta o nombre de cliente (opcional)
   /// - fechaDesde: Filtrar por fecha desde (opcional)
   /// - fechaHasta: Filtrar por fecha hasta (opcional)
   ///
@@ -251,7 +252,7 @@ class VentaService {
   /// - Error: Mensaje de error descriptivo
   Future<ApiResponse<Map<String, dynamic>>> getVentas({
     int page = 1,
-    int perPage = 15,
+    int perPage = 20, // ✅ MODIFICADO: 20 registros por página para mejor UX
     String? estado,
     String? estadoLogistico,
     String? busqueda,

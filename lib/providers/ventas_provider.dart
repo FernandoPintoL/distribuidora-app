@@ -16,7 +16,7 @@ class VentasProvider with ChangeNotifier {
   int _currentPage = 1;
   bool _hasMorePages = true;
   int _totalItems = 0;
-  final int _perPage = 15;
+  final int _perPage = 20; // ✅ MODIFICADO: 20 registros por página para mejor UX
 
   // Filtros
   String? _filtroEstado;
@@ -35,6 +35,43 @@ class VentasProvider with ChangeNotifier {
   DateTime? get filtroFechaDesde => _filtroFechaDesde;
   DateTime? get filtroFechaHasta => _filtroFechaHasta;
   String? get filtroBusqueda => _filtroBusqueda;
+
+  // ✅ NUEVO: Estado para detalle de venta
+  Venta? _ventaDetalle;
+  bool _isLoadingDetalle = false;
+
+  // Getters para detalle de venta
+  Venta? get ventaDetalle => _ventaDetalle;
+  bool get isLoadingDetalle => _isLoadingDetalle;
+
+  /// Cargar detalles de una venta específica
+  Future<void> loadVentaDetalle(int ventaId) async {
+    _isLoadingDetalle = true;
+    _errorMessage = null;
+    Future.microtask(() => notifyListeners());
+
+    try {
+      final response = await _ventaService.getVenta(ventaId);
+
+      if (response.success && response.data != null) {
+        _ventaDetalle = response.data;
+        _isLoadingDetalle = false;
+        _errorMessage = null;
+
+        debugPrint('✅ Detalle de venta cargado: ${_ventaDetalle?.numero}');
+      } else {
+        _isLoadingDetalle = false;
+        _errorMessage = response.message;
+        debugPrint('❌ Error: ${response.message}');
+      }
+    } catch (e) {
+      _isLoadingDetalle = false;
+      _errorMessage = 'Error inesperado: ${e.toString()}';
+      debugPrint('Error loading venta detail: $e');
+    } finally {
+      Future.microtask(() => notifyListeners());
+    }
+  }
 
   /// Cargar lista de ventas (página 1)
   Future<void> loadVentas({
@@ -55,7 +92,7 @@ class VentasProvider with ChangeNotifier {
     _filtroBusqueda = busqueda;
 
     if (!refresh) {
-      notifyListeners();
+      Future.microtask(() => notifyListeners());
     }
 
     try {
@@ -87,7 +124,7 @@ class VentasProvider with ChangeNotifier {
       debugPrint('Error loading ventas: $e');
     } finally {
       _isLoading = false;
-      notifyListeners();
+      Future.microtask(() => notifyListeners());
     }
   }
 
@@ -97,7 +134,7 @@ class VentasProvider with ChangeNotifier {
 
     _isLoadingMore = true;
     _errorMessage = null;
-    notifyListeners();
+    Future.microtask(() => notifyListeners());
 
     try {
       final nextPage = _currentPage + 1;
@@ -129,7 +166,7 @@ class VentasProvider with ChangeNotifier {
       debugPrint('Error loading more ventas: $e');
     } finally {
       _isLoadingMore = false;
-      notifyListeners();
+      Future.microtask(() => notifyListeners());
     }
   }
 
@@ -187,7 +224,7 @@ class VentasProvider with ChangeNotifier {
   /// Limpiar errores
   void limpiarErrores() {
     _errorMessage = null;
-    notifyListeners();
+    Future.microtask(() => notifyListeners());
   }
 
   /// Resetear provider
@@ -203,6 +240,6 @@ class VentasProvider with ChangeNotifier {
     _filtroFechaDesde = null;
     _filtroFechaHasta = null;
     _filtroBusqueda = null;
-    notifyListeners();
+    Future.microtask(() => notifyListeners());
   }
 }

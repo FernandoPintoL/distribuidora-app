@@ -107,6 +107,22 @@ class _ProductGridItemState extends State<ProductGridItem>
         widget.product.precioVenta != null &&
         stock > 0;
 
+    // Verificar si el usuario es preventista
+    bool isPreventista = false;
+    try {
+      final authProvider = context.read<AuthProvider>();
+      final userRoles = authProvider.user?.roles ?? [];
+      isPreventista = userRoles.any((role) =>
+          role.toLowerCase() == 'preventista');
+    } catch (e) {
+      debugPrint('❌ Error al verificar rol en ProductGridItem: $e');
+    }
+
+    // Obtener cantidad disponible
+    final cantidadDisponible = widget.product.stockPrincipal?.cantidadDisponible != null
+        ? (widget.product.stockPrincipal!.cantidadDisponible as num).toInt()
+        : 0;
+
     // Color marrón fijo para botones, precios y categoría
     const brownColor = Color(0xFF795548);
     final brownColorLight = brownColor.withAlpha(isDark ? 100 : 40);
@@ -140,98 +156,122 @@ class _ProductGridItemState extends State<ProductGridItem>
         onTapUp: (_) => _scaleController.reverse(),
         onTapCancel: () => _scaleController.reverse(),
         child: Padding(
-          padding: const EdgeInsets.all(6.0),
+          padding: const EdgeInsets.all(4.0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
             children: [
               // Badges superior (Categoría) - Color marrón fijo
-              if (widget.product.categoria != null)
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 4.0),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                    decoration: BoxDecoration(
-                      color: brownColor.withAlpha(100),
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(
-                        color: brownColor.withAlpha(150),
-                        width: 1,
-                      ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: brownColor.withAlpha(30),
-                          blurRadius: 4,
-                          offset: const Offset(0, 2),
+              Row(
+                children: [
+                  if (widget.product.categoria != null)
+                    Expanded(
+                      child: Padding(
+                        padding: const EdgeInsets.only(right: 3.0),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                          decoration: BoxDecoration(
+                            color: brownColor.withAlpha(100),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: brownColor.withAlpha(150),
+                              width: 0.5,
+                            ),
+                          ),
+                          child: Text(
+                            widget.product.categoria!.nombre,
+                            style: context.textTheme.labelSmall?.copyWith(
+                              fontSize: 8,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.white,
+                              height: 1.0,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
                         ),
-                      ],
-                    ),
-                    child: Text(
-                      widget.product.categoria!.nombre,
-                      style: context.textTheme.labelSmall?.copyWith(
-                        fontSize: 10,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.white,
-                        letterSpacing: 0.5,
                       ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
                     ),
-                  ),
-                ),
+                  // Badge de cantidad disponible para preventistas
+                  if (isPreventista)
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: colorScheme.primaryContainer.withAlpha(200),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(
+                          color: colorScheme.primary.withAlpha(150),
+                          width: 0.5,
+                        ),
+                      ),
+                      child: Text(
+                        '$cantidadDisponible',
+                        style: context.textTheme.labelSmall?.copyWith(
+                          fontSize: 7,
+                          fontWeight: FontWeight.w700,
+                          color: colorScheme.onPrimaryContainer,
+                          height: 1.0,
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+              const SizedBox(height: 3),
 
               // Imagen compacta
               Center(
-                child: ProductImageWidget(product: widget.product, size: 70),
+                child: ProductImageWidget(product: widget.product, size: 60),
               ),
-              const SizedBox(height: 4),
+              const SizedBox(height: 2),
 
               // Nombre y detalles (compacto)
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  // Nombre en 1 línea, fuente más pequeña
-                  Text(
-                    widget.product.nombre,
-                    style: context.textTheme.bodySmall?.copyWith(
-                      fontWeight: FontWeight.w600,
-                      fontSize: 11,
-                      height: 1.0,
-                      letterSpacing: 0,
-                      color: colorScheme.onSurface,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: 1),
-
-                  // SKU en una línea compacta
-                  Text(
-                    'SKU: ${widget.product.sku}',
-                    style: context.textTheme.bodySmall?.copyWith(
-                      fontSize: 7,
-                      color: colorScheme.outline,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  if (widget.product.marca != null) ...[
-                    const SizedBox(height: 1),
+              Flexible(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // Nombre en 1 línea
                     Text(
-                      widget.product.marca!.nombre,
+                      widget.product.nombre,
                       style: context.textTheme.bodySmall?.copyWith(
-                        fontSize: 7,
-                        fontWeight: FontWeight.w500,
-                        color: colorScheme.secondary,
+                        fontWeight: FontWeight.w600,
+                        fontSize: 10,
+                        height: 1.0,
+                        letterSpacing: 0,
+                        color: colorScheme.onSurface,
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
+                    // SKU
+                    if (widget.product.sku != null)
+                      Text(
+                        'SKU: ${widget.product.sku}',
+                        style: context.textTheme.bodySmall?.copyWith(
+                          fontSize: 6,
+                          height: 1.0,
+                          color: colorScheme.outline,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    // Marca
+                    if (widget.product.marca != null)
+                      Text(
+                        widget.product.marca!.nombre,
+                        style: context.textTheme.bodySmall?.copyWith(
+                          fontSize: 6,
+                          height: 1.0,
+                          fontWeight: FontWeight.w500,
+                          color: colorScheme.secondary,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
                   ],
-                ],
+                ),
               ),
-              const SizedBox(height: 4),
+              const SizedBox(height: 2),
 
               // Precio y acciones
               Row(
@@ -246,7 +286,8 @@ class _ProductGridItemState extends State<ProductGridItem>
                         style: context.textTheme.bodySmall?.copyWith(
                           color: brownColor,
                           fontWeight: FontWeight.w700,
-                          fontSize: 12,
+                          fontSize: 11,
+                          height: 1.0,
                           letterSpacing: 0.1,
                         ),
                       ),
@@ -258,13 +299,13 @@ class _ProductGridItemState extends State<ProductGridItem>
                       ScaleTransition(
                         scale: _bounceAnimation,
                         child: SizedBox(
-                          width: 32,
-                          height: 32,
+                          width: 28,
+                          height: 28,
                           child: IconButton(
                             onPressed: _incrementQuantity,
                             icon: const Icon(
                               Icons.add_shopping_cart,
-                              size: 14,
+                              size: 12,
                             ),
                             style: IconButton.styleFrom(
                               backgroundColor: brownColor,
@@ -281,21 +322,21 @@ class _ProductGridItemState extends State<ProductGridItem>
                       Container(
                         decoration: BoxDecoration(
                           color: brownColor.withAlpha(20),
-                          borderRadius: BorderRadius.circular(8),
+                          borderRadius: BorderRadius.circular(6),
                           border: Border.all(
                             color: brownColor,
-                            width: 1,
+                            width: 0.5,
                           ),
                         ),
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             SizedBox(
-                              width: 24,
-                              height: 24,
+                              width: 20,
+                              height: 20,
                               child: IconButton(
                                 onPressed: _decrementQuantity,
-                                icon: const Icon(Icons.remove, size: 10),
+                                icon: const Icon(Icons.remove, size: 8),
                                 padding: EdgeInsets.zero,
                                 style: IconButton.styleFrom(
                                   foregroundColor: brownColor,
@@ -303,7 +344,7 @@ class _ProductGridItemState extends State<ProductGridItem>
                               ),
                             ),
                             SizedBox(
-                              width: 24,
+                              width: 18,
                               child: Center(
                                 child: AnimatedSwitcher(
                                   duration: const Duration(milliseconds: 200),
@@ -324,7 +365,8 @@ class _ProductGridItemState extends State<ProductGridItem>
                                     style: context.textTheme.labelSmall
                                         ?.copyWith(
                                           fontWeight: FontWeight.bold,
-                                          fontSize: 11,
+                                          fontSize: 9,
+                                          height: 1.0,
                                           color: brownColor,
                                         ),
                                   ),
@@ -332,11 +374,11 @@ class _ProductGridItemState extends State<ProductGridItem>
                               ),
                             ),
                             SizedBox(
-                              width: 24,
-                              height: 24,
+                              width: 20,
+                              height: 20,
                               child: IconButton(
                                 onPressed: _incrementQuantity,
-                                icon: const Icon(Icons.add, size: 10),
+                                icon: const Icon(Icons.add, size: 8),
                                 padding: EdgeInsets.zero,
                                 style: IconButton.styleFrom(
                                   foregroundColor: brownColor,

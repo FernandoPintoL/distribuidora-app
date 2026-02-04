@@ -16,6 +16,8 @@ import 'screens/cliente/mis_direcciones_screen.dart';
 import 'screens/cliente/direccion_form_screen.dart';
 import 'screens/chofer/iniciar_ruta_screen.dart';
 import 'screens/ventas/mis_ventas_screen.dart';
+import 'screens/visitas/orden_del_dia_screen.dart';
+import 'screens/cliente/credito_cliente_screen.dart';
 import 'widgets/realtime_notifications_listener.dart';
 import 'config/app_themes.dart';
 import 'services/local_notification_service.dart';
@@ -69,6 +71,7 @@ void main() async {
           ChangeNotifierProvider(create: (_) => NotificationProvider()),
           ChangeNotifierProvider(create: (_) => EstadosProvider()),
           ChangeNotifierProvider(create: (_) => VisitaProvider()),
+          ChangeNotifierProvider(create: (_) => ClienteCreditoProvider()),
           ChangeNotifierProvider(create: (_) => CajaProvider()),
           ChangeNotifierProvider(create: (_) => GastoProvider()),
         ],
@@ -118,6 +121,7 @@ class MyApp extends StatelessWidget {
             '/direccion-entrega-seleccion': (context) =>
                 const DireccionEntregaSeleccionScreen(),
             '/mis-pedidos': (context) => const PedidosHistorialScreen(),
+            '/orden-del-dia': (context) => const OrdenDelDiaScreen(),
             '/mis-ventas': (context) => const MisVentasScreen(),
             '/mis-direcciones': (context) => const MisDireccionesScreen(),
             '/notifications': (context) => const NotificationsScreen(),
@@ -176,7 +180,18 @@ class MyApp extends StatelessWidget {
                 );
 
               case '/pedido-creado':
-                final pedido = settings.arguments as Pedido?;
+                // ✅ NUEVO: Manejar argumentos como Map o Pedido directo (compatibilidad)
+                Pedido? pedido;
+                bool esActualizacion = false;
+
+                if (settings.arguments is Map<String, dynamic>) {
+                  final args = settings.arguments as Map<String, dynamic>;
+                  pedido = args['pedido'] as Pedido?;
+                  esActualizacion = args['esActualizacion'] as bool? ?? false;
+                } else if (settings.arguments is Pedido) {
+                  pedido = settings.arguments as Pedido?;
+                }
+
                 if (pedido == null) {
                   return MaterialPageRoute(
                     builder: (context) => const Scaffold(
@@ -185,7 +200,10 @@ class MyApp extends StatelessWidget {
                   );
                 }
                 return MaterialPageRoute(
-                  builder: (context) => PedidoCreadoScreen(pedido: pedido),
+                  builder: (context) => PedidoCreadoScreen(
+                    pedido: pedido!,  // ✅ Usar ! para indicar que no es null
+                    esActualizacion: esActualizacion,
+                  ),
                 );
 
               case '/pedido-detalle':
@@ -201,6 +219,22 @@ class MyApp extends StatelessWidget {
                 }
                 return MaterialPageRoute(
                   builder: (context) => PedidoDetalleScreen(pedidoId: pedidoId),
+                );
+
+              // ✅ NUEVO: Ruta para detalles de VENTA (no proforma)
+              case '/venta-detalle':
+                final ventaId = settings.arguments as int?;
+                if (ventaId == null) {
+                  return MaterialPageRoute(
+                    builder: (context) => const Scaffold(
+                      body: Center(
+                        child: Text('Error: ID de venta no encontrado'),
+                      ),
+                    ),
+                  );
+                }
+                return MaterialPageRoute(
+                  builder: (context) => VentaDetalleScreen(ventaId: ventaId),
                 );
 
               case '/pedido-tracking':
@@ -276,6 +310,35 @@ class MyApp extends StatelessWidget {
                 }
                 return MaterialPageRoute(
                   builder: (context) => IniciarRutaScreen(entregaId: entregaId),
+                );
+
+              case '/credito':
+                final args = settings.arguments as Map<String, dynamic>?;
+                if (args == null) {
+                  return MaterialPageRoute(
+                    builder: (context) => const Scaffold(
+                      body: Center(
+                        child: Text('Error: Parámetros no encontrados'),
+                      ),
+                    ),
+                  );
+                }
+                final clienteId = args['clienteId'] as int?;
+                final clienteNombre = args['clienteNombre'] as String?;
+                if (clienteId == null || clienteNombre == null) {
+                  return MaterialPageRoute(
+                    builder: (context) => const Scaffold(
+                      body: Center(
+                        child: Text('Error: Cliente no encontrado'),
+                      ),
+                    ),
+                  );
+                }
+                return MaterialPageRoute(
+                  builder: (context) => CreditoClienteScreen(
+                    clienteId: clienteId,
+                    clienteNombre: clienteNombre,
+                  ),
                 );
 
               default:

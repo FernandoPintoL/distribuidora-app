@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import '../models/models.dart';
+import '../models/orden_del_dia.dart';
 import 'api_service.dart';
 
 class VisitaService {
@@ -230,6 +231,31 @@ class VisitaService {
       );
     } catch (e) {
       return ApiResponse<Map<String, dynamic>>(
+        success: false,
+        message: 'Error inesperado: ${e.toString()}',
+        data: null,
+      );
+    }
+  }
+
+  /// ✅ NUEVO: Obtener orden del día (clientes a visitar hoy)
+  Future<ApiResponse<OrdenDelDia>> obtenerOrdenDelDia() async {
+    try {
+      final response = await _apiService.get('/visitas/orden-del-dia');
+
+      return ApiResponse<OrdenDelDia>.fromJson(
+        response.data,
+        (data) => OrdenDelDia.fromJson(data),
+      );
+    } on DioException catch (e) {
+      return ApiResponse<OrdenDelDia>(
+        success: false,
+        message: _getErrorMessage(e),
+        data: null,
+      );
+    } catch (e) {
+      debugPrint('❌ Error al obtener orden del día: $e');
+      return ApiResponse<OrdenDelDia>(
         success: false,
         message: 'Error inesperado: ${e.toString()}',
         data: null,

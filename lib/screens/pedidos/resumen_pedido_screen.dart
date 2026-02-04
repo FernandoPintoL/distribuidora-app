@@ -52,6 +52,16 @@ class _ResumenPedidoScreenState extends State<ResumenPedidoScreen> {
       '🚀 cliente cargado ${carritoProvider.getClienteSeleccionadoId()}',
     );
 
+    // ✅ NUEVO: Detectar si estamos editando una proforma existente
+    final editandoProforma = carritoProvider.editandoProforma;
+    final proformaId = carritoProvider.proformaEditandoId;
+
+    if (editandoProforma && proformaId != null) {
+      debugPrint('✏️ MODO EDICIÓN: Actualizando proforma #$proformaId');
+    } else {
+      debugPrint('➕ MODO CREACIÓN: Creando nueva proforma');
+    }
+
     if (carritoProvider.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -215,21 +225,47 @@ class _ResumenPedidoScreenState extends State<ResumenPedidoScreen> {
         }
       }
 
-      // Crear pedido con tipoEntrega y política de pago
-      // IMPORTANTE: Usar clienteIdParaPedido como cliente_id
-      final response = await _pedidoService.crearPedido(
-        clienteId: clienteIdParaPedido,
-        items: items,
-        tipoEntrega: widget.tipoEntrega, // DELIVERY o PICKUP
-        fechaProgramada: widget.fechaProgramada ?? DateTime.now(),
-        direccionId: direccionId, // null para PICKUP, int para DELIVERY
-        horaInicio: widget.horaInicio,
-        horaFin: widget.horaFin,
-        observaciones: widget.observaciones,
-        politicaPago: _politicaPago, // ✅ Política de pago seleccionada
-      );
+      // ✅ NUEVO: Diferenciar entre CREAR nueva proforma y ACTUALIZAR existente
+      dynamic response;
 
-      debugPrint('✅ Pedido creado - Política de pago: $_politicaPago');
+      if (editandoProforma && proformaId != null) {
+        // 📝 ACTUALIZAR proforma existente
+        debugPrint(
+          '📝 Actualizando proforma #$proformaId con los nuevos datos...',
+        );
+
+        response = await _pedidoService.actualizarProforma(
+          proformaId: proformaId,
+          clienteId: clienteIdParaPedido,
+          items: items,
+          tipoEntrega: widget.tipoEntrega,
+          fechaProgramada: widget.fechaProgramada ?? DateTime.now(),
+          direccionId: direccionId,
+          horaInicio: widget.horaInicio,
+          horaFin: widget.horaFin,
+          observaciones: widget.observaciones,
+          politicaPago: _politicaPago,
+        );
+
+        debugPrint('✅ Proforma actualizada - Política de pago: $_politicaPago');
+      } else {
+        // ➕ CREAR nueva proforma
+        debugPrint('➕ Creando nueva proforma...');
+
+        response = await _pedidoService.crearPedido(
+          clienteId: clienteIdParaPedido,
+          items: items,
+          tipoEntrega: widget.tipoEntrega, // DELIVERY o PICKUP
+          fechaProgramada: widget.fechaProgramada ?? DateTime.now(),
+          direccionId: direccionId, // null para PICKUP, int para DELIVERY
+          horaInicio: widget.horaInicio,
+          horaFin: widget.horaFin,
+          observaciones: widget.observaciones,
+          politicaPago: _politicaPago, // ✅ Política de pago seleccionada
+        );
+
+        debugPrint('✅ Pedido creado - Política de pago: $_politicaPago');
+      }
 
       setState(() {
         _isCreandoPedido = false;
@@ -239,13 +275,22 @@ class _ResumenPedidoScreenState extends State<ResumenPedidoScreen> {
         // Limpiar el carrito
         carritoProvider.limpiarCarrito();
 
-        // Navegar a pantalla de éxito
+        // ✅ NUEVO: Si estábamos editando, limpiar el estado de edición
+        if (editandoProforma) {
+          carritoProvider.limpiarProformaEditando();
+          debugPrint('✅ Estado de edición limpiado');
+        }
+
+        // ✅ NUEVO: Navegar a pantalla de éxito con parámetro de si es creación o actualización
         if (mounted) {
           Navigator.pushNamedAndRemoveUntil(
             context,
             '/pedido-creado',
             (route) => route.isFirst,
-            arguments: response.data,
+            arguments: {
+              'pedido': response.data,
+              'esActualizacion': editandoProforma,
+            },
           );
         }
       } else {
@@ -256,6 +301,8 @@ class _ResumenPedidoScreenState extends State<ResumenPedidoScreen> {
               content: Text(
                 response.message.isNotEmpty
                     ? response.message
+                    : editandoProforma
+                    ? 'Error al actualizar la proforma'
                     : 'Error al crear el pedido',
               ),
               backgroundColor: Colors.red,
@@ -309,9 +356,16 @@ class _ResumenPedidoScreenState extends State<ResumenPedidoScreen> {
     final colorScheme = context.colorScheme;
     final isDark = context.isDark;
 
+    // ✅ NUEVO: Detectar si estamos editando para cambiar títulos
+    final carritoProvider = context.read<CarritoProvider>();
+    final editandoProforma = carritoProvider.editandoProforma;
+    final tituloResumen = editandoProforma
+        ? 'Actualizar Proforma'
+        : 'Resumen del Pedido';
+
     return Scaffold(
       appBar: CustomGradientAppBar(
-        title: 'Resumen del Pedido',
+        title: tituloResumen,
         customGradient: AppGradients.blue,
       ),
       body: Consumer<CarritoProvider>(
@@ -329,17 +383,57 @@ class _ResumenPedidoScreenState extends State<ResumenPedidoScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        'Revisa tu pedido',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w500,
-                          color: colorScheme.onSurface,
+                      // ✅ NUEVO: Texto dinámico según sea crear o actualizar
+                      if (editandoProforma) ...[
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.edit_document,
+                              size: 20,
+                              color: colorScheme.primary,
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Actualizando Proforma',
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w600,
+                                      color: colorScheme.onSurface,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    '#${carritoProvider.proformaEditando?.numero ?? 'N/A'} (ID: ${carritoProvider.proformaEditandoId ?? 'N/A'})',
+                                    style: TextStyle(
+                                      fontSize: 13,
+                                      color: colorScheme.primary,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
                         ),
-                      ),
+                      ] else ...[
+                        Text(
+                          'Revisa tu pedido',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w500,
+                            color: colorScheme.onSurface,
+                          ),
+                        ),
+                      ],
                       const SizedBox(height: 4),
                       Text(
-                        'Verifica que todo esté correcto antes de confirmar',
+                        editandoProforma
+                            ? 'Verifica los cambios antes de actualizar'
+                            : 'Verifica que todo esté correcto antes de confirmar',
                         style: TextStyle(
                           fontSize: 14,
                           color: colorScheme.onSurfaceVariant,
@@ -413,26 +507,54 @@ class _ResumenPedidoScreenState extends State<ResumenPedidoScreen> {
                                           color: colorScheme.onSurface,
                                         ),
                                       ),
-                                      const SizedBox(height: 4),
-                                      Text(
-                                        'Cantidad: ${item.cantidad}',
-                                        style: TextStyle(
-                                          color: colorScheme.onSurfaceVariant,
-                                          fontSize: 14,
-                                        ),
+                                      const SizedBox(height: 6),
+                                      // ✅ NUEVO: Mostrar precio unitario y cantidad
+                                      Row(
+                                        children: [
+                                          Text(
+                                            'Precio: Bs. ${(item.subtotal / item.cantidad).toStringAsFixed(2)}',
+                                            style: TextStyle(
+                                              color: colorScheme.primary,
+                                              fontSize: 13,
+                                              fontWeight: FontWeight.w500,
+                                            ),
+                                          ),
+                                          const SizedBox(width: 12),
+                                          Text(
+                                            '×${item.cantidad}',
+                                            style: TextStyle(
+                                              color:
+                                                  colorScheme.onSurfaceVariant,
+                                              fontSize: 13,
+                                            ),
+                                          ),
+                                        ],
                                       ),
                                     ],
                                   ),
                                 ),
 
-                                // Precio
-                                Text(
-                                  'Bs. ${item.subtotal.toStringAsFixed(2)}',
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 16,
-                                    color: colorScheme.onSurface,
-                                  ),
+                                // Precio subtotal
+                                Column(
+                                  crossAxisAlignment: CrossAxisAlignment.end,
+                                  children: [
+                                    Text(
+                                      'Bs. ${item.subtotal.toStringAsFixed(2)}',
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 16,
+                                        color: colorScheme.onSurface,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      'subtotal',
+                                      style: TextStyle(
+                                        fontSize: 11,
+                                        color: colorScheme.onSurfaceVariant,
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               ],
                             ),
@@ -789,60 +911,37 @@ class _ResumenPedidoScreenState extends State<ResumenPedidoScreen> {
                         color: colorScheme.surfaceVariant,
                         child: Padding(
                           padding: const EdgeInsets.all(16),
-                          child: Column(
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              Row(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceBetween,
-                                children: [
-                                  Text(
-                                    'Subtotal',
-                                    style: TextStyle(
-                                      fontSize: 16,
-                                      color: colorScheme.onSurface,
-                                    ),
-                                  ),
-                                  Text(
-                                    'Bs. ${carrito.subtotal.toStringAsFixed(2)}',
-                                    style: TextStyle(
-                                      fontSize: 16,
-                                      color: colorScheme.onSurface,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              Divider(
-                                height: 24,
-                                color: colorScheme.outline.withAlpha(
-                                  isDark ? 80 : 40,
+                              Text(
+                                'Total',
+                                style: TextStyle(
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.bold,
+                                  color: colorScheme.onSurface,
                                 ),
                               ),
-                              Row(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceBetween,
-                                children: [
-                                  Text(
-                                    'Total',
-                                    style: TextStyle(
-                                      fontSize: 20,
-                                      fontWeight: FontWeight.bold,
-                                      color: colorScheme.onSurface,
-                                    ),
-                                  ),
-                                  Text(
-                                    'Bs. ${carrito.total.toStringAsFixed(2)}',
-                                    style: TextStyle(
-                                      fontSize: 20,
-                                      fontWeight: FontWeight.bold,
-                                      color: Color(0xFF4CAF50),
-                                    ),
-                                  ),
-                                ],
+                              Text(
+                                'Bs. ${carrito.total.toStringAsFixed(2)}',
+                                style: TextStyle(
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.bold,
+                                  color: Color(0xFF4CAF50),
+                                ),
                               ),
                             ],
                           ),
                         ),
                       ),
+
+                      // ✅ NUEVO: Mostrar resumen de crédito si el cliente tiene crédito disponible
+                      if (carritoProvider.clienteSeleccionado?.puedeAtenerCredito ?? false)
+                        _buildCreditSummaryCard(
+                          carritoProvider.clienteSeleccionado!,
+                          colorScheme,
+                          isDark,
+                        ),
 
                       const SizedBox(height: 80),
                     ],
@@ -886,9 +985,12 @@ class _ResumenPedidoScreenState extends State<ResumenPedidoScreen> {
                         valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                       ),
                     )
-                  : const Text(
-                      'Confirmar Pedido',
-                      style: TextStyle(
+                  : Text(
+                      // ✅ NUEVO: Texto dinámico según sea crear o actualizar
+                      editandoProforma
+                          ? 'Actualizar Proforma'
+                          : 'Confirmar Pedido',
+                      style: const TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
                       ),
@@ -978,6 +1080,155 @@ class _ResumenPedidoScreenState extends State<ResumenPedidoScreen> {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  // ✅ NUEVO: Widget para mostrar resumen de crédito disponible
+  Widget _buildCreditSummaryCard(
+    Client cliente,
+    ColorScheme colorScheme,
+    bool isDark,
+  ) {
+    final limiteCredito = cliente.limiteCredito ?? 0.0;
+    final creditoUtilizado = cliente.creditoUtilizado ?? 0.0;
+    final creditoDisponible = limiteCredito - creditoUtilizado;
+    final porcentajeUsado = limiteCredito > 0 ? (creditoUtilizado / limiteCredito) * 100 : 0.0;
+
+    return Padding(
+      padding: const EdgeInsets.only(top: 12),
+      child: Card(
+        color: Colors.blue.shade50,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+          side: BorderSide(
+            color: Colors.blue.shade200,
+            width: 1,
+          ),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Título
+              Row(
+                children: [
+                  Icon(
+                    Icons.credit_card,
+                    color: Colors.blue.shade600,
+                    size: 20,
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    'Resumen de Crédito',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.blue.shade600,
+                    ),
+                  ),
+                ],
+              ),
+
+              const SizedBox(height: 12),
+
+              // Límite de crédito
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Límite de Crédito',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.blue.shade700,
+                    ),
+                  ),
+                  Text(
+                    'Bs. ${limiteCredito.toStringAsFixed(2)}',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.blue.shade700,
+                    ),
+                  ),
+                ],
+              ),
+
+              const SizedBox(height: 8),
+
+              // Crédito utilizado
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Utilizado',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.orange.shade700,
+                    ),
+                  ),
+                  Text(
+                    'Bs. ${creditoUtilizado.toStringAsFixed(2)}',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.orange.shade700,
+                    ),
+                  ),
+                ],
+              ),
+
+              const SizedBox(height: 8),
+
+              // Barra de progreso visual
+              ClipRRect(
+                borderRadius: BorderRadius.circular(4),
+                child: LinearProgressIndicator(
+                  value: porcentajeUsado / 100,
+                  minHeight: 8,
+                  backgroundColor: Colors.blue.shade200,
+                  valueColor: AlwaysStoppedAnimation<Color>(
+                    porcentajeUsado > 80
+                        ? Colors.red.shade500
+                        : porcentajeUsado > 50
+                        ? Colors.orange.shade500
+                        : Colors.green.shade500,
+                  ),
+                ),
+              ),
+
+              const SizedBox(height: 8),
+
+              // Disponible
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Disponible',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                      color: creditoDisponible > 0
+                          ? Colors.green.shade700
+                          : Colors.red.shade700,
+                    ),
+                  ),
+                  Text(
+                    'Bs. ${creditoDisponible.toStringAsFixed(2)}',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                      color: creditoDisponible > 0
+                          ? Colors.green.shade700
+                          : Colors.red.shade700,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

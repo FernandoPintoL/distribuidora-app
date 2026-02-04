@@ -1036,6 +1036,53 @@ class PedidoProvider with ChangeNotifier {
     }
   }
 
+  /// ✅ NUEVO: Anular una proforma pendiente o aprobada
+  ///
+  /// Parámetros:
+  /// - proformaId: ID de la proforma a anular
+  /// - motivo: Motivo de la anulación
+  ///
+  /// Retorna:
+  /// - true si la anulación fue exitosa
+  /// - false si hay error
+  Future<bool> anularProforma(int proformaId, String motivo) async {
+    try {
+      _errorMessage = null;
+
+      final response = await _proformaService.anularProforma(
+        proformaId: proformaId,
+        motivo: motivo,
+      );
+
+      if (response.success && response.data != null) {
+        // Actualizar el pedido en la lista si existe
+        final index = _pedidos.indexWhere((p) => p.id == proformaId);
+        if (index != -1) {
+          _pedidos[index] = response.data!;
+        }
+
+        // Actualizar pedido actual si es el mismo
+        if (_pedidoActual?.id == proformaId) {
+          _pedidoActual = response.data;
+        }
+
+        debugPrint('✅ Proforma #$proformaId anulada exitosamente');
+        notifyListeners();
+        return true;
+      } else {
+        _errorMessage = response.message;
+        debugPrint('❌ Error al anular proforma: ${response.message}');
+        notifyListeners();
+        return false;
+      }
+    } catch (e) {
+      _errorMessage = 'Error inesperado al anular: ${e.toString()}';
+      debugPrint('❌ Error: $e');
+      notifyListeners();
+      return false;
+    }
+  }
+
   /// Resetear provider
   void reset() {
     detenerEscuchaWebSocket();

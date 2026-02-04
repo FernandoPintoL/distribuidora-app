@@ -6,8 +6,11 @@ import '../models/carrito_con_rangos.dart';
 import '../models/detalle_carrito_con_rango.dart';
 import '../models/product.dart';
 import '../models/client.dart'; // ✅ NUEVO: Importar Client
+import '../models/pedido.dart'; // ✅ NUEVO: Importar Pedido para editar proformas
 import '../services/carrito_service.dart';
 import '../services/api_service.dart';
+import '../services/proforma_service.dart'; // ✅ NUEVO: Para actualizar proformas
+import '../services/product_service.dart'; // ✅ NUEVO: Para obtener stocks actualizados
 
 class CarritoProvider with ChangeNotifier {
   Carrito _carrito = Carrito(items: []);
@@ -20,6 +23,9 @@ class CarritoProvider with ChangeNotifier {
   // ✅ NUEVO: Cliente seleccionado para pedidos del preventista
   Client? _clienteSeleccionado;
 
+  // ✅ NUEVO: Proforma siendo editada (null si es creación nueva)
+  Pedido? _proformaEditando;
+
   // Descuentos
   String? _codigoDescuento;
   double _porcentajeDescuento = 0;
@@ -28,6 +34,8 @@ class CarritoProvider with ChangeNotifier {
 
   // Persistencia
   late CarritoService _carritoService;
+  late ProformaService _proformaService; // ✅ NUEVO: Para actualizar proformas
+  late ProductService _productService; // ✅ NUEVO: Para obtener stocks actualizados
   bool _guardandoCarrito = false;
   bool _recuperandoCarrito = false;
   int? _usuarioId;
@@ -43,6 +51,8 @@ class CarritoProvider with ChangeNotifier {
 
   CarritoProvider() {
     _carritoService = CarritoService(ApiService());
+    _proformaService = ProformaService(); // ✅ NUEVO: Inicializar servicio de proformas
+    _productService = ProductService(); // ✅ NUEVO: Inicializar servicio de productos
   }
 
   @override
@@ -93,6 +103,103 @@ class CarritoProvider with ChangeNotifier {
   void limpiarClienteSeleccionado() {
     _clienteSeleccionado = null;
     debugPrint('👤 [CarritoProvider] Cliente seleccionado limpiado');
+    notifyListeners();
+  }
+
+  // ✅ NUEVO: Getters para proforma siendo editada
+  Pedido? get proformaEditando => _proformaEditando;
+  bool get editandoProforma => _proformaEditando != null;
+  int? get proformaEditandoId => _proformaEditando?.id;
+
+  /// ✅ NUEVO: Cargar una proforma pendiente en el carrito para editar (CON STOCKS ACTUALIZADOS)
+  ///
+  /// Este método:
+  /// 1. Limpia el carrito actual
+  /// 2. Carga datos del cliente
+  /// 3. OBTIENE STOCKS ACTUALIZADOS de cada producto
+  /// 4. Agrega todos los items al carrito con stocks correctos
+  /// 5. Guarda la referencia a la proforma para actualizar después
+  ///
+  /// Parámetros:
+  /// - proforma: La proforma a editar (debe estar en estado PENDIENTE)
+  ///
+  /// Retorna: Future<bool> - true si se cargó exitosamente
+  Future<bool> cargarProformaEnCarrito(Pedido proforma) async {
+    if (proforma.estadoCodigo != 'PENDIENTE') {
+      _errorMessage = 'Solo se pueden editar proformas pendientes';
+      notifyListeners();
+      return false;
+    }
+
+    try {
+      _isLoading = true;
+      _errorMessage = null;
+      notifyListeners();
+
+      _proformaEditando = proforma;
+      limpiarCarrito();
+
+      // ✅ NUEVO: Establecer el cliente de la proforma
+      if (proforma.cliente != null) {
+        setClienteSeleccionado(proforma.cliente);
+      }
+
+      // ✅ NUEVO: Obtener datos actualizados de cada producto (INCLUYENDO STOCKS)
+      debugPrint('📦 Obteniendo datos actualizados de ${proforma.items.length} productos...');
+
+      for (final item in proforma.items) {
+        if (item.producto != null) {
+          // Obtener producto actualizado del servidor (con stock correcto)
+          final response = await _productService.getProduct(item.producto!.id);
+
+          Product productoActualizado = item.producto!;
+
+          if (response.success && response.data != null) {
+            productoActualizado = response.data!;
+            debugPrint('✅ Stock obtenido para ${productoActualizado.nombre}: ${productoActualizado.stockPrincipal?.cantidad}');
+          } else {
+            debugPrint('⚠️ No se pudo obtener stock para ${item.producto!.nombre}, usando datos de proforma');
+          }
+
+          // Agregar al carrito con producto actualizado
+          final carritoItem = CarritoItem(
+            producto: productoActualizado,
+            cantidad: item.cantidad,
+            observaciones: item.observaciones ?? '',
+          );
+
+          final index = _carrito.items.indexWhere(
+            (i) => i.producto.id == productoActualizado.id,
+          );
+
+          if (index != -1) {
+            _carrito.items[index] = _carrito.items[index].copyWith(
+              cantidad: _carrito.items[index].cantidad + item.cantidad,
+            );
+          } else {
+            _carrito.items.add(carritoItem);
+          }
+        }
+      }
+
+      _calcularTotales();
+      _isLoading = false;
+      debugPrint('📦 [CarritoProvider] Proforma #${proforma.numero} cargada con stocks actualizados (${proforma.items.length} productos)');
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _errorMessage = 'Error al cargar proforma: ${e.toString()}';
+      _isLoading = false;
+      debugPrint('❌ Error: $e');
+      notifyListeners();
+      return false;
+    }
+  }
+
+  /// ✅ NUEVO: Limpiar proforma siendo editada (al cancelar edición)
+  void limpiarProformaEditando() {
+    _proformaEditando = null;
+    debugPrint('📦 [CarritoProvider] Edición de proforma cancelada');
     notifyListeners();
   }
 
@@ -845,6 +952,97 @@ class CarritoProvider with ChangeNotifier {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         notifyListeners();
       });
+      return null;
+    }
+  }
+
+  /// ✅ NUEVO: Guardar o actualizar proforma (detecta automáticamente)
+  ///
+  /// Si se está editando una proforma pendiente:
+  /// - Actualiza la proforma existente con los nuevos items
+  ///
+  /// Si es creación nueva:
+  /// - Crea una nueva proforma
+  ///
+  /// Retorna:
+  /// - Map con la proforma guardada/actualizada (ej: {'numero': '001', 'id': 123})
+  /// - null si hay error
+  Future<Map<String, dynamic>?> guardarProformaOActualizar() async {
+    if (_usuarioId == null) {
+      _errorMessage = 'Usuario no inicializado';
+      debugPrint('❌ Error: Usuario no inicializado');
+      return null;
+    }
+
+    if (isEmpty) {
+      _errorMessage = 'No hay productos en el carrito';
+      debugPrint('❌ Error: Carrito vacío');
+      return null;
+    }
+
+    if (!tieneClienteSeleccionado) {
+      _errorMessage = 'No hay cliente seleccionado';
+      debugPrint('❌ Error: Cliente no seleccionado');
+      return null;
+    }
+
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      // ✅ NUEVO: Si se está editando una proforma, actualizar en lugar de crear
+      if (editandoProforma && _proformaEditando != null) {
+        debugPrint('📝 Actualizando proforma #${_proformaEditando!.numero}');
+
+        // Convertir items del carrito al formato esperado por la API
+        final itemsData = _carrito.items
+            .map((item) => {
+                  'producto_id': item.producto.id,
+                  'cantidad': item.cantidad,
+                  'precio_unitario': item.producto.precioVenta,
+                  'observaciones': item.observaciones,
+                })
+            .toList();
+
+        final response = await _proformaService.actualizarProforma(
+          proformaId: _proformaEditando!.id,
+          clienteId: _clienteSeleccionado!.id,
+          items: itemsData,
+          observaciones: null,
+        );
+
+        if (response.success && response.data != null) {
+          debugPrint('✅ Proforma actualizada: ${response.data!.numero}');
+
+          // Limpiar estado de edición
+          limpiarProformaEditando();
+          limpiarCarrito();
+
+          _isLoading = false;
+          notifyListeners();
+
+          return {
+            'numero': response.data!.numero,
+            'id': response.data!.id,
+            'estado': response.data!.estadoCodigo,
+          };
+        } else {
+          _errorMessage = response.message;
+          _isLoading = false;
+          notifyListeners();
+          return null;
+        }
+      } else {
+        // ✅ ORIGINAL: Crear nueva proforma
+        debugPrint('📋 Creando nueva proforma');
+        return await convertirAProforma();
+      }
+    } catch (e) {
+      _errorMessage = 'Error al guardar proforma: ${e.toString()}';
+      _isLoading = false;
+      debugPrint('❌ Error: $e');
+      notifyListeners();
       return null;
     }
   }

@@ -24,6 +24,11 @@ class _MisVentasScreenState extends State<MisVentasScreen> {
     super.initState();
     _searchController = TextEditingController();
 
+    // Listener para actualizar el UI cuando el texto cambia
+    _searchController.addListener(() {
+      setState(() {});
+    });
+
     // Cargar ventas cuando se abre la pantalla
     SchedulerBinding.instance.addPostFrameCallback((_) {
       _ventasProvider = context.read<VentasProvider>();
@@ -48,12 +53,8 @@ class _MisVentasScreenState extends State<MisVentasScreen> {
   }
 
   void _onVentaTapped(Venta venta) {
-    // Navegar al detalle de la venta/pedido
-    Navigator.pushNamed(
-      context,
-      '/pedido-detalle',
-      arguments: venta.id,
-    );
+    // ✅ CORREGIDO: Navegar a detalles de VENTA, no de proforma
+    Navigator.pushNamed(context, '/venta-detalle', arguments: venta.id);
   }
 
   @override
@@ -63,7 +64,7 @@ class _MisVentasScreenState extends State<MisVentasScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Mis Ventas'),
+        title: const Text('Mis Compras'),
         elevation: 0,
         backgroundColor: colorScheme.primary,
         foregroundColor: Colors.white,
@@ -71,9 +72,7 @@ class _MisVentasScreenState extends State<MisVentasScreen> {
       body: Consumer<VentasProvider>(
         builder: (context, ventasProvider, _) {
           if (ventasProvider.isLoading && ventasProvider.ventas.isEmpty) {
-            return const Center(
-              child: CircularProgressIndicator(),
-            );
+            return const Center(child: CircularProgressIndicator());
           }
 
           if (ventasProvider.errorMessage != null &&
@@ -87,16 +86,17 @@ class _MisVentasScreenState extends State<MisVentasScreen> {
 
           return RefreshIndicator(
             onRefresh: _onRefresh,
-            child: ListView(
-              children: [
-                // Búsqueda y filtros
-                _buildSearchBar(ventasProvider),
+            child: CustomScrollView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              slivers: [
+                // Búsqueda y filtros (SliverToBoxAdapter para que sea fixed)
+                SliverToBoxAdapter(child: _buildSearchBar(ventasProvider)),
 
                 // Estadísticas rápidas
-                _buildStatsBar(ventasProvider),
+                SliverToBoxAdapter(child: _buildStatsBar(ventasProvider)),
 
-                // Lista de ventas
-                _buildVentasList(ventasProvider),
+                // Lista de ventas con scroll infinito
+                _buildVentasListSliver(ventasProvider),
               ],
             ),
           );
@@ -110,22 +110,56 @@ class _MisVentasScreenState extends State<MisVentasScreen> {
       padding: const EdgeInsets.all(16),
       child: Column(
         children: [
-          // Campo de búsqueda
-          TextField(
-            controller: _searchController,
-            onChanged: (value) {
-              provider.aplicarBusqueda(value.isEmpty ? null : value);
-            },
-            decoration: InputDecoration(
-              hintText: 'Buscar por número de venta...',
-              prefixIcon: const Icon(Icons.search),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
+          // Campo de búsqueda mejorado (sin tiempo real)
+          Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  controller: _searchController,
+                  onSubmitted: (value) {
+                    // Buscar cuando se presiona Enter
+                    provider.aplicarBusqueda(value.isEmpty ? null : value);
+                  },
+                  decoration: InputDecoration(
+                    hintText: 'ID, número o cliente...',
+                    prefixIcon: const Icon(Icons.search),
+                    suffixIcon: _searchController.text.isNotEmpty
+                        ? IconButton(
+                            icon: const Icon(Icons.clear),
+                            onPressed: () {
+                              _searchController.clear();
+                              provider.aplicarBusqueda(null);
+                              setState(() {});
+                            },
+                          )
+                        : null,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 12,
+                    ),
+                  ),
+                ),
               ),
-              contentPadding: const EdgeInsets.symmetric(
-                horizontal: 16,
-                vertical: 12,
+              const SizedBox(width: 8),
+              // Botón de búsqueda
+              IconButton.filled(
+                icon: const Icon(Icons.search),
+                onPressed: () {
+                  provider.aplicarBusqueda(
+                    _searchController.text.isEmpty ? null : _searchController.text,
+                  );
+                },
               ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Buscar por ID, número de venta o nombre del cliente',
+            style: Theme.of(context).textTheme.labelSmall?.copyWith(
+              color: Colors.grey,
             ),
           ),
 
@@ -144,20 +178,17 @@ class _MisVentasScreenState extends State<MisVentasScreen> {
                 _buildFilterChip(
                   label: 'Pagados',
                   isSelected: provider.filtroEstado == 'PAGADO',
-                  onSelected: () =>
-                      provider.aplicarFiltroEstado('PAGADO'),
+                  onSelected: () => provider.aplicarFiltroEstado('PAGADO'),
                 ),
                 _buildFilterChip(
                   label: 'Parciales',
                   isSelected: provider.filtroEstado == 'PARCIAL',
-                  onSelected: () =>
-                      provider.aplicarFiltroEstado('PARCIAL'),
+                  onSelected: () => provider.aplicarFiltroEstado('PARCIAL'),
                 ),
                 _buildFilterChip(
                   label: 'Pendientes',
                   isSelected: provider.filtroEstado == 'PENDIENTE',
-                  onSelected: () =>
-                      provider.aplicarFiltroEstado('PENDIENTE'),
+                  onSelected: () => provider.aplicarFiltroEstado('PENDIENTE'),
                 ),
               ],
             ),
@@ -217,10 +248,9 @@ class _MisVentasScreenState extends State<MisVentasScreen> {
                     stat.$1,
                     style: TextStyle(
                       fontSize: 12,
-                      color: Theme.of(context)
-                          .colorScheme
-                          .onSurface
-                          .withOpacity(0.6),
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.onSurface.withOpacity(0.6),
                     ),
                   ),
                 ],
@@ -231,6 +261,62 @@ class _MisVentasScreenState extends State<MisVentasScreen> {
     );
   }
 
+  /// SliverList para scroll infinito con CustomScrollView
+  Widget _buildVentasListSliver(VentasProvider provider) {
+    final isDark = context.isDark;
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return SliverList(
+      delegate: SliverChildBuilderDelegate(
+        (context, index) {
+          // Loading indicator (check this FIRST)
+          if (provider.isLoadingMore && index == provider.ventas.length) {
+            return Padding(
+              padding: const EdgeInsets.all(16),
+              child: Center(
+                child: SizedBox(
+                  width: 32,
+                  height: 32,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: colorScheme.primary,
+                  ),
+                ),
+              ),
+            );
+          }
+
+          // Load more trigger (check this SECOND)
+          if (!provider.isLoadingMore &&
+              provider.hasMorePages &&
+              index == provider.ventas.length) {
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              provider.loadMoreVentas();
+            });
+            return const SizedBox.shrink();
+          }
+
+          // Safety check: if index is beyond available ventas, return empty
+          if (index >= provider.ventas.length) {
+            return const SizedBox.shrink();
+          }
+
+          final venta = provider.ventas[index];
+          return Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+            child: _buildVentaCard(venta, isDark, colorScheme),
+          );
+        },
+        childCount:
+            provider.ventas.length +
+            (provider.hasMorePages ? 1 : 0) +
+            (provider.isLoadingMore ? 1 : 0),
+      ),
+    );
+  }
+
+  /// Método legacy - mantener para compatibilidad
+  @Deprecated('Usar _buildVentasListSliver en su lugar')
   Widget _buildVentasList(VentasProvider provider) {
     final isDark = context.isDark;
     final colorScheme = Theme.of(context).colorScheme;
@@ -239,18 +325,13 @@ class _MisVentasScreenState extends State<MisVentasScreen> {
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
       padding: const EdgeInsets.symmetric(horizontal: 16),
-      itemCount: provider.ventas.length +
+      itemCount:
+          provider.ventas.length +
           (provider.hasMorePages ? 1 : 0) +
           (provider.isLoadingMore ? 1 : 0),
       itemBuilder: (context, index) {
-        // Load more trigger
-        if (index == provider.ventas.length && provider.hasMorePages) {
-          provider.loadMoreVentas();
-          return const SizedBox.shrink();
-        }
-
-        // Loading indicator
-        if (index == provider.ventas.length && provider.isLoadingMore) {
+        // Loading indicator (check this FIRST)
+        if (provider.isLoadingMore && index == provider.ventas.length) {
           return Padding(
             padding: const EdgeInsets.all(16),
             child: Center(
@@ -264,6 +345,19 @@ class _MisVentasScreenState extends State<MisVentasScreen> {
               ),
             ),
           );
+        }
+
+        // Load more trigger (check this SECOND)
+        if (!provider.isLoadingMore &&
+            provider.hasMorePages &&
+            index == provider.ventas.length) {
+          provider.loadMoreVentas();
+          return const SizedBox.shrink();
+        }
+
+        // Safety check: if index is beyond available ventas, return empty
+        if (index >= provider.ventas.length) {
+          return const SizedBox.shrink();
         }
 
         final venta = provider.ventas[index];
@@ -284,9 +378,7 @@ class _MisVentasScreenState extends State<MisVentasScreen> {
         decoration: BoxDecoration(
           color: colorScheme.surface,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: colorScheme.outline.withOpacity(0.2),
-          ),
+          border: Border.all(color: colorScheme.outline.withOpacity(0.2)),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withOpacity(isDark ? 0.2 : 0.05),
@@ -325,7 +417,7 @@ class _MisVentasScreenState extends State<MisVentasScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Venta #${venta.numero}',
+                        'Cmp: #${venta.id} | ${venta.numero}',
                         style: const TextStyle(
                           fontWeight: FontWeight.bold,
                           fontSize: 15,
@@ -339,6 +431,47 @@ class _MisVentasScreenState extends State<MisVentasScreen> {
                           color: colorScheme.onSurface.withOpacity(0.6),
                         ),
                       ),
+                      const SizedBox(height: 6),
+                      // ✅ NUEVO: Mostrar canal, política y tipo de pago
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 2,
+                        children: [
+                          if (venta.canalOrigen != null)
+                            Chip(
+                              label: Text('Canal: ${venta.canalOrigen}'),
+                              labelStyle: const TextStyle(fontSize: 10),
+                              padding: EdgeInsets.zero,
+                              materialTapTargetSize:
+                                  MaterialTapTargetSize.shrinkWrap,
+                              side: BorderSide(
+                                color: colorScheme.outline.withOpacity(0.3),
+                              ),
+                            ),
+                          if (venta.politicaPago != null)
+                            Chip(
+                              label: Text('Política: ${venta.politicaPago}'),
+                              labelStyle: const TextStyle(fontSize: 10),
+                              padding: EdgeInsets.zero,
+                              materialTapTargetSize:
+                                  MaterialTapTargetSize.shrinkWrap,
+                              side: BorderSide(
+                                color: colorScheme.outline.withOpacity(0.3),
+                              ),
+                            ),
+                          if (venta.tipoPago != null)
+                            Chip(
+                              label: Text('Tipo: ${venta.tipoPago!.nombre}'),
+                              labelStyle: const TextStyle(fontSize: 10),
+                              padding: EdgeInsets.zero,
+                              materialTapTargetSize:
+                                  MaterialTapTargetSize.shrinkWrap,
+                              side: BorderSide(
+                                color: colorScheme.outline.withOpacity(0.3),
+                              ),
+                            ),
+                        ],
+                      ),
                       const SizedBox(height: 8),
                       Container(
                         padding: const EdgeInsets.symmetric(
@@ -346,7 +479,9 @@ class _MisVentasScreenState extends State<MisVentasScreen> {
                           vertical: 4,
                         ),
                         decoration: BoxDecoration(
-                          color: estadoPagoColor.withOpacity(isDark ? 0.15 : 0.1),
+                          color: estadoPagoColor.withOpacity(
+                            isDark ? 0.15 : 0.1,
+                          ),
                           borderRadius: BorderRadius.circular(4),
                         ),
                         child: Text(
