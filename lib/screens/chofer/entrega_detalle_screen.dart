@@ -457,6 +457,144 @@ class _EntregaDetalleScreenState extends State<EntregaDetalleScreen> {
     }
   }
 
+  /// Mostrar diálogo para marcar carga como entregada (EN_TRANSITO → ENTREGADO)
+  Future<void> _mostrarDialogoMarcarEntregada(
+    BuildContext context,
+    Entrega entrega,
+    EntregaProvider provider,
+  ) async {
+    if (!mounted) return;
+
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    final resultado = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Marcar Carga como Entregada'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.check_circle, size: 48, color: Colors.green),
+            const SizedBox(height: 16),
+            const Text('¿Confirmas que has entregado la carga?'),
+            const SizedBox(height: 8),
+            if (entrega.cliente != null)
+              Text(
+                'Cliente: ${entrega.cliente!}',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: isDarkMode ? Colors.grey[400] : Colors.grey[600],
+                  fontStyle: FontStyle.italic,
+                ),
+                textAlign: TextAlign.center,
+              ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancelar'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
+            child: const Text('Confirmar Entrega'),
+          ),
+        ],
+      ),
+    );
+
+    if (resultado == true && mounted) {
+      // Mostrar loading
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => Center(
+          child: Container(
+            padding: const EdgeInsets.all(32),
+            decoration: BoxDecoration(
+              color: isDarkMode ? Colors.grey[850] : Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.2),
+                  blurRadius: 20,
+                  spreadRadius: 5,
+                ),
+              ],
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                SizedBox(
+                  width: 60,
+                  height: 60,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 3,
+                    valueColor: AlwaysStoppedAnimation<Color>(
+                      Theme.of(context).primaryColor,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 24),
+                Text(
+                  'Marcando entrega...',
+                  style: Theme.of(context).textTheme.titleMedium
+                      ?.copyWith(fontWeight: FontWeight.w600),
+                  textAlign: TextAlign.center,
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+
+      try {
+        debugPrint('🚀 Marcando carga #${entrega.id} como entregada...');
+
+        final success = await provider.marcarCargaEntregada(entrega.id);
+
+        if (mounted) {
+          Navigator.pop(context); // Cerrar loading
+
+          if (success) {
+            debugPrint('✅ Carga marcada como entregada correctamente');
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('✅ Carga marcada como entregada correctamente'),
+                backgroundColor: Colors.green,
+                duration: Duration(seconds: 3),
+              ),
+            );
+            // Recargar detalle
+            await _cargarDetalle(provider);
+          } else {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(
+                  'Error: ${provider.errorMessage ?? 'Error desconocido'}',
+                ),
+                backgroundColor: Colors.red,
+                duration: const Duration(seconds: 3),
+              ),
+            );
+          }
+        }
+      } catch (e) {
+        debugPrint('❌ Excepción: $e');
+        if (mounted) {
+          Navigator.pop(context); // Cerrar loading
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Error inesperado: ${e.toString()}'),
+              backgroundColor: Colors.red,
+              duration: const Duration(seconds: 3),
+            ),
+          );
+        }
+      }
+    }
+  }
+
   Future<void> _mostrarDialogoReportarNovedad(
     BuildContext context,
     Entrega entrega,
@@ -872,6 +1010,7 @@ class _EntregaDetalleScreenState extends State<EntregaDetalleScreen> {
             provider: provider,
             onIniciarEntrega: _mostrarDialogoIniciarEntrega,
             onMarcarLlegada: _mostrarDialogoMarcarLlegada,
+            onMarcarEntregada: _mostrarDialogoMarcarEntregada,
             onReportarNovedad: _mostrarDialogoReportarNovedad,
             onReintentarGps: () => _reintentarGpsTracking(provider, entrega),
           ),
@@ -1522,6 +1661,7 @@ class _BotonesAccion extends StatelessWidget {
   final EntregaProvider provider;
   final Function(BuildContext, Entrega, EntregaProvider) onIniciarEntrega;
   final Function(BuildContext, Entrega, EntregaProvider) onMarcarLlegada;
+  final Function(BuildContext, Entrega, EntregaProvider) onMarcarEntregada;
   final Function(BuildContext, Entrega, EntregaProvider) onReportarNovedad;
   final VoidCallback? onReintentarGps; // Callback para reintentar GPS
 
@@ -1531,17 +1671,25 @@ class _BotonesAccion extends StatelessWidget {
     required this.provider,
     required this.onIniciarEntrega,
     required this.onMarcarLlegada,
+    required this.onMarcarEntregada,
     required this.onReportarNovedad,
     this.onReintentarGps,
   }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
-    // Verificar si el estado es LISTO_PARA_ENTREGA
+    // Verificar estados actuales
     final esListoParaEntrega =
         entrega.estadoEntregaCodigo == 'LISTO_PARA_ENTREGA' ||
         (entrega.estadoEntregaCodigo == null &&
             entrega.estado == 'LISTO_PARA_ENTREGA');
+
+    final esEnTransito = entrega.estadoEntregaCodigo == 'EN_TRANSITO' ||
+        entrega.estado == 'EN_TRANSITO' ||
+        entrega.estado == 'EN_CAMINO';
+
+    final esLlego = entrega.estadoEntregaCodigo == 'LLEGO' ||
+        entrega.estado == 'LLEGO';
 
     return Column(
       spacing: 8,
@@ -1568,13 +1716,24 @@ class _BotonesAccion extends StatelessWidget {
               ).pushNamed('/chofer/iniciar-ruta', arguments: entrega.id);
             },
           ),
-        if (entrega.puedeMarcarLlegada)
+        // Botón "Marcar Llegada" - Cuando está EN_TRANSITO o puedeMarcarLlegada
+        if (entrega.puedeMarcarLlegada || esEnTransito)
           _BotonAccion(
             label: 'Marcar Llegada',
             icon: Icons.location_on,
             color: Colors.orange,
             onPressed: () async {
               await onMarcarLlegada(context, entrega, provider);
+            },
+          ),
+        // Botón "Marcar Carga Entregada" - Cuando está LLEGO
+        if (esLlego)
+          _BotonAccion(
+            label: 'Marcar Carga Entregada',
+            icon: Icons.check_circle,
+            color: Colors.green,
+            onPressed: () async {
+              await onMarcarEntregada(context, entrega, provider);
             },
           ),
         /* if (entrega.puedeReportarNovedad)

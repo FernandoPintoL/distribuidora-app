@@ -350,20 +350,42 @@ class Producto {
   final String nombre;
   final String? descripcion;
   final double? peso;
+  final List<ImagenProducto>? imagenes;
 
   Producto({
     required this.id,
     required this.nombre,
     this.descripcion,
     this.peso,
+    this.imagenes,
   });
 
+  /// Obtener la imagen principal (es_principal == true) o la primera imagen
+  ImagenProducto? get imagenPrincipal {
+    if (imagenes == null || imagenes!.isEmpty) return null;
+    // Buscar la imagen principal
+    try {
+      return imagenes!.firstWhere((img) => img.esPrincipal == true);
+    } catch (e) {
+      // Si no hay imagen principal, retornar la primera
+      return imagenes!.isNotEmpty ? imagenes!.first : null;
+    }
+  }
+
   factory Producto.fromJson(Map<String, dynamic> json) {
+    List<ImagenProducto>? imagenes;
+    if (json['imagenes'] != null && json['imagenes'] is List) {
+      imagenes = (json['imagenes'] as List)
+          .map((img) => ImagenProducto.fromJson(img))
+          .toList();
+    }
+
     return Producto(
       id: json['id'] as int,
       nombre: json['nombre'] as String,
       descripcion: json['descripcion'] as String?,
       peso: (json['peso'] as num?)?.toDouble(),
+      imagenes: imagenes,
     );
   }
 
@@ -373,6 +395,43 @@ class Producto {
       'nombre': nombre,
       'descripcion': descripcion,
       'peso': peso,
+      'imagenes': imagenes?.map((img) => img.toJson()).toList(),
+    };
+  }
+}
+
+class ImagenProducto {
+  final int? id;
+  final int? productoId;
+  final String url;
+  final bool esPrincipal;
+  final int? orden;
+
+  ImagenProducto({
+    this.id,
+    this.productoId,
+    required this.url,
+    this.esPrincipal = false,
+    this.orden,
+  });
+
+  factory ImagenProducto.fromJson(Map<String, dynamic> json) {
+    return ImagenProducto(
+      id: json['id'] as int?,
+      productoId: json['producto_id'] as int?,
+      url: json['url'] as String,
+      esPrincipal: json['es_principal'] == true || json['es_principal'] == 1,
+      orden: json['orden'] as int?,
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'producto_id': productoId,
+      'url': url,
+      'es_principal': esPrincipal,
+      'orden': orden,
     };
   }
 }

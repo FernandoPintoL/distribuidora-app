@@ -45,6 +45,18 @@ class Product {
     this.stockPorAlmacenes,
   });
 
+  /// Obtener la imagen principal (es_principal == true) o la primera imagen
+  ProductImage? get imagenPrincipal {
+    if (imagenes == null || imagenes!.isEmpty) return null;
+    // Buscar la imagen principal
+    try {
+      return imagenes!.firstWhere((img) => img.esPrincipal == true);
+    } catch (e) {
+      // Si no hay imagen principal, retornar la primera
+      return imagenes!.isNotEmpty ? imagenes!.first : null;
+    }
+  }
+
   factory Product.fromJson(Map<String, dynamic> json) {
     try {
       final product = Product(

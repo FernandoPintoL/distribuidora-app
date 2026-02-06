@@ -1198,6 +1198,90 @@ class EntregaProvider with ChangeNotifier, EntregaTrackingMixin {
     }
   }
 
+  /// Marcar carga como entregada (cambiar estado a ENTREGADO)
+  /// Se usa cuando el estado está EN_TRANSITO y el chofer ha entregado la carga
+  Future<bool> marcarCargaEntregada(int entregaId) async {
+    _isLoading = true;
+    _errorMessage = null;
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      notifyListeners();
+    });
+
+    try {
+      // Validar que la entrega esté cargada
+      if (_entregaActual == null) {
+        _errorMessage = 'Entrega no cargada';
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          notifyListeners();
+        });
+        return false;
+      }
+
+      final estadoActual =
+          _entregaActual!.estadoEntregaCodigo ?? _entregaActual!.estado;
+      debugPrint('🔍 [MARCAR_ENTREGADA] Estado actual: $estadoActual');
+
+      // Validar que esté en estado LLEGO
+      if (estadoActual != 'LLEGO') {
+        _errorMessage =
+            'La entrega debe estar en estado LLEGO. Estado actual: $estadoActual';
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          notifyListeners();
+        });
+        return false;
+      }
+
+      debugPrint('✅ [MARCAR_ENTREGADA] Validación OK, marcando como entregada...');
+
+      // Cambiar estado a ENTREGADO
+      final respuestaEstado = await _entregaService.actualizarEstado(
+        entregaId,
+        estado: 'ENTREGADO',
+      );
+
+      if (!respuestaEstado.success) {
+        _errorMessage =
+            'Error marcando como entregada: ${respuestaEstado.message}';
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          notifyListeners();
+        });
+        return false;
+      }
+
+      // Actualizar la entrega actual con la respuesta
+      _entregaActual = respuestaEstado.data;
+      _actualizarEnListaEntregas(_entregaActual!);
+
+      debugPrint('✅ [MARCAR_ENTREGADA] Carga marcada como entregada');
+
+      // Detener tracking si está activo
+      if (isTracking) {
+        await detenerTracking();
+      }
+
+      // Mostrar notificación de cambio de estado
+      await _notificationService.showDeliveryStateChangeNotification(
+        deliveryId: _entregaActual!.id,
+        newState: _entregaActual!.estado,
+        clientName: _entregaActual!.cliente ?? 'Cliente',
+      );
+
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        notifyListeners();
+      });
+
+      return true;
+    } catch (e) {
+      _errorMessage = 'Error inesperado: ${e.toString()}';
+      debugPrint('❌ [MARCAR_ENTREGADA] Excepción: $e');
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        notifyListeners();
+      });
+      return false;
+    }
+  }
+
   // Limpiar
   void limpiar() {
     _entregas = [];

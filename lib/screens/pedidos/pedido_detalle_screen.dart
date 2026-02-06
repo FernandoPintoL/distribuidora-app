@@ -314,6 +314,23 @@ class _PedidoDetalleScreenState extends State<PedidoDetalleScreen> {
     return formatter.format(fecha);
   }
 
+  String _getLocalidadNombre(Client cliente) {
+    // ✅ El backend carga la relación localidad como objeto Localidad
+    if (cliente.localidad != null) {
+      if (cliente.localidad is Map) {
+        // Si viene como Map (aunque no debería)
+        return (cliente.localidad as Map)['nombre'] ?? 'No disponible';
+      }
+      // Si viene como objeto Localidad
+      try {
+        return cliente.localidad.nombre ?? 'No disponible';
+      } catch (e) {
+        return 'No disponible';
+      }
+    }
+    return 'No disponible';
+  }
+
   @override
   Widget build(BuildContext context) {
     final colorScheme = context.colorScheme;
@@ -429,6 +446,10 @@ class _PedidoDetalleScreenState extends State<PedidoDetalleScreen> {
                     children: [
                       // Header con estado
                       _buildHeader(pedido),
+
+                      // ✅ NUEVO: Información del cliente
+                      if (pedido.cliente != null)
+                        _buildSeccionCliente(pedido.cliente!),
 
                       // ✅ NUEVO: Información de venta (si es una venta convertida)
                       Consumer<PedidoProvider>(
@@ -733,6 +754,173 @@ class _PedidoDetalleScreenState extends State<PedidoDetalleScreen> {
     );
   }
 
+  Widget _buildSeccionCliente(Client cliente) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: Card(
+        elevation: 2,
+        child: Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(12),
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                colorScheme.primary.withOpacity(0.1),
+                colorScheme.primary.withOpacity(0.05),
+              ],
+            ),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: colorScheme.primary.withOpacity(0.2),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Icon(
+                        Icons.person,
+                        color: colorScheme.primary,
+                        size: 24,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'Información del Cliente',
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w500,
+                              color: Colors.grey,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            cliente.nombre,
+                            style: const TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                            ),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                const Divider(height: 1),
+                const SizedBox(height: 16),
+                // Fila 1: Teléfono y Ciudad
+                Row(
+                  children: [
+                    Expanded(
+                      child: _buildClientInfoItem(
+                        icon: Icons.phone,
+                        label: 'Teléfono',
+                        value: cliente.telefono ?? 'No disponible',
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: _buildClientInfoItem(
+                        icon: Icons.location_on,
+                        label: 'Localidad',
+                        value: _getLocalidadNombre(cliente),
+                      ),
+                    ),
+                  ],
+                ),
+                // Fila 2: Estado y Crédito
+                if (cliente.puedeAtenerCredito || !cliente.activo) ...[
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _buildClientInfoItem(
+                          icon: Icons.check_circle,
+                          label: 'Estado',
+                          value: cliente.activo ? 'Activo' : 'Inactivo',
+                          valueColor:
+                              cliente.activo ? Colors.green : Colors.red,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      /* if (cliente.puedeAtenerCredito &&
+                          cliente.limiteCredito != null &&
+                          cliente.creditoUtilizado != null)
+                        Expanded(
+                          child: _buildClientInfoItem(
+                            icon: Icons.credit_card,
+                            label: 'Crédito Disponible',
+                            value:
+                                '\$${(cliente.limiteCredito! - cliente.creditoUtilizado!).toStringAsFixed(2)}',
+                            valueColor: Colors.blue,
+                          ),
+                        ), */
+                    ],
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildClientInfoItem({
+    required IconData icon,
+    required String label,
+    required String value,
+    Color? valueColor,
+  }) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Icon(icon, size: 16, color: colorScheme.primary),
+            const SizedBox(width: 6),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 11,
+                color: colorScheme.onSurfaceVariant,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 4),
+        Text(
+          value,
+          style: TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+            color: valueColor ?? colorScheme.onSurface,
+          ),
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
+        ),
+      ],
+    );
+  }
+
   Widget _buildSeccionInfo(Pedido pedido) {
     return Padding(
       padding: const EdgeInsets.all(16),
@@ -917,13 +1105,11 @@ class _PedidoDetalleScreenState extends State<PedidoDetalleScreen> {
                         color: Theme.of(context).colorScheme.surfaceContainerHighest.withOpacity(0.5),
                         borderRadius: BorderRadius.circular(8),
                       ),
-                      child:
-                          item.producto?.imagenes != null &&
-                              item.producto!.imagenes!.isNotEmpty
+                      child: item.producto?.imagenPrincipal != null
                           ? ClipRRect(
                               borderRadius: BorderRadius.circular(8),
                               child: Image.network(
-                                item.producto!.imagenes!.first.url,
+                                item.producto!.imagenPrincipal!.url,
                                 fit: BoxFit.cover,
                                 errorBuilder: (_, __, ___) =>
                                     const Icon(Icons.image),
@@ -1068,55 +1254,113 @@ class _PedidoDetalleScreenState extends State<PedidoDetalleScreen> {
     return Padding(
       padding: const EdgeInsets.all(16),
       child: Card(
-        color: colorScheme.surfaceContainerHighest.withOpacity(isDark ? 0.4 : 0.2),
+        elevation: 0,
+        color: isDark
+            ? colorScheme.surface
+            : colorScheme.surfaceContainer,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+          side: BorderSide(
+            color: colorScheme.outline.withOpacity(isDark ? 0.2 : 0.15),
+          ),
+        ),
         child: Padding(
           padding: const EdgeInsets.all(16),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
+              // Header
+              Text(
                 'Resumen',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                style: context.textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: colorScheme.onSurface,
+                ),
               ),
-              const Divider(height: 24),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const Text('Subtotal', style: TextStyle(fontSize: 16)),
-                  Text(
-                    'Bs. ${pedido.subtotal.toStringAsFixed(2)}',
-                    style: const TextStyle(fontSize: 16),
-                  ),
-                ],
+              Divider(
+                height: 20,
+                color: colorScheme.outline.withOpacity(isDark ? 0.2 : 0.15),
               ),
-              const SizedBox(height: 12),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const Text('Impuesto', style: TextStyle(fontSize: 16)),
-                  Text(
-                    'Bs. ${pedido.impuesto.toStringAsFixed(2)}',
-                    style: const TextStyle(fontSize: 16),
-                  ),
-                ],
-              ),
-              const Divider(height: 24),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const Text(
-                    'Total',
-                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-                  ),
-                  Text(
-                    'Bs. ${pedido.total.toStringAsFixed(2)}',
-                    style: TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.green.shade400,
+
+              // Subtotal
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 8),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'Subtotal',
+                      style: context.textTheme.bodyMedium?.copyWith(
+                        color: colorScheme.onSurface.withOpacity(0.8),
+                      ),
                     ),
+                    Text(
+                      'Bs. ${pedido.subtotal.toStringAsFixed(2)}',
+                      style: context.textTheme.bodyMedium?.copyWith(
+                        fontWeight: FontWeight.w500,
+                        color: colorScheme.onSurface,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              // Impuesto
+              /* Padding(
+                padding: const EdgeInsets.symmetric(vertical: 8),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'Impuesto',
+                      style: context.textTheme.bodyMedium?.copyWith(
+                        color: colorScheme.onSurface.withOpacity(0.8),
+                      ),
+                    ),
+                    Text(
+                      'Bs. ${pedido.impuesto.toStringAsFixed(2)}',
+                      style: context.textTheme.bodyMedium?.copyWith(
+                        fontWeight: FontWeight.w500,
+                        color: colorScheme.onSurface,
+                      ),
+                    ),
+                  ],
+                ),
+              ), */
+
+              Divider(
+                height: 20,
+                color: colorScheme.outline.withOpacity(isDark ? 0.2 : 0.15),
+              ),
+
+              // Total
+              Container(
+                padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 12),
+                decoration: BoxDecoration(
+                  color: colorScheme.primaryContainer.withOpacity(
+                    isDark ? 0.3 : 0.2,
                   ),
-                ],
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'Total',
+                      style: context.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: colorScheme.onSurface,
+                      ),
+                    ),
+                    Text(
+                      'Bs. ${pedido.total.toStringAsFixed(2)}',
+                      style: context.textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: colorScheme.primary,
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ],
           ),
@@ -1126,20 +1370,45 @@ class _PedidoDetalleScreenState extends State<PedidoDetalleScreen> {
   }
 
   Widget _buildSeccionObservaciones(Pedido pedido) {
+    final isDark = context.isDark;
+    final colorScheme = context.colorScheme;
+
     return Padding(
       padding: const EdgeInsets.all(16),
       child: Card(
+        elevation: 0,
+        color: isDark
+            ? colorScheme.surface
+            : colorScheme.surfaceContainer,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+          side: BorderSide(
+            color: colorScheme.outline.withOpacity(isDark ? 0.2 : 0.15),
+          ),
+        ),
         child: Padding(
           padding: const EdgeInsets.all(16),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
+              Text(
                 'Observaciones',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                style: context.textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: colorScheme.onSurface,
+                ),
               ),
-              const Divider(height: 24),
-              Text(pedido.observaciones!, style: const TextStyle(fontSize: 15)),
+              Divider(
+                height: 20,
+                color: colorScheme.outline.withOpacity(isDark ? 0.2 : 0.15),
+              ),
+              Text(
+                pedido.observaciones!,
+                style: context.textTheme.bodyMedium?.copyWith(
+                  color: colorScheme.onSurface.withOpacity(0.85),
+                  height: 1.5,
+                ),
+              ),
             ],
           ),
         ),
