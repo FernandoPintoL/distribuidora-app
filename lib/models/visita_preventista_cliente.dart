@@ -1,23 +1,14 @@
 import 'client.dart';
 
-enum TipoVisitaPreventista {
-  COBRO,
-  TOMA_PEDIDO,
-  ENTREGA,
-  SUPERVISION,
-  OTRO
-}
+enum TipoVisitaPreventista { COBRO, TOMA_PEDIDO, SUPERVISION, OTRO }
 
-enum EstadoVisitaPreventista {
-  EXITOSA,
-  NO_ATENDIDO
-}
+enum EstadoVisitaPreventista { EXITOSA, NO_ATENDIDO }
 
 enum MotivoNoAtencionVisita {
   CLIENTE_CERRADO,
   CLIENTE_AUSENTE,
   DIRECCION_INCORRECTA,
-  OTRO
+  OTRO,
 }
 
 class VisitaPreventistaCliente {
@@ -81,10 +72,12 @@ class VisitaPreventistaCliente {
       dentroVentanaHoraria: json['dentro_ventana_horaria'] ?? false,
       ventanaEntregaId: json['ventana_entrega_id'] != null
           ? json['ventana_entrega_id'] is int
-              ? json['ventana_entrega_id']
-              : int.parse(json['ventana_entrega_id'].toString())
+                ? json['ventana_entrega_id']
+                : int.parse(json['ventana_entrega_id'].toString())
           : null,
-      cliente: json['cliente'] != null ? Client.fromJson(json['cliente']) : null,
+      cliente: json['cliente'] != null
+          ? Client.fromJson(json['cliente'])
+          : null,
       preventistaNombre: json['preventista']?['nombre'],
       createdAt: json['created_at'] != null
           ? DateTime.parse(json['created_at'])
@@ -143,8 +136,6 @@ extension TipoVisitaLabel on TipoVisitaPreventista {
         return 'Cobro';
       case TipoVisitaPreventista.TOMA_PEDIDO:
         return 'Toma de Pedido';
-      case TipoVisitaPreventista.ENTREGA:
-        return 'Entrega';
       case TipoVisitaPreventista.SUPERVISION:
         return 'Supervisión';
       case TipoVisitaPreventista.OTRO:

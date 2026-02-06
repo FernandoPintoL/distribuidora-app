@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../models/orden_del_dia.dart';
+import '../../models/client.dart';
 import '../../providers/providers.dart';
 import '../../config/config.dart';
+import '../chofer/marcar_visita_screen.dart';
 
 class OrdenDelDiaScreen extends StatefulWidget {
   const OrdenDelDiaScreen({super.key});
@@ -25,6 +27,625 @@ class _OrdenDelDiaScreenState extends State<OrdenDelDiaScreen> {
     _ordenDelDiaFuture = visitaProvider.obtenerOrdenDelDia();
   }
 
+  /// Navega a MarcarVisitaScreen para registrar una visita
+  void _navigateToMarcarVisita(ClienteOrdenDelDia clienteOrdenDelDia) {
+    if (!mounted) return;
+
+    // Convertir ClienteOrdenDelDia a Client para MarcarVisitaScreen
+    final client = Client(
+      id: clienteOrdenDelDia.clienteId,
+      nombre: clienteOrdenDelDia.nombre,
+      codigoCliente: clienteOrdenDelDia.codigoCliente,
+      telefono: clienteOrdenDelDia.telefono,
+      email: clienteOrdenDelDia.email,
+      activo: true,
+    );
+
+    debugPrint(
+      '📍 Navegando a MarcarVisitaScreen para cliente: ${client.nombre}',
+    );
+    Navigator.of(context)
+        .push(
+          MaterialPageRoute(
+            builder: (context) => MarcarVisitaScreen(cliente: client),
+          ),
+        )
+        .then((_) {
+          // Recargar orden del día después de volver
+          if (mounted) {
+            setState(() {
+              _loadOrdenDelDia();
+            });
+          }
+        });
+  }
+
+  /// Muestra modal con detalles del cliente
+  void _showClienteDetail(ClienteOrdenDelDia cliente) {
+    showModalBottomSheet(
+      context: context,
+      builder: (BuildContext context) {
+        return Container(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          cliente.nombre,
+                          style: Theme.of(context).textTheme.titleLarge,
+                        ),
+                        if (cliente.codigoCliente != null) ...[
+                          const SizedBox(height: 4),
+                          Text(
+                            cliente.codigoCliente!,
+                            style: Theme.of(context).textTheme.bodySmall,
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 6,
+                    ),
+                    decoration: BoxDecoration(
+                      color: cliente.visitado
+                          ? Colors.green.withOpacity(0.15)
+                          : Colors.orange.withOpacity(0.15),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Text(
+                      cliente.visitado ? 'Visitado' : 'Pendiente',
+                      style: TextStyle(
+                        fontWeight: FontWeight.w600,
+                        color: cliente.visitado ? Colors.green : Colors.orange,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 20),
+
+              // Imagen del cliente
+              if (cliente.fotoPerfil != null && cliente.fotoPerfil!.isNotEmpty)
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(12),
+                  child: Image.network(
+                    cliente.fotoPerfil!,
+                    height: 200,
+                    width: double.infinity,
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) {
+                      return Container(
+                        height: 150,
+                        color: Colors.grey[300],
+                        child: Icon(
+                          Icons.person,
+                          size: 60,
+                          color: Colors.grey[600],
+                        ),
+                      );
+                    },
+                    loadingBuilder: (context, child, loadingProgress) {
+                      if (loadingProgress == null) return child;
+                      return Container(
+                        height: 150,
+                        color: Colors.grey[300],
+                        child: const Center(child: CircularProgressIndicator()),
+                      );
+                    },
+                  ),
+                ),
+              const SizedBox(height: 20),
+              Divider(
+                color: Theme.of(context).brightness == Brightness.dark
+                    ? Colors.grey.shade700
+                    : Colors.grey.shade200,
+              ),
+              const SizedBox(height: 16),
+
+              // Detalles de contacto
+              if (cliente.telefono != null) ...[
+                Row(
+                  children: [
+                    Icon(Icons.phone, size: 18, color: Colors.blue),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Teléfono',
+                            style: Theme.of(context).textTheme.labelSmall,
+                          ),
+                          Text(
+                            cliente.telefono!,
+                            style: Theme.of(context).textTheme.bodyMedium,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+              ],
+
+              if (cliente.email != null) ...[
+                Row(
+                  children: [
+                    Icon(Icons.email, size: 18, color: Colors.blue),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Email',
+                            style: Theme.of(context).textTheme.labelSmall,
+                          ),
+                          Text(
+                            cliente.email!,
+                            style: Theme.of(context).textTheme.bodyMedium,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+              ],
+
+              // Dirección
+              if (cliente.direccion.direccion != null) ...[
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Icon(Icons.location_on, size: 18, color: Colors.blue),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Dirección',
+                            style: Theme.of(context).textTheme.labelSmall,
+                          ),
+                          Text(
+                            cliente.direccion.direccion!,
+                            style: Theme.of(context).textTheme.bodyMedium,
+                          ),
+                          if (cliente.direccion.ciudad != null)
+                            Text(
+                              cliente.direccion.ciudad!,
+                              style: Theme.of(context).textTheme.bodySmall,
+                            ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+              ],
+
+              // Ventana horaria
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Icon(Icons.access_time, size: 18, color: Colors.blue),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Ventana Horaria',
+                          style: Theme.of(context).textTheme.labelSmall,
+                        ),
+                        Text(
+                          '${cliente.ventanaHoraria.horaInicio} - ${cliente.ventanaHoraria.horaFin}',
+                          style: Theme.of(context).textTheme.bodyMedium,
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+
+              // Información de crédito si aplica
+              if (cliente.puedeAtenerCredito) ...[
+                const SizedBox(height: 12),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Icon(Icons.credit_card, size: 18, color: Colors.blue),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Límite de Crédito',
+                            style: Theme.of(context).textTheme.labelSmall,
+                          ),
+                          Text(
+                            'Bs. ${cliente.limiteCredito?.toStringAsFixed(2) ?? 'N/A'}',
+                            style: Theme.of(context).textTheme.bodyMedium,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+
+              const SizedBox(height: 20),
+              Divider(
+                color: Theme.of(context).brightness == Brightness.dark
+                    ? Colors.grey.shade700
+                    : Colors.grey.shade200,
+              ),
+              const SizedBox(height: 16),
+
+              // Botones de acción
+              Row(
+                children: [
+                  // Botón secundario: Cerrar
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: () => Navigator.pop(context),
+                      child: const Text('Cerrar'),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  // Botón principal: Marcar Visita (solo si no está visitado)
+                  if (!cliente.visitado)
+                    Expanded(
+                      child: ElevatedButton.icon(
+                        onPressed: () {
+                          Navigator.pop(context);
+                          _navigateToMarcarVisita(cliente);
+                        },
+                        icon: const Icon(Icons.check_circle),
+                        label: const Text('Marcar Visita'),
+                      ),
+                    )
+                  else
+                    Expanded(
+                      child: ElevatedButton.icon(
+                        onPressed: null,
+                        icon: const Icon(Icons.check_circle),
+                        label: const Text('Visitado'),
+                      ),
+                    ),
+                ],
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  /// Construye tarjeta de cliente
+  Widget _buildClienteCard(
+    BuildContext context,
+    ClienteOrdenDelDia cliente,
+    int index,
+  ) {
+    final estadoVisitado = cliente.visitado;
+    final statusColor = estadoVisitado ? Colors.green : Colors.orange;
+    final statusIcon = estadoVisitado ? Icons.check_circle : Icons.schedule;
+    final statusText = estadoVisitado ? 'Visitado' : 'Pendiente';
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      decoration: BoxDecoration(
+        border: Border.all(
+          color: estadoVisitado
+              ? Colors.green.withOpacity(0.2)
+              : Colors.orange.withOpacity(0.2),
+          width: 1,
+        ),
+        borderRadius: BorderRadius.circular(12),
+        color: isDark
+            ? Colors.grey.shade900
+            : (estadoVisitado
+                  ? Colors.green.withOpacity(0.05)
+                  : Colors.orange.withOpacity(0.05)),
+      ),
+      child: Material(
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(12),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(12),
+          onTap: () {
+            _showClienteDetail(cliente);
+          },
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Encabezado: imagen, nombre, código y estado
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Imagen del cliente
+                    if (cliente.fotoPerfil != null &&
+                        cliente.fotoPerfil!.isNotEmpty)
+                      Container(
+                        width: 70,
+                        height: 70,
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(
+                            color: statusColor.withOpacity(0.3),
+                            width: 2,
+                          ),
+                        ),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(6),
+                          child: Image.network(
+                            cliente.fotoPerfil!,
+                            fit: BoxFit.cover,
+                            errorBuilder: (context, error, stackTrace) {
+                              return Container(
+                                color: Colors.grey[300],
+                                child: Icon(
+                                  Icons.person,
+                                  size: 35,
+                                  color: Colors.grey[600],
+                                ),
+                              );
+                            },
+                            loadingBuilder: (context, child, loadingProgress) {
+                              if (loadingProgress == null) return child;
+                              return Container(
+                                color: Colors.grey[300],
+                                child: const Center(
+                                  child: SizedBox(
+                                    width: 24,
+                                    height: 24,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                    ),
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+                        ),
+                      )
+                    else
+                      Container(
+                        width: 70,
+                        height: 70,
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(8),
+                          color: Colors.grey[300],
+                          border: Border.all(
+                            color: statusColor.withOpacity(0.3),
+                            width: 2,
+                          ),
+                        ),
+                        child: Icon(
+                          Icons.person,
+                          size: 35,
+                          color: Colors.grey[600],
+                        ),
+                      ),
+                    const SizedBox(width: 12),
+                    // Información del cliente
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      cliente.nombre,
+                                      style: const TextStyle(
+                                        fontSize: 15,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                    if (cliente.codigoCliente != null) ...[
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        cliente.codigoCliente!,
+                                        style: TextStyle(
+                                          fontSize: 12,
+                                          color: Colors.grey.shade600,
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                      ),
+                                    ],
+                                  ],
+                                ),
+                              ),
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 10,
+                                  vertical: 6,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: statusColor.withOpacity(0.15),
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(
+                                      statusIcon,
+                                      size: 16,
+                                      color: statusColor,
+                                    ),
+                                    const SizedBox(width: 6),
+                                    Text(
+                                      statusText,
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w600,
+                                        color: statusColor,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+
+                // Información de contacto
+                if (cliente.telefono != null)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 8),
+                    child: Row(
+                      children: [
+                        Icon(Icons.phone, size: 16, color: Colors.grey.shade600),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            cliente.telefono!,
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: Colors.grey.shade700,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                // Dirección
+                if (cliente.direccion.direccion != null)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 8),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Icon(
+                          Icons.location_on,
+                          size: 16,
+                          color: Colors.grey.shade600,
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                cliente.direccion.direccion!,
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  color: Colors.grey.shade700,
+                                ),
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              if (cliente.direccion.ciudad != null)
+                                Text(
+                                  cliente.direccion.ciudad!,
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: Colors.grey.shade600,
+                                  ),
+                                ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                const SizedBox(height: 12),
+
+                // Ventana horaria y hora de visita
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: isDark ? Colors.grey.shade800 : Colors.grey.shade100,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Row(
+                            children: [
+                              Icon(
+                                Icons.access_time,
+                                size: 16,
+                                color: Colors.blue,
+                              ),
+                              const SizedBox(width: 8),
+                              Text(
+                                'Ventana: ${cliente.ventanaHoraria.horaInicio} - ${cliente.ventanaHoraria.horaFin}',
+                                style: const TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                      if (cliente.visitadoALas != null) ...[
+                        const SizedBox(height: 8),
+                        Row(
+                          children: [
+                            Icon(Icons.done, size: 16, color: Colors.green),
+                            const SizedBox(width: 8),
+                            Text(
+                              'Visitado a las ${cliente.visitadoALas}',
+                              style: const TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                                color: Colors.green,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -39,9 +660,7 @@ class _OrdenDelDiaScreenState extends State<OrdenDelDiaScreen> {
         future: _ordenDelDiaFuture,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(
-              child: CircularProgressIndicator(),
-            );
+            return const Center(child: CircularProgressIndicator());
           }
 
           if (snapshot.hasError) {
@@ -243,9 +862,9 @@ class _OrdenDelDiaScreenState extends State<OrdenDelDiaScreen> {
                                   const SizedBox(height: 12),
                                   Text(
                                     'No hay clientes para hoy',
-                                    style: Theme.of(context)
-                                        .textTheme
-                                        .titleMedium,
+                                    style: Theme.of(
+                                      context,
+                                    ).textTheme.titleMedium,
                                   ),
                                 ],
                               ),
@@ -274,390 +893,41 @@ class _OrdenDelDiaScreenState extends State<OrdenDelDiaScreen> {
       ),
     );
   }
+}
 
   Widget _buildResumenCard(ResumenOrdenDelDia resumen) {
-    final porcentajeDecimal = resumen.porcentajeCompletado / 100;
-    Color progressColor = Colors.red;
-    if (porcentajeDecimal >= 0.75) {
-      progressColor = Colors.green;
-    } else if (porcentajeDecimal >= 0.5) {
-      progressColor = Colors.orange;
-    }
-
-    return Card(
-      elevation: 0,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-        side: BorderSide(color: Colors.grey.shade200),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Título y porcentaje
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                const Text(
-                  'Progreso del Día',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 6,
-                  ),
-                  decoration: BoxDecoration(
-                    color: progressColor.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Text(
-                    '${resumen.porcentajeCompletado.toStringAsFixed(0)}%',
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.bold,
-                      color: progressColor,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-
-            // Progress bar
-            ClipRRect(
-              borderRadius: BorderRadius.circular(8),
-              child: LinearProgressIndicator(
-                minHeight: 12,
-                value: porcentajeDecimal,
-                backgroundColor: Colors.grey.shade200,
-                valueColor: AlwaysStoppedAnimation<Color>(progressColor),
-              ),
-            ),
-            const SizedBox(height: 16),
-
-            // Estadísticas en fila
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: [
-                _buildStatItem(
-                  count: resumen.totalClientes,
-                  label: 'Total',
-                  color: Colors.blue,
-                ),
-                _buildStatItem(
-                  count: resumen.visitados,
-                  label: 'Visitados',
-                  color: Colors.green,
-                ),
-                _buildStatItem(
-                  count: resumen.pendientes,
-                  label: 'Pendientes',
-                  color: Colors.orange,
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
+  final porcentajeDecimal = resumen.porcentajeCompletado / 100;
+  Color progressColor = Colors.red;
+  if (porcentajeDecimal >= 0.75) {
+    progressColor = Colors.green;
+  } else if (porcentajeDecimal >= 0.5) {
+    progressColor = Colors.orange;
   }
 
-  Widget _buildStatItem({
-    required int count,
-    required String label,
-    required Color color,
-  }) {
-    return Column(
-      children: [
-        Text(
-          count.toString(),
-          style: TextStyle(
-            fontSize: 24,
-            fontWeight: FontWeight.bold,
-            color: color,
+  return Builder(
+    builder: (context) {
+      final isDark = Theme.of(context).brightness == Brightness.dark;
+      return Card(
+        elevation: 0,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: BorderSide(
+            color: isDark ? Colors.grey.shade700 : Colors.grey.shade200,
           ),
         ),
-        const SizedBox(height: 4),
-        Text(
-          label,
-          style: TextStyle(
-            fontSize: 12,
-            color: Colors.grey.shade600,
-            fontWeight: FontWeight.w500,
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildClienteCard(
-    BuildContext context,
-    ClienteOrdenDelDia cliente,
-    int index,
-  ) {
-    final estadoVisitado = cliente.visitado;
-    final statusColor = estadoVisitado ? Colors.green : Colors.orange;
-    final statusIcon = estadoVisitado ? Icons.check_circle : Icons.schedule;
-    final statusText = estadoVisitado ? 'Visitado' : 'Pendiente';
-
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      decoration: BoxDecoration(
-        border: Border.all(
-          color: estadoVisitado
-              ? Colors.green.withOpacity(0.2)
-              : Colors.orange.withOpacity(0.2),
-          width: 1,
-        ),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Material(
-        color: estadoVisitado
-            ? Colors.green.withOpacity(0.05)
-            : Colors.orange.withOpacity(0.05),
-        borderRadius: BorderRadius.circular(12),
-        child: InkWell(
-          borderRadius: BorderRadius.circular(12),
-          onTap: () {
-            _showClienteDetail(context, cliente);
-          },
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Encabezado: nombre, código y estado
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            cliente.nombre,
-                            style: const TextStyle(
-                              fontSize: 15,
-                              fontWeight: FontWeight.bold,
-                            ),
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                          if (cliente.codigoCliente != null) ...[
-                            const SizedBox(height: 4),
-                            Text(
-                              cliente.codigoCliente!,
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: Colors.grey.shade600,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                          ],
-                        ],
-                      ),
-                    ),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 6,
-                      ),
-                      decoration: BoxDecoration(
-                        color: statusColor.withOpacity(0.15),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(statusIcon, size: 16, color: statusColor),
-                          const SizedBox(width: 6),
-                          Text(
-                            statusText,
-                            style: TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600,
-                              color: statusColor,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-
-                // Información de contacto
-                if (cliente.telefono != null)
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 8),
-                    child: Row(
-                      children: [
-                        Icon(
-                          Icons.phone,
-                          size: 16,
-                          color: Colors.grey.shade600,
-                        ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
-                            cliente.telefono!,
-                            style: TextStyle(
-                              fontSize: 13,
-                              color: Colors.grey.shade700,
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-
-                // Dirección
-                if (cliente.direccion.direccion != null)
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 8),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Icon(
-                          Icons.location_on,
-                          size: 16,
-                          color: Colors.grey.shade600,
-                        ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                cliente.direccion.direccion!,
-                                style: TextStyle(
-                                  fontSize: 13,
-                                  color: Colors.grey.shade700,
-                                ),
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                              if (cliente.direccion.ciudad != null)
-                                Text(
-                                  cliente.direccion.ciudad!,
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    color: Colors.grey.shade600,
-                                  ),
-                                ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-
-                const SizedBox(height: 12),
-
-                // Ventana horaria y hora de visita
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: Colors.grey.shade100,
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Row(
-                            children: [
-                              Icon(
-                                Icons.access_time,
-                                size: 16,
-                                color: Colors.blue,
-                              ),
-                              const SizedBox(width: 8),
-                              Text(
-                                'Ventana: ${cliente.ventanaHoraria.horaInicio} - ${cliente.ventanaHoraria.horaFin}',
-                                style: const TextStyle(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                      if (cliente.visitadoALas != null) ...[
-                        const SizedBox(height: 8),
-                        Row(
-                          children: [
-                            Icon(
-                              Icons.done,
-                              size: 16,
-                              color: Colors.green,
-                            ),
-                            const SizedBox(width: 8),
-                            Text(
-                              'Visitado a las ${cliente.visitadoALas}',
-                              style: const TextStyle(
-                                fontSize: 12,
-                                fontWeight: FontWeight.w600,
-                                color: Colors.green,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  void _showClienteDetail(
-    BuildContext context,
-    ClienteOrdenDelDia cliente,
-  ) {
-    showModalBottomSheet(
-      context: context,
-      builder: (BuildContext context) {
-        return Container(
+        color: isDark ? Colors.grey.shade900 : Colors.white,
+        child: Padding(
           padding: const EdgeInsets.all(20),
           child: Column(
-            mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // Título y porcentaje
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          cliente.nombre,
-                          style: Theme.of(context).textTheme.titleLarge,
-                        ),
-                        if (cliente.codigoCliente != null) ...[
-                          const SizedBox(height: 4),
-                          Text(
-                            cliente.codigoCliente!,
-                            style: Theme.of(context).textTheme.bodySmall,
-                          ),
-                        ],
-                      ],
-                    ),
+                  const Text(
+                    'Progreso del Día',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                   ),
                   Container(
                     padding: const EdgeInsets.symmetric(
@@ -665,178 +935,90 @@ class _OrdenDelDiaScreenState extends State<OrdenDelDiaScreen> {
                       vertical: 6,
                     ),
                     decoration: BoxDecoration(
-                      color: cliente.visitado
-                          ? Colors.green.withOpacity(0.15)
-                          : Colors.orange.withOpacity(0.15),
-                      borderRadius: BorderRadius.circular(12),
+                      color: progressColor.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(20),
                     ),
                     child: Text(
-                      cliente.visitado ? 'Visitado' : 'Pendiente',
+                      '${resumen.porcentajeCompletado.toStringAsFixed(0)}%',
                       style: TextStyle(
-                        fontWeight: FontWeight.w600,
-                        color: cliente.visitado
-                            ? Colors.green
-                            : Colors.orange,
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                        color: progressColor,
                       ),
                     ),
                   ),
                 ],
               ),
-              const SizedBox(height: 20),
-              Divider(color: Colors.grey.shade200),
               const SizedBox(height: 16),
 
-              // Detalles de contacto
-              if (cliente.telefono != null) ...[
-                Row(
-                  children: [
-                    Icon(Icons.phone, size: 18, color: Colors.blue),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Teléfono',
-                            style: Theme.of(context).textTheme.labelSmall,
-                          ),
-                          Text(
-                            cliente.telefono!,
-                            style: Theme.of(context).textTheme.bodyMedium,
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
+              // Progress bar
+              ClipRRect(
+                borderRadius: BorderRadius.circular(8),
+                child: LinearProgressIndicator(
+                  minHeight: 12,
+                  value: porcentajeDecimal,
+                  backgroundColor: isDark
+                      ? Colors.grey.shade700
+                      : Colors.grey.shade200,
+                  valueColor: AlwaysStoppedAnimation<Color>(progressColor),
                 ),
-                const SizedBox(height: 12),
-              ],
+              ),
+              const SizedBox(height: 16),
 
-              if (cliente.email != null) ...[
-                Row(
-                  children: [
-                    Icon(Icons.email, size: 18, color: Colors.blue),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Email',
-                            style: Theme.of(context).textTheme.labelSmall,
-                          ),
-                          Text(
-                            cliente.email!,
-                            style: Theme.of(context).textTheme.bodyMedium,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-              ],
-
-              // Dirección
-              if (cliente.direccion.direccion != null) ...[
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Icon(Icons.location_on, size: 18, color: Colors.blue),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Dirección',
-                            style: Theme.of(context).textTheme.labelSmall,
-                          ),
-                          Text(
-                            cliente.direccion.direccion!,
-                            style: Theme.of(context).textTheme.bodyMedium,
-                          ),
-                          if (cliente.direccion.ciudad != null)
-                            Text(
-                              cliente.direccion.ciudad!,
-                              style: Theme.of(context).textTheme.bodySmall,
-                            ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-              ],
-
-              // Ventana horaria
+              // Estadísticas en fila
               Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
                 children: [
-                  Icon(Icons.access_time, size: 18, color: Colors.blue),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Ventana Horaria',
-                          style: Theme.of(context).textTheme.labelSmall,
-                        ),
-                        Text(
-                          '${cliente.ventanaHoraria.horaInicio} - ${cliente.ventanaHoraria.horaFin}',
-                          style: Theme.of(context).textTheme.bodyMedium,
-                        ),
-                      ],
-                    ),
+                  _buildStatItem(
+                    count: resumen.totalClientes,
+                    label: 'Total',
+                    color: Colors.blue,
+                  ),
+                  _buildStatItem(
+                    count: resumen.visitados,
+                    label: 'Visitados',
+                    color: Colors.green,
+                  ),
+                  _buildStatItem(
+                    count: resumen.pendientes,
+                    label: 'Pendientes',
+                    color: Colors.orange,
                   ),
                 ],
-              ),
-
-              // Información de crédito si aplica
-              if (cliente.puedeAtenerCredito) ...[
-                const SizedBox(height: 12),
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Icon(Icons.credit_card, size: 18, color: Colors.blue),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Límite de Crédito',
-                            style: Theme.of(context).textTheme.labelSmall,
-                          ),
-                          Text(
-                            'Bs. ${cliente.limiteCredito?.toStringAsFixed(2) ?? 'N/A'}',
-                            style: Theme.of(context).textTheme.bodyMedium,
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-
-              const SizedBox(height: 20),
-              Divider(color: Colors.grey.shade200),
-              const SizedBox(height: 16),
-
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: () => Navigator.pop(context),
-                  child: const Text('Cerrar'),
-                ),
               ),
             ],
           ),
-        );
-      },
-    );
-  }
+        ),
+      );
+    },
+  );
 }
+
+Widget _buildStatItem({
+  required int count,
+  required String label,
+  required Color color,
+}) {
+  return Column(
+    children: [
+      Text(
+        count.toString(),
+        style: TextStyle(
+          fontSize: 24,
+          fontWeight: FontWeight.bold,
+          color: color,
+        ),
+      ),
+      const SizedBox(height: 4),
+      Text(
+        label,
+        style: TextStyle(
+          fontSize: 12,
+          color: Colors.grey.shade600,
+          fontWeight: FontWeight.w500,
+        ),
+      ),
+    ],
+  );
+}
+

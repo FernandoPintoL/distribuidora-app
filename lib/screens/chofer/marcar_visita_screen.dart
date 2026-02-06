@@ -12,10 +12,7 @@ import '../../widgets/widgets.dart';
 class MarcarVisitaScreen extends StatefulWidget {
   final Client cliente;
 
-  const MarcarVisitaScreen({
-    super.key,
-    required this.cliente,
-  });
+  const MarcarVisitaScreen({super.key, required this.cliente});
 
   @override
   State<MarcarVisitaScreen> createState() => _MarcarVisitaScreenState();
@@ -28,7 +25,7 @@ class _MarcarVisitaScreenState extends State<MarcarVisitaScreen> {
   final _imagePicker = ImagePicker();
 
   TipoVisitaPreventista _tipoVisitaSeleccionado =
-      TipoVisitaPreventista.SUPERVISION;
+      TipoVisitaPreventista.TOMA_PEDIDO;
   EstadoVisitaPreventista _estadoVisitaSeleccionado =
       EstadoVisitaPreventista.EXITOSA;
   MotivoNoAtencionVisita? _motivoNoAtencionSeleccionado;
@@ -71,7 +68,9 @@ class _MarcarVisitaScreenState extends State<MarcarVisitaScreen> {
 
   Future<void> _validarHorarioCliente() async {
     final visitaProvider = context.read<VisitaProvider>();
-    final resultado = await visitaProvider.validarHorarioCliente(widget.cliente.id);
+    final resultado = await visitaProvider.validarHorarioCliente(
+      widget.cliente.id,
+    );
 
     if (resultado != null && mounted) {
       setState(() {
@@ -96,7 +95,9 @@ class _MarcarVisitaScreenState extends State<MarcarVisitaScreen> {
 
         try {
           final fotoComprimida =
-              await ImageCompressionService.comprimirYValidarImagen(fotoOriginal);
+              await ImageCompressionService.comprimirYValidarImagen(
+                fotoOriginal,
+              );
 
           setState(() {
             _fotoLocal = fotoComprimida;
@@ -179,7 +180,8 @@ class _MarcarVisitaScreenState extends State<MarcarVisitaScreen> {
                     const SizedBox(height: 16),
 
                     // Advertencia horario
-                    if (!_dentroVentanaHoraria && _mensajeAdvertenciaHorario != null)
+                    if (!_dentroVentanaHoraria &&
+                        _mensajeAdvertenciaHorario != null)
                       _buildAdvertenciaHorario(),
 
                     const SizedBox(height: 16),
@@ -200,8 +202,8 @@ class _MarcarVisitaScreenState extends State<MarcarVisitaScreen> {
                     const SizedBox(height: 16),
 
                     // Ubicación GPS
-                    _buildUbicacionGPS(),
-                    const SizedBox(height: 16),
+                    /* _buildUbicacionGPS(),
+                    const SizedBox(height: 16), */
 
                     // Foto
                     _buildFotoSection(),
@@ -242,31 +244,129 @@ class _MarcarVisitaScreenState extends State<MarcarVisitaScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              'Cliente',
-              style: TextStyle(
-                fontSize: 12,
-                color: Colors.grey[600],
-              ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              widget.cliente.nombre,
-              style: const TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            if (widget.cliente.codigoCliente != null) ...[
-              const SizedBox(height: 4),
-              Text(
-                'Código: ${widget.cliente.codigoCliente}',
-                style: TextStyle(
-                  fontSize: 14,
-                  color: Colors.grey[600],
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Imagen del cliente
+                if (widget.cliente.fotoPerfil != null &&
+                    widget.cliente.fotoPerfil!.isNotEmpty)
+                  Container(
+                    width: 80,
+                    height: 80,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(
+                        color: Theme.of(context).colorScheme.primary,
+                        width: 2,
+                      ),
+                    ),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(6),
+                      child: Image.network(
+                        widget.cliente.fotoPerfil!,
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) {
+                          return Container(
+                            color: Colors.grey[300],
+                            child: Icon(
+                              Icons.person,
+                              size: 40,
+                              color: Colors.grey[600],
+                            ),
+                          );
+                        },
+                        loadingBuilder: (context, child, loadingProgress) {
+                          if (loadingProgress == null) return child;
+                          return Container(
+                            color: Colors.grey[300],
+                            child: const Center(
+                              child: SizedBox(
+                                width: 30,
+                                height: 30,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                ),
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                  )
+                else
+                  Container(
+                    width: 80,
+                    height: 80,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(8),
+                      color: Colors.grey[300],
+                      border: Border.all(
+                        color: Theme.of(context).colorScheme.primary,
+                        width: 2,
+                      ),
+                    ),
+                    child: Icon(
+                      Icons.person,
+                      size: 40,
+                      color: Colors.grey[600],
+                    ),
+                  ),
+                const SizedBox(width: 16),
+                // Información del cliente
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Cliente',
+                        style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        widget.cliente.nombre,
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      if (widget.cliente.codigoCliente != null) ...[
+                        const SizedBox(height: 4),
+                        Text(
+                          'Código: ${widget.cliente.codigoCliente}',
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: Colors.grey[600],
+                          ),
+                        ),
+                      ],
+                      if (widget.cliente.telefono != null &&
+                          widget.cliente.telefono!.isNotEmpty) ...[
+                        const SizedBox(height: 4),
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.phone,
+                              size: 16,
+                              color: Colors.grey[600],
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              widget.cliente.telefono!,
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: Colors.grey[600],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ],
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ],
         ),
       ),
@@ -302,10 +402,7 @@ class _MarcarVisitaScreenState extends State<MarcarVisitaScreen> {
       children: [
         const Text(
           'Tipo de Visita *',
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.bold,
-          ),
+          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 8),
         DropdownButtonFormField<TipoVisitaPreventista>(
@@ -315,10 +412,7 @@ class _MarcarVisitaScreenState extends State<MarcarVisitaScreen> {
             contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
           ),
           items: TipoVisitaPreventista.values.map((tipo) {
-            return DropdownMenuItem(
-              value: tipo,
-              child: Text(tipo.label),
-            );
+            return DropdownMenuItem(value: tipo, child: Text(tipo.label));
           }).toList(),
           onChanged: (value) {
             if (value != null) {
@@ -336,10 +430,7 @@ class _MarcarVisitaScreenState extends State<MarcarVisitaScreen> {
       children: [
         const Text(
           'Estado de Visita *',
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.bold,
-          ),
+          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 8),
         DropdownButtonFormField<EstadoVisitaPreventista>(
@@ -349,10 +440,7 @@ class _MarcarVisitaScreenState extends State<MarcarVisitaScreen> {
             contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
           ),
           items: EstadoVisitaPreventista.values.map((estado) {
-            return DropdownMenuItem(
-              value: estado,
-              child: Text(estado.label),
-            );
+            return DropdownMenuItem(value: estado, child: Text(estado.label));
           }).toList(),
           onChanged: (value) {
             if (value != null) {
@@ -375,10 +463,7 @@ class _MarcarVisitaScreenState extends State<MarcarVisitaScreen> {
       children: [
         const Text(
           'Motivo de No Atención *',
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.bold,
-          ),
+          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 8),
         DropdownButtonFormField<MotivoNoAtencionVisita>(
@@ -388,10 +473,7 @@ class _MarcarVisitaScreenState extends State<MarcarVisitaScreen> {
             contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
           ),
           items: MotivoNoAtencionVisita.values.map((motivo) {
-            return DropdownMenuItem(
-              value: motivo,
-              child: Text(motivo.label),
-            );
+            return DropdownMenuItem(value: motivo, child: Text(motivo.label));
           }).toList(),
           onChanged: (value) {
             setState(() => _motivoNoAtencionSeleccionado = value);
@@ -410,14 +492,14 @@ class _MarcarVisitaScreenState extends State<MarcarVisitaScreen> {
           children: [
             Row(
               children: [
-                Icon(Icons.location_on, color: Theme.of(context).colorScheme.primary),
+                Icon(
+                  Icons.location_on,
+                  color: Theme.of(context).colorScheme.primary,
+                ),
                 const SizedBox(width: 8),
                 const Text(
                   'Ubicación GPS',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                  ),
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                 ),
               ],
             ),
@@ -455,10 +537,7 @@ class _MarcarVisitaScreenState extends State<MarcarVisitaScreen> {
       children: [
         const Text(
           'Foto del Local (Opcional)',
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.bold,
-          ),
+          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 8),
         if (_fotoLocal != null)
@@ -480,9 +559,7 @@ class _MarcarVisitaScreenState extends State<MarcarVisitaScreen> {
                   onPressed: () => setState(() => _fotoLocal = null),
                   icon: const Icon(Icons.close),
                   color: Colors.white,
-                  style: IconButton.styleFrom(
-                    backgroundColor: Colors.black54,
-                  ),
+                  style: IconButton.styleFrom(backgroundColor: Colors.black54),
                 ),
               ),
             ],
@@ -506,10 +583,7 @@ class _MarcarVisitaScreenState extends State<MarcarVisitaScreen> {
       children: [
         const Text(
           'Observaciones (Opcional)',
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.bold,
-          ),
+          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 8),
         TextFormField(
@@ -527,19 +601,13 @@ class _MarcarVisitaScreenState extends State<MarcarVisitaScreen> {
 
   void _mostrarError(String mensaje) {
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(mensaje),
-        backgroundColor: Colors.red,
-      ),
+      SnackBar(content: Text(mensaje), backgroundColor: Colors.red),
     );
   }
 
   void _mostrarExito(String mensaje) {
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(mensaje),
-        backgroundColor: Colors.green,
-      ),
+      SnackBar(content: Text(mensaje), backgroundColor: Colors.green),
     );
   }
 }

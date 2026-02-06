@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'base/base_home_screen.dart';
 import '../models/navigation_item.dart';
+import '../models/orden_del_dia.dart';
 import '../providers/providers.dart';
 import 'clients/client_list_screen.dart';
 import 'perfil/perfil_screen.dart';
@@ -302,7 +303,7 @@ class _DashboardPreventistaState extends State<DashboardPreventista>
                             homeState?.navigateToIndex(1); // Index 1 = Clientes
                           },
                         ),
-                        _buildGradientCard(
+                        /* _buildGradientCard(
                           context,
                           title: 'Nuevo Cliente',
                           subtitle: 'Registrar',
@@ -311,7 +312,7 @@ class _DashboardPreventistaState extends State<DashboardPreventista>
                           onTap: () {
                             Navigator.pushNamed(context, '/client-form');
                           },
-                        ),
+                        ), */
                         // dirigir a la pantalla de pedidos
                         _buildGradientCard(
                           context,
@@ -404,9 +405,9 @@ class _DashboardPreventistaState extends State<DashboardPreventista>
                     ),
                     const SizedBox(height: 32),
 
-                    // Clientes Pendientes
+                    // Clientes Pendientes de Visitas
                     const Text(
-                      'Clientes Pendientes',
+                      'Clientes Pendientes de Visitas',
                       style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
@@ -414,83 +415,180 @@ class _DashboardPreventistaState extends State<DashboardPreventista>
                     ),
                     const SizedBox(height: 16),
 
-                    Consumer<ClientProvider>(
-                      builder: (context, clientProvider, child) {
-                        final clientesPendientes = clientProvider.clients
-                            .where((c) => !c.activo)
-                            .toList();
+                    Consumer<VisitaProvider>(
+                      builder: (context, visitaProvider, child) {
+                        final ordenDelDiaFuture = visitaProvider
+                            .obtenerOrdenDelDia();
 
-                        if (clientesPendientes.isEmpty) {
-                          return Container(
-                            padding: const EdgeInsets.symmetric(vertical: 32),
-                            child: Center(
-                              child: Column(
-                                children: [
-                                  Icon(
-                                    Icons.done_all_rounded,
-                                    size: 48,
-                                    color: Colors.green.shade300,
-                                  ),
-                                  const SizedBox(height: 12),
-                                  Text(
-                                    'Excelente trabajo',
-                                    style: TextStyle(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.bold,
-                                      color: Colors.grey.shade700,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    'Todos tus clientes están activos',
-                                    style: TextStyle(
-                                      fontSize: 13,
-                                      color: Colors.grey.shade600,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          );
-                        }
+                        return FutureBuilder<OrdenDelDia?>(
+                          future: ordenDelDiaFuture,
+                          builder: (context, snapshot) {
+                            if (snapshot.connectionState ==
+                                ConnectionState.waiting) {
+                              return const Center(
+                                child: CircularProgressIndicator(),
+                              );
+                            }
 
-                        return Column(
-                          children: [
-                            ...clientesPendientes.take(3).map((cliente) {
-                              return Padding(
-                                padding: const EdgeInsets.only(bottom: 12),
-                                child: _buildClientPendingCard(
-                                  context,
-                                  nombre: cliente.nombre,
-                                  telefono: cliente.telefono ?? 'Sin teléfono',
-                                  localidad:
-                                      cliente.localidad?.nombre ??
-                                      'Sin localidad',
+                            final ordenDelDia = snapshot.data;
+                            if (ordenDelDia == null) {
+                              return Container(
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 24,
+                                ),
+                                child: Center(
+                                  child: Column(
+                                    children: [
+                                      Icon(
+                                        Icons.info_outline,
+                                        size: 48,
+                                        color: Colors.blue.shade300,
+                                      ),
+                                      const SizedBox(height: 12),
+                                      Text(
+                                        'Sin orden del día',
+                                        style: TextStyle(
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.bold,
+                                          color: Colors.grey.shade700,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        'No hay clientes programados para hoy',
+                                        style: TextStyle(
+                                          fontSize: 13,
+                                          color: Colors.grey.shade600,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
                                 ),
                               );
-                            }),
-                            if (clientesPendientes.length > 3)
-                              Padding(
-                                padding: const EdgeInsets.only(top: 8),
-                                child: TextButton(
-                                  onPressed: () {
-                                    Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                        builder: (context) =>
-                                            const ClientListScreen(),
-                                      ),
-                                    );
-                                  },
-                                  child: Text(
-                                    'Ver ${clientesPendientes.length - 3} más',
-                                    style: const TextStyle(
-                                      fontWeight: FontWeight.w600,
+                            }
+
+                            // Resumen de la orden del día
+                            final resumen = ordenDelDia.resumen;
+                            final porcentajeDecimal =
+                                resumen.porcentajeCompletado / 100;
+                            Color progressColor = Colors.red;
+                            if (porcentajeDecimal >= 0.75) {
+                              progressColor = Colors.green;
+                            } else if (porcentajeDecimal >= 0.5) {
+                              progressColor = Colors.orange;
+                            }
+
+                            return Card(
+                              elevation: 0,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(16),
+                                side: BorderSide(color: Colors.grey.shade200),
+                              ),
+                              child: Padding(
+                                padding: const EdgeInsets.all(16),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    // Título y porcentaje
+                                    Row(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.spaceBetween,
+                                      children: [
+                                        const Text(
+                                          'Progreso del Día',
+                                          style: TextStyle(
+                                            fontSize: 16,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 12,
+                                            vertical: 6,
+                                          ),
+                                          decoration: BoxDecoration(
+                                            color: progressColor.withOpacity(
+                                              0.1,
+                                            ),
+                                            borderRadius: BorderRadius.circular(
+                                              20,
+                                            ),
+                                          ),
+                                          child: Text(
+                                            '${resumen.porcentajeCompletado.toStringAsFixed(0)}%',
+                                            style: TextStyle(
+                                              fontSize: 14,
+                                              fontWeight: FontWeight.bold,
+                                              color: progressColor,
+                                            ),
+                                          ),
+                                        ),
+                                      ],
                                     ),
-                                  ),
+                                    const SizedBox(height: 12),
+
+                                    // Progress bar
+                                    ClipRRect(
+                                      borderRadius: BorderRadius.circular(8),
+                                      child: LinearProgressIndicator(
+                                        minHeight: 10,
+                                        value: porcentajeDecimal,
+                                        backgroundColor: Colors.grey.shade200,
+                                        valueColor:
+                                            AlwaysStoppedAnimation<Color>(
+                                              progressColor,
+                                            ),
+                                      ),
+                                    ),
+                                    const SizedBox(height: 16),
+
+                                    // Estadísticas en fila
+                                    Row(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.spaceAround,
+                                      children: [
+                                        _buildStatItem(
+                                          count: resumen.totalClientes,
+                                          label: 'Total',
+                                          color: Colors.blue,
+                                        ),
+                                        _buildStatItem(
+                                          count: resumen.visitados,
+                                          label: 'Visitados',
+                                          color: Colors.green,
+                                        ),
+                                        _buildStatItem(
+                                          count: resumen.pendientes,
+                                          label: 'Pendientes',
+                                          color: Colors.orange,
+                                        ),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 16),
+
+                                    // Botón para ver más detalles
+                                    SizedBox(
+                                      width: double.infinity,
+                                      child: OutlinedButton(
+                                        onPressed: () {
+                                          Navigator.pushNamed(
+                                            context,
+                                            '/orden-del-dia',
+                                          );
+                                        },
+                                        child: const Text(
+                                          'Ver Orden del Día',
+                                          style: TextStyle(
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               ),
-                          ],
+                            );
+                          },
                         );
                       },
                     ),
@@ -980,6 +1078,34 @@ class _DashboardPreventistaState extends State<DashboardPreventista>
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildStatItem({
+    required int count,
+    required String label,
+    required Color color,
+  }) {
+    return Column(
+      children: [
+        Text(
+          count.toString(),
+          style: TextStyle(
+            fontSize: 24,
+            fontWeight: FontWeight.bold,
+            color: color,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 12,
+            color: Colors.grey.shade600,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+      ],
     );
   }
 }

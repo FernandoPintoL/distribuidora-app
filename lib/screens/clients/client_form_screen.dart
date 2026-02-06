@@ -106,7 +106,8 @@ class _ClientFormScreenState extends State<ClientFormScreen> {
         _phoneController.text = clientCompleto.telefono ?? '';
         _selectedLocationId = clientCompleto.localidadId;
         _isActive = clientCompleto.activo;
-        _createUser = clientCompleto.userId != null;
+        // ✅ SEGURIDAD: En modo edición, NUNCA crear usuario (cambiar contraseña requiere admin)
+        _createUser = false;
         _puedeAtenerCredito = clientCompleto.puedeAtenerCredito;
         _limiteCredito = clientCompleto.limiteCredito ?? 0.0;
         _observationsController.text = clientCompleto.observaciones ?? '';
@@ -802,49 +803,13 @@ class _ClientFormScreenState extends State<ClientFormScreen> {
                                 ],
                               ),
                             ),
+                            // ✅ SEGURIDAD: "Crear Usuario" está OCULTO
+                            // - Al crear cliente: _createUser = true (automático)
+                            // - Al editar cliente: _createUser = false (automático)
+                            // El usuario NO puede cambiar esto. Cambiar contraseña requiere admin.
                             const SizedBox(height: 16),
-                            Row(
-                              children: [
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        'Crear Usuario',
-                                        style: TextStyle(
-                                          fontSize: 16,
-                                          fontWeight: FontWeight.w500,
-                                          color: Theme.of(
-                                            context,
-                                          ).colorScheme.onSurface,
-                                        ),
-                                      ),
-                                      Text(
-                                        'Crear cuenta de usuario para acceso a la app',
-                                        style: TextStyle(
-                                          fontSize: 14,
-                                          color: Theme.of(
-                                            context,
-                                          ).colorScheme.onSurfaceVariant,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                                Switch(
-                                  value: _createUser,
-                                  onChanged: (value) =>
-                                      setState(() => _createUser = value),
-                                  activeThumbColor: Theme.of(
-                                    context,
-                                  ).colorScheme.primary,
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 24),
                             // 💳 Configuración de Crédito
-                            Row(
+                            /* Row(
                               children: [
                                 Expanded(
                                   child: Column(
@@ -881,7 +846,7 @@ class _ClientFormScreenState extends State<ClientFormScreen> {
                                   activeThumbColor: Colors.blue.shade600,
                                 ),
                               ],
-                            ),
+                            ), */
                             // Límite de Crédito (solo visible si está habilitado)
                             if (_puedeAtenerCredito) ...[
                               const SizedBox(height: 16),
@@ -1106,8 +1071,8 @@ class _ClientFormScreenState extends State<ClientFormScreen> {
           categoriasIds: _selectedCategoriasIds.isNotEmpty
               ? _selectedCategoriasIds.toList()
               : null,
-          //crear usuario solo si se seleccionó y no está editando
-          crearUsuario: _createUser,
+          // ✅ SEGURIDAD: En modo edición, NUNCA crear usuario (cambiar contraseña requiere admin)
+          crearUsuario: false,
           direcciones: _addressController.text.isNotEmpty
               ? [
                   ClientAddress(

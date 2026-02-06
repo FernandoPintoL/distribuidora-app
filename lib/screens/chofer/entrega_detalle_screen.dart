@@ -12,6 +12,7 @@ import '../../widgets/chofer/animated_navigation_card.dart';
 import '../../widgets/chofer/sla_status_widget.dart';
 import '../../widgets/chofer/gps_tracking_status_widget.dart';
 import '../../widgets/chofer/connection_health_widget.dart';
+import '../../widgets/chofer/productos_agrupados_widget.dart';
 import '../../config/config.dart';
 import '../../services/location_service.dart';
 import '../../services/print_service.dart';
@@ -841,26 +842,13 @@ class _EntregaDetalleScreenState extends State<EntregaDetalleScreen> {
           // Información general (incluye fechas y tiempos)
           _InformacionGeneralCard(entrega: entrega),
           const SizedBox(height: 16),
-          // ✅ NUEVO: Sección de Productos Genéricos (consolidados de todas las ventas)
-          // Mostrar primero los productos genéricos, ANTES de ventas asignadas
-          Builder(
-            builder: (context) {
-              debugPrint(
-                '🛍️ [PRODUCTOS] Cantidad productos genéricos: ${entrega.productosGenerico.length}',
-              );
-              if (entrega.productosGenerico.isNotEmpty) {
-                return Column(
-                  children: [
-                    _ProductosGenericosCard(
-                      productos: entrega.productosGenerico,
-                      entregaId: entrega.id,
-                    ),
-                    const SizedBox(height: 16),
-                  ],
-                );
-              }
-              return const SizedBox.shrink();
-            },
+          // ✅ NUEVO: Sección de Productos Agrupados (desde endpoint separado)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 16),
+            child: ProductosAgrupadsWidget(
+              entregaId: entrega.id,
+              mostrarDetalleVentas: true,
+            ),
           ),
           // Timeline visual de estados
           /* EntregaTimeline(entrega: entrega),

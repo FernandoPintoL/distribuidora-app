@@ -4,26 +4,13 @@ import '../../models/models.dart';
 import '../../providers/providers.dart';
 import '../../services/services.dart';
 import '../../widgets/widgets.dart';
+import '../../widgets/pedidos/direccion_selector_modal.dart';
+import '../../widgets/pedidos/fecha_hora_selector_modal.dart';
 import '../../config/config.dart';
 import '../../extensions/theme_extension.dart';
 
 class ResumenPedidoScreen extends StatefulWidget {
-  final String tipoEntrega; // DELIVERY or PICKUP
-  final ClientAddress? direccion; // Null para PICKUP, required para DELIVERY
-  final DateTime? fechaProgramada;
-  final TimeOfDay? horaInicio;
-  final TimeOfDay? horaFin;
-  final String? observaciones;
-
-  const ResumenPedidoScreen({
-    super.key,
-    required this.tipoEntrega,
-    this.direccion,
-    this.fechaProgramada,
-    this.horaInicio,
-    this.horaFin,
-    this.observaciones,
-  });
+  const ResumenPedidoScreen({super.key});
 
   @override
   State<ResumenPedidoScreen> createState() => _ResumenPedidoScreenState();
@@ -32,10 +19,16 @@ class ResumenPedidoScreen extends StatefulWidget {
 class _ResumenPedidoScreenState extends State<ResumenPedidoScreen> {
   bool _isCreandoPedido = false;
 
-  // ✅ Política de pago (antes era _solicitarCredito)
-  String _politicaPago = 'CONTRA_ENTREGA'; // Default
+  // ✅ Estado interno para tipo de entrega y datos relacionados
+  String _tipoEntrega = 'DELIVERY'; // Default
+  ClientAddress? _direccionSeleccionada;
+  DateTime? _fechaProgramada;
+  TimeOfDay? _horaInicio;
+  TimeOfDay? _horaFin;
+  String _observaciones = '';
 
-  // Constantes de políticas
+  // Política de pago
+  String _politicaPago = 'CONTRA_ENTREGA'; // Default
   static const String POLITICA_ANTICIPADO = 'ANTICIPADO_100';
   static const String POLITICA_MEDIO_MEDIO = 'MEDIO_MEDIO';
   static const String POLITICA_CONTRA_ENTREGA = 'CONTRA_ENTREGA';
@@ -43,8 +36,107 @@ class _ResumenPedidoScreenState extends State<ResumenPedidoScreen> {
 
   final PedidoService _pedidoService = PedidoService();
 
-  // Detectar si es PICKUP o DELIVERY
-  bool get esPickup => widget.tipoEntrega == 'PICKUP';
+  @override
+  void initState() {
+    super.initState();
+    // Inicializar fecha/hora por defecto
+    final now = DateTime.now();
+    _fechaProgramada = DateTime(now.year, now.month, now.day);
+    _horaInicio = const TimeOfDay(hour: 9, minute: 0);
+    _horaFin = const TimeOfDay(hour: 17, minute: 0);
+
+    // ✅ NUEVO: Cargar automáticamente la dirección principal del cliente
+    _cargarDireccionPrincipal();
+  }
+
+  // ✅ NUEVO: Cargar automáticamente dirección principal
+  void _cargarDireccionPrincipal() {
+    try {
+      final carritoProvider = context.read<CarritoProvider>();
+      final cliente = carritoProvider.clienteSeleccionado;
+
+      if (cliente == null || cliente.direcciones == null || cliente.direcciones!.isEmpty) {
+        debugPrint('⚠️ [ResumenPedidoScreen] No hay direcciones disponibles');
+        return;
+      }
+
+      // Buscar dirección principal
+      final direccionPrincipal = cliente.direcciones!
+          .firstWhere(
+            (dir) => dir.esPrincipal == true,
+            orElse: () => cliente.direcciones!.first, // Fallback a la primera si no hay principal
+          );
+
+      setState(() {
+        _direccionSeleccionada = direccionPrincipal;
+      });
+
+      debugPrint(
+        '✅ [ResumenPedidoScreen] Dirección principal seleccionada: ${direccionPrincipal.direccion}',
+      );
+    } catch (e) {
+      debugPrint('❌ [ResumenPedidoScreen] Error al cargar dirección principal: $e');
+    }
+  }
+
+  // ✅ Mostrar selector de dirección como modal
+  void _mostrarSelectorDireccion() async {
+    final carritoProvider = context.read<CarritoProvider>();
+    final cliente = carritoProvider.clienteSeleccionado;
+
+    if (cliente == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Error: Cliente no cargado'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    final resultado = await showModalBottomSheet<ClientAddress>(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.only(
+          topLeft: Radius.circular(24),
+          topRight: Radius.circular(24),
+        ),
+      ),
+      builder: (context) => DireccionSelectorModal(
+        cliente: cliente,
+        direccionInicial: _direccionSeleccionada,
+      ),
+    );
+
+    if (resultado != null) {
+      setState(() {
+        _direccionSeleccionada = resultado;
+      });
+    }
+  }
+
+  // ✅ Mostrar selector de fecha/hora como dialog
+  void _mostrarSelectorFechaHora() async {
+    final resultado = await showDialog<Map<String, dynamic>>(
+      context: context,
+      builder: (context) => FechaHoraSelectorModal(
+        fechaInicial: _fechaProgramada,
+        horaInicioInicial: _horaInicio,
+        horaFinInicial: _horaFin,
+        observacionesInicial: _observaciones,
+      ),
+    );
+
+    if (resultado != null && mounted) {
+      setState(() {
+        _fechaProgramada = resultado['fecha'];
+        _horaInicio = resultado['horaInicio'];
+        _horaFin = resultado['horaFin'];
+        _observaciones = resultado['observaciones'] ?? '';
+      });
+    }
+  }
 
   Future<void> _confirmarPedido() async {
     final carritoProvider = context.read<CarritoProvider>();
@@ -52,7 +144,7 @@ class _ResumenPedidoScreenState extends State<ResumenPedidoScreen> {
       '🚀 cliente cargado ${carritoProvider.getClienteSeleccionadoId()}',
     );
 
-    // ✅ NUEVO: Detectar si estamos editando una proforma existente
+    // ✅ Detectar si estamos editando una proforma existente
     final editandoProforma = carritoProvider.editandoProforma;
     final proformaId = carritoProvider.proformaEditandoId;
 
@@ -66,6 +158,17 @@ class _ResumenPedidoScreenState extends State<ResumenPedidoScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('El carrito está vacío'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    // ✅ Validación: Si es DELIVERY, dirección es obligatoria
+    if (_tipoEntrega == 'DELIVERY' && _direccionSeleccionada == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Debes seleccionar una dirección de entrega'),
           backgroundColor: Colors.red,
         ),
       );
@@ -86,20 +189,13 @@ class _ResumenPedidoScreenState extends State<ResumenPedidoScreen> {
         throw Exception('Usuario no autenticado');
       }
 
-      // Validación condicional según tipo de entrega
+      // Dirección ID (null para PICKUP)
       int? direccionId;
-      if (!esPickup) {
-        // Para DELIVERY: la dirección es REQUERIDA
-        if (widget.direccion == null || widget.direccion!.id == null) {
-          throw Exception(
-            'La dirección de entrega es requerida para pedidos de tipo DELIVERY',
-          );
-        }
-        direccionId = widget.direccion!.id;
+      if (_tipoEntrega == 'DELIVERY') {
+        direccionId = _direccionSeleccionada!.id;
       }
-      // Para PICKUP: direccionId puede ser null
 
-      // Determinar si es cliente o preventista y obtener cliente_id para la proforma
+      // Determinar cliente ID
       final clienteIdUsuario = authProvider.user!.clienteId;
       final carritoClienteId = carritoProvider.getClienteSeleccionadoId();
 
@@ -107,35 +203,26 @@ class _ResumenPedidoScreenState extends State<ResumenPedidoScreen> {
       bool esClienteLogueado = false;
       bool esPreventista = false;
 
-      // Si es cliente logueado (tiene clienteId en su perfil)
       if (clienteIdUsuario != null) {
         clienteIdParaPedido = clienteIdUsuario;
         esClienteLogueado = true;
         debugPrint('👤 Creador: CLIENTE logueado (ID: $clienteIdUsuario)');
-      }
-      // Si es preventista (no tiene clienteId pero seleccionó un cliente)
-      else if (carritoClienteId != null) {
+      } else if (carritoClienteId != null) {
         clienteIdParaPedido = carritoClienteId;
         esPreventista = true;
         debugPrint(
           '👨‍💼 Creador: PREVENTISTA para cliente (ID: $carritoClienteId)',
         );
-      }
-      // Si ninguno de los dos casos se cumple, error
-      else {
+      } else {
         throw Exception(
           'No se pudo identificar al cliente. Asegúrate de estar correctamente autenticado.',
         );
       }
 
-      // Obtener el cliente para verificar permisos de crédito
-      // ✅ Dos formas de obtener al cliente según el tipo de usuario:
-      // 1. Si es CLIENTE LOGUEADO: cargar desde API usando clienteId
-      // 2. Si es PREVENTISTA: obtener desde carritoProvider (ya seleccionado)
+      // Obtener cliente
       Client? clienteSeleccionado;
 
       if (esClienteLogueado) {
-        // Para cliente logueado: cargar desde API usando ClientProvider
         debugPrint(
           '👤 Cargando datos del cliente logueado (ID: $clienteIdParaPedido)...',
         );
@@ -158,7 +245,6 @@ class _ResumenPedidoScreenState extends State<ResumenPedidoScreen> {
           '👤 Cliente logueado cargado: ${clienteSeleccionado.nombre} (ID: ${clienteSeleccionado.id})',
         );
       } else if (esPreventista) {
-        // Para preventista: obtener del carrito (ya fue seleccionado)
         clienteSeleccionado = carritoProvider.getClienteSeleccionado();
         if (clienteSeleccionado == null) {
           throw Exception(
@@ -172,10 +258,9 @@ class _ResumenPedidoScreenState extends State<ResumenPedidoScreen> {
         throw Exception('No se pudo identificar el tipo de usuario.');
       }
 
-      // ✅ Validar política de pago seleccionada
+      // ✅ Validar política de pago
       debugPrint('💳 Política de pago seleccionada: $_politicaPago');
 
-      // Si solicita crédito, validar permisos
       if (_politicaPago == POLITICA_CREDITO) {
         debugPrint(
           '💳 Verificando permisos de crédito para ${clienteSeleccionado.nombre}',
@@ -189,7 +274,6 @@ class _ResumenPedidoScreenState extends State<ResumenPedidoScreen> {
         if (!clienteSeleccionado.puedeAtenerCredito) {
           debugPrint('⚠️  Cliente NO tiene permisos de crédito');
 
-          // Mostrar advertencia pero permitir que continúe
           if (!mounted) return;
           final shouldContinue = await showDialog<bool>(
             context: context,
@@ -225,11 +309,10 @@ class _ResumenPedidoScreenState extends State<ResumenPedidoScreen> {
         }
       }
 
-      // ✅ NUEVO: Diferenciar entre CREAR nueva proforma y ACTUALIZAR existente
+      // ✅ Crear o actualizar proforma
       dynamic response;
 
       if (editandoProforma && proformaId != null) {
-        // 📝 ACTUALIZAR proforma existente
         debugPrint(
           '📝 Actualizando proforma #$proformaId con los nuevos datos...',
         );
@@ -238,30 +321,29 @@ class _ResumenPedidoScreenState extends State<ResumenPedidoScreen> {
           proformaId: proformaId,
           clienteId: clienteIdParaPedido,
           items: items,
-          tipoEntrega: widget.tipoEntrega,
-          fechaProgramada: widget.fechaProgramada ?? DateTime.now(),
+          tipoEntrega: _tipoEntrega,
+          fechaProgramada: _fechaProgramada ?? DateTime.now(),
           direccionId: direccionId,
-          horaInicio: widget.horaInicio,
-          horaFin: widget.horaFin,
-          observaciones: widget.observaciones,
+          horaInicio: _horaInicio,
+          horaFin: _horaFin,
+          observaciones: _observaciones,
           politicaPago: _politicaPago,
         );
 
         debugPrint('✅ Proforma actualizada - Política de pago: $_politicaPago');
       } else {
-        // ➕ CREAR nueva proforma
         debugPrint('➕ Creando nueva proforma...');
 
         response = await _pedidoService.crearPedido(
           clienteId: clienteIdParaPedido,
           items: items,
-          tipoEntrega: widget.tipoEntrega, // DELIVERY o PICKUP
-          fechaProgramada: widget.fechaProgramada ?? DateTime.now(),
-          direccionId: direccionId, // null para PICKUP, int para DELIVERY
-          horaInicio: widget.horaInicio,
-          horaFin: widget.horaFin,
-          observaciones: widget.observaciones,
-          politicaPago: _politicaPago, // ✅ Política de pago seleccionada
+          tipoEntrega: _tipoEntrega,
+          fechaProgramada: _fechaProgramada ?? DateTime.now(),
+          direccionId: direccionId,
+          horaInicio: _horaInicio,
+          horaFin: _horaFin,
+          observaciones: _observaciones,
+          politicaPago: _politicaPago,
         );
 
         debugPrint('✅ Pedido creado - Política de pago: $_politicaPago');
@@ -272,16 +354,13 @@ class _ResumenPedidoScreenState extends State<ResumenPedidoScreen> {
       });
 
       if (response.success && response.data != null) {
-        // Limpiar el carrito
         carritoProvider.limpiarCarrito();
 
-        // ✅ NUEVO: Si estábamos editando, limpiar el estado de edición
         if (editandoProforma) {
           carritoProvider.limpiarProformaEditando();
           debugPrint('✅ Estado de edición limpiado');
         }
 
-        // ✅ NUEVO: Navegar a pantalla de éxito con parámetro de si es creación o actualización
         if (mounted) {
           Navigator.pushNamedAndRemoveUntil(
             context,
@@ -294,7 +373,6 @@ class _ResumenPedidoScreenState extends State<ResumenPedidoScreen> {
           );
         }
       } else {
-        // Mostrar error
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
@@ -326,6 +404,7 @@ class _ResumenPedidoScreenState extends State<ResumenPedidoScreen> {
     }
   }
 
+  // ✅ Métodos auxiliares de formato
   String _formatearFecha(DateTime fecha) {
     final meses = [
       'Ene',
@@ -356,12 +435,10 @@ class _ResumenPedidoScreenState extends State<ResumenPedidoScreen> {
     final colorScheme = context.colorScheme;
     final isDark = context.isDark;
 
-    // ✅ NUEVO: Detectar si estamos editando para cambiar títulos
     final carritoProvider = context.read<CarritoProvider>();
     final editandoProforma = carritoProvider.editandoProforma;
-    final tituloResumen = editandoProforma
-        ? 'Actualizar Proforma'
-        : 'Resumen del Pedido';
+    final tituloResumen =
+        editandoProforma ? 'Actualizar Proforma' : 'Resumen del Pedido';
 
     return Scaffold(
       appBar: CustomGradientAppBar(
@@ -383,7 +460,6 @@ class _ResumenPedidoScreenState extends State<ResumenPedidoScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // ✅ NUEVO: Texto dinámico según sea crear o actualizar
                       if (editandoProforma) ...[
                         Row(
                           children: [
@@ -448,6 +524,24 @@ class _ResumenPedidoScreenState extends State<ResumenPedidoScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
+                      // ✅ NUEVO: Sección Información del Cliente
+                      _buildClienteInfoSection(context, carritoProvider),
+                      const SizedBox(height: 24),
+
+                      // ✅ NUEVO: Selector de Tipo de Entrega
+                      _buildTipoEntregaSelector(),
+                      const SizedBox(height: 24),
+
+                      // ✅ NUEVO: Selector de Dirección (solo si DELIVERY)
+                      if (_tipoEntrega == 'DELIVERY') ...[
+                        _buildDireccionSection(),
+                        const SizedBox(height: 24),
+                      ],
+
+                      // ✅ NUEVO: Selector de Fecha/Hora
+                      _buildFechaHoraSection(),
+                      const SizedBox(height: 24),
+
                       // Productos
                       Text(
                         'Productos',
@@ -467,7 +561,6 @@ class _ResumenPedidoScreenState extends State<ResumenPedidoScreen> {
                             padding: const EdgeInsets.all(12),
                             child: Row(
                               children: [
-                                // Imagen del producto
                                 Container(
                                   width: 60,
                                   height: 60,
@@ -494,7 +587,6 @@ class _ResumenPedidoScreenState extends State<ResumenPedidoScreen> {
 
                                 const SizedBox(width: 12),
 
-                                // Información del producto
                                 Expanded(
                                   child: Column(
                                     crossAxisAlignment:
@@ -508,7 +600,6 @@ class _ResumenPedidoScreenState extends State<ResumenPedidoScreen> {
                                         ),
                                       ),
                                       const SizedBox(height: 6),
-                                      // ✅ NUEVO: Mostrar precio unitario y cantidad
                                       Row(
                                         children: [
                                           Text(
@@ -523,8 +614,8 @@ class _ResumenPedidoScreenState extends State<ResumenPedidoScreen> {
                                           Text(
                                             '×${item.cantidad}',
                                             style: TextStyle(
-                                              color:
-                                                  colorScheme.onSurfaceVariant,
+                                              color: colorScheme
+                                                  .onSurfaceVariant,
                                               fontSize: 13,
                                             ),
                                           ),
@@ -534,7 +625,6 @@ class _ResumenPedidoScreenState extends State<ResumenPedidoScreen> {
                                   ),
                                 ),
 
-                                // Precio subtotal
                                 Column(
                                   crossAxisAlignment: CrossAxisAlignment.end,
                                   children: [
@@ -551,7 +641,8 @@ class _ResumenPedidoScreenState extends State<ResumenPedidoScreen> {
                                       'subtotal',
                                       style: TextStyle(
                                         fontSize: 11,
-                                        color: colorScheme.onSurfaceVariant,
+                                        color:
+                                            colorScheme.onSurfaceVariant,
                                       ),
                                     ),
                                   ],
@@ -563,254 +654,6 @@ class _ResumenPedidoScreenState extends State<ResumenPedidoScreen> {
                       ),
 
                       const SizedBox(height: 24),
-
-                      // Mostrar dirección SOLO si es DELIVERY
-                      if (!esPickup) ...[
-                        Text(
-                          'Dirección de entrega',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                            color: colorScheme.onSurface,
-                          ),
-                        ),
-                        const SizedBox(height: 12),
-
-                        Card(
-                          color: colorScheme.surface,
-                          child: Padding(
-                            padding: const EdgeInsets.all(16),
-                            child: Row(
-                              children: [
-                                Icon(
-                                  Icons.location_on,
-                                  color: colorScheme.primary,
-                                  size: 28,
-                                ),
-                                const SizedBox(width: 12),
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        widget.direccion!.direccion,
-                                        style: TextStyle(
-                                          fontWeight: FontWeight.w600,
-                                          fontSize: 16,
-                                          color: colorScheme.onSurface,
-                                        ),
-                                      ),
-                                      if (widget.direccion!.ciudad != null) ...[
-                                        const SizedBox(height: 4),
-                                        Text(
-                                          'Ciudad: ${widget.direccion!.ciudad}',
-                                          style: TextStyle(
-                                            color: colorScheme.onSurfaceVariant,
-                                          ),
-                                        ),
-                                      ],
-                                      if (widget.direccion!.observaciones !=
-                                          null) ...[
-                                        const SizedBox(height: 4),
-                                        Text(
-                                          'Obs: ${widget.direccion!.observaciones}',
-                                          style: TextStyle(
-                                            color: colorScheme.primary,
-                                            fontSize: 13,
-                                          ),
-                                        ),
-                                      ],
-                                    ],
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-
-                        const SizedBox(height: 24),
-                      ],
-
-                      // Mostrar info de almacén SI es PICKUP
-                      if (esPickup) ...[
-                        Text(
-                          'Lugar de Retiro',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                            color: colorScheme.onSurface,
-                          ),
-                        ),
-                        const SizedBox(height: 12),
-
-                        Card(
-                          color: isDark
-                              ? Color(0xFFFFC107).withOpacity(0.15)
-                              : Color(0xFFFFC107).withOpacity(0.08),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            side: BorderSide(
-                              color: Color(
-                                0xFFFFC107,
-                              ).withOpacity(isDark ? 0.4 : 0.3),
-                              width: 1.5,
-                            ),
-                          ),
-                          child: Padding(
-                            padding: const EdgeInsets.all(16),
-                            child: Row(
-                              children: [
-                                Icon(
-                                  Icons.storefront_outlined,
-                                  color: Color(0xFFFFC107),
-                                  size: 28,
-                                ),
-                                const SizedBox(width: 12),
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        'Almacén Principal',
-                                        style: TextStyle(
-                                          fontWeight: FontWeight.w600,
-                                          fontSize: 16,
-                                          color: colorScheme.onSurface,
-                                        ),
-                                      ),
-                                      const SizedBox(height: 4),
-                                      Text(
-                                        'Retira tu pedido cuando esté listo',
-                                        style: TextStyle(
-                                          color: Color(0xFFFFC107),
-                                          fontSize: 13,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-
-                        const SizedBox(height: 24),
-                      ],
-
-                      // Fecha y hora programada
-                      if (widget.fechaProgramada != null ||
-                          widget.horaInicio != null ||
-                          widget.horaFin != null) ...[
-                        Text(
-                          'Fecha y hora programada',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                            color: colorScheme.onSurface,
-                          ),
-                        ),
-                        const SizedBox(height: 12),
-
-                        Card(
-                          color: colorScheme.surface,
-                          child: Padding(
-                            padding: const EdgeInsets.all(16),
-                            child: Column(
-                              children: [
-                                if (widget.fechaProgramada != null)
-                                  Row(
-                                    children: [
-                                      Icon(
-                                        Icons.calendar_today,
-                                        size: 20,
-                                        color: colorScheme.onSurfaceVariant,
-                                      ),
-                                      const SizedBox(width: 12),
-                                      Text(
-                                        _formatearFecha(
-                                          widget.fechaProgramada!,
-                                        ),
-                                        style: TextStyle(
-                                          fontSize: 16,
-                                          color: colorScheme.onSurface,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-
-                                if (widget.horaInicio != null ||
-                                    widget.horaFin != null) ...[
-                                  const SizedBox(height: 12),
-                                  Row(
-                                    children: [
-                                      Icon(
-                                        Icons.access_time,
-                                        size: 20,
-                                        color: colorScheme.onSurfaceVariant,
-                                      ),
-                                      const SizedBox(width: 12),
-                                      Text(
-                                        '${widget.horaInicio != null ? _formatearHora(widget.horaInicio!) : '--:--'} a ${widget.horaFin != null ? _formatearHora(widget.horaFin!) : '--:--'}',
-                                        style: TextStyle(
-                                          fontSize: 16,
-                                          color: colorScheme.onSurface,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ],
-                              ],
-                            ),
-                          ),
-                        ),
-
-                        const SizedBox(height: 24),
-                      ],
-
-                      // Observaciones
-                      if (widget.observaciones != null &&
-                          widget.observaciones!.isNotEmpty) ...[
-                        Text(
-                          'Observaciones',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                            color: colorScheme.onSurface,
-                          ),
-                        ),
-                        const SizedBox(height: 12),
-
-                        Card(
-                          color: colorScheme.surface,
-                          child: Padding(
-                            padding: const EdgeInsets.all(16),
-                            child: Row(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Icon(
-                                  Icons.note,
-                                  size: 20,
-                                  color: colorScheme.onSurfaceVariant,
-                                ),
-                                const SizedBox(width: 12),
-                                Expanded(
-                                  child: Text(
-                                    widget.observaciones!,
-                                    style: TextStyle(
-                                      fontSize: 15,
-                                      color: colorScheme.onSurface,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-
-                        const SizedBox(height: 24),
-                      ],
 
                       // ✅ Sección de Política de Pago
                       Consumer<CarritoProvider>(
@@ -836,7 +679,6 @@ class _ResumenPedidoScreenState extends State<ResumenPedidoScreen> {
                                   padding: const EdgeInsets.all(16),
                                   child: Column(
                                     children: [
-                                      // Opción 1: Pago Anticipado 100%
                                       _buildPoliticaPagoOption(
                                         context,
                                         value: POLITICA_ANTICIPADO,
@@ -848,7 +690,6 @@ class _ResumenPedidoScreenState extends State<ResumenPedidoScreen> {
                                       ),
                                       const Divider(height: 24),
 
-                                      // Opción 2: Pago Mitad-Mitad
                                       _buildPoliticaPagoOption(
                                         context,
                                         value: POLITICA_MEDIO_MEDIO,
@@ -860,7 +701,6 @@ class _ResumenPedidoScreenState extends State<ResumenPedidoScreen> {
                                       ),
                                       const Divider(height: 24),
 
-                                      // Opción 3: Contra Entrega
                                       _buildPoliticaPagoOption(
                                         context,
                                         value: POLITICA_CONTRA_ENTREGA,
@@ -872,7 +712,6 @@ class _ResumenPedidoScreenState extends State<ResumenPedidoScreen> {
                                       ),
                                       const Divider(height: 24),
 
-                                      // Opción 4: Crédito (solo si tiene permisos)
                                       if (clienteSeleccionado != null &&
                                           clienteSeleccionado
                                               .puedeAtenerCredito)
@@ -935,8 +774,9 @@ class _ResumenPedidoScreenState extends State<ResumenPedidoScreen> {
                         ),
                       ),
 
-                      // ✅ NUEVO: Mostrar resumen de crédito si el cliente tiene crédito disponible
-                      if (carritoProvider.clienteSeleccionado?.puedeAtenerCredito ?? false)
+                      if (carritoProvider.clienteSeleccionado
+                              ?.puedeAtenerCredito ??
+                          false)
                         _buildCreditSummaryCard(
                           carritoProvider.clienteSeleccionado!,
                           colorScheme,
@@ -986,7 +826,6 @@ class _ResumenPedidoScreenState extends State<ResumenPedidoScreen> {
                       ),
                     )
                   : Text(
-                      // ✅ NUEVO: Texto dinámico según sea crear o actualizar
                       editandoProforma
                           ? 'Actualizar Proforma'
                           : 'Confirmar Pedido',
@@ -1002,7 +841,392 @@ class _ResumenPedidoScreenState extends State<ResumenPedidoScreen> {
     );
   }
 
-  /// ✅ Widget auxiliar para construir opciones de política de pago
+  // ✅ Widget: Información del Cliente
+  Widget _buildClienteInfoSection(
+    BuildContext context,
+    CarritoProvider carritoProvider,
+  ) {
+    final colorScheme = context.colorScheme;
+    final isDark = context.isDark;
+
+    final cliente = carritoProvider.clienteSeleccionado;
+
+    if (cliente == null) {
+      return SizedBox.shrink();
+    }
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: colorScheme.primaryContainer.withOpacity(isDark ? 0.3 : 0.1),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: colorScheme.primary.withOpacity(isDark ? 0.3 : 0.2),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                Icons.person_outline,
+                color: colorScheme.primary,
+                size: 20,
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  'Información del Cliente',
+                  style: context.textTheme.bodyLarge?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: colorScheme.onSurface,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+
+          Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Cliente',
+                      style: context.textTheme.bodySmall?.copyWith(
+                        color: colorScheme.onSurfaceVariant,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      cliente.nombre,
+                      style: context.textTheme.bodyLarge?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: colorScheme.onSurface,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+
+          if (cliente.telefono != null)
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Teléfono',
+                  style: context.textTheme.bodySmall?.copyWith(
+                    color: colorScheme.onSurfaceVariant,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  cliente.telefono ?? '-',
+                  style: context.textTheme.bodyMedium?.copyWith(
+                    color: colorScheme.onSurface,
+                  ),
+                ),
+              ],
+            ),
+
+          if (cliente.puedeAtenerCredito == true) ...[
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: const Color(0xFF4CAF50).withOpacity(0.1),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.check_circle_outline,
+                    color: const Color(0xFF4CAF50),
+                    size: 16,
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    'Cliente con crédito disponible',
+                    style: context.textTheme.bodySmall?.copyWith(
+                      color: const Color(0xFF4CAF50),
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  // ✅ Widget: Selector Tipo de Entrega
+  Widget _buildTipoEntregaSelector() {
+    final colorScheme = context.colorScheme;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Tipo de Entrega',
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            color: colorScheme.onSurface,
+          ),
+        ),
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            Expanded(
+              child: _buildTipoEntregaChip(
+                'DELIVERY',
+                '🚚 Delivery',
+                const Color(0xFF4CAF50),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: _buildTipoEntregaChip(
+                'PICKUP',
+                '🏪 Retiro',
+                const Color(0xFFFFC107),
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildTipoEntregaChip(String value, String label, Color color) {
+    final isSelected = _tipoEntrega == value;
+    final colorScheme = context.colorScheme;
+    final isDark = context.isDark;
+
+    return GestureDetector(
+      onTap: () {
+        setState(() {
+          _tipoEntrega = value;
+          if (value == 'PICKUP') {
+            _direccionSeleccionada = null;
+          }
+        });
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+        decoration: BoxDecoration(
+          color: isSelected
+              ? color.withOpacity(isDark ? 0.2 : 0.1)
+              : colorScheme.surfaceVariant,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: isSelected
+                ? color
+                : colorScheme.outline.withOpacity(isDark ? 0.3 : 0.2),
+            width: isSelected ? 2 : 1,
+          ),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+            color: isSelected ? color : colorScheme.onSurfaceVariant,
+          ),
+          textAlign: TextAlign.center,
+        ),
+      ),
+    );
+  }
+
+  // ✅ Widget: Selector Dirección
+  Widget _buildDireccionSection() {
+    final colorScheme = context.colorScheme;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Dirección de Entrega',
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            color: colorScheme.onSurface,
+          ),
+        ),
+        const SizedBox(height: 12),
+        if (_direccionSeleccionada == null)
+          GestureDetector(
+            onTap: _mostrarSelectorDireccion,
+            child: Card(
+              color: colorScheme.surfaceVariant,
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.location_on_outlined,
+                      color: colorScheme.primary,
+                      size: 24,
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        'Seleccionar dirección',
+                        style: context.textTheme.bodyMedium?.copyWith(
+                          color: colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ),
+                    Icon(
+                      Icons.arrow_forward_ios,
+                      size: 16,
+                      color: colorScheme.onSurfaceVariant,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          )
+        else
+          Column(
+            children: [
+              Card(
+                color: colorScheme.surface,
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.location_on,
+                        color: colorScheme.primary,
+                        size: 28,
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              _direccionSeleccionada!.direccion,
+                              style: context.textTheme.bodyMedium?.copyWith(
+                                fontWeight: FontWeight.w600,
+                                color: colorScheme.onSurface,
+                              ),
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            if (_direccionSeleccionada!.ciudad != null) ...[
+                              const SizedBox(height: 4),
+                              Text(
+                                'Ciudad: ${_direccionSeleccionada!.ciudad}',
+                                style: context.textTheme.bodySmall?.copyWith(
+                                  color: colorScheme.onSurfaceVariant,
+                                ),
+                              ),
+                            ],
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 8),
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  onPressed: _mostrarSelectorDireccion,
+                  icon: const Icon(Icons.edit),
+                  label: const Text('Cambiar Dirección'),
+                ),
+              ),
+            ],
+          ),
+      ],
+    );
+  }
+
+  // ✅ Widget: Selector Fecha/Hora
+  Widget _buildFechaHoraSection() {
+    final colorScheme = context.colorScheme;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Fecha y Hora de Entrega',
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            color: colorScheme.onSurface,
+          ),
+        ),
+        const SizedBox(height: 12),
+        GestureDetector(
+          onTap: _mostrarSelectorFechaHora,
+          child: Card(
+            color: colorScheme.surface,
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.calendar_today,
+                    color: colorScheme.primary,
+                    size: 24,
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          _fechaProgramada != null
+                              ? _formatearFecha(_fechaProgramada!)
+                              : 'Seleccionar fecha',
+                          style: context.textTheme.bodyMedium?.copyWith(
+                            fontWeight: FontWeight.w600,
+                            color: colorScheme.onSurface,
+                          ),
+                        ),
+                        if (_horaInicio != null && _horaFin != null) ...[
+                          const SizedBox(height: 4),
+                          Text(
+                            '🕐 ${_formatearHora(_horaInicio!)} - ${_formatearHora(_horaFin!)}',
+                            style: context.textTheme.bodySmall?.copyWith(
+                              color: colorScheme.primary,
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                  Icon(
+                    Icons.arrow_forward_ios,
+                    size: 16,
+                    color: colorScheme.onSurfaceVariant,
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  // ✅ Widget auxiliar: Opción de Política de Pago
   Widget _buildPoliticaPagoOption(
     BuildContext context, {
     required String value,
@@ -1084,7 +1308,7 @@ class _ResumenPedidoScreenState extends State<ResumenPedidoScreen> {
     );
   }
 
-  // ✅ NUEVO: Widget para mostrar resumen de crédito disponible
+  // ✅ Widget: Resumen de Crédito
   Widget _buildCreditSummaryCard(
     Client cliente,
     ColorScheme colorScheme,
@@ -1111,7 +1335,6 @@ class _ResumenPedidoScreenState extends State<ResumenPedidoScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Título
               Row(
                 children: [
                   Icon(
@@ -1133,7 +1356,6 @@ class _ResumenPedidoScreenState extends State<ResumenPedidoScreen> {
 
               const SizedBox(height: 12),
 
-              // Límite de crédito
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -1157,7 +1379,6 @@ class _ResumenPedidoScreenState extends State<ResumenPedidoScreen> {
 
               const SizedBox(height: 8),
 
-              // Crédito utilizado
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -1181,7 +1402,6 @@ class _ResumenPedidoScreenState extends State<ResumenPedidoScreen> {
 
               const SizedBox(height: 8),
 
-              // Barra de progreso visual
               ClipRRect(
                 borderRadius: BorderRadius.circular(4),
                 child: LinearProgressIndicator(
@@ -1200,7 +1420,6 @@ class _ResumenPedidoScreenState extends State<ResumenPedidoScreen> {
 
               const SizedBox(height: 8),
 
-              // Disponible
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [

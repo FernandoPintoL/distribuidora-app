@@ -10,6 +10,7 @@ import 'providers/providers.dart';
 import 'providers/theme_provider.dart';
 import 'providers/estados_provider.dart';
 import 'providers/visita_provider.dart';
+import 'providers/productos_agrupados_provider.dart';
 import 'screens/screens.dart';
 import 'screens/carrito/carrito_abandonado_list_screen.dart';
 import 'screens/cliente/mis_direcciones_screen.dart';
@@ -74,6 +75,7 @@ void main() async {
           ChangeNotifierProvider(create: (_) => ClienteCreditoProvider()),
           ChangeNotifierProvider(create: (_) => CajaProvider()),
           ChangeNotifierProvider(create: (_) => GastoProvider()),
+          ChangeNotifierProvider(create: (_) => ProductosAgrupadsProvider()),
         ],
         child: const MyApp(),
       ),
@@ -125,6 +127,7 @@ class MyApp extends StatelessWidget {
             '/mis-ventas': (context) => const MisVentasScreen(),
             '/mis-direcciones': (context) => const MisDireccionesScreen(),
             '/notifications': (context) => const NotificationsScreen(),
+            '/resumen-pedido': (context) => const ResumenPedidoScreen(),
           },
           onGenerateRoute: (settings) {
             // Handle routes with arguments
@@ -148,35 +151,6 @@ class MyApp extends StatelessWidget {
                 return MaterialPageRoute(
                   builder: (context) =>
                       FechaHoraEntregaScreen(direccion: direccion),
-                );
-
-              case '/resumen-pedido':
-                final args = settings.arguments as Map<String, dynamic>?;
-                if (args == null) {
-                  return MaterialPageRoute(
-                    builder: (context) => const Scaffold(
-                      body: Center(
-                        child: Text('Error: Parámetros no encontrados'),
-                      ),
-                    ),
-                  );
-                }
-
-                // Extraer tipoEntrega (requerido)
-                final tipoEntrega =
-                    args['tipoEntrega'] as String? ?? 'DELIVERY';
-
-                return MaterialPageRoute(
-                  builder: (context) => ResumenPedidoScreen(
-                    tipoEntrega: tipoEntrega,
-                    direccion:
-                        args['direccion']
-                            as ClientAddress?, // Nullable para PICKUP
-                    fechaProgramada: args['fechaProgramada'] as DateTime?,
-                    horaInicio: args['horaInicio'] as TimeOfDay?,
-                    horaFin: args['horaFin'] as TimeOfDay?,
-                    observaciones: args['observaciones'] as String?,
-                  ),
                 );
 
               case '/pedido-creado':

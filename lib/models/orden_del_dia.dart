@@ -20,8 +20,8 @@ class OrdenDelDia {
       preventista: Preventista.fromJson(json['preventista'] ?? {}),
       clientes: json['clientes'] != null
           ? (json['clientes'] as List)
-              .map((c) => ClienteOrdenDelDia.fromJson(c))
-              .toList()
+                .map((c) => ClienteOrdenDelDia.fromJson(c))
+                .toList()
           : [],
       resumen: ResumenOrdenDelDia.fromJson(json['resumen'] ?? {}),
     );
@@ -33,11 +33,7 @@ class Preventista {
   final String nombre;
   final String codigo;
 
-  Preventista({
-    required this.id,
-    required this.nombre,
-    required this.codigo,
-  });
+  Preventista({required this.id, required this.nombre, required this.codigo});
 
   factory Preventista.fromJson(Map<String, dynamic> json) {
     return Preventista(
@@ -56,6 +52,7 @@ class ClienteOrdenDelDia {
   final String? telefono;
   final String? email;
   final String? codigoCliente;
+  final String? fotoPerfil;
   final DireccionCliente direccion;
   final VentanaHoraria ventanaHoraria;
   final bool visitado;
@@ -71,6 +68,7 @@ class ClienteOrdenDelDia {
     this.telefono,
     this.email,
     this.codigoCliente,
+    this.fotoPerfil,
     required this.direccion,
     required this.ventanaHoraria,
     required this.visitado,
@@ -90,6 +88,7 @@ class ClienteOrdenDelDia {
       telefono: json['telefono'],
       email: json['email'],
       codigoCliente: json['codigo_cliente'],
+      fotoPerfil: json['foto_perfil'],
       direccion: DireccionCliente.fromJson(json['direccion'] ?? {}),
       ventanaHoraria: VentanaHoraria.fromJson(json['ventana_horaria'] ?? {}),
       visitado: json['visitado'] ?? false,
@@ -110,12 +109,7 @@ class DireccionCliente {
   final double? latitud;
   final double? longitud;
 
-  DireccionCliente({
-    this.direccion,
-    this.ciudad,
-    this.latitud,
-    this.longitud,
-  });
+  DireccionCliente({this.direccion, this.ciudad, this.latitud, this.longitud});
 
   factory DireccionCliente.fromJson(Map<String, dynamic> json) {
     return DireccionCliente(
@@ -136,11 +130,7 @@ class VentanaHoraria {
   final String? horaFin;
   final int? diaSemana;
 
-  VentanaHoraria({
-    this.horaInicio,
-    this.horaFin,
-    this.diaSemana,
-  });
+  VentanaHoraria({this.horaInicio, this.horaFin, this.diaSemana});
 
   factory VentanaHoraria.fromJson(Map<String, dynamic> json) {
     return VentanaHoraria(

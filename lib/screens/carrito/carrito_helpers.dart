@@ -52,7 +52,8 @@ void mostrarDialogoVaciarCarrito(BuildContext context) {
 }
 
 /// Navega a la pantalla de selección de tipo de entrega (DELIVERY o PICKUP)
-void continuarCompra(BuildContext context) {
+/// ✅ ACTUALIZADO: Carga información del cliente antes de navegar
+void continuarCompra(BuildContext context) async {
   // Verificar que el carrito no esté vacío
   final carritoProvider = context.read<CarritoProvider>();
 
@@ -66,27 +67,101 @@ void continuarCompra(BuildContext context) {
     return;
   }
 
-  // ✅ NUEVO: Verificar que preventista haya seleccionado cliente
+  // Obtener providers necesarios
+  final authProvider = context.read<AuthProvider>();
+  final clientProvider = context.read<ClientProvider>();
+
+  // Variables para almacenar información del cliente
+  int? clienteId;
+  bool isPreventista = false;
+
+  // ✅ ACTUALIZADO: Obtener clienteId según el tipo de usuario
   try {
-    final authProvider = context.read<AuthProvider>();
     final userRoles = authProvider.user?.roles ?? [];
-    final isPreventista = userRoles.any((role) =>
+    isPreventista = userRoles.any((role) =>
         role.toLowerCase() == 'preventista');
 
-    if (isPreventista && !carritoProvider.tieneClienteSeleccionado) {
+    if (isPreventista) {
+      // Preventista: debe tener cliente seleccionado en carritoProvider
+      if (!carritoProvider.tieneClienteSeleccionado) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Debes seleccionar un cliente para continuar'),
+            backgroundColor: Colors.red,
+          ),
+        );
+        return;
+      }
+      clienteId = carritoProvider.getClienteSeleccionadoId();
+    } else {
+      // Cliente logueado: usar su clienteId del user
+      clienteId = authProvider.user?.clienteId;
+      if (clienteId == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Error: No se encontró información de cliente'),
+            backgroundColor: Colors.red,
+          ),
+        );
+        return;
+      }
+    }
+  } catch (e) {
+    debugPrint('❌ Error verificando rol de usuario: $e');
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Error al validar usuario'),
+        backgroundColor: Colors.red,
+      ),
+    );
+    return;
+  }
+
+  // ✅ NUEVO: Mostrar loading mientras se carga la información del cliente
+  if (!context.mounted) return;
+
+  ScaffoldMessenger.of(context).showSnackBar(
+    const SnackBar(
+      content: Text('Cargando información del cliente...'),
+      duration: Duration(seconds: 1),
+    ),
+  );
+
+  try {
+    // ✅ NUEVO: Cargar datos completos del cliente desde la API
+    debugPrint('👤 [CarritoScreen] Cargando cliente ID: $clienteId');
+    final cliente = await clientProvider.getClient(clienteId!);
+
+    if (!context.mounted) return;
+
+    if (cliente == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Debes seleccionar un cliente para continuar'),
+          content: Text('Error: No se pudo cargar la información del cliente'),
           backgroundColor: Colors.red,
         ),
       );
       return;
     }
-  } catch (e) {
-    debugPrint('❌ Error verificando rol de preventista: $e');
-  }
 
-  // Navegar a la selección del tipo de entrega (DELIVERY o PICKUP)
-  // Luego el usuario elegirá el tipo y será dirigido a direcciones (para DELIVERY) o fecha/hora (para PICKUP)
-  Navigator.pushNamed(context, '/tipo-entrega-seleccion');
+    // ✅ NUEVO: Guardar cliente en carritoProvider para reutilizar en pantallas siguientes
+    carritoProvider.setClienteSeleccionado(cliente);
+    debugPrint('✅ [CarritoScreen] Cliente cargado en provider: ${cliente.nombre}');
+
+    // ✅ ACTUALIZADO: Navegar directamente a ResumenPedidoScreen consolidado
+    // (antes navegaba a /tipo-entrega-seleccion)
+    if (context.mounted) {
+      Navigator.pushNamed(context, '/resumen-pedido');
+    }
+  } catch (e) {
+    debugPrint('❌ Error al cargar cliente en continuarCompra: $e');
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error al cargar cliente: ${e.toString()}'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
 }

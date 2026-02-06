@@ -706,17 +706,89 @@ class _CarritoItemCardState extends State<CarritoItemCard> {
   }
 
   Widget _buildImagePlaceholder() {
+    final producto = widget.item.producto;
+    final imagenes = producto.imagenes;
+
+    // Si hay imágenes, mostrar la principal (si existe) o la primera
+    if (imagenes != null && imagenes.isNotEmpty) {
+      // Buscar la imagen principal
+      final imagenPrincipal = imagenes.firstWhere(
+        (img) => img.esPrincipal,
+        orElse: () => imagenes.first,
+      );
+
+      return Image.network(
+        imagenPrincipal.url,
+        width: 80,
+        height: 80,
+        fit: BoxFit.cover,
+        errorBuilder: (context, error, stackTrace) {
+          debugPrint('❌ Error cargando imagen: ${imagenPrincipal.url}');
+          return _buildImageError();
+        },
+        loadingBuilder: (context, child, loadingProgress) {
+          if (loadingProgress == null) {
+            return child;
+          }
+          return Container(
+            width: 80,
+            height: 80,
+            decoration: BoxDecoration(
+              color: Colors.grey.shade200,
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Center(
+              child: SizedBox(
+                width: 30,
+                height: 30,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  value: loadingProgress.expectedTotalBytes != null
+                      ? loadingProgress.cumulativeBytesLoaded /
+                          loadingProgress.expectedTotalBytes!
+                      : null,
+                ),
+              ),
+            ),
+          );
+        },
+      );
+    }
+
+    // Si no hay imágenes, mostrar placeholder
+    return _buildImageError();
+  }
+
+  /// Widget para cuando no hay imagen disponible
+  Widget _buildImageError() {
     return Container(
       width: 80,
       height: 80,
       decoration: BoxDecoration(
         color: Colors.grey.shade200,
         borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color: Colors.grey.shade300,
+          width: 1,
+        ),
       ),
-      child: Icon(
-        Icons.image_not_supported,
-        size: 40,
-        color: Colors.grey.shade400,
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            Icons.image_not_supported,
+            size: 28,
+            color: Colors.grey.shade400,
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'Sin imagen',
+            style: TextStyle(
+              fontSize: 9,
+              color: Colors.grey.shade500,
+            ),
+          ),
+        ],
       ),
     );
   }

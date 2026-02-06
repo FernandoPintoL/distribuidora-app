@@ -4,6 +4,7 @@ import '../models/api_response.dart';
 import '../models/entrega.dart';
 import '../models/estadisticas_chofer.dart';
 import '../models/ubicacion_tracking.dart';
+import '../models/producto_agrupado.dart';
 import 'api_service.dart';
 
 class EntregaService {
@@ -858,6 +859,59 @@ class EntregaService {
       );
     } catch (e) {
       debugPrint('Error inesperado en obtenerTiposPago: $e');
+      return ApiResponse(
+        success: false,
+        message: 'Error inesperado: ${e.toString()}',
+      );
+    }
+  }
+
+  /// 📦 Obtener productos agrupados de una entrega
+  ///
+  /// Consolida productos de múltiples ventas, sumando cantidades
+  /// EJEMPLO:
+  /// - Venta A: 2x ProductoA, 1x ProductoB
+  /// - Venta B: 2x ProductoA, 2x ProductoB
+  /// RESULTADO: 4x ProductoA, 3x ProductoB
+  ///
+  /// GET /api/entregas/{id}/productos-agrupados
+  Future<ApiResponse<ProductosAgrupados>> obtenerProductosAgrupados(int entregaId) async {
+    try {
+      debugPrint('📦 [ENTREGA_SERVICE] Obteniendo productos agrupados para entrega #$entregaId');
+
+      final response = await _apiService.get(
+        '/entregas/$entregaId/productos-agrupados',
+      );
+
+      final data = response.data as Map<String, dynamic>;
+
+      if (!data['success'] as bool) {
+        return ApiResponse(
+          success: false,
+          message: data['message'] as String? ?? 'Error al obtener productos',
+        );
+      }
+
+      final productosJson = data['data'] as Map<String, dynamic>;
+      final productosAgrupados = ProductosAgrupados.fromJson(productosJson);
+
+      debugPrint(
+        '✅ [ENTREGA_SERVICE] Productos obtenidos: ${productosAgrupados.totalItems} tipos, ${productosAgrupados.cantidadTotal.toInt()} unidades',
+      );
+
+      return ApiResponse(
+        success: true,
+        data: productosAgrupados,
+        message: 'Productos obtenidos exitosamente',
+      );
+    } on DioException catch (e) {
+      debugPrint('❌ Error obteniendo productos agrupados: ${e.message}');
+      return ApiResponse(
+        success: false,
+        message: 'Error al obtener productos: ${e.message}',
+      );
+    } catch (e) {
+      debugPrint('❌ Error inesperado: $e');
       return ApiResponse(
         success: false,
         message: 'Error inesperado: ${e.toString()}',

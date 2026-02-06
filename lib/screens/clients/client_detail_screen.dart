@@ -3242,8 +3242,6 @@ class _ClientDetailScreenState extends State<ClientDetailScreen>
         return Icons.payment;
       case TipoVisitaPreventista.TOMA_PEDIDO:
         return Icons.shopping_cart;
-      case TipoVisitaPreventista.ENTREGA:
-        return Icons.local_shipping;
       case TipoVisitaPreventista.SUPERVISION:
         return Icons.visibility;
       case TipoVisitaPreventista.OTRO:

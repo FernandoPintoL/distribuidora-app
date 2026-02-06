@@ -213,17 +213,47 @@ class UnitMeasure {
 }
 
 class ProductImage {
-  final String url;
+  final int id;
+  final int productoId;
+  final String _url; // Almacenar URL sin procesar
+  final bool esPrincipal;
   final int orden;
 
-  ProductImage({required this.url, required this.orden});
+  ProductImage({
+    required this.id,
+    required this.productoId,
+    required String url,
+    required this.esPrincipal,
+    required this.orden,
+  }) : _url = url;
+
+  /// Getter que retorna URL formateada correctamente
+  /// Si ya tiene protocolo http, retorna como está
+  /// Si no, agrega /storage/ prefix
+  String get url {
+    if (_url.isEmpty) return '';
+    if (_url.startsWith('http')) return _url;
+    return '/storage/$_url';
+  }
 
   factory ProductImage.fromJson(Map<String, dynamic> json) {
-    return ProductImage(url: json['url'], orden: json['orden']);
+    return ProductImage(
+      id: json['id'] ?? 0,
+      productoId: json['producto_id'] ?? 0,
+      url: json['url'] ?? '',
+      esPrincipal: json['es_principal'] ?? false,
+      orden: json['orden'] ?? 0,
+    );
   }
 
   Map<String, dynamic> toJson() {
-    return {'url': url, 'orden': orden};
+    return {
+      'id': id,
+      'producto_id': productoId,
+      'url': _url,
+      'es_principal': esPrincipal,
+      'orden': orden,
+    };
   }
 }
 

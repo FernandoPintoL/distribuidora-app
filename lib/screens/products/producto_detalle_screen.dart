@@ -4,6 +4,7 @@ import '../../models/models.dart';
 import '../../providers/providers.dart';
 import '../../widgets/widgets.dart';
 import '../../config/config.dart';
+import '../../extensions/theme_extension.dart';
 
 /// Pantalla de detalle de producto
 /// Muestra información completa del producto y permite agregar al carrito
@@ -204,14 +205,19 @@ class _ProductoDetalleScreenState extends State<ProductoDetalleScreen> {
 
   Widget _buildImageGallery() {
     final imagenes = widget.producto.imagenes;
+    final colorScheme = context.colorScheme;
 
     if (imagenes == null || imagenes.isEmpty) {
       return Container(
         width: double.infinity,
         height: 300,
-        color: Colors.grey.shade200,
-        child: const Center(
-          child: Icon(Icons.image_not_supported, size: 80),
+        color: colorScheme.surfaceVariant,
+        child: Center(
+          child: Icon(
+            Icons.image_not_supported,
+            size: 80,
+            color: colorScheme.onSurfaceVariant.withOpacity(0.5),
+          ),
         ),
       );
     }
@@ -219,7 +225,7 @@ class _ProductoDetalleScreenState extends State<ProductoDetalleScreen> {
     return Container(
       width: double.infinity,
       height: 300,
-      color: Colors.grey.shade100,
+      color: colorScheme.surfaceVariant,
       child: PageView.builder(
         itemCount: imagenes.length,
         itemBuilder: (context, index) {
@@ -228,8 +234,12 @@ class _ProductoDetalleScreenState extends State<ProductoDetalleScreen> {
             fit: BoxFit.cover,
             errorBuilder: (context, error, stackTrace) {
               return Container(
-                color: Colors.grey.shade200,
-                child: const Icon(Icons.broken_image, size: 80),
+                color: colorScheme.surfaceVariant,
+                child: Icon(
+                  Icons.broken_image,
+                  size: 80,
+                  color: colorScheme.onSurfaceVariant.withOpacity(0.5),
+                ),
               );
             },
           );
@@ -239,6 +249,8 @@ class _ProductoDetalleScreenState extends State<ProductoDetalleScreen> {
   }
 
   Widget _buildNombreYPrecio() {
+    final colorScheme = context.colorScheme;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -253,7 +265,7 @@ class _ProductoDetalleScreenState extends State<ProductoDetalleScreen> {
           Text(
             'Código: ${widget.producto.codigo}',
             style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                  color: Colors.grey.shade600,
+                  color: colorScheme.onSurfaceVariant,
                 ),
           ),
         const SizedBox(height: 12),
@@ -261,7 +273,7 @@ class _ProductoDetalleScreenState extends State<ProductoDetalleScreen> {
           'Bs ${(widget.producto.precioVenta ?? 0).toStringAsFixed(2)}',
           style: Theme.of(context).textTheme.displaySmall?.copyWith(
                 fontWeight: FontWeight.bold,
-                color: Colors.green.shade700,
+                color: Colors.green.shade400,
               ),
         ),
       ],
@@ -269,20 +281,37 @@ class _ProductoDetalleScreenState extends State<ProductoDetalleScreen> {
   }
 
   Widget _buildStockInfo(bool tieneStock, int stockDisponible) {
+    final colorScheme = context.colorScheme;
+    final isDark = context.isDark;
+
+    final backgroundColor = tieneStock
+        ? (isDark ? Colors.green.shade900.withOpacity(0.2) : Colors.green.shade50)
+        : (isDark ? Colors.red.shade900.withOpacity(0.2) : Colors.red.shade50);
+
+    final borderColor = tieneStock
+        ? (isDark ? Colors.green.shade700 : Colors.green.shade300)
+        : (isDark ? Colors.red.shade700 : Colors.red.shade300);
+
+    final iconColor = tieneStock
+        ? (isDark ? Colors.green.shade400 : Colors.green.shade700)
+        : (isDark ? Colors.red.shade400 : Colors.red.shade700);
+
+    final textColor = tieneStock
+        ? (isDark ? Colors.green.shade300 : Colors.green.shade700)
+        : (isDark ? Colors.red.shade300 : Colors.red.shade700);
+
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: tieneStock ? Colors.green.shade50 : Colors.red.shade50,
-        border: Border.all(
-          color: tieneStock ? Colors.green.shade300 : Colors.red.shade300,
-        ),
+        color: backgroundColor,
+        border: Border.all(color: borderColor),
         borderRadius: BorderRadius.circular(8),
       ),
       child: Row(
         children: [
           Icon(
             tieneStock ? Icons.check_circle : Icons.cancel,
-            color: tieneStock ? Colors.green.shade700 : Colors.red.shade700,
+            color: iconColor,
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -293,15 +322,14 @@ class _ProductoDetalleScreenState extends State<ProductoDetalleScreen> {
                   tieneStock ? 'Disponible en stock' : 'Sin stock',
                   style: TextStyle(
                     fontWeight: FontWeight.bold,
-                    color:
-                        tieneStock ? Colors.green.shade700 : Colors.red.shade700,
+                    color: textColor,
                   ),
                 ),
                 if (tieneStock)
                   Text(
                     '${stockDisponible.toStringAsFixed(0)} ${widget.producto.unidadMedida?.nombre ?? 'unidades'} disponibles',
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: Colors.grey.shade600,
+                          color: colorScheme.onSurfaceVariant,
                         ),
                   ),
               ],
@@ -391,7 +419,7 @@ class _ProductoDetalleScreenState extends State<ProductoDetalleScreen> {
                     detalle.key,
                     style: Theme.of(context).textTheme.labelMedium?.copyWith(
                           fontWeight: FontWeight.w600,
-                          color: Colors.grey.shade600,
+                          color: context.colorScheme.onSurfaceVariant,
                         ),
                   ),
                 ),
@@ -414,8 +442,11 @@ class _ProductoDetalleScreenState extends State<ProductoDetalleScreen> {
     required int cantidadMinima,
     required int stockDisponible,
   }) {
+    final colorScheme = context.colorScheme;
+    final isDark = context.isDark;
+
     return Container(
-      color: Colors.grey.shade50,
+      color: colorScheme.surface,
       padding: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -433,14 +464,20 @@ class _ProductoDetalleScreenState extends State<ProductoDetalleScreen> {
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: Colors.amber.shade50,
-              border: Border.all(color: Colors.amber.shade200),
+              color: isDark
+                  ? Colors.orange.shade900.withOpacity(0.2)
+                  : Colors.orange.shade50,
+              border: Border.all(
+                color: isDark ? Colors.orange.shade700 : Colors.orange.shade200,
+              ),
               borderRadius: BorderRadius.circular(4),
             ),
             child: Text(
               'Cantidad mínima: $cantidadMinima ${widget.producto.unidadMedida?.nombre ?? 'unidades'}',
               style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                    color: Colors.amber.shade800,
+                    color: isDark
+                        ? Colors.orange.shade300
+                        : Colors.orange.shade800,
                   ),
             ),
           ),
@@ -453,7 +490,7 @@ class _ProductoDetalleScreenState extends State<ProductoDetalleScreen> {
                 onPressed: _decrementarCantidad,
                 icon: const Icon(Icons.remove),
                 style: IconButton.styleFrom(
-                  backgroundColor: Colors.grey.shade200,
+                  backgroundColor: colorScheme.surfaceVariant,
                 ),
               ),
               Expanded(
@@ -475,32 +512,14 @@ class _ProductoDetalleScreenState extends State<ProductoDetalleScreen> {
                 onPressed: _incrementarCantidad,
                 icon: const Icon(Icons.add),
                 style: IconButton.styleFrom(
-                  backgroundColor: Colors.green.shade100,
+                  backgroundColor: isDark
+                      ? Colors.green.shade900.withOpacity(0.3)
+                      : Colors.green.shade100,
                 ),
               ),
             ],
           ),
           const SizedBox(height: 16),
-
-          // Campo de observaciones
-          /*Text(
-            'Observaciones (opcional)',
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
-          ),
-          const SizedBox(height: 8),
-          TextField(
-            controller: _observacionesController,
-            maxLines: 3,
-            decoration: InputDecoration(
-              hintText: 'Ej: Sin conservante, lo más fresco posible...',
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
-            ),
-          ),
-          const SizedBox(height: 20),*/
 
           // Botón agregar al carrito
           SizedBox(
@@ -519,19 +538,18 @@ class _ProductoDetalleScreenState extends State<ProductoDetalleScreen> {
                             AlwaysStoppedAnimation<Color>(Colors.white),
                       ),
                     )
-                  : const Icon(Icons.shopping_cart_checkout, color: Colors.white,),
+                  : const Icon(Icons.shopping_cart_checkout),
               label: Text(
                 _agregandoAlCarrito
                     ? 'Agregando...'
                     : tieneStock
                         ? 'Agregar al Carrito'
                         : 'Producto sin Stock',
-                  style: TextStyle(color: Colors.white),
               ),
               style: ElevatedButton.styleFrom(
                 padding: const EdgeInsets.symmetric(vertical: 16),
-                backgroundColor: Colors.green.shade700,
-                disabledBackgroundColor: Colors.grey.shade300,
+                backgroundColor: Colors.green.shade500,
+                disabledBackgroundColor: colorScheme.surfaceVariant,
               ),
             ),
           ),

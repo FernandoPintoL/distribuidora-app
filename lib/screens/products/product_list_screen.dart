@@ -121,6 +121,15 @@ class _ProductListScreenState extends State<ProductListScreen>
     await productProvider.loadProducts(search: _searchController.text);
   }
 
+  /// Refresh: Limpia y recarga los productos desde el inicio
+  Future<void> _refreshProducts() async {
+    final productProvider = context.read<ProductProvider>();
+    // Limpiar lista y resetear paginador
+    productProvider.clearProducts();
+    // Recargar desde página 1
+    await productProvider.loadProducts(search: _searchController.text.isEmpty ? null : _searchController.text);
+  }
+
   void _onSearchChanged(String value) {
     _debounceTimer?.cancel();
     _debounceTimer = Timer(const Duration(milliseconds: 500), () {
@@ -728,70 +737,76 @@ class _ProductListScreenState extends State<ProductListScreen>
     // Altura compacta: ajustada al contenido
     final mainAxisExtent = maxItemWidth * 1.0;
 
-    return Stack(
-      children: [
-        GridView.builder(
-          controller: _scrollController,
-          padding: const EdgeInsets.all(16),
-          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: crossAxisCount,
-            mainAxisExtent: mainAxisExtent,
-            crossAxisSpacing: spacing,
-            mainAxisSpacing: spacing,
+    return RefreshIndicator(
+      onRefresh: _refreshProducts,
+      child: Stack(
+        children: [
+          GridView.builder(
+            controller: _scrollController,
+            padding: const EdgeInsets.all(16),
+            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: crossAxisCount,
+              mainAxisExtent: mainAxisExtent,
+              crossAxisSpacing: spacing,
+              mainAxisSpacing: spacing,
+            ),
+            itemCount: productProvider.products.length,
+            itemBuilder: (context, index) {
+              final product = productProvider.products[index];
+              return ProductGridItem(
+                product: product,
+                onTap: () => _onProductTap(product),
+              );
+            },
           ),
-          itemCount: productProvider.products.length,
-          itemBuilder: (context, index) {
-            final product = productProvider.products[index];
-            return ProductGridItem(
-              product: product,
-              onTap: () => _onProductTap(product),
-            );
-          },
-        ),
-        // Loading indicator at bottom when fetching more products
-        if (productProvider.isLoading && productProvider.products.isNotEmpty)
-          Positioned(
-            bottom: 16,
-            left: 0,
-            right: 0,
-            child: Center(
-              child: CircularProgressIndicator(
-                color: Theme.of(context).colorScheme.primary,
+          // Loading indicator at bottom when fetching more products
+          if (productProvider.isLoading && productProvider.products.isNotEmpty)
+            Positioned(
+              bottom: 16,
+              left: 0,
+              right: 0,
+              child: Center(
+                child: CircularProgressIndicator(
+                  color: Theme.of(context).colorScheme.primary,
+                ),
               ),
             ),
-          ),
-      ],
+        ],
+      ),
     );
   }
 
   Widget _buildListView(ProductProvider productProvider) {
-    return Stack(
-      children: [
-        ListView.builder(
-          controller: _scrollController,
-          itemCount: productProvider.products.length,
-          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 12),
-          itemBuilder: (context, index) {
-            final product = productProvider.products[index];
-            return ProductListItem(
-              product: product,
-              onTap: () => _onProductTap(product),
-            );
-          },
-        ),
-        // Loading indicator at bottom when fetching more products
-        if (productProvider.isLoading && productProvider.products.isNotEmpty)
-          Positioned(
-            bottom: 16,
-            left: 0,
-            right: 0,
-            child: Center(
-              child: CircularProgressIndicator(
-                color: Theme.of(context).colorScheme.primary,
+    return RefreshIndicator(
+      onRefresh: _refreshProducts,
+      child: Stack(
+        children: [
+          ListView.builder(
+            controller: _scrollController,
+            itemCount: productProvider.products.length,
+            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 12),
+            itemBuilder: (context, index) {
+              final product = productProvider.products[index];
+              return ProductListItem(
+                product: product,
+                onTap: () => _onProductTap(product),
+              );
+            },
+          ),
+          // Loading indicator at bottom when fetching more products
+          if (productProvider.isLoading && productProvider.products.isNotEmpty)
+            Positioned(
+              bottom: 16,
+              left: 0,
+              right: 0,
+              child: Center(
+                child: CircularProgressIndicator(
+                  color: Theme.of(context).colorScheme.primary,
+                ),
               ),
             ),
-          ),
-      ],
+        ],
+      ),
     );
   }
 

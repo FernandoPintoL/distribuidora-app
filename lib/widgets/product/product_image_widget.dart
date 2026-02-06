@@ -3,7 +3,7 @@ import '../../models/product.dart';
 import '../../extensions/theme_extension.dart';
 
 /// Widget que muestra la imagen del producto con badge de categoría
-/// Adaptado para modo oscuro
+/// Adaptado para modo oscuro, con soporte para imagenes_producto
 class ProductImageWidget extends StatelessWidget {
   final Product product;
   final double size;
@@ -14,10 +14,28 @@ class ProductImageWidget extends StatelessWidget {
     this.size = 70,
   });
 
+  /// Obtiene la URL de la imagen principal o la primera imagen disponible
+  String? _getPrimaryImageUrl() {
+    if (product.imagenes == null || product.imagenes!.isEmpty) {
+      return null;
+    }
+
+    // Buscar imagen marcada como principal
+    final primaryImage = product.imagenes!.firstWhere(
+      (img) => img.esPrincipal,
+      orElse: () => product.imagenes!.first,
+    );
+
+    // Usar el getter url que formatea correctamente la URL
+    final url = primaryImage.url;
+    return url.isNotEmpty ? url : null;
+  }
+
   @override
   Widget build(BuildContext context) {
     final colorScheme = context.colorScheme;
     final isDark = context.isDark;
+    final imageUrl = _getPrimaryImageUrl();
 
     return Container(
       width: size,
@@ -56,13 +74,48 @@ class ProductImageWidget extends StatelessWidget {
       child: Stack(
         alignment: Alignment.center,
         children: [
-          Icon(
-            Icons.inventory_2_rounded,
-            color: isDark
-                ? colorScheme.primary.withAlpha(200)
-                : colorScheme.primary,
-            size: size * 0.5,
-          ),
+          // Mostrar imagen si está disponible, si no mostrar icono
+          if (imageUrl != null)
+            ClipRRect(
+              borderRadius: BorderRadius.circular(10),
+              child: Image.network(
+                imageUrl,
+                width: size,
+                height: size,
+                fit: BoxFit.cover,
+                errorBuilder: (context, error, stackTrace) {
+                  return Icon(
+                    Icons.inventory_2_rounded,
+                    color: isDark
+                        ? colorScheme.primary.withAlpha(200)
+                        : colorScheme.primary,
+                    size: size * 0.5,
+                  );
+                },
+                loadingBuilder: (context, child, loadingProgress) {
+                  if (loadingProgress == null) return child;
+                  return Center(
+                    child: CircularProgressIndicator(
+                      value: loadingProgress.expectedTotalBytes != null
+                          ? loadingProgress.cumulativeBytesLoaded /
+                              loadingProgress.expectedTotalBytes!
+                          : null,
+                      valueColor: AlwaysStoppedAnimation<Color>(
+                        colorScheme.primary,
+                      ),
+                    ),
+                  );
+                },
+              ),
+            )
+          else
+            Icon(
+              Icons.inventory_2_rounded,
+              color: isDark
+                  ? colorScheme.primary.withAlpha(200)
+                  : colorScheme.primary,
+              size: size * 0.5,
+            ),
           // Badge de categoría
           if (product.categoria != null)
             Positioned(
