@@ -40,10 +40,16 @@ class PedidoProvider with ChangeNotifier {
   final int _perPage = 15;
 
   // Filtros
-  String? _filtroEstado;  // ✅ Cambio: De EstadoPedido? a String?
+  String? _filtroEstado;
   DateTime? _filtroFechaDesde;
   DateTime? _filtroFechaHasta;
   String? _filtroBusqueda;
+
+  // ✅ NUEVO: Filtros específicos para fechas de vencimiento y entrega
+  DateTime? _filtroFechaVencimientoDesde;
+  DateTime? _filtroFechaVencimientoHasta;
+  DateTime? _filtroFechaEntregaSolicitadaDesde;
+  DateTime? _filtroFechaEntregaSolicitadaHasta;
 
   // Getters
   List<Pedido> get pedidos => _pedidos;
@@ -61,18 +67,28 @@ class PedidoProvider with ChangeNotifier {
   Map<String, dynamic>? get errorData => _errorData;
   bool get hasMorePages => _hasMorePages;
   int get totalItems => _totalItems;
-  String? get filtroEstado => _filtroEstado;  // ✅ Cambio: Devuelve String? en lugar de EstadoPedido?
+  String? get filtroEstado => _filtroEstado;
   DateTime? get filtroFechaDesde => _filtroFechaDesde;
   DateTime? get filtroFechaHasta => _filtroFechaHasta;
   String? get filtroBusqueda => _filtroBusqueda;
 
+  // ✅ NUEVO: Getters para filtros específicos
+  DateTime? get filtroFechaVencimientoDesde => _filtroFechaVencimientoDesde;
+  DateTime? get filtroFechaVencimientoHasta => _filtroFechaVencimientoHasta;
+  DateTime? get filtroFechaEntregaSolicitadaDesde => _filtroFechaEntregaSolicitadaDesde;
+  DateTime? get filtroFechaEntregaSolicitadaHasta => _filtroFechaEntregaSolicitadaHasta;
+
   /// Cargar historial de pedidos (página 1)
   /// ✅ ACTUALIZADO: Parámetro estado es ahora String? (código del estado)
   Future<void> loadPedidos({
-    String? estado,  // Cambio de EstadoPedido? a String?
+    String? estado,
     DateTime? fechaDesde,
     DateTime? fechaHasta,
-    String? busqueda,
+    String? cliente,
+    DateTime? fechaVencimientoDesde,
+    DateTime? fechaVencimientoHasta,
+    DateTime? fechaEntregaSolicitadaDesde,
+    DateTime? fechaEntregaSolicitadaHasta,
     bool refresh = false,
   }) async {
     if (_isLoading && !refresh) return;
@@ -83,7 +99,11 @@ class PedidoProvider with ChangeNotifier {
     _filtroEstado = estado;
     _filtroFechaDesde = fechaDesde;
     _filtroFechaHasta = fechaHasta;
-    _filtroBusqueda = busqueda;
+    _filtroBusqueda = cliente;
+    _filtroFechaVencimientoDesde = fechaVencimientoDesde;
+    _filtroFechaVencimientoHasta = fechaVencimientoHasta;
+    _filtroFechaEntregaSolicitadaDesde = fechaEntregaSolicitadaDesde;
+    _filtroFechaEntregaSolicitadaHasta = fechaEntregaSolicitadaHasta;
 
     if (refresh) {
       // Si es refresh, no mostramos loading inicial
@@ -99,7 +119,11 @@ class PedidoProvider with ChangeNotifier {
         estado: estado,
         fechaDesde: fechaDesde,
         fechaHasta: fechaHasta,
-        busqueda: busqueda,
+        cliente: cliente,
+        fechaVencimientoDesde: fechaVencimientoDesde,
+        fechaVencimientoHasta: fechaVencimientoHasta,
+        fechaEntregaSolicitadaDesde: fechaEntregaSolicitadaDesde,
+        fechaEntregaSolicitadaHasta: fechaEntregaSolicitadaHasta,
       );
 
       if (response.success && response.data != null) {
@@ -179,7 +203,7 @@ class PedidoProvider with ChangeNotifier {
         estado: _filtroEstado,
         fechaDesde: _filtroFechaDesde,
         fechaHasta: _filtroFechaHasta,
-        busqueda: _filtroBusqueda,
+        cliente: _filtroBusqueda,  // ✅ CAMBIO: De 'busqueda' a 'cliente'
       );
 
       if (response.success && response.data != null) {
@@ -406,18 +430,63 @@ class PedidoProvider with ChangeNotifier {
       estado: _filtroEstado,
       fechaDesde: desde,
       fechaHasta: hasta,
-      busqueda: _filtroBusqueda,
+      cliente: _filtroBusqueda,
+      fechaVencimientoDesde: _filtroFechaVencimientoDesde,
+      fechaVencimientoHasta: _filtroFechaVencimientoHasta,
+      fechaEntregaSolicitadaDesde: _filtroFechaEntregaSolicitadaDesde,
+      fechaEntregaSolicitadaHasta: _filtroFechaEntregaSolicitadaHasta,
     );
   }
 
-  /// Aplicar búsqueda
-  Future<void> aplicarBusqueda(String? busqueda) async {
+  // ✅ NUEVO: Aplicar filtro de fecha de vencimiento
+  Future<void> aplicarFiltroFechaVencimiento(
+    DateTime? desde,
+    DateTime? hasta,
+  ) async {
     await loadPedidos(
       estado: _filtroEstado,
       fechaDesde: _filtroFechaDesde,
       fechaHasta: _filtroFechaHasta,
-      busqueda: busqueda,
+      cliente: _filtroBusqueda,
+      fechaVencimientoDesde: desde,
+      fechaVencimientoHasta: hasta,
+      fechaEntregaSolicitadaDesde: _filtroFechaEntregaSolicitadaDesde,
+      fechaEntregaSolicitadaHasta: _filtroFechaEntregaSolicitadaHasta,
     );
+  }
+
+  // ✅ NUEVO: Aplicar filtro de fecha de entrega solicitada
+  Future<void> aplicarFiltroFechaEntregaSolicitada(
+    DateTime? desde,
+    DateTime? hasta,
+  ) async {
+    await loadPedidos(
+      estado: _filtroEstado,
+      fechaDesde: _filtroFechaDesde,
+      fechaHasta: _filtroFechaHasta,
+      cliente: _filtroBusqueda,
+      fechaVencimientoDesde: _filtroFechaVencimientoDesde,
+      fechaVencimientoHasta: _filtroFechaVencimientoHasta,
+      fechaEntregaSolicitadaDesde: desde,
+      fechaEntregaSolicitadaHasta: hasta,
+    );
+  }
+
+  /// Aplicar búsqueda
+  // ✅ CAMBIO: De 'aplicarBusqueda' a 'aplicarBusquedaCliente' para mayor claridad
+  Future<void> aplicarBusquedaCliente(String? cliente) async {
+    await loadPedidos(
+      estado: _filtroEstado,
+      fechaDesde: _filtroFechaDesde,
+      fechaHasta: _filtroFechaHasta,
+      cliente: cliente,
+    );
+  }
+
+  // Mantener método anterior para compatibilidad
+  @Deprecated('Usar aplicarBusquedaCliente en su lugar')
+  Future<void> aplicarBusqueda(String? busqueda) async {
+    await aplicarBusquedaCliente(busqueda);
   }
 
   /// Limpiar filtros

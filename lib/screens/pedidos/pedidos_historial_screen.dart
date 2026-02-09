@@ -21,12 +21,18 @@ class PedidosHistorialScreen extends StatefulWidget {
 class _PedidosHistorialScreenState extends State<PedidosHistorialScreen> {
   final ScrollController _scrollController = ScrollController();
   final TextEditingController _searchController = TextEditingController();
-  String? _filtroEstadoSeleccionado;  // ✅ CAMBIO: De EstadoPedido? a String?
+  String? _filtroEstadoSeleccionado;
   Timer? _debounceTimer;
   bool _isSearchExpanded = false;
   bool _isFilterDateExpanded = false;
   DateTime? _filtroFechaDesde;
   DateTime? _filtroFechaHasta;
+
+  // ✅ NUEVO: Filtros específicos para fechas de vencimiento y entrega
+  DateTime? _filtroFechaVencimientoDesde;
+  DateTime? _filtroFechaVencimientoHasta;
+  DateTime? _filtroFechaEntregaSolicitadaDesde;
+  DateTime? _filtroFechaEntregaSolicitadaHasta;
 
   @override
   void initState() {
@@ -76,8 +82,186 @@ class _PedidosHistorialScreenState extends State<PedidosHistorialScreen> {
     final pedidoProvider = context.read<PedidoProvider>();
     await pedidoProvider.loadPedidos(
       estado: _filtroEstadoSeleccionado,
-      busqueda: _searchController.text.isEmpty ? null : _searchController.text,
+      // ✅ CAMBIADO: De 'busqueda' a 'cliente' para buscar por nombre, teléfono o NIT
+      cliente: _searchController.text.isEmpty ? null : _searchController.text,
       refresh: true,
+    );
+  }
+
+  /// ✅ MEJORADO: Helper para construir un grupo de filtro de fecha
+  Widget _buildDateFilterGroup(
+    BuildContext context,
+    String label,
+    IconData icon,
+    DateTime? desde,
+    DateTime? hasta,
+    Function(DateTime?) onDesdeChanged,
+    Function(DateTime?) onHastaChanged,
+    DateTime? minDate,
+    DateTime? maxDate,
+  ) {
+    final colorScheme = context.colorScheme;
+    final isDark = context.isDark;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: isDark
+            ? colorScheme.surfaceContainerHighest.withOpacity(0.5)
+            : colorScheme.primary.withOpacity(0.05),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(
+          color: (desde != null || hasta != null)
+              ? colorScheme.primary.withOpacity(0.3)
+              : colorScheme.outline.withOpacity(0.2),
+          width: 1,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Label del grupo
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(icon, size: 14, color: colorScheme.primary),
+              const SizedBox(width: 6),
+              Text(
+                label,
+                style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                      color: colorScheme.primary,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 11,
+                    ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          // Botones desde/hasta
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Botón Desde
+              InkWell(
+                onTap: () async {
+                  final fecha = await showDatePicker(
+                    context: context,
+                    initialDate: desde ?? DateTime.now(),
+                    firstDate: minDate ?? DateTime(2020),
+                    lastDate: maxDate ?? DateTime(2100),
+                  );
+                  if (fecha != null) {
+                    onDesdeChanged(fecha);
+                  }
+                },
+                child: Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: isDark ? colorScheme.surface : Colors.white,
+                    borderRadius: BorderRadius.circular(6),
+                    border: Border.all(
+                      color: desde != null
+                          ? colorScheme.primary
+                          : colorScheme.outline.withOpacity(0.2),
+                    ),
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        'Desde',
+                        style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                              fontSize: 9,
+                              color: colorScheme.onSurface.withOpacity(0.5),
+                            ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        desde != null
+                            ? DateFormat('dd/MM').format(desde)
+                            : '--',
+                        style:
+                            Theme.of(context).textTheme.labelSmall?.copyWith(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w600,
+                                  color: desde != null
+                                      ? colorScheme.primary
+                                      : colorScheme.onSurface
+                                          .withOpacity(0.6),
+                                ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(width: 6),
+              // Separador
+              Text(
+                '→',
+                style: TextStyle(
+                  color: colorScheme.outline.withOpacity(0.4),
+                  fontSize: 12,
+                ),
+              ),
+              const SizedBox(width: 6),
+              // Botón Hasta
+              InkWell(
+                onTap: () async {
+                  final fecha = await showDatePicker(
+                    context: context,
+                    initialDate: hasta ?? DateTime.now(),
+                    firstDate: desde ?? minDate ?? DateTime(2020),
+                    lastDate: maxDate ?? DateTime(2100),
+                  );
+                  if (fecha != null) {
+                    onHastaChanged(fecha);
+                  }
+                },
+                child: Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: isDark ? colorScheme.surface : Colors.white,
+                    borderRadius: BorderRadius.circular(6),
+                    border: Border.all(
+                      color: hasta != null
+                          ? colorScheme.primary
+                          : colorScheme.outline.withOpacity(0.2),
+                    ),
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        'Hasta',
+                        style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                              fontSize: 9,
+                              color: colorScheme.onSurface.withOpacity(0.5),
+                            ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        hasta != null ? DateFormat('dd/MM').format(hasta) : '--',
+                        style:
+                            Theme.of(context).textTheme.labelSmall?.copyWith(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w600,
+                                  color: hasta != null
+                                      ? colorScheme.primary
+                                      : colorScheme.onSurface
+                                          .withOpacity(0.6),
+                                ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
     );
   }
 
@@ -101,149 +285,133 @@ class _PedidosHistorialScreenState extends State<PedidosHistorialScreen> {
         ),
       ),
       child: SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        child: Row(
+        scrollDirection: Axis.vertical,
+        child: Column(
           children: [
-            // Botón para seleccionar fecha desde
-            InkWell(
-              onTap: () async {
-                final fecha = await showDatePicker(
-                  context: context,
-                  initialDate: _filtroFechaDesde ?? DateTime.now(),
-                  firstDate: DateTime(2020),
-                  lastDate: DateTime.now(),
-                );
-                if (fecha != null) {
-                  setState(() {
-                    _filtroFechaDesde = fecha;
-                  });
-                }
-              },
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                decoration: BoxDecoration(
-                  color: isDark
-                      ? colorScheme.surfaceContainerHighest
-                      : Colors.white,
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(
-                    color: _filtroFechaDesde != null
-                        ? colorScheme.primary
-                        : colorScheme.outline.withOpacity(0.3),
-                  ),
+            // ✅ MEJORADO: Grid de 3 columnas para los filtros
+            Wrap(
+              spacing: 10,
+              runSpacing: 10,
+              children: [
+                // 1️⃣ FILTRO DE CREACIÓN
+                _buildDateFilterGroup(
+                  context,
+                  'Fecha Creación',
+                  Icons.calendar_today,
+                  _filtroFechaDesde,
+                  _filtroFechaHasta,
+                  (fecha) =>
+                      setState(() => _filtroFechaDesde = fecha),
+                  (fecha) =>
+                      setState(() => _filtroFechaHasta = fecha),
+                  DateTime(2020),
+                  DateTime.now(),
                 ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      Icons.calendar_today,
-                      size: 16,
-                      color: colorScheme.primary,
-                    ),
-                    const SizedBox(width: 6),
-                    Text(
-                      _filtroFechaDesde != null
-                          ? DateFormat('dd/MM').format(_filtroFechaDesde!)
-                          : 'Desde',
-                      style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                            color: _filtroFechaDesde != null
-                                ? colorScheme.primary
-                                : colorScheme.onSurface.withOpacity(0.6),
-                          ),
-                    ),
-                  ],
+
+                // 2️⃣ FILTRO DE VENCIMIENTO
+                _buildDateFilterGroup(
+                  context,
+                  'Fecha Vencimiento',
+                  Icons.event_note,
+                  _filtroFechaVencimientoDesde,
+                  _filtroFechaVencimientoHasta,
+                  (fecha) =>
+                      setState(() => _filtroFechaVencimientoDesde = fecha),
+                  (fecha) =>
+                      setState(() => _filtroFechaVencimientoHasta = fecha),
+                  DateTime(2020),
+                  DateTime(2100),
                 ),
-              ),
+
+                // 3️⃣ FILTRO DE ENTREGA SOLICITADA
+                _buildDateFilterGroup(
+                  context,
+                  'Entrega Solicitada',
+                  Icons.local_shipping,
+                  _filtroFechaEntregaSolicitadaDesde,
+                  _filtroFechaEntregaSolicitadaHasta,
+                  (fecha) =>
+                      setState(() => _filtroFechaEntregaSolicitadaDesde = fecha),
+                  (fecha) =>
+                      setState(() => _filtroFechaEntregaSolicitadaHasta = fecha),
+                  DateTime(2020),
+                  DateTime(2100),
+                ),
+              ],
             ),
-            const SizedBox(width: 8),
-            // Botón para seleccionar fecha hasta
-            InkWell(
-              onTap: () async {
-                final fecha = await showDatePicker(
-                  context: context,
-                  initialDate: _filtroFechaHasta ?? DateTime.now(),
-                  firstDate: _filtroFechaDesde ?? DateTime(2020),
-                  lastDate: DateTime.now(),
-                );
-                if (fecha != null) {
-                  setState(() {
-                    _filtroFechaHasta = fecha;
-                  });
-                }
-              },
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                decoration: BoxDecoration(
-                  color: isDark
-                      ? colorScheme.surfaceContainerHighest
-                      : Colors.white,
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(
-                    color: _filtroFechaHasta != null
-                        ? colorScheme.primary
-                        : colorScheme.outline.withOpacity(0.3),
+            const SizedBox(height: 12),
+            // Botones de acción
+            Row(
+              children: [
+                // Botón "Buscar"
+                if (_filtroFechaDesde != null ||
+                    _filtroFechaHasta != null ||
+                    _filtroFechaVencimientoDesde != null ||
+                    _filtroFechaVencimientoHasta != null ||
+                    _filtroFechaEntregaSolicitadaDesde != null ||
+                    _filtroFechaEntregaSolicitadaHasta != null)
+                  Expanded(
+                    child: ElevatedButton.icon(
+                      onPressed: () {
+                        context.read<PedidoProvider>().loadPedidos(
+                              estado: context
+                                  .read<PedidoProvider>()
+                                  .filtroEstado,
+                              fechaDesde: _filtroFechaDesde,
+                              fechaHasta: _filtroFechaHasta,
+                              cliente: context
+                                  .read<PedidoProvider>()
+                                  .filtroBusqueda,
+                              fechaVencimientoDesde:
+                                  _filtroFechaVencimientoDesde,
+                              fechaVencimientoHasta:
+                                  _filtroFechaVencimientoHasta,
+                              fechaEntregaSolicitadaDesde:
+                                  _filtroFechaEntregaSolicitadaDesde,
+                              fechaEntregaSolicitadaHasta:
+                                  _filtroFechaEntregaSolicitadaHasta,
+                            );
+                      },
+                      icon: const Icon(Icons.search, size: 16),
+                      label: const Text('Buscar'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: colorScheme.primary,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 16, vertical: 10),
+                      ),
+                    ),
                   ),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      Icons.calendar_today,
-                      size: 16,
-                      color: colorScheme.primary,
+                const SizedBox(width: 8),
+                // Botón "Limpiar"
+                if (_filtroFechaDesde != null ||
+                    _filtroFechaHasta != null ||
+                    _filtroFechaVencimientoDesde != null ||
+                    _filtroFechaVencimientoHasta != null ||
+                    _filtroFechaEntregaSolicitadaDesde != null ||
+                    _filtroFechaEntregaSolicitadaHasta != null)
+                  OutlinedButton.icon(
+                    onPressed: () {
+                      setState(() {
+                        _filtroFechaDesde = null;
+                        _filtroFechaHasta = null;
+                        _filtroFechaVencimientoDesde = null;
+                        _filtroFechaVencimientoHasta = null;
+                        _filtroFechaEntregaSolicitadaDesde = null;
+                        _filtroFechaEntregaSolicitadaHasta = null;
+                      });
+                      context.read<PedidoProvider>().loadPedidos();
+                    },
+                    icon: const Icon(Icons.clear, size: 16),
+                    label: const Text('Limpiar'),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: colorScheme.primary,
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 16, vertical: 10),
                     ),
-                    const SizedBox(width: 6),
-                    Text(
-                      _filtroFechaHasta != null
-                          ? DateFormat('dd/MM').format(_filtroFechaHasta!)
-                          : 'Hasta',
-                      style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                            color: _filtroFechaHasta != null
-                                ? colorScheme.primary
-                                : colorScheme.onSurface.withOpacity(0.6),
-                          ),
-                    ),
-                  ],
-                ),
-              ),
+                  ),
+              ],
             ),
-            const SizedBox(width: 8),
-            // ✅ NUEVO: Botón "Buscar" para aplicar filtro de fechas
-            if (_filtroFechaDesde != null || _filtroFechaHasta != null)
-              ElevatedButton.icon(
-                onPressed: () {
-                  // Aplicar filtro de fechas
-                  context.read<PedidoProvider>().aplicarFiltroFechas(
-                        _filtroFechaDesde,
-                        _filtroFechaHasta,
-                      );
-                },
-                icon: const Icon(Icons.search, size: 16),
-                label: const Text('Buscar'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: colorScheme.primary,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  minimumSize: const Size(0, 40),
-                ),
-              ),
-            const SizedBox(width: 8),
-            // ✅ Botón para limpiar fechas
-            if (_filtroFechaDesde != null || _filtroFechaHasta != null)
-              IconButton(
-                icon: const Icon(Icons.clear),
-                iconSize: 18,
-                onPressed: () {
-                  setState(() {
-                    _filtroFechaDesde = null;
-                    _filtroFechaHasta = null;
-                  });
-                  context
-                      .read<PedidoProvider>()
-                      .aplicarFiltroFechas(null, null);
-                },
-                tooltip: 'Limpiar filtro de fechas',
-              ),
           ],
         ),
       ),
@@ -258,7 +426,6 @@ class _PedidosHistorialScreenState extends State<PedidosHistorialScreen> {
   ) {
     return Consumer<EstadosProvider>(
       builder: (context, estadosProvider, _) {
-        // Si aún está cargando, mostrar skeleton o vacío
         if (estadosProvider.isLoading && estadosProvider.estados.isEmpty) {
           return Container(
             width: double.infinity,
@@ -289,7 +456,6 @@ class _PedidosHistorialScreenState extends State<PedidosHistorialScreen> {
           );
         }
 
-        // Construir chips dinámicamente
         final states = estadosProvider.estados;
 
         return Container(
@@ -309,7 +475,6 @@ class _PedidosHistorialScreenState extends State<PedidosHistorialScreen> {
             scrollDirection: Axis.horizontal,
             child: Row(
               children: [
-                // Chip "Todos"
                 _buildDynamicFilterChip(
                   context: context,
                   label: 'Todos',
@@ -322,8 +487,6 @@ class _PedidosHistorialScreenState extends State<PedidosHistorialScreen> {
                   isDark: isDark,
                 ),
                 const SizedBox(width: 8),
-
-                // Chips dinámicos generados desde estados
                 ...states.map((estado) {
                   final contador = estadosProvider.getContadorEstado(estado.codigo);
                   final color = _hexToColor(estado.color);
@@ -352,10 +515,9 @@ class _PedidosHistorialScreenState extends State<PedidosHistorialScreen> {
     );
   }
 
-  /// Obtener ícono según código de estado (Proforma, Venta, Logística)
+  /// Obtener ícono según código de estado
   IconData _getIconoParaEstado(String codigo) {
     switch (codigo.toUpperCase()) {
-      // Estados de Proforma
       case 'PENDIENTE':
         return Icons.hourglass_empty;
       case 'APROBADA':
@@ -366,8 +528,6 @@ class _PedidosHistorialScreenState extends State<PedidosHistorialScreen> {
         return Icons.schedule;
       case 'RECHAZADA':
         return Icons.cancel;
-
-      // Estados de Logística/Venta
       case 'PENDIENTE_ENVIO':
       case 'PENDIENTE_RETIRO':
         return Icons.inventory_2_outlined;
@@ -378,7 +538,6 @@ class _PedidosHistorialScreenState extends State<PedidosHistorialScreen> {
         return Icons.done_all;
       case 'PAGADO':
         return Icons.paid_outlined;
-
       default:
         return Icons.circle;
     }
@@ -472,14 +631,6 @@ class _PedidosHistorialScreenState extends State<PedidosHistorialScreen> {
     );
   }
 
-  void _onSearchChanged(String query) {
-    _debounceTimer?.cancel();
-    _debounceTimer = Timer(const Duration(milliseconds: 500), () {
-      final pedidoProvider = context.read<PedidoProvider>();
-      pedidoProvider.aplicarBusqueda(query.isEmpty ? null : query);
-    });
-  }
-
   void _aplicarFiltroEstado(String? estado) {
     // ✅ ACTUALIZADO: Ahora acepta código String en lugar de enum EstadoPedido
     setState(() {
@@ -496,6 +647,10 @@ class _PedidosHistorialScreenState extends State<PedidosHistorialScreen> {
       _isFilterDateExpanded = false;
       _filtroFechaDesde = null;
       _filtroFechaHasta = null;
+      _filtroFechaVencimientoDesde = null;
+      _filtroFechaVencimientoHasta = null;
+      _filtroFechaEntregaSolicitadaDesde = null;
+      _filtroFechaEntregaSolicitadaHasta = null;
     });
     context.read<PedidoProvider>().limpiarFiltros();
   }
@@ -551,38 +706,82 @@ class _PedidosHistorialScreenState extends State<PedidosHistorialScreen> {
                         ),
                       ),
                     ),
-                    child: TextField(
-                      controller: _searchController,
-                      onChanged: _onSearchChanged,
-                      autofocus: true,
-                      decoration: InputDecoration(
-                        hintText: 'Buscar por número, cliente o monto...',
-                        prefixIcon: Icon(
-                          Icons.search,
-                          color: colorScheme.primary,
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: TextField(
+                            controller: _searchController,
+                            autofocus: true,
+                            // ✅ CAMBIO: De onChanged a onSubmitted (Enter key o botón)
+                            onSubmitted: (query) {
+                              final pedidoProvider =
+                                  context.read<PedidoProvider>();
+                              pedidoProvider.aplicarBusquedaCliente(
+                                query.isEmpty ? null : query,
+                              );
+                            },
+                            decoration: InputDecoration(
+                              hintText:
+                                  'Buscar por nombre, teléfono o NIT...',
+                              prefixIcon: Icon(
+                                Icons.search,
+                                color: colorScheme.primary,
+                              ),
+                              suffixIcon:
+                                  _searchController.text.isNotEmpty
+                                      ? IconButton(
+                                          icon:
+                                              const Icon(Icons.clear),
+                                          onPressed: () {
+                                            setState(() {
+                                              _searchController.clear();
+                                            });
+                                          },
+                                        )
+                                      : null,
+                              filled: true,
+                              fillColor: isDark
+                                  ? colorScheme
+                                      .surfaceContainerHighest
+                                  : Colors.white,
+                              border: OutlineInputBorder(
+                                borderRadius:
+                                    BorderRadius.circular(12),
+                                borderSide: BorderSide.none,
+                              ),
+                              contentPadding:
+                                  const EdgeInsets.symmetric(
+                                horizontal: 16,
+                                vertical: 12,
+                              ),
+                            ),
+                          ),
                         ),
-                        suffixIcon: _searchController.text.isNotEmpty
-                            ? IconButton(
-                                icon: const Icon(Icons.clear),
-                                onPressed: () {
-                                  _searchController.clear();
-                                  _onSearchChanged('');
-                                },
-                              )
-                            : null,
-                        filled: true,
-                        fillColor: isDark
-                            ? colorScheme.surfaceContainerHighest
-                            : Colors.white,
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide.none,
+                        const SizedBox(width: 8),
+                        // ✅ NUEVO: Botón para ejecutar búsqueda
+                        ElevatedButton.icon(
+                          onPressed: () {
+                            final pedidoProvider =
+                                context.read<PedidoProvider>();
+                            pedidoProvider.aplicarBusquedaCliente(
+                              _searchController.text.isEmpty
+                                  ? null
+                                  : _searchController.text,
+                            );
+                          },
+                          icon: const Icon(Icons.search, size: 16),
+                          label: const Text('Buscar'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: colorScheme.primary,
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 8,
+                            ),
+                            minimumSize: const Size(0, 48),
+                          ),
                         ),
-                        contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 12,
-                        ),
-                      ),
+                      ],
                     ),
                   )
                 : const SizedBox.shrink(),
@@ -1259,7 +1458,9 @@ class _PedidoCard extends StatelessWidget {
               // ═══════════════════════════════════════════════════════════════
               if (pedido.cantidadItems > 0 ||
                   pedido.direccionEntrega != null ||
-                  pedido.tieneReservasProximasAVencer) ...[
+                  pedido.tieneReservasProximasAVencer ||
+                  pedido.fechaVencimiento != null ||
+                  pedido.fechaEntregaSolicitada != null) ...[
                 const SizedBox(height: 16),
                 Container(
                   padding: const EdgeInsets.symmetric(
@@ -1311,6 +1512,48 @@ class _PedidoCard extends StatelessWidget {
                                 ),
                                 maxLines: 2,
                                 overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+
+                      // ✅ NUEVO: Fecha de vencimiento
+                      if (pedido.fechaVencimiento != null) ...[
+                        const SizedBox(height: 8),
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.event_note,
+                              size: 14,
+                              color: colorScheme.onSurface.withOpacity(0.6),
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              '📅 Vencimiento: ${_formatearFecha(pedido.fechaVencimiento!)}',
+                              style: context.textTheme.labelSmall?.copyWith(
+                                color: colorScheme.onSurface.withOpacity(0.7),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+
+                      // ✅ NUEVO: Fecha de entrega solicitada
+                      if (pedido.fechaEntregaSolicitada != null) ...[
+                        const SizedBox(height: 8),
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.local_shipping,
+                              size: 14,
+                              color: colorScheme.onSurface.withOpacity(0.6),
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              '🚚 Entrega Solicitada: ${_formatearFecha(pedido.fechaEntregaSolicitada!)}',
+                              style: context.textTheme.labelSmall?.copyWith(
+                                color: colorScheme.onSurface.withOpacity(0.7),
                               ),
                             ),
                           ],

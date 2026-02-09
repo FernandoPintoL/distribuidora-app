@@ -82,6 +82,10 @@ class Pedido {
   final String? comentariosAprobacion;
   final String? comentarioRechazo;
 
+  // ✅ NUEVO: Fechas de vencimiento y entrega solicitada
+  final DateTime? fechaVencimiento;
+  final DateTime? fechaEntregaSolicitada;
+
   // Comprobantes de entrega
   final String? firmaDigitalUrl;
   final String? fotoEntregaUrl;
@@ -126,6 +130,8 @@ class Pedido {
     this.fotoEntregaUrl,
     this.fechaFirmaEntrega,
     this.estadoProformaId,
+    this.fechaVencimiento,
+    this.fechaEntregaSolicitada,
   });
 
   factory Pedido.fromJson(Map<String, dynamic> json) {
@@ -245,6 +251,13 @@ class Pedido {
             ? DateTime.parse(json['fecha_firma_entrega'] as String)
             : null,
         estadoProformaId: json['estado_proforma_id'] as int?,
+        // ✅ NUEVO: Parsear fechas de vencimiento y entrega solicitada
+        fechaVencimiento: json['fecha_vencimiento'] != null
+            ? DateTime.parse(json['fecha_vencimiento'] as String)
+            : null,
+        fechaEntregaSolicitada: json['fecha_entrega_solicitada'] != null
+            ? DateTime.parse(json['fecha_entrega_solicitada'] as String)
+            : null,
       );
     } catch (e) {
       debugPrint('❌ Error parsing Pedido: $e');
@@ -307,6 +320,9 @@ class Pedido {
       'foto_entrega_url': fotoEntregaUrl,
       'fecha_firma_entrega': fechaFirmaEntrega?.toIso8601String(),
       'estado_proforma_id': estadoProformaId,
+      // ✅ NUEVO: Incluir fechas de vencimiento y entrega solicitada
+      'fecha_vencimiento': fechaVencimiento?.toIso8601String(),
+      'fecha_entrega_solicitada': fechaEntregaSolicitada?.toIso8601String(),
     };
   }
 
@@ -346,6 +362,8 @@ class Pedido {
     String? fotoEntregaUrl,
     DateTime? fechaFirmaEntrega,
     int? estadoProformaId,
+    DateTime? fechaVencimiento,
+    DateTime? fechaEntregaSolicitada,
   }) {
     return Pedido(
       id: id ?? this.id,
@@ -383,6 +401,8 @@ class Pedido {
       fotoEntregaUrl: fotoEntregaUrl ?? this.fotoEntregaUrl,
       fechaFirmaEntrega: fechaFirmaEntrega ?? this.fechaFirmaEntrega,
       estadoProformaId: estadoProformaId ?? this.estadoProformaId,
+      fechaVencimiento: fechaVencimiento ?? this.fechaVencimiento,
+      fechaEntregaSolicitada: fechaEntregaSolicitada ?? this.fechaEntregaSolicitada,
     );
   }
 

@@ -410,6 +410,76 @@ class _EntregaCardState extends State<EntregaCard> {
               ),
             ),
 
+          // ✅ NUEVO: Localidades de la entrega
+          if (entrega.localidades != null &&
+              (entrega.localidades!['cantidad_localidades'] as int? ?? 0) > 0)
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              decoration: BoxDecoration(
+                color: isDarkMode
+                    ? Colors.amber[900]?.withAlpha((0.2 * 255).toInt())
+                    : Colors.amber[50],
+                border: Border(
+                  bottom: BorderSide(
+                    color: isDarkMode ? Colors.grey[700]! : Colors.grey[200]!,
+                  ),
+                ),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.location_on,
+                        size: 18,
+                        color: Colors.amber[600],
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        '📍 Localidades',
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.amber[600],
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  // Mostrar localidades como chips
+                  Wrap(
+                    spacing: 6,
+                    runSpacing: 6,
+                    children: [
+                      for (var localidad
+                          in (entrega.localidades!['localidades'] as List? ?? []))
+                        Chip(
+                          label: Text(
+                            localidad['nombre'] as String? ?? 'Sin nombre',
+                            style: const TextStyle(fontSize: 11),
+                          ),
+                          avatar: CircleAvatar(
+                            backgroundColor: Colors.amber[100],
+                            radius: 12,
+                            child: const Icon(
+                              Icons.location_on,
+                              size: 12,
+                              color: Colors.amber,
+                            ),
+                          ),
+                          backgroundColor: isDarkMode
+                              ? Colors.amber[900]!.withValues(alpha: 0.4)
+                              : Colors.amber[100],
+                          padding: const EdgeInsets.symmetric(horizontal: 6),
+                          materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+
           // Fecha y botones de acción
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),

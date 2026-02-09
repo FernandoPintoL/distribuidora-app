@@ -211,12 +211,33 @@ class _VentasAsignadasCardState extends State<VentasAsignadasCard> {
                         Row(
                           children: [
                             Expanded(
-                              child: Text(
-                                venta.clienteNombre?.toUpperCase() ?? 'Cliente',
-                                style: const TextStyle(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.bold,
-                                ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    venta.clienteNombre?.toUpperCase() ?? 'Cliente',
+                                    style: const TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                  // ✅ NUEVO: Mostrar localidad del cliente
+                                  if (venta.clienteLocalidad != null && venta.clienteLocalidad!.isNotEmpty) ...[
+                                    const SizedBox(height: 2),
+                                    Chip(
+                                      label: Text(
+                                        venta.clienteLocalidad!,
+                                        style: const TextStyle(fontSize: 10),
+                                      ),
+                                      avatar: const Icon(
+                                        Icons.location_on,
+                                        size: 12,
+                                      ),
+                                      padding: const EdgeInsets.symmetric(horizontal: 4),
+                                      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                    ),
+                                  ],
+                                ],
                               ),
                             ),
                             if (isEnRuta)
@@ -604,14 +625,13 @@ class _VentasAsignadasCardState extends State<VentasAsignadasCard> {
                               const SizedBox(height: 8),
                             ],
                             const SizedBox(height: 16),
-                            if (entregaActual.estadoEntregaCodigo ==
-                                    'EN_TRANSITO' &&
-                                venta.estadoLogisticoCodigo == 'EN_TRANSITO')
+                            // ✅ Botón de confirmación solo en EN_TRANSITO
+                            if (venta.estadoLogisticoCodigo == 'EN_TRANSITO')
                               SizedBox(
                                 width: double.infinity,
                                 child: ElevatedButton.icon(
                                   onPressed: () async {
-                                    // Mostrar diálogo de confirmación de entrega
+                                    // ✅ NUEVO: Navegar a la pantalla de confirmación
                                     await ConfirmarVentaEntregadaDialog.show(
                                       context,
                                       entregaActual,

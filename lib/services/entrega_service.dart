@@ -128,6 +128,14 @@ class EntregaService {
           );
         }
 
+        // ✅ NUEVO: Agregar localidades si vienen en la respuesta
+        if (responseData['localidades'] is Map<String, dynamic>) {
+          entregaData['localidades'] = responseData['localidades'];
+          debugPrint(
+            '📍 [ENTREGA_SERVICE] Localidades agregadas: ${(responseData['localidades'] as Map)['cantidad_localidades']} localidades',
+          );
+        }
+
         final entrega = Entrega.fromJson(entregaData);
 
         debugPrint(
@@ -834,12 +842,15 @@ class EntregaService {
     int ventaId, {
     List<String>? fotosBase64,
     String? observaciones,
+    String? observacionesLogistica,  // ✅ NUEVO: Observaciones logísticas (estado entrega, incidentes)
   }) async {
     try {
       final data = <String, dynamic>{
         if (fotosBase64 != null && fotosBase64.isNotEmpty) 'fotos': fotosBase64,
         if (observaciones != null && observaciones.isNotEmpty)
           'observaciones': observaciones,
+        if (observacionesLogistica != null && observacionesLogistica.isNotEmpty)
+          'observaciones_logistica': observacionesLogistica,  // ✅ NUEVO: Pasar al backend
       };
 
       final response = await _apiService.post(

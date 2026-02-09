@@ -59,6 +59,9 @@ class Entrega {
   final TimeOfDay? ventanaEntregaIni; // Hora inicio ventana de entrega
   final TimeOfDay? ventanaEntregaFin; // Hora fin ventana de entrega
 
+  // ✅ NUEVO: Entregador (quien realiza la entrega)
+  final String? entregador;
+
   // Historial de estados (viene en la respuesta principal)
   final List<EntregaEstadoHistorial> historialEstados;
 
@@ -67,6 +70,9 @@ class Entrega {
 
   // ✅ NUEVO: Productos genéricos consolidados de todas las ventas
   final List<Map<String, dynamic>> productosGenerico;
+
+  // ✅ NUEVO: Localidades de los clientes en las ventas de esta entrega
+  final Map<String, dynamic>? localidades;
 
   // Relaciones con objetos completos del backend
   final Chofer? chofer;
@@ -112,12 +118,16 @@ class Entrega {
     this.fechaEntregaComprometida,
     this.ventanaEntregaIni,
     this.ventanaEntregaFin,
+    // Entregador
+    this.entregador,
     // Historial de estados
     this.historialEstados = const [],
     // Ventas
     this.ventas = const [],
     // ✅ NUEVO: Productos genéricos
     this.productosGenerico = const [],
+    // ✅ NUEVO: Localidades
+    this.localidades,
     // Relaciones
     this.chofer,
     this.vehiculo,
@@ -255,6 +265,12 @@ class Entrega {
           .toList();
     }
 
+    // ✅ NUEVO: Parsear localidades si vienen en la respuesta
+    Map<String, dynamic>? localidadesMap;
+    if (json['localidades'] is Map<String, dynamic>) {
+      localidadesMap = json['localidades'] as Map<String, dynamic>;
+    }
+
     return Entrega(
       id: json['id'] as int,
       proformaId: json['proforma_id'] as int?, // Ahora opcional
@@ -311,12 +327,16 @@ class Entrega {
           : null,
       ventanaEntregaIni: ventanaIni,
       ventanaEntregaFin: ventanaFin,
+      // ✅ NUEVO: Entregador
+      entregador: json['entregador'] as String?,
       // Historial de estados
       historialEstados: historial,
       // Ventas
       ventas: ventasList,
       // ✅ NUEVO: Productos genéricos
       productosGenerico: productosGenericoList,
+      // ✅ NUEVO: Localidades
+      localidades: localidadesMap,
       // Relaciones
       chofer: choferObj,
       vehiculo: vehiculoObj,

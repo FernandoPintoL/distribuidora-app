@@ -215,23 +215,27 @@ class PedidoService {
   /// - page: Número de página (default: 1)
   /// - perPage: Items por página (default: 15)
   /// - estado: Filtrar por estado (opcional)
-  /// - fechaDesde: Filtrar desde fecha (opcional)
-  /// - fechaHasta: Filtrar hasta fecha (opcional)
-  /// - busqueda: Buscar por número de proforma (opcional)
+  /// - fechaDesde: Filtrar desde fecha de creación (opcional)
+  /// - fechaHasta: Filtrar hasta fecha de creación (opcional)
+  /// - cliente: Buscar por nombre, teléfono o NIT del cliente (opcional)
+  /// - ✅ NUEVO: fechaVencimientoDesde/Hasta: Filtrar por fecha de vencimiento
+  /// - ✅ NUEVO: fechaEntregaSolicitadaDesde/Hasta: Filtrar por fecha de entrega solicitada
   Future<PaginatedResponse<Pedido>> getPedidosCliente({
     int page = 1,
     int perPage = 15,
-    // ✅ ACTUALIZADO: Cambiar a String en lugar de enum EstadoPedido
     String? estado,
     DateTime? fechaDesde,
     DateTime? fechaHasta,
-    String? busqueda,
+    String? cliente,
+    DateTime? fechaVencimientoDesde,
+    DateTime? fechaVencimientoHasta,
+    DateTime? fechaEntregaSolicitadaDesde,
+    DateTime? fechaEntregaSolicitadaHasta,
   }) async {
     try {
       final queryParams = <String, dynamic>{'page': page, 'per_page': perPage};
 
       if (estado != null) {
-        // ✅ ACTUALIZADO: Usar String directamente sin conversión de enum
         queryParams['estado'] = estado;
       }
 
@@ -243,8 +247,25 @@ class PedidoService {
         queryParams['fecha_hasta'] = fechaHasta.toIso8601String();
       }
 
-      if (busqueda != null && busqueda.isNotEmpty) {
-        queryParams['busqueda'] = busqueda;
+      if (cliente != null && cliente.isNotEmpty) {
+        queryParams['cliente'] = cliente;
+      }
+
+      // ✅ NUEVO: Agregar filtros de fechas específicas
+      if (fechaVencimientoDesde != null) {
+        queryParams['fecha_vencimiento_desde'] = fechaVencimientoDesde.toIso8601String();
+      }
+
+      if (fechaVencimientoHasta != null) {
+        queryParams['fecha_vencimiento_hasta'] = fechaVencimientoHasta.toIso8601String();
+      }
+
+      if (fechaEntregaSolicitadaDesde != null) {
+        queryParams['fecha_entrega_solicitada_desde'] = fechaEntregaSolicitadaDesde.toIso8601String();
+      }
+
+      if (fechaEntregaSolicitadaHasta != null) {
+        queryParams['fecha_entrega_solicitada_hasta'] = fechaEntregaSolicitadaHasta.toIso8601String();
       }
 
       final response = await _apiService.get(

@@ -19,6 +19,8 @@ import 'entrega_detalle/widgets/estado_card.dart';
 import 'entrega_detalle/widgets/informacion_general_card.dart';
 import 'entrega_detalle/widgets/botones_accion.dart';
 import 'entrega_detalle/widgets/ventas_asignadas_card.dart';
+import 'entrega_detalle/widgets/localidades_card.dart';
+import 'entrega_detalle/widgets/entregador_info.dart';
 // Diálogos extraídos
 import 'entrega_detalle/dialogs/marcar_llegada_dialog.dart';
 import 'entrega_detalle/dialogs/iniciar_entrega_dialog.dart';
@@ -39,7 +41,6 @@ class EntregaDetalleScreen extends StatefulWidget {
 
 class _EntregaDetalleScreenState extends State<EntregaDetalleScreen> {
   bool _isRetryingGps = false; // Estado para reintentos de GPS
-  bool _expandedTracking = false; // Estado para expandir/colapsar tracking
 
   @override
   void initState() {
@@ -263,7 +264,15 @@ class _EntregaDetalleScreenState extends State<EntregaDetalleScreen> {
                 return _buildErrorContentWithDebug(provider);
               }
 
-              return _buildContent(provider);
+              // ✅ NUEVO: RefreshIndicator para actualizar al hacer scroll hacia abajo
+              return RefreshIndicator(
+                onRefresh: () async {
+                  debugPrint('🔄 Actualizando datos de entrega...');
+                  await provider.obtenerEntrega(widget.entregaId);
+                  debugPrint('✅ Datos actualizados');
+                },
+                child: _buildContent(provider),
+              );
             },
           );
         },
@@ -325,94 +334,13 @@ class _EntregaDetalleScreenState extends State<EntregaDetalleScreen> {
           EstadoCard(entrega: entrega),
           const SizedBox(height: 16),
 
-          // GPS Tracking Status - Solo si tracking activo o estado es EN_TRANSITO
-          if (provider.isTracking ||
-              entrega.estadoEntregaCodigo == 'EN_TRANSITO') ...[
-            Card(
-              elevation: 2,
-              child: ExpansionTile(
-                title: Row(
-                  children: [
-                    Icon(
-                      Icons.gps_fixed,
-                      color: provider.isTracking ? Colors.green : Colors.grey,
-                      size: 20,
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Información de Rastreo',
-                            style: Theme.of(context).textTheme.titleSmall
-                                ?.copyWith(fontWeight: FontWeight.bold),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            provider.isTracking
-                                ? '✅ GPS Activo'
-                                : '⏸️ GPS Inactivo',
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: provider.isTracking
-                                  ? Colors.green
-                                  : Colors.orange,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-                initiallyExpanded: _expandedTracking,
-                onExpansionChanged: (expanded) {
-                  setState(() => _expandedTracking = expanded);
-                },
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Column(
-                      spacing: 16,
-                      children: [
-                        // GPS Tracking Status Details
-                        GpsTrackingStatusWidget(
-                          isTracking: provider.isTracking,
-                          ultimaUbicacion: provider.ultimaUbicacion,
-                          destinoLatitud: entrega.latitudeDestino,
-                          destinoLongitud: entrega.longitudeDestino,
-                          distanciaRecorrida: provider.distanciaRecorrida,
-                          compact: false,
-                          onRetry: () =>
-                              _reintentarGpsTracking(provider, entrega),
-                          isRetrying: _isRetryingGps,
-                        ),
-                        // Connection Health - Solo si tracking activo
-                        if (provider.isTracking)
-                          ConnectionHealthWidget(
-                            isTracking: provider.isTracking,
-                            ultimaUbicacion: provider.ultimaUbicacion,
-                            onRetryGps: () =>
-                                _reintentarGpsTracking(provider, entrega),
-                          ),
-                        // Divider antes de navegación
-                        const Divider(),
-                        // Panel de navegación
-                        NavigationPanel(
-                          clientName: entrega.cliente ?? 'Cliente',
-                          address:
-                              entrega.direccion ?? 'Dirección no disponible',
-                          destinationLatitude: entrega.latitudeDestino,
-                          destinationLongitude: entrega.longitudeDestino,
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 16),
-          ],
+          // ✅ NUEVO: Localidades - Widget extraído
+          LocalidadesCard(
+            entrega: entrega,
+            isDarkMode:
+                Theme.of(context).brightness == Brightness.dark,
+          ),
+          const SizedBox(height: 16),
 
           // SLA Status - FASE 6
           if (entrega.fechaEntregaComprometida != null) ...[
@@ -427,6 +355,14 @@ class _EntregaDetalleScreenState extends State<EntregaDetalleScreen> {
           ],
           // Información general - Widget extraído
           InformacionGeneralCard(entrega: entrega),
+          const SizedBox(height: 16),
+          // ✅ NUEVO: Información del entregador
+          EntregadorInfo(
+            entregador: entrega.entregador,
+            choferNombre: entrega.chofer?.nombre,
+            isDarkMode:
+                Theme.of(context).brightness == Brightness.dark,
+          ),
           const SizedBox(height: 16),
           // ✅ Sección de Productos Agrupados (desde endpoint separado)
           Padding(

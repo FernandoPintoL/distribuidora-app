@@ -6,11 +6,13 @@ class Venta {
   final String? cliente;
   final String? clienteNombre;
   final String? clienteTelefono; // Nuevo: Teléfono del cliente
+  final String? clienteLocalidad; // ✅ NUEVO: Localidad del cliente
   final double total;
   final double subtotal;
   final double descuento; // Puede venir del backend o calcularse
   final double impuesto;
   final String? observaciones;
+  final String? observacionesLogistica;  // ✅ NUEVO: Observaciones sobre entrega (completa, incidentes, etc.)
   final int? estadoLogisticoId; // ID del estado logístico
   final String?
   estadoLogisticoCodigo; // Código del estado (PENDIENTE_ENVIO, EN_TRANSITO, etc)
@@ -37,11 +39,13 @@ class Venta {
     this.cliente,
     this.clienteNombre,
     this.clienteTelefono,
+    this.clienteLocalidad,
     required this.total,
     required this.subtotal,
     required this.descuento,
     required this.impuesto,
     this.observaciones,
+    this.observacionesLogistica,  // ✅ NUEVO
     this.estadoLogisticoId,
     this.estadoLogisticoCodigo,
     required this.estadoLogistico,
@@ -59,13 +63,19 @@ class Venta {
   });
 
   factory Venta.fromJson(Map<String, dynamic> json) {
-    // Extraer nombre y teléfono del cliente si es un objeto
+    // Extraer nombre, teléfono y localidad del cliente si es un objeto
     String? clienteNom;
     String? clienteTel;
+    String? clienteLocalidadNom;
     if (json['cliente'] is Map<String, dynamic>) {
       final clienteObj = json['cliente'] as Map<String, dynamic>;
       clienteNom = clienteObj['nombre'] as String?;
       clienteTel = clienteObj['telefono'] as String?;
+      // ✅ NUEVO: Extraer localidad del cliente
+      if (clienteObj['localidad'] is Map<String, dynamic>) {
+        final localidadObj = clienteObj['localidad'] as Map<String, dynamic>;
+        clienteLocalidadNom = localidadObj['nombre'] as String?;
+      }
     } else {
       clienteNom = json['cliente'] as String?;
     }
@@ -156,11 +166,13 @@ class Venta {
       cliente: json['cliente'] is String ? json['cliente'] as String? : null,
       clienteNombre: clienteNom,
       clienteTelefono: clienteTel,
+      clienteLocalidad: clienteLocalidadNom,  // ✅ NUEVO
       total: _parseDouble(json['total']),
       subtotal: _parseDouble(json['subtotal']),
       descuento: descuentoValue,
       impuesto: _parseDouble(json['impuesto']),
       observaciones: json['observaciones'] as String?,
+      observacionesLogistica: json['observaciones_logistica'] as String?,  // ✅ NUEVO
       estadoLogisticoId: estadoLogisticoId,
       estadoLogisticoCodigo: estadoLogisticoCodigo,
       estadoLogistico: estadoLogisticoNombre,
@@ -223,6 +235,7 @@ class Venta {
       'descuento': descuento,
       'impuesto': impuesto,
       'observaciones': observaciones,
+      'observaciones_logistica': observacionesLogistica,  // ✅ NUEVO
       'estado_logistico_id': estadoLogisticoId,
       'estado_logistico_codigo': estadoLogisticoCodigo,
       'estado_logistico': estadoLogistico,

@@ -426,12 +426,14 @@ class ProformaService {
     required String motivo,
   }) async {
     try {
-      debugPrint('🚫 Anulando proforma #$proformaId - Motivo: $motivo');
+      debugPrint('🚫 Rechazando proforma #$proformaId - Motivo: $motivo');
 
+      // ✅ CORREGIDO: Usar endpoint 'rechazar' en lugar de 'anular'
+      // ✅ CORREGIDO: Usar parámetro 'comentario' en lugar de 'motivo_anulacion'
       final response = await _apiService.post(
-        '/proformas/$proformaId/anular',
+        '/proformas/$proformaId/rechazar',
         data: {
-          'motivo_anulacion': motivo,
+          'comentario': motivo,
         },
       );
 

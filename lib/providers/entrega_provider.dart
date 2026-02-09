@@ -1081,6 +1081,7 @@ class EntregaProvider with ChangeNotifier, EntregaTrackingMixin {
     required Function(String) onError,
     List<String>? fotosBase64,
     String? observaciones,
+    String? observacionesLogistica,  // ✅ NUEVO: Observaciones logísticas (estado entrega, incidentes)
   }) async {
     _isLoading = true;
     _errorMessage = null;
@@ -1099,6 +1100,7 @@ class EntregaProvider with ChangeNotifier, EntregaTrackingMixin {
         ventaId,
         fotosBase64: fotosBase64,
         observaciones: observaciones,
+        observacionesLogistica: observacionesLogistica,  // ✅ NUEVO: Pasar observaciones logísticas
       );
 
       if (response.success) {
