@@ -23,7 +23,6 @@ class ProductListItem extends StatefulWidget {
 
 class _ProductListItemState extends State<ProductListItem>
     with TickerProviderStateMixin {
-  int _quantity = 0;
   late AnimationController _scaleController;
   late Animation<double> _scaleAnimation;
   late AnimationController _bounceController;
@@ -72,68 +71,72 @@ class _ProductListItemState extends State<ProductListItem>
 
   void _incrementQuantity() {
     final stock = _getMainWarehouseStock();
-    if (_quantity < stock) {
-      setState(() {
-        _quantity++;
-      });
+    final carritoProvider = context.read<CarritoProvider>();
+    final cantidadActual = carritoProvider.obtenerCantidadProducto(widget.product.id);
 
+    if (cantidadActual < stock) {
       // Trigger bounce animation
       _bounceController.forward(from: 0.0);
 
-      final carritoProvider = context.read<CarritoProvider>();
+      // Agregar al carrito (esto dispara notifyListeners en el provider)
       carritoProvider.agregarProducto(widget.product);
     }
   }
 
   void _decrementQuantity() {
-    if (_quantity > 0) {
-      setState(() {
-        _quantity--;
-      });
-      final carritoProvider = context.read<CarritoProvider>();
+    final carritoProvider = context.read<CarritoProvider>();
+    final cantidadActual = carritoProvider.obtenerCantidadProducto(widget.product.id);
+
+    if (cantidadActual > 0) {
+      // Decrementar del carrito (esto dispara notifyListeners en el provider)
       carritoProvider.decrementarCantidad(widget.product.id);
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = context.colorScheme;
-    final isDark = context.isDark;
-    final stock = _getMainWarehouseStock();
-    final stockStatus = StockStatus.from(
-      stock: stock,
-      minimumStock: widget.product.stockMinimo,
-    );
-    final canAddToCart =
-        widget.product.activo &&
-        widget.product.precioVenta != null &&
-        stock > 0;
+    return Consumer<CarritoProvider>(
+      builder: (context, carritoProvider, _) {
+        final colorScheme = context.colorScheme;
+        final isDark = context.isDark;
+        final stock = _getMainWarehouseStock();
+        final stockStatus = StockStatus.from(
+          stock: stock,
+          minimumStock: widget.product.stockMinimo,
+        );
+        final canAddToCart =
+            widget.product.activo &&
+            widget.product.precioVenta != null &&
+            stock > 0;
 
-    // Verificar si el usuario es preventista
-    bool isPreventista = false;
-    try {
-      final authProvider = context.read<AuthProvider>();
-      final userRoles = authProvider.user?.roles ?? [];
-      isPreventista = userRoles.any(
-        (role) => role.toLowerCase() == 'preventista',
-      );
-    } catch (e) {
-      debugPrint('❌ Error al verificar rol en ProductListItem: $e');
-    }
+        // ✅ NUEVO: Obtener cantidad actual del carrito (sincronizada globalmente)
+        final _quantity = carritoProvider.obtenerCantidadProducto(widget.product.id);
 
-    // Obtener cantidad disponible
-    final cantidadDisponible =
-        widget.product.stockPrincipal?.cantidadDisponible != null
-        ? (widget.product.stockPrincipal!.cantidadDisponible as num).toInt()
-        : 0;
+        // Verificar si el usuario es preventista
+        bool isPreventista = false;
+        try {
+          final authProvider = context.read<AuthProvider>();
+          final userRoles = authProvider.user?.roles ?? [];
+          isPreventista = userRoles.any(
+            (role) => role.toLowerCase() == 'preventista',
+          );
+        } catch (e) {
+          debugPrint('❌ Error al verificar rol en ProductListItem: $e');
+        }
 
-    // Color marrón fijo para botones, precios y categoría
-    const brownColor = Color(0xFF795548);
-    final brownColorLight = brownColor.withAlpha(isDark ? 100 : 40);
-    final brownShadow = brownColor.withAlpha(isDark ? 30 : 15);
-    final brownBorder = brownColor.withAlpha(120);
+        // Obtener cantidad disponible
+        final cantidadDisponible =
+            widget.product.stockPrincipal?.cantidadDisponible != null
+            ? (widget.product.stockPrincipal!.cantidadDisponible as num).toInt()
+            : 0;
 
-    return Card(
+        // Color marrón fijo para botones, precios y categoría
+        const brownColor = Color(0xFF795548);
+        final brownColorLight = brownColor.withAlpha(isDark ? 100 : 40);
+        final brownShadow = brownColor.withAlpha(isDark ? 30 : 15);
+        final brownBorder = brownColor.withAlpha(120);
+
+        return Card(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       elevation: 4,
       color: _quantity > 0
@@ -308,6 +311,8 @@ class _ProductListItemState extends State<ProductListItem>
           ),
         ),
       ),
+        );
+      },
     );
   }
 }

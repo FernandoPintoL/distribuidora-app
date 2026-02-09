@@ -41,33 +41,28 @@ class _ProductoDetalleScreenState extends State<ProductoDetalleScreen> {
   }
 
   void _incrementarCantidad() {
-    setState(() {
-      _cantidad += 1;
-      _cantidadController.text = _cantidad.toString();
-    });
+    final carritoProvider = context.read<CarritoProvider>();
+    final cantidadActual = carritoProvider.obtenerCantidadProducto(widget.producto.id);
+    final stock = (widget.producto.stockPrincipal?.cantidadDisponible ?? 0 as num).toInt();
+
+    if (cantidadActual < stock) {
+      // Agregar 1 unidad al carrito
+      carritoProvider.agregarProducto(widget.producto, cantidad: 1);
+    }
   }
 
   void _decrementarCantidad() {
-    if (_cantidad > 1) {
-      setState(() {
-        _cantidad -= 1;
-        _cantidadController.text = _cantidad.toString();
-      });
+    final carritoProvider = context.read<CarritoProvider>();
+    final cantidadActual = carritoProvider.obtenerCantidadProducto(widget.producto.id);
+
+    if (cantidadActual > 0) {
+      // Decrementar 1 unidad del carrito
+      carritoProvider.decrementarCantidad(widget.producto.id);
     }
   }
 
   void _actualizarCantidad(String valor) {
-    if (valor.isEmpty) {
-      _cantidad = 0;
-      return;
-    }
-
-    final nuevaCantidad = int.tryParse(valor) ?? 0;
-    if (nuevaCantidad > 0) {
-      setState(() {
-        _cantidad = nuevaCantidad;
-      });
-    }
+    // Ya no se usa, pero lo dejamos por compatibilidad
   }
 
   Future<void> _agregarAlCarrito() async {
@@ -85,6 +80,7 @@ class _ProductoDetalleScreenState extends State<ProductoDetalleScreen> {
       // Simular delay de procesamiento
       await Future.delayed(const Duration(milliseconds: 500));
 
+      // ✅ NUEVO: Agregar al carrito (esto dispara notifyListeners() automáticamente)
       carritoProvider.agregarProducto(
         widget.producto,
         cantidad: _cantidad,
@@ -139,67 +135,71 @@ class _ProductoDetalleScreenState extends State<ProductoDetalleScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final stockDisponible =
-        widget.producto.stockPrincipal?.cantidadDisponible ?? 0;
-    final stockDispInt = (stockDisponible as num).toInt();
-    final tieneStock = stockDispInt > 0;
-    final cantidadMinima = widget.producto.cantidadMinima ?? 1;
+    return Consumer2<CarritoProvider, ProductProvider>(
+      builder: (context, carritoProvider, productProvider, _) {
+        final stockDisponible =
+            widget.producto.stockPrincipal?.cantidadDisponible ?? 0;
+        final stockDispInt = (stockDisponible as num).toInt();
+        final tieneStock = stockDispInt > 0;
+        final cantidadMinima = widget.producto.cantidadMinima ?? 1;
 
-    return Scaffold(
-      appBar: CustomGradientAppBar(
-        title: widget.producto.nombre,
-        customGradient: AppGradients.blue,
-      ),
-      body: Padding(
-        padding: const EdgeInsets.all(8.0),
-        child: SingleChildScrollView(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Imagen del producto
-              _buildImageGallery(),
-
-              // Información básica
-              Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Nombre y precio
-                    _buildNombreYPrecio(),
-                    const SizedBox(height: 16),
-
-                    // Información de stock
-                    _buildStockInfo(tieneStock, stockDispInt),
-                    const SizedBox(height: 16),
-
-                    // Descripción
-                    if (widget.producto.descripcion != null &&
-                        widget.producto.descripcion!.isNotEmpty)
-                      _buildDescripcion(),
-
-                    // Detalles adicionales
-                    const SizedBox(height: 16),
-                    _buildDetallesAdicionales(),
-
-                    // Volume discounts si existen
-                    const SizedBox(height: 16),
-                    // Aquí va el widget VolumeDiscountDisplay cuando se integre con descuentos
-                  ],
-                ),
-              ),
-
-              // Sección de agregar al carrito
-              _buildSeccionAgregarAlCarrito(
-                tieneStock: tieneStock,
-                cantidadMinima: cantidadMinima,
-                stockDisponible: stockDispInt,
-              ),
-              SizedBox(height: 16,)
-            ],
+        return Scaffold(
+          appBar: CustomGradientAppBar(
+            title: widget.producto.nombre,
+            customGradient: AppGradients.blue,
           ),
-        ),
-      ),
+          body: Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: SingleChildScrollView(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Imagen del producto
+                  _buildImageGallery(),
+
+                  // Información básica
+                  Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Nombre y precio
+                        _buildNombreYPrecio(),
+                        const SizedBox(height: 16),
+
+                        // Información de stock
+                        _buildStockInfo(tieneStock, stockDispInt),
+                        const SizedBox(height: 16),
+
+                        // Descripción
+                        if (widget.producto.descripcion != null &&
+                            widget.producto.descripcion!.isNotEmpty)
+                          _buildDescripcion(),
+
+                        // Detalles adicionales
+                        const SizedBox(height: 16),
+                        _buildDetallesAdicionales(),
+
+                        // Volume discounts si existen
+                        const SizedBox(height: 16),
+                        // Aquí va el widget VolumeDiscountDisplay cuando se integre con descuentos
+                      ],
+                    ),
+                  ),
+
+                  // Sección de agregar al carrito
+                  _buildSeccionAgregarAlCarrito(
+                    tieneStock: tieneStock,
+                    cantidadMinima: cantidadMinima,
+                    stockDisponible: stockDispInt,
+                  ),
+                  SizedBox(height: 16,)
+                ],
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 
@@ -445,116 +445,134 @@ class _ProductoDetalleScreenState extends State<ProductoDetalleScreen> {
     final colorScheme = context.colorScheme;
     final isDark = context.isDark;
 
-    return Container(
-      color: colorScheme.surface,
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Selector de cantidad
-          Text(
-            'Cantidad',
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
-          ),
-          const SizedBox(height: 12),
+    return Consumer<CarritoProvider>(
+      builder: (context, carritoProvider, _) {
+        final cantidadEnCarrito = carritoProvider.obtenerCantidadProducto(widget.producto.id);
+        const brownColor = Color(0xFF795548);
+        final brownColorLight = brownColor.withAlpha(isDark ? 100 : 40);
 
-          // Información de cantidad mínima
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: isDark
-                  ? Colors.orange.shade900.withOpacity(0.2)
-                  : Colors.orange.shade50,
-              border: Border.all(
-                color: isDark ? Colors.orange.shade700 : Colors.orange.shade200,
-              ),
-              borderRadius: BorderRadius.circular(4),
-            ),
-            child: Text(
-              'Cantidad mínima: $cantidadMinima ${widget.producto.unidadMedida?.nombre ?? 'unidades'}',
-              style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                    color: isDark
-                        ? Colors.orange.shade300
-                        : Colors.orange.shade800,
-                  ),
-            ),
-          ),
-          const SizedBox(height: 12),
-
-          // Input de cantidad con botones
-          Row(
+        return Container(
+          color: cantidadEnCarrito > 0 ? brownColorLight : colorScheme.surface,
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              IconButton(
-                onPressed: _decrementarCantidad,
-                icon: const Icon(Icons.remove),
-                style: IconButton.styleFrom(
-                  backgroundColor: colorScheme.surfaceVariant,
+              // Mostrar cantidad en carrito
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(12),
+                margin: const EdgeInsets.only(bottom: 16),
+                decoration: BoxDecoration(
+                  color: Colors.blue.shade50,
+                  border: Border.all(color: Colors.blue.shade200),
+                  borderRadius: BorderRadius.circular(8),
                 ),
-              ),
-              Expanded(
-                child: TextField(
-                  controller: _cantidadController,
-                  onChanged: _actualizarCantidad,
-                  keyboardType:
-                      const TextInputType.numberWithOptions(decimal: true),
-                  textAlign: TextAlign.center,
-                  decoration: InputDecoration(
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    contentPadding: const EdgeInsets.symmetric(vertical: 8),
+                child: Text(
+                  cantidadEnCarrito > 0
+                      ? '🛒 Cantidad en carrito: $cantidadEnCarrito ${widget.producto.unidadMedida?.nombre ?? 'unidades'}'
+                      : '📦 Este producto no está en el carrito',
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: Colors.blue.shade800,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
               ),
-              IconButton(
-                onPressed: _incrementarCantidad,
-                icon: const Icon(Icons.add),
-                style: IconButton.styleFrom(
-                  backgroundColor: isDark
-                      ? Colors.green.shade900.withOpacity(0.3)
-                      : Colors.green.shade100,
+
+              // Controles de cantidad
+              if (tieneStock)
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Cantidad',
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.bold,
+                          ),
+                    ),
+                    const SizedBox(height: 12),
+                    if (cantidadEnCarrito == 0)
+                      // Mostrar botón + si no está en carrito
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton.icon(
+                          onPressed: _incrementarCantidad,
+                          icon: const Icon(Icons.add_shopping_cart),
+                          label: const Text('Agregar al Carrito'),
+                          style: ElevatedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            backgroundColor: Colors.green.shade500,
+                            foregroundColor: Colors.white,
+                          ),
+                        ),
+                      )
+                    else
+                      // Mostrar controles +/- si ya está en carrito
+                      Container(
+                        decoration: BoxDecoration(
+                          color: brownColor.withAlpha(20),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: brownColor, width: 1.5),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            SizedBox(
+                              width: 48,
+                              height: 48,
+                              child: IconButton(
+                                onPressed: _decrementarCantidad,
+                                icon: const Icon(Icons.remove, size: 20),
+                                style: IconButton.styleFrom(
+                                  foregroundColor: brownColor,
+                                ),
+                              ),
+                            ),
+                            Text(
+                              '$cantidadEnCarrito',
+                              style: Theme.of(context).textTheme.headlineSmall
+                                  ?.copyWith(
+                                fontWeight: FontWeight.bold,
+                                color: brownColor,
+                              ),
+                            ),
+                            SizedBox(
+                              width: 48,
+                              height: 48,
+                              child: IconButton(
+                                onPressed: _incrementarCantidad,
+                                icon: const Icon(Icons.add, size: 20),
+                                style: IconButton.styleFrom(
+                                  foregroundColor: brownColor,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                  ],
+                )
+              else
+                // Mostrar mensaje si no hay stock
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.red.shade50,
+                    border: Border.all(color: Colors.red.shade200),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text(
+                    '❌ Producto sin stock disponible',
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: Colors.red.shade800,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
                 ),
-              ),
             ],
           ),
-          const SizedBox(height: 16),
-
-          // Botón agregar al carrito
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton.icon(
-              onPressed: tieneStock && !_agregandoAlCarrito
-                  ? _agregarAlCarrito
-                  : null,
-              icon: _agregandoAlCarrito
-                  ? const SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        valueColor:
-                            AlwaysStoppedAnimation<Color>(Colors.white),
-                      ),
-                    )
-                  : const Icon(Icons.shopping_cart_checkout),
-              label: Text(
-                _agregandoAlCarrito
-                    ? 'Agregando...'
-                    : tieneStock
-                        ? 'Agregar al Carrito'
-                        : 'Producto sin Stock',
-              ),
-              style: ElevatedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                backgroundColor: Colors.green.shade500,
-                disabledBackgroundColor: colorScheme.surfaceVariant,
-              ),
-            ),
-          ),
-        ],
-      ),
+        );
+      },
     );
   }
 }

@@ -34,6 +34,8 @@ class WebSocketConfig {
   static const String eventVentaEnTransito = 'venta.en_transito';
   static const String eventVentaEntregada = 'venta.entregada';
   static const String eventVentaProblema = 'venta.problema';
+  static const String eventVentaPreparacionCarga = 'venta:preparacion-carga'; // ✅ NUEVO: Cuando venta entra en PREPARACION_CARGA
+  static const String eventVentaListoParaEntrega = 'venta:listo-para-entrega'; // ✅ NUEVO: Cuando venta cambia a PENDIENTE_ENVIO
 
   // Eventos de Stock
   static const String eventStockReserved = 'stock_reserved';

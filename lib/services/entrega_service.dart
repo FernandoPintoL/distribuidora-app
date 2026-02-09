@@ -819,6 +819,125 @@ class EntregaService {
     }
   }
 
+  /// Confirmar que una venta fue entregada (FASE 3: Entrega Individual)
+  ///
+  /// POST /api/chofer/entregas/{id}/ventas/{venta_id}/confirmar-entrega
+  ///
+  /// Parámetros:
+  /// - fotos: List<String> (opcional) - Fotos en base64
+  /// - observaciones: String (opcional) - Observaciones sobre la entrega (max 500 chars)
+  ///
+  /// Respuesta:
+  /// - Venta actualizada con estado_logistico_id = ENTREGADA
+  Future<ApiResponse<Map<String, dynamic>>> confirmarVentaEntregada(
+    int entregaId,
+    int ventaId, {
+    List<String>? fotosBase64,
+    String? observaciones,
+  }) async {
+    try {
+      final data = <String, dynamic>{
+        if (fotosBase64 != null && fotosBase64.isNotEmpty) 'fotos': fotosBase64,
+        if (observaciones != null && observaciones.isNotEmpty)
+          'observaciones': observaciones,
+      };
+
+      final response = await _apiService.post(
+        '/chofer/entregas/$entregaId/ventas/$ventaId/confirmar-entrega',
+        data: data,
+      );
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        final responseData = response.data as Map<String, dynamic>;
+        return ApiResponse(
+          success: true,
+          data: responseData['data'] as Map<String, dynamic>?,
+          message: responseData['message'] ??
+              'Venta entregada correctamente',
+        );
+      } else {
+        return ApiResponse(
+          success: false,
+          message: response.data['message'] ??
+              'Error al confirmar entrega de venta',
+        );
+      }
+    } on DioException catch (e) {
+      return ApiResponse(
+        success: false,
+        message: 'Error al confirmar entrega: ${e.message}',
+      );
+    } catch (e) {
+      return ApiResponse(
+        success: false,
+        message: 'Error inesperado: ${e.toString()}',
+      );
+    }
+  }
+
+  /// Finalizar entrega (marcar como ENTREGADA cuando todas las ventas están entregadas)
+  ///
+  /// POST /api/chofer/entregas/{id}/finalizar-entrega
+  ///
+  /// Parámetros (todos opcionales):
+  /// - firma_digital_base64: String - Firma digital en base64
+  /// - fotos: List<String> - Fotos en base64
+  /// - observaciones: String - Observaciones finales
+  /// - monto_recolectado: double - Dinero recolectado
+  ///
+  /// Respuesta:
+  /// - Entrega actualizada con estado_entrega_id = ENTREGADO
+  /// - Validación: Todas las ventas deben estar ENTREGADAS o CANCELADAS
+  Future<ApiResponse<Entrega>> finalizarEntrega(
+    int entregaId, {
+    String? firmaBase64,
+    List<String>? fotosBase64,
+    String? observaciones,
+    double? montoRecolectado,
+  }) async {
+    try {
+      final data = <String, dynamic>{
+        if (firmaBase64 != null && firmaBase64.isNotEmpty)
+          'firma_digital_base64': firmaBase64,
+        if (fotosBase64 != null && fotosBase64.isNotEmpty) 'fotos': fotosBase64,
+        if (observaciones != null && observaciones.isNotEmpty)
+          'observaciones': observaciones,
+        if (montoRecolectado != null) 'monto_recolectado': montoRecolectado,
+      };
+
+      final response = await _apiService.post(
+        '/chofer/entregas/$entregaId/finalizar-entrega',
+        data: data,
+      );
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        final entrega = Entrega.fromJson(
+          response.data['data'] as Map<String, dynamic>,
+        );
+        return ApiResponse(
+          success: true,
+          data: entrega,
+          message: response.data['message'] ?? 'Entrega finalizada correctamente',
+        );
+      } else {
+        return ApiResponse(
+          success: false,
+          message: response.data['message'] ?? 'Error al finalizar entrega',
+        );
+      }
+    } on DioException catch (e) {
+      return ApiResponse(
+        success: false,
+        message: 'Error al finalizar entrega: ${e.message}',
+      );
+    } catch (e) {
+      return ApiResponse(
+        success: false,
+        message: 'Error inesperado: ${e.toString()}',
+      );
+    }
+  }
+
   // ✅ FASE 2: Obtener tipos de pago desde la API
   Future<ApiResponse<List>> obtenerTiposPago() async {
     try {

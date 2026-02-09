@@ -439,6 +439,7 @@ class ClientProvider with ChangeNotifier {
     _totalItems = 0;
     _hasMorePages = true;
     _errorMessage = null;
+    _safeNotifyListeners();
   }
 
   // Gestión de direcciones

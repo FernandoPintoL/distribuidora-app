@@ -684,6 +684,32 @@ class EntregaProvider with ChangeNotifier, EntregaTrackingMixin {
     if (data == null) return;
 
     switch (type) {
+      case 'asignada':
+        // ✅ NUEVO: Cuando entrega consolidada se asigna al chofer
+        debugPrint('🚚 ENTREGA CONSOLIDADA ASIGNADA');
+        debugPrint('   Entrega: #${data['numero_entrega'] ?? 'N/A'}');
+        debugPrint('   Chofer: ${data['chofer']?['nombre'] ?? 'N/A'}');
+        debugPrint('   Vehículo: ${data['vehiculo']?['placa'] ?? 'N/A'}');
+        debugPrint('   Peso Total: ${data['peso_kg']} kg');
+        debugPrint('   Cantidad de Ventas: ${data['cantidad_ventas'] ?? 'N/A'}');
+
+        // Mostrar notificación local al chofer
+        final numeroEntrega = data['numero_entrega'] as String? ?? 'N/A';
+        final nombreChofer = data['chofer']?['nombre'] as String? ?? 'Entrega asignada';
+        final placaVehiculo = data['vehiculo']?['placa'] as String? ?? 'N/A';
+        _notificationService.showEnvioProgramadoNotification(
+          envioId: numeroEntrega.hashCode,
+          cliente: 'Entrega $numeroEntrega - $placaVehiculo',
+          fecha: nombreChofer,
+        );
+
+        // Actualizar entrega actual
+        _actualizarEntregaActual(data);
+
+        // Notificar listeners para que UI se actualice
+        notifyListeners();
+        break;
+
       case 'preparacion_carga':
         debugPrint('📋 Entrega en preparación de carga: ${data['numero']}');
         _actualizarEntregaActual(data);
@@ -814,6 +840,50 @@ class EntregaProvider with ChangeNotifier, EntregaTrackingMixin {
             notifyListeners();
           }
         }
+        break;
+
+      case 'preparacion_carga':
+        // ✅ NUEVO: Cuando venta entra en PREPARACION_CARGA
+        debugPrint('📦 VENTA EN PREPARACION DE CARGA');
+        debugPrint('   Cantidad de Ventas: ${data['cantidad_ventas'] ?? 'N/A'}');
+        debugPrint('   Ventas: ${data['ventas_numeros']?.join(", ") ?? 'N/A'}');
+        debugPrint('   Entrega: #${data['numero_entrega'] ?? 'N/A'}');
+        debugPrint('   Mensaje: ${data['mensaje'] ?? 'N/A'}');
+
+        // Mostrar notificación local al usuario
+        final cantidadVentas = data['cantidad_ventas'] as int? ?? 1;
+        final numeroEntrega = data['numero_entrega'] as String? ?? 'N/A';
+        _notificationService.showEnvioProgramadoNotification(
+          envioId: numeroEntrega.hashCode,
+          cliente: 'Tu venta${cantidadVentas > 1 ? 's' : ''} (${cantidadVentas}) está en preparación',
+          fecha: numeroEntrega,
+        );
+
+        // Notificar a listeners para que UI se actualice
+        notifyListeners();
+        break;
+
+      case 'listo_para_entrega':
+        // ✅ NUEVO: Cuando venta cambia a PENDIENTE_ENVIO (listo para entrega)
+        debugPrint('✅ VENTA LISTA PARA ENTREGA');
+        debugPrint('   Cantidad de Ventas: ${data['cantidad_ventas'] ?? 'N/A'}');
+        debugPrint('   Ventas: ${data['ventas_numeros']?.join(", ") ?? 'N/A'}');
+        debugPrint('   Entrega: #${data['numero_entrega'] ?? 'N/A'}');
+        debugPrint('   Estado Anterior: ${data['estado_logistico_anterior'] ?? 'N/A'}');
+        debugPrint('   Estado Nuevo: ${data['estado_logistico_nuevo'] ?? 'N/A'}');
+        debugPrint('   Mensaje: ${data['mensaje'] ?? 'N/A'}');
+
+        // Mostrar notificación local al usuario
+        final cantidadVentasListo = data['cantidad_ventas'] as int? ?? 1;
+        final numeroEntregaListo = data['numero_entrega'] as String? ?? 'N/A';
+        _notificationService.showEnvioProgramadoNotification(
+          envioId: numeroEntregaListo.hashCode + 1,
+          cliente: 'Tu venta${cantidadVentasListo > 1 ? 's' : ''} (${cantidadVentasListo}) está lista para envío',
+          fecha: numeroEntregaListo,
+        );
+
+        // Notificar a listeners para que UI se actualice
+        notifyListeners();
         break;
 
       default:
@@ -1003,6 +1073,148 @@ class EntregaProvider with ChangeNotifier, EntregaTrackingMixin {
     }
   }
 
+  // Confirmar venta entregada (FASE 3: Entrega Individual)
+  Future<bool> confirmarVentaEntregada(
+    int entregaId,
+    int ventaId, {
+    required Function(String) onSuccess,
+    required Function(String) onError,
+    List<String>? fotosBase64,
+    String? observaciones,
+  }) async {
+    _isLoading = true;
+    _errorMessage = null;
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      notifyListeners();
+    });
+
+    try {
+      debugPrint(
+        '✅ Confirmando venta #$ventaId entregada en entrega #$entregaId',
+      );
+
+      final response = await _entregaService.confirmarVentaEntregada(
+        entregaId,
+        ventaId,
+        fotosBase64: fotosBase64,
+        observaciones: observaciones,
+      );
+
+      if (response.success) {
+        _errorMessage = null;
+
+        // Llamar callback de éxito
+        onSuccess(response.message ?? 'Venta entregada correctamente');
+
+        // Recargar la entrega para obtener datos actualizados
+        await obtenerEntrega(entregaId);
+
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          notifyListeners();
+        });
+        return true;
+      } else {
+        _errorMessage = response.message;
+
+        // Llamar callback de error
+        onError(_errorMessage ?? 'Error desconocido');
+
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          notifyListeners();
+        });
+        return false;
+      }
+    } catch (e) {
+      _errorMessage = 'Error inesperado: ${e.toString()}';
+      onError(_errorMessage!);
+
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        notifyListeners();
+      });
+      return false;
+    } finally {
+      _isLoading = false;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        notifyListeners();
+      });
+    }
+  }
+
+  // Finalizar entrega (FASE 3: Entrega Completada)
+  Future<bool> finalizarEntrega(
+    int entregaId, {
+    required Function(String) onSuccess,
+    required Function(String) onError,
+    String? firmaBase64,
+    List<String>? fotosBase64,
+    String? observaciones,
+    double? montoRecolectado,
+  }) async {
+    _isLoading = true;
+    _errorMessage = null;
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      notifyListeners();
+    });
+
+    try {
+      debugPrint('✅ Finalizando entrega #$entregaId');
+
+      final response = await _entregaService.finalizarEntrega(
+        entregaId,
+        firmaBase64: firmaBase64,
+        fotosBase64: fotosBase64,
+        observaciones: observaciones,
+        montoRecolectado: montoRecolectado,
+      );
+
+      if (response.success && response.data != null) {
+        _entregaActual = response.data;
+        _actualizarEnListaEntregas(_entregaActual!);
+        _errorMessage = null;
+
+        // Mostrar notificación de cambio de estado
+        await _notificationService.showDeliveryStateChangeNotification(
+          deliveryId: _entregaActual!.id,
+          newState: _entregaActual!.estado,
+          clientName: _entregaActual!.cliente ?? 'Cliente',
+        );
+
+        // Llamar callback de éxito
+        onSuccess(response.message ?? 'Entrega finalizada correctamente');
+
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          notifyListeners();
+        });
+        return true;
+      } else {
+        _errorMessage = response.message;
+
+        // Llamar callback de error
+        onError(_errorMessage ?? 'Error desconocido');
+
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          notifyListeners();
+        });
+        return false;
+      }
+    } catch (e) {
+      _errorMessage = 'Error inesperado: ${e.toString()}';
+      onError(_errorMessage!);
+
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        notifyListeners();
+      });
+      return false;
+    } finally {
+      _isLoading = false;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        notifyListeners();
+      });
+    }
+  }
+
   // Obtener progreso de entrega (FASE 2)
   Future<Map<String, dynamic>?> obtenerProgresoEntrega(int entregaId) async {
     try {
@@ -1127,6 +1339,82 @@ class EntregaProvider with ChangeNotifier, EntregaTrackingMixin {
     } catch (e) {
       _errorMessage = 'Error inesperado: ${e.toString()}';
       debugPrint('❌ [INICIAR_ENTREGA] Excepción: $e');
+      onError(_errorMessage!);
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        notifyListeners();
+      });
+      return false;
+    } finally {
+      _isLoading = false;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        notifyListeners();
+      });
+    }
+  }
+
+  /// ✅ NUEVO: Confirmar carga lista
+  /// Cambia estado de PREPARACION_CARGA a LISTO_PARA_ENTREGA
+  Future<bool> confirmarCargaLista(
+    int entregaId, {
+    required Function(String) onSuccess,
+    required Function(String) onError,
+  }) async {
+    _isLoading = true;
+    _errorMessage = null;
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      notifyListeners();
+    });
+
+    try {
+      // Validar que el estado actual sea PREPARACION_CARGA
+      if (_entregaActual == null) {
+        _errorMessage = 'Entrega no cargada';
+        onError('Entrega no cargada');
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          notifyListeners();
+        });
+        return false;
+      }
+
+      final estadoActual =
+          _entregaActual!.estadoEntregaCodigo ?? _entregaActual!.estado;
+      debugPrint('🔍 [CONFIRMAR_CARGA] Estado actual: $estadoActual');
+
+      if (estadoActual != 'PREPARACION_CARGA') {
+        _errorMessage =
+            'La entrega debe estar en estado PREPARACION_CARGA. Estado actual: $estadoActual';
+        onError(_errorMessage!);
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          notifyListeners();
+        });
+        return false;
+      }
+
+      debugPrint('✅ [CONFIRMAR_CARGA] Validación OK, confirmando carga...');
+
+      // Confirmar cargo completo (cambia estado a LISTO_PARA_ENTREGA)
+      final response = await confirmarCargoCompleto(entregaId);
+
+      if (response) {
+        debugPrint('✅ [CONFIRMAR_CARGA] Carga confirmada correctamente');
+        onSuccess('Carga confirmada. Listo para iniciar entrega.');
+
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          notifyListeners();
+        });
+        return true;
+      } else {
+        _errorMessage = errorMessage ?? 'Error al confirmar carga';
+        onError(_errorMessage!);
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          notifyListeners();
+        });
+        return false;
+      }
+    } catch (e) {
+      _errorMessage = 'Error inesperado: ${e.toString()}';
+      debugPrint('❌ [CONFIRMAR_CARGA] Excepción: $e');
       onError(_errorMessage!);
       WidgetsBinding.instance.addPostFrameCallback((_) {
         notifyListeners();

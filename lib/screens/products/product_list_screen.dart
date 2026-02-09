@@ -121,21 +121,26 @@ class _ProductListScreenState extends State<ProductListScreen>
     await productProvider.loadProducts(search: _searchController.text);
   }
 
-  /// Refresh: Limpia y recarga los productos desde el inicio
+  /// Refresh: Limpia el input, limpia lista y recarga productos desde el inicio
   Future<void> _refreshProducts() async {
     final productProvider = context.read<ProductProvider>();
+    // Limpiar campo de búsqueda
+    _searchController.clear();
     // Limpiar lista y resetear paginador
     productProvider.clearProducts();
-    // Recargar desde página 1
-    await productProvider.loadProducts(search: _searchController.text.isEmpty ? null : _searchController.text);
+    // Recargar desde página 1 sin búsqueda
+    await productProvider.loadProducts();
   }
 
   void _onSearchChanged(String value) {
-    _debounceTimer?.cancel();
-    _debounceTimer = Timer(const Duration(milliseconds: 500), () {
-      final productProvider = context.read<ProductProvider>();
-      productProvider.loadProducts(search: value.isEmpty ? null : value);
-    });
+    // La búsqueda ahora se hace al presionar Enter o al hacer clic en el botón
+    // Esta función ya no se ejecuta automáticamente
+  }
+
+  void _performSearch() {
+    final productProvider = context.read<ProductProvider>();
+    final searchText = _searchController.text;
+    productProvider.loadProducts(search: searchText.isEmpty ? null : searchText);
   }
 
   void _clearSearch() {
@@ -371,7 +376,7 @@ class _ProductListScreenState extends State<ProductListScreen>
 
   void _searchByBarcode(String barcode) {
     _searchController.text = barcode;
-    _onSearchChanged(barcode);
+    _performSearch();
   }
 
   void _toggleView() {
@@ -459,6 +464,7 @@ class _ProductListScreenState extends State<ProductListScreen>
                       controller: _searchController,
                       focusNode: _searchFocusNode,
                       onChanged: _onSearchChanged,
+                      onSubmitted: (_) => _performSearch(),
                       decoration: InputDecoration(
                         hintText: 'Buscar productos...',
                         hintStyle: TextStyle(
@@ -485,7 +491,7 @@ class _ProductListScreenState extends State<ProductListScreen>
                   ),
                 ),
                 const SizedBox(width: 12),
-                // Botón de scanner de código de barras - Premium style
+                // Botón de búsqueda - Premium style
                 Container(
                   height: 56,
                   width: 56,
@@ -507,17 +513,17 @@ class _ProductListScreenState extends State<ProductListScreen>
                     ],
                   ),
                   child: IconButton(
-                    onPressed: _openBarcodeScanner,
+                    onPressed: _performSearch,
                     icon: Icon(
-                      Icons.qr_code_scanner,
+                      Icons.search,
                       color: colorScheme.primary,
                       size: 24,
                     ),
-                    tooltip: 'Escanear código de barras',
+                    tooltip: 'Buscar',
                   ),
                 ),
                 const SizedBox(width: 8),
-                // Botón de cambio de vista - Premium style
+                // Botón de recarga - Premium style
                 Container(
                   height: 56,
                   width: 56,
@@ -539,33 +545,13 @@ class _ProductListScreenState extends State<ProductListScreen>
                     ],
                   ),
                   child: IconButton(
-                    onPressed: _toggleView,
-                    icon: AnimatedSwitcher(
-                      duration: const Duration(milliseconds: 200),
-                      transitionBuilder: (child, animation) {
-                        return RotationTransition(
-                          turns: Tween<double>(
-                            begin: 0.0,
-                            end: 0.5,
-                          ).animate(animation),
-                          child: FadeTransition(
-                            opacity: animation,
-                            child: child,
-                          ),
-                        );
-                      },
-                      child: Icon(
-                        _isGridView
-                            ? Icons.view_list_rounded
-                            : Icons.grid_view_rounded,
-                        color: colorScheme.primary,
-                        size: 24,
-                        key: ValueKey(_isGridView),
-                      ),
+                    onPressed: _refreshProducts,
+                    icon: Icon(
+                      Icons.refresh,
+                      color: colorScheme.primary,
+                      size: 24,
                     ),
-                    tooltip: _isGridView
-                        ? 'Vista de lista'
-                        : 'Vista de cuadrícula',
+                    tooltip: 'Recargar',
                   ),
                 ),
               ],

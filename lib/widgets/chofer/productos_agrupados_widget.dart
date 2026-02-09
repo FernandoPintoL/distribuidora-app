@@ -147,7 +147,7 @@ class _ProductosAgrupadsWidgetState extends State<ProductosAgrupadsWidget> {
                     ),
                     const SizedBox(width: 12),
                     Text(
-                      'Lista Generica de Productos en la Entrega # ${widget.entregaId}',
+                      'Lista Generica #${widget.entregaId}',
                       style: Theme.of(context).textTheme.titleMedium?.copyWith(
                         fontWeight: FontWeight.bold,
                       ),

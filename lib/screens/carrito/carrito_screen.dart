@@ -18,9 +18,12 @@ class CarritoScreen extends StatefulWidget {
 }
 
 class _CarritoScreenState extends State<CarritoScreen> {
+  late TextEditingController _searchClienteController;
+
   @override
   void initState() {
     super.initState();
+    _searchClienteController = TextEditingController();
     // 🔑 FASE 3: Calcular precios CON RANGOS cuando se abre la pantalla
     // Usamos calcularCarritoConRangosAhora() porque es la PRIMERA vez
     // (no usamos debounce para la carga inicial)
@@ -30,6 +33,12 @@ class _CarritoScreenState extends State<CarritoScreen> {
         carritoProvider.calcularCarritoConRangosAhora();
       }
     });
+  }
+
+  @override
+  void dispose() {
+    _searchClienteController.dispose();
+    super.dispose();
   }
 
   @override
@@ -347,194 +356,195 @@ class _CarritoScreenState extends State<CarritoScreen> {
               ),
             )
           else
-            // Dropdown normal cuando se crea una nueva proforma
-            DropdownSearch<Client>(
-              items: clientProvider.clients.where((c) => c.activo).toList(),
-              selectedItem: carritoProvider.clienteSeleccionado,
-              itemAsString: (client) {
-                final creditBadge = client.puedeAtenerCredito
-                    ? ' ✅ Crédito'
-                    : ' ❌ Sin crédito';
-                final phone =
-                    client.telefono != null && client.telefono!.isNotEmpty
-                    ? ' (${client.telefono})'
-                    : '';
-                return '${client.nombre}$phone$creditBadge';
-              },
-              onChanged: (cliente) {
-                if (cliente != null) {
-                  carritoProvider.setClienteSeleccionado(cliente);
-                  debugPrint('✅ Cliente seleccionado: ${cliente.nombre}');
-                  debugPrint('✅ Cliente seleccionado: ${cliente.id}');
-                  debugPrint(
-                    '✅ Puede atender crédito: ${cliente.puedeAtenerCredito}',
-                  );
-                }
-              },
-            popupProps: PopupProps.menu(
-              showSearchBox: true,
-              searchFieldProps: TextFieldProps(
-                decoration: InputDecoration(
-                  hintText: 'Buscar cliente...',
-                  contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 8,
-                  ),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
-                    borderSide: BorderSide(
-                      color: colorScheme.primary.withOpacity(0.5),
+            // ✅ DropdownSearch integrado con búsqueda manual (single unified component)
+            Consumer<ClientProvider>(
+              builder: (context, clientProviderConsumer, _) {
+                debugPrint('🔄 Rebuilding DropdownSearch with ${clientProviderConsumer.clients.length} clients');
+
+                return DropdownSearch<Client>(
+                  key: ValueKey('dropdown_${clientProviderConsumer.clients.length}'),
+                  asyncItems: (String filter) async {
+                    // ✅ Buscar en el backend cuando el usuario escribe
+                    if (filter.isNotEmpty) {
+                      await clientProvider.loadClients(
+                        search: filter,
+                        active: true,
+                        perPage: 20,
+                      );
+                    }
+                    return clientProvider.clients;
+                  },
+                  selectedItem: carritoProvider.clienteSeleccionado,
+                  itemAsString: (client) {
+                    final creditBadge = client.puedeAtenerCredito
+                        ? ' ✅ Crédito'
+                        : ' ❌ Sin crédito';
+                    final phone =
+                        client.telefono != null && client.telefono!.isNotEmpty
+                        ? ' (${client.telefono})'
+                        : '';
+                    return '${client.nombre}$phone$creditBadge';
+                  },
+                  onChanged: (cliente) {
+                    if (cliente != null) {
+                      carritoProvider.setClienteSeleccionado(cliente);
+                      debugPrint('✅ Cliente seleccionado: ${cliente.nombre}');
+                      debugPrint('✅ Cliente seleccionado: ${cliente.id}');
+                      debugPrint(
+                        '✅ Puede atender crédito: ${cliente.puedeAtenerCredito}',
+                      );
+                    }
+                  },
+                  popupProps: PopupProps.menu(
+                    showSearchBox: true,
+                    searchFieldProps: TextFieldProps(
+                      controller: _searchClienteController,
+                      decoration: InputDecoration(
+                        hintText: 'Buscar cliente...',
+                        prefixIcon: const Icon(Icons.search),
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 12,
+                        ),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
                     ),
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
-                    borderSide: BorderSide(
-                      color: colorScheme.primary.withOpacity(0.5),
+                    menuProps: MenuProps(
+                      borderRadius: BorderRadius.circular(8),
+                      elevation: 8,
+                      backgroundColor: colorScheme.surface,
                     ),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
-                    borderSide: BorderSide(
-                      color: colorScheme.primary,
-                      width: 2,
-                    ),
-                  ),
-                  filled: true,
-                  fillColor: colorScheme.surface,
-                ),
-              ),
-              menuProps: MenuProps(
-                borderRadius: BorderRadius.circular(8),
-                elevation: 8,
-                backgroundColor: colorScheme.surface,
-              ),
-              itemBuilder: (context, item, isSelected) {
-                return Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 8,
-                  ),
-                  decoration: BoxDecoration(
-                    color: isSelected
-                        ? colorScheme.primary.withOpacity(isDark ? 0.2 : 0.1)
-                        : colorScheme.surface,
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      // Nombre y badge de crédito
-                      Row(
-                        children: [
-                          Expanded(
-                            child: Text(
-                              item.nombre,
-                              style: TextStyle(
-                                fontWeight: FontWeight.w500,
-                                fontSize: 14,
-                                color: isSelected
-                                    ? colorScheme.primary
-                                    : colorScheme.onSurface,
-                              ),
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                          // ✅ Badge de crédito disponible
-                          if (item.puedeAtenerCredito)
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 6,
-                                vertical: 2,
-                              ),
-                              decoration: BoxDecoration(
-                                color: Colors.green.withOpacity(
-                                  isDark ? 0.2 : 0.1,
-                                ),
-                                borderRadius: BorderRadius.circular(4),
-                              ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Icon(
-                                    Icons.check_circle,
-                                    size: 12,
-                                    color: Colors.green.shade500,
-                                  ),
-                                  const SizedBox(width: 2),
-                                  Text(
-                                    'Crédito',
+                    itemBuilder: (context, item, isSelected) {
+                      return Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 8,
+                        ),
+                        decoration: BoxDecoration(
+                          color: isSelected
+                              ? colorScheme.primary.withOpacity(isDark ? 0.2 : 0.1)
+                              : colorScheme.surface,
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            // Nombre y badge de crédito
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: Text(
+                                    item.nombre,
                                     style: TextStyle(
-                                      fontSize: 10,
-                                      fontWeight: FontWeight.w600,
-                                      color: Colors.green.shade500,
+                                      fontWeight: FontWeight.w500,
+                                      fontSize: 14,
+                                      color: isSelected
+                                          ? colorScheme.primary
+                                          : colorScheme.onSurface,
+                                    ),
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                                // ✅ Badge de crédito disponible
+                                if (item.puedeAtenerCredito)
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 6,
+                                      vertical: 2,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: Colors.green.withOpacity(
+                                        isDark ? 0.2 : 0.1,
+                                      ),
+                                      borderRadius: BorderRadius.circular(4),
+                                    ),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Icon(
+                                          Icons.check_circle,
+                                          size: 12,
+                                          color: Colors.green.shade500,
+                                        ),
+                                        const SizedBox(width: 2),
+                                        Text(
+                                          'Crédito',
+                                          style: TextStyle(
+                                            fontSize: 10,
+                                            fontWeight: FontWeight.w600,
+                                            color: Colors.green.shade500,
+                                          ),
+                                        ),
+                                      ],
                                     ),
                                   ),
-                                ],
+                              ],
+                            ),
+                            const SizedBox(height: 4),
+                            // Teléfono
+                            if (item.telefono != null && item.telefono!.isNotEmpty)
+                              Text(
+                                item.telefono!,
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: colorScheme.onSurfaceVariant,
+                                ),
                               ),
-                            ),
-                        ],
+                            // Límite de crédito si está disponible
+                            if (item.puedeAtenerCredito &&
+                                item.limiteCredito != null &&
+                                item.limiteCredito! > 0)
+                              Padding(
+                                padding: const EdgeInsets.only(top: 4),
+                                child: Text(
+                                  'Límite: Bs. ${item.limiteCredito!.toStringAsFixed(2)}',
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    color: Colors.green.shade500,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ),
+                          ],
+                        ),
+                      );
+                    },
+                  ),
+                  dropdownDecoratorProps: DropDownDecoratorProps(
+                    dropdownSearchDecoration: InputDecoration(
+                      hintText: 'Seleccionar cliente...',
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 12,
                       ),
-                      const SizedBox(height: 4),
-                      // Teléfono
-                      if (item.telefono != null && item.telefono!.isNotEmpty)
-                        Text(
-                          item.telefono!,
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: colorScheme.onSurfaceVariant,
-                          ),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                        borderSide: BorderSide(
+                          color: colorScheme.primary.withOpacity(0.5),
                         ),
-                      // Límite de crédito si está disponible
-                      if (item.puedeAtenerCredito &&
-                          item.limiteCredito != null &&
-                          item.limiteCredito! > 0)
-                        Padding(
-                          padding: const EdgeInsets.only(top: 4),
-                          child: Text(
-                            'Límite: Bs. ${item.limiteCredito!.toStringAsFixed(2)}',
-                            style: TextStyle(
-                              fontSize: 11,
-                              color: Colors.green.shade500,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                        borderSide: BorderSide(
+                          color: colorScheme.primary.withOpacity(0.5),
                         ),
-                    ],
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                        borderSide: BorderSide(
+                          color: colorScheme.primary,
+                          width: 2,
+                        ),
+                      ),
+                      filled: true,
+                      fillColor: colorScheme.surface,
+                    ),
                   ),
                 );
               },
             ),
-            dropdownDecoratorProps: DropDownDecoratorProps(
-              dropdownSearchDecoration: InputDecoration(
-                hintText: 'Seleccionar cliente...',
-                contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 12,
-                ),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
-                  borderSide: BorderSide(
-                    color: colorScheme.primary.withOpacity(0.5),
-                  ),
-                ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
-                  borderSide: BorderSide(
-                    color: colorScheme.primary.withOpacity(0.5),
-                  ),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
-                  borderSide: BorderSide(
-                    color: colorScheme.primary,
-                    width: 2,
-                  ),
-                ),
-                filled: true,
-                fillColor: colorScheme.surface,
-              ),
-            ),
-          ),
           // Mostrar cliente seleccionado con info de crédito
           if (carritoProvider.tieneClienteSeleccionado)
             Padding(

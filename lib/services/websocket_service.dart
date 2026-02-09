@@ -550,6 +550,40 @@ class WebSocketService {
       _handleEvent(WebSocketConfig.eventVentaProblema, data);
     });
 
+    // ✅ NUEVO: Evento cuando venta entra en PREPARACION_CARGA
+    _socket!.on(WebSocketConfig.eventVentaPreparacionCarga, (data) {
+      debugPrint('📦 VENTA EN PREPARACION DE CARGA');
+      debugPrint('   Cantidad de Ventas: ${data['cantidad_ventas'] ?? 'N/A'}');
+      debugPrint('   Ventas: ${data['ventas_numeros']?.join(", ") ?? 'N/A'}');
+      debugPrint('   Entrega: #${data['numero_entrega'] ?? 'N/A'}');
+      debugPrint('   Chofer: ${data['chofer']?['nombre'] ?? 'N/A'}');
+      debugPrint('   Vehículo: ${data['vehiculo']?['placa'] ?? 'N/A'}');
+      debugPrint('   Mensaje: ${data['mensaje'] ?? 'N/A'}');
+      _ventaController.add({
+        'type': 'preparacion_carga',
+        'data': data,
+      });
+      _handleEvent(WebSocketConfig.eventVentaPreparacionCarga, data);
+    });
+
+    // ✅ NUEVO: Evento cuando venta está lista para entrega (cambia a PENDIENTE_ENVIO)
+    _socket!.on(WebSocketConfig.eventVentaListoParaEntrega, (data) {
+      debugPrint('✅ VENTA LISTA PARA ENTREGA');
+      debugPrint('   Cantidad de Ventas: ${data['cantidad_ventas'] ?? 'N/A'}');
+      debugPrint('   Ventas: ${data['ventas_numeros']?.join(", ") ?? 'N/A'}');
+      debugPrint('   Entrega: #${data['numero_entrega'] ?? 'N/A'}');
+      debugPrint('   Estado Anterior: ${data['estado_logistico_anterior'] ?? 'N/A'}');
+      debugPrint('   Estado Nuevo: ${data['estado_logistico_nuevo'] ?? 'N/A'}');
+      debugPrint('   Chofer: ${data['chofer']?['nombre'] ?? 'N/A'}');
+      debugPrint('   Vehículo: ${data['vehiculo']?['placa'] ?? 'N/A'}');
+      debugPrint('   Mensaje: ${data['mensaje'] ?? 'N/A'}');
+      _ventaController.add({
+        'type': 'listo_para_entrega',
+        'data': data,
+      });
+      _handleEvent(WebSocketConfig.eventVentaListoParaEntrega, data);
+    });
+
     // ✅ NUEVA FASE 3: Eventos de Créditos
     // Notificación de crédito vencido
     _socket!.on(WebSocketConfig.eventCreditoVencido, (data) {
