@@ -14,6 +14,7 @@ import '../../config/config.dart';
 import '../../services/location_service.dart';
 import '../../services/print_service.dart';
 import '../../utils/phone_utils.dart';
+import 'resumen_pagos_entrega_screen.dart';  // ✅ NUEVO: Para ver resumen de pagos
 // Widgets extraídos
 import 'entrega_detalle/widgets/estado_card.dart';
 import 'entrega_detalle/widgets/informacion_general_card.dart';
@@ -171,6 +172,33 @@ class _EntregaDetalleScreenState extends State<EntregaDetalleScreen> {
       appBar: CustomGradientAppBar(
         title: 'Detalle de Entrega # ${widget.entregaId}',
         customGradient: AppGradients.green,
+        actions: [
+          // ✅ NUEVO: Botón para ver resumen de pagos
+          Padding(
+            padding: const EdgeInsets.only(right: 8),
+            child: Consumer<EntregaProvider>(
+              builder: (context, provider, _) {
+                return IconButton(
+                  icon: const Icon(Icons.receipt_long),
+                  tooltip: 'Resumen de Pagos',
+                  onPressed: () {
+                    if (provider.entregaActual != null) {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => ResumenPagosEntregaScreen(
+                            entrega: provider.entregaActual!,
+                            provider: provider,
+                          ),
+                        ),
+                      );
+                    }
+                  },
+                );
+              },
+            ),
+          ),
+        ],
       ),
       body: FutureBuilder<bool>(
         future: context.read<EntregaProvider>().obtenerEntrega(
@@ -254,15 +282,21 @@ class _EntregaDetalleScreenState extends State<EntregaDetalleScreen> {
           }
 
           // Datos cargados correctamente
-          return Consumer<EntregaProvider>(
-            builder: (context, provider, _) {
+          // ✅ Usar Selector para escuchar específicamente cambios en entregaActual
+          return Selector<EntregaProvider, Entrega?>(
+            selector: (context, provider) => provider.entregaActual,
+            builder: (context, entregaActual, _) {
               debugPrint(
-                '🏗️ [CONSUMER_BUILD] entregaActual=${provider.entregaActual?.id}, provider_id=${provider.hashCode}',
+                '🏗️ [CONSUMER_BUILD] entregaActual=${entregaActual?.id}',
               );
 
-              if (provider.entregaActual == null) {
+              if (entregaActual == null) {
+                final provider = context.read<EntregaProvider>();
                 return _buildErrorContentWithDebug(provider);
               }
+
+              // ✅ Obtener provider para acceder a otros métodos
+              final provider = context.read<EntregaProvider>();
 
               // ✅ NUEVO: RefreshIndicator para actualizar al hacer scroll hacia abajo
               return RefreshIndicator(
@@ -320,22 +354,21 @@ class _EntregaDetalleScreenState extends State<EntregaDetalleScreen> {
       '✅ [BUILD_CONTENT] Renderizando contenido de entrega ${entrega.id}',
     );
 
-    return RefreshIndicator(
-      onRefresh: () => _cargarDetalle(provider),
-      backgroundColor: Theme.of(context).brightness == Brightness.dark
-          ? Colors.grey[800]!
-          : Colors.white,
-      color: Theme.of(context).primaryColor,
-      strokeWidth: 2.5,
-      child: ListView(
+    // ✅ REMOVIDO: RefreshIndicator redundante (ya está en el Selector)
+    return ListView(
         padding: const EdgeInsets.all(16),
         children: [
+          // ✅ CRÍTICO: Keys únicos para forzar reconstrucción cuando los datos cambien
           // Estado - Widget extraído
-          EstadoCard(entrega: entrega),
+          EstadoCard(
+            key: ValueKey('estado_${entrega.id}_${entrega.estado}'),
+            entrega: entrega,
+          ),
           const SizedBox(height: 16),
 
           // ✅ NUEVO: Localidades - Widget extraído
           LocalidadesCard(
+            key: ValueKey('localidades_${entrega.id}'),
             entrega: entrega,
             isDarkMode:
                 Theme.of(context).brightness == Brightness.dark,
@@ -345,6 +378,7 @@ class _EntregaDetalleScreenState extends State<EntregaDetalleScreen> {
           // SLA Status - FASE 6
           if (entrega.fechaEntregaComprometida != null) ...[
             SlaStatusWidget(
+              key: ValueKey('sla_${entrega.id}'),
               fechaEntregaComprometida: entrega.fechaEntregaComprometida,
               ventanaEntregaIni: entrega.ventanaEntregaIni,
               ventanaEntregaFin: entrega.ventanaEntregaFin,
@@ -354,10 +388,14 @@ class _EntregaDetalleScreenState extends State<EntregaDetalleScreen> {
             const SizedBox(height: 16),
           ],
           // Información general - Widget extraído
-          InformacionGeneralCard(entrega: entrega),
+          InformacionGeneralCard(
+            key: ValueKey('info_${entrega.id}'),
+            entrega: entrega,
+          ),
           const SizedBox(height: 16),
           // ✅ NUEVO: Información del entregador
           EntregadorInfo(
+            key: ValueKey('entregador_${entrega.id}'),
             entregador: entrega.entregador,
             choferNombre: entrega.chofer?.nombre,
             isDarkMode:
@@ -366,6 +404,7 @@ class _EntregaDetalleScreenState extends State<EntregaDetalleScreen> {
           const SizedBox(height: 16),
           // ✅ Sección de Productos Agrupados (desde endpoint separado)
           Padding(
+            key: ValueKey('productos_${entrega.id}'),
             padding: const EdgeInsets.only(bottom: 16),
             child: ProductosAgrupadsWidget(
               entregaId: entrega.id,
@@ -377,6 +416,7 @@ class _EntregaDetalleScreenState extends State<EntregaDetalleScreen> {
           const SizedBox(height: 16), */
           // Sección de Ventas Asignadas - Widget extraído
           VentasAsignadasCard(
+            key: ValueKey('ventas_${entrega.id}_${entrega.ventas.length}'),
             entrega: entrega,
             provider: provider,
             onLlamarCliente: (tel) => PhoneUtils.llamarCliente(context, tel),
@@ -390,6 +430,7 @@ class _EntregaDetalleScreenState extends State<EntregaDetalleScreen> {
           ], */
           // Botones de acción - Widget extraído
           BotonesAccion(
+            key: ValueKey('botones_${entrega.id}_${entrega.estado}'),
             entrega: entrega,
             provider: provider,
             onIniciarEntrega: (ctx, ent, prov) =>
@@ -408,7 +449,6 @@ class _EntregaDetalleScreenState extends State<EntregaDetalleScreen> {
           ),
           const SizedBox(height: 42),
         ],
-      ),
-    );
+      );
   }
 }

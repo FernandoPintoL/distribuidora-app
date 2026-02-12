@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../models/entrega.dart';
 import '../../providers/entrega_provider.dart';
-import '../../providers/entrega_estados_provider.dart';
-import 'entregas_asignadas/entregas_asignadas_exports.dart';
+import 'entregas_asignadas/widgets/entrega_card.dart';
 
 class EntregasAsignadasScreen extends StatefulWidget {
   const EntregasAsignadasScreen({Key? key}) : super(key: key);
@@ -15,29 +13,57 @@ class EntregasAsignadasScreen extends StatefulWidget {
 
 class _EntregasAsignadasScreenState extends State<EntregasAsignadasScreen> {
   String? _filtroEstado;
-  String _busqueda = '';
-  DateTime? _fechaInicio;
-  DateTime? _fechaFin;
-  bool _filtrosExpandidos = false;
-  bool _isRefreshing = false;
-  final TextEditingController _searchController = TextEditingController();
-  late Future<void> _cargarFuture;
+  DateTime? _fechaFiltro = DateTime.now();
+  String? _searchQuery;  // ✅ NUEVO: búsqueda
+  String _searchInput = '';  // ✅ NUEVO: input temporal de búsqueda (antes de confirmar)
+  int? _localidadFiltro;  // ✅ NUEVO: localidad
+  bool _mostrarFiltros = false;  // ✅ NUEVO: control de visibilidad de filtros (inicia OCULTO)
+  final TextEditingController _searchController = TextEditingController();  // ✅ NUEVO: controller para el campo
+
+  // ✅ CRÍTICO: Future estable que NO se recrea en cada rebuild
+  late Future<bool> _futureEntregas;
+
+  Future<void> _onCambiarFiltro(String? nuevoEstado) async {
+    setState(() => _filtroEstado = nuevoEstado);
+    _cargarEntregas();  // ✅ NUEVO: Recargar entregas después de cambiar filtro
+  }
 
   @override
   void initState() {
     super.initState();
-    // Inicializar con un future completado para evitar LateInitializationError
-    _cargarFuture = Future.value();
+    // ✅ CRÍTICO: Crear el Future UNA SOLA VEZ en initState
+    _cargarEntregas();
+  }
 
-    // Retrasar la carga de datos hasta después del build para evitar
-    // "setState() called during build" error cuando el provider notifica listeners
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) {
-        setState(() {
-          _cargarFuture = _cargarDatos();
-        });
-      }
+  // ✅ NUEVO: Método para (re)cargar entregas sin recrear el Future
+  void _cargarEntregas() {
+    _futureEntregas = context.read<EntregaProvider>().obtenerEntregasAsignadas(
+          estado: _filtroEstado,
+          fechaDesde: _fechaFiltro != null
+              ? _fechaFiltro!.toIso8601String().split('T')[0]
+              : null,
+          search: _searchQuery,
+          localidadId: _localidadFiltro,
+        );
+  }
+
+  // ✅ NUEVO: Ejecutar búsqueda manualmente (por Enter o botón)
+  Future<void> _ejecutarBusqueda() async {
+    setState(() {
+      _searchQuery = _searchInput.isEmpty ? null : _searchInput;
     });
+    _cargarEntregas();
+    debugPrint('🔍 Búsqueda ejecutada: $_searchQuery');
+  }
+
+  // ✅ NUEVO: Limpiar campo de búsqueda
+  void _limpiarBusqueda() {
+    _searchController.clear();
+    setState(() {
+      _searchInput = '';
+      _searchQuery = null;
+    });
+    _cargarEntregas();
   }
 
   @override
@@ -46,140 +72,23 @@ class _EntregasAsignadasScreenState extends State<EntregasAsignadasScreen> {
     super.dispose();
   }
 
-  Future<void> _cargarDatos() async {
-    final estadosProvider = context.read<EntregaEstadosProvider>();
-    await estadosProvider.cargarEstados();
-
-    final entregaProvider = context.read<EntregaProvider>();
-    await entregaProvider.obtenerEntregasAsignadas(
-      estado: _filtroEstado != 'Todas' && _filtroEstado != null
-          ? _filtroEstado
-          : null,
+  Future<void> _onCambiarFecha() async {
+    final fecha = await showDatePicker(
+      context: context,
+      initialDate: _fechaFiltro ?? DateTime.now(),
+      firstDate: DateTime(2020),
+      lastDate: DateTime.now().add(const Duration(days: 365)),
     );
-  }
 
-  Future<void> _cargarEntregas() async {
-    final provider = context.read<EntregaProvider>();
-    await provider.obtenerEntregasAsignadas(
-      estado: _filtroEstado != 'Todas' && _filtroEstado != null
-          ? _filtroEstado
-          : null,
-    );
-  }
-
-  Future<void> _onRefresh() async {
-    if (_isRefreshing) return;
-
-    setState(() => _isRefreshing = true);
-
-    try {
-      final estadosProvider = context.read<EntregaEstadosProvider>();
-      final entregaProvider = context.read<EntregaProvider>();
-
-      await Future.wait([
-        estadosProvider.cargarEstados(),
-        entregaProvider.obtenerEntregasAsignadas(
-          estado: _filtroEstado != 'Todas' && _filtroEstado != null
-              ? _filtroEstado
-              : null,
-        ),
-      ]);
-    } catch (e) {
-      debugPrint('❌ Error refrescando entregas: $e');
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error al actualizar: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    } finally {
-      if (mounted) {
-        setState(() => _isRefreshing = false);
-      }
+    if (fecha != null) {
+      setState(() => _fechaFiltro = fecha);
+      _cargarEntregas();  // ✅ NUEVO: Recargar entregas después de cambiar fecha
     }
   }
 
-  List<Entrega> _getEntregasFiltradas(List<Entrega> entregas) {
-    return entregas.where((entrega) {
-      // Filtro por búsqueda
-      if (_busqueda.isNotEmpty) {
-        final search = _busqueda.toLowerCase();
-        bool coincide = false;
-
-        if ((entrega.id.toString().contains(search)) ||
-            (entrega.numero?.toLowerCase().contains(search) ?? false) ||
-            (entrega.cliente?.toLowerCase().contains(search) ?? false) ||
-            (entrega.direccion?.toLowerCase().contains(search) ?? false)) {
-          coincide = true;
-        }
-
-        if (!coincide && entrega.ventas.isNotEmpty) {
-          for (final venta in entrega.ventas) {
-            if ((venta.id.toString().contains(search)) ||
-                (venta.numero?.toLowerCase().contains(search) ?? false) ||
-                (venta.clienteNombre?.toLowerCase().contains(search) ??
-                    false) ||
-                (venta.cliente?.toLowerCase().contains(search) ?? false)) {
-              coincide = true;
-              break;
-            }
-            if (venta.cliente is Map) {
-              final clienteMap = venta.cliente as Map;
-              if ((clienteMap['nombre']?.toString().toLowerCase().contains(
-                        search,
-                      ) ??
-                      false) ||
-                  (clienteMap['ci']?.toString().toLowerCase().contains(
-                        search,
-                      ) ??
-                      false) ||
-                  (clienteMap['telefono']?.toString().toLowerCase().contains(
-                        search,
-                      ) ??
-                      false)) {
-                coincide = true;
-                break;
-              }
-            }
-          }
-        }
-
-        if (!coincide) {
-          return false;
-        }
-      }
-
-      // Filtro por fechas
-      if (_fechaInicio != null || _fechaFin != null) {
-        final fecha = entrega.fechaAsignacion;
-        if (fecha != null) {
-          if (_fechaInicio != null &&
-              fecha.isBefore(
-                _fechaInicio!.subtract(const Duration(hours: 1)),
-              )) {
-            return false;
-          }
-          if (_fechaFin != null &&
-              fecha.isAfter(_fechaFin!.add(const Duration(days: 1)))) {
-            return false;
-          }
-        }
-      }
-
-      return true;
-    }).toList();
-  }
-
-  void _limpiarFiltros() {
-    setState(() {
-      _filtroEstado = null;
-      _busqueda = '';
-      _fechaInicio = null;
-      _fechaFin = null;
-      _searchController.clear();
-    });
+  void _limpiarFecha() {
+    setState(() => _fechaFiltro = null);
+    _cargarEntregas();  // ✅ NUEVO: Recargar entregas después de limpiar fecha
   }
 
   @override
@@ -188,140 +97,499 @@ class _EntregasAsignadasScreenState extends State<EntregasAsignadasScreen> {
 
     return Scaffold(
       backgroundColor: isDarkMode ? Colors.grey[900] : Colors.grey[50],
-      body: RefreshIndicator(
-        onRefresh: _onRefresh,
-        displacement: 40,
-        strokeWidth: 2.5,
-        color: Colors.blue,
-        backgroundColor: isDarkMode ? Colors.grey[900] : Colors.white,
-        child: FutureBuilder<void>(
-          future: _cargarFuture,
-          builder: (context, snapshot) {
-            return Consumer<EntregaProvider>(
-              builder: (context, provider, _) {
-                if (snapshot.connectionState == ConnectionState.waiting &&
-                    provider.entregas.isEmpty) {
-                  return Center(
-                    child: CircularProgressIndicator(
-                      valueColor: AlwaysStoppedAnimation<Color>(
-                        isDarkMode ? Colors.blue : Colors.blue,
+      body: FutureBuilder<bool>(
+        // ✅ CRÍTICO: Usar _futureEntregas que NO se recrea en cada rebuild
+        future: _futureEntregas,
+        builder: (context, snapshot) {
+          debugPrint(
+            '🏗️ [FUTUREBUILDER] connectionState=${snapshot.connectionState}, hasData=${snapshot.hasData}',
+          );
+
+          // Mientras carga
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return Stack(
+              children: [
+                Container(
+                  color: isDarkMode ? Colors.grey[900] : Colors.grey[50],
+                ),
+                Positioned.fill(
+                  child: Container(
+                    color: Colors.black.withValues(alpha: 0.3),
+                    child: Center(
+                      child: Container(
+                        padding: const EdgeInsets.all(32),
+                        decoration: BoxDecoration(
+                          color: isDarkMode ? Colors.grey[850] : Colors.white,
+                          borderRadius: BorderRadius.circular(16),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.2),
+                              blurRadius: 20,
+                              spreadRadius: 5,
+                            ),
+                          ],
+                        ),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            SizedBox(
+                              width: 60,
+                              height: 60,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 3,
+                                valueColor: AlwaysStoppedAnimation<Color>(
+                                  Theme.of(context).primaryColor,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 24),
+                            Text(
+                              'Cargando entregas...',
+                              style: Theme.of(context).textTheme.titleMedium
+                                  ?.copyWith(fontWeight: FontWeight.w600),
+                              textAlign: TextAlign.center,
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              'Por favor espera',
+                              style: Theme.of(context).textTheme.bodySmall
+                                  ?.copyWith(
+                                    color: isDarkMode
+                                        ? Colors.grey[400]
+                                        : Colors.grey[600],
+                                  ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
-                  );
-                }
+                  ),
+                ),
+              ],
+            );
+          }
 
-                final entregasFiltradas = _getEntregasFiltradas(
-                  provider.entregas,
-                );
+          // Si hay error o la carga falló
+          if (snapshot.hasError || snapshot.data == false) {
+            final provider = context.read<EntregaProvider>();
+            return _buildErrorContent(provider, isDarkMode);
+          }
 
-                return Column(
+          // Datos cargados correctamente
+          // ✅ Usar Selector para escuchar específicamente cambios en entregas
+          return Selector<EntregaProvider, List>(
+            selector: (context, provider) => provider.entregas,
+            builder: (context, entregas, _) {
+              debugPrint(
+                '🏗️ [CONSUMER_BUILD] entregas.length=${entregas.length}',
+              );
+              final provider = context.read<EntregaProvider>();
+
+              return RefreshIndicator(
+                onRefresh: () async {
+                  debugPrint('🔄 Actualizando entregas...');
+                  // ✅ CRÍTICO: Recargar usando el método que actualiza _futureEntregas
+                  _cargarEntregas();
+                  // Esperar a que se resuelva el futuro
+                  await _futureEntregas;
+                  debugPrint('✅ Entregas actualizadas');
+                },
+                child: Column(
                   children: [
-                    FiltrosModernos(
-                      filtroEstado: _filtroEstado ?? '',
-                      busqueda: _busqueda,
-                      fechaInicio: _fechaInicio,
-                      fechaFin: _fechaFin,
-                      filtrosExpandidos: _filtrosExpandidos,
-                      isDarkMode: isDarkMode,
-                      searchController: _searchController,
-                      onBusquedaChanged: (value) {
-                        setState(() => _busqueda = value);
-                      },
-                      onFiltroEstadoChanged: (estado) {
-                        setState(() => _filtroEstado = estado);
-                      },
-                      onFechaInicioChanged: (date) {
-                        setState(() => _fechaInicio = date);
-                      },
-                      onFechaFinChanged: (date) {
-                        setState(() => _fechaFin = date);
-                      },
-                      onFiltrosExpandidosChanged: (expanded) {
-                        setState(() => _filtrosExpandidos = expanded);
-                      },
-                      onLimpiarFiltros: _limpiarFiltros,
-                      onCargarEntregas: _cargarEntregas,
-                    ),
-                    Expanded(
-                      child: _buildListado(
-                        provider,
-                        entregasFiltradas,
-                        isDarkMode,
+                    // ✅ NUEVO: Panel colapsable de filtros
+                    Container(
+                      color: isDarkMode ? Colors.grey[800] : Colors.grey[100],
+                      child: Column(
+                        children: [
+                          // Header con icono para expandir/contraer
+                          InkWell(
+                            onTap: () {
+                              setState(() => _mostrarFiltros = !_mostrarFiltros);
+                            },
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 12,
+                              ),
+                              child: Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Row(
+                                    children: [
+                                      Icon(
+                                        Icons.filter_alt,
+                                        color: Theme.of(context).primaryColor,
+                                      ),
+                                      const SizedBox(width: 8),
+                                      const Text(
+                                        'Filtros',
+                                        style: TextStyle(
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                                      // ✅ Mostrar cantidad de filtros activos (solo los confirmados)
+                                      if (_searchQuery != null ||
+                                          _localidadFiltro != null ||
+                                          _filtroEstado != null ||
+                                          _fechaFiltro != null)
+                                        Padding(
+                                          padding: const EdgeInsets.only(left: 8),
+                                          child: Container(
+                                            padding: const EdgeInsets.symmetric(
+                                              horizontal: 8,
+                                              vertical: 2,
+                                            ),
+                                            decoration: BoxDecoration(
+                                              color: Colors.orange[600],
+                                              borderRadius:
+                                                  BorderRadius.circular(12),
+                                            ),
+                                            child: Text(
+                                              '${(_searchQuery != null ? 1 : 0) + (_localidadFiltro != null ? 1 : 0) + (_filtroEstado != null ? 1 : 0) + (_fechaFiltro != null ? 1 : 0)}',
+                                              style: const TextStyle(
+                                                color: Colors.white,
+                                                fontSize: 12,
+                                                fontWeight: FontWeight.bold,
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                    ],
+                                  ),
+                                  Icon(
+                                    _mostrarFiltros
+                                        ? Icons.expand_less
+                                        : Icons.expand_more,
+                                    color: Theme.of(context).primaryColor,
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                          // Contenido de filtros (expandible)
+                          if (_mostrarFiltros)
+                            Padding(
+                              padding: const EdgeInsets.all(12),
+                              child: Column(
+                                spacing: 12,
+                                children: [
+                                  // ✅ NUEVO: Campo de búsqueda + botón (Row)
+                                  Row(
+                                    spacing: 8,
+                                    children: [
+                                      // TextField
+                                      Expanded(
+                                        child: TextField(
+                                          controller: _searchController,
+                                          onChanged: (value) {
+                                            setState(() => _searchInput = value);
+                                          },
+                                          onSubmitted: (_) {
+                                            _ejecutarBusqueda();
+                                          },
+                                          decoration: InputDecoration(
+                                            hintText:
+                                                '🔍 Buscar (ID, número, cliente, NIT, teléfono)',
+                                            prefixIcon: const Icon(Icons.search),
+                                            suffixIcon: _searchInput.isNotEmpty
+                                                ? GestureDetector(
+                                                    onTap: _limpiarBusqueda,
+                                                    child: Icon(
+                                                      Icons.close,
+                                                      size: 20,
+                                                      color: Colors.red[400],
+                                                    ),
+                                                  )
+                                                : null,
+                                            border: OutlineInputBorder(
+                                              borderRadius:
+                                                  BorderRadius.circular(8),
+                                            ),
+                                            contentPadding:
+                                                const EdgeInsets.symmetric(
+                                              horizontal: 12,
+                                              vertical: 12,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                      // ✅ Botón Buscar
+                                      Material(
+                                        color: Theme.of(context).primaryColor,
+                                        borderRadius:
+                                            BorderRadius.circular(8),
+                                        child: InkWell(
+                                          onTap: _ejecutarBusqueda,
+                                          borderRadius:
+                                              BorderRadius.circular(8),
+                                          child: Container(
+                                            padding: const EdgeInsets.all(12),
+                                            child: const Icon(
+                                              Icons.search,
+                                              color: Colors.white,
+                                              size: 24,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  // Selector de fecha
+                                  InkWell(
+                                    onTap: _onCambiarFecha,
+                                    child: Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 12,
+                                        vertical: 12,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        border: Border.all(
+                                          color: isDarkMode
+                                              ? Colors.grey[700]!
+                                              : Colors.grey[300]!,
+                                        ),
+                                        borderRadius:
+                                            BorderRadius.circular(4),
+                                      ),
+                                      child: Row(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment
+                                                .spaceBetween,
+                                        children: [
+                                          Text(
+                                            _fechaFiltro != null
+                                                ? '📅 ${_fechaFiltro!.day}/${_fechaFiltro!.month}/${_fechaFiltro!.year}'
+                                                : '📅 Todas las fechas',
+                                            style: const TextStyle(
+                                                fontSize: 16),
+                                          ),
+                                          if (_fechaFiltro != null)
+                                            GestureDetector(
+                                              onTap: _limpiarFecha,
+                                              child: Icon(
+                                                Icons.close,
+                                                size: 20,
+                                                color: Colors.red[400],
+                                              ),
+                                            )
+                                          else
+                                            Icon(
+                                              Icons.calendar_today,
+                                              size: 20,
+                                              color: Theme.of(context)
+                                                  .primaryColor,
+                                            ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                  // ✅ NUEVO: Dropdown de localidad (dinámico)
+                                  Consumer<EntregaProvider>(
+                                    builder: (context, provider, _) {
+                                      final localidades =
+                                          provider.obtenerLocalidadesUnicas();
+
+                                      return DropdownButton<int?>(
+                                        value: _localidadFiltro,
+                                        isExpanded: true,
+                                        hint: const Text(
+                                            '🏘️ Todas las localidades'),
+                                        onChanged: (value) {
+                                          setState(
+                                              () => _localidadFiltro = value);
+                                          _cargarEntregas();
+                                        },
+                                        items: [
+                                          const DropdownMenuItem(
+                                            value: null,
+                                            child: Text(
+                                                '🏘️ Todas las localidades'),
+                                          ),
+                                          ...localidades.map((loc) {
+                                            return DropdownMenuItem(
+                                              value: loc['id'] as int,
+                                              child: Text(
+                                                  '📍 ${loc['nombre']} (${loc['codigo'] ?? 'N/A'})'),
+                                            );
+                                          }).toList(),
+                                        ],
+                                      );
+                                    },
+                                  ),
+                                  // Dropdown de estado
+                                  DropdownButton<String?>(
+                                    value: _filtroEstado,
+                                    isExpanded: true,
+                                    hint: const Text('Todos los estados'),
+                                    onChanged: _onCambiarFiltro,
+                                    items: [
+                                      const DropdownMenuItem(
+                                        value: null,
+                                        child: Text('Todos los estados'),
+                                      ),
+                                      const DropdownMenuItem(
+                                        value: 'PREPARACION_CARGA',
+                                        child: Text('📦 Preparación de Carga'),
+                                      ),
+                                      const DropdownMenuItem(
+                                        value: 'LISTO_PARA_ENTREGA',
+                                        child: Text('✅ Listo para Entrega'),
+                                      ),
+                                      const DropdownMenuItem(
+                                        value: 'EN_TRANSITO',
+                                        child: Text('🚗 En Tránsito'),
+                                      ),
+                                      const DropdownMenuItem(
+                                        value: 'ENTREGADO',
+                                        child: Text('✓ Entregado'),
+                                      ),
+                                    ],
+                                  ),
+                                  // ✅ NUEVO: Botón para limpiar todos
+                                  if (_searchQuery != null ||
+                                      _localidadFiltro != null ||
+                                      _filtroEstado != null ||
+                                      _fechaFiltro != null)
+                                    ElevatedButton.icon(
+                                      onPressed: () {
+                                        setState(() {
+                                          _searchQuery = null;
+                                          _searchInput = '';
+                                          _searchController.clear();
+                                          _localidadFiltro = null;
+                                          _filtroEstado = null;
+                                          _fechaFiltro = DateTime.now();
+                                        });
+                                        _cargarEntregas();  // ✅ NUEVO: Recargar entregas después de limpiar
+                                      },
+                                      icon: const Icon(Icons.clear_all),
+                                      label: const Text('Limpiar Todos'),
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: Colors.orange[600],
+                                        foregroundColor: Colors.white,
+                                      ),
+                                    ),
+                                ],
+                              ),
+                            ),
+                        ],
                       ),
+                    ),
+                    // Listado
+                    Expanded(
+                      child: entregas.isEmpty
+                          ? SingleChildScrollView(
+                              physics: const AlwaysScrollableScrollPhysics(),
+                              child: Center(
+                                child: Padding(
+                                  padding: const EdgeInsets.all(32),
+                                  child: Column(
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.center,
+                                    children: [
+                                      Icon(
+                                        Icons.local_shipping,
+                                        size: 64,
+                                        color: isDarkMode
+                                            ? Colors.grey[600]
+                                            : Colors.grey[400],
+                                      ),
+                                      const SizedBox(height: 16),
+                                      Text(
+                                        'No hay entregas',
+                                        style: TextStyle(
+                                          fontSize: 18,
+                                          fontWeight: FontWeight.w600,
+                                          color: isDarkMode
+                                              ? Colors.white
+                                              : Colors.black87,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 8),
+                                      Text(
+                                        _filtroEstado != null
+                                            ? 'No hay entregas en estado "$_filtroEstado"'
+                                            : 'Las entregas aparecerán aquí cuando se asignen',
+                                        style: TextStyle(
+                                          color: isDarkMode
+                                              ? Colors.grey[400]
+                                              : Colors.grey[600],
+                                        ),
+                                        textAlign: TextAlign.center,
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            )
+                          : ListView.builder(
+                              padding: const EdgeInsets.all(12),
+                              itemCount: entregas.length,
+                              physics: const AlwaysScrollableScrollPhysics(),
+                              itemBuilder: (context, index) {
+                                final entrega = entregas[index];
+                                // ✅ CRÍTICO: Key único permite que Flutter reconstruya cuando los datos cambian
+                                return EntregaCard(
+                                  key: ValueKey('entrega_${entrega.id}_${entrega.estado}'),
+                                  entrega: entrega,
+                                  isDarkMode: isDarkMode,
+                                );
+                              },
+                            ),
                     ),
                   ],
-                );
-              },
-            );
-          },
-        ),
+                ),
+              );
+            },
+          );
+        },
       ),
     );
   }
 
-  Widget _buildListado(
-    EntregaProvider provider,
-    List<Entrega> entregas,
-    bool isDarkMode,
-  ) {
-    if (provider.isLoading) {
-      return Center(
-        child: CircularProgressIndicator(
-          valueColor: AlwaysStoppedAnimation<Color>(
-            isDarkMode ? Colors.blue : Colors.blue,
+  Widget _buildErrorContent(EntregaProvider provider, bool isDarkMode) {
+    debugPrint('❌ [BUILD_ERROR] Error cargando entregas');
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            Icons.error_outline,
+            size: 64,
+            color: isDarkMode ? Colors.red[400] : Colors.red[300],
           ),
-        ),
-      );
-    }
-
-    if (entregas.isEmpty) {
-      return SingleChildScrollView(
-        physics: const AlwaysScrollableScrollPhysics(),
-        child: Center(
-          child: Padding(
-            padding: const EdgeInsets.all(32),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(
-                  Icons.local_shipping,
-                  size: 64,
-                  color: isDarkMode ? Colors.grey[600] : Colors.grey[400],
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  'No hay entregas',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w600,
-                    color: isDarkMode ? Colors.white : Colors.black87,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  _busqueda.isNotEmpty || _filtroEstado != null
-                      ? 'No se encontraron resultados para los filtros seleccionados'
-                      : 'Las entregas aparecerán aquí cuando se asignen',
-                  style: TextStyle(
-                    color: isDarkMode ? Colors.grey[400] : Colors.grey[600],
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-              ],
+          const SizedBox(height: 16),
+          Text(
+            'Error al cargar entregas',
+            style: TextStyle(
+              fontSize: 16,
+              color: isDarkMode ? Colors.grey[300] : Colors.grey[700],
             ),
           ),
-        ),
-      );
-    }
-
-    return ListView.builder(
-      padding: const EdgeInsets.all(12),
-      itemCount: entregas.length,
-      physics: const AlwaysScrollableScrollPhysics(),
-      itemBuilder: (context, index) {
-        final entrega = entregas[index];
-        return EntregaCard(entrega: entrega, isDarkMode: isDarkMode);
-      },
+          if (provider.errorMessage != null) ...[
+            const SizedBox(height: 8),
+            Text(
+              provider.errorMessage!,
+              style: TextStyle(
+                fontSize: 12,
+                color: isDarkMode ? Colors.grey[400] : Colors.grey[600],
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ],
+          const SizedBox(height: 16),
+          ElevatedButton(
+            onPressed: () {
+              setState(() {
+                _filtroEstado = null; // Reiniciar filtro
+              });
+            },
+            child: const Text('Reintentar'),
+          ),
+        ],
+      ),
     );
   }
 }

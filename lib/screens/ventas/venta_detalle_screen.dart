@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../models/models.dart';
 import '../../providers/providers.dart';
+import '../../services/print_service.dart';
+import '../../utils/phone_utils.dart';
 
 class VentaDetalleScreen extends StatefulWidget {
   final int ventaId;
@@ -25,7 +27,7 @@ class _VentaDetalleScreenState extends State<VentaDetalleScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Detalle de Compra'), elevation: 0),
+      appBar: AppBar(title: const Text('Detalle de Venta'), elevation: 0),
       body: Consumer<VentasProvider>(
         builder: (context, ventasProvider, _) {
           // Loading state
@@ -90,7 +92,7 @@ class _VentaDetalleScreenState extends State<VentaDetalleScreen> {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
-                                    'Venta #${venta.numero}',
+                                    'Folio #${venta.id} | ${venta.numero}',
                                     style: Theme.of(context).textTheme.titleLarge,
                                   ),
                                   const SizedBox(height: 4),
@@ -137,27 +139,207 @@ class _VentaDetalleScreenState extends State<VentaDetalleScreen> {
                         const SizedBox(height: 16),
                         const Divider(),
                         const SizedBox(height: 12),
-                        // Cliente
-                        Row(
-                          children: [
-                            const Icon(Icons.person, size: 18),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    venta.clienteNombre ?? 'Cliente desconocido',
-                                    style: const TextStyle(fontWeight: FontWeight.bold),
+                        // Cliente - Card mejorada con Avatar, Ubicación y Botones
+                        Card(
+                          elevation: 0,
+                          color: Theme.of(context).brightness == Brightness.dark
+                              ? Colors.grey[800]?.withValues(alpha: 0.5)
+                              : Colors.blue[50]?.withValues(alpha: 0.5),
+                          child: Padding(
+                            padding: const EdgeInsets.all(12),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                // Avatar y Nombre del Cliente
+                                Row(
+                                  children: [
+                                    // Avatar con iniciales
+                                    CircleAvatar(
+                                      radius: 32,
+                                      backgroundColor:
+                                          Theme.of(context).primaryColor,
+                                      child: Text(
+                                        (venta.clienteNombre ?? 'C')
+                                            .substring(0, 1)
+                                            .toUpperCase(),
+                                        style: const TextStyle(
+                                          fontSize: 24,
+                                          fontWeight: FontWeight.bold,
+                                          color: Colors.white,
+                                        ),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 12),
+                                    // Información del Cliente
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            venta.clienteNombre ??
+                                                'Cliente desconocido',
+                                            style: const TextStyle(
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: 14,
+                                            ),
+                                            maxLines: 2,
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                          const SizedBox(height: 2),
+                                          Text(
+                                            'NIT: ${venta.cliente ?? 'N/A'}',
+                                            style: Theme.of(context)
+                                                .textTheme
+                                                .bodySmall,
+                                          ),
+                                          if (venta.clienteLocalidad != null &&
+                                              venta.clienteLocalidad!
+                                                  .isNotEmpty) ...[
+                                            const SizedBox(height: 2),
+                                            Text(
+                                              '📍 ${venta.clienteLocalidad}',
+                                              style: Theme.of(context)
+                                                  .textTheme
+                                                  .bodySmall
+                                                  ?.copyWith(
+                                                    color: Theme.of(context)
+                                                            .brightness ==
+                                                        Brightness.dark
+                                                      ? Colors.greenAccent
+                                                      : Colors.green,
+                                                    fontWeight: FontWeight.w500,
+                                                  ),
+                                              maxLines: 1,
+                                              overflow: TextOverflow.ellipsis,
+                                            ),
+                                          ],
+                                        ],
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                // Ubicación de Entrega (si disponible)
+                                if (venta.direccion != null &&
+                                    venta.direccion!.isNotEmpty) ...[
+                                  const SizedBox(height: 12),
+                                  const Divider(height: 1),
+                                  const SizedBox(height: 12),
+                                  Row(
+                                    children: [
+                                      const Icon(
+                                        Icons.location_on,
+                                        size: 16,
+                                        color: Colors.red,
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            const Text(
+                                              'Dirección de Entrega',
+                                              style: TextStyle(
+                                                fontSize: 11,
+                                                fontWeight: FontWeight.w600,
+                                                color: Colors.grey,
+                                              ),
+                                            ),
+                                            const SizedBox(height: 2),
+                                            Text(
+                                              venta.direccion!,
+                                              style: const TextStyle(
+                                                fontSize: 13,
+                                                fontWeight: FontWeight.w500,
+                                              ),
+                                              maxLines: 2,
+                                              overflow: TextOverflow.ellipsis,
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ],
                                   ),
-                                  Text(
-                                    'NIT: ${venta.cliente ?? 'N/A'}',
-                                    style: Theme.of(context).textTheme.bodySmall,
+                                  // Coordenadas GPS si disponibles
+                                  if (venta.latitud != null &&
+                                      venta.longitud != null) ...[
+                                    const SizedBox(height: 8),
+                                    Text(
+                                      '🧭 ${venta.latitud!.toStringAsFixed(4)}, ${venta.longitud!.toStringAsFixed(4)}',
+                                      style: TextStyle(
+                                        fontSize: 11,
+                                        color: Theme.of(context).brightness ==
+                                            Brightness.dark
+                                          ? Colors.grey[400]
+                                          : Colors.grey[600],
+                                      ),
+                                    ),
+                                  ],
+                                ],
+                                // Botones de Contacto
+                                if (venta.clienteTelefono != null &&
+                                    venta.clienteTelefono!.isNotEmpty) ...[
+                                  const SizedBox(height: 12),
+                                  const Divider(height: 1),
+                                  const SizedBox(height: 12),
+                                  Row(
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceEvenly,
+                                    children: [
+                                      // Botón Llamar
+                                      _buildContactButton(
+                                        context,
+                                        icon: Icons.phone,
+                                        label: 'Llamar',
+                                        color: Colors.green,
+                                        onPressed: () =>
+                                            PhoneUtils.llamarCliente(
+                                          context,
+                                          venta.clienteTelefono,
+                                        ),
+                                      ),
+                                      // Botón WhatsApp
+                                      _buildContactButton(
+                                        context,
+                                        icon: Icons.chat,
+                                        label: 'WhatsApp',
+                                        color: Colors.green[600]!,
+                                        onPressed: () =>
+                                            PhoneUtils.enviarWhatsApp(
+                                          context,
+                                          venta.clienteTelefono,
+                                        ),
+                                      ),
+                                      // Botón Descargar PDF
+                                      _buildContactButton(
+                                        context,
+                                        icon: Icons.download,
+                                        label: 'Nota',
+                                        color: Colors.blue,
+                                        onPressed: () =>
+                                            _descargarPDFVenta(venta.id),
+                                      ),
+                                    ],
+                                  ),
+                                ] else ...[
+                                  const SizedBox(height: 12),
+                                  const Divider(height: 1),
+                                  const SizedBox(height: 12),
+                                  Center(
+                                    child: _buildContactButton(
+                                      context,
+                                      icon: Icons.download,
+                                      label: 'Descargar Nota',
+                                      color: Colors.blue,
+                                      onPressed: () =>
+                                          _descargarPDFVenta(venta.id),
+                                    ),
                                   ),
                                 ],
-                              ),
+                              ],
                             ),
-                          ],
+                          ),
                         ),
                         const SizedBox(height: 12),
                         // Estados
@@ -389,5 +571,88 @@ class _VentaDetalleScreenState extends State<VentaDetalleScreen> {
         },
       ),
     );
+  }
+
+  /// Widget para los botones de contacto
+  Widget _buildContactButton(
+    BuildContext context, {
+    required IconData icon,
+    required String label,
+    required Color color,
+    required VoidCallback onPressed,
+  }) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: onPressed,
+            borderRadius: BorderRadius.circular(50),
+            child: Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: color.withValues(alpha: 0.15),
+              ),
+              child: Icon(
+                icon,
+                color: color,
+                size: 20,
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(height: 6),
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 11,
+            fontWeight: FontWeight.w600,
+            color: color,
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// Descargar PDF de la venta
+  Future<void> _descargarPDFVenta(int ventaId) async {
+    try {
+      final printService = PrintService();
+      final success = await printService.downloadDocument(
+        documentoId: ventaId,
+        documentType: PrintDocumentType.venta,
+        format: PrintFormat.ticket58,
+      );
+
+      if (!success && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('No se pudo descargar el PDF'),
+            duration: Duration(seconds: 3),
+            backgroundColor: Colors.red,
+          ),
+        );
+      } else if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('✅ Nota de venta descargada'),
+            duration: Duration(seconds: 2),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error: ${e.toString()}'),
+            duration: const Duration(seconds: 3),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
   }
 }

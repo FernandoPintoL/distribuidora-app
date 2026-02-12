@@ -179,7 +179,7 @@ class HttpLogger {
     buffer.writeln(
       '╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳',
     );
-    debugPrint(buffer.toString());
+    // debugPrint(buffer.toString());
   }
 
   /// Enmascarar headers sensibles

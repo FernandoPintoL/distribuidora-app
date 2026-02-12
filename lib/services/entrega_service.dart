@@ -56,13 +56,17 @@ class EntregaService {
     String? estado,
     String? fechaDesde,
     String? fechaHasta,
+    String? search,  // ✅ NUEVO: búsqueda case-insensitive
+    int? localidadId,  // ✅ NUEVO: filtro por localidad
   }) async {
     try {
       final params = {
         'page': page,
         if (estado != null) 'estado': estado,
-        if (fechaDesde != null) 'fecha_desde': fechaDesde,
-        if (fechaHasta != null) 'fecha_hasta': fechaHasta,
+        if (fechaDesde != null) 'fecha_asignacion': fechaDesde,
+        if (fechaHasta != null) 'fecha_asignacion_hasta': fechaHasta,
+        if (search != null && search.isNotEmpty) 'search': search,  // ✅ NUEVO
+        if (localidadId != null) 'localidad_id': localidadId,  // ✅ NUEVO
       };
 
       // Nuevo endpoint que devuelve entregas + envios
@@ -843,6 +847,8 @@ class EntregaService {
     List<String>? fotosBase64,
     String? observaciones,
     String? observacionesLogistica,  // ✅ NUEVO: Observaciones logísticas (estado entrega, incidentes)
+    double? montoRecibido,  // ✅ NUEVO: Monto que pagó el cliente
+    int? tipoPagoId,  // ✅ NUEVO: ID del tipo de pago
   }) async {
     try {
       final data = <String, dynamic>{
@@ -851,6 +857,8 @@ class EntregaService {
           'observaciones': observaciones,
         if (observacionesLogistica != null && observacionesLogistica.isNotEmpty)
           'observaciones_logistica': observacionesLogistica,  // ✅ NUEVO: Pasar al backend
+        if (montoRecibido != null) 'monto_recibido': montoRecibido,  // ✅ NUEVO: Pasar monto
+        if (tipoPagoId != null) 'tipo_pago_id': tipoPagoId,  // ✅ NUEVO: Pasar tipo de pago
       };
 
       final response = await _apiService.post(
@@ -949,8 +957,46 @@ class EntregaService {
     }
   }
 
+  /// Obtener resumen de pagos registrados en una entrega
+  ///
+  /// GET /api/chofer/entregas/{id}/resumen-pagos
+  Future<ApiResponse<Map<String, dynamic>>> obtenerResumenPagos(int entregaId) async {
+    try {
+      final response = await _apiService.get('/chofer/entregas/$entregaId/resumen-pagos');
+
+      final data = response.data as Map<String, dynamic>;
+
+      if (data['success'] == false) {
+        return ApiResponse(
+          success: false,
+          message: data['message'] ?? 'Error al obtener resumen',
+        );
+      }
+
+      final resumen = data['data'] as Map<String, dynamic>;
+
+      return ApiResponse(
+        success: true,
+        data: resumen,
+        message: 'Resumen obtenido exitosamente',
+      );
+    } on DioException catch (e) {
+      debugPrint('Error al obtener resumen de pagos: ${e.message}');
+      return ApiResponse(
+        success: false,
+        message: 'Error al obtener resumen: ${e.message}',
+      );
+    } catch (e) {
+      debugPrint('Error inesperado: $e');
+      return ApiResponse(
+        success: false,
+        message: 'Error inesperado: ${e.toString()}',
+      );
+    }
+  }
+
   // ✅ FASE 2: Obtener tipos de pago desde la API
-  Future<ApiResponse<List>> obtenerTiposPago() async {
+  Future<ApiResponse<List<Map<String, dynamic>>>> obtenerTiposPago() async {
     try {
       final response = await _apiService.get('/tipos-pago');
 

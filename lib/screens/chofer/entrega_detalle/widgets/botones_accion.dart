@@ -78,15 +78,6 @@ class BotonesAccion extends StatelessWidget {
                   .pushNamed('/chofer/iniciar-ruta', arguments: entrega.id);
             },
           ),
-        if (entrega.puedeMarcarLlegada || esEnTransito)
-          BotonAccion(
-            label: 'Marcar Llegada',
-            icon: Icons.location_on,
-            color: Colors.orange,
-            onPressed: () async {
-              await onMarcarLlegada(context, entrega, provider);
-            },
-          ),
         // ✅ NUEVO: Botón Entregas Terminadas cuando está EN_TRANSITO
         if (esEnTransito && onEntregasTerminadas != null)
           BotonAccion(
@@ -105,17 +96,6 @@ class BotonesAccion extends StatelessWidget {
             onPressed: () async {
               await onMarcarEntregada(context, entrega, provider);
             },
-          ),
-        if (onReintentarGps != null &&
-            !provider.isTracking &&
-            (entrega.estadoEntregaCodigo == 'EN_TRANSITO' ||
-                entrega.estado == 'EN_CAMINO' ||
-                entrega.estado == 'LLEGO'))
-          BotonAccion(
-            label: 'Reintentar GPS',
-            icon: Icons.gps_fixed,
-            color: Colors.blue,
-            onPressed: onReintentarGps!,
           ),
       ],
     );

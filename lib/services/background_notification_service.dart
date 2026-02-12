@@ -4,7 +4,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'dart:async';
-import 'local_notification_service.dart';
 
 /// Servicio de background para polling periódico de notificaciones
 /// Solo se activa si el usuario es chofer
@@ -110,10 +109,8 @@ Future<void> _pollingTask() async {
   try {
     final prefs = await SharedPreferences.getInstance();
     final token = prefs.getString('auth_token');
-    final userType = prefs.getString('user_type');
 
     if (token == null) {
-      debugPrint('⚠️ Sin token, no se pueden obtener notificaciones');
       return;
     }
 
@@ -127,6 +124,8 @@ Future<void> _pollingTask() async {
     // Hacer llamada API para obtener notificaciones nuevas
     final dio = Dio();
     dio.options.headers['Authorization'] = 'Bearer $token';
+    dio.options.connectTimeout = const Duration(seconds: 5);
+    dio.options.receiveTimeout = const Duration(seconds: 5);
 
     try {
       final response = await dio.get(
@@ -137,14 +136,9 @@ Future<void> _pollingTask() async {
         final List<dynamic> notifications = response.data['data'] ?? [];
 
         if (notifications.isNotEmpty) {
-          debugPrint('📬 ${notifications.length} notificación(es) nueva(s)');
-
-          // Procesar cada notificación
+          // Solo guardar el último ID, no mostrar notificaciones en background
           for (var notif in notifications) {
             final id = notif['id'] as int;
-            final title = notif['title'] as String? ?? 'Nueva notificación';
-            final body = notif['body'] as String? ?? '';
-            final type = notif['type'] as String? ?? 'general';
 
             // Guardar el ID más reciente
             if (id > lastNotificationId) {
@@ -153,59 +147,13 @@ Future<void> _pollingTask() async {
                 id,
               );
             }
-
-            // Mostrar notificación local
-            try {
-              final localNotificationService = LocalNotificationService();
-              final channelId = _getChannelForType(type);
-              await localNotificationService.showNewDeliveryNotification(
-                deliveryId: id,
-                clientName: title,
-                address: body,
-              );
-              debugPrint('🔔 Notificación mostrada: $title');
-            } catch (e) {
-              debugPrint('⚠️ Error mostrando notificación local: $e');
-            }
           }
         }
       }
     } catch (e) {
-      debugPrint('❌ Error obteniendo notificaciones: $e');
-    }
-
-    // Si es chofer, también actualizar ubicación
-    if (userType == 'chofer') {
-      await _updateChoferLocation(token);
+      // Error silencioso en background
     }
   } catch (e) {
-    debugPrint('❌ Error en polling task: $e');
-  }
-}
-
-/// Actualizar ubicación del chofer (si es chofer)
-Future<void> _updateChoferLocation(String token) async {
-  try {
-    // Esta es una llamada que el backend debe proporcionar
-    // Por ahora, solo lo loguearemos
-    debugPrint('📍 Ubicación del chofer actualizada en background');
-  } catch (e) {
-    debugPrint('⚠️ Error actualizando ubicación: $e');
-  }
-}
-
-/// Obtener el canal de notificación según el tipo
-String _getChannelForType(String type) {
-  switch (type.toLowerCase()) {
-    case 'entrega':
-      return 'entregas_nuevas';
-    case 'proforma':
-      return 'proformas';
-    case 'estado':
-      return 'cambio_estados';
-    case 'recordatorio':
-      return 'recordatorios';
-    default:
-      return 'entregas_nuevas';
+    // Ignorar errores en background
   }
 }

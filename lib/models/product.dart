@@ -21,6 +21,7 @@ class Product {
   final List<String>? codigosBarra;
   final StockWarehouse? stockPrincipal;
   final List<StockWarehouse>? stockPorAlmacenes;
+  final List<Precio>? precios;  // ✅ NUEVO: Array de precios
 
   Product({
     required this.id,
@@ -43,6 +44,7 @@ class Product {
     this.codigosBarra,
     this.stockPrincipal,
     this.stockPorAlmacenes,
+    this.precios,  // ✅ NUEVO: Parámetro de precios
   });
 
   /// Obtener la imagen principal (es_principal == true) o la primera imagen
@@ -57,6 +59,26 @@ class Product {
     }
   }
 
+  /// Obtener cantidad total de stock (desde stockPrincipal)
+  num get cantidadStock {
+    return stockPrincipal?.cantidad ?? 0;
+  }
+
+  /// Obtener cantidad disponible (no reservada)
+  num get cantidadDisponible {
+    return stockPrincipal?.cantidadDisponible ?? 0;
+  }
+
+  /// Obtener cantidad reservada
+  num get cantidadReservada {
+    return stockPrincipal?.cantidadReservada ?? 0;
+  }
+
+  /// Verificar si hay stock disponible
+  bool get tieneStock {
+    return cantidadDisponible > 0;
+  }
+
   factory Product.fromJson(Map<String, dynamic> json) {
     try {
       final product = Product(
@@ -67,11 +89,19 @@ class Product {
         sku: json['sku'],
         descripcion: json['descripcion'],
         categoria: json['categoria'] != null
-            ? Category.fromJson(json['categoria'])
+            ? (json['categoria'] is Map
+                ? Category.fromJson(json['categoria'])
+                : Category(id: json['categoria_id'] ?? 0, nombre: json['categoria'].toString()))
             : null,
-        marca: json['marca'] != null ? Brand.fromJson(json['marca']) : null,
+        marca: json['marca'] != null
+            ? (json['marca'] is Map
+                ? Brand.fromJson(json['marca'])
+                : Brand(id: json['marca_id'] ?? 0, nombre: json['marca'].toString()))
+            : null,
         proveedor: json['proveedor'] != null
-            ? Supplier.fromJson(json['proveedor'])
+            ? (json['proveedor'] is Map
+                ? Supplier.fromJson(json['proveedor'])
+                : Supplier(id: json['proveedor_id'] ?? 0, nombre: json['proveedor'].toString()))
             : null,
         // Backend sends 'unidad', not 'unidad_medida'
         unidadMedida: json['unidad'] != null
@@ -96,21 +126,26 @@ class Product {
             json['codigos_barra'] != null && json['codigos_barra'] is List
             ? List<String>.from(json['codigos_barra'])
             : null,
-        // Map stock_principal or create one from cantidad_disponible at root level
+        // Map stock_principal or create one from root-level stock fields
         stockPrincipal: json['stock_principal'] != null
             ? StockWarehouse.fromJson(json['stock_principal'])
-            : (json['cantidad_disponible'] != null
+            : (json['stock'] != null || json['stock_disponible'] != null || json['cantidad_disponible'] != null
                   ? StockWarehouse(
                       almacenId: 3, // Default to almacén 3 (main warehouse)
                       almacenNombre: 'Principal',
-                      cantidad:
-                          (json['cantidad_disponible'] as num?)?.toInt() ?? 0,
-                      cantidadDisponible: json['cantidad_disponible'],
+                      cantidad: (json['stock'] ?? json['cantidad_disponible'] as num?)?.toInt() ?? 0,
+                      cantidadDisponible: json['stock_disponible'] ?? json['cantidad_disponible'],
+                      cantidadReservada: json['stock_reservado'],
                     )
                   : null),
         stockPorAlmacenes: json['stock_por_almacenes'] != null
             ? (json['stock_por_almacenes'] as List)
                   .map((i) => StockWarehouse.fromJson(i))
+                  .toList()
+            : null,
+        precios: json['precios'] != null
+            ? (json['precios'] as List)
+                  .map((i) => Precio.fromJson(i))
                   .toList()
             : null,
       );
@@ -143,6 +178,7 @@ class Product {
       'limite_venta': limiteVenta,
       'imagenes': imagenes?.map((i) => i.toJson()).toList(),
       'codigos_barra': codigosBarra,
+      'precios': precios?.map((p) => p.toJson()).toList(),
     };
   }
 
@@ -311,5 +347,67 @@ class StockWarehouse {
       'lote': lote,
       'fecha_vencimiento': fechaVencimiento,
     };
+  }
+}
+
+/// Información de precios por tipo
+class Precio {
+  final int id;
+  final int productoId;
+  final int tipoPrecioId;
+  final String nombre;
+  final double precio;
+  final bool esPrecioBase;
+  final double margenGanancia;
+  final double porcentajeGanancia;
+  final Map<String, dynamic>? tipoPrecio;
+
+  Precio({
+    required this.id,
+    required this.productoId,
+    required this.tipoPrecioId,
+    required this.nombre,
+    required this.precio,
+    required this.esPrecioBase,
+    required this.margenGanancia,
+    required this.porcentajeGanancia,
+    this.tipoPrecio,
+  });
+
+  factory Precio.fromJson(Map<String, dynamic> json) {
+    return Precio(
+      id: json['id'] ?? 0,
+      productoId: json['producto_id'] ?? 0,
+      tipoPrecioId: json['tipo_precio_id'] ?? 0,
+      nombre: json['nombre'] ?? '',
+      precio: _parseDouble(json['precio']) ?? 0.0,
+      esPrecioBase: json['es_precio_base'] ?? false,
+      margenGanancia: _parseDouble(json['margen_ganancia']) ?? 0.0,
+      porcentajeGanancia: _parseDouble(json['porcentaje_ganancia']) ?? 0.0,
+      tipoPrecio: json['tipo_precio'] is Map ? json['tipo_precio'] : null,
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'producto_id': productoId,
+      'tipo_precio_id': tipoPrecioId,
+      'nombre': nombre,
+      'precio': precio,
+      'es_precio_base': esPrecioBase,
+      'margen_ganancia': margenGanancia,
+      'porcentaje_ganancia': porcentajeGanancia,
+      'tipo_precio': tipoPrecio,
+    };
+  }
+
+  static double? _parseDouble(dynamic value) {
+    if (value == null) return null;
+    if (value is double) return value;
+    if (value is int) return value.toDouble();
+    if (value is String) return double.tryParse(value);
+    if (value is num) return value.toDouble();
+    return null;
   }
 }

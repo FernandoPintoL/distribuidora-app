@@ -7,6 +7,7 @@ import '../../../models/entrega.dart';
 import '../../../models/venta.dart';
 import '../../../providers/entrega_provider.dart';
 import '../../../services/image_compression_service.dart';  // ✅ NUEVO: Para comprimir imágenes
+import '../../../services/entrega_service.dart';  // ✅ NUEVO: Para obtener tipos de pago
 
 class ConfirmarEntregaVentaScreen extends StatefulWidget {
   final Entrega entrega;
@@ -34,9 +35,16 @@ class _ConfirmarEntregaVentaScreenState
   String? _tipoEntrega; // COMPLETA o NOVEDAD
   String? _tipoNovedad; // CLIENTE_CERRADO, DEVOLUCION_PARCIAL, RECHAZADO
   final TextEditingController _observacionesController = TextEditingController();
+  final TextEditingController _montoController = TextEditingController();  // ✅ NUEVO: Monto de pago
   List<File> _fotosCapturadas = [];
 
   final ImagePicker _imagePicker = ImagePicker();
+  final EntregaService _entregaService = EntregaService();  // ✅ NUEVO: Para obtener tipos de pago
+
+  // ✅ NUEVO: Tipos de pago
+  List<Map<String, dynamic>> _tiposPago = [];
+  int? _tipoPageSelected;
+  bool _cargandoTiposPago = false;
 
   final List<Map<String, String>> _tiposNovedad = [
     {
@@ -57,9 +65,45 @@ class _ConfirmarEntregaVentaScreenState
   ];
 
   @override
+  void initState() {
+    super.initState();
+    _cargarTiposPago();
+  }
+
+  @override
   void dispose() {
     _observacionesController.dispose();
+    _montoController.dispose();  // ✅ NUEVO: Limpiar controlador de monto
     super.dispose();
+  }
+
+  /// Cargar tipos de pago disponibles
+  Future<void> _cargarTiposPago() async {
+    setState(() => _cargandoTiposPago = true);
+
+    try {
+      final response = await _entregaService.obtenerTiposPago();
+
+      if (response.success && response.data != null) {
+        setState(() {
+          _tiposPago = response.data!.cast<Map<String, dynamic>>();
+          _cargandoTiposPago = false;
+        });
+      } else {
+        setState(() => _cargandoTiposPago = false);
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Error al cargar tipos de pago: ${response.message}'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      setState(() => _cargandoTiposPago = false);
+      debugPrint('Error cargando tipos de pago: $e');
+    }
   }
 
   /// Capturar foto con cámara y comprimir
@@ -159,6 +203,20 @@ class _ConfirmarEntregaVentaScreenState
 
   /// Confirmar entrega
   Future<void> _confirmarEntrega() async {
+    // ✅ NUEVO: Validar que Cliente Cerrado/No Disponible requiere fotos
+    if (_tipoNovedad == 'CLIENTE_CERRADO' && _fotosCapturadas.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            '⚠️ Debes capturar al menos una foto para reportar cliente cerrado/no disponible',
+          ),
+          backgroundColor: Colors.orange,
+          duration: Duration(seconds: 3),
+        ),
+      );
+      return;
+    }
+
     try {
       // Mostrar loading
       if (mounted) {
@@ -184,11 +242,23 @@ class _ConfirmarEntregaVentaScreenState
 
       final observacionesFinales = _construirObservacionesFinales();
 
+      // ✅ NUEVO: Obtener monto y tipo de pago
+      double? montoRecibido;
+      try {
+        if (_montoController.text.isNotEmpty) {
+          montoRecibido = double.parse(_montoController.text);
+        }
+      } catch (e) {
+        debugPrint('Error parsing monto: $e');
+      }
+
       debugPrint('📤 Confirmando entrega:');
       debugPrint('   - Tipo: $_tipoEntrega');
       debugPrint('   - Tipo Novedad: $_tipoNovedad');
       debugPrint('   - Observaciones: $observacionesFinales');
       debugPrint('   - Fotos: ${_fotosCapturadas.length}');
+      debugPrint('   - Monto Recibido: $montoRecibido');  // ✅ NUEVO
+      debugPrint('   - Tipo Pago ID: $_tipoPageSelected');  // ✅ NUEVO
 
       final success = await widget.provider.confirmarVentaEntregada(
         widget.entrega.id,
@@ -201,6 +271,8 @@ class _ConfirmarEntregaVentaScreenState
         },
         fotosBase64: fotosBase64,
         observacionesLogistica: observacionesFinales,
+        montoRecibido: montoRecibido,  // ✅ NUEVO: Pasar monto
+        tipoPagoId: _tipoPageSelected,  // ✅ NUEVO: Pasar tipo de pago
       );
 
       if (mounted) {
@@ -563,6 +635,58 @@ class _ConfirmarEntregaVentaScreenState
                     ),
                   ),
                   const SizedBox(height: 24),
+
+                  // ✅ NUEVO: Sección de Pago
+                  Text(
+                    'Registrar Pago (Opcional)',
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.w600,
+                        ),
+                  ),
+                  const SizedBox(height: 12),
+
+                  // Campo de monto
+                  TextField(
+                    controller: _montoController,
+                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                    decoration: InputDecoration(
+                      labelText: 'Monto Recibido (Bs.)',
+                      hintText: 'Ej: 100.50',
+                      prefixIcon: const Icon(Icons.money),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      contentPadding: const EdgeInsets.all(12),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+
+                  // Selector de tipo de pago
+                  if (_cargandoTiposPago)
+                    const Center(child: CircularProgressIndicator())
+                  else if (_tiposPago.isNotEmpty)
+                    DropdownButtonFormField<int>(
+                      value: _tipoPageSelected,
+                      decoration: InputDecoration(
+                        labelText: 'Tipo de Pago',
+                        prefixIcon: const Icon(Icons.payment),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        contentPadding: const EdgeInsets.all(12),
+                      ),
+                      items: _tiposPago.map((tipo) {
+                        return DropdownMenuItem<int>(
+                          value: tipo['id'] as int,
+                          child: Text(tipo['nombre'] as String),
+                        );
+                      }).toList(),
+                      onChanged: (value) {
+                        setState(() => _tipoPageSelected = value);
+                      },
+                    ),
+
+                  const SizedBox(height: 24),
                   Text(
                     '✅ La entrega será registrada como completa',
                     style: TextStyle(
@@ -834,6 +958,58 @@ class _ConfirmarEntregaVentaScreenState
                       ),
                     ),
                   ),
+
+                  const SizedBox(height: 24),
+
+                  // ✅ NUEVO: Sección de Pago (también en Novedad)
+                  Text(
+                    'Registrar Pago (Opcional)',
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.w600,
+                        ),
+                  ),
+                  const SizedBox(height: 12),
+
+                  // Campo de monto
+                  TextField(
+                    controller: _montoController,
+                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                    decoration: InputDecoration(
+                      labelText: 'Monto Recibido (Bs.)',
+                      hintText: 'Ej: 100.50',
+                      prefixIcon: const Icon(Icons.money),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      contentPadding: const EdgeInsets.all(12),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+
+                  // Selector de tipo de pago
+                  if (_cargandoTiposPago)
+                    const Center(child: CircularProgressIndicator())
+                  else if (_tiposPago.isNotEmpty)
+                    DropdownButtonFormField<int>(
+                      value: _tipoPageSelected,
+                      decoration: InputDecoration(
+                        labelText: 'Tipo de Pago',
+                        prefixIcon: const Icon(Icons.payment),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        contentPadding: const EdgeInsets.all(12),
+                      ),
+                      items: _tiposPago.map((tipo) {
+                        return DropdownMenuItem<int>(
+                          value: tipo['id'] as int,
+                          child: Text(tipo['nombre'] as String),
+                        );
+                      }).toList(),
+                      onChanged: (value) {
+                        setState(() => _tipoPageSelected = value);
+                      },
+                    ),
                 ],
               ),
             ),
@@ -857,7 +1033,8 @@ class _ConfirmarEntregaVentaScreenState
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.orange,
                   ),
-                  onPressed: _tipoNovedad == null
+                  onPressed: _tipoNovedad == null ||
+                          (_tipoNovedad == 'CLIENTE_CERRADO' && _fotosCapturadas.isEmpty)  // ✅ NUEVO: Requiere foto para Cliente Cerrado
                       ? null
                       : _confirmarEntrega,
                   child: const Text('Confirmar'),

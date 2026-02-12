@@ -1,4 +1,5 @@
 import 'credito_cliente.dart'; // Para importar TipoPago
+import 'localidad.dart'; // ✅ Importar Localidad existente
 
 class Venta {
   final int id;
@@ -6,7 +7,8 @@ class Venta {
   final String? cliente;
   final String? clienteNombre;
   final String? clienteTelefono; // Nuevo: Teléfono del cliente
-  final String? clienteLocalidad; // ✅ NUEVO: Localidad del cliente
+  final String? clienteLocalidad; // ✅ DEPRECADO: Usar clienteLocalidadObj en su lugar
+  final Localidad? clienteLocalidadObj; // ✅ NUEVO: Localidad completa del cliente
   final double total;
   final double subtotal;
   final double descuento; // Puede venir del backend o calcularse
@@ -40,6 +42,7 @@ class Venta {
     this.clienteNombre,
     this.clienteTelefono,
     this.clienteLocalidad,
+    this.clienteLocalidadObj,  // ✅ NUEVO
     required this.total,
     required this.subtotal,
     required this.descuento,
@@ -67,6 +70,7 @@ class Venta {
     String? clienteNom;
     String? clienteTel;
     String? clienteLocalidadNom;
+    Localidad? clienteLocalidadObj;  // ✅ NUEVO: Objeto Localidad completo
     if (json['cliente'] is Map<String, dynamic>) {
       final clienteObj = json['cliente'] as Map<String, dynamic>;
       clienteNom = clienteObj['nombre'] as String?;
@@ -75,6 +79,7 @@ class Venta {
       if (clienteObj['localidad'] is Map<String, dynamic>) {
         final localidadObj = clienteObj['localidad'] as Map<String, dynamic>;
         clienteLocalidadNom = localidadObj['nombre'] as String?;
+        clienteLocalidadObj = Localidad.fromJson(localidadObj);  // ✅ NUEVO: Parsear objeto completo
       }
     } else {
       clienteNom = json['cliente'] as String?;
@@ -166,7 +171,8 @@ class Venta {
       cliente: json['cliente'] is String ? json['cliente'] as String? : null,
       clienteNombre: clienteNom,
       clienteTelefono: clienteTel,
-      clienteLocalidad: clienteLocalidadNom,  // ✅ NUEVO
+      clienteLocalidad: clienteLocalidadNom,
+      clienteLocalidadObj: clienteLocalidadObj,  // ✅ NUEVO: Objeto Localidad completo
       total: _parseDouble(json['total']),
       subtotal: _parseDouble(json['subtotal']),
       descuento: descuentoValue,

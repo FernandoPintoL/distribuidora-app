@@ -42,12 +42,19 @@ class EntregaProvider with ChangeNotifier, EntregaTrackingMixin {
   bool _isLoading = false;
   String? _errorMessage;
 
+  // ✅ NUEVO: Estados para búsqueda y filtros
+  String? _search;
+  int? _localidadId;
+
   /// Override notifyListeners para debug
   @override
   void notifyListeners() {
     debugPrint(
-      '👂 [NOTIFY_LISTENERS] LLAMADO - isLoading=$_isLoading, entregaActual=${_entregaActual?.id}',
+      '👂 [NOTIFY_LISTENERS] LLAMADO - isLoading=$_isLoading, entregas.length=${_entregas.length}, entregaActual=${_entregaActual?.id}',
     );
+    if (_entregas.isNotEmpty) {
+      debugPrint('👂 [NOTIFY_LISTENERS] Primera entrega: ${_entregas.first.numeroEntrega}');
+    }
     super.notifyListeners();
     debugPrint('👂 [NOTIFY_LISTENERS] COMPLETADO');
   }
@@ -67,6 +74,8 @@ class EntregaProvider with ChangeNotifier, EntregaTrackingMixin {
   List<EntregaEstadoHistorial> get historialEstados => _historialEstados;
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
+  String? get search => _search;  // ✅ NUEVO: Getter para búsqueda
+  int? get localidadId => _localidadId;  // ✅ NUEVO: Getter para localidad
 
   // Obtener entregas asignadas
   Future<bool> obtenerEntregasAsignadas({
@@ -74,13 +83,18 @@ class EntregaProvider with ChangeNotifier, EntregaTrackingMixin {
     String? estado,
     String? fechaDesde,
     String? fechaHasta,
+    String? search,  // ✅ NUEVO: búsqueda case-insensitive
+    int? localidadId,  // ✅ NUEVO: filtro por localidad
   }) async {
+    // ✅ NUEVO: Guardar búsqueda y localidad en estado
+    _search = search;
+    _localidadId = localidadId;
+
     _isLoading = true;
     _errorMessage = null;
-
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      notifyListeners();
-    });
+    debugPrint('🔍 [ENTREGA_PROVIDER] Iniciando carga - notificando isLoading=true');
+    debugPrint('🔍 [ENTREGA_PROVIDER] Parámetros: search=$search, localidad_id=$localidadId');
+    notifyListeners();
 
     try {
       final response = await _entregaService.obtenerEntregasAsignadas(
@@ -88,10 +102,19 @@ class EntregaProvider with ChangeNotifier, EntregaTrackingMixin {
         estado: estado,
         fechaDesde: fechaDesde,
         fechaHasta: fechaHasta,
+        search: search,  // ✅ NUEVO
+        localidadId: localidadId,  // ✅ NUEVO
       );
 
       if (response.success && response.data != null) {
         final newEntregas = response.data!;
+
+        debugPrint('🔍 [ENTREGA_PROVIDER] Respuesta exitosa recibida');
+        debugPrint('🔍 [ENTREGA_PROVIDER] newEntregas.length = ${newEntregas.length}');
+        debugPrint('🔍 [ENTREGA_PROVIDER] newEntregas.isEmpty = ${newEntregas.isEmpty}');
+        if (newEntregas.isNotEmpty) {
+          debugPrint('🔍 [ENTREGA_PROVIDER] Primera entrega ID: ${newEntregas.first.id}, numero: ${newEntregas.first.numeroEntrega}');
+        }
 
         // ✅ OPTIMIZADO: Detectar nuevas entregas y mostrar notificaciones
         // PERO: No mostrar notificaciones en la PRIMERA carga
@@ -109,32 +132,30 @@ class EntregaProvider with ChangeNotifier, EntregaTrackingMixin {
         }
 
         _entregas = newEntregas;
+        debugPrint('🔍 [ENTREGA_PROVIDER] _entregas asignado! Count: ${_entregas.length}');
+
         _previousEntregasCount = newEntregas.length;
         _isFirstLoad = false; // ✅ Marcar que ya se cargó la primera vez
         _errorMessage = null;
 
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          notifyListeners();
-        });
+        debugPrint('🔍 [ENTREGA_PROVIDER] Llamando notifyListeners() DIRECTAMENTE con ${_entregas.length} entregas');
+        notifyListeners();
         return true;
       } else {
         _errorMessage = response.message;
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          notifyListeners();
-        });
+        debugPrint('🔍 [ENTREGA_PROVIDER] Error: $_errorMessage');
+        notifyListeners();
         return false;
       }
     } catch (e) {
       _errorMessage = 'Error inesperado: ${e.toString()}';
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        notifyListeners();
-      });
+      debugPrint('🔍 [ENTREGA_PROVIDER] Exception en catch: $_errorMessage');
+      notifyListeners();
       return false;
     } finally {
       _isLoading = false;
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        notifyListeners();
-      });
+      debugPrint('🔍 [ENTREGA_PROVIDER] finally: _isLoading = false, notificando');
+      notifyListeners();
     }
   }
 
@@ -1082,6 +1103,8 @@ class EntregaProvider with ChangeNotifier, EntregaTrackingMixin {
     List<String>? fotosBase64,
     String? observaciones,
     String? observacionesLogistica,  // ✅ NUEVO: Observaciones logísticas (estado entrega, incidentes)
+    double? montoRecibido,  // ✅ NUEVO: Monto que pagó el cliente
+    int? tipoPagoId,  // ✅ NUEVO: ID del tipo de pago
   }) async {
     _isLoading = true;
     _errorMessage = null;
@@ -1101,6 +1124,8 @@ class EntregaProvider with ChangeNotifier, EntregaTrackingMixin {
         fotosBase64: fotosBase64,
         observaciones: observaciones,
         observacionesLogistica: observacionesLogistica,  // ✅ NUEVO: Pasar observaciones logísticas
+        montoRecibido: montoRecibido,  // ✅ NUEVO: Pasar monto
+        tipoPagoId: tipoPagoId,  // ✅ NUEVO: Pasar tipo de pago
       );
 
       if (response.success) {
@@ -1597,5 +1622,54 @@ class EntregaProvider with ChangeNotifier, EntregaTrackingMixin {
         message: 'Error al obtener tipos de pago: ${e.toString()}',
       );
     }
+  }
+
+  // ✅ NUEVO: Métodos para gestionar búsqueda y filtros
+  void setSearch(String? search) {
+    _search = search;
+    debugPrint('🔍 [ENTREGA_PROVIDER] setSearch: $_search');
+    notifyListeners();
+  }
+
+  void setLocalidad(int? localidadId) {
+    _localidadId = localidadId;
+    debugPrint('🏘️ [ENTREGA_PROVIDER] setLocalidad: $_localidadId');
+    notifyListeners();
+  }
+
+  void limpiarFiltros() {
+    _search = null;
+    _localidadId = null;
+    debugPrint('🗑️ [ENTREGA_PROVIDER] Filtros limpios');
+    notifyListeners();
+  }
+
+  // ✅ NUEVO: Obtener localidades únicas de todas las entregas
+  List<Map<String, dynamic>> obtenerLocalidadesUnicas() {
+    final localidadesMap = <int, Map<String, dynamic>>{};
+
+    for (var entrega in _entregas) {
+      for (var venta in entrega.ventas) {
+        if (venta.clienteLocalidadObj != null) {
+          final locId = venta.clienteLocalidadObj!.id;
+          if (!localidadesMap.containsKey(locId)) {
+            localidadesMap[locId] = {
+              'id': locId,
+              'nombre': venta.clienteLocalidadObj!.nombre,
+              'codigo': venta.clienteLocalidadObj!.codigo,
+            };
+          }
+        }
+      }
+    }
+
+    // Retornar lista ordenada por nombre
+    final localidades = localidadesMap.values.toList();
+    localidades.sort((a, b) =>
+        (a['nombre'] as String).compareTo(b['nombre'] as String));
+
+    debugPrint(
+        '🏘️ [ENTREGA_PROVIDER] Localidades únicas encontradas: ${localidades.length}');
+    return localidades;
   }
 }

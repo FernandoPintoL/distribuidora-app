@@ -113,7 +113,7 @@ class _EntregaCardState extends State<EntregaCard> {
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
               decoration: BoxDecoration(
                 color: isDarkMode
-                    ? Colors.orange[900]?.withAlpha((0.2 * 255).toInt())
+                    ? const Color.fromARGB(255, 143, 134, 129)?.withAlpha((0.2 * 255).toInt())
                     : Colors.orange[50],
                 border: Border(
                   bottom: BorderSide(
@@ -137,7 +137,6 @@ class _EntregaCardState extends State<EntregaCard> {
                             Icon(
                               Icons.local_shipping,
                               size: 20,
-                              color: Colors.orange,
                             ),
                             const SizedBox(width: 8),
                             Column(
@@ -148,16 +147,12 @@ class _EntregaCardState extends State<EntregaCard> {
                                   style: TextStyle(
                                     fontSize: 13,
                                     fontWeight: FontWeight.w600,
-                                    color: Colors.orange,
                                   ),
                                 ),
                                 Text(
                                   'Ver resumen consolidado',
                                   style: TextStyle(
                                     fontSize: 11,
-                                    color: Colors.orange.withAlpha(
-                                      (0.7 * 255).toInt(),
-                                    ),
                                   ),
                                 ),
                               ],
@@ -195,7 +190,7 @@ class _EntregaCardState extends State<EntregaCard> {
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
               decoration: BoxDecoration(
                 color: isDarkMode
-                    ? Colors.blue[900]?.withAlpha((0.3 * 255).toInt())
+                    ? const Color.fromARGB(255, 91, 94, 98)?.withAlpha((0.3 * 255).toInt())
                     : Colors.blue[50],
                 border: Border(
                   bottom: BorderSide(
@@ -219,7 +214,6 @@ class _EntregaCardState extends State<EntregaCard> {
                             Icon(
                               Icons.receipt_long,
                               size: 20,
-                              color: Colors.blue,
                             ),
                             const SizedBox(width: 8),
                             Column(
@@ -230,7 +224,6 @@ class _EntregaCardState extends State<EntregaCard> {
                                   style: TextStyle(
                                     fontSize: 13,
                                     fontWeight: FontWeight.w600,
-                                    color: Colors.blue,
                                   ),
                                 ),
                                 if (entrega.ventas.isNotEmpty)
@@ -238,7 +231,6 @@ class _EntregaCardState extends State<EntregaCard> {
                                     'Total: BS ${entrega.ventas.fold<double>(0, (sum, v) => sum + v.subtotal).toStringAsFixed(2)}',
                                     style: TextStyle(
                                       fontSize: 12,
-                                      color: Colors.blue,
                                     ),
                                   ),
                               ],

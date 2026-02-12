@@ -5,6 +5,7 @@ import '../../models/client.dart';
 import '../../providers/providers.dart';
 import '../../config/config.dart';
 import '../chofer/marcar_visita_screen.dart';
+import '../carrito/carrito_screen.dart';
 
 class OrdenDelDiaScreen extends StatefulWidget {
   const OrdenDelDiaScreen({super.key});
@@ -60,6 +61,33 @@ class _OrdenDelDiaScreenState extends State<OrdenDelDiaScreen> {
         });
   }
 
+  /// Navega a CarritoScreen para registrar un pedido
+  void _navigateToCarrito(ClienteOrdenDelDia clienteOrdenDelDia) {
+    if (!mounted) return;
+
+    // Convertir ClienteOrdenDelDia a Client
+    final client = Client(
+      id: clienteOrdenDelDia.clienteId,
+      nombre: clienteOrdenDelDia.nombre,
+      codigoCliente: clienteOrdenDelDia.codigoCliente,
+      telefono: clienteOrdenDelDia.telefono,
+      email: clienteOrdenDelDia.email,
+      activo: true,
+    );
+
+    debugPrint(
+      '🛒 Navegando a CarritoScreen para cliente: ${client.nombre}',
+    );
+
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => CarritoScreen(
+          clientePreseleccionado: client,
+        ),
+      ),
+    );
+  }
+
   /// Muestra modal con detalles del cliente
   void _showClienteDetail(ClienteOrdenDelDia cliente) {
     showModalBottomSheet(
@@ -71,6 +99,7 @@ class _OrdenDelDiaScreenState extends State<OrdenDelDiaScreen> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // Header: Nombre, código y badge (no scrollable)
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -113,181 +142,192 @@ class _OrdenDelDiaScreenState extends State<OrdenDelDiaScreen> {
                   ),
                 ],
               ),
-              const SizedBox(height: 20),
-
-              // Imagen del cliente
-              if (cliente.fotoPerfil != null && cliente.fotoPerfil!.isNotEmpty)
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(12),
-                  child: Image.network(
-                    cliente.fotoPerfil!,
-                    height: 200,
-                    width: double.infinity,
-                    fit: BoxFit.cover,
-                    errorBuilder: (context, error, stackTrace) {
-                      return Container(
-                        height: 150,
-                        color: Colors.grey[300],
-                        child: Icon(
-                          Icons.person,
-                          size: 60,
-                          color: Colors.grey[600],
-                        ),
-                      );
-                    },
-                    loadingBuilder: (context, child, loadingProgress) {
-                      if (loadingProgress == null) return child;
-                      return Container(
-                        height: 150,
-                        color: Colors.grey[300],
-                        child: const Center(child: CircularProgressIndicator()),
-                      );
-                    },
-                  ),
-                ),
-              const SizedBox(height: 20),
-              Divider(
-                color: Theme.of(context).brightness == Brightness.dark
-                    ? Colors.grey.shade700
-                    : Colors.grey.shade200,
-              ),
               const SizedBox(height: 16),
 
-              // Detalles de contacto
-              if (cliente.telefono != null) ...[
-                Row(
-                  children: [
-                    Icon(Icons.phone, size: 18, color: Colors.blue),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Teléfono',
-                            style: Theme.of(context).textTheme.labelSmall,
+              // Content scrollable: Imagen, detalles, etc.
+              Expanded(
+                child: SingleChildScrollView(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Imagen del cliente
+                      if (cliente.fotoPerfil != null && cliente.fotoPerfil!.isNotEmpty)
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(12),
+                          child: Image.network(
+                            cliente.fotoPerfil!,
+                            height: 200,
+                            width: double.infinity,
+                            fit: BoxFit.cover,
+                            errorBuilder: (context, error, stackTrace) {
+                              return Container(
+                                height: 150,
+                                color: Colors.grey[300],
+                                child: Icon(
+                                  Icons.person,
+                                  size: 60,
+                                  color: Colors.grey[600],
+                                ),
+                              );
+                            },
+                            loadingBuilder: (context, child, loadingProgress) {
+                              if (loadingProgress == null) return child;
+                              return Container(
+                                height: 150,
+                                color: Colors.grey[300],
+                                child: const Center(child: CircularProgressIndicator()),
+                              );
+                            },
                           ),
-                          Text(
-                            cliente.telefono!,
-                            style: Theme.of(context).textTheme.bodyMedium,
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-              ],
-
-              if (cliente.email != null) ...[
-                Row(
-                  children: [
-                    Icon(Icons.email, size: 18, color: Colors.blue),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Email',
-                            style: Theme.of(context).textTheme.labelSmall,
-                          ),
-                          Text(
-                            cliente.email!,
-                            style: Theme.of(context).textTheme.bodyMedium,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-              ],
-
-              // Dirección
-              if (cliente.direccion.direccion != null) ...[
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Icon(Icons.location_on, size: 18, color: Colors.blue),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Dirección',
-                            style: Theme.of(context).textTheme.labelSmall,
-                          ),
-                          Text(
-                            cliente.direccion.direccion!,
-                            style: Theme.of(context).textTheme.bodyMedium,
-                          ),
-                          if (cliente.direccion.ciudad != null)
-                            Text(
-                              cliente.direccion.ciudad!,
-                              style: Theme.of(context).textTheme.bodySmall,
-                            ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-              ],
-
-              // Ventana horaria
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Icon(Icons.access_time, size: 18, color: Colors.blue),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Ventana Horaria',
-                          style: Theme.of(context).textTheme.labelSmall,
                         ),
-                        Text(
-                          '${cliente.ventanaHoraria.horaInicio} - ${cliente.ventanaHoraria.horaFin}',
-                          style: Theme.of(context).textTheme.bodyMedium,
+                      if (cliente.fotoPerfil != null && cliente.fotoPerfil!.isNotEmpty)
+                        const SizedBox(height: 20),
+                      Divider(
+                        color: Theme.of(context).brightness == Brightness.dark
+                            ? Colors.grey.shade700
+                            : Colors.grey.shade200,
+                      ),
+                      const SizedBox(height: 16),
+
+                      // Detalles de contacto
+                      if (cliente.telefono != null) ...[
+                        Row(
+                          children: [
+                            Icon(Icons.phone, size: 18, color: Colors.blue),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Teléfono',
+                                    style: Theme.of(context).textTheme.labelSmall,
+                                  ),
+                                  Text(
+                                    cliente.telefono!,
+                                    style: Theme.of(context).textTheme.bodyMedium,
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                      ],
+
+                      if (cliente.email != null) ...[
+                        Row(
+                          children: [
+                            Icon(Icons.email, size: 18, color: Colors.blue),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Email',
+                                    style: Theme.of(context).textTheme.labelSmall,
+                                  ),
+                                  Text(
+                                    cliente.email!,
+                                    style: Theme.of(context).textTheme.bodyMedium,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                      ],
+
+                      // Dirección
+                      if (cliente.direccion.direccion != null) ...[
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Icon(Icons.location_on, size: 18, color: Colors.blue),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Dirección',
+                                    style: Theme.of(context).textTheme.labelSmall,
+                                  ),
+                                  Text(
+                                    cliente.direccion.direccion!,
+                                    style: Theme.of(context).textTheme.bodyMedium,
+                                  ),
+                                  if (cliente.direccion.ciudad != null)
+                                    Text(
+                                      cliente.direccion.ciudad!,
+                                      style: Theme.of(context).textTheme.bodySmall,
+                                    ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                      ],
+
+                      // Ventana horaria
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Icon(Icons.access_time, size: 18, color: Colors.blue),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Ventana Horaria',
+                                  style: Theme.of(context).textTheme.labelSmall,
+                                ),
+                                Text(
+                                  '${cliente.ventanaHoraria.horaInicio} - ${cliente.ventanaHoraria.horaFin}',
+                                  style: Theme.of(context).textTheme.bodyMedium,
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+
+                      // Información de crédito si aplica
+                      if (cliente.puedeAtenerCredito) ...[
+                        const SizedBox(height: 12),
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Icon(Icons.credit_card, size: 18, color: Colors.blue),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Límite de Crédito',
+                                    style: Theme.of(context).textTheme.labelSmall,
+                                  ),
+                                  Text(
+                                    'Bs. ${cliente.limiteCredito?.toStringAsFixed(2) ?? 'N/A'}',
+                                    style: Theme.of(context).textTheme.bodyMedium,
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
                         ),
                       ],
-                    ),
+                    ],
                   ),
-                ],
-              ),
-
-              // Información de crédito si aplica
-              if (cliente.puedeAtenerCredito) ...[
-                const SizedBox(height: 12),
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Icon(Icons.credit_card, size: 18, color: Colors.blue),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Límite de Crédito',
-                            style: Theme.of(context).textTheme.labelSmall,
-                          ),
-                          Text(
-                            'Bs. ${cliente.limiteCredito?.toStringAsFixed(2) ?? 'N/A'}',
-                            style: Theme.of(context).textTheme.bodyMedium,
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
                 ),
-              ],
+              ),
 
               const SizedBox(height: 20),
               Divider(
@@ -297,37 +337,59 @@ class _OrdenDelDiaScreenState extends State<OrdenDelDiaScreen> {
               ),
               const SizedBox(height: 16),
 
-              // Botones de acción
-              Row(
+              // Botones de acción (sticky at bottom, not scrollable)
+              Column(
                 children: [
-                  // Botón secundario: Cerrar
-                  Expanded(
-                    child: OutlinedButton(
-                      onPressed: () => Navigator.pop(context),
-                      child: const Text('Cerrar'),
+                  // Primera fila: Cerrar y Marcar Visita
+                  Row(
+                    children: [
+                      // Botón secundario: Cerrar
+                      Expanded(
+                        child: OutlinedButton(
+                          onPressed: () => Navigator.pop(context),
+                          child: const Text('Cerrar'),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      // Botón principal: Marcar Visita (solo si no está visitado)
+                      if (!cliente.visitado)
+                        Expanded(
+                          child: ElevatedButton.icon(
+                            onPressed: () {
+                              Navigator.pop(context);
+                              _navigateToMarcarVisita(cliente);
+                            },
+                            icon: const Icon(Icons.check_circle),
+                            label: const Text('Marcar Visita'),
+                          ),
+                        )
+                      else
+                        Expanded(
+                          child: ElevatedButton.icon(
+                            onPressed: null,
+                            icon: const Icon(Icons.check_circle),
+                            label: const Text('Visitado'),
+                          ),
+                        ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  // Segunda fila: Botón Registrar Pedido
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton.icon(
+                      onPressed: () {
+                        Navigator.pop(context);
+                        _navigateToCarrito(cliente);
+                      },
+                      icon: const Icon(Icons.shopping_cart),
+                      label: const Text('Registrar Pedido'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.blue,
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                      ),
                     ),
                   ),
-                  const SizedBox(width: 12),
-                  // Botón principal: Marcar Visita (solo si no está visitado)
-                  if (!cliente.visitado)
-                    Expanded(
-                      child: ElevatedButton.icon(
-                        onPressed: () {
-                          Navigator.pop(context);
-                          _navigateToMarcarVisita(cliente);
-                        },
-                        icon: const Icon(Icons.check_circle),
-                        label: const Text('Marcar Visita'),
-                      ),
-                    )
-                  else
-                    Expanded(
-                      child: ElevatedButton.icon(
-                        onPressed: null,
-                        icon: const Icon(Icons.check_circle),
-                        label: const Text('Visitado'),
-                      ),
-                    ),
                 ],
               ),
             ],

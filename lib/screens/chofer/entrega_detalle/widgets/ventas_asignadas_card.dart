@@ -168,470 +168,258 @@ class _VentasAsignadasCardState extends State<VentasAsignadasCard> {
                     : (isDarkMode ? Colors.grey[600]! : Colors.grey[300]!);
                 final borderWidth = isEnRuta ? 2.0 : 1.0;
 
-                return Card(
-                  margin: const EdgeInsets.symmetric(vertical: 10),
-                  elevation: isEnRuta ? 3 : 1,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
-                    side: BorderSide(color: borderColor, width: borderWidth),
-                  ),
-                  child: ExpansionTile(
-                    leading: esModoCarga
-                        ? cargando
-                            ? const SizedBox(
-                                width: 24,
-                                height: 24,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  valueColor:
-                                      AlwaysStoppedAnimation<Color>(
-                                    Colors.blue,
-                                  ),
-                                ),
-                              )
-                            : Checkbox(
-                                value: confirmada,
-                                onChanged: (value) {
-                                  final nuevoEstado = value ?? false;
-                                  _procesarConfirmacionVenta(
-                                    context,
-                                    nuevoEstado,
-                                    venta,
-                                  );
-                                },
-                              )
-                        : Icon(
-                            Icons.check_circle,
-                            color: Colors.green[400],
-                            size: 20,
-                          ),
-                    title: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    venta.clienteNombre?.toUpperCase() ?? 'Cliente',
-                                    style: const TextStyle(
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                  // ✅ NUEVO: Mostrar localidad del cliente
-                                  if (venta.clienteLocalidad != null && venta.clienteLocalidad!.isNotEmpty) ...[
-                                    const SizedBox(height: 2),
-                                    Chip(
-                                      label: Text(
-                                        venta.clienteLocalidad!,
-                                        style: const TextStyle(fontSize: 10),
-                                      ),
-                                      avatar: const Icon(
-                                        Icons.location_on,
-                                        size: 12,
-                                      ),
-                                      padding: const EdgeInsets.symmetric(horizontal: 4),
-                                      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                                    ),
-                                  ],
-                                ],
-                              ),
-                            ),
-                            if (isEnRuta)
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 8,
-                                  vertical: 2,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: isDarkMode
-                                      ? Colors.green[900]
-                                      : Colors.green[100],
-                                  borderRadius: BorderRadius.circular(4),
-                                  border: Border.all(
-                                    color: isDarkMode
-                                        ? Colors.green[600]!
-                                        : Colors.green[400]!,
-                                  ),
-                                ),
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Icon(
-                                      Icons.directions_run,
-                                      size: 12,
-                                      color: isDarkMode
-                                          ? Colors.green[400]
-                                          : Colors.green[700],
-                                    ),
-                                    const SizedBox(width: 4),
-                                    Text(
-                                      'En Ruta',
-                                      style: TextStyle(
-                                        fontSize: 11,
-                                        fontWeight: FontWeight.bold,
-                                        color: isDarkMode
-                                            ? Colors.green[400]
-                                            : Colors.green[700],
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                          ],
-                        ),
-                        const SizedBox(height: 8),
-                        Row(
-                          children: [
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment:
-                                    CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    '${venta.id} | #${venta.numero}',
-                                    style: const TextStyle(fontSize: 11),
-                                  ),
-                                  if (venta.clienteTelefono != null &&
-                                      venta.clienteTelefono!.isNotEmpty) ...[
-                                    const SizedBox(height: 4),
-                                    Text(
-                                      venta.clienteTelefono!,
-                                      style: TextStyle(
-                                        fontSize: 11,
-                                        color: isDarkMode
-                                            ? Colors.grey[500]
-                                            : Colors.grey[600],
-                                      ),
-                                    ),
-                                  ],
-                                ],
-                              ),
-                            ),
-                            if (venta.clienteTelefono != null &&
-                                venta.clienteTelefono!.isNotEmpty) ...[
-                              const SizedBox(width: 8),
-                              SizedBox(
-                                width: 32,
-                                height: 32,
-                                child: IconButton(
-                                  padding: EdgeInsets.zero,
-                                  constraints: const BoxConstraints(),
-                                  icon: const Icon(Icons.phone),
-                                  iconSize: 16,
-                                  color: Colors.green,
-                                  tooltip: 'Llamar',
-                                  onPressed: () => widget.onLlamarCliente(
-                                    venta.clienteTelefono,
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(width: 4),
-                              SizedBox(
-                                width: 32,
-                                height: 32,
-                                child: IconButton(
-                                  padding: EdgeInsets.zero,
-                                  constraints: const BoxConstraints(),
-                                  icon: const Icon(Icons.chat),
-                                  iconSize: 16,
-                                  color: Colors.green[600],
-                                  tooltip: 'WhatsApp',
-                                  onPressed: () =>
-                                      widget.onEnviarWhatsApp(
-                                    venta.clienteTelefono,
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(width: 4),
-                              SizedBox(
-                                width: 32,
-                                height: 32,
-                                child: IconButton(
-                                  padding: EdgeInsets.zero,
-                                  constraints: const BoxConstraints(),
-                                  icon: const Icon(Icons.download),
-                                  iconSize: 16,
-                                  color: Colors.blue,
-                                  tooltip: 'Descargar PDF',
-                                  onPressed: () =>
-                                      _descargarPDFVenta(venta.id),
-                                ),
-                              ),
-                            ],
-                          ],
-                        ),
-                        const SizedBox(height: 6),
-                        _buildUbicacionBadge(entregaActual),
-                      ],
+                return InkWell(
+                  onTap: () {
+                    // Navegar a la pantalla de detalle de venta
+                    Navigator.of(context).pushNamed(
+                      '/venta-detalle',
+                      arguments: venta.id,
+                    );
+                  },
+                  child: Card(
+                    margin: const EdgeInsets.symmetric(vertical: 10),
+                    elevation: isEnRuta ? 3 : 1,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      side: BorderSide(color: borderColor, width: borderWidth),
                     ),
-                    subtitle: SizedBox(
-                      width: 135,
+                    child: Padding(
+                      padding: const EdgeInsets.all(16),
                       child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.end,
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(
-                            'BS ${venta.subtotal.toStringAsFixed(2)}',
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 11,
-                              color: isDarkMode
-                                  ? Colors.grey[100]
-                                  : Colors.grey[900],
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                          const SizedBox(height: 1),
-                          SizedBox(
-                            height: 16,
-                            child: _buildEstadoLogisticoBadge(venta),
-                          ),
-                          const SizedBox(height: 1),
-                          SizedBox(
-                            height: 16,
-                            child: _buildEstadoPagoBadge(venta.estadoPago),
-                          ),
-                        ],
-                      ),
-                    ),
-                    children: [
-                      Padding(
-                        padding: const EdgeInsets.all(16),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            if (entregaActual.fechaEntregaComprometida !=
-                                null) ...[
-                              Container(
-                                padding: const EdgeInsets.all(12),
-                                decoration: BoxDecoration(
-                                  color: isDarkMode
-                                      ? Colors.blue[900]
-                                      : Colors.blue[50],
-                                  border: Border.all(
-                                    color: isDarkMode
-                                        ? Colors.blue[700]!
-                                        : Colors.blue[200]!,
-                                  ),
-                                  borderRadius: BorderRadius.circular(8),
+                          Row(
+                            children: [
+                              if (esModoCarga)
+                                if(cargando)
+                                    const SizedBox(
+                                        width: 24,
+                                        height: 24,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                          valueColor:
+                                              AlwaysStoppedAnimation<Color>(
+                                            Colors.blue,
+                                          ),
+                                        ),
+                                      )
+                              else
+                                Icon(
+                                  Icons.check_circle,
+                                  color: Colors.green[400],
+                                  size: 20,
                                 ),
+                              const SizedBox(width: 12),
+                              Expanded(
                                 child: Column(
                                   crossAxisAlignment:
                                       CrossAxisAlignment.start,
                                   children: [
-                                    Row(
-                                      children: [
-                                        Icon(
-                                          Icons.schedule,
-                                          color: isDarkMode
-                                              ? Colors.blue[400]
-                                              : Colors.blue[600],
-                                          size: 18,
-                                        ),
-                                        const SizedBox(width: 8),
-                                        Text(
-                                          'Información de Entrega',
-                                          style: TextStyle(
-                                            fontWeight: FontWeight.bold,
-                                            color: isDarkMode
-                                                ? Colors.blue[300]
-                                                : Colors.blue[900],
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                    const SizedBox(height: 8),
-                                    if (entregaActual.ventanaEntregaIni !=
-                                            null &&
-                                        entregaActual.ventanaEntregaFin != null)
-                                      Text(
-                                        'Ventana: ${entregaActual.ventanaEntregaIni!.hour.toString().padLeft(2, '0')}:${entregaActual.ventanaEntregaIni!.minute.toString().padLeft(2, '0')} - ${entregaActual.ventanaEntregaFin!.hour.toString().padLeft(2, '0')}:${entregaActual.ventanaEntregaFin!.minute.toString().padLeft(2, '0')}',
-                                        style: TextStyle(
-                                          fontSize: 12,
-                                          color: isDarkMode
-                                              ? Colors.grey[400]
-                                              : Colors.grey[700],
-                                        ),
+                                    Text(
+                                      venta.clienteNombre?.toUpperCase() ??
+                                          'Cliente',
+                                      style: const TextStyle(
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.bold,
                                       ),
-                                  ],
-                                ),
-                              ),
-                              const SizedBox(height: 16),
-                            ],
-                            Text(
-                              'Productos',
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .titleSmall
-                                  ?.copyWith(fontWeight: FontWeight.bold),
-                            ),
-                            const SizedBox(height: 12),
-                            if (venta.detalles.isNotEmpty)
-                              ...venta.detalles.asMap().entries.map((entry) {
-                                final idx = entry.key;
-                                final detalle = entry.value;
-                                final isLast =
-                                    idx == venta.detalles.length - 1;
-
-                                return Column(
-                                  children: [
-                                    Row(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        Container(
-                                          width: 40,
-                                          height: 40,
-                                          decoration: BoxDecoration(
-                                            color: isDarkMode
-                                                ? Colors.blue[900]
-                                                : Colors.blue[50],
-                                            borderRadius:
-                                                BorderRadius.circular(8),
-                                          ),
-                                          child: Center(
-                                            child: Text(
-                                              '${detalle.cantidad % 1 == 0 ? detalle.cantidad.toInt() : detalle.cantidad}x',
-                                              style: TextStyle(
-                                                fontWeight: FontWeight.bold,
-                                                fontSize: 12,
-                                                color: isDarkMode
-                                                    ? Colors.blue[300]
-                                                    : Colors.blue,
-                                              ),
-                                            ),
-                                          ),
-                                        ),
-                                        const SizedBox(width: 12),
-                                        Expanded(
-                                          child: Column(
-                                            crossAxisAlignment:
-                                                CrossAxisAlignment.start,
-                                            children: [
-                                              Text(
-                                                detalle.producto?.nombre ??
-                                                    'Producto desconocido',
-                                                style: TextStyle(
-                                                  fontWeight: FontWeight.w600,
-                                                  fontSize: 12,
-                                                  color: isDarkMode
-                                                      ? Colors.grey[100]
-                                                      : Colors.grey[900],
-                                                ),
-                                              ),
-                                              const SizedBox(height: 4),
-                                              if (detalle.producto
-                                                      ?.descripcion !=
-                                                  null)
-                                                Text(
-                                                  'SKU: ${detalle.producto!.descripcion}',
-                                                  style: TextStyle(
-                                                    fontSize: 11,
-                                                    color: isDarkMode
-                                                        ? Colors.grey[500]
-                                                        : Colors.grey[600],
-                                                  ),
-                                                ),
-                                            ],
-                                          ),
-                                        ),
-                                        Column(
-                                          crossAxisAlignment:
-                                              CrossAxisAlignment.end,
-                                          children: [
-                                            Text(
-                                              'BS ${detalle.subtotal.toStringAsFixed(2)}',
-                                              style: TextStyle(
-                                                fontWeight: FontWeight.bold,
-                                                fontSize: 12,
-                                                color: isDarkMode
-                                                    ? Colors.grey[100]
-                                                    : Colors.grey[900],
-                                              ),
-                                            ),
-                                            Text(
-                                              'BS ${detalle.precioUnitario.toStringAsFixed(2)} c/u',
-                                              style: TextStyle(
-                                                fontSize: 11,
-                                                color: isDarkMode
-                                                    ? Colors.grey[500]
-                                                    : Colors.grey[600],
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      ],
                                     ),
-                                    if (!isLast) ...[
-                                      const SizedBox(height: 12),
-                                      const Divider(height: 1),
-                                      const SizedBox(height: 12),
+                                    if (venta.clienteLocalidad != null &&
+                                        venta.clienteLocalidad!.isNotEmpty) ...[
+                                      const SizedBox(height: 2),
+                                      Chip(
+                                        label: Text(
+                                          venta.clienteLocalidad!,
+                                          style: const TextStyle(
+                                            fontSize: 10,
+                                          ),
+                                        ),
+                                        avatar: const Icon(
+                                          Icons.location_on,
+                                          size: 12,
+                                        ),
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 4,
+                                        ),
+                                        materialTapTargetSize:
+                                            MaterialTapTargetSize.shrinkWrap,
+                                      ),
                                     ],
                                   ],
-                                );
-                              }).toList()
-                            else
-                              Text(
-                                'Sin productos',
-                                style: TextStyle(
-                                  color: isDarkMode
-                                      ? Colors.grey[600]
-                                      : Colors.grey[400],
-                                  fontStyle: FontStyle.italic,
                                 ),
                               ),
-                            if (venta.detalles.isNotEmpty) ...[
-                              const SizedBox(height: 12),
-                              Container(
-                                padding: const EdgeInsets.all(12),
-                                decoration: BoxDecoration(
-                                  color: isDarkMode
-                                      ? Colors.grey[800]
-                                      : Colors.grey[100],
-                                  borderRadius: BorderRadius.circular(6),
+                              if (isEnRuta)
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 8,
+                                    vertical: 2,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: isDarkMode
+                                        ? Colors.green[900]
+                                        : Colors.green[100],
+                                    borderRadius: BorderRadius.circular(4),
+                                    border: Border.all(
+                                      color: isDarkMode
+                                          ? Colors.green[600]!
+                                          : Colors.green[400]!,
+                                    ),
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(
+                                        Icons.directions_run,
+                                        size: 12,
+                                        color: isDarkMode
+                                            ? Colors.green[400]
+                                            : Colors.green[700],
+                                      ),
+                                      const SizedBox(width: 4),
+                                      Text(
+                                        'En Ruta',
+                                        style: TextStyle(
+                                          fontSize: 11,
+                                          fontWeight: FontWeight.bold,
+                                          color: isDarkMode
+                                              ? Colors.green[400]
+                                              : Colors.green[700],
+                                        ),
+                                      ),
+                                    ],
+                                  ),
                                 ),
-                                child: Row(
-                                  mainAxisAlignment:
-                                      MainAxisAlignment.spaceBetween,
+                            ],
+                          ),
+                          const SizedBox(height: 12),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment:
+                                      CrossAxisAlignment.start,
                                   children: [
                                     Text(
-                                      'Total',
-                                      style: TextStyle(
-                                        fontSize: 12,
-                                        color: isDarkMode
-                                            ? Colors.grey[400]
-                                            : Colors.grey[600],
-                                      ),
+                                      'Folio ${venta.id} | #${venta.numero}',
+                                      style: const TextStyle(fontSize: 11),
                                     ),
-                                    Text(
-                                      'BS ${venta.subtotal.toStringAsFixed(2)}',
-                                      style: TextStyle(
-                                        fontWeight: FontWeight.w600,
-                                        fontSize: 12,
-                                        color: isDarkMode
-                                            ? Colors.grey[100]
-                                            : Colors.grey[900],
+                                    if (venta.clienteTelefono != null &&
+                                        venta.clienteTelefono!
+                                            .isNotEmpty) ...[
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        venta.clienteTelefono!,
+                                        style: TextStyle(
+                                          fontSize: 11,
+                                          color: isDarkMode
+                                              ? Colors.grey[500]
+                                              : Colors.grey[600],
+                                        ),
                                       ),
-                                    ),
+                                    ],
                                   ],
                                 ),
                               ),
-                              const SizedBox(height: 8),
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.end,
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Text(
+                                    'BS ${venta.subtotal.toStringAsFixed(2)}',
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 12,
+                                      color: isDarkMode
+                                          ? Colors.grey[100]
+                                          : Colors.grey[900],
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                  const SizedBox(height: 2),
+                                  SizedBox(
+                                    height: 16,
+                                    child:
+                                        _buildEstadoLogisticoBadge(venta),
+                                  ),
+                                  const SizedBox(height: 2),
+                                  SizedBox(
+                                    height: 16,
+                                    child: _buildEstadoPagoBadge(
+                                      venta.estadoPago,
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ],
-                            const SizedBox(height: 16),
-                            // ✅ Botón de confirmación solo en EN_TRANSITO
-                            if (venta.estadoLogisticoCodigo == 'EN_TRANSITO')
+                          ),
+                          const SizedBox(height: 12),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: _buildUbicacionBadge(entregaActual),
+                              ),
+                              const SizedBox(width: 8),
+                              if (venta.clienteTelefono != null &&
+                                  venta.clienteTelefono!.isNotEmpty) ...[
+                                SizedBox(
+                                  width: 32,
+                                  height: 32,
+                                  child: IconButton(
+                                    padding: EdgeInsets.zero,
+                                    constraints: const BoxConstraints(),
+                                    icon: const Icon(Icons.phone),
+                                    iconSize: 16,
+                                    color: Colors.green,
+                                    tooltip: 'Llamar',
+                                    onPressed: () =>
+                                        widget.onLlamarCliente(
+                                      venta.clienteTelefono,
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 4),
+                                SizedBox(
+                                  width: 32,
+                                  height: 32,
+                                  child: IconButton(
+                                    padding: EdgeInsets.zero,
+                                    constraints: const BoxConstraints(),
+                                    icon: const Icon(Icons.chat),
+                                    iconSize: 16,
+                                    color: Colors.green[600],
+                                    tooltip: 'WhatsApp',
+                                    onPressed: () =>
+                                        widget.onEnviarWhatsApp(
+                                      venta.clienteTelefono,
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 4),
+                                SizedBox(
+                                  width: 32,
+                                  height: 32,
+                                  child: IconButton(
+                                    padding: EdgeInsets.zero,
+                                    constraints: const BoxConstraints(),
+                                    icon: const Icon(Icons.download),
+                                    iconSize: 16,
+                                    color: Colors.blue,
+                                    tooltip: 'Descargar PDF',
+                                    onPressed: () =>
+                                        _descargarPDFVenta(venta.id),
+                                  ),
+                                ),
+                              ],
+                            ],
+                          ),
+                          // ✅ Botón de confirmación solo en EN_TRANSITO
+                          if (venta.estadoLogisticoCodigo == 'EN_TRANSITO')
+                            ...[
+                              const SizedBox(height: 12),
                               SizedBox(
                                 width: double.infinity,
                                 child: ElevatedButton.icon(
                                   onPressed: () async {
-                                    // ✅ NUEVO: Navegar a la pantalla de confirmación
                                     await ConfirmarVentaEntregadaDialog.show(
                                       context,
                                       entregaActual,
@@ -640,8 +428,7 @@ class _VentasAsignadasCardState extends State<VentasAsignadasCard> {
                                     );
                                   },
                                   icon: const Icon(Icons.check_circle),
-                                  label:
-                                      const Text('Confirmar Entrega'),
+                                  label: const Text('Confirmar Entrega'),
                                   style: ElevatedButton.styleFrom(
                                     backgroundColor: Colors.green,
                                     foregroundColor: Colors.white,
@@ -651,10 +438,10 @@ class _VentasAsignadasCardState extends State<VentasAsignadasCard> {
                                   ),
                                 ),
                               ),
-                          ],
-                        ),
+                            ],
+                        ],
                       ),
-                    ],
+                    ),
                   ),
                 );
               },

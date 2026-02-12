@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:dropdown_search/dropdown_search.dart';
 import '../../providers/providers.dart';
@@ -11,7 +12,9 @@ import '../../extensions/theme_extension.dart';
 import 'carrito_helpers.dart';
 
 class CarritoScreen extends StatefulWidget {
-  const CarritoScreen({super.key});
+  final Client? clientePreseleccionado;
+
+  const CarritoScreen({super.key, this.clientePreseleccionado});
 
   @override
   State<CarritoScreen> createState() => _CarritoScreenState();
@@ -19,15 +22,40 @@ class CarritoScreen extends StatefulWidget {
 
 class _CarritoScreenState extends State<CarritoScreen> {
   late TextEditingController _searchClienteController;
+  final FocusNode _searchFocusNode = FocusNode();
 
   @override
   void initState() {
     super.initState();
     _searchClienteController = TextEditingController();
+
+    // ✅ Capturar Enter en el campo de búsqueda
+    _searchFocusNode.onKey = (node, event) {
+      if (event.isKeyPressed(LogicalKeyboardKey.enter)) {
+        _ejecutarBusquedaDesdeEnter();
+        return KeyEventResult.handled;
+      }
+      return KeyEventResult.ignored;
+    };
+
     // 🔑 FASE 3: Calcular precios CON RANGOS cuando se abre la pantalla
     // Usamos calcularCarritoConRangosAhora() porque es la PRIMERA vez
     // (no usamos debounce para la carga inicial)
     Future.delayed(Duration.zero, () {
+      // ✅ Si hay cliente pre-seleccionado, cargar sus datos automáticamente
+      if (widget.clientePreseleccionado != null) {
+        final clientProvider = context.read<ClientProvider>();
+        debugPrint(
+          '📦 Cliente pre-seleccionado: ${widget.clientePreseleccionado!.nombre}',
+        );
+        // Cargar los datos del cliente pre-seleccionado
+        clientProvider.loadClients(
+          search: widget.clientePreseleccionado!.nombre,
+          active: true,
+          perPage: 1,
+        );
+      }
+
       final carritoProvider = context.read<CarritoProvider>();
       if (carritoProvider.isNotEmpty) {
         carritoProvider.calcularCarritoConRangosAhora();
@@ -38,7 +66,23 @@ class _CarritoScreenState extends State<CarritoScreen> {
   @override
   void dispose() {
     _searchClienteController.dispose();
+    _searchFocusNode.dispose();
     super.dispose();
+  }
+
+  // ✅ Función para ejecutar búsqueda desde Enter
+  Future<void> _ejecutarBusquedaDesdeEnter() async {
+    final clientProvider = context.read<ClientProvider>();
+    final searchText = _searchClienteController.text.trim();
+
+    if (searchText.isNotEmpty) {
+      await clientProvider.loadClients(
+        search: searchText,
+        active: true,
+        perPage: 20,
+      );
+      debugPrint('🔍 Búsqueda realizada por ENTER: "$searchText"');
+    }
   }
 
   @override
@@ -356,22 +400,30 @@ class _CarritoScreenState extends State<CarritoScreen> {
               ),
             )
           else
-            // ✅ DropdownSearch integrado con búsqueda manual (single unified component)
+            // ✅ DropdownSearch con búsqueda manual (botón + Enter)
             Consumer<ClientProvider>(
               builder: (context, clientProviderConsumer, _) {
                 debugPrint('🔄 Rebuilding DropdownSearch with ${clientProviderConsumer.clients.length} clients');
 
+                // Función local para realizar búsqueda (por botón)
+                Future<void> _realizarBusquedaLocal() async {
+                  final searchText = _searchClienteController.text.trim();
+                  if (searchText.isNotEmpty) {
+                    await clientProvider.loadClients(
+                      search: searchText,
+                      active: true,
+                      perPage: 20,
+                    );
+                    debugPrint('🔍 Búsqueda realizada por BOTÓN: "$searchText"');
+                  }
+                }
+
                 return DropdownSearch<Client>(
                   key: ValueKey('dropdown_${clientProviderConsumer.clients.length}'),
                   asyncItems: (String filter) async {
-                    // ✅ Buscar en el backend cuando el usuario escribe
-                    if (filter.isNotEmpty) {
-                      await clientProvider.loadClients(
-                        search: filter,
-                        active: true,
-                        perPage: 20,
-                      );
-                    }
+                    // ✅ NO hacer búsquedas en tiempo real
+                    // Solo mostrar resultados después de búsqueda manual (botón o Enter)
+                    // Si hay clientes en la lista, mostrarlos; si no, devolver lista vacía
                     return clientProvider.clients;
                   },
                   selectedItem: carritoProvider.clienteSeleccionado,
@@ -388,6 +440,7 @@ class _CarritoScreenState extends State<CarritoScreen> {
                   onChanged: (cliente) {
                     if (cliente != null) {
                       carritoProvider.setClienteSeleccionado(cliente);
+                      _searchClienteController.clear();
                       debugPrint('✅ Cliente seleccionado: ${cliente.nombre}');
                       debugPrint('✅ Cliente seleccionado: ${cliente.id}');
                       debugPrint(
@@ -399,9 +452,36 @@ class _CarritoScreenState extends State<CarritoScreen> {
                     showSearchBox: true,
                     searchFieldProps: TextFieldProps(
                       controller: _searchClienteController,
+                      focusNode: _searchFocusNode,
+                      textInputAction: TextInputAction.search,
                       decoration: InputDecoration(
-                        hintText: 'Buscar cliente...',
+                        hintText: 'Escribe y presiona Enter o 🔍',
                         prefixIcon: const Icon(Icons.search),
+                        suffixIcon: Consumer<ClientProvider>(
+                          builder: (context, clientProviderInner, _) {
+                            return Padding(
+                              padding: const EdgeInsets.only(right: 4),
+                              child: IconButton(
+                                icon: clientProviderInner.isLoading
+                                    ? const SizedBox(
+                                        width: 20,
+                                        height: 20,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                        ),
+                                      )
+                                    : const Icon(Icons.search),
+                                onPressed: clientProviderInner.isLoading
+                                    ? null
+                                    : () {
+                                        // ✅ Búsqueda al hacer click en el botón
+                                        _realizarBusquedaLocal();
+                                      },
+                                tooltip: 'Buscar clientes (Enter)',
+                              ),
+                            );
+                          },
+                        ),
                         contentPadding: const EdgeInsets.symmetric(
                           horizontal: 12,
                           vertical: 12,
