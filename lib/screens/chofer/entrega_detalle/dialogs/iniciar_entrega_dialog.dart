@@ -21,7 +21,7 @@ class IniciarEntregaDialog {
             const Text('¿Confirmas que deseas iniciar la entrega?'),
             const SizedBox(height: 12),
             Text(
-              'Se cambiar el estado a EN_RUTA y se iniciará el tracking de GPS.',
+              'Se cambiar el estado a EN_RUTA y se actualizarán los estados de las ventas.',
               style: TextStyle(
                 fontSize: 12,
                 color: isDarkMode ? Colors.grey[400] : Colors.grey[600],
@@ -110,7 +110,7 @@ class IniciarEntregaDialog {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: const Text(
-                  '✅ Entrega iniciada correctamente. GPS tracking activo.',
+                  '✅ Entrega iniciada correctamente.',
                 ),
                 backgroundColor: Colors.green,
                 duration: const Duration(seconds: 3),

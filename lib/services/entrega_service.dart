@@ -847,8 +847,12 @@ class EntregaService {
     List<String>? fotosBase64,
     String? observaciones,
     String? observacionesLogistica,  // ✅ NUEVO: Observaciones logísticas (estado entrega, incidentes)
-    double? montoRecibido,  // ✅ NUEVO: Monto que pagó el cliente
-    int? tipoPagoId,  // ✅ NUEVO: ID del tipo de pago
+    double? montoRecibido,  // ✅ NUEVO: Monto que pagó el cliente (backward compatible)
+    int? tipoPagoId,  // ✅ NUEVO: ID del tipo de pago (backward compatible)
+    // ✅ NUEVA 2026-02-12: Múltiples pagos
+    List<Map<String, dynamic>>? pagos,  // Array de {tipo_pago_id, monto, referencia}
+    bool? esCredito,  // ✅ CAMBIO: Si es promesa de pago (no dinero real)
+    String? tipoConfirmacion,  // COMPLETA o CON_NOVEDAD
   }) async {
     try {
       final data = <String, dynamic>{
@@ -857,8 +861,12 @@ class EntregaService {
           'observaciones': observaciones,
         if (observacionesLogistica != null && observacionesLogistica.isNotEmpty)
           'observaciones_logistica': observacionesLogistica,  // ✅ NUEVO: Pasar al backend
-        if (montoRecibido != null) 'monto_recibido': montoRecibido,  // ✅ NUEVO: Pasar monto
-        if (tipoPagoId != null) 'tipo_pago_id': tipoPagoId,  // ✅ NUEVO: Pasar tipo de pago
+        if (montoRecibido != null) 'monto_recibido': montoRecibido,  // ✅ NUEVO: Pasar monto (backward compatible)
+        if (tipoPagoId != null) 'tipo_pago_id': tipoPagoId,  // ✅ NUEVO: Pasar tipo de pago (backward compatible)
+        // ✅ NUEVA 2026-02-12: Múltiples pagos
+        if (pagos != null && pagos.isNotEmpty) 'pagos': pagos,  // Array de pagos múltiples
+        if (esCredito != null && esCredito) 'es_credito': esCredito,  // ✅ CAMBIO: Promesa de pago
+        if (tipoConfirmacion != null) 'tipo_confirmacion': tipoConfirmacion,  // COMPLETA o CON_NOVEDAD
       };
 
       final response = await _apiService.post(

@@ -18,6 +18,7 @@ class _EntregasAsignadasScreenState extends State<EntregasAsignadasScreen> {
   String _searchInput = '';  // ✅ NUEVO: input temporal de búsqueda (antes de confirmar)
   int? _localidadFiltro;  // ✅ NUEVO: localidad
   bool _mostrarFiltros = false;  // ✅ NUEVO: control de visibilidad de filtros (inicia OCULTO)
+  bool _isRefreshing = false;  // ✅ NUEVO: Estado para recarga manual
   final TextEditingController _searchController = TextEditingController();  // ✅ NUEVO: controller para el campo
 
   // ✅ CRÍTICO: Future estable que NO se recrea en cada rebuild
@@ -66,6 +67,49 @@ class _EntregasAsignadasScreenState extends State<EntregasAsignadasScreen> {
     _cargarEntregas();
   }
 
+  // ✅ NUEVO: Refrescar entregas con feedback visual
+  Future<void> _refrescarEntregas() async {
+    if (_isRefreshing) {
+      debugPrint('⏳ Ya está recargando...');
+      return;
+    }
+
+    debugPrint('🔄 [REFRESCAR] Recargar entregas asignadas...');
+
+    if (mounted) {
+      setState(() => _isRefreshing = true);
+    }
+
+    try {
+      _cargarEntregas();
+      // Esperar a que se resuelva el futuro
+      await _futureEntregas;
+
+      if (mounted) {
+        setState(() => _isRefreshing = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('✅ Entregas actualizadas'),
+            backgroundColor: Colors.green,
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
+    } catch (e) {
+      debugPrint('❌ Error recargando entregas: $e');
+      if (mounted) {
+        setState(() => _isRefreshing = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error al actualizar: ${e.toString()}'),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      }
+    }
+  }
+
   @override
   void dispose() {
     _searchController.dispose();
@@ -97,6 +141,30 @@ class _EntregasAsignadasScreenState extends State<EntregasAsignadasScreen> {
 
     return Scaffold(
       backgroundColor: isDarkMode ? Colors.grey[900] : Colors.grey[50],
+      appBar: AppBar(
+        title: const Text('Entregas Asignadas'),
+        backgroundColor: isDarkMode ? Colors.grey[800] : const Color.fromARGB(255, 84, 79, 79),
+        elevation: 1,
+        actions: [
+          // ✅ NUEVO: Botón para actualizar/recargar la pantalla
+          Padding(
+            padding: const EdgeInsets.only(right: 12),
+            child: Consumer<EntregaProvider>(
+              builder: (context, provider, _) {
+                return IconButton(
+                  icon: AnimatedRotation(
+                    turns: _isRefreshing ? 1.0 : 0.0,
+                    duration: const Duration(milliseconds: 500),
+                    child: const Icon(Icons.refresh),
+                  ),
+                  tooltip: _isRefreshing ? 'Recargando...' : 'Actualizar entregas',
+                  onPressed: _isRefreshing ? null : _refrescarEntregas,
+                );
+              },
+            ),
+          ),
+        ],
+      ),
       body: FutureBuilder<bool>(
         // ✅ CRÍTICO: Usar _futureEntregas que NO se recrea en cada rebuild
         future: _futureEntregas,

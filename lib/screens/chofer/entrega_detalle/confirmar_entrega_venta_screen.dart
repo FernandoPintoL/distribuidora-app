@@ -9,6 +9,25 @@ import '../../../providers/entrega_provider.dart';
 import '../../../services/image_compression_service.dart';  // ✅ NUEVO: Para comprimir imágenes
 import '../../../services/entrega_service.dart';  // ✅ NUEVO: Para obtener tipos de pago
 
+// ✅ NUEVA 2026-02-12: Modelo para pagos múltiples
+class PagoEntrega {
+  int tipoPagoId;
+  double monto;
+  String? referencia;
+
+  PagoEntrega({
+    required this.tipoPagoId,
+    required this.monto,
+    this.referencia,
+  });
+
+  Map<String, dynamic> toJson() => {
+    'tipo_pago_id': tipoPagoId,
+    'monto': monto,
+    'referencia': referencia,
+  };
+}
+
 class ConfirmarEntregaVentaScreen extends StatefulWidget {
   final Entrega entrega;
   final Venta venta;
@@ -35,16 +54,19 @@ class _ConfirmarEntregaVentaScreenState
   String? _tipoEntrega; // COMPLETA o NOVEDAD
   String? _tipoNovedad; // CLIENTE_CERRADO, DEVOLUCION_PARCIAL, RECHAZADO
   final TextEditingController _observacionesController = TextEditingController();
-  final TextEditingController _montoController = TextEditingController();  // ✅ NUEVO: Monto de pago
+  final TextEditingController _montoController = TextEditingController();
+  final TextEditingController _referenciaController = TextEditingController();
   List<File> _fotosCapturadas = [];
 
   final ImagePicker _imagePicker = ImagePicker();
   final EntregaService _entregaService = EntregaService();  // ✅ NUEVO: Para obtener tipos de pago
 
-  // ✅ NUEVO: Tipos de pago
+  // ✅ NUEVO 2026-02-12: Múltiples pagos + Crédito
   List<Map<String, dynamic>> _tiposPago = [];
-  int? _tipoPageSelected;
   bool _cargandoTiposPago = false;
+  List<PagoEntrega> _pagos = [];  // Lista de pagos múltiples
+  bool _esCredito = false;  // ✅ CAMBIO: Checkbox en lugar de input de monto
+  String _tipoConfirmacion = 'COMPLETA';  // COMPLETA o CON_NOVEDAD
 
   final List<Map<String, String>> _tiposNovedad = [
     {
@@ -68,12 +90,19 @@ class _ConfirmarEntregaVentaScreenState
   void initState() {
     super.initState();
     _cargarTiposPago();
+
+    // ✅ NUEVO 2026-02-13: Si la venta es a crédito, pre-marcar el checkbox
+    if (widget.venta.estadoPago == 'CREDITO') {
+      _esCredito = true;
+      debugPrint('💳 [VENTA CRÉDITO] Venta #${widget.venta.numero} es a crédito - pre-marcando checkbox');
+    }
   }
 
   @override
   void dispose() {
     _observacionesController.dispose();
-    _montoController.dispose();  // ✅ NUEVO: Limpiar controlador de monto
+    _montoController.dispose();
+    _referenciaController.dispose();
     super.dispose();
   }
 
@@ -201,6 +230,174 @@ class _ConfirmarEntregaVentaScreenState
     }
   }
 
+  /// ✅ NUEVA 2026-02-12: Formulario para agregar pago
+  Widget _buildPagoForm() {
+    int? tipoPagoSeleccionado;
+
+    return StatefulBuilder(
+      builder: (context, setFormState) {
+        return Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: Colors.orange.withOpacity(0.05),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: Colors.orange.withOpacity(0.2),
+            ),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                '➕ Agregar Nuevo Pago',
+                style: TextStyle(
+                  fontWeight: FontWeight.w600,
+                  color: Colors.orange[700],
+                ),
+              ),
+              const SizedBox(height: 12),
+
+              // Selector de tipo de pago
+              if (_cargandoTiposPago)
+                const Center(child: CircularProgressIndicator())
+              else if (_tiposPago.isNotEmpty)
+                DropdownButtonFormField<int>(
+                  value: tipoPagoSeleccionado,
+                  decoration: InputDecoration(
+                    labelText: 'Tipo de Pago',
+                    hintText: 'Selecciona método',
+                    prefixIcon: const Icon(Icons.payment),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    contentPadding: const EdgeInsets.all(12),
+                  ),
+                  items: _tiposPago.map((tipo) {
+                    return DropdownMenuItem<int>(
+                      value: tipo['id'] as int,
+                      child: Text(tipo['nombre'] as String),
+                    );
+                  }).toList(),
+                  onChanged: (value) {
+                    setFormState(() => tipoPagoSeleccionado = value);
+                  },
+                ),
+
+              const SizedBox(height: 12),
+
+              // Campo de monto
+              TextField(
+                controller: _montoController,
+                keyboardType:
+                    const TextInputType.numberWithOptions(decimal: true),
+                decoration: InputDecoration(
+                  labelText: 'Monto (Bs.)',
+                  hintText: 'Ej: 100.50',
+                  prefixIcon: const Icon(Icons.money),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  contentPadding: const EdgeInsets.all(12),
+                ),
+                onChanged: (_) {
+                  setFormState(() {});
+                },
+              ),
+
+              const SizedBox(height: 12),
+
+              // Botón para agregar
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: tipoPagoSeleccionado == null ||
+                          _montoController.text.isEmpty
+                      ? null
+                      : () {
+                          try {
+                            final monto = double.parse(_montoController.text);
+                            if (monto <= 0) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content:
+                                      Text('El monto debe ser mayor a 0'),
+                                  backgroundColor: Colors.red,
+                                ),
+                              );
+                              return;
+                            }
+
+                            setState(() {
+                              _pagos.add(
+                                PagoEntrega(
+                                  tipoPagoId: tipoPagoSeleccionado!,
+                                  monto: monto,
+                                  referencia: _referenciaController.text
+                                          .isNotEmpty
+                                      ? _referenciaController.text
+                                      : null,
+                                ),
+                              );
+                            });
+
+                            _montoController.clear();
+                            _referenciaController.clear();
+                            setFormState(
+                              () => tipoPagoSeleccionado = null,
+                            );
+
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('✅ Pago agregado'),
+                                backgroundColor: Colors.green,
+                                duration: Duration(seconds: 2),
+                              ),
+                            );
+                          } catch (e) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text('Error: ${e.toString()}'),
+                                backgroundColor: Colors.red,
+                              ),
+                            );
+                          }
+                        },
+                  icon: const Icon(Icons.add),
+                  label: const Text('Agregar Pago'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.orange,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  /// ✅ NUEVA 2026-02-12: Checkbox simple para marcar como crédito
+  Widget _buildSeccionCredito() {
+    return CheckboxListTile(
+      value: _esCredito,
+      onChanged: (value) {
+        setState(() {
+          _esCredito = value ?? false;
+        });
+      },
+      title: const Text(
+        '💳 Esta venta es a Crédito',
+        style: TextStyle(fontWeight: FontWeight.w600),
+      ),
+      subtitle: const Text(
+        'Marcar si el cliente no paga ahora (promesa de pago)',
+        style: TextStyle(fontSize: 12),
+      ),
+      controlAffinity: ListTileControlAffinity.leading,
+      contentPadding: const EdgeInsets.symmetric(horizontal: 0),
+    );
+  }
+
   /// Confirmar entrega
   Future<void> _confirmarEntrega() async {
     // ✅ NUEVO: Validar que Cliente Cerrado/No Disponible requiere fotos
@@ -242,14 +439,19 @@ class _ConfirmarEntregaVentaScreenState
 
       final observacionesFinales = _construirObservacionesFinales();
 
-      // ✅ NUEVO: Obtener monto y tipo de pago
-      double? montoRecibido;
-      try {
-        if (_montoController.text.isNotEmpty) {
-          montoRecibido = double.parse(_montoController.text);
-        }
-      } catch (e) {
-        debugPrint('Error parsing monto: $e');
+      // ✅ NUEVA 2026-02-12: Validar que al menos hay un pago registrado o es a crédito
+      double totalDineroRecibido = _pagos.fold(0, (sum, pago) => sum + pago.monto);
+
+      // Permitir entrega sin dinero si es crédito total
+      if (totalDineroRecibido == 0 && !_esCredito) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('⚠️ Debes registrar al menos un pago o marcar como crédito'),
+            backgroundColor: Colors.orange,
+            duration: Duration(seconds: 3),
+          ),
+        );
+        return;
       }
 
       debugPrint('📤 Confirmando entrega:');
@@ -257,8 +459,12 @@ class _ConfirmarEntregaVentaScreenState
       debugPrint('   - Tipo Novedad: $_tipoNovedad');
       debugPrint('   - Observaciones: $observacionesFinales');
       debugPrint('   - Fotos: ${_fotosCapturadas.length}');
-      debugPrint('   - Monto Recibido: $montoRecibido');  // ✅ NUEVO
-      debugPrint('   - Tipo Pago ID: $_tipoPageSelected');  // ✅ NUEVO
+      debugPrint('   - Pagos múltiples: ${_pagos.length}');  // ✅ NUEVO
+      debugPrint('   - Total dinero recibido: $totalDineroRecibido');  // ✅ NUEVO
+      debugPrint('   - Es Crédito: $_esCredito');  // ✅ CAMBIO
+
+      // ✅ NUEVA 2026-02-12: Construir array de pagos en formato backend
+      final pagosArray = _pagos.map((pago) => pago.toJson()).toList();
 
       final success = await widget.provider.confirmarVentaEntregada(
         widget.entrega.id,
@@ -271,8 +477,10 @@ class _ConfirmarEntregaVentaScreenState
         },
         fotosBase64: fotosBase64,
         observacionesLogistica: observacionesFinales,
-        montoRecibido: montoRecibido,  // ✅ NUEVO: Pasar monto
-        tipoPagoId: _tipoPageSelected,  // ✅ NUEVO: Pasar tipo de pago
+        // ✅ NUEVA 2026-02-12: Enviar múltiples pagos en lugar de uno solo
+        pagos: pagosArray,  // Array de {tipo_pago_id, monto, referencia}
+        esCredito: _esCredito,  // ✅ CAMBIO: Enviar si es a crédito
+        tipoConfirmacion: _tipoConfirmacion,
       );
 
       if (mounted) {
@@ -381,11 +589,35 @@ class _ConfirmarEntregaVentaScreenState
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    'Venta a Entregar',
-                    style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                          fontWeight: FontWeight.w500,
+                  // ✅ Encabezado con indicador de crédito si aplica
+                  Row(
+                    children: [
+                      Text(
+                        'Venta a Entregar',
+                        style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                              fontWeight: FontWeight.w500,
+                            ),
+                      ),
+                      const SizedBox(width: 8),
+                      // ✅ NUEVO: Badge si es a crédito
+                      if (widget.venta.estadoPago == 'CREDITO')
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: Colors.orange[100],
+                            border: Border.all(color: Colors.orange[700]!),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Text(
+                            '💳 CRÉDITO',
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.orange[900],
+                            ),
+                          ),
                         ),
+                    ],
                   ),
                   const SizedBox(height: 8),
                   Row(
@@ -634,57 +866,191 @@ class _ConfirmarEntregaVentaScreenState
                       ],
                     ),
                   ),
+
                   const SizedBox(height: 24),
 
-                  // ✅ NUEVO: Sección de Pago
+                  // ✅ NUEVA 2026-02-12: Resumen de montos
+                  _buildResumenMontos(widget.venta.total),
+
+                  const SizedBox(height: 24),
+
+                  // ✅ NUEVA 2026-02-12: Sección de Pagos Múltiples
                   Text(
-                    'Registrar Pago (Opcional)',
+                    '💳 Registrar Pagos (Múltiples Métodos)',
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
                           fontWeight: FontWeight.w600,
                         ),
                   ),
-                  const SizedBox(height: 12),
-
-                  // Campo de monto
-                  TextField(
-                    controller: _montoController,
-                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                    decoration: InputDecoration(
-                      labelText: 'Monto Recibido (Bs.)',
-                      hintText: 'Ej: 100.50',
-                      prefixIcon: const Icon(Icons.money),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      contentPadding: const EdgeInsets.all(12),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Cliente puede pagar en efectivo, transferencia, o combinación. También puede dejar crédito.',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.grey[600],
                     ),
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 16),
 
-                  // Selector de tipo de pago
-                  if (_cargandoTiposPago)
-                    const Center(child: CircularProgressIndicator())
-                  else if (_tiposPago.isNotEmpty)
-                    DropdownButtonFormField<int>(
-                      value: _tipoPageSelected,
-                      decoration: InputDecoration(
-                        labelText: 'Tipo de Pago',
-                        prefixIcon: const Icon(Icons.payment),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
+                  // ✅ NUEVA: Lista de pagos registrados
+                  if (_pagos.isNotEmpty)
+                    Column(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: Colors.blue.withOpacity(0.05),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: Colors.blue.withOpacity(0.2),
+                            ),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                '✅ Pagos Registrados (${_pagos.length})',
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 14,
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              ..._pagos.asMap().entries.map((entry) {
+                                final idx = entry.key;
+                                final pago = entry.value;
+                                final tipoNombre = _tiposPago
+                                    .firstWhere(
+                                      (t) => t['id'] == pago.tipoPagoId,
+                                      orElse: () => {'nombre': 'Desconocido'},
+                                    )['nombre'] ??
+                                    'Desconocido';
+
+                                return Padding(
+                                  padding: const EdgeInsets.only(bottom: 8),
+                                  child: Row(
+                                    children: [
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                              tipoNombre,
+                                              style: const TextStyle(
+                                                fontWeight: FontWeight.w500,
+                                              ),
+                                            ),
+                                            Text(
+                                              'Bs. ${pago.monto.toStringAsFixed(2)}',
+                                              style: TextStyle(
+                                                color: Colors.blue[700],
+                                                fontWeight: FontWeight.w600,
+                                              ),
+                                            ),
+                                            if (pago.referencia != null &&
+                                                pago.referencia!.isNotEmpty)
+                                              Text(
+                                                'Ref: ${pago.referencia}',
+                                                style: TextStyle(
+                                                  fontSize: 10,
+                                                  color: Colors.grey[600],
+                                                ),
+                                              ),
+                                          ],
+                                        ),
+                                      ),
+                                      IconButton(
+                                        icon: const Icon(Icons.delete_outline),
+                                        onPressed: () {
+                                          setState(() {
+                                            _pagos.removeAt(idx);
+                                          });
+                                        },
+                                        color: Colors.red,
+                                        tooltip: 'Eliminar pago',
+                                      ),
+                                    ],
+                                  ),
+                                );
+                              }).toList(),
+                              const SizedBox(height: 8),
+                              Divider(color: Colors.blue.withOpacity(0.3)),
+                              const SizedBox(height: 8),
+                              Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Text(
+                                    'Total Recibido:',
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                  Text(
+                                    'Bs. ${_pagos.fold(0.0, (sum, p) => sum + p.monto).toStringAsFixed(2)}',
+                                    style: TextStyle(
+                                      color: Colors.blue[700],
+                                      fontWeight: FontWeight.w700,
+                                      fontSize: 16,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
                         ),
-                        contentPadding: const EdgeInsets.all(12),
-                      ),
-                      items: _tiposPago.map((tipo) {
-                        return DropdownMenuItem<int>(
-                          value: tipo['id'] as int,
-                          child: Text(tipo['nombre'] as String),
-                        );
-                      }).toList(),
-                      onChanged: (value) {
-                        setState(() => _tipoPageSelected = value);
-                      },
+                        const SizedBox(height: 16),
+                      ],
                     ),
+
+                  // ✅ NUEVA: Formulario para agregar nuevo pago
+                  // Si es a crédito, mostrar aviso; si no, mostrar formulario
+                  if (widget.venta.estadoPago == 'CREDITO')
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.orange[50],
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: Colors.orange[300]!,
+                          width: 2,
+                        ),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Icon(Icons.info, color: Colors.orange[700], size: 20),
+                              const SizedBox(width: 8),
+                              Text(
+                                'Venta a Crédito',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.orange[900],
+                                  fontSize: 14,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            'Esta venta es una promesa de pago. El cliente NO paga ahora.',
+                            style: TextStyle(
+                              color: Colors.orange[700],
+                              fontSize: 12,
+                            ),
+                          ),
+                        ],
+                      ),
+                    )
+                  else
+                    _buildPagoForm(),
+
+                  const SizedBox(height: 24),
+
+                  // ✅ NUEVA: Sección de crédito (checkbox)
+                  _buildSeccionCredito(),
 
                   const SizedBox(height: 24),
                   Text(
@@ -856,6 +1222,11 @@ class _ConfirmarEntregaVentaScreenState
 
                   const SizedBox(height: 24),
 
+                  // ✅ NUEVA 2026-02-12: Resumen de montos (también en Novedad)
+                  _buildResumenMontos(widget.venta.total),
+
+                  const SizedBox(height: 24),
+
                   // Sección de Fotos
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -961,55 +1332,175 @@ class _ConfirmarEntregaVentaScreenState
 
                   const SizedBox(height: 24),
 
-                  // ✅ NUEVO: Sección de Pago (también en Novedad)
+                  // ✅ NUEVA 2026-02-12: Sección de Pagos Múltiples (también en Novedad)
                   Text(
-                    'Registrar Pago (Opcional)',
+                    '💳 Registrar Pagos (Múltiples Métodos)',
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
                           fontWeight: FontWeight.w600,
                         ),
                   ),
                   const SizedBox(height: 12),
 
-                  // Campo de monto
-                  TextField(
-                    controller: _montoController,
-                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                    decoration: InputDecoration(
-                      labelText: 'Monto Recibido (Bs.)',
-                      hintText: 'Ej: 100.50',
-                      prefixIcon: const Icon(Icons.money),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      contentPadding: const EdgeInsets.all(12),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
+                  // ✅ NUEVA: Lista de pagos registrados
+                  if (_pagos.isNotEmpty)
+                    Column(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: Colors.blue.withOpacity(0.05),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: Colors.blue.withOpacity(0.2),
+                            ),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                '✅ Pagos Registrados (${_pagos.length})',
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 14,
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              ..._pagos.asMap().entries.map((entry) {
+                                final idx = entry.key;
+                                final pago = entry.value;
+                                final tipoNombre = _tiposPago
+                                    .firstWhere(
+                                      (t) => t['id'] == pago.tipoPagoId,
+                                      orElse: () => {'nombre': 'Desconocido'},
+                                    )['nombre'] ??
+                                    'Desconocido';
 
-                  // Selector de tipo de pago
-                  if (_cargandoTiposPago)
-                    const Center(child: CircularProgressIndicator())
-                  else if (_tiposPago.isNotEmpty)
-                    DropdownButtonFormField<int>(
-                      value: _tipoPageSelected,
-                      decoration: InputDecoration(
-                        labelText: 'Tipo de Pago',
-                        prefixIcon: const Icon(Icons.payment),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
+                                return Padding(
+                                  padding: const EdgeInsets.only(bottom: 8),
+                                  child: Row(
+                                    children: [
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                              tipoNombre,
+                                              style: const TextStyle(
+                                                fontWeight: FontWeight.w500,
+                                              ),
+                                            ),
+                                            Text(
+                                              'Bs. ${pago.monto.toStringAsFixed(2)}',
+                                              style: TextStyle(
+                                                color: Colors.blue[700],
+                                                fontWeight: FontWeight.w600,
+                                              ),
+                                            ),
+                                            if (pago.referencia != null &&
+                                                pago.referencia!.isNotEmpty)
+                                              Text(
+                                                'Ref: ${pago.referencia}',
+                                                style: TextStyle(
+                                                  fontSize: 10,
+                                                  color: Colors.grey[600],
+                                                ),
+                                              ),
+                                          ],
+                                        ),
+                                      ),
+                                      IconButton(
+                                        icon: const Icon(Icons.delete_outline),
+                                        onPressed: () {
+                                          setState(() {
+                                            _pagos.removeAt(idx);
+                                          });
+                                        },
+                                        color: Colors.red,
+                                        tooltip: 'Eliminar pago',
+                                      ),
+                                    ],
+                                  ),
+                                );
+                              }).toList(),
+                              const SizedBox(height: 8),
+                              Divider(color: Colors.blue.withOpacity(0.3)),
+                              const SizedBox(height: 8),
+                              Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Text(
+                                    'Total Recibido:',
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                  Text(
+                                    'Bs. ${_pagos.fold(0.0, (sum, p) => sum + p.monto).toStringAsFixed(2)}',
+                                    style: TextStyle(
+                                      color: Colors.blue[700],
+                                      fontWeight: FontWeight.w700,
+                                      fontSize: 16,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
                         ),
-                        contentPadding: const EdgeInsets.all(12),
-                      ),
-                      items: _tiposPago.map((tipo) {
-                        return DropdownMenuItem<int>(
-                          value: tipo['id'] as int,
-                          child: Text(tipo['nombre'] as String),
-                        );
-                      }).toList(),
-                      onChanged: (value) {
-                        setState(() => _tipoPageSelected = value);
-                      },
+                        const SizedBox(height: 16),
+                      ],
                     ),
+
+                  // ✅ NUEVA: Formulario para agregar nuevo pago
+                  // Si es a crédito, mostrar aviso; si no, mostrar formulario
+                  if (widget.venta.estadoPago == 'CREDITO')
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.orange[50],
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: Colors.orange[300]!,
+                          width: 2,
+                        ),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Icon(Icons.info, color: Colors.orange[700], size: 20),
+                              const SizedBox(width: 8),
+                              Text(
+                                'Venta a Crédito',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.orange[900],
+                                  fontSize: 14,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            'Esta venta es una promesa de pago. El cliente NO paga ahora.',
+                            style: TextStyle(
+                              color: Colors.orange[700],
+                              fontSize: 12,
+                            ),
+                          ),
+                        ],
+                      ),
+                    )
+                  else
+                    _buildPagoForm(),
+
+                  const SizedBox(height: 24),
+
+                  // ✅ NUEVA: Sección de crédito (checkbox)
+                  _buildSeccionCredito(),
                 ],
               ),
             ),
@@ -1044,6 +1535,246 @@ class _ConfirmarEntregaVentaScreenState
           ),
         ),
       ],
+    );
+  }
+
+  /// ✅ NUEVA 2026-02-12: Resumen de montos de la venta
+  Widget _buildResumenMontos(double totalVenta) {
+    // Calcular totales
+    double totalRecibido = _pagos.fold(0.0, (sum, pago) => sum + pago.monto);
+    double montoCredito = _esCredito ? (totalVenta - totalRecibido).clamp(0.0, double.infinity) : 0;
+    double totalComprometido = totalRecibido + montoCredito;
+    double faltaPorRecibir = _esCredito ? 0 : (totalVenta - totalRecibido).clamp(0.0, double.infinity);
+
+    // Determinar estado
+    bool estaPerfecto = (totalRecibido + montoCredito) >= totalVenta && totalRecibido > 0;
+    bool esParcial = totalRecibido > 0 && totalRecibido < totalVenta;
+    bool esCredito = totalRecibido == 0 && _esCredito;
+    bool faltaRegistrar = totalRecibido == 0 && !_esCredito;
+
+    // Colores según estado
+    Color statusColor = faltaRegistrar
+      ? Colors.grey[600]!
+      : estaPerfecto
+        ? Colors.green
+        : esParcial
+          ? Colors.orange
+          : Colors.blue;
+
+    String statusLabel = faltaRegistrar
+      ? '⏳ Pendiente de Registrar'
+      : estaPerfecto
+        ? '✅ Pago Completo'
+        : esParcial
+          ? '⚠️ Pago Parcial'
+          : esCredito
+            ? '💳 Crédito Total'
+            : 'Registrando...';
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: statusColor.withOpacity(0.08),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: statusColor.withOpacity(0.3),
+          width: 2,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Encabezado con estado
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Expanded(
+                child: Text(
+                  '💰 Resumen de Pagos',
+                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.w600,
+                    color: statusColor,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                decoration: BoxDecoration(
+                  color: statusColor.withOpacity(0.15),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Text(
+                  statusLabel,
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                    color: statusColor,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+
+          // Total de la venta (prominente)
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Theme.of(context).primaryColor.withOpacity(0.05),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Total de la Venta',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Colors.grey[600],
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'Bs. ${totalVenta.toStringAsFixed(2)}',
+                  style: TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.w700,
+                    color: Theme.of(context).primaryColor,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 12),
+
+          // Desglose
+          Column(
+            children: [
+              // Total recibido
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Row(
+                    children: [
+                      Icon(Icons.attach_money, size: 18, color: Colors.green[600]),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Dinero Recibido:',
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: Colors.grey[700],
+                        ),
+                      ),
+                    ],
+                  ),
+                  Text(
+                    'Bs. ${totalRecibido.toStringAsFixed(2)}',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: totalRecibido > 0 ? Colors.green[700] : Colors.grey[600],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+
+              // Crédito registrado (si existe)
+              if (montoCredito > 0)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Row(
+                        children: [
+                          Icon(Icons.credit_card, size: 18, color: Colors.blue[600]),
+                          const SizedBox(width: 8),
+                          Text(
+                            'Crédito Otorgado:',
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: Colors.grey[700],
+                            ),
+                          ),
+                        ],
+                      ),
+                      Text(
+                        'Bs. ${montoCredito.toStringAsFixed(2)}',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.blue[700],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+              // Falta por recibir (si existe)
+              if (faltaPorRecibir > 0)
+                Padding(
+                  padding: const EdgeInsets.only(top: 8, bottom: 0),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Row(
+                        children: [
+                          Icon(Icons.warning_amber, size: 18, color: Colors.orange[600]),
+                          const SizedBox(width: 8),
+                          Text(
+                            'Falta por Recibir:',
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: Colors.grey[700],
+                            ),
+                          ),
+                        ],
+                      ),
+                      Text(
+                        'Bs. ${faltaPorRecibir.toStringAsFixed(2)}',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.orange[700],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+            ],
+          ),
+
+          // Barra de progreso
+          const SizedBox(height: 12),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(8),
+            child: LinearProgressIndicator(
+              value: totalVenta > 0 ? (totalRecibido / totalVenta).clamp(0.0, 1.0) : 0,
+              minHeight: 6,
+              backgroundColor: Colors.grey[300],
+              valueColor: AlwaysStoppedAnimation<Color>(
+                estaPerfecto ? Colors.green : esParcial ? Colors.orange : Colors.blue,
+              ),
+            ),
+          ),
+
+          // Indicador porcentaje
+          const SizedBox(height: 8),
+          Center(
+            child: Text(
+              '${(totalVenta > 0 ? (totalRecibido / totalVenta * 100) : 0).toStringAsFixed(1)}% del total comprometido',
+              style: TextStyle(
+                fontSize: 11,
+                color: Colors.grey[600],
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 

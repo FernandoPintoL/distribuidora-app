@@ -42,6 +42,7 @@ class EntregaDetalleScreen extends StatefulWidget {
 
 class _EntregaDetalleScreenState extends State<EntregaDetalleScreen> {
   bool _isRetryingGps = false; // Estado para reintentos de GPS
+  bool _isRefreshing = false; // Estado para recarga de datos
 
   @override
   void initState() {
@@ -119,14 +120,26 @@ class _EntregaDetalleScreenState extends State<EntregaDetalleScreen> {
   }
 
   Future<void> _cargarDetalle(EntregaProvider provider) async {
+    // No ejecutar si ya está recargando
+    if (_isRefreshing) {
+      debugPrint('⏳ Ya está recargando...');
+      return;
+    }
+
     debugPrint(
       '🔄 [RECARGAR] Recargando detalle de entrega ID: ${widget.entregaId}...',
     );
+
+    if (mounted) {
+      setState(() => _isRefreshing = true);
+    }
 
     try {
       final success = await provider.obtenerEntrega(widget.entregaId);
 
       if (mounted) {
+        setState(() => _isRefreshing = false);
+
         if (success) {
           debugPrint('✅ Entrega recargada exitosamente');
           ScaffoldMessenger.of(context).showSnackBar(
@@ -152,6 +165,7 @@ class _EntregaDetalleScreenState extends State<EntregaDetalleScreen> {
     } catch (e) {
       debugPrint('❌ Excepción al recargar: $e');
       if (mounted) {
+        setState(() => _isRefreshing = false);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Error: ${e.toString()}'),
@@ -173,7 +187,24 @@ class _EntregaDetalleScreenState extends State<EntregaDetalleScreen> {
         title: 'Detalle de Entrega # ${widget.entregaId}',
         customGradient: AppGradients.green,
         actions: [
-          // ✅ NUEVO: Botón para ver resumen de pagos
+          // ✅ Botón para actualizar/recargar la pantalla
+          Padding(
+            padding: const EdgeInsets.only(right: 8),
+            child: Consumer<EntregaProvider>(
+              builder: (context, provider, _) {
+                return IconButton(
+                  icon: AnimatedRotation(
+                    turns: _isRefreshing ? 1.0 : 0.0,
+                    duration: const Duration(milliseconds: 500),
+                    child: const Icon(Icons.refresh),
+                  ),
+                  tooltip: _isRefreshing ? 'Recargando...' : 'Actualizar información',
+                  onPressed: _isRefreshing ? null : () => _cargarDetalle(provider),
+                );
+              },
+            ),
+          ),
+          // ✅ Botón para ver resumen de pagos
           Padding(
             padding: const EdgeInsets.only(right: 8),
             child: Consumer<EntregaProvider>(
@@ -441,11 +472,12 @@ class _EntregaDetalleScreenState extends State<EntregaDetalleScreen> {
                 MarcarEntregadaDialog.show(ctx, ent, prov),
             onReportarNovedad: (ctx, ent, prov) =>
                 ReportarNovedadDialog.show(ctx, ent, prov),
-            onConfirmarCargaLista: (ctx, ent, prov) =>
-                ConfirmarCargaListaDialog.show(ctx, ent, prov),
+            onConfirmarCargaLista: (ctx, ent, prov, {onReload}) =>
+                ConfirmarCargaListaDialog.show(ctx, ent, prov, onReload: onReload),
             onEntregasTerminadas: (ctx, ent, prov) =>
                 EntregasTerminadasDialog.show(ctx, ent, prov),
             onReintentarGps: () => _reintentarGpsTracking(provider, entrega),
+            onReload: () => _cargarDetalle(provider),
           ),
           const SizedBox(height: 42),
         ],

@@ -10,9 +10,10 @@ class BotonesAccion extends StatelessWidget {
   final Function(BuildContext, Entrega, EntregaProvider) onMarcarLlegada;
   final Function(BuildContext, Entrega, EntregaProvider) onMarcarEntregada;
   final Function(BuildContext, Entrega, EntregaProvider) onReportarNovedad;
-  final Function(BuildContext, Entrega, EntregaProvider)? onConfirmarCargaLista;
+  final Function(BuildContext, Entrega, EntregaProvider, {VoidCallback? onReload})? onConfirmarCargaLista;
   final Function(BuildContext, Entrega, EntregaProvider)? onEntregasTerminadas;
   final VoidCallback? onReintentarGps;
+  final VoidCallback? onReload;
 
   const BotonesAccion({
     Key? key,
@@ -25,6 +26,7 @@ class BotonesAccion extends StatelessWidget {
     this.onConfirmarCargaLista,
     this.onEntregasTerminadas,
     this.onReintentarGps,
+    this.onReload,
   }) : super(key: key);
 
   @override
@@ -56,7 +58,12 @@ class BotonesAccion extends StatelessWidget {
             icon: Icons.check_circle,
             color: Colors.blue,
             onPressed: () {
-              onConfirmarCargaLista!(context, entrega, provider);
+              onConfirmarCargaLista!(
+                context,
+                entrega,
+                provider,
+                onReload: onReload,
+              );
             },
           ),
         if (esListoParaEntrega)
@@ -78,16 +85,16 @@ class BotonesAccion extends StatelessWidget {
                   .pushNamed('/chofer/iniciar-ruta', arguments: entrega.id);
             },
           ),
-        // ✅ NUEVO: Botón Entregas Terminadas cuando está EN_TRANSITO
-        if (esEnTransito && onEntregasTerminadas != null)
-          BotonAccion(
-            label: 'Entregas Terminadas',
-            icon: Icons.check_circle_outline,
-            color: Colors.green,
-            onPressed: () async {
-              await onEntregasTerminadas!(context, entrega, provider);
-            },
-          ),
+        // ❌ OCULTO: Botón Entregas Terminadas - Solo el cajero en oficina puede terminar entregas
+        // if (esEnTransito && onEntregasTerminadas != null)
+        //   BotonAccion(
+        //     label: 'Entregas Terminadas',
+        //     icon: Icons.check_circle_outline,
+        //     color: Colors.green,
+        //     onPressed: () async {
+        //       await onEntregasTerminadas!(context, entrega, provider);
+        //     },
+        //   ),
         if (esLlego)
           BotonAccion(
             label: 'Marcar Carga Entregada',

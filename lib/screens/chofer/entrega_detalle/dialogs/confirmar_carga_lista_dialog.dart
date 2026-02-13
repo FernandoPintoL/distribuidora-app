@@ -6,8 +6,9 @@ class ConfirmarCargaListaDialog {
   static Future<void> show(
     BuildContext context,
     Entrega entrega,
-    EntregaProvider provider,
-  ) async {
+    EntregaProvider provider, {
+    VoidCallback? onReload,
+  }) async {
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
     final resultado = await showDialog<bool>(
       context: context,
@@ -118,6 +119,9 @@ class ConfirmarCargaListaDialog {
             );
 
             await provider.obtenerEntrega(entrega.id);
+
+            // ✅ Recargar la pantalla después de confirmar
+            onReload?.call();
           } else {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(

@@ -1103,8 +1103,12 @@ class EntregaProvider with ChangeNotifier, EntregaTrackingMixin {
     List<String>? fotosBase64,
     String? observaciones,
     String? observacionesLogistica,  // ✅ NUEVO: Observaciones logísticas (estado entrega, incidentes)
-    double? montoRecibido,  // ✅ NUEVO: Monto que pagó el cliente
-    int? tipoPagoId,  // ✅ NUEVO: ID del tipo de pago
+    double? montoRecibido,  // ✅ NUEVO: Monto que pagó el cliente (backward compatible)
+    int? tipoPagoId,  // ✅ NUEVO: ID del tipo de pago (backward compatible)
+    // ✅ NUEVA 2026-02-12: Múltiples pagos
+    List<Map<String, dynamic>>? pagos,  // Array de {tipo_pago_id, monto, referencia}
+    bool? esCredito,  // ✅ CAMBIO: Si es promesa de pago (no dinero real)
+    String? tipoConfirmacion,  // COMPLETA o CON_NOVEDAD
   }) async {
     _isLoading = true;
     _errorMessage = null;
@@ -1124,8 +1128,12 @@ class EntregaProvider with ChangeNotifier, EntregaTrackingMixin {
         fotosBase64: fotosBase64,
         observaciones: observaciones,
         observacionesLogistica: observacionesLogistica,  // ✅ NUEVO: Pasar observaciones logísticas
-        montoRecibido: montoRecibido,  // ✅ NUEVO: Pasar monto
-        tipoPagoId: tipoPagoId,  // ✅ NUEVO: Pasar tipo de pago
+        montoRecibido: montoRecibido,  // ✅ NUEVO: Pasar monto (backward compatible)
+        tipoPagoId: tipoPagoId,  // ✅ NUEVO: Pasar tipo de pago (backward compatible)
+        // ✅ NUEVA 2026-02-12: Múltiples pagos
+        pagos: pagos,  // Array de pagos múltiples
+        esCredito: esCredito,  // ✅ CAMBIO: Si es promesa de pago
+        tipoConfirmacion: tipoConfirmacion,  // COMPLETA o CON_NOVEDAD
       );
 
       if (response.success) {
@@ -1343,21 +1351,9 @@ class EntregaProvider with ChangeNotifier, EntregaTrackingMixin {
         clientName: _entregaActual!.cliente ?? 'Cliente',
       );
 
-      // Ahora iniciar tracking de GPS
-      debugPrint('🚀 [INICIAR_ENTREGA] Iniciando GPS tracking...');
-
-      await iniciarTracking(
-        entregaId: entregaId,
-        onSuccess: (mensaje) {
-          debugPrint('✅ [INICIAR_ENTREGA] GPS tracking iniciado: $mensaje');
-          onSuccess('Entrega iniciada correctamente. $mensaje');
-        },
-        onError: (error) {
-          debugPrint('⚠️ [INICIAR_ENTREGA] Error en GPS: $error');
-          // El estado ya cambió, entonces continuamos aunque falle el GPS
-          onSuccess('Entrega iniciada. Nota: Error con GPS: $error');
-        },
-      );
+      // ✅ Estado actualizado a EN_RUTA - Sin GPS tracking
+      debugPrint('✅ [INICIAR_ENTREGA] Entrega iniciada sin GPS tracking');
+      onSuccess('Entrega iniciada correctamente');
 
       WidgetsBinding.instance.addPostFrameCallback((_) {
         notifyListeners();
