@@ -343,7 +343,8 @@ class ApiService {
 
   /// ✅ NUEVO: Descargar PDF de proformas filtradas
   /// Descarga el PDF directamente del endpoint API
-  Future<void> descargarPdfProformas({
+  /// Retorna los bytes del PDF para que la pantalla los maneje
+  Future<List<int>> descargarPdfProformas({
     required String ids,
     required String formato,
   }) async {
@@ -359,12 +360,7 @@ class ApiService {
       );
 
       if (response.statusCode == 200) {
-        // Usar print service para guardar/abrir el PDF
-        final printService = PrintService();
-        await printService.abrirPdfDesdeBytes(
-          pdfBytes: response.data as List<int>,
-          nombreArchivo: 'proformas_${DateTime.now().millisecondsSinceEpoch}.pdf',
-        );
+        return response.data as List<int>;
       } else {
         throw Exception('Error: ${response.statusCode}');
       }

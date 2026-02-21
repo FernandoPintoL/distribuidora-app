@@ -117,8 +117,7 @@ class _PedidosHistorialScreenState extends State<PedidosHistorialScreen> {
 
       // Obtener IDs de los pedidos actuales
       final proformaIds = pedidoProvider.pedidos
-          .where((p) => p.proformaId != null)
-          .map((p) => p.proformaId.toString())
+          .map((p) => p.id.toString())
           .toList();
 
       if (proformaIds.isEmpty) {
@@ -134,6 +133,7 @@ class _PedidosHistorialScreenState extends State<PedidosHistorialScreen> {
       // Construir URL con IDs
       final idsParam = proformaIds.join(',');
       final apiService = ApiService();
+      final printService = PrintService();
 
       // Mostrar loading
       ScaffoldMessenger.of(context).showSnackBar(
@@ -144,9 +144,15 @@ class _PedidosHistorialScreenState extends State<PedidosHistorialScreen> {
       );
 
       // Descargar PDF
-      await apiService.descargarPdfProformas(
+      final pdfBytes = await apiService.descargarPdfProformas(
         ids: idsParam,
         formato: 'A4',
+      );
+
+      // Abrir PDF con PrintService
+      await printService.abrirPdfDesdeBytes(
+        pdfBytes: pdfBytes,
+        nombreArchivo: 'proformas_${DateTime.now().millisecondsSinceEpoch}.pdf',
       );
 
       ScaffoldMessenger.of(context).showSnackBar(
