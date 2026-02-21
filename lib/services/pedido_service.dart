@@ -226,7 +226,7 @@ class PedidoService {
     String? estado,
     DateTime? fechaDesde,
     DateTime? fechaHasta,
-    String? cliente,
+    String? search,
     DateTime? fechaVencimientoDesde,
     DateTime? fechaVencimientoHasta,
     DateTime? fechaEntregaSolicitadaDesde,
@@ -247,8 +247,9 @@ class PedidoService {
         queryParams['fecha_hasta'] = fechaHasta.toIso8601String();
       }
 
-      if (cliente != null && cliente.isNotEmpty) {
-        queryParams['cliente'] = cliente;
+      // ✅ ACTUALIZADO: Cambiar de 'cliente' a 'search' para búsqueda unificada
+      if (search != null && search.isNotEmpty) {
+        queryParams['search'] = search;
       }
 
       // ✅ NUEVO: Agregar filtros de fechas específicas

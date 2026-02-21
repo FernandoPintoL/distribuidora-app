@@ -80,7 +80,7 @@ class _PedidosHistorialScreenState extends State<PedidosHistorialScreen> {
     final pedidoProvider = context.read<PedidoProvider>();
     await pedidoProvider.loadPedidos(
       estado: _filtroEstadoSeleccionado,
-      cliente: _searchController.text.isEmpty ? null : _searchController.text,
+      search: _searchController.text.isEmpty ? null : _searchController.text,
       fechaDesde: _filtroFechaDesde,
       fechaHasta: _filtroFechaHasta,
       fechaVencimientoDesde: _filtroFechaVencimientoDesde,
@@ -95,7 +95,7 @@ class _PedidosHistorialScreenState extends State<PedidosHistorialScreen> {
     await pedidoProvider.loadPedidos(
       estado: _filtroEstadoSeleccionado,
       // ✅ CAMBIADO: De 'busqueda' a 'cliente' para buscar por nombre, teléfono o NIT
-      cliente: _searchController.text.isEmpty ? null : _searchController.text,
+      search: _searchController.text.isEmpty ? null : _searchController.text,
       refresh: true,
     );
   }
@@ -327,7 +327,7 @@ class _PedidosHistorialScreenState extends State<PedidosHistorialScreen> {
                                       estado: _filtroEstadoSeleccionado,
                                       fechaDesde: _filtroFechaDesde,
                                       fechaHasta: _filtroFechaHasta,
-                                      cliente: _searchController.text.isEmpty ? null : _searchController.text,
+                                      search: _searchController.text.isEmpty ? null : _searchController.text,
                                       fechaVencimientoDesde:
                                           _filtroFechaVencimientoDesde,
                                       fechaVencimientoHasta:
@@ -362,7 +362,7 @@ class _PedidosHistorialScreenState extends State<PedidosHistorialScreen> {
                               });
                               context.read<PedidoProvider>().loadPedidos(
                                     estado: _filtroEstadoSeleccionado,
-                                    cliente: _searchController.text.isEmpty ? null : _searchController.text,
+                                    search: _searchController.text.isEmpty ? null : _searchController.text,
                                   );
                             },
                             icon: const Icon(Icons.clear, size: 16),
@@ -1048,7 +1048,7 @@ class _PedidosHistorialScreenState extends State<PedidosHistorialScreen> {
                                   },
                                   decoration: InputDecoration(
                                     hintText:
-                                        'Buscar por nombre, teléfono o NIT...',
+                                        'Buscar ID, número, nombre o código cliente...',
                                     prefixIcon: Icon(
                                       Icons.search,
                                       color: colorScheme.primary,

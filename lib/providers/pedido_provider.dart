@@ -80,11 +80,12 @@ class PedidoProvider with ChangeNotifier {
 
   /// Cargar historial de pedidos (página 1)
   /// ✅ ACTUALIZADO: Parámetro estado es ahora String? (código del estado)
+  /// ✅ ACTUALIZADO 2026-02-21: Cambiar 'cliente' por 'search' para búsqueda unificada
   Future<void> loadPedidos({
     String? estado,
     DateTime? fechaDesde,
     DateTime? fechaHasta,
-    String? cliente,
+    String? search,
     DateTime? fechaVencimientoDesde,
     DateTime? fechaVencimientoHasta,
     DateTime? fechaEntregaSolicitadaDesde,
@@ -99,7 +100,7 @@ class PedidoProvider with ChangeNotifier {
     _filtroEstado = estado;
     _filtroFechaDesde = fechaDesde;
     _filtroFechaHasta = fechaHasta;
-    _filtroBusqueda = cliente;
+    _filtroBusqueda = search;
     _filtroFechaVencimientoDesde = fechaVencimientoDesde;
     _filtroFechaVencimientoHasta = fechaVencimientoHasta;
     _filtroFechaEntregaSolicitadaDesde = fechaEntregaSolicitadaDesde;
@@ -119,7 +120,7 @@ class PedidoProvider with ChangeNotifier {
         estado: estado,
         fechaDesde: fechaDesde,
         fechaHasta: fechaHasta,
-        cliente: cliente,
+        search: search,
         fechaVencimientoDesde: fechaVencimientoDesde,
         fechaVencimientoHasta: fechaVencimientoHasta,
         fechaEntregaSolicitadaDesde: fechaEntregaSolicitadaDesde,
@@ -203,7 +204,7 @@ class PedidoProvider with ChangeNotifier {
         estado: _filtroEstado,
         fechaDesde: _filtroFechaDesde,
         fechaHasta: _filtroFechaHasta,
-        cliente: _filtroBusqueda,  // ✅ CAMBIO: De 'busqueda' a 'cliente'
+        search: _filtroBusqueda,  // ✅ ACTUALIZADO: Usar 'search' para búsqueda unificada
       );
 
       if (response.success && response.data != null) {
@@ -430,7 +431,7 @@ class PedidoProvider with ChangeNotifier {
       estado: _filtroEstado,
       fechaDesde: desde,
       fechaHasta: hasta,
-      cliente: _filtroBusqueda,
+      search: _filtroBusqueda,
       fechaVencimientoDesde: _filtroFechaVencimientoDesde,
       fechaVencimientoHasta: _filtroFechaVencimientoHasta,
       fechaEntregaSolicitadaDesde: _filtroFechaEntregaSolicitadaDesde,
@@ -447,7 +448,7 @@ class PedidoProvider with ChangeNotifier {
       estado: _filtroEstado,
       fechaDesde: _filtroFechaDesde,
       fechaHasta: _filtroFechaHasta,
-      cliente: _filtroBusqueda,
+      search: _filtroBusqueda,
       fechaVencimientoDesde: desde,
       fechaVencimientoHasta: hasta,
       fechaEntregaSolicitadaDesde: _filtroFechaEntregaSolicitadaDesde,
@@ -464,7 +465,7 @@ class PedidoProvider with ChangeNotifier {
       estado: _filtroEstado,
       fechaDesde: _filtroFechaDesde,
       fechaHasta: _filtroFechaHasta,
-      cliente: _filtroBusqueda,
+      search: _filtroBusqueda,
       fechaVencimientoDesde: _filtroFechaVencimientoDesde,
       fechaVencimientoHasta: _filtroFechaVencimientoHasta,
       fechaEntregaSolicitadaDesde: desde,
@@ -474,12 +475,13 @@ class PedidoProvider with ChangeNotifier {
 
   /// Aplicar búsqueda
   // ✅ CAMBIO: De 'aplicarBusqueda' a 'aplicarBusquedaCliente' para mayor claridad
-  Future<void> aplicarBusquedaCliente(String? cliente) async {
+  // ✅ ACTUALIZADO 2026-02-21: Cambiar parámetro a 'search' para búsqueda unificada
+  Future<void> aplicarBusquedaCliente(String? search) async {
     await loadPedidos(
       estado: _filtroEstado,
       fechaDesde: _filtroFechaDesde,
       fechaHasta: _filtroFechaHasta,
-      cliente: cliente,
+      search: search,
     );
   }
 
