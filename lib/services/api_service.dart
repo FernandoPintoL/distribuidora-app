@@ -341,7 +341,7 @@ class ApiService {
     return _token;
   }
 
-  /// ✅ NUEVO: Descargar PDF de proformas filtradas
+  /// ✅ NUEVO: Descargar PDF de proformas filtradas (por IDs)
   /// Descarga el PDF directamente del endpoint API
   /// Retorna los bytes del PDF para que la pantalla los maneje
   Future<List<int>> descargarPdfProformas({
@@ -366,6 +366,76 @@ class ApiService {
       }
     } catch (e) {
       debugPrint('❌ Error descargando PDF: $e');
+      rethrow;
+    }
+  }
+
+  /// ✅ NUEVO: Descargar PDF de proformas con filtros (búsqueda completa)
+  /// Envía filtros al backend para obtener TODOS los resultados que coincidan
+  /// El backend busca sin paginación y genera el PDF completo
+  Future<List<int>> descargarPdfProformasConFiltros({
+    String? busqueda,
+    String? estado,
+    DateTime? fechaDesde,
+    DateTime? fechaHasta,
+    DateTime? fechaVencimientoDesde,
+    DateTime? fechaVencimientoHasta,
+    DateTime? fechaEntregaSolicitadaDesde,
+    DateTime? fechaEntregaSolicitadaHasta,
+    required String formato,
+  }) async {
+    try {
+      final params = <String, dynamic>{};
+
+      // Agregar filtros solo si tienen valor
+      if (busqueda != null && busqueda.isNotEmpty) {
+        params['busqueda'] = busqueda;
+      }
+      if (estado != null && estado.isNotEmpty) {
+        params['estado'] = estado;
+      }
+      if (fechaDesde != null) {
+        params['fecha_desde'] = fechaDesde.toIso8601String().split('T')[0];
+      }
+      if (fechaHasta != null) {
+        params['fecha_hasta'] = fechaHasta.toIso8601String().split('T')[0];
+      }
+      if (fechaVencimientoDesde != null) {
+        params['fecha_vencimiento_desde'] =
+            fechaVencimientoDesde.toIso8601String().split('T')[0];
+      }
+      if (fechaVencimientoHasta != null) {
+        params['fecha_vencimiento_hasta'] =
+            fechaVencimientoHasta.toIso8601String().split('T')[0];
+      }
+      if (fechaEntregaSolicitadaDesde != null) {
+        params['fecha_entrega_solicitada_desde'] =
+            fechaEntregaSolicitadaDesde.toIso8601String().split('T')[0];
+      }
+      if (fechaEntregaSolicitadaHasta != null) {
+        params['fecha_entrega_solicitada_hasta'] =
+            fechaEntregaSolicitadaHasta.toIso8601String().split('T')[0];
+      }
+      params['formato'] = formato;
+
+      debugPrint('📋 Filtros para PDF: $params');
+
+      final response = await _dio.get(
+        '$baseUrl/proformas/descargar-pdf-con-filtros',
+        queryParameters: params,
+        options: Options(
+          responseType: ResponseType.bytes,
+          contentType: 'application/pdf',
+        ),
+      );
+
+      if (response.statusCode == 200) {
+        return response.data as List<int>;
+      } else {
+        throw Exception('Error: ${response.statusCode}');
+      }
+    } catch (e) {
+      debugPrint('❌ Error descargando PDF con filtros: $e');
       rethrow;
     }
   }

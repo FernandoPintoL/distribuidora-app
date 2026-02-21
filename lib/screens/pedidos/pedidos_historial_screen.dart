@@ -100,52 +100,31 @@ class _PedidosHistorialScreenState extends State<PedidosHistorialScreen> {
     );
   }
 
-  /// ✅ NUEVO: Descargar PDF de proformas filtradas
+  /// ✅ NUEVO: Descargar PDF de proformas con filtros
+  /// Envía los filtros actuales al backend para obtener TODOS los resultados
   Future<void> _descargarPdfProformas() async {
     try {
-      final pedidoProvider = context.read<PedidoProvider>();
-
-      if (pedidoProvider.pedidos.isEmpty) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('No hay pedidos para descargar'),
-            duration: Duration(seconds: 2),
-          ),
-        );
-        return;
-      }
-
-      // Obtener IDs de los pedidos actuales
-      final proformaIds = pedidoProvider.pedidos
-          .map((p) => p.id.toString())
-          .toList();
-
-      if (proformaIds.isEmpty) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('No hay proformas para descargar'),
-            duration: Duration(seconds: 2),
-          ),
-        );
-        return;
-      }
-
-      // Construir URL con IDs
-      final idsParam = proformaIds.join(',');
       final apiService = ApiService();
       final printService = PrintService();
 
       // Mostrar loading
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Generando PDF...'),
+          content: Text('Generando PDF con todos los resultados filtrados...'),
           duration: Duration(seconds: 1),
         ),
       );
 
-      // Descargar PDF
-      final pdfBytes = await apiService.descargarPdfProformas(
-        ids: idsParam,
+      // Enviar filtros al backend (no IDs, sino los filtros aplicados)
+      final pdfBytes = await apiService.descargarPdfProformasConFiltros(
+        busqueda: _searchController.text.isEmpty ? null : _searchController.text,
+        estado: _filtroEstadoSeleccionado,
+        fechaDesde: _filtroFechaDesde,
+        fechaHasta: _filtroFechaHasta,
+        fechaVencimientoDesde: _filtroFechaVencimientoDesde,
+        fechaVencimientoHasta: _filtroFechaVencimientoHasta,
+        fechaEntregaSolicitadaDesde: _filtroFechaEntregaSolicitadaDesde,
+        fechaEntregaSolicitadaHasta: _filtroFechaEntregaSolicitadaHasta,
         formato: 'A4',
       );
 
