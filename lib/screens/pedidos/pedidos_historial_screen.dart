@@ -1186,20 +1186,49 @@ class _PedidosHistorialScreenState extends State<PedidosHistorialScreen> {
               builder: (context, pedidoProvider, _) {
                 // Estado de carga inicial
                 if (pedidoProvider.isLoading && pedidoProvider.pedidos.isEmpty) {
+                  // Detectar si hay filtros activos
+                  final tieneFilTros = _filtroEstadoSeleccionado != null ||
+                      _searchController.text.isNotEmpty ||
+                      _filtroFechaDesde != null ||
+                      _filtroFechaHasta != null ||
+                      _filtroFechaVencimientoDesde != null ||
+                      _filtroFechaVencimientoHasta != null ||
+                      _filtroFechaEntregaSolicitadaDesde != null ||
+                      _filtroFechaEntregaSolicitadaHasta != null;
+
+                  final mensajeCarga = tieneFilTros
+                      ? '🔍 Buscando pedidos con filtros...'
+                      : '📋 Cargando pedidos...';
+
                   return Center(
                     child: Padding(
                       padding: const EdgeInsets.all(32),
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          CircularProgressIndicator(
-                            color: colorScheme.primary,
+                          // Indicador de carga animado
+                          SizedBox(
+                            width: 60,
+                            height: 60,
+                            child: CircularProgressIndicator(
+                              color: colorScheme.primary,
+                              strokeWidth: 4,
+                            ),
                           ),
-                          const SizedBox(height: 16),
+                          const SizedBox(height: 24),
                           Text(
-                            'Cargando pedidos...',
+                            mensajeCarga,
+                            style: context.textTheme.bodyMedium?.copyWith(
+                              color: colorScheme.primary,
+                              fontWeight: FontWeight.w500,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            'Por favor espera...',
                             style: context.textTheme.bodySmall?.copyWith(
-                              color: context.textTheme.bodySmall?.color,
+                              color: colorScheme.outline,
                             ),
                           ),
                         ],
@@ -1223,37 +1252,96 @@ class _PedidosHistorialScreenState extends State<PedidosHistorialScreen> {
                 return RefreshIndicator(
                   onRefresh: _onRefresh,
                   color: colorScheme.primary,
-                  child: ListView.builder(
+                  child: ListView(
                     controller: _scrollController,
-                    itemCount: pedidoProvider.pedidos.length +
-                        (pedidoProvider.isLoadingMore ? 1 : 0),
                     padding: const EdgeInsets.symmetric(vertical: 8),
-                    itemBuilder: (context, index) {
-                      // Indicador de carga al final
-                      if (index == pedidoProvider.pedidos.length) {
-                        return Padding(
-                          padding: const EdgeInsets.all(16),
-                          child: Center(
-                            child: CircularProgressIndicator(
-                              color: colorScheme.primary,
-                            ),
+                    children: [
+                      // ✅ NUEVO: Resumen de resultados
+                      Container(
+                        margin: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 12,
+                        ),
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: colorScheme.primary.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(
+                            color: colorScheme.primary.withOpacity(0.3),
                           ),
-                        );
-                      }
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Expanded(
+                              child: Text(
+                                '${pedidoProvider.pedidos.length} resultado${pedidoProvider.pedidos.length != 1 ? 's' : ''} encontrado${pedidoProvider.pedidos.length != 1 ? 's' : ''}',
+                                style: context.textTheme.bodyMedium?.copyWith(
+                                  color: colorScheme.primary,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ),
+                            // Mostrar indicador si hay más páginas
+                            if (pedidoProvider.hasMorePages)
+                              Chip(
+                                label: const Text('Hay más'),
+                                backgroundColor:
+                                    colorScheme.primaryContainer,
+                                labelStyle: TextStyle(
+                                  color: colorScheme.onPrimaryContainer,
+                                  fontSize: 11,
+                                ),
+                              ),
+                          ],
+                        ),
+                      ),
 
-                      final pedido = pedidoProvider.pedidos[index];
-                      return _PedidoCard(
-                        pedido: pedido,
-                        onTap: () {
-                          Navigator.pushNamed(
-                            context,
-                            '/pedido-detalle',
-                            arguments: pedido.id,
+                      // Lista de pedidos
+                      ListView.builder(
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        itemCount: pedidoProvider.pedidos.length +
+                            (pedidoProvider.isLoadingMore ? 1 : 0),
+                        padding:
+                            const EdgeInsets.symmetric(vertical: 0),
+                        itemBuilder: (context, index) {
+                          // Indicador de carga al final
+                          if (index == pedidoProvider.pedidos.length) {
+                            return Padding(
+                              padding: const EdgeInsets.all(16),
+                              child: Center(
+                                child: Column(
+                                  children: [
+                                    CircularProgressIndicator(
+                                      color: colorScheme.primary,
+                                    ),
+                                    const SizedBox(height: 8),
+                                    Text(
+                                      'Cargando más pedidos...',
+                                      style: context.textTheme.bodySmall,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            );
+                          }
+
+                          final pedido = pedidoProvider.pedidos[index];
+                          return _PedidoCard(
+                            pedido: pedido,
+                            onTap: () {
+                              Navigator.pushNamed(
+                                context,
+                                '/pedido-detalle',
+                                arguments: pedido.id,
+                              );
+                            },
+                            onPrint: _handlePrintProforma,
                           );
                         },
-                        onPrint: _handlePrintProforma,
-                      );
-                    },
+                      ),
+                    ],
                   ),
                 );
               },
@@ -1395,6 +1483,32 @@ class _PedidosHistorialScreenState extends State<PedidosHistorialScreen> {
     final colorScheme = context.colorScheme;
     final isDark = context.isDark;
 
+    // Detectar si hay filtros activos
+    final tieneFilTros = _filtroEstadoSeleccionado != null ||
+        _searchController.text.isNotEmpty ||
+        _filtroFechaDesde != null ||
+        _filtroFechaHasta != null ||
+        _filtroFechaVencimientoDesde != null ||
+        _filtroFechaVencimientoHasta != null ||
+        _filtroFechaEntregaSolicitadaDesde != null ||
+        _filtroFechaEntregaSolicitadaHasta != null;
+
+    // Construir descripción de filtros activos
+    final filtrosActivos = <String>[];
+    if (_searchController.text.isNotEmpty) {
+      filtrosActivos.add('búsqueda: "${_searchController.text}"');
+    }
+    if (_filtroEstadoSeleccionado != null) {
+      filtrosActivos.add('estado: $_filtroEstadoSeleccionado');
+    }
+    if (_filtroFechaDesde != null || _filtroFechaHasta != null) {
+      final desde =
+          _filtroFechaDesde?.toString().split(' ')[0] ?? '...';
+      final hasta =
+          _filtroFechaHasta?.toString().split(' ')[0] ?? '...';
+      filtrosActivos.add('fechas: $desde a $hasta');
+    }
+
     return SingleChildScrollView(
       child: Center(
         child: Padding(
@@ -1403,37 +1517,70 @@ class _PedidosHistorialScreenState extends State<PedidosHistorialScreen> {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Icon(
-                Icons.receipt_long_outlined,
-                size: 80, // Reducido de 120
+                tieneFilTros ? Icons.search_off : Icons.receipt_long_outlined,
+                size: 80,
                 color: isDark
                     ? colorScheme.onSurface.withOpacity(0.3)
                     : colorScheme.outline,
               ),
-              const SizedBox(height: 16), // Reducido de 24
+              const SizedBox(height: 16),
               Text(
-                _filtroEstadoSeleccionado != null ||
-                        _searchController.text.isNotEmpty
-                    ? 'No se encontraron pedidos'
-                    : 'No tienes pedidos aún',
+                tieneFilTros
+                    ? '😔 No se encontraron pedidos'
+                    : '📭 No tienes pedidos aún',
                 style: context.textTheme.titleMedium?.copyWith(
-                  // Cambiado de headlineSmall
                   color: colorScheme.onSurface,
                   fontWeight: FontWeight.w600,
                 ),
                 textAlign: TextAlign.center,
               ),
-              const SizedBox(height: 8), // Reducido de 12
+              const SizedBox(height: 8),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: Text(
-                  _filtroEstadoSeleccionado != null ||
-                          _searchController.text.isNotEmpty
-                      ? 'Intenta con otros filtros de búsqueda'
-                      : 'Crea tu primer pedido desde el catálogo',
-                  style: context.textTheme.bodySmall?.copyWith(
-                    color: context.textTheme.bodySmall?.color,
-                  ),
-                  textAlign: TextAlign.center,
+                child: Column(
+                  children: [
+                    Text(
+                      tieneFilTros
+                          ? 'Intenta ajustar tus filtros de búsqueda'
+                          : 'Crea tu primer pedido desde el catálogo',
+                      style: context.textTheme.bodySmall?.copyWith(
+                        color: context.textTheme.bodySmall?.color,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                    // Mostrar filtros activos
+                    if (tieneFilTros && filtrosActivos.isNotEmpty) ...[
+                      const SizedBox(height: 12),
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: colorScheme.errorContainer.withOpacity(0.3),
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Filtros activos:',
+                              style: context.textTheme.labelSmall?.copyWith(
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            ...filtrosActivos.map(
+                              (filtro) => Padding(
+                                padding: const EdgeInsets.only(top: 2),
+                                child: Text(
+                                  '• $filtro',
+                                  style: context.textTheme.bodySmall,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ],
                 ),
               ),
               if (_filtroEstadoSeleccionado == null &&
