@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../../models/entrega.dart';
+import '../../../../widgets/map_location_selector.dart';
 
 /// ✅ NUEVO: Widget para mostrar localidades de una entrega
 /// Muestra todas las localidades únicas de los clientes en las ventas de la entrega
@@ -12,6 +13,60 @@ class LocalidadesCard extends StatelessWidget {
     required this.entrega,
     required this.isDarkMode,
   }) : super(key: key);
+
+  /// ✅ NUEVO 2026-02-17: Extraer ubicaciones de ventas para mostrar en mapa
+  List<MapLocation> _obtenerUbicacionesVentas() {
+    final ubicaciones = <MapLocation>[];
+
+    if (entrega.ventas.isEmpty) {
+      return ubicaciones;
+    }
+
+    // ✅ NUEVO: Crear MapLocation para cada venta con ubicación válida
+    for (final venta in entrega.ventas) {
+      if (venta.latitud != null && venta.longitud != null) {
+        ubicaciones.add(
+          MapLocation(
+            latitude: venta.latitud!,
+            longitude: venta.longitud!,
+            title: venta.clienteNombre ?? 'Cliente #${venta.cliente}',
+            subtitle: venta.numero,
+            isSelected: false,
+          ),
+        );
+      }
+    }
+
+    return ubicaciones;
+  }
+
+  /// ✅ NUEVO: Abrir mapa con todas las ubicaciones de ventas
+  void _abrirMapaConUbicaciones(BuildContext context) {
+    final ubicaciones = _obtenerUbicacionesVentas();
+
+    if (ubicaciones.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('❌ No hay ubicaciones disponibles para mostrar en el mapa'),
+          duration: Duration(seconds: 2),
+        ),
+      );
+      return;
+    }
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => MapLocationSelector(
+          onLocationSelected: (latitude, longitude, address) {
+            // No hacer nada, solo visualizar
+            Navigator.pop(context);
+          },
+          additionalLocations: ubicaciones, // ✅ NUEVO: Pasar ubicaciones de ventas
+        ),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -62,6 +117,14 @@ class LocalidadesCard extends StatelessWidget {
                   ),
                 ],
               ),
+            ),
+            // ✅ NUEVO 2026-02-17: Botón para ver ubicaciones en mapa
+            IconButton(
+              icon: const Icon(Icons.map, size: 20),
+              tooltip: 'Ver en mapa',
+              onPressed: () => _abrirMapaConUbicaciones(context),
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(minHeight: 36, minWidth: 36),
             ),
           ],
         ),

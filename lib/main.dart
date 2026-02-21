@@ -19,6 +19,7 @@ import 'screens/chofer/iniciar_ruta_screen.dart';
 import 'screens/ventas/mis_ventas_screen.dart';
 import 'screens/visitas/orden_del_dia_screen.dart';
 import 'screens/cliente/credito_cliente_screen.dart';
+import 'screens/pedidos/proforma_creacion_screen.dart'; // ✅ NUEVO: Pantalla de creación de proformas
 import 'widgets/realtime_notifications_listener.dart';
 import 'config/app_themes.dart';
 import 'services/local_notification_service.dart';
@@ -128,6 +129,7 @@ class MyApp extends StatelessWidget {
             '/mis-direcciones': (context) => const MisDireccionesScreen(),
             '/notifications': (context) => const NotificationsScreen(),
             '/resumen-pedido': (context) => const ResumenPedidoScreen(),
+            '/proforma-creacion': (context) => const ProformaCreacionScreen(), // ✅ NUEVO: Ruta para crear proformas con combos
           },
           onGenerateRoute: (settings) {
             // Handle routes with arguments

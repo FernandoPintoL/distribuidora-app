@@ -1,19 +1,37 @@
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geocoding/geocoding.dart';
-import 'package:geolocator/geolocator.dart';
 import '../services/location_service.dart';
+
+// ✅ NUEVO 2026-02-18: Modelo para representar un punto de ubicación en el mapa
+class MapLocation {
+  final double latitude;
+  final double longitude;
+  final String title;
+  final String? subtitle;
+  final bool isSelected; // ✅ Para diferenciar la ubicación seleccionada
+
+  MapLocation({
+    required this.latitude,
+    required this.longitude,
+    required this.title,
+    this.subtitle,
+    this.isSelected = false,
+  });
+}
 
 class MapLocationSelector extends StatefulWidget {
   final double? initialLatitude;
   final double? initialLongitude;
   final Function(double, double, String?) onLocationSelected;
+  final List<MapLocation>? additionalLocations; // ✅ NUEVO 2026-02-18: Ubicaciones adicionales (ventas)
 
   const MapLocationSelector({
     super.key,
     this.initialLatitude,
     this.initialLongitude,
     required this.onLocationSelected,
+    this.additionalLocations, // ✅ NUEVO
   });
 
   @override
@@ -30,6 +48,8 @@ class _MapLocationSelectorState extends State<MapLocationSelector> {
   bool _hasLocationPermission = false;
   MapType _mapType = MapType.normal;
   final _locationService = LocationService();
+  // ✅ NUEVO 2026-02-17: Almacenar markerId para mostrar infoWindow automáticamente
+  String? _markerIdToShowInfoWindow;
 
   @override
   void initState() {
@@ -42,6 +62,13 @@ class _MapLocationSelectorState extends State<MapLocationSelector> {
     if (_selectedLocation != null) {
       _addMarker(_selectedLocation!);
       _getAddressFromCoordinates(_selectedLocation!);
+    }
+
+    // ✅ NUEVO 2026-02-18: Agregar marcadores de ubicaciones adicionales (ventas)
+    if (widget.additionalLocations != null && widget.additionalLocations!.isNotEmpty) {
+      for (final location in widget.additionalLocations!) {
+        _addAdditionalMarker(location);
+      }
     }
 
     // Verificar permisos de ubicación
@@ -79,12 +106,41 @@ class _MapLocationSelectorState extends State<MapLocationSelector> {
     // Agregar un pequeño delay para asegurar que el mapa se cargue correctamente
     Future.delayed(const Duration(milliseconds: 500), () {
       if (mounted) {
-        _mapController.animateCamera(
-          CameraUpdate.newLatLngZoom(
-            _selectedLocation ?? const LatLng(-25.2637, -57.5759),
-            15,
-          ),
-        );
+        // ✅ MEJORADO 2026-02-17: Si hay ubicaciones adicionales, animar a los bounds de todos
+        if (widget.additionalLocations != null && widget.additionalLocations!.isNotEmpty) {
+          // Crear lista de todas las posiciones (adicionales + seleccionada si existe)
+          final positions = <LatLng>[
+            for (final loc in widget.additionalLocations!)
+              LatLng(loc.latitude, loc.longitude),
+          ];
+
+          // Agregar posición seleccionada si existe
+          if (_selectedLocation != null) {
+            positions.add(_selectedLocation!);
+          }
+
+          // Calcular bounds y animar
+          final bounds = _calculateBounds(positions);
+          if (bounds != null) {
+            _animateCameraToBounds(bounds);
+          }
+
+          // ✅ NUEVO 2026-02-17: Mostrar infoWindow automáticamente para todos los markers
+          Future.delayed(const Duration(milliseconds: 1000), () {
+            if (mounted && _markerIdToShowInfoWindow != null) {
+              _mapController.showMarkerInfoWindow(MarkerId(_markerIdToShowInfoWindow!));
+              debugPrint('📍 InfoWindow abierto automáticamente para: $_markerIdToShowInfoWindow');
+            }
+          });
+        } else {
+          // Comportamiento original: animar a ubicación seleccionada o default
+          _mapController.animateCamera(
+            CameraUpdate.newLatLngZoom(
+              _selectedLocation ?? const LatLng(-25.2637, -57.5759),
+              15,
+            ),
+          );
+        }
       }
     });
   }
@@ -117,13 +173,69 @@ class _MapLocationSelectorState extends State<MapLocationSelector> {
   }
 
   void _addMarker(LatLng position) {
-    _markers.clear();
+    // ✅ ACTUALIZADO 2026-02-18: Mantener marcadores adicionales al agregar selección
+    // Limpiar SOLO el marcador de selección anterior, no todos
+    _markers.removeWhere((m) => m.markerId.value == 'selected_location');
     _markers.add(
       Marker(
         markerId: const MarkerId('selected_location'),
         position: position,
         infoWindow: const InfoWindow(title: 'Ubicación seleccionada'),
+        icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueBlue),
       ),
+    );
+  }
+
+  /// ✅ NUEVO 2026-02-18: Agregar marcador para ubicaciones adicionales (ventas)
+  /// ✅ MEJORADO 2026-02-17: Mostrar información completa (cliente + venta) con mejor formato
+  void _addAdditionalMarker(MapLocation location) {
+    final markerId = MarkerId('venta_${location.hashCode}');
+
+    // ✅ NUEVO 2026-02-17: Guardar el ID del primer marker para mostrar infoWindow automáticamente
+    _markerIdToShowInfoWindow ??= markerId.value;
+
+    _markers.add(
+      Marker(
+        markerId: markerId,
+        position: LatLng(location.latitude, location.longitude),
+        infoWindow: InfoWindow(
+          title: '👤 ${location.title}',
+          snippet: '📦 ${location.subtitle}',
+          onTap: () {
+            debugPrint('📍 Ubicación: ${location.title} | Venta: ${location.subtitle}');
+          },
+        ),
+        icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed),
+      ),
+    );
+  }
+
+  /// ✅ NUEVO 2026-02-17: Calcular bounds para mostrar todos los markers
+  LatLngBounds? _calculateBounds(List<LatLng> positions) {
+    if (positions.isEmpty) return null;
+
+    double minLat = positions.first.latitude;
+    double maxLat = positions.first.latitude;
+    double minLng = positions.first.longitude;
+    double maxLng = positions.first.longitude;
+
+    for (final pos in positions) {
+      minLat = minLat > pos.latitude ? pos.latitude : minLat;
+      maxLat = maxLat < pos.latitude ? pos.latitude : maxLat;
+      minLng = minLng > pos.longitude ? pos.longitude : minLng;
+      maxLng = maxLng < pos.longitude ? pos.longitude : maxLng;
+    }
+
+    return LatLngBounds(
+      southwest: LatLng(minLat, minLng),
+      northeast: LatLng(maxLat, maxLng),
+    );
+  }
+
+  /// ✅ NUEVO 2026-02-17: Animar cámara a los bounds de todos los markers
+  void _animateCameraToBounds(LatLngBounds bounds) {
+    _mapController.animateCamera(
+      CameraUpdate.newLatLngBounds(bounds, 100), // 100 = padding
     );
   }
 

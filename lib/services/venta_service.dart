@@ -323,6 +323,68 @@ class VentaService {
     }
   }
 
+  /// Obtener detalles de la entrega asociada a una venta
+  ///
+  /// Parámetros:
+  /// - ventaId: ID de la venta
+  ///
+  /// Retorna:
+  /// - Map con detalles de la entrega o null si no hay entrega asignada
+  /// - Success: true si se obtuvieron los datos correctamente
+  Future<ApiResponse<Map<String, dynamic>>> getEntregaPorVenta(int ventaId) async {
+    try {
+      debugPrint('📦 [VentaService] Obteniendo entrega para venta #$ventaId');
+
+      // ✅ Endpoint correcto que retorna entregas con confirmacionesVentas
+      final response = await _apiService.get('/ventas/$ventaId/entregas');
+
+      final Map<String, dynamic> responseData =
+          response.data as Map<String, dynamic>;
+
+      if (responseData['success'] == true) {
+        // El endpoint retorna un Map con array de entregas dentro
+        final data = responseData['data'] as Map<String, dynamic>;
+        Map<String, dynamic>? entregaData;
+
+        // Buscar entregas dentro del data
+        if (data['entregas'] != null && data['entregas'] is List) {
+          final entregas = data['entregas'] as List;
+          if (entregas.isNotEmpty) {
+            entregaData = entregas.first as Map<String, dynamic>;
+          }
+        }
+
+        return ApiResponse<Map<String, dynamic>>(
+          success: true,
+          message: responseData['message'] as String? ??
+              'Información de entrega obtenida',
+          data: entregaData,
+        );
+      } else {
+        return ApiResponse<Map<String, dynamic>>(
+          success: false,
+          message: responseData['message'] as String? ??
+              'Error al obtener entrega',
+          data: null,
+        );
+      }
+    } on DioException catch (e) {
+      debugPrint('❌ [VentaService] Error obteniendo entrega: ${e.message}');
+      return ApiResponse<Map<String, dynamic>>(
+        success: false,
+        message: _getErrorMessage(e),
+        data: null,
+      );
+    } catch (e) {
+      debugPrint('❌ [VentaService] Error inesperado: $e');
+      return ApiResponse<Map<String, dynamic>>(
+        success: false,
+        message: 'Error inesperado al obtener entrega: ${e.toString()}',
+        data: null,
+      );
+    }
+  }
+
   /// Helper para obtener mensaje de error desde DioException
   String _getErrorMessage(DioException e) {
     switch (e.type) {

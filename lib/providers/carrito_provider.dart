@@ -249,6 +249,7 @@ class CarritoProvider with ChangeNotifier {
     Product producto, {
     int cantidad = 1,
     String? observaciones,
+    List<Map<String, dynamic>>? comboItemsSeleccionados,
   }) {
     _errorMessage = null;
 
@@ -292,10 +293,43 @@ class CarritoProvider with ChangeNotifier {
       return;
     }
 
-    // Verificar si el producto ya está en el carrito
-    final itemExistente = _carrito.getItemByProductoId(producto.id);
-
     List<CarritoItem> nuevosItems = List.from(_carrito.items);
+
+    // ✅ NUEVO: Buscar item existente considerando también comboItemsSeleccionados
+    // Para combos: buscar item con MISMO producto ID + MISMOS combo items seleccionados
+    CarritoItem? itemExistente;
+    try {
+      itemExistente = nuevosItems.firstWhere((item) {
+      if (item.producto.id != producto.id) return false;
+
+      // Para combos, comparar también los items seleccionados
+      if (producto.esCombo) {
+        // Si ambos son null o ambos tienen los mismos items
+        if (item.comboItemsSeleccionados == null && comboItemsSeleccionados == null) {
+          return true;
+        }
+        if (item.comboItemsSeleccionados == null || comboItemsSeleccionados == null) {
+          return false;
+        }
+        // Comparar si tienen los mismos combo_item_ids
+        if (item.comboItemsSeleccionados!.length != comboItemsSeleccionados!.length) {
+          return false;
+        }
+        for (int i = 0; i < item.comboItemsSeleccionados!.length; i++) {
+          if (item.comboItemsSeleccionados![i]['combo_item_id'] !=
+              comboItemsSeleccionados![i]['combo_item_id']) {
+            return false;
+          }
+        }
+        return true;
+      }
+
+      // Para productos normales, solo comparar producto.id
+      return true;
+      });
+    } catch (e) {
+      itemExistente = null;
+    }
 
     if (itemExistente != null) {
       // Si ya existe, validar que la nueva cantidad total no exceda el stock
@@ -313,10 +347,12 @@ class CarritoProvider with ChangeNotifier {
       }
 
       // Si pasa la validación, actualizar la cantidad
-      final index = nuevosItems.indexWhere(
-        (item) => item.producto.id == producto.id,
+      final index = nuevosItems.indexWhere((item) => item == itemExistente);
+      // ✅ NUEVO: Actualizar también comboItemsSeleccionados si existen
+      nuevosItems[index] = itemExistente.copyWith(
+        cantidad: nuevaCantidadTotal,
+        comboItemsSeleccionados: comboItemsSeleccionados ?? itemExistente.comboItemsSeleccionados,
       );
-      nuevosItems[index] = itemExistente.copyWith(cantidad: nuevaCantidadTotal);
       debugPrint(
         '✅ Cantidad de ${producto.nombre} aumentada a $nuevaCantidadTotal',
       );
@@ -327,11 +363,23 @@ class CarritoProvider with ChangeNotifier {
           producto: producto,
           cantidad: cantidad,
           observaciones: observaciones,
+          comboItemsSeleccionados: comboItemsSeleccionados,
         ),
       );
       debugPrint(
         '✅ ${producto.nombre} agregado al carrito con cantidad: $cantidad',
       );
+      if (comboItemsSeleccionados != null) {
+        debugPrint('   📦 Combo items guardados: $comboItemsSeleccionados');
+      } else {
+        debugPrint('   ⚠️ SIN combo items seleccionados');
+      }
+
+      // ✅ DEBUG: Mostrar item guardado en carrito
+      final itemGuardado = nuevosItems.lastWhere(
+        (i) => i.producto.id == producto.id,
+      );
+      debugPrint('   🔍 Item en carrito - comboItemsSeleccionados: ${itemGuardado.comboItemsSeleccionados}');
     }
 
     _carrito = _carrito.copyWith(items: nuevosItems);
@@ -474,6 +522,38 @@ class CarritoProvider with ChangeNotifier {
     nuevosItems[index] = itemExistente.copyWith(observaciones: observaciones);
 
     _carrito = _carrito.copyWith(items: nuevosItems);
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      notifyListeners();
+    });
+  }
+
+  /// ✅ NUEVO: Actualizar items opcionales de un combo existente en el carrito
+  void actualizarComboItems(
+    int productoId,
+    List<Map<String, dynamic>>? comboItemsSeleccionados,
+  ) {
+    final itemExistente = _carrito.getItemByProductoId(productoId);
+    if (itemExistente == null) {
+      debugPrint('⚠️ Item no encontrado en carrito: $productoId');
+      return;
+    }
+
+    List<CarritoItem> nuevosItems = List.from(_carrito.items);
+    final index = nuevosItems.indexWhere(
+      (item) => item.producto.id == productoId,
+    );
+
+    nuevosItems[index] = itemExistente.copyWith(
+      comboItemsSeleccionados: comboItemsSeleccionados,
+    );
+
+    _carrito = _carrito.copyWith(items: nuevosItems);
+
+    debugPrint('✅ Items opcionales del combo actualizados');
+    if (comboItemsSeleccionados != null) {
+      debugPrint('   📦 Nuevos combo items: $comboItemsSeleccionados');
+    }
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       notifyListeners();

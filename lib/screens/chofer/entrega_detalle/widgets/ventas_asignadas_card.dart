@@ -348,6 +348,14 @@ class _VentasAsignadasCardState extends State<VentasAsignadasCard> {
                                       venta.estadoPago,
                                     ),
                                   ),
+                                  const SizedBox(height: 2),
+                                  // ✅ NUEVO: Badge de tipo de pago
+                                  SizedBox(
+                                    height: 16,
+                                    child: _buildTipoPagoBadge(
+                                      venta.tipoPago?.nombre,
+                                    ),
+                                  ),
                                 ],
                               ),
                             ],
@@ -564,6 +572,93 @@ class _VentasAsignadasCardState extends State<VentasAsignadasCard> {
 
     final config = estadoColores[estadoPago] ??
         {'color': Colors.grey, 'label': estadoPago, 'icon': '?'};
+
+    return Builder(
+      builder: (context) {
+        final isDarkMode =
+            Theme.of(context).brightness == Brightness.dark;
+        final bgColor = isDarkMode
+            ? (config['color'] as Color).withOpacity(0.25)
+            : (config['color'] as Color).withOpacity(0.15);
+
+        return Container(
+          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+          decoration: BoxDecoration(
+            color: bgColor,
+            borderRadius: BorderRadius.circular(3),
+            border: Border.all(
+                color: config['color'] as Color, width: 0.5),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                config['icon'] as String,
+                style: const TextStyle(fontSize: 9),
+              ),
+              const SizedBox(width: 2),
+              Flexible(
+                child: Text(
+                  config['label'] as String,
+                  style: TextStyle(
+                    fontSize: 9,
+                    fontWeight: FontWeight.w600,
+                    color: config['color'] as Color,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  // ✅ NUEVO: Widget para mostrar el tipo de pago de la venta
+  Widget _buildTipoPagoBadge(String? tipoPago) {
+    if (tipoPago == null || tipoPago.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    // Mapeo de tipos de pago con colores e iconos
+    const tipoPagoColores = {
+      'Efectivo': {
+        'color': Color(0xFF10b981), // Verde
+        'label': 'Efectivo',
+        'icon': '💵',
+      },
+      'Transferencia': {
+        'color': Color(0xFF3b82f6), // Azul
+        'label': 'Transferencia',
+        'icon': '💳',
+      },
+      'Transferencia / QR': {
+        'color': Color(0xFF3b82f6), // Azul
+        'label': 'Transfer.',
+        'icon': '📱',
+      },
+      'Cheque': {
+        'color': Color(0xFF8b5cf6), // Púrpura
+        'label': 'Cheque',
+        'icon': '📄',
+      },
+      'Crédito': {
+        'color': Color(0xFFf59e0b), // Ámbar
+        'label': 'Crédito',
+        'icon': '📋',
+      },
+    };
+
+    final config = tipoPagoColores[tipoPago] ??
+        {
+          'color': Colors.blueGrey,
+          'label': tipoPago.length > 10
+              ? tipoPago.substring(0, 10)
+              : tipoPago,
+          'icon': '💰'
+        };
 
     return Builder(
       builder: (context) {

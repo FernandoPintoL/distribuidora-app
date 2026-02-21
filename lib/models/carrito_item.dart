@@ -5,12 +5,14 @@ class CarritoItem {
   final int cantidad;
   final double precioUnitario;
   final String? observaciones;
+  final List<Map<String, dynamic>>? comboItemsSeleccionados;
 
   CarritoItem({
     required this.producto,
     required this.cantidad,
     double? precioUnitario,
     this.observaciones,
+    this.comboItemsSeleccionados,
   }) : precioUnitario = precioUnitario ?? producto.precioVenta ?? 0.0;
 
   // Cálculo del subtotal
@@ -52,12 +54,14 @@ class CarritoItem {
     int? cantidad,
     double? precioUnitario,
     String? observaciones,
+    List<Map<String, dynamic>>? comboItemsSeleccionados,
   }) {
     return CarritoItem(
       producto: producto ?? this.producto,
       cantidad: cantidad ?? this.cantidad,
       precioUnitario: precioUnitario ?? this.precioUnitario,
       observaciones: observaciones ?? this.observaciones,
+      comboItemsSeleccionados: comboItemsSeleccionados ?? this.comboItemsSeleccionados,
     );
   }
 
@@ -70,6 +74,8 @@ class CarritoItem {
       'precio_unitario': precioUnitario,
       'subtotal': subtotal,
       'observaciones': observaciones,
+      if (comboItemsSeleccionados != null)
+        'combo_items_seleccionados': comboItemsSeleccionados,
     };
   }
 
@@ -80,6 +86,9 @@ class CarritoItem {
       cantidad: _parseInt(json['cantidad']),
       precioUnitario: _parseDouble(json['precio_unitario']),
       observaciones: json['observaciones'],
+      comboItemsSeleccionados: json['combo_items_seleccionados'] != null
+          ? List<Map<String, dynamic>>.from(json['combo_items_seleccionados'])
+          : null,
     );
   }
 
@@ -118,9 +127,39 @@ class CarritoItem {
   @override
   bool operator ==(Object other) {
     if (identical(this, other)) return true;
-    return other is CarritoItem && other.producto.id == producto.id;
+    if (other is! CarritoItem) return false;
+
+    // Comparar producto ID
+    if (other.producto.id != producto.id) return false;
+
+    // Comparar comboItemsSeleccionados si es un combo
+    if (comboItemsSeleccionados != null || other.comboItemsSeleccionados != null) {
+      if (comboItemsSeleccionados == null || other.comboItemsSeleccionados == null) {
+        return false;
+      }
+      // Comparar contenido de las listas
+      if (comboItemsSeleccionados!.length != other.comboItemsSeleccionados!.length) {
+        return false;
+      }
+      for (int i = 0; i < comboItemsSeleccionados!.length; i++) {
+        if (comboItemsSeleccionados![i]['combo_item_id'] !=
+            other.comboItemsSeleccionados![i]['combo_item_id']) {
+          return false;
+        }
+      }
+    }
+
+    return true;
   }
 
   @override
-  int get hashCode => producto.id.hashCode;
+  int get hashCode {
+    int hash = producto.id.hashCode;
+    if (comboItemsSeleccionados != null) {
+      for (final item in comboItemsSeleccionados!) {
+        hash = hash ^ item['combo_item_id'].hashCode;
+      }
+    }
+    return hash;
+  }
 }

@@ -77,12 +77,12 @@ class EntregaProvider with ChangeNotifier, EntregaTrackingMixin {
   String? get search => _search;  // ✅ NUEVO: Getter para búsqueda
   int? get localidadId => _localidadId;  // ✅ NUEVO: Getter para localidad
 
-  // Obtener entregas asignadas
+  // ✅ ACTUALIZADO: Obtener entregas asignadas - Rango de fechas de CREACIÓN (created_at)
   Future<bool> obtenerEntregasAsignadas({
     int page = 1,
     String? estado,
-    String? fechaDesde,
-    String? fechaHasta,
+    String? createdDesde,  // ✅ ACTUALIZADO: Rango de fechas de creación (created_at)
+    String? createdHasta,  // ✅ ACTUALIZADO: Rango de fechas de creación (created_at)
     String? search,  // ✅ NUEVO: búsqueda case-insensitive
     int? localidadId,  // ✅ NUEVO: filtro por localidad
   }) async {
@@ -93,15 +93,15 @@ class EntregaProvider with ChangeNotifier, EntregaTrackingMixin {
     _isLoading = true;
     _errorMessage = null;
     debugPrint('🔍 [ENTREGA_PROVIDER] Iniciando carga - notificando isLoading=true');
-    debugPrint('🔍 [ENTREGA_PROVIDER] Parámetros: search=$search, localidad_id=$localidadId');
+    debugPrint('🔍 [ENTREGA_PROVIDER] Parámetros: search=$search, localidad_id=$localidadId, createdDesde=$createdDesde, createdHasta=$createdHasta');
     notifyListeners();
 
     try {
       final response = await _entregaService.obtenerEntregasAsignadas(
         page: page,
         estado: estado,
-        fechaDesde: fechaDesde,
-        fechaHasta: fechaHasta,
+        createdDesde: createdDesde,  // ✅ ACTUALIZADO: Pasar parámetros de created_at
+        createdHasta: createdHasta,  // ✅ ACTUALIZADO: Pasar parámetros de created_at
         search: search,  // ✅ NUEVO
         localidadId: localidadId,  // ✅ NUEVO
       );
@@ -1109,6 +1109,8 @@ class EntregaProvider with ChangeNotifier, EntregaTrackingMixin {
     List<Map<String, dynamic>>? pagos,  // Array de {tipo_pago_id, monto, referencia}
     bool? esCredito,  // ✅ CAMBIO: Si es promesa de pago (no dinero real)
     String? tipoConfirmacion,  // COMPLETA o CON_NOVEDAD
+    // ✅ NUEVA 2026-02-15: Productos rechazados en devolución parcial
+    List<Map<String, dynamic>>? productosRechazados,  // Array de {detalle_venta_id, nombre_producto, cantidad, precio_unitario, subtotal}
   }) async {
     _isLoading = true;
     _errorMessage = null;
@@ -1134,6 +1136,8 @@ class EntregaProvider with ChangeNotifier, EntregaTrackingMixin {
         pagos: pagos,  // Array de pagos múltiples
         esCredito: esCredito,  // ✅ CAMBIO: Si es promesa de pago
         tipoConfirmacion: tipoConfirmacion,  // COMPLETA o CON_NOVEDAD
+        // ✅ NUEVA 2026-02-15: Productos rechazados en devolución parcial
+        productosRechazados: productosRechazados,  // Array de productos rechazados
       );
 
       if (response.success) {
@@ -1667,5 +1671,40 @@ class EntregaProvider with ChangeNotifier, EntregaTrackingMixin {
     debugPrint(
         '🏘️ [ENTREGA_PROVIDER] Localidades únicas encontradas: ${localidades.length}');
     return localidades;
+  }
+
+  // ✅ NUEVO 2026-02-21: Cambiar tipo de entrega de una venta
+  Future<void> cambiarTipoEntrega({
+    required int entregaId,
+    required int ventaId,
+    required String tipoEntrega, // COMPLETA o CON_NOVEDAD
+    String? tipoNovedad,
+  }) async {
+    try {
+      _isLoading = true;
+      _errorMessage = null;
+      notifyListeners();
+
+      final response = await _entregaService.cambiarTipoEntrega(
+        entregaId: entregaId,
+        ventaId: ventaId,
+        tipoEntrega: tipoEntrega,
+        tipoNovedad: tipoNovedad,
+      );
+
+      if (response.success) {
+        // Recargar la entrega actual para reflejar los cambios
+        await obtenerEntrega(entregaId);
+      } else {
+        _errorMessage = response.message;
+      }
+
+      _isLoading = false;
+      notifyListeners();
+    } catch (e) {
+      _errorMessage = 'Error inesperado: ${e.toString()}';
+      _isLoading = false;
+      notifyListeners();
+    }
   }
 }

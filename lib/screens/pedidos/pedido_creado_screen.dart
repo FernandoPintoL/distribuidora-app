@@ -2,6 +2,11 @@ import 'package:flutter/material.dart';
 import '../../models/models.dart';
 import '../../services/estados_helpers.dart'; // ✅ AGREGADO para estados dinámicos
 import '../../extensions/theme_extension.dart';
+import '../../services/api_service.dart';
+import '../../services/print_service.dart'; // ✅ Para descargar PDFs
+import 'dart:io' show Platform;
+import 'package:share_plus/share_plus.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class PedidoCreadoScreen extends StatelessWidget {
   final Pedido pedido;
@@ -85,7 +90,7 @@ class PedidoCreadoScreen extends StatelessWidget {
                   padding: const EdgeInsets.all(20),
                   child: Column(
                     children: [
-                      // Número de pedido
+                      // Número de pedido con botón de impresión
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
@@ -97,15 +102,76 @@ class PedidoCreadoScreen extends StatelessWidget {
                             ),
                           ),
                           Flexible(
-                            child: Text(
-                              pedido.numero,
-                              style: TextStyle(
-                                fontWeight: FontWeight.bold,
-                                fontSize: 16,
-                                color: colorScheme.onSurface,
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Flexible(
+                                  fit: FlexFit.loose,
+                                  child: Text(
+                                    pedido.numero,
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 16,
+                                      color: colorScheme.onSurface,
+                                    ),
+                                    textAlign: TextAlign.right,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                // ✅ Botón de descargar/compartir impresión
+                                PopupMenuButton<String>(
+                                onSelected: (value) {
+                                  // ✅ Usar ApiService para obtener baseUrl dinámicamente
+                                  final apiService = ApiService();
+                                  final baseUrl = apiService.baseUrl; // http://localhost:8000/api
+                                  final impresionUrl = '$baseUrl/proformas/${pedido.id}/imprimir?formato=TICKET_80&accion=$value';
+
+                                  _manejarAccionImpresion(context, value, impresionUrl, pedido.numero, colorScheme, pedido.id);
+                                },
+                                itemBuilder: (BuildContext context) => [
+                                  PopupMenuItem<String>(
+                                    value: 'download',
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Icon(Icons.download, size: 18, color: colorScheme.primary),
+                                        const SizedBox(width: 8),
+                                        const Text('Descargar PDF'),
+                                      ],
+                                    ),
+                                  ),
+                                  PopupMenuItem<String>(
+                                    value: 'stream',
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Icon(Icons.preview, size: 18, color: colorScheme.primary),
+                                        const SizedBox(width: 8),
+                                        const Text('Ver en navegador'),
+                                      ],
+                                    ),
+                                  ),
+                                  PopupMenuItem<String>(
+                                    value: 'compartir',
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Icon(Icons.share, size: 18, color: colorScheme.primary),
+                                        const SizedBox(width: 8),
+                                        const Text('Compartir'),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                                icon: Icon(
+                                  Icons.more_vert,
+                                  size: 20,
+                                  color: colorScheme.onSurface.withOpacity(0.6),
+                                ),
+                                padding: EdgeInsets.zero,
                               ),
-                              textAlign: TextAlign.right,
-                              overflow: TextOverflow.ellipsis,
+                              ],
                             ),
                           ),
                         ],
@@ -308,6 +374,85 @@ class PedidoCreadoScreen extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  /// ✅ Manejar acciones de impresión/descarga
+  static void _manejarAccionImpresion(
+    BuildContext context,
+    String accion,
+    String impresionUrl,
+    String numeroPedido,
+    ColorScheme colorScheme,
+    int proformaId,
+  ) async {
+    try {
+      switch (accion) {
+        case 'download':
+          // ✅ Descargar PDF usando PrintService (como en pedidos_historial_screen)
+          final printService = PrintService();
+          final success = await printService.downloadDocument(
+            documentoId: proformaId,
+            documentType: PrintDocumentType.proforma,
+            format: PrintFormat.ticket80,
+          );
+
+          if (!success && context.mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('No se pudo descargar el PDF'),
+                duration: Duration(seconds: 3),
+                backgroundColor: Colors.red,
+              ),
+            );
+          } else if (context.mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Abriendo PDF...'),
+                duration: Duration(seconds: 2),
+                backgroundColor: Colors.green,
+              ),
+            );
+          }
+          break;
+
+        case 'stream':
+          // ✅ Ver en navegador
+          final streamUrl = impresionUrl.replaceAll('accion=stream', 'accion=stream');
+          if (await canLaunchUrl(Uri.parse(streamUrl))) {
+            await launchUrl(
+              Uri.parse(streamUrl),
+              mode: LaunchMode.externalApplication,
+            );
+          } else {
+            if (context.mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: const Text('No se pudo abrir el navegador'),
+                  backgroundColor: colorScheme.error,
+                ),
+              );
+            }
+          }
+          break;
+
+        case 'compartir':
+          // ✅ Compartir
+          await Share.share(
+            'Proforma: $numeroPedido\n\nDescargar PDF: $impresionUrl',
+            subject: 'Proforma $numeroPedido',
+          );
+          break;
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error: ${e.toString()}'),
+            backgroundColor: colorScheme.error,
+          ),
+        );
+      }
+    }
   }
 
   /// ✅ HELPER: Convertir hex string (#RRGGBB) a Color

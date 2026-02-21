@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../../../models/entrega.dart';
+import '../../../../services/api_service.dart';
 import '../../../../widgets/chofer/productos_agrupados_widget.dart';
+import '../../../../widgets/map_location_selector.dart';
 import 'estado_venta_badge.dart';
 import 'info_row.dart';
 
@@ -533,9 +535,24 @@ class _EntregaCardState extends State<EntregaCard> {
                         },
                       ),
                     ),
+                    // ✅ Descargar Ticket de Entrega
+                    Tooltip(
+                      message: 'Descargar Ticket',
+                      child: IconButton(
+                        icon: const Icon(Icons.print),
+                        color: Colors.purple,
+                        iconSize: 20,
+                        padding: const EdgeInsets.all(4),
+                        constraints: const BoxConstraints(
+                          minWidth: 32,
+                          minHeight: 32,
+                        ),
+                        onPressed: () => _descargarTicket(context),
+                      ),
+                    ),
                     // Cómo llegar
                     Tooltip(
-                      message: 'Cómo llegar',
+                      message: 'Ver en mapa',
                       child: IconButton(
                         icon: const Icon(Icons.map),
                         color: Colors.orange,
@@ -545,7 +562,7 @@ class _EntregaCardState extends State<EntregaCard> {
                           minWidth: 32,
                           minHeight: 32,
                         ),
-                        onPressed: () => _openInGoogleMaps(context),
+                        onPressed: () => _abrirMapaConVentas(context),
                       ),
                     ),
                     // Iniciar Ruta (condicional)
@@ -603,25 +620,110 @@ class _EntregaCardState extends State<EntregaCard> {
     return 'Entrega #${entrega.id}';
   }
 
-  Future<void> _openInGoogleMaps(BuildContext context) async {
-    final address = entrega.direccion ?? '';
-    if (address.isEmpty) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Dirección no disponible')));
+  /// ✅ MEJORADO 2026-02-17: Abrir mapa con todas las ubicaciones de ventas
+  /// En lugar de abrir Google Maps, ahora abre MapLocationSelector mostrando
+  /// todas las ubicaciones de las ventas que pertenecen a esta entrega
+  void _abrirMapaConVentas(BuildContext context) {
+    // Extraer ubicaciones de todas las ventas de la entrega
+    final ubicaciones = <MapLocation>[];
+
+    if (entrega.ventas.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('❌ No hay ventas con ubicación en esta entrega'),
+          duration: Duration(seconds: 2),
+        ),
+      );
       return;
     }
 
-    final url = Uri.parse('https://www.google.com/maps/search/$address');
+    // Crear MapLocation para cada venta con ubicación válida
+    for (final venta in entrega.ventas) {
+      if (venta.latitud != null && venta.longitud != null) {
+        ubicaciones.add(
+          MapLocation(
+            latitude: venta.latitud!,
+            longitude: venta.longitud!,
+            title: venta.clienteNombre ?? 'Cliente #${venta.cliente}',
+            subtitle: venta.numero,
+            isSelected: false,
+          ),
+        );
+      }
+    }
 
-    if (await canLaunchUrl(url)) {
-      await launchUrl(url, mode: LaunchMode.externalApplication);
-    } else {
+    if (ubicaciones.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('❌ No hay ventas con ubicación válida en esta entrega'),
+          duration: Duration(seconds: 2),
+        ),
+      );
+      return;
+    }
+
+    // Abrir mapa con todas las ubicaciones
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => MapLocationSelector(
+          onLocationSelected: (latitude, longitude, address) {
+            // No hacer nada, solo visualizar
+            Navigator.pop(context);
+          },
+          additionalLocations: ubicaciones, // ✅ NUEVO: Pasar ubicaciones de ventas
+        ),
+      ),
+    );
+  }
+
+  /// ✅ NUEVO 2026-02-21: Descargar/Imprimir ticket de entrega
+  Future<void> _descargarTicket(BuildContext context) async {
+    try {
+      // Obtener URL del backend usando ApiService
+      final apiService = ApiService();
+      final baseUrl = apiService.baseUrl;
+      // Nota: baseUrl incluye /api, así que construimos la URL completa
+      final ticketUrl = '$baseUrl/entregas/${entrega.id}/descargar?formato=TICKET_80&accion=stream';
+
+      // Mostrar snackbar informativo
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('📄 Abriendo ticket de entrega...'),
+          backgroundColor: Colors.blue[600],
+          duration: const Duration(seconds: 2),
+        ),
+      );
+
+      // Intentar abrir el URL en el navegador
+      final Uri uri = Uri.parse(ticketUrl);
+      if (await canLaunchUrl(uri)) {
+        await launchUrl(
+          uri,
+          mode: LaunchMode.externalApplication,
+        );
+      } else {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: const Text('❌ No se puede abrir el navegador'),
+              backgroundColor: Colors.red[600],
+              duration: const Duration(seconds: 2),
+            ),
+          );
+        }
+      }
+    } catch (e) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('No se pudo abrir Google Maps')),
+          SnackBar(
+            content: Text('❌ Error: $e'),
+            backgroundColor: Colors.red[600],
+            duration: const Duration(seconds: 2),
+          ),
         );
       }
     }
   }
+
 }

@@ -99,7 +99,12 @@ abstract class BaseHomeScreenState<T extends BaseHomeScreen> extends State<T> {
       appBar: appBar,
       drawer: drawer,
       endDrawer: endDrawer,
-      body: screens[_currentIndex],
+      // ✅ OPTIMIZADO: Usar IndexedStack para preservar estado de tabs
+      // en lugar de screens[_currentIndex] que destruye/recrea widgets
+      body: IndexedStack(
+        index: _currentIndex,
+        children: screens,
+      ),
       bottomNavigationBar: buildBottomNavigationBar(),
       floatingActionButton: floatingActionButton,
       backgroundColor: backgroundColor,

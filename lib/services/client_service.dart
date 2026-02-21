@@ -86,6 +86,57 @@ class ClientService {
     }
   }
 
+  /// ✅ NUEVO: Obtener estadísticas ligeras del dashboard del preventista
+  /// Retorna solo conteos sin cargar listas completas
+  Future<ApiResponse<Map<String, dynamic>>> getDashboardStats() async {
+    try {
+      final response = await _apiService.get('/visitas/dashboard-stats');
+
+      if (response.data == null) {
+        return ApiResponse<Map<String, dynamic>>(
+          success: false,
+          message: 'Respuesta vacía del servidor',
+          data: null,
+        );
+      }
+
+      final jsonData = response.data as Map<String, dynamic>;
+      final success = jsonData['success'] as bool? ?? false;
+      final message = jsonData['message'] as String? ?? '';
+
+      if (!success) {
+        return ApiResponse<Map<String, dynamic>>(
+          success: false,
+          message: message,
+          data: null,
+        );
+      }
+
+      // Extraer directamente el diccionario de datos
+      final data = (jsonData['data'] as Map<String, dynamic>?) ?? {};
+
+      return ApiResponse<Map<String, dynamic>>(
+        success: true,
+        message: message,
+        data: data,
+      );
+    } on DioException catch (e) {
+      debugPrint('❌ DioException en getDashboardStats: $e');
+      return ApiResponse<Map<String, dynamic>>(
+        success: false,
+        message: _getErrorMessage(e),
+        data: null,
+      );
+    } catch (e) {
+      debugPrint('❌ Error en getDashboardStats: $e');
+      return ApiResponse<Map<String, dynamic>>(
+        success: false,
+        message: 'Error inesperado: ${e.toString()}',
+        data: null,
+      );
+    }
+  }
+
   Future<ApiResponse<Client>> getClient(int id) async {
     try {
       final response = await _apiService.get('/clientes/$id');

@@ -723,27 +723,107 @@ class _ProductListScreenState extends State<ProductListScreen>
     // Altura compacta: ajustada al contenido
     final mainAxisExtent = maxItemWidth * 1.0;
 
+    // ✅ NUEVO: Separar combos de productos normales
+    final combos = productProvider.products
+        .where((p) => p.esCombo == true)
+        .toList();
+    final productosNormales = productProvider.products
+        .where((p) => p.esCombo != true)
+        .toList();
+
+    final tieneCombosSeparados = combos.isNotEmpty && productosNormales.isNotEmpty;
+
     return RefreshIndicator(
       onRefresh: _refreshProducts,
       child: Stack(
         children: [
-          GridView.builder(
+          CustomScrollView(
             controller: _scrollController,
-            padding: const EdgeInsets.all(16),
-            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: crossAxisCount,
-              mainAxisExtent: mainAxisExtent,
-              crossAxisSpacing: spacing,
-              mainAxisSpacing: spacing,
-            ),
-            itemCount: productProvider.products.length,
-            itemBuilder: (context, index) {
-              final product = productProvider.products[index];
-              return ProductGridItem(
-                product: product,
-                onTap: () => _onProductTap(product),
-              );
-            },
+            slivers: [
+              // Sección de Combos
+              if (combos.isNotEmpty) ...[
+                SliverPadding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  sliver: SliverToBoxAdapter(
+                    child: Text(
+                      '🎁 Combos Especiales',
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: Theme.of(context).colorScheme.primary,
+                      ),
+                    ),
+                  ),
+                ),
+                SliverPadding(
+                  padding: const EdgeInsets.all(16),
+                  sliver: SliverGrid(
+                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: crossAxisCount,
+                      mainAxisExtent: mainAxisExtent,
+                      crossAxisSpacing: spacing,
+                      mainAxisSpacing: spacing,
+                    ),
+                    delegate: SliverChildBuilderDelegate(
+                      (context, index) {
+                        final product = combos[index];
+                        return ProductGridItem(
+                          product: product,
+                          onTap: () => _onProductTap(product),
+                        );
+                      },
+                      childCount: combos.length,
+                    ),
+                  ),
+                ),
+              ],
+
+              // Separador
+              if (tieneCombosSeparados)
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    child: Divider(
+                      color: Theme.of(context).colorScheme.outline.withAlpha(50),
+                    ),
+                  ),
+                ),
+
+              // Sección de Productos Normales
+              if (productosNormales.isNotEmpty) ...[
+                SliverPadding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  sliver: SliverToBoxAdapter(
+                    child: Text(
+                      'Productos',
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ),
+                SliverPadding(
+                  padding: const EdgeInsets.all(16),
+                  sliver: SliverGrid(
+                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: crossAxisCount,
+                      mainAxisExtent: mainAxisExtent,
+                      crossAxisSpacing: spacing,
+                      mainAxisSpacing: spacing,
+                    ),
+                    delegate: SliverChildBuilderDelegate(
+                      (context, index) {
+                        final product = productosNormales[index];
+                        return ProductGridItem(
+                          product: product,
+                          onTap: () => _onProductTap(product),
+                        );
+                      },
+                      childCount: productosNormales.length,
+                    ),
+                  ),
+                ),
+              ],
+            ],
           ),
           // Loading indicator at bottom when fetching more products
           if (productProvider.isLoading && productProvider.products.isNotEmpty)
@@ -763,20 +843,65 @@ class _ProductListScreenState extends State<ProductListScreen>
   }
 
   Widget _buildListView(ProductProvider productProvider) {
+    // ✅ NUEVO: Separar combos de productos normales
+    final combos = productProvider.products
+        .where((p) => p.esCombo == true)
+        .toList();
+    final productosNormales = productProvider.products
+        .where((p) => p.esCombo != true)
+        .toList();
+
     return RefreshIndicator(
       onRefresh: _refreshProducts,
       child: Stack(
         children: [
           ListView.builder(
             controller: _scrollController,
-            itemCount: productProvider.products.length,
+            itemCount: combos.length + productosNormales.length + (combos.isNotEmpty && productosNormales.isNotEmpty ? 1 : 0),
             padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 12),
             itemBuilder: (context, index) {
-              final product = productProvider.products[index];
-              return ProductListItem(
-                product: product,
-                onTap: () => _onProductTap(product),
-              );
+              // Sección de Combos
+              if (index < combos.length) {
+                final product = combos[index];
+                return ProductListItem(
+                  product: product,
+                  onTap: () => _onProductTap(product),
+                );
+              }
+
+              // Separador entre combos y productos normales
+              if (index == combos.length && productosNormales.isNotEmpty) {
+                return Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
+                  child: Column(
+                    children: [
+                      Divider(
+                        color: Theme.of(context).colorScheme.outline.withAlpha(50),
+                        height: 1,
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Productos Regulares',
+                        style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                          color: Theme.of(context).colorScheme.outline,
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              }
+
+              // Sección de Productos Normales
+              final productIndex = index - combos.length - (combos.isNotEmpty && productosNormales.isNotEmpty ? 1 : 0);
+              if (productIndex < productosNormales.length) {
+                final product = productosNormales[productIndex];
+                return ProductListItem(
+                  product: product,
+                  onTap: () => _onProductTap(product),
+                );
+              }
+
+              return const SizedBox.shrink();
             },
           ),
           // Loading indicator at bottom when fetching more products

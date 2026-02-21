@@ -14,7 +14,12 @@ import '../login_screen.dart';
 import '../chofer/marcar_visita_screen.dart';
 
 class ClientListScreen extends StatefulWidget {
-  const ClientListScreen({super.key});
+  final VoidCallback? onBecomesVisible; // ✅ Callback cuando se selecciona esta pestaña
+
+  const ClientListScreen({
+    super.key,
+    this.onBecomesVisible,
+  });
 
   @override
   State<ClientListScreen> createState() => _ClientListScreenState();
@@ -28,6 +33,7 @@ class _ClientListScreenState extends State<ClientListScreen> {
   late ClientProvider _clientProvider;
   bool _isLoadingClients = false; // Flag para prevenir llamadas simultáneas
   bool _isLoadingMore = false; // Flag para carga de más clientes
+  bool _hasInitialized = false; // ✅ Rastrear si ya hemos intentado cargar
 
   // ✅ CONFIGURACIÓN DE PAGINACIÓN
   static const int PER_PAGE = 20; // Aumentado de 5 a 20 items por página
@@ -42,10 +48,9 @@ class _ClientListScreenState extends State<ClientListScreen> {
     // Configurar listener para scroll infinito
     _scrollController.addListener(_onScroll);
 
-    // Cargar automáticamente al iniciar la pantalla
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _safeLoadClients();
-    });
+    // ✅ OPTIMIZADO: No cargar clientes en initState
+    // Los clientes se cargarán solo cuando el usuario navegue a esta pestaña
+    // mediante didChangeWidget o cuando se haga pull-to-refresh
   }
 
   @override
@@ -142,6 +147,14 @@ class _ClientListScreenState extends State<ClientListScreen> {
     }
   }
 
+  /// ✅ Método público para cargar clientes cuando se selecciona esta pestaña
+  /// Carga solo si aún no hay clientes cargados
+  void loadClientsIfNeeded() {
+    if (mounted && _clientProvider.clients.isEmpty && !_isLoadingClients) {
+      _safeLoadClients();
+    }
+  }
+
   Future<void> _loadMoreClientes() async {
     if (!mounted) {
       debugPrint('⚠️ _loadMoreClientes: Widget no está montado, cancelando');
@@ -205,6 +218,10 @@ class _ClientListScreenState extends State<ClientListScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // ✅ OPTIMIZADO: NO cargar clientes automáticamente
+    // Los clientes se cargarán SOLO cuando el usuario haga pull-to-refresh
+    // Esto evita hacer requests innecesarias al abrir home_screen
+
     final colorScheme = Theme.of(context).colorScheme;
 
     return Scaffold(

@@ -12,6 +12,7 @@ class CarritoItemCard extends StatefulWidget {
   final Function(int) onUpdateCantidad;
   final DetalleCarritoConRango? detalleConRango;
   final VoidCallback? onAgregarParaAhorrar;
+  final VoidCallback? onProductoTap;
   final bool isPreventista;
 
   const CarritoItemCard({
@@ -23,6 +24,7 @@ class CarritoItemCard extends StatefulWidget {
     required this.onUpdateCantidad,
     this.detalleConRango,
     this.onAgregarParaAhorrar,
+    this.onProductoTap,
     this.isPreventista = false,
   });
 
@@ -118,146 +120,212 @@ class _CarritoItemCardState extends State<CarritoItemCard> {
     final excedido = widget.item.cantidadExcedida;
 
     return Card(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      elevation: excedido > 0 ? 2 : 0,
+      margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      elevation: excedido > 0 ? 2 : 1,
       color: excedido > 0 ? context.carritoErrorBg : null,
       child: Padding(
-        padding: const EdgeInsets.all(12),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // ✅ MEJORADO: Encabezado con imagen, nombre y botón eliminar
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 // Imagen del producto
                 ClipRRect(
-                  borderRadius: BorderRadius.circular(8),
-                  child: _buildImagePlaceholder(),
+                  borderRadius: BorderRadius.circular(10),
+                  child: SizedBox(
+                    width: 70,
+                    height: 70,
+                    child: _buildImagePlaceholder(),
+                  ),
                 ),
                 const SizedBox(width: 12),
 
-                // Información del producto
+                // Nombre y acciones
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Nombre del producto con badge de stock
-                      Row(
-                        children: [
-                          Expanded(
-                            child: Text(
-                              producto.nombre,
-                              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                fontWeight: FontWeight.bold,
-                              ),
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
-                            ),
+                      // Nombre clickeable con icono
+                      InkWell(
+                        onTap: widget.onProductoTap,
+                        borderRadius: BorderRadius.circular(4),
+                        child: Text(
+                          producto.nombre,
+                          style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 15,
                           ),
-                          if (widget.isPreventista)
-                            const SizedBox(width: 8),
-                          if (widget.isPreventista)
-                            _buildStockBadge(context, stockDispInt),
-                        ],
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
                       ),
                       const SizedBox(height: 4),
 
-                      // Código del producto
+                      // Código
                       Text(
                         'Código: ${producto.codigo}',
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        style: Theme.of(context).textTheme.labelSmall?.copyWith(
                           color: context.carritoSecondaryText,
                         ),
-                      ),
-                      const SizedBox(height: 8),
-
-                      // 🔑 NUEVO: Precio con comparativa si cambió de rango
-                      _buildPrecioUnitarioSection(context),
-                      const SizedBox(height: 8),
-
-                      // Controles de cantidad
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          // Botones de cantidad
-                          Container(
-                            decoration: BoxDecoration(
-                              border: Border.all(
-                                color: tieneStockSuficiente
-                                    ? context.carritorBorderColor
-                                    : context.carritoErrorBorder,
-                              ),
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                IconButton(
-                                  onPressed: widget.onDecrement,
-                                  icon: const Icon(Icons.remove, size: 18),
-                                  padding: const EdgeInsets.all(4),
-                                  constraints: const BoxConstraints(
-                                    minWidth: 32,
-                                    minHeight: 32,
-                                  ),
-                                ),
-                                SizedBox(
-                                  width: 60,
-                                  height: 32,
-                                  child: TextFormField(
-                                    controller: _cantidadController,
-                                    textAlign: TextAlign.center,
-                                    keyboardType: TextInputType.number,
-                                    maxLength: 4,
-                                    decoration: InputDecoration(
-                                      counterText: '',
-                                      border: InputBorder.none,
-                                      contentPadding: EdgeInsets.zero,
-                                      hintText: '0',
-                                      hintStyle: TextStyle(
-                                        color: context.carritoQuantityText.withAlpha(100),
-                                      ),
-                                    ),
-                                    style: TextStyle(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.bold,
-                                      color: tieneStockSuficiente
-                                          ? context.carritoQuantityText
-                                          : context.carritoErrorIcon,
-                                    ),
-                                    onFieldSubmitted: (_) => _actualizarCantidadDesdeInput(),
-                                    onTapOutside: (_) => _actualizarCantidadDesdeInput(),
-                                  ),
-                                ),
-                                IconButton(
-                                  onPressed: widget.onIncrement,
-                                  icon: const Icon(Icons.add, size: 18),
-                                  padding: const EdgeInsets.all(4),
-                                  constraints: const BoxConstraints(
-                                    minWidth: 32,
-                                    minHeight: 32,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-
-                          // 🔑 NUEVO: Subtotal con comparativa si cambió de rango
-                          Flexible(
-                            child: _buildSubtotalComparativo(context),
-                          ),
-                        ],
                       ),
                     ],
                   ),
                 ),
 
                 // Botón eliminar
-                IconButton(
-                  onPressed: widget.onRemove,
-                  icon: Icon(Icons.delete_outline, color: context.carritoDeleteIconColor),
-                  tooltip: 'Eliminar',
+                SizedBox(
+                  width: 40,
+                  height: 40,
+                  child: IconButton(
+                    onPressed: widget.onRemove,
+                    icon: Icon(
+                      Icons.delete_outline,
+                      color: context.carritoDeleteIconColor,
+                      size: 18,
+                    ),
+                    style: IconButton.styleFrom(
+                      backgroundColor: context.carritoDeleteIconColor.withAlpha(15),
+                    ),
+                    tooltip: 'Eliminar',
+                  ),
                 ),
+              ],
+            ),
+
+            const SizedBox(height: 12),
+
+            // ✅ MEJORADO: Precio unitario + Stock disponible
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                // Precio unitario
+                Expanded(
+                  child: _buildPrecioUnitarioSection(context),
+                ),
+                const SizedBox(width: 12),
+
+                // Stock disponible
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: tieneStockSuficiente
+                        ? Colors.green.shade50
+                        : Colors.red.shade50,
+                    border: Border.all(
+                      color: tieneStockSuficiente
+                          ? Colors.green.shade300
+                          : Colors.red.shade300,
+                      width: 1,
+                    ),
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        'Disponible',
+                        style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                          color: context.carritoSecondaryText,
+                          fontSize: 11,
+                        ),
+                      ),
+                      Text(
+                        '$stockDispInt',
+                        style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: tieneStockSuficiente
+                              ? Colors.green.shade700
+                              : Colors.red.shade700,
+                          fontSize: 14,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+
+            const SizedBox(height: 12),
+            const Divider(height: 1),
+            const SizedBox(height: 12),
+
+            // ✅ MEJORADO: Controles en fila simplificada
+            Row(
+              children: [
+                // Controles de cantidad - Izquierda
+                Container(
+                  decoration: BoxDecoration(
+                    border: Border.all(
+                      color: tieneStockSuficiente
+                          ? context.carritorBorderColor
+                          : context.carritoErrorBorder,
+                      width: 1.5,
+                    ),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      IconButton(
+                        onPressed: widget.onDecrement,
+                        icon: const Icon(Icons.remove, size: 16),
+                        padding: const EdgeInsets.all(6),
+                        constraints: const BoxConstraints(
+                          minWidth: 32,
+                          minHeight: 32,
+                        ),
+                      ),
+                      SizedBox(
+                        width: 45,
+                        height: 32,
+                        child: TextFormField(
+                          controller: _cantidadController,
+                          textAlign: TextAlign.center,
+                          keyboardType: TextInputType.number,
+                          maxLength: 4,
+                          decoration: InputDecoration(
+                            counterText: '',
+                            border: InputBorder.none,
+                            contentPadding: const EdgeInsets.symmetric(vertical: 6),
+                            hintText: '0',
+                            hintStyle: TextStyle(
+                              color: context.carritoQuantityText.withAlpha(100),
+                              fontSize: 13,
+                            ),
+                          ),
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.bold,
+                            color: tieneStockSuficiente
+                                ? context.carritoQuantityText
+                                : context.carritoErrorIcon,
+                          ),
+                          onFieldSubmitted: (_) => _actualizarCantidadDesdeInput(),
+                          onTapOutside: (_) => _actualizarCantidadDesdeInput(),
+                        ),
+                      ),
+                      IconButton(
+                        onPressed: widget.onIncrement,
+                        icon: const Icon(Icons.add, size: 16),
+                        padding: const EdgeInsets.all(6),
+                        constraints: const BoxConstraints(
+                          minWidth: 32,
+                          minHeight: 32,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+                const Spacer(),
+
+                // Subtotal - Derecha
+                _buildSubtotalComparativo(context),
               ],
             ),
 

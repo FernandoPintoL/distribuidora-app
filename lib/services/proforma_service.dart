@@ -3,6 +3,9 @@ import 'package:flutter/material.dart';
 import '../models/models.dart';
 import 'api_service.dart';
 
+// ✅ NUEVO: Importar TimeOfDay para parámetros de proforma
+// (ya incluido en flutter/material.dart)
+
 /// Servicio para gestionar proformas (cotizaciones)
 ///
 /// Una proforma es una cotización que el cliente solicita
@@ -237,6 +240,183 @@ class ProformaService {
       return ApiResponse<Map<String, dynamic>>(
         success: false,
         message: 'Error inesperado al obtener estado de pago: ${e.toString()}',
+        data: null,
+      );
+    }
+  }
+
+  /// ✅ NUEVO: Crear una nueva proforma con validación de combos
+  ///
+  /// Esta es la versión optimizada de PedidoService.crearPedido() enfocada en proformas.
+  /// El backend valida automáticamente productos COMBO vs SIMPLE con su lógica de capacidad.
+  ///
+  /// Parámetros:
+  /// - clienteId: ID del cliente
+  /// - items: Lista de items con formato {producto_id, cantidad, precio_unitario}
+  /// - tipoEntrega: DELIVERY o PICKUP
+  /// - fechaProgramada: Fecha de entrega solicitada
+  /// - direccionId: ID de dirección (requerido para DELIVERY)
+  /// - horaInicio: Hora inicio preferida (opcional)
+  /// - horaFin: Hora fin preferida (opcional)
+  /// - observaciones: Observaciones (opcional)
+  /// - politicaPago: CONTRA_ENTREGA, ANTICIPADO_100, MEDIO_MEDIO, CREDITO
+  ///
+  /// Retorna:
+  /// - Success: La proforma creada (estado PENDIENTE)
+  /// - Error: Mensajes de validación o error del servidor
+  ///
+  /// Ejemplos de validación:
+  /// - COMBO: Valida capacidad (cuello de botella)
+  /// - SIMPLE: Valida stock_disponible
+  /// - Combos requieren al menos cantidad=1
+  ///
+  /// Cambios en 2026-02-19:
+  /// - Backend ahora distingue entre COMBO (usa ComboStockService) y SIMPLE (usa stock_disponible)
+  /// - Ya no hay errores SQLSTATE[42703] (columna indefinida)
+  /// - Retorna detalles de error incluyendo cuello_de_botella para combos
+  Future<ApiResponse<Pedido>> crearProforma({
+    required int clienteId,
+    required List<Map<String, dynamic>> items,
+    required String tipoEntrega,
+    required DateTime fechaProgramada,
+    int? direccionId,
+    TimeOfDay? horaInicio,
+    TimeOfDay? horaFin,
+    String? observaciones,
+    String politicaPago = 'CONTRA_ENTREGA',
+  }) async {
+    try {
+      // Preparar el cuerpo de la petición
+      final Map<String, dynamic> requestBody = {
+        'cliente_id': clienteId,
+        'productos': items,
+        'tipo_entrega': tipoEntrega,
+        'fecha_programada': fechaProgramada.toIso8601String(),
+        'politica_pago': politicaPago,
+      };
+
+      // Agregar dirección SOLO si es DELIVERY
+      if (tipoEntrega == 'DELIVERY' && direccionId != null) {
+        requestBody['direccion_entrega_solicitada_id'] = direccionId;
+      }
+
+      // Agregar campos opcionales si están presentes
+      if (horaInicio != null) {
+        requestBody['hora_inicio_preferida'] =
+            '${horaInicio.hour.toString().padLeft(2, '0')}:${horaInicio.minute.toString().padLeft(2, '0')}';
+      }
+
+      if (horaFin != null) {
+        requestBody['hora_fin_preferida'] =
+            '${horaFin.hour.toString().padLeft(2, '0')}:${horaFin.minute.toString().padLeft(2, '0')}';
+      }
+
+      if (observaciones != null && observaciones.isNotEmpty) {
+        requestBody['observaciones'] = observaciones;
+      }
+
+      debugPrint('📋 Creando PROFORMA con ${items.length} productos');
+      debugPrint('   Cliente: $clienteId');
+      debugPrint('   Tipo entrega: $tipoEntrega');
+      debugPrint('   Política pago: $politicaPago');
+      if (tipoEntrega == 'DELIVERY' && direccionId != null) {
+        debugPrint('   Dirección: $direccionId');
+      }
+
+      final response = await _apiService.post(
+        '/proformas',
+        data: requestBody,
+      );
+
+      // Backend wraps proforma data inside data.proforma
+      final Map<String, dynamic> responseData = response.data as Map<String, dynamic>;
+
+      if (responseData['success'] == true && responseData['data'] != null) {
+        final proformaData = responseData['data'] is Map<String, dynamic> &&
+                (responseData['data'] as Map<String, dynamic>).containsKey('proforma')
+            ? (responseData['data'] as Map<String, dynamic>)['proforma']
+            : responseData['data'];
+
+        final proforma = Pedido.fromJson(proformaData as Map<String, dynamic>);
+
+        debugPrint('✅ PROFORMA creada: ${proforma.numero} - Estado: ${proforma.estadoCodigo}');
+        return ApiResponse<Pedido>(
+          success: true,
+          message: 'Proforma creada exitosamente',
+          data: proforma,
+        );
+      } else {
+        // 🔴 Manejo mejorado de errores de stock insuficiente
+        String errorMessage = responseData['message'] as String? ?? 'Error al crear proforma';
+
+        if (responseData['tipo_error'] == 'STOCK_INSUFICIENTE') {
+          final detallesError = responseData['detalles_error'] as Map<String, dynamic>?;
+          if (detallesError != null) {
+            final producto = detallesError['producto'] as Map<String, dynamic>?;
+            final stockInfo = detallesError['stock_info'] as Map<String, dynamic>?;
+
+            if (producto != null && stockInfo != null) {
+              final nombreProducto = producto['nombre'] ?? 'Producto';
+              final disponible = stockInfo['disponible'] ?? 0;
+              final solicitado = stockInfo['solicitado'] ?? 0;
+
+              errorMessage = '❌ Stock insuficiente para "$nombreProducto"\n'
+                  'Disponible: $disponible unidades\n'
+                  'Solicitado: $solicitado unidades\n\n'
+                  '${responseData['sugerencia'] ?? 'Por favor, ajusta las cantidades.'}';
+
+              debugPrint('⚠️  Error de stock: $errorMessage');
+            }
+          }
+        }
+
+        return ApiResponse<Pedido>(
+          success: false,
+          message: errorMessage,
+          data: null,
+        );
+      }
+    } on DioException catch (e) {
+      // 🔴 Manejo mejorado de errores de stock durante la reserva
+      String errorMessage = _getErrorMessage(e);
+
+      if (e.response?.statusCode == 422 && e.response?.data is Map<String, dynamic>) {
+        final responseData = e.response!.data as Map<String, dynamic>;
+
+        // Si es error de stock insuficiente
+        if (responseData['tipo_error'] == 'STOCK_INSUFICIENTE') {
+          final detallesError = responseData['detalles_error'] as Map<String, dynamic>?;
+          if (detallesError != null) {
+            final producto = detallesError['producto'] as Map<String, dynamic>?;
+            final stockInfo = detallesError['stock_info'] as Map<String, dynamic>?;
+
+            if (producto != null && stockInfo != null) {
+              final nombreProducto = producto['nombre'] ?? 'Producto';
+              final disponible = stockInfo['disponible'] ?? 0;
+              final solicitado = stockInfo['solicitado'] ?? 0;
+
+              errorMessage = '❌ Stock insuficiente para "$nombreProducto"\n'
+                  'Disponible: $disponible unidades\n'
+                  'Solicitado: $solicitado unidades\n\n'
+                  '${responseData['sugerencia'] ?? 'Por favor, ajusta las cantidades.'}';
+
+              debugPrint('⚠️  Error de stock: $errorMessage');
+            }
+          }
+        }
+      }
+
+      debugPrint('❌ Error creando proforma: $errorMessage');
+      return ApiResponse<Pedido>(
+        success: false,
+        message: errorMessage,
+        data: null,
+      );
+    } catch (e) {
+      debugPrint('❌ Error inesperado al crear proforma: $e');
+      return ApiResponse<Pedido>(
+        success: false,
+        message: 'Error inesperado al crear proforma: ${e.toString()}',
         data: null,
       );
     }

@@ -94,6 +94,10 @@ class Pedido {
   // Campos de proforma (nuevo backend)
   final int? estadoProformaId;
 
+  // ✅ NUEVO: Información de la venta cuando se convierte
+  final int? ventaId;
+  final String? ventaNumero;
+
   Pedido({
     required this.id,
     required this.numero,
@@ -132,6 +136,8 @@ class Pedido {
     this.estadoProformaId,
     this.fechaVencimiento,
     this.fechaEntregaSolicitada,
+    this.ventaId,
+    this.ventaNumero,
   });
 
   factory Pedido.fromJson(Map<String, dynamic> json) {
@@ -258,6 +264,9 @@ class Pedido {
         fechaEntregaSolicitada: json['fecha_entrega_solicitada'] != null
             ? DateTime.parse(json['fecha_entrega_solicitada'] as String)
             : null,
+        // ✅ NUEVO: Información de venta cuando se convierte
+        ventaId: json['venta_id'] as int?,
+        ventaNumero: json['venta_numero'] as String? ?? json['venta']?['numero'] as String?,
       );
     } catch (e) {
       debugPrint('❌ Error parsing Pedido: $e');
@@ -323,6 +332,9 @@ class Pedido {
       // ✅ NUEVO: Incluir fechas de vencimiento y entrega solicitada
       'fecha_vencimiento': fechaVencimiento?.toIso8601String(),
       'fecha_entrega_solicitada': fechaEntregaSolicitada?.toIso8601String(),
+      // ✅ NUEVO: Incluir información de venta
+      'venta_id': ventaId,
+      'venta_numero': ventaNumero,
     };
   }
 
@@ -364,6 +376,8 @@ class Pedido {
     int? estadoProformaId,
     DateTime? fechaVencimiento,
     DateTime? fechaEntregaSolicitada,
+    int? ventaId,
+    String? ventaNumero,
   }) {
     return Pedido(
       id: id ?? this.id,
@@ -403,6 +417,8 @@ class Pedido {
       estadoProformaId: estadoProformaId ?? this.estadoProformaId,
       fechaVencimiento: fechaVencimiento ?? this.fechaVencimiento,
       fechaEntregaSolicitada: fechaEntregaSolicitada ?? this.fechaEntregaSolicitada,
+      ventaId: ventaId ?? this.ventaId,
+      ventaNumero: ventaNumero ?? this.ventaNumero,
     );
   }
 
@@ -445,7 +461,8 @@ class Pedido {
   // ✅ NUEVOS HELPERS PARA TIMELINE UNIFICADO
   /// Obtener si este pedido ya se convirtió de proforma a venta
   bool get esVenta {
-    return estadoCategoria.contains('venta');
+    // Verificar si existe relación venta (por ventaId o ventaNumero)
+    return ventaId != null && ventaId! > 0;
   }
 
   /// Obtener el estado de pago si es venta (historial)

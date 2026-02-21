@@ -389,6 +389,27 @@ class _EntregaDetalleScreenState extends State<EntregaDetalleScreen> {
     return ListView(
         padding: const EdgeInsets.all(16),
         children: [
+          // Botones de acción - Widget extraído
+          BotonesAccion(
+            key: ValueKey('botones_${entrega.id}_${entrega.estado}'),
+            entrega: entrega,
+            provider: provider,
+            onIniciarEntrega: (ctx, ent, prov) =>
+                IniciarEntregaDialog.show(ctx, ent, prov),
+            onMarcarLlegada: (ctx, ent, prov) =>
+                MarcarLlegadaDialog.show(ctx, ent, prov),
+            onMarcarEntregada: (ctx, ent, prov) =>
+                MarcarEntregadaDialog.show(ctx, ent, prov),
+            onReportarNovedad: (ctx, ent, prov) =>
+                ReportarNovedadDialog.show(ctx, ent, prov),
+            onConfirmarCargaLista: (ctx, ent, prov, {onReload}) =>
+                ConfirmarCargaListaDialog.show(ctx, ent, prov, onReload: onReload),
+            onEntregasTerminadas: (ctx, ent, prov) =>
+                EntregasTerminadasDialog.show(ctx, ent, prov),
+            onReintentarGps: () => _reintentarGpsTracking(provider, entrega),
+            onReload: () => _cargarDetalle(provider),
+          ),
+          const SizedBox(height: 16),
           // ✅ CRÍTICO: Keys únicos para forzar reconstrucción cuando los datos cambien
           // Estado - Widget extraído
           EstadoCard(
@@ -459,26 +480,7 @@ class _EntregaDetalleScreenState extends State<EntregaDetalleScreen> {
             HistorialEstadosCard(estados: provider.historialEstados),
             const SizedBox(height: 16),
           ], */
-          // Botones de acción - Widget extraído
-          BotonesAccion(
-            key: ValueKey('botones_${entrega.id}_${entrega.estado}'),
-            entrega: entrega,
-            provider: provider,
-            onIniciarEntrega: (ctx, ent, prov) =>
-                IniciarEntregaDialog.show(ctx, ent, prov),
-            onMarcarLlegada: (ctx, ent, prov) =>
-                MarcarLlegadaDialog.show(ctx, ent, prov),
-            onMarcarEntregada: (ctx, ent, prov) =>
-                MarcarEntregadaDialog.show(ctx, ent, prov),
-            onReportarNovedad: (ctx, ent, prov) =>
-                ReportarNovedadDialog.show(ctx, ent, prov),
-            onConfirmarCargaLista: (ctx, ent, prov, {onReload}) =>
-                ConfirmarCargaListaDialog.show(ctx, ent, prov, onReload: onReload),
-            onEntregasTerminadas: (ctx, ent, prov) =>
-                EntregasTerminadasDialog.show(ctx, ent, prov),
-            onReintentarGps: () => _reintentarGpsTracking(provider, entrega),
-            onReload: () => _cargarDetalle(provider),
-          ),
+          
           const SizedBox(height: 42),
         ],
       );

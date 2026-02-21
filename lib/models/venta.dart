@@ -35,6 +35,11 @@ class Venta {
   final String? politicaPago; // Política de pago
   final TipoPago? tipoPago; // Tipo de pago relacionado
 
+  // ✅ NUEVO (2026-02-17): Información de entrega
+  final int? entregaId; // ID de la entrega asignada a esta venta
+  final String? numeroEntrega; // Número de entrega (ej: ENT-20260217-001)
+  final String? estadoEntrega; // Estado de la entrega (ASIGNADA, EN_CAMINO, ENTREGADO, etc)
+
   Venta({
     required this.id,
     required this.numero,
@@ -63,6 +68,9 @@ class Venta {
     this.canalOrigen,
     this.politicaPago,
     this.tipoPago,
+    this.entregaId,
+    this.numeroEntrega,
+    this.estadoEntrega,
   });
 
   factory Venta.fromJson(Map<String, dynamic> json) {
@@ -195,6 +203,9 @@ class Venta {
       canalOrigen: json['canal_origen'] as String?,
       politicaPago: json['politica_pago'] as String?,
       tipoPago: tipoPago,
+      entregaId: json['entrega_id'] as int?,
+      numeroEntrega: json['numero_entrega'] as String?,
+      estadoEntrega: json['estado_entrega'] as String?,
     );
   }
 
@@ -273,6 +284,7 @@ class VentaDetalle {
   final double descuento;
   final double subtotal;
   final Producto? producto;
+  final String? nombreProducto; // ✅ NUEVO 2026-02-21: Nombre del producto desde backend
 
   VentaDetalle({
     required this.id,
@@ -283,6 +295,7 @@ class VentaDetalle {
     required this.descuento,
     required this.subtotal,
     this.producto,
+    this.nombreProducto,
   });
 
   factory VentaDetalle.fromJson(Map<String, dynamic> json) {
@@ -314,6 +327,7 @@ class VentaDetalle {
       descuento: _parseDouble(json['descuento']),
       subtotal: _parseDouble(json['subtotal']),
       producto: productoObj,
+      nombreProducto: json['producto_nombre'] as String?, // ✅ NUEVO 2026-02-21
     );
   }
 

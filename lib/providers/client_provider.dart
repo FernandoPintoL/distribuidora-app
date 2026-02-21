@@ -16,6 +16,13 @@ class ClientProvider with ChangeNotifier {
   int _totalItems = 0;
   bool _hasMorePages = true;
 
+  // ✅ NUEVO: Dashboard stats (para evitar cargar todos los clientes)
+  int? _dashboardTotalClientes;
+  int? _dashboardClientesActivos;
+  int? _dashboardClientesInactivos;
+  int? _dashboardTotalPedidosPendientes;
+  int? _dashboardTotalPedidosConfirmados;
+
   // Getters
   List<Client> get clients => _clients;
   Client? get clientePerfil => _clientePerfil; // ✅ NUEVO: Getter para acceder al perfil del cliente
@@ -25,6 +32,13 @@ class ClientProvider with ChangeNotifier {
   int get totalPages => _totalPages;
   int get totalItems => _totalItems;
   bool get hasMorePages => _hasMorePages;
+
+  // ✅ NUEVO: Dashboard stats getters
+  int? get dashboardTotalClientes => _dashboardTotalClientes;
+  int? get dashboardClientesActivos => _dashboardClientesActivos;
+  int? get dashboardClientesInactivos => _dashboardClientesInactivos;
+  int? get dashboardTotalPedidosPendientes => _dashboardTotalPedidosPendientes;
+  int? get dashboardTotalPedidosConfirmados => _dashboardTotalPedidosConfirmados;
 
   // Helper method for safe _safeNotifyListeners
   void _safeNotifyListeners() {
@@ -111,6 +125,49 @@ class ClientProvider with ChangeNotifier {
       active: active,
       append: true,
     );
+  }
+
+  /// ✅ NUEVO: Cargar solo estadísticas ligeras del dashboard
+  /// Esto reemplaza cargar 100+ clientes completos solo para mostrar conteos
+  Future<bool> loadDashboardStats() async {
+    _isLoading = true;
+    _errorMessage = null;
+
+    try {
+      debugPrint('📊 [ClientProvider] Iniciando carga de dashboard stats...');
+      final response = await _clientService.getDashboardStats();
+
+      debugPrint('📊 [ClientProvider] Respuesta: success=${response.success}, data=${ response.data}');
+
+      if (response.success && response.data != null) {
+        // Extraer valores con casteo seguro
+        _dashboardTotalClientes = (response.data!['total_clientes'] ?? 0) as int;
+        _dashboardClientesActivos = (response.data!['clientes_activos'] ?? 0) as int;
+        _dashboardClientesInactivos = (response.data!['clientes_inactivos'] ?? 0) as int;
+        _dashboardTotalPedidosPendientes = (response.data!['total_pedidos_pendientes'] ?? 0) as int;
+        _dashboardTotalPedidosConfirmados = (response.data!['total_pedidos_confirmados'] ?? 0) as int;
+
+        _errorMessage = null;
+        debugPrint('✅ [ClientProvider] Dashboard stats cargados correctamente:');
+        debugPrint('   - Total clientes: $_dashboardTotalClientes');
+        debugPrint('   - Clientes activos: $_dashboardClientesActivos');
+        debugPrint('   - Clientes inactivos: $_dashboardClientesInactivos');
+        debugPrint('   - Pedidos pendientes: $_dashboardTotalPedidosPendientes');
+        debugPrint('   - Pedidos confirmados: $_dashboardTotalPedidosConfirmados');
+        return true;
+      } else {
+        _errorMessage = response.message;
+        debugPrint('❌ [ClientProvider] Error: ${response.message}');
+        return false;
+      }
+    } catch (e) {
+      _errorMessage = 'Error al cargar estadísticas del dashboard: $e';
+      debugPrint('❌ [ClientProvider] Excepción cargando dashboard stats: $e');
+      return false;
+    } finally {
+      _isLoading = false;
+      _safeNotifyListeners();
+    }
   }
 
   Future<List<Client>> searchClients(String query, {int limit = 10}) async {

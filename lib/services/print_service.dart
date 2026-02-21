@@ -426,6 +426,57 @@ class PrintService {
       format: format,
     );
   }
+
+  /// ✅ NUEVO: Abrir PDF desde bytes (para descargas de API)
+  ///
+  /// Parámetros:
+  /// - pdfBytes: Bytes del PDF a abrir
+  /// - nombreArchivo: Nombre del archivo a guardar
+  ///
+  /// Retorna:
+  /// - true si se abrió exitosamente
+  /// - false si hubo error
+  Future<bool> abrirPdfDesdeBytes({
+    required List<int> pdfBytes,
+    required String nombreArchivo,
+  }) async {
+    try {
+      // Obtener directorio cache
+      final cacheDir = await getTemporaryDirectory();
+      final filePath = '${cacheDir.path}/$nombreArchivo';
+
+      // Guardar archivo
+      final file = File(filePath);
+      await file.writeAsBytes(pdfBytes);
+
+      debugPrint('✅ PDF guardado correctamente');
+      debugPrint('📁 Ubicación: $filePath');
+
+      // Intentar abrir el PDF usando MethodChannel (con FileProvider)
+      try {
+        final bool opened = await platform.invokeMethod(
+          'openFile',
+          {'path': filePath},
+        );
+
+        if (opened) {
+          debugPrint('✅ PDF abierto automáticamente');
+          return true;
+        } else {
+          debugPrint('⚠️ No hay app para abrir PDFs, pero el archivo se descargó correctamente');
+          debugPrint('📁 El archivo está guardado en: $filePath');
+          return true; // Consideramos éxito si el archivo se guardó
+        }
+      } catch (e) {
+        debugPrint('⚠️ Error abriendo PDF: $e');
+        debugPrint('📁 El archivo está guardado en: $filePath');
+        return true; // Consideramos éxito si el archivo se guardó
+      }
+    } catch (e) {
+      debugPrint('❌ Error procesando PDF: $e');
+      return false;
+    }
+  }
 }
 
 /// Extensión para ApiService para obtener baseUrl

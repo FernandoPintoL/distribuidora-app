@@ -13,7 +13,9 @@ class EntregasAsignadasScreen extends StatefulWidget {
 
 class _EntregasAsignadasScreenState extends State<EntregasAsignadasScreen> {
   String? _filtroEstado;
-  DateTime? _fechaFiltro = DateTime.now();
+  // ✅ CAMBIO: Rango de fechas de CREACIÓN (created_at)
+  DateTime? _fechaDesde = DateTime.now();  // Por defecto: hoy
+  DateTime? _fechaHasta = DateTime.now();  // Por defecto: hoy
   String? _searchQuery;  // ✅ NUEVO: búsqueda
   String _searchInput = '';  // ✅ NUEVO: input temporal de búsqueda (antes de confirmar)
   int? _localidadFiltro;  // ✅ NUEVO: localidad
@@ -40,8 +42,11 @@ class _EntregasAsignadasScreenState extends State<EntregasAsignadasScreen> {
   void _cargarEntregas() {
     _futureEntregas = context.read<EntregaProvider>().obtenerEntregasAsignadas(
           estado: _filtroEstado,
-          fechaDesde: _fechaFiltro != null
-              ? _fechaFiltro!.toIso8601String().split('T')[0]
+          createdDesde: _fechaDesde != null
+              ? _fechaDesde!.toIso8601String().split('T')[0]
+              : null,
+          createdHasta: _fechaHasta != null
+              ? _fechaHasta!.toIso8601String().split('T')[0]
               : null,
           search: _searchQuery,
           localidadId: _localidadFiltro,
@@ -116,23 +121,42 @@ class _EntregasAsignadasScreenState extends State<EntregasAsignadasScreen> {
     super.dispose();
   }
 
-  Future<void> _onCambiarFecha() async {
+  // ✅ NUEVO: Cambiar fecha DESDE del rango
+  Future<void> _onCambiarFechaDesde() async {
     final fecha = await showDatePicker(
       context: context,
-      initialDate: _fechaFiltro ?? DateTime.now(),
+      initialDate: _fechaDesde ?? DateTime.now(),
       firstDate: DateTime(2020),
-      lastDate: DateTime.now().add(const Duration(days: 365)),
+      lastDate: _fechaHasta ?? DateTime.now().add(const Duration(days: 365)),
     );
 
     if (fecha != null) {
-      setState(() => _fechaFiltro = fecha);
+      setState(() => _fechaDesde = fecha);
       _cargarEntregas();  // ✅ NUEVO: Recargar entregas después de cambiar fecha
     }
   }
 
-  void _limpiarFecha() {
-    setState(() => _fechaFiltro = null);
-    _cargarEntregas();  // ✅ NUEVO: Recargar entregas después de limpiar fecha
+  // ✅ NUEVO: Cambiar fecha HASTA del rango
+  Future<void> _onCambiarFechaHasta() async {
+    final fecha = await showDatePicker(
+      context: context,
+      initialDate: _fechaHasta ?? DateTime.now(),
+      firstDate: _fechaDesde ?? DateTime(2020),
+      lastDate: DateTime.now().add(const Duration(days: 365)),
+    );
+
+    if (fecha != null) {
+      setState(() => _fechaHasta = fecha);
+      _cargarEntregas();  // ✅ NUEVO: Recargar entregas después de cambiar fecha
+    }
+  }
+
+  void _limpiarFechas() {
+    setState(() {
+      _fechaDesde = DateTime.now();
+      _fechaHasta = DateTime.now();
+    });
+    _cargarEntregas();  // ✅ NUEVO: Recargar entregas después de limpiar fechas
   }
 
   @override
@@ -301,7 +325,7 @@ class _EntregasAsignadasScreenState extends State<EntregasAsignadasScreen> {
                                       if (_searchQuery != null ||
                                           _localidadFiltro != null ||
                                           _filtroEstado != null ||
-                                          _fechaFiltro != null)
+                                          (_fechaDesde != DateTime.now() || _fechaHasta != DateTime.now()))
                                         Padding(
                                           padding: const EdgeInsets.only(left: 8),
                                           child: Container(
@@ -315,7 +339,7 @@ class _EntregasAsignadasScreenState extends State<EntregasAsignadasScreen> {
                                                   BorderRadius.circular(12),
                                             ),
                                             child: Text(
-                                              '${(_searchQuery != null ? 1 : 0) + (_localidadFiltro != null ? 1 : 0) + (_filtroEstado != null ? 1 : 0) + (_fechaFiltro != null ? 1 : 0)}',
+                                              '${(_searchQuery != null ? 1 : 0) + (_localidadFiltro != null ? 1 : 0) + (_filtroEstado != null ? 1 : 0) + (_fechaDesde != DateTime.now() || _fechaHasta != DateTime.now() ? 1 : 0)}',
                                               style: const TextStyle(
                                                 color: Colors.white,
                                                 fontSize: 12,
@@ -404,54 +428,108 @@ class _EntregasAsignadasScreenState extends State<EntregasAsignadasScreen> {
                                       ),
                                     ],
                                   ),
-                                  // Selector de fecha
-                                  InkWell(
-                                    onTap: _onCambiarFecha,
-                                    child: Container(
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 12,
-                                        vertical: 12,
-                                      ),
-                                      decoration: BoxDecoration(
-                                        border: Border.all(
-                                          color: isDarkMode
-                                              ? Colors.grey[700]!
-                                              : Colors.grey[300]!,
-                                        ),
-                                        borderRadius:
-                                            BorderRadius.circular(4),
-                                      ),
-                                      child: Row(
-                                        mainAxisAlignment:
-                                            MainAxisAlignment
-                                                .spaceBetween,
-                                        children: [
-                                          Text(
-                                            _fechaFiltro != null
-                                                ? '📅 ${_fechaFiltro!.day}/${_fechaFiltro!.month}/${_fechaFiltro!.year}'
-                                                : '📅 Todas las fechas',
-                                            style: const TextStyle(
-                                                fontSize: 16),
-                                          ),
-                                          if (_fechaFiltro != null)
-                                            GestureDetector(
-                                              onTap: _limpiarFecha,
-                                              child: Icon(
-                                                Icons.close,
-                                                size: 20,
-                                                color: Colors.red[400],
-                                              ),
-                                            )
-                                          else
-                                            Icon(
-                                              Icons.calendar_today,
-                                              size: 20,
-                                              color: Theme.of(context)
-                                                  .primaryColor,
+                                  // ✅ NUEVO: Selectores de rango de fechas (Desde y Hasta)
+                                  Row(
+                                    spacing: 8,
+                                    children: [
+                                      // Fecha DESDE
+                                      Expanded(
+                                        child: InkWell(
+                                          onTap: _onCambiarFechaDesde,
+                                          child: Container(
+                                            padding: const EdgeInsets.symmetric(
+                                              horizontal: 12,
+                                              vertical: 12,
                                             ),
-                                        ],
+                                            decoration: BoxDecoration(
+                                              border: Border.all(
+                                                color: isDarkMode
+                                                    ? Colors.grey[700]!
+                                                    : Colors.grey[300]!,
+                                              ),
+                                              borderRadius:
+                                                  BorderRadius.circular(4),
+                                            ),
+                                            child: Column(
+                                              crossAxisAlignment:
+                                                  CrossAxisAlignment.start,
+                                              children: [
+                                                Text(
+                                                  'Desde',
+                                                  style: TextStyle(
+                                                    fontSize: 12,
+                                                    color: isDarkMode
+                                                        ? Colors.grey[400]
+                                                        : Colors.grey[600],
+                                                  ),
+                                                ),
+                                                const SizedBox(height: 4),
+                                                Text(
+                                                  '📅 ${_fechaDesde!.day}/${_fechaDesde!.month}/${_fechaDesde!.year}',
+                                                  style: const TextStyle(
+                                                      fontSize: 14,
+                                                      fontWeight:
+                                                          FontWeight.w600),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                        ),
                                       ),
-                                    ),
+                                      // Fecha HASTA
+                                      Expanded(
+                                        child: InkWell(
+                                          onTap: _onCambiarFechaHasta,
+                                          child: Container(
+                                            padding: const EdgeInsets.symmetric(
+                                              horizontal: 12,
+                                              vertical: 12,
+                                            ),
+                                            decoration: BoxDecoration(
+                                              border: Border.all(
+                                                color: isDarkMode
+                                                    ? Colors.grey[700]!
+                                                    : Colors.grey[300]!,
+                                              ),
+                                              borderRadius:
+                                                  BorderRadius.circular(4),
+                                            ),
+                                            child: Column(
+                                              crossAxisAlignment:
+                                                  CrossAxisAlignment.start,
+                                              children: [
+                                                Text(
+                                                  'Hasta',
+                                                  style: TextStyle(
+                                                    fontSize: 12,
+                                                    color: isDarkMode
+                                                        ? Colors.grey[400]
+                                                        : Colors.grey[600],
+                                                  ),
+                                                ),
+                                                const SizedBox(height: 4),
+                                                Text(
+                                                  '📅 ${_fechaHasta!.day}/${_fechaHasta!.month}/${_fechaHasta!.year}',
+                                                  style: const TextStyle(
+                                                      fontSize: 14,
+                                                      fontWeight:
+                                                          FontWeight.w600),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                      // Botón limpiar fechas
+                                      GestureDetector(
+                                        onTap: _limpiarFechas,
+                                        child: Icon(
+                                          Icons.close,
+                                          size: 24,
+                                          color: Colors.red[400],
+                                        ),
+                                      ),
+                                    ],
                                   ),
                                   // ✅ NUEVO: Dropdown de localidad (dinámico)
                                   Consumer<EntregaProvider>(
@@ -519,7 +597,7 @@ class _EntregasAsignadasScreenState extends State<EntregasAsignadasScreen> {
                                   if (_searchQuery != null ||
                                       _localidadFiltro != null ||
                                       _filtroEstado != null ||
-                                      _fechaFiltro != null)
+                                      (_fechaDesde != DateTime.now() || _fechaHasta != DateTime.now()))
                                     ElevatedButton.icon(
                                       onPressed: () {
                                         setState(() {
@@ -528,7 +606,8 @@ class _EntregasAsignadasScreenState extends State<EntregasAsignadasScreen> {
                                           _searchController.clear();
                                           _localidadFiltro = null;
                                           _filtroEstado = null;
-                                          _fechaFiltro = DateTime.now();
+                                          _fechaDesde = DateTime.now();
+                                          _fechaHasta = DateTime.now();
                                         });
                                         _cargarEntregas();  // ✅ NUEVO: Recargar entregas después de limpiar
                                       },

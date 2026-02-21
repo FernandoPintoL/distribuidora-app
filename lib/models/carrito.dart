@@ -121,6 +121,8 @@ class Carrito {
       'producto_id': item.producto.id,
       'cantidad': item.cantidad,
       'precio_unitario': item.precioUnitario,
+      if (item.comboItemsSeleccionados != null)
+        'combo_items_seleccionados': item.comboItemsSeleccionados,
     }).toList();
   }
 }

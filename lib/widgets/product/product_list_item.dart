@@ -27,6 +27,8 @@ class _ProductListItemState extends State<ProductListItem>
   late Animation<double> _scaleAnimation;
   late AnimationController _bounceController;
   late Animation<double> _bounceAnimation;
+  late TextEditingController _cantidadController;
+  late FocusNode _cantidadFocusNode;
 
   @override
   void initState() {
@@ -53,12 +55,18 @@ class _ProductListItemState extends State<ProductListItem>
         ]).animate(
           CurvedAnimation(parent: _bounceController, curve: Curves.elasticOut),
         );
+
+    // ✅ NUEVO: Controller para entrada de cantidad
+    _cantidadController = TextEditingController(text: '1');
+    _cantidadFocusNode = FocusNode();
   }
 
   @override
   void dispose() {
     _scaleController.dispose();
     _bounceController.dispose();
+    _cantidadController.dispose();
+    _cantidadFocusNode.dispose();
     super.dispose();
   }
 
@@ -67,6 +75,22 @@ class _ProductListItemState extends State<ProductListItem>
       return (widget.product.stockPrincipal!.cantidad as num).toInt();
     }
     return 0;
+  }
+
+  // ✅ NUEVO: Construir combo items (solo items obligatorios al agregar desde lista)
+  List<Map<String, dynamic>>? _construirComboItemsObligatorios() {
+    if (!widget.product.esCombo) return null;
+
+    final items = widget.product.comboItems ?? [];
+    final itemsObligatorios = items.where((i) => i.esObligatorio).toList();
+
+    if (itemsObligatorios.isEmpty) return null;
+
+    return itemsObligatorios.map((i) => {
+      'combo_item_id': i.id,
+      'producto_id': i.productoId,
+      'cantidad': i.cantidad,
+    }).toList();
   }
 
   void _incrementQuantity() {
@@ -78,8 +102,11 @@ class _ProductListItemState extends State<ProductListItem>
       // Trigger bounce animation
       _bounceController.forward(from: 0.0);
 
-      // Agregar al carrito (esto dispara notifyListeners en el provider)
-      carritoProvider.agregarProducto(widget.product);
+      // ✅ ACTUALIZADO: Agregar combo con items obligatorios precargados
+      carritoProvider.agregarProducto(
+        widget.product,
+        comboItemsSeleccionados: _construirComboItemsObligatorios(),
+      );
     }
   }
 
@@ -91,6 +118,37 @@ class _ProductListItemState extends State<ProductListItem>
       // Decrementar del carrito (esto dispara notifyListeners en el provider)
       carritoProvider.decrementarCantidad(widget.product.id);
     }
+  }
+
+  // ✅ NUEVO: Método para actualizar cantidad desde TextField - Actualiza directamente al carrito
+  void _actualizarCantidadDesdeInput(String valor) {
+    final carritoProvider = context.read<CarritoProvider>();
+    final stock = _getMainWarehouseStock();
+
+    if (valor.isEmpty) {
+      // Si está vacío, eliminar del carrito
+      carritoProvider.eliminarProducto(widget.product.id);
+      return;
+    }
+
+    final cantidadIngresada = int.tryParse(valor) ?? 0;
+
+    // Validar que no exceda el stock
+    if (cantidadIngresada <= 0) {
+      // Si es 0 o negativo, eliminar del carrito
+      carritoProvider.eliminarProducto(widget.product.id);
+      return;
+    }
+
+    if (cantidadIngresada > stock) {
+      // Si excede stock, ajustar al máximo disponible y actualizar UI
+      _cantidadController.text = stock.toString();
+      carritoProvider.actualizarCantidad(widget.product.id, stock);
+      return;
+    }
+
+    // ✅ NUEVO: Actualizar cantidad directamente
+    carritoProvider.actualizarCantidad(widget.product.id, cantidadIngresada);
   }
 
   @override
@@ -111,6 +169,12 @@ class _ProductListItemState extends State<ProductListItem>
 
         // ✅ NUEVO: Obtener cantidad actual del carrito (sincronizada globalmente)
         final _quantity = carritoProvider.obtenerCantidadProducto(widget.product.id);
+
+        // ✅ NUEVO: Sincronizar el controller con la cantidad del provider
+        // (solo si el usuario no está escribiendo actualmente)
+        if (!_cantidadFocusNode.hasFocus) {
+          _cantidadController.text = _quantity.toString();
+        }
 
         // Verificar si el usuario es preventista
         bool isPreventista = false;
@@ -257,34 +321,39 @@ class _ProductListItemState extends State<ProductListItem>
                                 ),
                               ),
                               SizedBox(
-                                width: 32,
-                                child: Center(
-                                  child: AnimatedSwitcher(
-                                    duration: const Duration(milliseconds: 200),
-                                    transitionBuilder: (child, animation) {
-                                      return ScaleTransition(
-                                        scale:
-                                            Tween<double>(
-                                              begin: 0.8,
-                                              end: 1.0,
-                                            ).animate(
-                                              CurvedAnimation(
-                                                parent: animation,
-                                                curve: Curves.elasticOut,
-                                              ),
-                                            ),
-                                        child: child,
-                                      );
-                                    },
-                                    child: Text(
-                                      '$_quantity',
-                                      key: ValueKey(_quantity),
-                                      style: context.textTheme.labelMedium
-                                          ?.copyWith(
-                                            fontWeight: FontWeight.bold,
-                                            fontSize: 15,
-                                            color: brownColor,
-                                          ),
+                                width: 40,
+                                height: 32,
+                                child: Container(
+                                  margin: const EdgeInsets.symmetric(
+                                      horizontal: 2),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white.withAlpha(200),
+                                    borderRadius: BorderRadius.circular(6),
+                                  ),
+                                  child: TextField(
+                                    controller: _cantidadController,
+                                    focusNode: _cantidadFocusNode,
+                                    textAlign: TextAlign.center,
+                                    keyboardType: TextInputType.number,
+                                    onChanged: _actualizarCantidadDesdeInput,
+                                    style: context.textTheme.labelMedium
+                                        ?.copyWith(
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 12,
+                                          color: brownColor,
+                                        ),
+                                    decoration: InputDecoration(
+                                      contentPadding:
+                                          const EdgeInsets.symmetric(
+                                        horizontal: 4,
+                                        vertical: 4,
+                                      ),
+                                      border: InputBorder.none,
+                                      hintText: '1',
+                                      hintStyle: TextStyle(
+                                        color: brownColor.withAlpha(50),
+                                        fontSize: 12,
+                                      ),
                                     ),
                                   ),
                                 ),

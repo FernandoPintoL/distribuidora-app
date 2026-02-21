@@ -69,6 +69,22 @@ class _ProductGridItemState extends State<ProductGridItem>
     return 0;
   }
 
+  // ✅ NUEVO: Construir combo items (solo items obligatorios al agregar desde lista)
+  List<Map<String, dynamic>>? _construirComboItemsObligatorios() {
+    if (!widget.product.esCombo) return null;
+
+    final items = widget.product.comboItems ?? [];
+    final itemsObligatorios = items.where((i) => i.esObligatorio).toList();
+
+    if (itemsObligatorios.isEmpty) return null;
+
+    return itemsObligatorios.map((i) => {
+      'combo_item_id': i.id,
+      'producto_id': i.productoId,
+      'cantidad': i.cantidad,
+    }).toList();
+  }
+
   void _incrementQuantity() {
     final stock = _getMainWarehouseStock();
     final carritoProvider = context.read<CarritoProvider>();
@@ -78,8 +94,11 @@ class _ProductGridItemState extends State<ProductGridItem>
       // Trigger bounce animation
       _bounceController.forward(from: 0.0);
 
-      // Actualizar el provider (esto dispara notifyListeners)
-      carritoProvider.agregarProducto(widget.product);
+      // ✅ ACTUALIZADO: Agregar combo con items obligatorios precargados
+      carritoProvider.agregarProducto(
+        widget.product,
+        comboItemsSeleccionados: _construirComboItemsObligatorios(),
+      );
     }
   }
 
@@ -161,9 +180,45 @@ class _ProductGridItemState extends State<ProductGridItem>
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
             children: [
-              // Badges superior (Categoría) - Color marrón fijo
+              // Badges superior (Categoría + Combo) - Color marrón fijo
               Row(
                 children: [
+                  // ✅ NUEVO: Badge de COMBO
+                  if (widget.product.esCombo)
+                    Padding(
+                      padding: const EdgeInsets.only(right: 3.0),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                        decoration: BoxDecoration(
+                          color: Colors.amber.shade600,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: Colors.amber.shade700,
+                            width: 0.5,
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.card_giftcard,
+                              size: 8,
+                              color: Colors.white,
+                            ),
+                            const SizedBox(width: 2),
+                            Text(
+                              'COMBO',
+                              style: context.textTheme.labelSmall?.copyWith(
+                                fontSize: 7,
+                                fontWeight: FontWeight.w700,
+                                color: Colors.white,
+                                height: 1.0,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
                   if (widget.product.categoria != null)
                     Expanded(
                       child: Padding(

@@ -67,6 +67,39 @@ void continuarCompra(BuildContext context) async {
     return;
   }
 
+  // ✅ ACTUALIZADO: Validar cantidad mínima considerando componentes de combos
+  // Combos: Suma la cantidad de todos sus componentes
+  // Productos simples: Cuenta su cantidad
+  int cantidadItemsValidacion = 0;
+  for (final item in carritoProvider.items) {
+    if (item.producto.esCombo && item.comboItemsSeleccionados != null && item.comboItemsSeleccionados!.isNotEmpty) {
+      // Combo: Sumar cantidad de todos sus componentes
+      for (final comboItem in item.comboItemsSeleccionados!) {
+        final comboItemCantidad = comboItem['cantidad'] ?? 1;
+        final cantidad = comboItemCantidad is int
+          ? comboItemCantidad
+          : (comboItemCantidad as num).toInt();
+        cantidadItemsValidacion += cantidad;
+      }
+    } else {
+      // Producto simple o combo sin componentes seleccionados: contar su cantidad
+      cantidadItemsValidacion += item.cantidad.toInt();
+    }
+  }
+
+  if (cantidadItemsValidacion < 5) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          'Debes tener mínimo 5 productos en el carrito (tienes $cantidadItemsValidacion)',
+        ),
+        backgroundColor: Colors.orange,
+        duration: const Duration(seconds: 3),
+      ),
+    );
+    return;
+  }
+
   // Obtener providers necesarios
   final authProvider = context.read<AuthProvider>();
   final clientProvider = context.read<ClientProvider>();
@@ -148,10 +181,17 @@ void continuarCompra(BuildContext context) async {
     carritoProvider.setClienteSeleccionado(cliente);
     debugPrint('✅ [CarritoScreen] Cliente cargado en provider: ${cliente.nombre}');
 
-    // ✅ ACTUALIZADO: Navegar directamente a ResumenPedidoScreen consolidado
-    // (antes navegaba a /tipo-entrega-seleccion)
+    // ✅ ACTUALIZADO: Navegar según tipo de usuario
+    // - Preventista: Navega a /proforma-creacion (nuevo flujo con combos)
+    // - Cliente: Navega a /resumen-pedido (flujo tradicional)
     if (context.mounted) {
-      Navigator.pushNamed(context, '/resumen-pedido');
+      if (isPreventista) {
+        debugPrint('🎯 Preventista detectado, navegando a pantalla de creación de proforma');
+        Navigator.pushNamed(context, '/proforma-creacion');
+      } else {
+        debugPrint('🎯 Cliente detectado, navegando a resumen de pedido');
+        Navigator.pushNamed(context, '/resumen-pedido');
+      }
     }
   } catch (e) {
     debugPrint('❌ Error al cargar cliente en continuarCompra: $e');

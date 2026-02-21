@@ -10,14 +10,18 @@ import '../../config/config.dart';
 import '../../extensions/theme_extension.dart';
 import '../clients/direccion_form_screen_for_client.dart';
 
-class ResumenPedidoScreen extends StatefulWidget {
-  const ResumenPedidoScreen({super.key});
+/// 🎯 Pantalla de creación de proformas (Preventistas)
+///
+/// Adaptado de ResumenPedidoScreen con soporte para combos.
+/// El backend valida automáticamente COMBO vs SIMPLE products.
+class ProformaCreacionScreen extends StatefulWidget {
+  const ProformaCreacionScreen({super.key});
 
   @override
-  State<ResumenPedidoScreen> createState() => _ResumenPedidoScreenState();
+  State<ProformaCreacionScreen> createState() => _ProformaCreacionScreenState();
 }
 
-class _ResumenPedidoScreenState extends State<ResumenPedidoScreen> {
+class _ProformaCreacionScreenState extends State<ProformaCreacionScreen> {
   bool _isCreandoPedido = false;
 
   // ✅ Estado interno para tipo de entrega y datos relacionados
@@ -35,7 +39,7 @@ class _ResumenPedidoScreenState extends State<ResumenPedidoScreen> {
   static const String POLITICA_CONTRA_ENTREGA = 'CONTRA_ENTREGA';
   static const String POLITICA_CREDITO = 'CREDITO';
 
-  final PedidoService _pedidoService = PedidoService();
+  final ProformaService _proformaService = ProformaService();
 
   @override
   void initState() {
@@ -57,7 +61,7 @@ class _ResumenPedidoScreenState extends State<ResumenPedidoScreen> {
       final cliente = carritoProvider.clienteSeleccionado;
 
       if (cliente == null || cliente.direcciones == null || cliente.direcciones!.isEmpty) {
-        debugPrint('⚠️ [ResumenPedidoScreen] No hay direcciones disponibles');
+        debugPrint('⚠️ [ProformaCreacionScreen] No hay direcciones disponibles');
         return;
       }
 
@@ -73,10 +77,10 @@ class _ResumenPedidoScreenState extends State<ResumenPedidoScreen> {
       });
 
       debugPrint(
-        '✅ [ResumenPedidoScreen] Dirección principal seleccionada: ${direccionPrincipal.direccion}',
+        '✅ [ProformaCreacionScreen] Dirección principal seleccionada: ${direccionPrincipal.direccion}',
       );
     } catch (e) {
-      debugPrint('❌ [ResumenPedidoScreen] Error al cargar dirección principal: $e');
+      debugPrint('❌ [ProformaCreacionScreen] Error al cargar dirección principal: $e');
     }
   }
 
@@ -139,21 +143,11 @@ class _ResumenPedidoScreenState extends State<ResumenPedidoScreen> {
     }
   }
 
-  Future<void> _confirmarPedido() async {
+  Future<void> _confirmarProforma() async {
     final carritoProvider = context.read<CarritoProvider>();
-    debugPrint(
-      '🚀 cliente cargado ${carritoProvider.getClienteSeleccionadoId()}',
-    );
+    final cliente = carritoProvider.clienteSeleccionado;
 
-    // ✅ Detectar si estamos editando una proforma existente
-    final editandoProforma = carritoProvider.editandoProforma;
-    final proformaId = carritoProvider.proformaEditandoId;
-
-    if (editandoProforma && proformaId != null) {
-      debugPrint('✏️ MODO EDICIÓN: Actualizando proforma #$proformaId');
-    } else {
-      debugPrint('➕ MODO CREACIÓN: Creando nueva proforma');
-    }
+    debugPrint('🎯 Creando proforma para cliente: ${cliente?.nombre}');
 
     if (carritoProvider.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -176,19 +170,32 @@ class _ResumenPedidoScreenState extends State<ResumenPedidoScreen> {
       return;
     }
 
+    if (cliente == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Error: Cliente no seleccionado'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
     setState(() {
       _isCreandoPedido = true;
     });
 
     try {
-      // Obtener items del carrito
-      final items = carritoProvider.getItemsParaPedido();
-
-      // Validar que el usuario esté autenticado
-      final authProvider = Provider.of<AuthProvider>(context, listen: false);
-      if (authProvider.user == null) {
-        throw Exception('Usuario no autenticado');
-      }
+      // Obtener items del carrito - Usar producto.id directamente
+      // ✅ NUEVO: Incluir combo_items_seleccionados en el payload
+      final items = carritoProvider.items.map((item) {
+        return {
+          'producto_id': item.producto.id,
+          'cantidad': item.cantidad,
+          'precio_unitario': item.precioUnitario,
+          if (item.comboItemsSeleccionados != null)
+            'combo_items_seleccionados': item.comboItemsSeleccionados,
+        };
+      }).toList();
 
       // Dirección ID (null para PICKUP)
       int? direccionId;
@@ -196,159 +203,27 @@ class _ResumenPedidoScreenState extends State<ResumenPedidoScreen> {
         direccionId = _direccionSeleccionada!.id;
       }
 
-      // Determinar cliente ID
-      final clienteIdUsuario = authProvider.user!.clienteId;
-      final carritoClienteId = carritoProvider.getClienteSeleccionadoId();
+      debugPrint('📝 Creando proforma con ${items.length} productos');
+      debugPrint('   Cliente: ${cliente.nombre} (ID: ${cliente.id})');
+      debugPrint('   Tipo entrega: $_tipoEntrega');
+      debugPrint('   Política pago: $_politicaPago');
 
-      late int clienteIdParaPedido;
-      bool esClienteLogueado = false;
-      bool esPreventista = false;
-
-      if (clienteIdUsuario != null) {
-        clienteIdParaPedido = clienteIdUsuario;
-        esClienteLogueado = true;
-        debugPrint('👤 Creador: CLIENTE logueado (ID: $clienteIdUsuario)');
-      } else if (carritoClienteId != null) {
-        clienteIdParaPedido = carritoClienteId;
-        esPreventista = true;
-        debugPrint(
-          '👨‍💼 Creador: PREVENTISTA para cliente (ID: $carritoClienteId)',
-        );
-      } else {
-        throw Exception(
-          'No se pudo identificar al cliente. Asegúrate de estar correctamente autenticado.',
-        );
+      // ✅ DEBUG: Mostrar items con combo_items_seleccionados
+      for (var i = 0; i < items.length; i++) {
+        debugPrint('   📦 Producto ${i+1}: ID ${items[i]['producto_id']}, Combo items: ${items[i]['combo_items_seleccionados']}');
       }
 
-      // Obtener cliente
-      Client? clienteSeleccionado;
-
-      if (esClienteLogueado) {
-        debugPrint(
-          '👤 Cargando datos del cliente logueado (ID: $clienteIdParaPedido)...',
-        );
-
-        final clientProvider = Provider.of<ClientProvider>(
-          context,
-          listen: false,
-        );
-        clienteSeleccionado = await clientProvider.getClient(
-          clienteIdParaPedido,
-        );
-
-        if (clienteSeleccionado == null) {
-          throw Exception(
-            'No se pudieron cargar los datos del cliente. Por favor, intenta de nuevo.',
-          );
-        }
-
-        debugPrint(
-          '👤 Cliente logueado cargado: ${clienteSeleccionado.nombre} (ID: ${clienteSeleccionado.id})',
-        );
-      } else if (esPreventista) {
-        clienteSeleccionado = carritoProvider.getClienteSeleccionado();
-        if (clienteSeleccionado == null) {
-          throw Exception(
-            'No se pudo obtener el cliente seleccionado. Por favor, intenta de nuevo.',
-          );
-        }
-        debugPrint(
-          '👨‍💼 Cliente seleccionado por preventista: ${clienteSeleccionado.nombre} (ID: ${clienteSeleccionado.id})',
-        );
-      } else {
-        throw Exception('No se pudo identificar el tipo de usuario.');
-      }
-
-      // ✅ Validar política de pago
-      debugPrint('💳 Política de pago seleccionada: $_politicaPago');
-
-      if (_politicaPago == POLITICA_CREDITO) {
-        debugPrint(
-          '💳 Verificando permisos de crédito para ${clienteSeleccionado.nombre}',
-        );
-        debugPrint('   ID Cliente: ${clienteSeleccionado.id}');
-        debugPrint(
-          '   puedeAtenerCredito: ${clienteSeleccionado.puedeAtenerCredito}',
-        );
-        debugPrint('   limiteCredito: ${clienteSeleccionado.limiteCredito}');
-
-        if (!clienteSeleccionado.puedeAtenerCredito) {
-          debugPrint('⚠️  Cliente NO tiene permisos de crédito');
-
-          if (!mounted) return;
-          final shouldContinue = await showDialog<bool>(
-            context: context,
-            builder: (BuildContext context) => AlertDialog(
-              title: const Text('Sin Permisos de Crédito'),
-              content: Text(
-                'El cliente "${clienteSeleccionado!.nombre}" no tiene permisos para solicitar crédito.\n\n'
-                '¿Deseas continuar con otra forma de pago?',
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(context, false),
-                  child: const Text('Volver'),
-                ),
-                TextButton(
-                  onPressed: () => Navigator.pop(context, true),
-                  child: const Text('Continuar'),
-                ),
-              ],
-            ),
-          );
-
-          if (shouldContinue != true) {
-            setState(() {
-              _isCreandoPedido = false;
-            });
-            return;
-          }
-        } else {
-          debugPrint(
-            '✅ Cliente tiene permisos de crédito. Límite: Bs. ${clienteSeleccionado.limiteCredito?.toStringAsFixed(2) ?? 'N/A'}',
-          );
-        }
-      }
-
-      // ✅ Crear o actualizar proforma
-      dynamic response;
-
-      if (editandoProforma && proformaId != null) {
-        debugPrint(
-          '📝 Actualizando proforma #$proformaId con los nuevos datos...',
-        );
-
-        response = await _pedidoService.actualizarProforma(
-          proformaId: proformaId,
-          clienteId: clienteIdParaPedido,
-          items: items,
-          tipoEntrega: _tipoEntrega,
-          fechaProgramada: _fechaProgramada ?? DateTime.now(),
-          direccionId: direccionId,
-          horaInicio: _horaInicio,
-          horaFin: _horaFin,
-          observaciones: _observaciones,
-          politicaPago: _politicaPago,
-        );
-
-        debugPrint('✅ Proforma actualizada - Política de pago: $_politicaPago');
-      } else {
-        debugPrint('➕ Creando nueva proforma...');
-
-        response = await _pedidoService.crearPedido(
-          clienteId: clienteIdParaPedido,
-          items: items,
-          tipoEntrega: _tipoEntrega,
-          fechaProgramada: _fechaProgramada ?? DateTime.now(),
-          direccionId: direccionId,
-          horaInicio: _horaInicio,
-          horaFin: _horaFin,
-          observaciones: _observaciones,
-          politicaPago: _politicaPago,
-        );
-
-        debugPrint('✅ Pedido creado - Política de pago: $_politicaPago');
-      }
+      final response = await _proformaService.crearProforma(
+        clienteId: cliente.id,
+        items: items,
+        tipoEntrega: _tipoEntrega,
+        fechaProgramada: _fechaProgramada ?? DateTime.now(),
+        direccionId: direccionId,
+        horaInicio: _horaInicio,
+        horaFin: _horaFin,
+        observaciones: _observaciones.isNotEmpty ? _observaciones : null,
+        politicaPago: _politicaPago,
+      );
 
       setState(() {
         _isCreandoPedido = false;
@@ -357,11 +232,6 @@ class _ResumenPedidoScreenState extends State<ResumenPedidoScreen> {
       if (response.success && response.data != null) {
         carritoProvider.limpiarCarrito();
 
-        if (editandoProforma) {
-          carritoProvider.limpiarProformaEditando();
-          debugPrint('✅ Estado de edición limpiado');
-        }
-
         if (mounted) {
           Navigator.pushNamedAndRemoveUntil(
             context,
@@ -369,24 +239,39 @@ class _ResumenPedidoScreenState extends State<ResumenPedidoScreen> {
             (route) => route.isFirst,
             arguments: {
               'pedido': response.data,
-              'esActualizacion': editandoProforma,
+              'esActualizacion': false,
             },
           );
         }
       } else {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                response.message.isNotEmpty
-                    ? response.message
-                    : editandoProforma
-                    ? 'Error al actualizar la proforma'
-                    : 'Error al crear el pedido',
+          // 🔴 Si es error de stock, mostrar un Dialog con más detalles
+          if (response.message.contains('Stock insuficiente')) {
+            showDialog(
+              context: context,
+              builder: (context) => AlertDialog(
+                title: const Text('❌ Stock Insuficiente'),
+                content: Text(response.message),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(context),
+                    child: const Text('Ajustar cantidad'),
+                  ),
+                ],
               ),
-              backgroundColor: Colors.red,
-            ),
-          );
+            );
+          } else {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(
+                  response.message.isNotEmpty
+                      ? response.message
+                      : 'Error al crear la proforma',
+                ),
+                backgroundColor: Colors.red,
+              ),
+            );
+          }
         }
       }
     } catch (e) {
@@ -437,13 +322,10 @@ class _ResumenPedidoScreenState extends State<ResumenPedidoScreen> {
     final isDark = context.isDark;
 
     final carritoProvider = context.read<CarritoProvider>();
-    final editandoProforma = carritoProvider.editandoProforma;
-    final tituloResumen =
-        editandoProforma ? 'Actualizar Proforma' : 'Resumen del Pedido';
 
     return Scaffold(
       appBar: CustomGradientAppBar(
-        title: tituloResumen,
+        title: 'Crear Proforma',
         customGradient: AppGradients.blue,
       ),
       body: Consumer<CarritoProvider>(
@@ -461,56 +343,17 @@ class _ResumenPedidoScreenState extends State<ResumenPedidoScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      if (editandoProforma) ...[
-                        Row(
-                          children: [
-                            Icon(
-                              Icons.edit_document,
-                              size: 20,
-                              color: colorScheme.primary,
-                            ),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    'Actualizando Proforma',
-                                    style: TextStyle(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.w600,
-                                      color: colorScheme.onSurface,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 2),
-                                  Text(
-                                    '#${carritoProvider.proformaEditando?.numero ?? 'N/A'} (ID: ${carritoProvider.proformaEditandoId ?? 'N/A'})',
-                                    style: TextStyle(
-                                      fontSize: 13,
-                                      color: colorScheme.primary,
-                                      fontWeight: FontWeight.w500,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
+                      Text(
+                        'Nueva Proforma',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w500,
+                          color: colorScheme.onSurface,
                         ),
-                      ] else ...[
-                        Text(
-                          'Revisa tu pedido',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w500,
-                            color: colorScheme.onSurface,
-                          ),
-                        ),
-                      ],
+                      ),
                       const SizedBox(height: 4),
                       Text(
-                        editandoProforma
-                            ? 'Verifica los cambios antes de actualizar'
-                            : 'Verifica que todo esté correcto antes de confirmar',
+                        'Verifica que todo esté correcto antes de confirmar',
                         style: TextStyle(
                           fontSize: 14,
                           color: colorScheme.onSurfaceVariant,
@@ -525,21 +368,21 @@ class _ResumenPedidoScreenState extends State<ResumenPedidoScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // ✅ NUEVO: Sección Información del Cliente
+                      // ✅ Sección Información del Cliente
                       _buildClienteInfoSection(context, carritoProvider),
                       const SizedBox(height: 24),
 
-                      // ✅ NUEVO: Selector de Tipo de Entrega
+                      // ✅ Selector de Tipo de Entrega
                       _buildTipoEntregaSelector(),
                       const SizedBox(height: 24),
 
-                      // ✅ NUEVO: Selector de Dirección (solo si DELIVERY)
+                      // ✅ Selector de Dirección (solo si DELIVERY)
                       if (_tipoEntrega == 'DELIVERY') ...[
                         _buildDireccionSection(),
                         const SizedBox(height: 24),
                       ],
 
-                      // ✅ NUEVO: Selector de Fecha/Hora
+                      // ✅ Selector de Fecha/Hora
                       _buildFechaHoraSection(),
                       const SizedBox(height: 24),
 
@@ -555,38 +398,37 @@ class _ResumenPedidoScreenState extends State<ResumenPedidoScreen> {
                       const SizedBox(height: 12),
 
                       ...carrito.items.map(
-                        (item) => Card(
-                          color: colorScheme.surface,
-                          margin: const EdgeInsets.only(bottom: 8),
-                          child: Padding(
-                            padding: const EdgeInsets.all(12),
-                            child: Row(
-                              children: [
-                                Container(
-                                  width: 60,
-                                  height: 60,
-                                  decoration: BoxDecoration(
-                                    color: colorScheme.surfaceVariant,
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                  child:
-                                      item.producto.imagenes != null &&
-                                          item.producto.imagenes!.isNotEmpty
-                                      ? ClipRRect(
-                                          borderRadius: BorderRadius.circular(
-                                            8,
-                                          ),
-                                          child: Image.network(
-                                            item.producto.imagenes!.first.url,
-                                            fit: BoxFit.cover,
-                                            errorBuilder: (_, __, ___) =>
-                                                const Icon(Icons.image),
-                                          ),
-                                        )
-                                      : const Icon(Icons.image, size: 32),
-                                ),
+                        (item) => Column(
+                          children: [
+                            Card(
+                              color: colorScheme.surface,
+                              margin: const EdgeInsets.only(bottom: 8),
+                              child: Padding(
+                                padding: const EdgeInsets.all(12),
+                                child: Row(
+                                  children: [
+                                    Container(
+                                      width: 60,
+                                      height: 60,
+                                      decoration: BoxDecoration(
+                                        color: colorScheme.surfaceVariant,
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                      child: item.producto.imagenes != null &&
+                                              item.producto.imagenes!.isNotEmpty
+                                          ? ClipRRect(
+                                              borderRadius: BorderRadius.circular(8),
+                                              child: Image.network(
+                                                item.producto.imagenes!.first.url,
+                                                fit: BoxFit.cover,
+                                                errorBuilder: (_, __, ___) =>
+                                                    const Icon(Icons.image),
+                                              ),
+                                            )
+                                          : const Icon(Icons.image, size: 32),
+                                    ),
 
-                                const SizedBox(width: 12),
+                                    const SizedBox(width: 12),
 
                                 Expanded(
                                   child: Column(
@@ -602,16 +444,20 @@ class _ResumenPedidoScreenState extends State<ResumenPedidoScreen> {
                                       ),
                                       const SizedBox(height: 6),
                                       Row(
+                                        mainAxisSize: MainAxisSize.max,
                                         children: [
-                                          Text(
-                                            'Precio: Bs. ${(item.subtotal / item.cantidad).toStringAsFixed(2)}',
-                                            style: TextStyle(
-                                              color: colorScheme.primary,
-                                              fontSize: 13,
-                                              fontWeight: FontWeight.w500,
+                                          Expanded(
+                                            child: Text(
+                                              'Precio: Bs. ${(item.subtotal / item.cantidad).toStringAsFixed(2)}',
+                                              style: TextStyle(
+                                                color: colorScheme.primary,
+                                                fontSize: 13,
+                                                fontWeight: FontWeight.w500,
+                                              ),
+                                              overflow: TextOverflow.ellipsis,
                                             ),
                                           ),
-                                          const SizedBox(width: 12),
+                                          const SizedBox(width: 8),
                                           Text(
                                             '×${item.cantidad}',
                                             style: TextStyle(
@@ -651,6 +497,14 @@ class _ResumenPedidoScreenState extends State<ResumenPedidoScreen> {
                               ],
                             ),
                           ),
+                        ),
+
+                            // ✅ NUEVO: Mostrar detalles del combo si tiene items seleccionados
+                            if (item.producto.esCombo &&
+                                item.comboItemsSeleccionados != null &&
+                                item.comboItemsSeleccionados!.isNotEmpty)
+                              _buildComboDetallesSection(item, colorScheme),
+                          ],
                         ),
                       ),
 
@@ -775,15 +629,6 @@ class _ResumenPedidoScreenState extends State<ResumenPedidoScreen> {
                         ),
                       ),
 
-                      if (carritoProvider.clienteSeleccionado
-                              ?.puedeAtenerCredito ??
-                          false)
-                        _buildCreditSummaryCard(
-                          carritoProvider.clienteSeleccionado!,
-                          colorScheme,
-                          isDark,
-                        ),
-
                       const SizedBox(height: 80),
                     ],
                   ),
@@ -809,7 +654,7 @@ class _ResumenPedidoScreenState extends State<ResumenPedidoScreen> {
           child: SizedBox(
             width: double.infinity,
             child: ElevatedButton(
-              onPressed: _isCreandoPedido ? null : _confirmarPedido,
+              onPressed: _isCreandoPedido ? null : _confirmarProforma,
               style: ElevatedButton.styleFrom(
                 padding: const EdgeInsets.symmetric(vertical: 16),
                 shape: RoundedRectangleBorder(
@@ -826,11 +671,9 @@ class _ResumenPedidoScreenState extends State<ResumenPedidoScreen> {
                         valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                       ),
                     )
-                  : Text(
-                      editandoProforma
-                          ? 'Actualizar Proforma'
-                          : 'Confirmar Pedido',
-                      style: const TextStyle(
+                  : const Text(
+                      'Crear Proforma',
+                      style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
                       ),
@@ -853,7 +696,7 @@ class _ResumenPedidoScreenState extends State<ResumenPedidoScreen> {
     final cliente = carritoProvider.clienteSeleccionado;
 
     if (cliente == null) {
-      return SizedBox.shrink();
+      return const SizedBox.shrink();
     }
 
     return Container(
@@ -1340,146 +1183,153 @@ class _ResumenPedidoScreenState extends State<ResumenPedidoScreen> {
     );
   }
 
-  // ✅ Widget: Resumen de Crédito
-  Widget _buildCreditSummaryCard(
-    Client cliente,
-    ColorScheme colorScheme,
-    bool isDark,
-  ) {
-    final limiteCredito = cliente.limiteCredito ?? 0.0;
-    final creditoUtilizado = cliente.creditoUtilizado ?? 0.0;
-    final creditoDisponible = limiteCredito - creditoUtilizado;
-    final porcentajeUsado = limiteCredito > 0 ? (creditoUtilizado / limiteCredito) * 100 : 0.0;
+  // ✅ NUEVO: Mostrar detalles de componentes del combo
+  Widget _buildComboDetallesSection(CarritoItem item, ColorScheme colorScheme) {
+    final comboItems = item.comboItemsSeleccionados ?? [];
 
-    return Padding(
-      padding: const EdgeInsets.only(top: 12),
-      child: Card(
+    // Obtener nombres de los productos desde el combo
+    final comboItemsDelProducto = item.producto.comboItems ?? [];
+
+    String? obtenerNombreComboItem(int comboItemId) {
+      try {
+        return comboItemsDelProducto
+            .firstWhere((c) => c.id == comboItemId)
+            .productoNombre;
+      } catch (e) {
+        return null;
+      }
+    }
+
+    return Container(
+      margin: const EdgeInsets.only(left: 8, right: 8, top: 8, bottom: 12),
+      decoration: BoxDecoration(
         color: Colors.blue.shade50,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-          side: BorderSide(
-            color: Colors.blue.shade200,
-            width: 1,
-          ),
-        ),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Icon(
-                    Icons.credit_card,
-                    color: Colors.blue.shade600,
-                    size: 20,
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    'Resumen de Crédito',
+        border: Border.all(color: Colors.blue.shade200),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(12),
+            child: Row(
+              children: [
+                Icon(
+                  Icons.shopping_cart_checkout,
+                  color: Colors.blue.shade600,
+                  size: 18,
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'Componentes - ${item.cantidad} combo${item.cantidad > 1 ? 's' : ''}',
                     style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.blue.shade600,
-                    ),
-                  ),
-                ],
-              ),
-
-              const SizedBox(height: 12),
-
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    'Límite de Crédito',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.blue.shade700,
-                    ),
-                  ),
-                  Text(
-                    'Bs. ${limiteCredito.toStringAsFixed(2)}',
-                    style: TextStyle(
-                      fontSize: 12,
                       fontWeight: FontWeight.bold,
                       color: Colors.blue.shade700,
+                      fontSize: 13,
                     ),
-                  ),
-                ],
-              ),
-
-              const SizedBox(height: 8),
-
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    'Utilizado',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.orange.shade700,
-                    ),
-                  ),
-                  Text(
-                    'Bs. ${creditoUtilizado.toStringAsFixed(2)}',
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.orange.shade700,
-                    ),
-                  ),
-                ],
-              ),
-
-              const SizedBox(height: 8),
-
-              ClipRRect(
-                borderRadius: BorderRadius.circular(4),
-                child: LinearProgressIndicator(
-                  value: porcentajeUsado / 100,
-                  minHeight: 8,
-                  backgroundColor: Colors.blue.shade200,
-                  valueColor: AlwaysStoppedAnimation<Color>(
-                    porcentajeUsado > 80
-                        ? Colors.red.shade500
-                        : porcentajeUsado > 50
-                        ? Colors.orange.shade500
-                        : Colors.green.shade500,
                   ),
                 ),
-              ),
-
-              const SizedBox(height: 8),
-
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    'Disponible',
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.bold,
-                      color: creditoDisponible > 0
-                          ? Colors.green.shade700
-                          : Colors.red.shade700,
-                    ),
-                  ),
-                  Text(
-                    'Bs. ${creditoDisponible.toStringAsFixed(2)}',
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.bold,
-                      color: creditoDisponible > 0
-                          ? Colors.green.shade700
-                          : Colors.red.shade700,
-                    ),
-                  ),
-                ],
-              ),
-            ],
+              ],
+            ),
           ),
-        ),
+          Container(
+            decoration: BoxDecoration(
+              border: Border(
+                top: BorderSide(color: Colors.blue.shade200),
+              ),
+            ),
+            child: Column(
+              children: comboItems.asMap().entries.map((entry) {
+                final index = entry.key;
+                final comboItem = entry.value;
+                // ✅ Convertir cantidad de forma segura (puede ser int o double)
+                final cantidadRaw = comboItem['cantidad'] ?? 1;
+                final cantidad = cantidadRaw is int ? cantidadRaw : (cantidadRaw as num).toInt();
+                final comboItemId = comboItem['combo_item_id'] ?? 0;
+                final nombreProducto = obtenerNombreComboItem(comboItemId) ?? 'Producto';
+                final isLast = index == comboItems.length - 1;
+
+                // Mostrar cantidad total si el combo tiene cantidad > 1
+                final cantidadTotal = cantidad * item.cantidad;
+
+                return Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  decoration: BoxDecoration(
+                    border: isLast
+                        ? null
+                        : Border(
+                            bottom: BorderSide(
+                              color: Colors.blue.shade100,
+                            ),
+                          ),
+                  ),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              '• $nombreProducto',
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w500,
+                                color: Colors.blue.shade900,
+                              ),
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              'ID: ${comboItem['producto_id']}',
+                              style: TextStyle(
+                                fontSize: 11,
+                                color: Colors.blue.shade600,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 4,
+                            ),
+                            decoration: BoxDecoration(
+                              color: Colors.blue.shade100,
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: Text(
+                              '${cantidadTotal}x',
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                color: Colors.blue.shade700,
+                                fontSize: 12,
+                              ),
+                            ),
+                          ),
+                          if (item.cantidad > 1)
+                            Text(
+                              '($cantidad×${item.cantidad})',
+                              style: TextStyle(
+                                fontSize: 10,
+                                color: Colors.blue.shade600,
+                              ),
+                            ),
+                        ],
+                      ),
+                    ],
+                  ),
+                );
+              }).toList(),
+            ),
+          ),
+        ],
       ),
     );
   }

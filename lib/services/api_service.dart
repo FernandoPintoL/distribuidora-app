@@ -341,6 +341,39 @@ class ApiService {
     return _token;
   }
 
+  /// ✅ NUEVO: Descargar PDF de proformas filtradas
+  /// Descarga el PDF directamente del endpoint API
+  Future<void> descargarPdfProformas({
+    required String ids,
+    required String formato,
+  }) async {
+    try {
+      final url = '$baseUrl/proformas/descargar-pdf?ids=$ids&formato=$formato';
+
+      final response = await _dio.get(
+        url,
+        options: Options(
+          responseType: ResponseType.bytes,
+          contentType: 'application/pdf',
+        ),
+      );
+
+      if (response.statusCode == 200) {
+        // Usar print service para guardar/abrir el PDF
+        final printService = PrintService();
+        await printService.abrirPdfDesdeBytes(
+          pdfBytes: response.data as List<int>,
+          nombreArchivo: 'proformas_${DateTime.now().millisecondsSinceEpoch}.pdf',
+        );
+      } else {
+        throw Exception('Error: ${response.statusCode}');
+      }
+    } catch (e) {
+      debugPrint('❌ Error descargando PDF: $e');
+      rethrow;
+    }
+  }
+
   // Singleton con inicialización lazy
   static ApiService? _instance;
 

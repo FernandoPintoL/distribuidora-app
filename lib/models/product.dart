@@ -23,6 +23,16 @@ class Product {
   final List<StockWarehouse>? stockPorAlmacenes;
   final List<Precio>? precios;  // ✅ NUEVO: Array de precios
 
+  // ✅ CAMPOS PARA COMBOS
+  final bool esCombo;
+  final List<ComboItem>? comboItems;
+  final List<ComboGrupo>? comboGrupos;
+  final int? capacidad;
+
+  // ✅ CAMPOS DE PRECIOS RECOMENDADOS
+  final int? tipoPrecioIdRecomendado;
+  final String? tipoPrecioNombreRecomendado;
+
   Product({
     required this.id,
     required this.nombre,
@@ -45,6 +55,12 @@ class Product {
     this.stockPrincipal,
     this.stockPorAlmacenes,
     this.precios,  // ✅ NUEVO: Parámetro de precios
+    this.esCombo = false,  // ✅ NUEVO: Es combo
+    this.comboItems,  // ✅ NUEVO: Items del combo
+    this.comboGrupos,  // ✅ NUEVO: Grupos opcionales
+    this.capacidad,  // ✅ NUEVO: Capacidad de combos
+    this.tipoPrecioIdRecomendado,  // ✅ NUEVO: ID del tipo de precio recomendado
+    this.tipoPrecioNombreRecomendado,  // ✅ NUEVO: Nombre del tipo de precio recomendado
   });
 
   /// Obtener la imagen principal (es_principal == true) o la primera imagen
@@ -148,6 +164,22 @@ class Product {
                   .map((i) => Precio.fromJson(i))
                   .toList()
             : null,
+        // ✅ NUEVO: Campos de combos
+        esCombo: json['es_combo'] ?? false,
+        comboItems: json['combo_items'] != null
+            ? (json['combo_items'] as List)
+                  .map((i) => ComboItem.fromJson(i))
+                  .toList()
+            : null,
+        comboGrupos: json['combo_grupos'] != null
+            ? (json['combo_grupos'] as List)
+                  .map((i) => ComboGrupo.fromJson(i))
+                  .toList()
+            : null,
+        capacidad: json['capacidad'],
+        // ✅ NUEVO: Campos de precios recomendados
+        tipoPrecioIdRecomendado: json['tipo_precio_id_recomendado'],
+        tipoPrecioNombreRecomendado: json['tipo_precio_nombre_recomendado'],
       );
 
       // debugPrint('✅ Product.fromJson - ${product.nombre} (stock: ${product.stockPrincipal?.cantidad})');
@@ -179,6 +211,8 @@ class Product {
       'imagenes': imagenes?.map((i) => i.toJson()).toList(),
       'codigos_barra': codigosBarra,
       'precios': precios?.map((p) => p.toJson()).toList(),
+      'tipo_precio_id_recomendado': tipoPrecioIdRecomendado,
+      'tipo_precio_nombre_recomendado': tipoPrecioNombreRecomendado,
     };
   }
 
@@ -409,5 +443,185 @@ class Precio {
     if (value is String) return double.tryParse(value);
     if (value is num) return value.toDouble();
     return null;
+  }
+}
+
+/// Representa un producto que forma parte de un combo
+class ComboItem {
+  final int id;
+  final int comboId;
+  final int productoId;
+  final String? productoNombre;
+  final String? productoSku;
+  final double cantidad;
+  final double? precioUnitario;
+  final int? tipoPrecioId;
+  final String? tipoPrecioNombre;
+  final num? stockDisponible;
+  final num? stockTotal;
+  final bool esObligatorio;
+  final bool? esCuelloBotella;
+  final int? combosPosibles;
+  final int? unidadMedidaId;
+  final String? unidadMedidaNombre;
+
+  ComboItem({
+    required this.id,
+    required this.comboId,
+    required this.productoId,
+    this.productoNombre,
+    this.productoSku,
+    required this.cantidad,
+    this.precioUnitario,
+    this.tipoPrecioId,
+    this.tipoPrecioNombre,
+    this.stockDisponible,
+    this.stockTotal,
+    this.esObligatorio = true,
+    this.esCuelloBotella,
+    this.combosPosibles,
+    this.unidadMedidaId,
+    this.unidadMedidaNombre,
+  });
+
+  factory ComboItem.fromJson(Map<String, dynamic> json) {
+    return ComboItem(
+      id: json['id'] ?? 0,
+      comboId: json['combo_id'] ?? 0,
+      productoId: json['producto_id'] ?? 0,
+      productoNombre: json['producto_nombre'],
+      productoSku: json['producto_sku'],
+      cantidad: _parseDouble(json['cantidad']) ?? 0.0,
+      precioUnitario: _parseDouble(json['precio_unitario']),
+      tipoPrecioId: json['tipo_precio_id'],
+      tipoPrecioNombre: json['tipo_precio_nombre'],
+      stockDisponible: json['stock_disponible'],
+      stockTotal: json['stock_total'],
+      esObligatorio: json['es_obligatorio'] ?? true,
+      esCuelloBotella: json['es_cuello_botella'],
+      combosPosibles: json['combos_posibles'],
+      unidadMedidaId: json['unidad_medida_id'],
+      unidadMedidaNombre: json['unidad_medida_nombre'],
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'combo_id': comboId,
+      'producto_id': productoId,
+      'producto_nombre': productoNombre,
+      'producto_sku': productoSku,
+      'cantidad': cantidad,
+      'precio_unitario': precioUnitario,
+      'tipo_precio_id': tipoPrecioId,
+      'tipo_precio_nombre': tipoPrecioNombre,
+      'stock_disponible': stockDisponible,
+      'stock_total': stockTotal,
+      'es_obligatorio': esObligatorio,
+      'es_cuello_botella': esCuelloBotella,
+      'combos_posibles': combosPosibles,
+      'unidad_medida_id': unidadMedidaId,
+      'unidad_medida_nombre': unidadMedidaNombre,
+    };
+  }
+
+  static double? _parseDouble(dynamic value) {
+    if (value == null) return null;
+    if (value is double) return value;
+    if (value is int) return value.toDouble();
+    if (value is String) return double.tryParse(value);
+    if (value is num) return value.toDouble();
+    return null;
+  }
+}
+
+/// Representa un grupo opcional dentro de un combo
+class ComboGrupo {
+  final int id;
+  final int comboId;
+  final String nombreGrupo;
+  final int cantidadALlevar;
+  final double? precioGrupo;
+  final List<int>? productos;
+  final List<ComboGrupoItem>? productosDetalle;
+
+  ComboGrupo({
+    required this.id,
+    required this.comboId,
+    required this.nombreGrupo,
+    this.cantidadALlevar = 1,
+    this.precioGrupo,
+    this.productos,
+    this.productosDetalle,
+  });
+
+  factory ComboGrupo.fromJson(Map<String, dynamic> json) {
+    return ComboGrupo(
+      id: json['id'] ?? 0,
+      comboId: json['combo_id'] ?? 0,
+      nombreGrupo: json['nombre_grupo'] ?? 'Grupo',
+      cantidadALlevar: json['cantidad_a_llevar'] ?? 1,
+      precioGrupo: _parseDouble(json['precio_grupo']),
+      productos: json['productos'] != null
+          ? List<int>.from(json['productos'])
+          : null,
+      productosDetalle: json['productos_detalle'] != null
+          ? (json['productos_detalle'] as List)
+                .map((i) => ComboGrupoItem.fromJson(i))
+                .toList()
+          : null,
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'combo_id': comboId,
+      'nombre_grupo': nombreGrupo,
+      'cantidad_a_llevar': cantidadALlevar,
+      'precio_grupo': precioGrupo,
+      'productos': productos,
+      'productos_detalle':
+          productosDetalle?.map((p) => p.toJson()).toList(),
+    };
+  }
+
+  static double? _parseDouble(dynamic value) {
+    if (value == null) return null;
+    if (value is double) return value;
+    if (value is int) return value.toDouble();
+    if (value is String) return double.tryParse(value);
+    if (value is num) return value.toDouble();
+    return null;
+  }
+}
+
+/// Representa un producto dentro de un grupo opcional del combo
+class ComboGrupoItem {
+  final int productoId;
+  final String? productoNombre;
+  final String? productoSku;
+
+  ComboGrupoItem({
+    required this.productoId,
+    this.productoNombre,
+    this.productoSku,
+  });
+
+  factory ComboGrupoItem.fromJson(Map<String, dynamic> json) {
+    return ComboGrupoItem(
+      productoId: json['producto_id'] ?? 0,
+      productoNombre: json['producto_nombre'],
+      productoSku: json['producto_sku'],
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'producto_id': productoId,
+      'producto_nombre': productoNombre,
+      'producto_sku': productoSku,
+    };
   }
 }

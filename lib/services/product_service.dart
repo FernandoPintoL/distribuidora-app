@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import '../models/models.dart';
 import 'api_service.dart';
 
@@ -9,6 +10,10 @@ class ProductService {
   ///
   /// ✅ IMPORTANTE: El almacén se obtiene AUTOMÁTICAMENTE del servidor
   /// NO enviar 'almacen_id' en el request
+  ///
+  /// ✅ ACTUALIZADO: El backend (indexApi) ahora incluye COMBOS como buscarApi
+  /// - Trae: es_combo, combo_items, combo_grupos, capacidad
+  /// - Mantiene paginación y filtros del listado
   ///
   /// El servidor valida que:
   /// 1. Usuario tenga rol permitido (Preventista, Cliente, Chofer, Super Admin)
@@ -26,8 +31,6 @@ class ProductService {
     int? brandId,
     int? supplierId,
     bool? active,
-    // ❌ REMOVIDO: int? almacenId - El almacén se obtiene del servidor
-    // ❌ REMOVIDO: bool withStock - Siempre se filtra por stock
   }) async {
     try {
       final queryParams = <String, dynamic>{
@@ -51,9 +54,6 @@ class ProductService {
       if (active != null) {
         queryParams['activo'] = active;
       }
-      // ❌ NO ENVIAR: almacen_id
-      // ❌ NO ENVIAR: con_stock
-      // El servidor maneja esto automáticamente basado en auth()->user()->empresa->almacen_id
 
       final response = await _apiService.get(
         '/productos',
