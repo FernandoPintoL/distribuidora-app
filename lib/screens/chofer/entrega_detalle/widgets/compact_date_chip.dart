@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../../config/app_text_styles.dart';
 import '../../../../utils/date_formatters.dart';
 
 class CompactDateChip extends StatelessWidget {
@@ -67,7 +68,7 @@ class CompactDateChip extends StatelessWidget {
             style: Theme.of(context).textTheme.labelSmall?.copyWith(
               fontWeight: FontWeight.w600,
               color: isDarkMode ? Colors.grey[100] : Colors.grey[900],
-              fontSize: 11,
+              fontSize: AppTextStyles.labelSmall(context).fontSize!,
             ),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,

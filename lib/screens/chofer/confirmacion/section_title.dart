@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../../config/app_text_styles.dart';
+
 class SectionTitle extends StatelessWidget {
   final String title;
 
@@ -15,7 +17,7 @@ class SectionTitle extends StatelessWidget {
       style: Theme.of(context).textTheme.titleMedium?.copyWith(
         fontWeight: FontWeight.bold,
         color: isDarkMode ? colorScheme.onSurface : colorScheme.onSurface,
-        fontSize: 16,
+        fontSize: AppTextStyles.bodyLarge(context).fontSize!,
         letterSpacing: 0.5,
       ),
     );

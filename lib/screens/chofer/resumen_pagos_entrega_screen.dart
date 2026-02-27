@@ -55,7 +55,9 @@ class _ResumenPagosEntregaScreenState extends State<ResumenPagosEntregaScreen> {
   }
 
   Future<Map<String, dynamic>?> _obtenerResumen() async {
-    final response = await _entregaService.obtenerResumenPagos(widget.entrega.id);
+    final response = await _entregaService.obtenerResumenPagos(
+      widget.entrega.id,
+    );
     if (response.success && response.data != null) {
       return response.data;
     }
@@ -109,7 +111,7 @@ class _ResumenPagosEntregaScreenState extends State<ResumenPagosEntregaScreen> {
                   Text(
                     'Error al cargar resumen',
                     style: TextStyle(
-                      fontSize: 16,
+                      fontSize: AppTextStyles.bodyLarge(context).fontSize!,
                       color: isDarkMode ? Colors.grey[300] : Colors.grey[700],
                     ),
                   ),
@@ -152,10 +154,7 @@ class _ResumenPagosEntregaScreenState extends State<ResumenPagosEntregaScreen> {
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
               gradient: LinearGradient(
-                colors: [
-                  Colors.green[400]!,
-                  Colors.green[600]!,
-                ],
+                colors: [Colors.green[400]!, Colors.green[600]!],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
@@ -173,8 +172,8 @@ class _ResumenPagosEntregaScreenState extends State<ResumenPagosEntregaScreen> {
               children: [
                 Text(
                   'Resumen de Entrega #${widget.entrega.id}',
-                  style: const TextStyle(
-                    fontSize: 18,
+                  style: TextStyle(
+                    fontSize: AppTextStyles.headlineSmall(context).fontSize!,
                     fontWeight: FontWeight.w600,
                     color: Colors.white,
                   ),
@@ -189,15 +188,19 @@ class _ResumenPagosEntregaScreenState extends State<ResumenPagosEntregaScreen> {
                         Text(
                           'Total Esperado',
                           style: TextStyle(
-                            fontSize: 12,
+                            fontSize: AppTextStyles.bodySmall(
+                              context,
+                            ).fontSize!,
                             color: Colors.white.withValues(alpha: 0.8),
                           ),
                         ),
                         const SizedBox(height: 4),
                         Text(
                           'Bs. ${totalEsperado.toStringAsFixed(2)}',
-                          style: const TextStyle(
-                            fontSize: 20,
+                          style: TextStyle(
+                            fontSize: AppTextStyles.headlineMedium(
+                              context,
+                            ).fontSize!,
                             fontWeight: FontWeight.bold,
                             color: Colors.white,
                           ),
@@ -210,15 +213,19 @@ class _ResumenPagosEntregaScreenState extends State<ResumenPagosEntregaScreen> {
                         Text(
                           'Total Recibido',
                           style: TextStyle(
-                            fontSize: 12,
+                            fontSize: AppTextStyles.bodySmall(
+                              context,
+                            ).fontSize!,
                             color: Colors.white.withValues(alpha: 0.8),
                           ),
                         ),
                         const SizedBox(height: 4),
                         Text(
                           'Bs. ${totalRecibido.toStringAsFixed(2)}',
-                          style: const TextStyle(
-                            fontSize: 20,
+                          style: TextStyle(
+                            fontSize: AppTextStyles.headlineMedium(
+                              context,
+                            ).fontSize!,
                             fontWeight: FontWeight.bold,
                             color: Colors.white,
                           ),
@@ -229,7 +236,9 @@ class _ResumenPagosEntregaScreenState extends State<ResumenPagosEntregaScreen> {
                 ),
                 const SizedBox(height: 16),
                 LinearProgressIndicator(
-                  value: totalEsperado > 0 ? (totalRecibido / totalEsperado).toDouble() : 0,
+                  value: totalEsperado > 0
+                      ? (totalRecibido / totalEsperado).toDouble()
+                      : 0,
                   minHeight: 8,
                   backgroundColor: Colors.white.withValues(alpha: 0.3),
                   valueColor: AlwaysStoppedAnimation<Color>(
@@ -243,7 +252,7 @@ class _ResumenPagosEntregaScreenState extends State<ResumenPagosEntregaScreen> {
                     Text(
                       'Avance: ${porcentajeRecibido.toStringAsFixed(1)}%',
                       style: TextStyle(
-                        fontSize: 13,
+                        fontSize: AppTextStyles.bodySmall(context).fontSize!,
                         color: Colors.white.withValues(alpha: 0.9),
                         fontWeight: FontWeight.w500,
                       ),
@@ -253,7 +262,7 @@ class _ResumenPagosEntregaScreenState extends State<ResumenPagosEntregaScreen> {
                           ? 'Falta: Bs. ${diferencia.abs().toStringAsFixed(2)}'
                           : 'Completo ✅',
                       style: TextStyle(
-                        fontSize: 13,
+                        fontSize: AppTextStyles.bodySmall(context).fontSize!,
                         color: Colors.white.withValues(alpha: 0.9),
                         fontWeight: FontWeight.w500,
                       ),
@@ -269,9 +278,9 @@ class _ResumenPagosEntregaScreenState extends State<ResumenPagosEntregaScreen> {
           // ✅ SECCIÓN DE PAGOS POR TIPO
           Text(
             'Pagos Registrados',
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.w600,
-                ),
+            style: Theme.of(
+              context,
+            ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
           ),
           const SizedBox(height: 12),
 
@@ -321,9 +330,9 @@ class _ResumenPagosEntregaScreenState extends State<ResumenPagosEntregaScreen> {
           // ✅ NUEVA 2026-02-15: SECCIÓN DE DETALLE DE VENTAS CON PAGOS EDITABLES
           Text(
             'Detalle de Ventas',
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.w600,
-                ),
+            style: Theme.of(
+              context,
+            ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
           ),
           const SizedBox(height: 12),
 
@@ -353,14 +362,16 @@ class _ResumenPagosEntregaScreenState extends State<ResumenPagosEntregaScreen> {
           if (sinRegistrar.isNotEmpty) ...[
             Text(
               'Ventas Sin Pago Registrado',
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w600,
-                  ),
+              style: Theme.of(
+                context,
+              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
             ),
             const SizedBox(height: 12),
             Container(
               decoration: BoxDecoration(
-                color: isDarkMode ? Colors.orange[900]?.withOpacity(0.2) : Colors.orange[50],
+                color: isDarkMode
+                    ? Colors.orange[900]?.withOpacity(0.2)
+                    : Colors.orange[50],
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(
                   color: isDarkMode ? Colors.orange[700]! : Colors.orange[200]!,
@@ -393,9 +404,13 @@ class _ResumenPagosEntregaScreenState extends State<ResumenPagosEntregaScreen> {
                             Text(
                               'Venta $ventaNumero',
                               style: TextStyle(
-                                fontSize: 14,
+                                fontSize: AppTextStyles.bodyMedium(
+                                  context,
+                                ).fontSize!,
                                 fontWeight: FontWeight.w500,
-                                color: isDarkMode ? Colors.grey[200] : Colors.grey[800],
+                                color: isDarkMode
+                                    ? Colors.grey[200]
+                                    : Colors.grey[800],
                               ),
                             ),
                           ],
@@ -403,7 +418,9 @@ class _ResumenPagosEntregaScreenState extends State<ResumenPagosEntregaScreen> {
                         Text(
                           'Bs. ${monto.toStringAsFixed(2)}',
                           style: TextStyle(
-                            fontSize: 14,
+                            fontSize: AppTextStyles.bodyMedium(
+                              context,
+                            ).fontSize!,
                             fontWeight: FontWeight.w600,
                             color: Colors.orange[700],
                           ),
@@ -435,9 +452,7 @@ class _ResumenPagosEntregaScreenState extends State<ResumenPagosEntregaScreen> {
                   },
                   icon: const Icon(Icons.refresh),
                   label: const Text('Actualizar'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.blue,
-                  ),
+                  style: ElevatedButton.styleFrom(backgroundColor: Colors.blue),
                 ),
               ),
             ],
@@ -463,9 +478,13 @@ class _ResumenPagosEntregaScreenState extends State<ResumenPagosEntregaScreen> {
 
         // ✅ NUEVO 2026-02-17: Extraer campos de confirmación de entrega
         final fotos = (venta['fotos'] as List<dynamic>?)?.cast<String>() ?? [];
-        final observacionesLogistica = venta['observaciones_logistica'] as String? ?? '';
+        final observacionesLogistica =
+            venta['observaciones_logistica'] as String? ?? '';
         final firmaDigitalUrl = venta['firma_digital_url'] as String?;
-        final detalles = (venta['detalles'] as List<dynamic>?)?.cast<Map<String, dynamic>>() ?? [];
+        final detalles =
+            (venta['detalles'] as List<dynamic>?)
+                ?.cast<Map<String, dynamic>>() ??
+            [];
 
         if (ventaId > 0) {
           if (!ventasMap.containsKey(ventaId)) {
@@ -509,7 +528,8 @@ class _ResumenPagosEntregaScreenState extends State<ResumenPagosEntregaScreen> {
       final total = ventaData['total'] as double;
       // ✅ NUEVO 2026-02-17: Campos de confirmación de entrega
       final fotos = (ventaData['fotos'] as List?) ?? [];
-      final observacionesLogistica = ventaData['observaciones_logistica'] as String? ?? '';
+      final observacionesLogistica =
+          ventaData['observaciones_logistica'] as String? ?? '';
       final detalles = (ventaData['detalles'] as List?) ?? [];
 
       return Padding(
@@ -543,17 +563,25 @@ class _ResumenPagosEntregaScreenState extends State<ResumenPagosEntregaScreen> {
                             Text(
                               'Venta #$ventaId',
                               style: TextStyle(
-                                fontSize: 16,
+                                fontSize: AppTextStyles.bodyLarge(
+                                  context,
+                                ).fontSize!,
                                 fontWeight: FontWeight.w700,
-                                color: isDarkMode ? Colors.grey[100] : Colors.grey[900],
+                                color: isDarkMode
+                                    ? Colors.grey[100]
+                                    : Colors.grey[900],
                               ),
                             ),
                             const SizedBox(height: 4),
                             Text(
                               ventaNumero,
                               style: TextStyle(
-                                fontSize: 13,
-                                color: isDarkMode ? Colors.grey[400] : Colors.grey[600],
+                                fontSize: AppTextStyles.bodySmall(
+                                  context,
+                                ).fontSize!,
+                                color: isDarkMode
+                                    ? Colors.grey[400]
+                                    : Colors.grey[600],
                                 fontFamily: 'monospace',
                               ),
                             ),
@@ -588,7 +616,9 @@ class _ResumenPagosEntregaScreenState extends State<ResumenPagosEntregaScreen> {
                                         ? '✅ Completa'
                                         : '⚠️ Con Novedad${tipoNovedad != null ? ': $tipoNovedad' : ''}',
                                     style: TextStyle(
-                                      fontSize: 11,
+                                      fontSize: AppTextStyles.labelSmall(
+                                        context,
+                                      ).fontSize!,
                                       fontWeight: FontWeight.w600,
                                       color: tipoEntrega == 'COMPLETA'
                                           ? Colors.green[700]
@@ -603,7 +633,10 @@ class _ResumenPagosEntregaScreenState extends State<ResumenPagosEntregaScreen> {
                       ),
                       // Botón cambiar tipo de entrega - Navega a pantalla completa
                       IconButton(
-                        icon: const Icon(Icons.local_shipping_outlined, size: 22),
+                        icon: const Icon(
+                          Icons.local_shipping_outlined,
+                          size: 22,
+                        ),
                         onPressed: () {
                           // Convertir detalles de Map a VentaDetalle
                           final detallesVenta = detalles
@@ -646,7 +679,8 @@ class _ResumenPagosEntregaScreenState extends State<ResumenPagosEntregaScreen> {
                         color: Colors.orange[600],
                       ),
                       // ✅ Botón editar pagos (solo para Entrega Completa o Devolución Parcial)
-                      if (tipoEntrega == 'COMPLETA' || tipoNovedad == 'DEVOLUCION_PARCIAL')
+                      if (tipoEntrega == 'COMPLETA' ||
+                          tipoNovedad == 'DEVOLUCION_PARCIAL')
                         IconButton(
                           icon: const Icon(Icons.edit_outlined, size: 22),
                           onPressed: () {
@@ -680,12 +714,11 @@ class _ResumenPagosEntregaScreenState extends State<ResumenPagosEntregaScreen> {
                       vertical: 10,
                     ),
                     decoration: BoxDecoration(
-                      color: isDarkMode ? Colors.blue[900]?.withOpacity(0.3) : Colors.blue[50],
+                      color: isDarkMode
+                          ? Colors.blue[900]?.withOpacity(0.3)
+                          : Colors.blue[50],
                       borderRadius: BorderRadius.circular(8),
-                      border: Border.all(
-                        color: Colors.blue[400]!,
-                        width: 1,
-                      ),
+                      border: Border.all(color: Colors.blue[400]!, width: 1),
                     ),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -693,17 +726,25 @@ class _ResumenPagosEntregaScreenState extends State<ResumenPagosEntregaScreen> {
                         Text(
                           '💰 Total de la Venta',
                           style: TextStyle(
-                            fontSize: 13,
+                            fontSize: AppTextStyles.bodySmall(
+                              context,
+                            ).fontSize!,
                             fontWeight: FontWeight.w600,
-                            color: isDarkMode ? Colors.blue[200] : Colors.blue[800],
+                            color: isDarkMode
+                                ? Colors.blue[200]
+                                : Colors.blue[800],
                           ),
                         ),
                         Text(
                           'Bs. ${total.toStringAsFixed(2)}',
                           style: TextStyle(
-                            fontSize: 14,
+                            fontSize: AppTextStyles.bodyMedium(
+                              context,
+                            ).fontSize!,
                             fontWeight: FontWeight.bold,
-                            color: isDarkMode ? Colors.blue[100] : Colors.blue[900],
+                            color: isDarkMode
+                                ? Colors.blue[100]
+                                : Colors.blue[900],
                           ),
                         ),
                       ],
@@ -719,7 +760,8 @@ class _ResumenPagosEntregaScreenState extends State<ResumenPagosEntregaScreen> {
                     isDarkMode: isDarkMode,
                     fotos: fotos.cast<String>(),
                     observacionesLogistica: observacionesLogistica,
-                    tipoNovedad: tipoNovedad,  // ✅ NUEVO 2026-02-17: Pasar tipo_novedad para destacar devoluciones
+                    tipoNovedad:
+                        tipoNovedad, // ✅ NUEVO 2026-02-17: Pasar tipo_novedad para destacar devoluciones
                   ),
                   const SizedBox(height: 12),
 
@@ -728,14 +770,18 @@ class _ResumenPagosEntregaScreenState extends State<ResumenPagosEntregaScreen> {
                     Text(
                       '💳 Pagos Registrados',
                       style: TextStyle(
-                        fontSize: 12,
+                        fontSize: AppTextStyles.bodySmall(context).fontSize!,
                         fontWeight: FontWeight.w600,
                         color: isDarkMode ? Colors.grey[300] : Colors.grey[700],
                       ),
                     ),
                     const SizedBox(height: 8),
                   ] else if (tipoNovedad != null &&
-                      ['RECHAZADA', 'CLIENTE_CERRADO', 'NO_CONTACTADO'].contains(tipoNovedad)) ...[
+                      [
+                        'RECHAZADA',
+                        'CLIENTE_CERRADO',
+                        'NO_CONTACTADO',
+                      ].contains(tipoNovedad)) ...[
                     // Mensaje informativo cuando no hay pago esperado
                     Container(
                       padding: const EdgeInsets.symmetric(
@@ -760,9 +806,15 @@ class _ResumenPagosEntregaScreenState extends State<ResumenPagosEntregaScreen> {
                           const SizedBox(width: 8),
                           Expanded(
                             child: Text(
-                              'No se espera pago por ${tipoNovedad == 'RECHAZADA' ? 'rechazo total' : tipoNovedad == 'CLIENTE_CERRADO' ? 'cliente cerrado' : 'no haber sido contactado'}',
+                              'No se espera pago por ${tipoNovedad == 'RECHAZADA'
+                                  ? 'rechazo total'
+                                  : tipoNovedad == 'CLIENTE_CERRADO'
+                                  ? 'cliente cerrado'
+                                  : 'no haber sido contactado'}',
                               style: TextStyle(
-                                fontSize: 12,
+                                fontSize: AppTextStyles.bodySmall(
+                                  context,
+                                ).fontSize!,
                                 color: Colors.orange[700],
                               ),
                             ),
@@ -782,9 +834,7 @@ class _ResumenPagosEntregaScreenState extends State<ResumenPagosEntregaScreen> {
                         final isLast = entry.key == pagos.length - 1;
 
                         return Padding(
-                          padding: EdgeInsets.only(
-                            bottom: isLast ? 0 : 8,
-                          ),
+                          padding: EdgeInsets.only(bottom: isLast ? 0 : 8),
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
@@ -794,7 +844,9 @@ class _ResumenPagosEntregaScreenState extends State<ResumenPagosEntregaScreen> {
                                   child: Text(
                                     '└─ $tipoPago',
                                     style: TextStyle(
-                                      fontSize: 12,
+                                      fontSize: AppTextStyles.bodySmall(
+                                        context,
+                                      ).fontSize!,
                                       color: isDarkMode
                                           ? Colors.grey[300]
                                           : Colors.grey[700],
@@ -805,7 +857,9 @@ class _ResumenPagosEntregaScreenState extends State<ResumenPagosEntregaScreen> {
                               Text(
                                 'Bs. ${monto.toStringAsFixed(2)}',
                                 style: TextStyle(
-                                  fontSize: 12,
+                                  fontSize: AppTextStyles.bodySmall(
+                                    context,
+                                  ).fontSize!,
                                   fontWeight: FontWeight.w600,
                                   color: Colors.blue[600],
                                 ),
@@ -834,7 +888,9 @@ class _ResumenPagosEntregaScreenState extends State<ResumenPagosEntregaScreen> {
                         child: Text(
                           '⚠️ Sin pagos registrados',
                           style: TextStyle(
-                            fontSize: 12,
+                            fontSize: AppTextStyles.bodySmall(
+                              context,
+                            ).fontSize!,
                             color: Colors.orange[700],
                             fontWeight: FontWeight.w500,
                           ),
@@ -858,7 +914,9 @@ class _ResumenPagosEntregaScreenState extends State<ResumenPagosEntregaScreen> {
                         Text(
                           '📊 Total de Pagos:',
                           style: TextStyle(
-                            fontSize: 13,
+                            fontSize: AppTextStyles.bodySmall(
+                              context,
+                            ).fontSize!,
                             fontWeight: FontWeight.w600,
                             color: isDarkMode
                                 ? Colors.grey[200]
@@ -868,7 +926,9 @@ class _ResumenPagosEntregaScreenState extends State<ResumenPagosEntregaScreen> {
                         Text(
                           'Bs. ${total.toStringAsFixed(2)}',
                           style: TextStyle(
-                            fontSize: 14,
+                            fontSize: AppTextStyles.bodyMedium(
+                              context,
+                            ).fontSize!,
                             fontWeight: FontWeight.w700,
                             color: Colors.green[600],
                           ),
@@ -895,8 +955,11 @@ class _ResumenPagosEntregaScreenState extends State<ResumenPagosEntregaScreen> {
     List<Map<String, dynamic>> detalles = [];
     if (pagos.isNotEmpty) {
       final primerPago = pagos.first;
-      if (primerPago.containsKey('detalles') && primerPago['detalles'] is List) {
-        detalles = List<Map<String, dynamic>>.from(primerPago['detalles'] as List);
+      if (primerPago.containsKey('detalles') &&
+          primerPago['detalles'] is List) {
+        detalles = List<Map<String, dynamic>>.from(
+          primerPago['detalles'] as List,
+        );
       }
     }
 
@@ -905,7 +968,9 @@ class _ResumenPagosEntregaScreenState extends State<ResumenPagosEntregaScreen> {
       return Container(
         padding: const EdgeInsets.all(10),
         decoration: BoxDecoration(
-          color: isDarkMode ? Colors.grey[900]?.withOpacity(0.3) : Colors.grey[50],
+          color: isDarkMode
+              ? Colors.grey[900]?.withOpacity(0.3)
+              : Colors.grey[50],
           borderRadius: BorderRadius.circular(8),
           border: Border.all(
             color: isDarkMode ? Colors.grey[700]! : Colors.grey[200]!,
@@ -915,7 +980,7 @@ class _ResumenPagosEntregaScreenState extends State<ResumenPagosEntregaScreen> {
           child: Text(
             '📦 Sin productos',
             style: TextStyle(
-              fontSize: 12,
+              fontSize: AppTextStyles.bodySmall(context).fontSize!,
               color: isDarkMode ? Colors.grey[400] : Colors.grey[600],
               fontStyle: FontStyle.italic,
             ),
@@ -932,7 +997,7 @@ class _ResumenPagosEntregaScreenState extends State<ResumenPagosEntregaScreen> {
         Text(
           '📦 Productos (${detalles.length})',
           style: TextStyle(
-            fontSize: 12,
+            fontSize: AppTextStyles.bodySmall(context).fontSize!,
             fontWeight: FontWeight.w600,
             color: isDarkMode ? Colors.grey[300] : Colors.grey[700],
           ),
@@ -942,7 +1007,9 @@ class _ResumenPagosEntregaScreenState extends State<ResumenPagosEntregaScreen> {
         // Lista de productos
         Container(
           decoration: BoxDecoration(
-            color: isDarkMode ? Colors.grey[900]?.withOpacity(0.3) : Colors.blue[50],
+            color: isDarkMode
+                ? Colors.grey[900]?.withOpacity(0.3)
+                : Colors.blue[50],
             borderRadius: BorderRadius.circular(8),
             border: Border.all(
               color: isDarkMode ? Colors.blue[800]! : Colors.blue[200]!,
@@ -954,7 +1021,8 @@ class _ResumenPagosEntregaScreenState extends State<ResumenPagosEntregaScreen> {
               final isLast = entry.key == detalles.length - 1;
 
               final productoNombre =
-                  detalle['producto_nombre'] as String? ?? 'Producto desconocido';
+                  detalle['producto_nombre'] as String? ??
+                  'Producto desconocido';
               final productoCodiogo =
                   detalle['producto_codigo'] as String? ?? '';
               final cantidad = (detalle['cantidad'] as num?) ?? 0;
@@ -980,7 +1048,9 @@ class _ResumenPagosEntregaScreenState extends State<ResumenPagosEntregaScreen> {
                                   Text(
                                     productoNombre,
                                     style: TextStyle(
-                                      fontSize: 12,
+                                      fontSize: AppTextStyles.bodySmall(
+                                        context,
+                                      ).fontSize!,
                                       fontWeight: FontWeight.w600,
                                       color: isDarkMode
                                           ? Colors.grey[200]
@@ -993,7 +1063,9 @@ class _ResumenPagosEntregaScreenState extends State<ResumenPagosEntregaScreen> {
                                     Text(
                                       '#$productoCodiogo',
                                       style: TextStyle(
-                                        fontSize: 10,
+                                        fontSize: AppTextStyles.labelSmall(
+                                          context,
+                                        ).fontSize!,
                                         color: isDarkMode
                                             ? Colors.grey[500]
                                             : Colors.grey[600],
@@ -1018,7 +1090,9 @@ class _ResumenPagosEntregaScreenState extends State<ResumenPagosEntregaScreen> {
                                   Text(
                                     'Cantidad',
                                     style: TextStyle(
-                                      fontSize: 10,
+                                      fontSize: AppTextStyles.labelSmall(
+                                        context,
+                                      ).fontSize!,
                                       color: isDarkMode
                                           ? Colors.grey[500]
                                           : Colors.grey[600],
@@ -1027,7 +1101,9 @@ class _ResumenPagosEntregaScreenState extends State<ResumenPagosEntregaScreen> {
                                   Text(
                                     cantidad.toString(),
                                     style: TextStyle(
-                                      fontSize: 12,
+                                      fontSize: AppTextStyles.bodySmall(
+                                        context,
+                                      ).fontSize!,
                                       fontWeight: FontWeight.w600,
                                       color: isDarkMode
                                           ? Colors.grey[300]
@@ -1046,7 +1122,9 @@ class _ResumenPagosEntregaScreenState extends State<ResumenPagosEntregaScreen> {
                                   Text(
                                     'Precio Unit.',
                                     style: TextStyle(
-                                      fontSize: 10,
+                                      fontSize: AppTextStyles.labelSmall(
+                                        context,
+                                      ).fontSize!,
                                       color: isDarkMode
                                           ? Colors.grey[500]
                                           : Colors.grey[600],
@@ -1055,7 +1133,9 @@ class _ResumenPagosEntregaScreenState extends State<ResumenPagosEntregaScreen> {
                                   Text(
                                     'Bs. ${precioUnitario.toStringAsFixed(2)}',
                                     style: TextStyle(
-                                      fontSize: 12,
+                                      fontSize: AppTextStyles.bodySmall(
+                                        context,
+                                      ).fontSize!,
                                       fontWeight: FontWeight.w600,
                                       color: isDarkMode
                                           ? Colors.grey[300]
@@ -1074,7 +1154,9 @@ class _ResumenPagosEntregaScreenState extends State<ResumenPagosEntregaScreen> {
                                   Text(
                                     'Subtotal',
                                     style: TextStyle(
-                                      fontSize: 10,
+                                      fontSize: AppTextStyles.labelSmall(
+                                        context,
+                                      ).fontSize!,
                                       color: isDarkMode
                                           ? Colors.grey[500]
                                           : Colors.grey[600],
@@ -1082,10 +1164,14 @@ class _ResumenPagosEntregaScreenState extends State<ResumenPagosEntregaScreen> {
                                   ),
                                   Text(
                                     'Bs. ${subtotal.toStringAsFixed(2)}',
-                                    style: const TextStyle(
-                                      fontSize: 12,
+                                    style: TextStyle(
+                                      fontSize: AppTextStyles.bodySmall(
+                                        context,
+                                      ).fontSize!,
                                       fontWeight: FontWeight.w700,
-                                      color: Colors.green,
+                                      color: isDarkMode
+                                          ? Colors.green[400]
+                                          : Colors.green[700],
                                     ),
                                   ),
                                 ],
@@ -1136,7 +1222,7 @@ class _ResumenPagosEntregaScreenState extends State<ResumenPagosEntregaScreen> {
           Text(
             '📸 Fotos (${fotos.length})',
             style: TextStyle(
-              fontSize: 12,
+              fontSize: AppTextStyles.bodySmall(context).fontSize!,
               fontWeight: FontWeight.w600,
               color: isDarkMode ? Colors.grey[300] : Colors.grey[700],
             ),
@@ -1160,10 +1246,15 @@ class _ResumenPagosEntregaScreenState extends State<ResumenPagosEntregaScreen> {
                           width: 80,
                           height: 80,
                           decoration: BoxDecoration(
-                            color: isDarkMode ? Colors.grey[700] : Colors.grey[200],
+                            color: isDarkMode
+                                ? Colors.grey[700]
+                                : Colors.grey[200],
                             borderRadius: BorderRadius.circular(6),
                           ),
-                          child: const Icon(Icons.image_not_supported, size: 20),
+                          child: const Icon(
+                            Icons.image_not_supported,
+                            size: 20,
+                          ),
                         );
                       },
                     ),
@@ -1180,7 +1271,7 @@ class _ResumenPagosEntregaScreenState extends State<ResumenPagosEntregaScreen> {
           Text(
             '📝 Observaciones',
             style: TextStyle(
-              fontSize: 12,
+              fontSize: AppTextStyles.bodySmall(context).fontSize!,
               fontWeight: FontWeight.w600,
               color: isDarkMode ? Colors.grey[300] : Colors.grey[700],
             ),
@@ -1189,16 +1280,16 @@ class _ResumenPagosEntregaScreenState extends State<ResumenPagosEntregaScreen> {
           Container(
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-              color: isDarkMode ? Colors.orange[900]?.withOpacity(0.2) : Colors.orange[50],
+              color: isDarkMode
+                  ? Colors.orange[900]?.withOpacity(0.2)
+                  : Colors.orange[50],
               borderRadius: BorderRadius.circular(6),
-              border: Border.all(
-                color: Colors.orange[300]!,
-              ),
+              border: Border.all(color: Colors.orange[300]!),
             ),
             child: Text(
               observacionesLogistica,
               style: TextStyle(
-                fontSize: 12,
+                fontSize: AppTextStyles.bodySmall(context).fontSize!,
                 color: isDarkMode ? Colors.orange[200] : Colors.orange[900],
               ),
             ),
@@ -1211,14 +1302,14 @@ class _ResumenPagosEntregaScreenState extends State<ResumenPagosEntregaScreen> {
           // ✅ Título diferenciado según tipo de novedad
           Text(
             (tipoNovedad ?? '') == 'DEVOLUCION_PARCIAL'
-              ? '📦 Productos Devueltos (${detalles.length})'
-              : '📦 Productos (${detalles.length})',
+                ? '📦 Productos Devueltos (${detalles.length})'
+                : '📦 Productos (${detalles.length})',
             style: TextStyle(
-              fontSize: 12,
+              fontSize: AppTextStyles.bodySmall(context).fontSize!,
               fontWeight: FontWeight.w600,
               color: (tipoNovedad ?? '') == 'DEVOLUCION_PARCIAL'
-                ? (isDarkMode ? Colors.orange[300] : Colors.orange[800])
-                : (isDarkMode ? Colors.grey[300] : Colors.grey[700]),
+                  ? (isDarkMode ? Colors.orange[300] : Colors.orange[800])
+                  : (isDarkMode ? Colors.grey[300] : Colors.grey[700]),
             ),
           ),
           const SizedBox(height: 8),
@@ -1226,13 +1317,17 @@ class _ResumenPagosEntregaScreenState extends State<ResumenPagosEntregaScreen> {
             decoration: BoxDecoration(
               // ✅ Colores diferenciados para DEVOLUCION_PARCIAL
               color: (tipoNovedad ?? '') == 'DEVOLUCION_PARCIAL'
-                ? (isDarkMode ? Colors.orange[900]?.withOpacity(0.2) : Colors.orange[50])
-                : (isDarkMode ? Colors.grey[900]?.withOpacity(0.3) : Colors.blue[50]),
+                  ? (isDarkMode
+                        ? Colors.orange[900]?.withOpacity(0.2)
+                        : Colors.orange[50])
+                  : (isDarkMode
+                        ? Colors.grey[900]?.withOpacity(0.3)
+                        : Colors.blue[50]),
               borderRadius: BorderRadius.circular(8),
               border: Border.all(
                 color: (tipoNovedad ?? '') == 'DEVOLUCION_PARCIAL'
-                  ? (isDarkMode ? Colors.orange[700]! : Colors.orange[200]!)
-                  : (isDarkMode ? Colors.blue[800]! : Colors.blue[200]!),
+                    ? (isDarkMode ? Colors.orange[700]! : Colors.orange[200]!)
+                    : (isDarkMode ? Colors.blue[800]! : Colors.blue[200]!),
               ),
             ),
             child: Column(
@@ -1240,10 +1335,14 @@ class _ResumenPagosEntregaScreenState extends State<ResumenPagosEntregaScreen> {
                 final detalle = entry.value;
                 final isLast = entry.key == detalles.length - 1;
 
-                final productoNombre = detalle['producto_nombre'] as String? ?? 'Producto desconocido';
-                final productoCodiogo = detalle['producto_codigo'] as String? ?? '';
+                final productoNombre =
+                    detalle['producto_nombre'] as String? ??
+                    'Producto desconocido';
+                final productoCodiogo =
+                    detalle['producto_codigo'] as String? ?? '';
                 final cantidad = (detalle['cantidad'] as num?) ?? 0;
-                final precioUnitario = (detalle['precio_unitario'] as num?) ?? 0;
+                final precioUnitario =
+                    (detalle['precio_unitario'] as num?) ?? 0;
                 final subtotal = (detalle['subtotal'] as num?) ?? 0;
 
                 return Column(
@@ -1257,9 +1356,13 @@ class _ResumenPagosEntregaScreenState extends State<ResumenPagosEntregaScreen> {
                           Text(
                             productoNombre,
                             style: TextStyle(
-                              fontSize: 12,
+                              fontSize: AppTextStyles.bodySmall(
+                                context,
+                              ).fontSize!,
                               fontWeight: FontWeight.w600,
-                              color: isDarkMode ? Colors.grey[200] : Colors.grey[900],
+                              color: isDarkMode
+                                  ? Colors.grey[200]
+                                  : Colors.grey[900],
                             ),
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,
@@ -1268,8 +1371,12 @@ class _ResumenPagosEntregaScreenState extends State<ResumenPagosEntregaScreen> {
                             Text(
                               '#$productoCodiogo',
                               style: TextStyle(
-                                fontSize: 10,
-                                color: isDarkMode ? Colors.grey[500] : Colors.grey[600],
+                                fontSize: AppTextStyles.labelSmall(
+                                  context,
+                                ).fontSize!,
+                                color: isDarkMode
+                                    ? Colors.grey[500]
+                                    : Colors.grey[600],
                               ),
                             ),
                           const SizedBox(height: 6),
@@ -1280,23 +1387,35 @@ class _ResumenPagosEntregaScreenState extends State<ResumenPagosEntregaScreen> {
                               Text(
                                 'Cant: ${cantidad.toInt()}',
                                 style: TextStyle(
-                                  fontSize: 11,
-                                  color: isDarkMode ? Colors.grey[400] : Colors.grey[700],
+                                  fontSize: AppTextStyles.labelSmall(
+                                    context,
+                                  ).fontSize!,
+                                  color: isDarkMode
+                                      ? Colors.grey[400]
+                                      : Colors.grey[700],
                                 ),
                               ),
                               Text(
                                 'Bs. ${precioUnitario.toStringAsFixed(2)}',
                                 style: TextStyle(
-                                  fontSize: 11,
-                                  color: isDarkMode ? Colors.grey[400] : Colors.grey[700],
+                                  fontSize: AppTextStyles.labelSmall(
+                                    context,
+                                  ).fontSize!,
+                                  color: isDarkMode
+                                      ? Colors.grey[400]
+                                      : Colors.grey[700],
                                 ),
                               ),
                               Text(
                                 'Bs. ${subtotal.toStringAsFixed(2)}',
-                                style: const TextStyle(
-                                  fontSize: 11,
+                                style: TextStyle(
+                                  fontSize: AppTextStyles.labelSmall(
+                                    context,
+                                  ).fontSize!,
                                   fontWeight: FontWeight.w700,
-                                  color: Colors.green,
+                                  color: isDarkMode
+                                      ? Colors.green[400]
+                                      : Colors.green[700],
                                 ),
                               ),
                             ],
@@ -1307,8 +1426,12 @@ class _ResumenPagosEntregaScreenState extends State<ResumenPagosEntregaScreen> {
                     if (!isLast)
                       Divider(
                         color: (tipoNovedad ?? '') == 'DEVOLUCION_PARCIAL'
-                          ? (isDarkMode ? Colors.orange[700] : Colors.orange[200])
-                          : (isDarkMode ? Colors.grey[700] : Colors.blue[200]),
+                            ? (isDarkMode
+                                  ? Colors.orange[700]
+                                  : Colors.orange[200])
+                            : (isDarkMode
+                                  ? Colors.grey[700]
+                                  : Colors.blue[200]),
                         height: 1,
                         thickness: 1,
                       ),
@@ -1349,7 +1472,9 @@ class _ResumenPagosEntregaScreenState extends State<ResumenPagosEntregaScreen> {
         if (tipoPago != null && tiposPago.isNotEmpty) {
           try {
             final tipoEncontrado = tiposPago.firstWhere(
-              (t) => (t['nombre'] as String).toUpperCase() == tipoPago.toUpperCase(),
+              (t) =>
+                  (t['nombre'] as String).toUpperCase() ==
+                  tipoPago.toUpperCase(),
               orElse: () => {'id': 0, 'nombre': tipoPago},
             );
             tipoPagoId = tipoEncontrado['id'] as int? ?? 0;
@@ -1369,7 +1494,8 @@ class _ResumenPagosEntregaScreenState extends State<ResumenPagosEntregaScreen> {
     }
 
     // ✅ FIX 2026-02-21: Controllers se crean FUERA del builder para persistir entre rebuilds
-    final Map<int, TextEditingController> montoControllers = <int, TextEditingController>{};
+    final Map<int, TextEditingController> montoControllers =
+        <int, TextEditingController>{};
     for (int i = 0; i < pagosEditables.length; i++) {
       montoControllers[i] = TextEditingController(
         text: (pagosEditables[i]['monto'] as double).toStringAsFixed(2),
@@ -1381,8 +1507,14 @@ class _ResumenPagosEntregaScreenState extends State<ResumenPagosEntregaScreen> {
       builder: (BuildContext dialogContext) {
         return StatefulBuilder(
           builder: (context, setStateDialog) {
-            final totalRecibidoActual = pagosEditables.fold(0.0, (sum, p) => sum + (p['monto'] as double));
-            final montoPendienteActual = (total - totalRecibidoActual).clamp(0.0, double.infinity);
+            final totalRecibidoActual = pagosEditables.fold(
+              0.0,
+              (sum, p) => sum + (p['monto'] as double),
+            );
+            final montoPendienteActual = (total - totalRecibidoActual).clamp(
+              0.0,
+              double.infinity,
+            );
 
             return Dialog(
               backgroundColor: isDarkMode ? Colors.grey[900] : Colors.white,
@@ -1399,9 +1531,13 @@ class _ResumenPagosEntregaScreenState extends State<ResumenPagosEntregaScreen> {
                         Text(
                           '✏️ Corregir Pagos',
                           style: TextStyle(
-                            fontSize: 18,
+                            fontSize: AppTextStyles.headlineSmall(
+                              context,
+                            ).fontSize!,
                             fontWeight: FontWeight.w600,
-                            color: isDarkMode ? Colors.grey[100] : Colors.grey[900],
+                            color: isDarkMode
+                                ? Colors.grey[100]
+                                : Colors.grey[900],
                           ),
                         ),
                         IconButton(
@@ -1413,7 +1549,9 @@ class _ResumenPagosEntregaScreenState extends State<ResumenPagosEntregaScreen> {
                             }
                             Navigator.pop(context);
                           },
-                          color: isDarkMode ? Colors.grey[400] : Colors.grey[600],
+                          color: isDarkMode
+                              ? Colors.grey[400]
+                              : Colors.grey[600],
                         ),
                       ],
                     ),
@@ -1421,7 +1559,7 @@ class _ResumenPagosEntregaScreenState extends State<ResumenPagosEntregaScreen> {
                     Text(
                       'Venta $ventaNumero - $clienteNombre',
                       style: TextStyle(
-                        fontSize: 13,
+                        fontSize: AppTextStyles.bodySmall(context).fontSize!,
                         color: isDarkMode ? Colors.grey[400] : Colors.grey[600],
                       ),
                     ),
@@ -1443,15 +1581,21 @@ class _ResumenPagosEntregaScreenState extends State<ResumenPagosEntregaScreen> {
                               Text(
                                 'Total Venta:',
                                 style: TextStyle(
-                                  fontSize: 13,
+                                  fontSize: AppTextStyles.bodySmall(
+                                    context,
+                                  ).fontSize!,
                                   fontWeight: FontWeight.w500,
-                                  color: isDarkMode ? Colors.grey[300] : Colors.grey[700],
+                                  color: isDarkMode
+                                      ? Colors.grey[300]
+                                      : Colors.grey[700],
                                 ),
                               ),
                               Text(
                                 'Bs. ${total.toStringAsFixed(2)}',
-                                style: const TextStyle(
-                                  fontSize: 14,
+                                style: TextStyle(
+                                  fontSize: AppTextStyles.bodyMedium(
+                                    context,
+                                  ).fontSize!,
                                   fontWeight: FontWeight.bold,
                                   color: Colors.green,
                                 ),
@@ -1465,17 +1609,25 @@ class _ResumenPagosEntregaScreenState extends State<ResumenPagosEntregaScreen> {
                               Text(
                                 'Total Recibido:',
                                 style: TextStyle(
-                                  fontSize: 13,
+                                  fontSize: AppTextStyles.bodySmall(
+                                    context,
+                                  ).fontSize!,
                                   fontWeight: FontWeight.w500,
-                                  color: isDarkMode ? Colors.grey[300] : Colors.grey[700],
+                                  color: isDarkMode
+                                      ? Colors.grey[300]
+                                      : Colors.grey[700],
                                 ),
                               ),
                               Text(
                                 'Bs. ${totalRecibidoActual.toStringAsFixed(2)}',
-                                style: const TextStyle(
-                                  fontSize: 14,
+                                style: TextStyle(
+                                  fontSize: AppTextStyles.bodyMedium(
+                                    context,
+                                  ).fontSize!,
                                   fontWeight: FontWeight.bold,
-                                  color: Colors.blue,
+                                  color: isDarkMode
+                                      ? Colors.blue[400]
+                                      : Colors.blue[700],
                                 ),
                               ),
                             ],
@@ -1487,17 +1639,29 @@ class _ResumenPagosEntregaScreenState extends State<ResumenPagosEntregaScreen> {
                               Text(
                                 'Monto Pendiente:',
                                 style: TextStyle(
-                                  fontSize: 13,
+                                  fontSize: AppTextStyles.bodySmall(
+                                    context,
+                                  ).fontSize!,
                                   fontWeight: FontWeight.w500,
-                                  color: isDarkMode ? Colors.grey[300] : Colors.grey[700],
+                                  color: isDarkMode
+                                      ? Colors.grey[300]
+                                      : Colors.grey[700],
                                 ),
                               ),
                               Text(
                                 'Bs. ${montoPendienteActual.toStringAsFixed(2)}',
                                 style: TextStyle(
-                                  fontSize: 14,
+                                  fontSize: AppTextStyles.bodyMedium(
+                                    context,
+                                  ).fontSize!,
                                   fontWeight: FontWeight.bold,
-                                  color: montoPendienteActual > 0 ? Colors.red : Colors.green,
+                                  color: montoPendienteActual > 0
+                                      ? (isDarkMode
+                                            ? Colors.red[400]
+                                            : Colors.red[700])
+                                      : (isDarkMode
+                                            ? Colors.green[400]
+                                            : Colors.green[700]),
                                 ),
                               ),
                             ],
@@ -1511,7 +1675,7 @@ class _ResumenPagosEntregaScreenState extends State<ResumenPagosEntregaScreen> {
                     Text(
                       'Pagos de esta Venta',
                       style: TextStyle(
-                        fontSize: 13,
+                        fontSize: AppTextStyles.bodySmall(context).fontSize!,
                         fontWeight: FontWeight.w600,
                         color: isDarkMode ? Colors.grey[200] : Colors.grey[800],
                       ),
@@ -1522,10 +1686,14 @@ class _ResumenPagosEntregaScreenState extends State<ResumenPagosEntregaScreen> {
                       Container(
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
-                          color: isDarkMode ? Colors.orange[900]?.withOpacity(0.2) : Colors.orange[50],
+                          color: isDarkMode
+                              ? Colors.orange[900]?.withOpacity(0.2)
+                              : Colors.orange[50],
                           borderRadius: BorderRadius.circular(8),
                           border: Border.all(
-                            color: isDarkMode ? Colors.orange[700]! : Colors.orange[200]!,
+                            color: isDarkMode
+                                ? Colors.orange[700]!
+                                : Colors.orange[200]!,
                           ),
                         ),
                         child: Center(
@@ -1533,174 +1701,245 @@ class _ResumenPagosEntregaScreenState extends State<ResumenPagosEntregaScreen> {
                             '⚠️ Sin pagos registrados aún',
                             style: TextStyle(
                               color: Colors.orange[700],
-                              fontSize: 13,
+                              fontSize: AppTextStyles.bodySmall(
+                                context,
+                              ).fontSize!,
                               fontWeight: FontWeight.w500,
                             ),
                           ),
                         ),
                       )
                     else
-                      ...List<int>.generate(pagosEditables.length, (i) => i).map((index) {
-                          final pago = pagosEditables[index];
-                          final esRegistrado = pago['registrado'] as bool? ?? false;
+                      ...List<int>.generate(
+                        pagosEditables.length,
+                        (i) => i,
+                      ).map((index) {
+                        final pago = pagosEditables[index];
+                        final esRegistrado =
+                            pago['registrado'] as bool? ?? false;
 
-                          return Padding(
-                            padding: const EdgeInsets.only(bottom: 10),
-                            child: Container(
-                              padding: const EdgeInsets.all(10),
-                              decoration: BoxDecoration(
-                                color: isDarkMode ? Colors.grey[800] : Colors.grey[50],
-                                borderRadius: BorderRadius.circular(8),
-                                border: Border.all(
-                                  color: esRegistrado
-                                      ? Colors.green[400]!
-                                      : (isDarkMode ? Colors.grey[700]! : Colors.grey[300]!),
-                                  width: esRegistrado ? 2 : 1,
-                                ),
-                              ),
-                              child: Column(
-                                children: [
-                                  // Encabezado con estado
-                                  Row(
-                                    children: [
-                                      if (esRegistrado)
-                                        Container(
-                                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                          decoration: BoxDecoration(
-                                            color: Colors.green[100],
-                                            borderRadius: BorderRadius.circular(4),
-                                          ),
-                                          child: Text(
-                                            '✅ Registrado',
-                                            style: TextStyle(
-                                              fontSize: 11,
-                                              fontWeight: FontWeight.w600,
-                                              color: Colors.green[700],
-                                            ),
-                                          ),
-                                        )
-                                      else
-                                        Container(
-                                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                          decoration: BoxDecoration(
-                                            color: Colors.blue[100],
-                                            borderRadius: BorderRadius.circular(4),
-                                          ),
-                                          child: Text(
-                                            '+ Nuevo',
-                                            style: TextStyle(
-                                              fontSize: 11,
-                                              fontWeight: FontWeight.w600,
-                                              color: Colors.blue[700],
-                                            ),
-                                          ),
-                                        ),
-                                      const Spacer(),
-                                      Text(
-                                        'Bs. ${(pago['monto'] as double).toStringAsFixed(2)}',
-                                        style: TextStyle(
-                                          fontSize: 14,
-                                          fontWeight: FontWeight.bold,
-                                          color: Colors.blue[600],
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                  const SizedBox(height: 8),
-                                  // Campos editables
-                                  Row(
-                                    children: [
-                                      Expanded(
-                                        flex: 2,
-                                        child: DropdownButton<int>(
-                                          value: pago['tipo_pago_id'] ?? 0,
-                                          isExpanded: true,
-                                          items: [
-                                            const DropdownMenuItem<int>(
-                                              value: 0,
-                                              child: Text('Seleccionar tipo...'),
-                                            ),
-                                            ...tiposPago.map((tipo) => DropdownMenuItem<int>(
-                                                  value: tipo['id'] as int,
-                                                  child: Text(tipo['nombre'] as String),
-                                                )),
-                                          ],
-                                          onChanged: (newValue) {
-                                            if (newValue != null && newValue != 0) {
-                                              final tipoSeleccionado = tiposPago.firstWhere(
-                                                (t) => t['id'] == newValue,
-                                                orElse: () => {'id': newValue, 'nombre': 'OTRO'},
-                                              );
-                                              setStateDialog(() {
-                                                pagosEditables[index]['tipo_pago_id'] = newValue;
-                                                pagosEditables[index]['tipo_pago_nombre'] = tipoSeleccionado['nombre'];
-                                              });
-                                            }
-                                          },
-                                        ),
-                                      ),
-                                      const SizedBox(width: 8),
-                                      Expanded(
-                                        flex: 1,
-                                        child: TextField(
-                                          keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                                          decoration: InputDecoration(
-                                            hintText: 'Monto',
-                                            hintStyle: TextStyle(
-                                              color: isDarkMode ? Colors.grey[500] : Colors.grey[400],
-                                            ),
-                                            contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-                                            border: OutlineInputBorder(
-                                              borderRadius: BorderRadius.circular(4),
-                                            ),
-                                          ),
-                                          controller: montoControllers[index]!,
-                                          onChanged: (value) {
-                                            setStateDialog(() {
-                                              pagosEditables[index]['monto'] = double.tryParse(value) ?? 0.0;
-                                            });
-                                          },
-                                        ),
-                                      ),
-                                      const SizedBox(width: 8),
-                                      IconButton(
-                                        icon: const Icon(Icons.delete_outline, color: Colors.red),
-                                        onPressed: () {
-                                          setStateDialog(() {
-                                            // Dispose el controller del pago que se elimina
-                                            montoControllers[index]?.dispose();
-                                            montoControllers.remove(index);
-
-                                            // Remover el pago
-                                            pagosEditables.removeAt(index);
-
-                                            // Reconstruir mapa de controllers con índices válidos
-                                            final newControllers = <int, TextEditingController>{};
-                                            for (int i = 0; i < pagosEditables.length; i++) {
-                                              // Usar el controller existente o crear uno nuevo
-                                              if (i < index && montoControllers.containsKey(i)) {
-                                                newControllers[i] = montoControllers[i]!;
-                                              } else if (i >= index && montoControllers.containsKey(i + 1)) {
-                                                newControllers[i] = montoControllers[i + 1]!;
-                                              } else {
-                                                newControllers[i] = TextEditingController(
-                                                  text: (pagosEditables[i]['monto'] as double).toStringAsFixed(2),
-                                                );
-                                              }
-                                            }
-                                            montoControllers.clear();
-                                            montoControllers.addAll(newControllers);
-                                          });
-                                        },
-                                        iconSize: 20,
-                                      ),
-                                    ],
-                                  ),
-                                ],
+                        return Padding(
+                          padding: const EdgeInsets.only(bottom: 10),
+                          child: Container(
+                            padding: const EdgeInsets.all(10),
+                            decoration: BoxDecoration(
+                              color: isDarkMode
+                                  ? Colors.grey[800]
+                                  : Colors.grey[50],
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(
+                                color: esRegistrado
+                                    ? Colors.green[400]!
+                                    : (isDarkMode
+                                          ? Colors.grey[700]!
+                                          : Colors.grey[300]!),
+                                width: esRegistrado ? 2 : 1,
                               ),
                             ),
-                          );
-                        }).toList(),
+                            child: Column(
+                              children: [
+                                // Encabezado con estado
+                                Row(
+                                  children: [
+                                    if (esRegistrado)
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 6,
+                                          vertical: 2,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          color: Colors.green[100],
+                                          borderRadius: BorderRadius.circular(
+                                            4,
+                                          ),
+                                        ),
+                                        child: Text(
+                                          '✅ Registrado',
+                                          style: TextStyle(
+                                            fontSize: AppTextStyles.labelSmall(
+                                              context,
+                                            ).fontSize!,
+                                            fontWeight: FontWeight.w600,
+                                            color: Colors.green[700],
+                                          ),
+                                        ),
+                                      )
+                                    else
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 6,
+                                          vertical: 2,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          color: Colors.blue[100],
+                                          borderRadius: BorderRadius.circular(
+                                            4,
+                                          ),
+                                        ),
+                                        child: Text(
+                                          '+ Nuevo',
+                                          style: TextStyle(
+                                            fontSize: AppTextStyles.labelSmall(
+                                              context,
+                                            ).fontSize!,
+                                            fontWeight: FontWeight.w600,
+                                            color: Colors.blue[700],
+                                          ),
+                                        ),
+                                      ),
+                                    const Spacer(),
+                                    Text(
+                                      'Bs. ${(pago['monto'] as double).toStringAsFixed(2)}',
+                                      style: TextStyle(
+                                        fontSize: AppTextStyles.bodyMedium(
+                                          context,
+                                        ).fontSize!,
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.blue[600],
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 8),
+                                // Campos editables
+                                Row(
+                                  children: [
+                                    Expanded(
+                                      flex: 2,
+                                      child: DropdownButton<int>(
+                                        value: pago['tipo_pago_id'] ?? 0,
+                                        isExpanded: true,
+                                        items: [
+                                          const DropdownMenuItem<int>(
+                                            value: 0,
+                                            child: Text('Seleccionar tipo...'),
+                                          ),
+                                          ...tiposPago.map(
+                                            (tipo) => DropdownMenuItem<int>(
+                                              value: tipo['id'] as int,
+                                              child: Text(
+                                                tipo['nombre'] as String,
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                        onChanged: (newValue) {
+                                          if (newValue != null &&
+                                              newValue != 0) {
+                                            final tipoSeleccionado = tiposPago
+                                                .firstWhere(
+                                                  (t) => t['id'] == newValue,
+                                                  orElse: () => {
+                                                    'id': newValue,
+                                                    'nombre': 'OTRO',
+                                                  },
+                                                );
+                                            setStateDialog(() {
+                                              pagosEditables[index]['tipo_pago_id'] =
+                                                  newValue;
+                                              pagosEditables[index]['tipo_pago_nombre'] =
+                                                  tipoSeleccionado['nombre'];
+                                            });
+                                          }
+                                        },
+                                      ),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Expanded(
+                                      flex: 1,
+                                      child: TextField(
+                                        keyboardType:
+                                            const TextInputType.numberWithOptions(
+                                              decimal: true,
+                                            ),
+                                        decoration: InputDecoration(
+                                          hintText: 'Monto',
+                                          hintStyle: TextStyle(
+                                            color: isDarkMode
+                                                ? Colors.grey[500]
+                                                : Colors.grey[400],
+                                          ),
+                                          contentPadding:
+                                              const EdgeInsets.symmetric(
+                                                horizontal: 8,
+                                                vertical: 8,
+                                              ),
+                                          border: OutlineInputBorder(
+                                            borderRadius: BorderRadius.circular(
+                                              4,
+                                            ),
+                                          ),
+                                        ),
+                                        controller: montoControllers[index]!,
+                                        onChanged: (value) {
+                                          setStateDialog(() {
+                                            pagosEditables[index]['monto'] =
+                                                double.tryParse(value) ?? 0.0;
+                                          });
+                                        },
+                                      ),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    IconButton(
+                                      icon: const Icon(
+                                        Icons.delete_outline,
+                                        color: Colors.red,
+                                      ),
+                                      onPressed: () {
+                                        setStateDialog(() {
+                                          // Dispose el controller del pago que se elimina
+                                          montoControllers[index]?.dispose();
+                                          montoControllers.remove(index);
+
+                                          // Remover el pago
+                                          pagosEditables.removeAt(index);
+
+                                          // Reconstruir mapa de controllers con índices válidos
+                                          final newControllers =
+                                              <int, TextEditingController>{};
+                                          for (
+                                            int i = 0;
+                                            i < pagosEditables.length;
+                                            i++
+                                          ) {
+                                            // Usar el controller existente o crear uno nuevo
+                                            if (i < index &&
+                                                montoControllers.containsKey(
+                                                  i,
+                                                )) {
+                                              newControllers[i] =
+                                                  montoControllers[i]!;
+                                            } else if (i >= index &&
+                                                montoControllers.containsKey(
+                                                  i + 1,
+                                                )) {
+                                              newControllers[i] =
+                                                  montoControllers[i + 1]!;
+                                            } else {
+                                              newControllers[i] =
+                                                  TextEditingController(
+                                                    text:
+                                                        (pagosEditables[i]['monto']
+                                                                as double)
+                                                            .toStringAsFixed(2),
+                                                  );
+                                            }
+                                          }
+                                          montoControllers.clear();
+                                          montoControllers.addAll(
+                                            newControllers,
+                                          );
+                                        });
+                                      },
+                                      iconSize: 20,
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ),
+                        );
+                      }).toList(),
 
                     const SizedBox(height: 12),
 
@@ -1716,7 +1955,9 @@ class _ResumenPagosEntregaScreenState extends State<ResumenPagosEntregaScreen> {
                           });
                           // Crear controller para el nuevo pago
                           final newIndex = pagosEditables.length - 1;
-                          montoControllers[newIndex] = TextEditingController(text: '0.00');
+                          montoControllers[newIndex] = TextEditingController(
+                            text: '0.00',
+                          );
                         });
                       },
                       icon: const Icon(Icons.add),
@@ -1750,7 +1991,8 @@ class _ResumenPagosEntregaScreenState extends State<ResumenPagosEntregaScreen> {
                               desglose: pagosEditables,
                               onFinish: () {
                                 // Limpiar controllers después de guardar
-                                for (final controller in montoControllers.values) {
+                                for (final controller
+                                    in montoControllers.values) {
                                   controller.dispose();
                                 }
                               },
@@ -1797,7 +2039,9 @@ class _ResumenPagosEntregaScreenState extends State<ResumenPagosEntregaScreen> {
         if (tipoPagoId == null || tipoPagoId == 0) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text('⚠️ Todos los pagos deben tener un tipo seleccionado'),
+              content: Text(
+                '⚠️ Todos los pagos deben tener un tipo seleccionado',
+              ),
               duration: Duration(seconds: 2),
               backgroundColor: Colors.orange,
             ),
@@ -1807,7 +2051,9 @@ class _ResumenPagosEntregaScreenState extends State<ResumenPagosEntregaScreen> {
         if (((pago['monto'] as double?) ?? 0) <= 0) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text('⚠️ Todos los pagos deben tener un monto mayor a 0'),
+              content: Text(
+                '⚠️ Todos los pagos deben tener un monto mayor a 0',
+              ),
               duration: Duration(seconds: 2),
               backgroundColor: Colors.orange,
             ),
@@ -1834,12 +2080,14 @@ class _ResumenPagosEntregaScreenState extends State<ResumenPagosEntregaScreen> {
 
       // Preparar desglose para enviar al API
       final desgloseParaApi = desglose
-          .map((pago) => {
-                'tipo_pago_id': pago['tipo_pago_id'],
-                'tipo_pago_nombre': pago['tipo_pago_nombre'],
-                'monto': pago['monto'],
-                'referencia': pago['referencia'] ?? '',
-              })
+          .map(
+            (pago) => {
+              'tipo_pago_id': pago['tipo_pago_id'],
+              'tipo_pago_nombre': pago['tipo_pago_nombre'],
+              'monto': pago['monto'],
+              'referencia': pago['referencia'] ?? '',
+            },
+          )
           .toList();
 
       // Llamar al API
@@ -1873,7 +2121,9 @@ class _ResumenPagosEntregaScreenState extends State<ResumenPagosEntregaScreen> {
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('❌ Error: ${response.message ?? 'No se pudieron guardar los pagos'}'),
+            content: Text(
+              '❌ Error: ${response.message ?? 'No se pudieron guardar los pagos'}',
+            ),
             duration: const Duration(seconds: 3),
             backgroundColor: Colors.red,
           ),
@@ -1922,7 +2172,7 @@ class _ResumenPagosEntregaScreenState extends State<ResumenPagosEntregaScreen> {
         title: Text(
           tipo,
           style: TextStyle(
-            fontSize: 16,
+            fontSize: AppTextStyles.bodyLarge(context).fontSize!,
             fontWeight: FontWeight.w600,
             color: isDarkMode ? Colors.grey[100] : Colors.grey[900],
           ),
@@ -1930,14 +2180,14 @@ class _ResumenPagosEntregaScreenState extends State<ResumenPagosEntregaScreen> {
         subtitle: Text(
           '$cantidad venta${cantidad > 1 ? 's' : ''}',
           style: TextStyle(
-            fontSize: 12,
+            fontSize: AppTextStyles.bodySmall(context).fontSize!,
             color: isDarkMode ? Colors.grey[400] : Colors.grey[600],
           ),
         ),
         trailing: Text(
           'Bs. ${total.toStringAsFixed(2)}',
           style: TextStyle(
-            fontSize: 16,
+            fontSize: AppTextStyles.bodyLarge(context).fontSize!,
             fontWeight: FontWeight.bold,
             color: color,
           ),
@@ -1976,9 +2226,13 @@ class _ResumenPagosEntregaScreenState extends State<ResumenPagosEntregaScreen> {
                             Text(
                               'Venta $ventaNumero',
                               style: TextStyle(
-                                fontSize: 13,
+                                fontSize: AppTextStyles.bodySmall(
+                                  context,
+                                ).fontSize!,
                                 fontWeight: FontWeight.w500,
-                                color: isDarkMode ? Colors.grey[200] : Colors.grey[800],
+                                color: isDarkMode
+                                    ? Colors.grey[200]
+                                    : Colors.grey[800],
                               ),
                             ),
                             const SizedBox(height: 4),
@@ -1987,7 +2241,9 @@ class _ResumenPagosEntregaScreenState extends State<ResumenPagosEntregaScreen> {
                                   ? '✅ Entrega Completa'
                                   : '⚠️ Con Novedad',
                               style: TextStyle(
-                                fontSize: 11,
+                                fontSize: AppTextStyles.labelSmall(
+                                  context,
+                                ).fontSize!,
                                 color: tipoEntrega == 'COMPLETA'
                                     ? Colors.green[600]
                                     : Colors.orange[600],
@@ -1999,7 +2255,7 @@ class _ResumenPagosEntregaScreenState extends State<ResumenPagosEntregaScreen> {
                       Text(
                         'Bs. ${montoRecibido.toStringAsFixed(2)}',
                         style: TextStyle(
-                          fontSize: 13,
+                          fontSize: AppTextStyles.bodySmall(context).fontSize!,
                           fontWeight: FontWeight.w600,
                           color: color,
                         ),

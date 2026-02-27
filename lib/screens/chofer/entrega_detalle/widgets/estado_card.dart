@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../../config/app_text_styles.dart';
 import '../../../../models/entrega.dart';
 import '../../../../constants/estado_colors.dart';
 
@@ -25,22 +26,24 @@ class EstadoCard extends StatelessWidget {
           children: [
             Text(
               'Estado Actual',
-              style: Theme.of(context)
-                  .textTheme
-                  .titleSmall
-                  ?.copyWith(color: Colors.white70),
+              style: Theme.of(
+                context,
+              ).textTheme.titleSmall?.copyWith(color: Colors.white70),
             ),
             const SizedBox(height: 8),
             Row(
               children: [
-                Text(entrega.estadoIcon, style: const TextStyle(fontSize: 24)),
+                Text(
+                  entrega.estadoIcon,
+                  style: const TextStyle(fontSize: 24),
+                ), // TODO: usar AppTextStyles.displaySmall),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Text(
                     entrega.estadoLabel,
-                    style: const TextStyle(
+                    style: TextStyle(
                       color: Colors.white,
-                      fontSize: 24,
+                      fontSize: AppTextStyles.displaySmall(context).fontSize!,
                       fontWeight: FontWeight.bold,
                     ),
                   ),

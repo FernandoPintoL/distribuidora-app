@@ -238,10 +238,18 @@ class VisitaService {
     }
   }
 
-  /// ✅ NUEVO: Obtener orden del día (clientes a visitar hoy)
-  Future<ApiResponse<OrdenDelDia>> obtenerOrdenDelDia() async {
+  /// ✅ MEJORADO: Obtener orden del día (con parámetro fecha opcional)
+  Future<ApiResponse<OrdenDelDia>> obtenerOrdenDelDia({String? fecha}) async {
     try {
-      final response = await _apiService.get('/visitas/orden-del-dia');
+      final params = <String, dynamic>{};
+      if (fecha != null) {
+        params['fecha'] = fecha;
+      }
+
+      final response = await _apiService.get(
+        '/visitas/orden-del-dia',
+        queryParameters: params.isNotEmpty ? params : null,
+      );
 
       return ApiResponse<OrdenDelDia>.fromJson(
         response.data,
@@ -261,6 +269,105 @@ class VisitaService {
         data: null,
       );
     }
+  }
+
+  /// ✅ NUEVO: Obtener orden del día de toda la semana
+  Future<ApiResponse<SemanaOrdenDelDia>> obtenerOrdenDelDiaSemana({
+    String? fechaInicio,
+    String? fechaFin,
+  }) async {
+    try {
+      final params = <String, dynamic>{};
+      if (fechaInicio != null) {
+        params['fecha_inicio'] = fechaInicio;
+      }
+      if (fechaFin != null) {
+        params['fecha_fin'] = fechaFin;
+      }
+
+      // Simulación de datos para MVP (backend aún no implementado)
+      // En la semana 2, implementar endpoint real en backend
+      final semana = await _generarSemanaOrdenes();
+
+      return ApiResponse<SemanaOrdenDelDia>(
+        success: true,
+        message: 'Orden del día de la semana obtenida correctamente',
+        data: semana,
+      );
+    } on DioException catch (e) {
+      return ApiResponse<SemanaOrdenDelDia>(
+        success: false,
+        message: _getErrorMessage(e),
+        data: null,
+      );
+    } catch (e) {
+      debugPrint('❌ Error al obtener orden del día semana: $e');
+      return ApiResponse<SemanaOrdenDelDia>(
+        success: false,
+        message: 'Error inesperado: ${e.toString()}',
+        data: null,
+      );
+    }
+  }
+
+  /// ✅ HELPER MVP: Generar semana basada en cargar cada día
+  /// TODO: Reemplazar con endpoint real en backend cuando esté disponible
+  Future<SemanaOrdenDelDia> _generarSemanaOrdenes() async {
+    final dias = <DiaSemanaResumen>[];
+    final hoy = DateTime.now();
+
+    // Cargar 7 días de la semana actual (desde lunes)
+    final inicioSemana =
+        hoy.subtract(Duration(days: hoy.weekday - 1)); // Lunes de esta semana
+
+    for (int i = 0; i < 7; i++) {
+      final fecha = inicioSemana.add(Duration(days: i));
+      final fechaStr = fecha.toIso8601String().split('T')[0];
+
+      // Obtener orden del día para cada fecha
+      final ordenResponse = await obtenerOrdenDelDia(fecha: fechaStr);
+
+      if (ordenResponse.success && ordenResponse.data != null) {
+        final orden = ordenResponse.data!;
+        dias.add(
+          DiaSemanaResumen(
+            fecha: orden.fecha,
+            diaSemana: orden.diaSemana,
+            totalClientes: orden.resumen.totalClientes,
+            visitados: orden.resumen.visitados,
+            pendientes: orden.resumen.pendientes,
+            porcentajeCompletado: orden.resumen.porcentajeCompletado,
+          ),
+        );
+      } else {
+        // Día sin datos
+        final diasSemanaNombre = [
+          'Domingo',
+          'Lunes',
+          'Martes',
+          'Miércoles',
+          'Jueves',
+          'Viernes',
+          'Sábado',
+        ];
+        dias.add(
+          DiaSemanaResumen(
+            fecha: fechaStr,
+            diaSemana: diasSemanaNombre[fecha.weekday % 7],
+            totalClientes: 0,
+            visitados: 0,
+            pendientes: 0,
+            porcentajeCompletado: 0,
+          ),
+        );
+      }
+    }
+
+    return SemanaOrdenDelDia(
+      fechaInicio: inicioSemana,
+      fechaFin: inicioSemana.add(const Duration(days: 6)),
+      dias: dias,
+    );
   }
 
   String _getErrorMessage(DioException e) {

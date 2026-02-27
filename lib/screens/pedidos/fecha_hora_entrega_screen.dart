@@ -42,7 +42,11 @@ class _FechaHoraEntregaScreenState extends State<FechaHoraEntregaScreen> {
 
   Future<void> _seleccionarFecha() async {
     final DateTime now = DateTime.now();
-    final DateTime firstDate = DateTime(now.year, now.month, now.day); // Hoy es el mínimo
+    final DateTime firstDate = DateTime(
+      now.year,
+      now.month,
+      now.day,
+    ); // Hoy es el mínimo
     final DateTime lastDate = now.add(const Duration(days: 30));
 
     final DateTime? picked = await showDatePicker(
@@ -102,7 +106,8 @@ class _FechaHoraEntregaScreenState extends State<FechaHoraEntregaScreen> {
       '/resumen-pedido',
       arguments: {
         'tipoEntrega': esPickup ? 'PICKUP' : 'DELIVERY',
-        'direccion': widget.direccion, // null para PICKUP, ClientAddress para DELIVERY
+        'direccion':
+            widget.direccion, // null para PICKUP, ClientAddress para DELIVERY
         'fechaProgramada': _fechaSeleccionada,
         'horaInicio': _horaInicio,
         'horaFin': _horaFin,
@@ -177,7 +182,7 @@ class _FechaHoraEntregaScreenState extends State<FechaHoraEntregaScreen> {
                         ? '¿Cuándo deseas retirar tu pedido?'
                         : '¿Cuándo deseas recibir tu pedido?',
                     style: TextStyle(
-                      fontSize: 16,
+                      fontSize: AppTextStyles.bodyLarge(context).fontSize!,
                       fontWeight: FontWeight.w500,
                       color: colorScheme.onSurface,
                     ),
@@ -188,7 +193,7 @@ class _FechaHoraEntregaScreenState extends State<FechaHoraEntregaScreen> {
                         ? 'Agenda la fecha y hora preferida para tu retiro'
                         : 'Selecciona fecha y rango horario (opcional)',
                     style: TextStyle(
-                      fontSize: 14,
+                      fontSize: AppTextStyles.bodyMedium(context).fontSize!,
                       color: colorScheme.onSurfaceVariant,
                     ),
                   ),
@@ -209,10 +214,7 @@ class _FechaHoraEntregaScreenState extends State<FechaHoraEntregaScreen> {
                         padding: const EdgeInsets.all(16),
                         child: Row(
                           children: [
-                            Icon(
-                              Icons.location_on,
-                              color: colorScheme.primary,
-                            ),
+                            Icon(Icons.location_on, color: colorScheme.primary),
                             const SizedBox(width: 12),
                             Expanded(
                               child: Column(
@@ -221,7 +223,9 @@ class _FechaHoraEntregaScreenState extends State<FechaHoraEntregaScreen> {
                                   Text(
                                     'Dirección de entrega',
                                     style: TextStyle(
-                                      fontSize: 12,
+                                      fontSize: AppTextStyles.bodySmall(
+                                        context,
+                                      ).fontSize!,
                                       color: colorScheme.onSurfaceVariant,
                                     ),
                                   ),
@@ -250,7 +254,9 @@ class _FechaHoraEntregaScreenState extends State<FechaHoraEntregaScreen> {
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
                         side: BorderSide(
-                          color: Color(0xFFFFC107).withOpacity(isDark ? 0.4 : 0.3),
+                          color: Color(
+                            0xFFFFC107,
+                          ).withOpacity(isDark ? 0.4 : 0.3),
                           width: 1.5,
                         ),
                       ),
@@ -271,7 +277,9 @@ class _FechaHoraEntregaScreenState extends State<FechaHoraEntregaScreen> {
                                   Text(
                                     'Lugar de Retiro',
                                     style: TextStyle(
-                                      fontSize: 12,
+                                      fontSize: AppTextStyles.bodySmall(
+                                        context,
+                                      ).fontSize!,
                                       color: colorScheme.onSurfaceVariant,
                                     ),
                                   ),
@@ -297,7 +305,7 @@ class _FechaHoraEntregaScreenState extends State<FechaHoraEntregaScreen> {
                   Text(
                     'Fecha programada',
                     style: TextStyle(
-                      fontSize: 16,
+                      fontSize: AppTextStyles.bodyLarge(context).fontSize!,
                       fontWeight: FontWeight.w600,
                       color: colorScheme.onSurface,
                     ),
@@ -309,7 +317,9 @@ class _FechaHoraEntregaScreenState extends State<FechaHoraEntregaScreen> {
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
                         border: Border.all(
-                          color: colorScheme.outline.withAlpha(isDark ? 80 : 40),
+                          color: colorScheme.outline.withAlpha(
+                            isDark ? 80 : 40,
+                          ),
                         ),
                         borderRadius: BorderRadius.circular(12),
                       ),
@@ -326,7 +336,9 @@ class _FechaHoraEntregaScreenState extends State<FechaHoraEntregaScreen> {
                                   ? _formatearFecha(_fechaSeleccionada!)
                                   : 'Seleccionar fecha (opcional)',
                               style: TextStyle(
-                                fontSize: 16,
+                                fontSize: AppTextStyles.bodyLarge(
+                                  context,
+                                ).fontSize!,
                                 color: _fechaSeleccionada != null
                                     ? colorScheme.onSurface
                                     : colorScheme.onSurfaceVariant,
@@ -348,7 +360,7 @@ class _FechaHoraEntregaScreenState extends State<FechaHoraEntregaScreen> {
                   Text(
                     'Horario preferido (opcional)',
                     style: TextStyle(
-                      fontSize: 16,
+                      fontSize: AppTextStyles.bodyLarge(context).fontSize!,
                       fontWeight: FontWeight.w600,
                       color: colorScheme.onSurface,
                     ),
@@ -357,7 +369,7 @@ class _FechaHoraEntregaScreenState extends State<FechaHoraEntregaScreen> {
                   Text(
                     'Especifica un rango horario para coordinar mejor la entrega',
                     style: TextStyle(
-                      fontSize: 14,
+                      fontSize: AppTextStyles.bodyMedium(context).fontSize!,
                       color: colorScheme.onSurfaceVariant,
                     ),
                   ),
@@ -373,7 +385,9 @@ class _FechaHoraEntregaScreenState extends State<FechaHoraEntregaScreen> {
                             padding: const EdgeInsets.all(16),
                             decoration: BoxDecoration(
                               border: Border.all(
-                                color: colorScheme.outline.withAlpha(isDark ? 80 : 40),
+                                color: colorScheme.outline.withAlpha(
+                                  isDark ? 80 : 40,
+                                ),
                               ),
                               borderRadius: BorderRadius.circular(12),
                             ),
@@ -383,7 +397,9 @@ class _FechaHoraEntregaScreenState extends State<FechaHoraEntregaScreen> {
                                 Text(
                                   'Desde',
                                   style: TextStyle(
-                                    fontSize: 12,
+                                    fontSize: AppTextStyles.bodySmall(
+                                      context,
+                                    ).fontSize!,
                                     color: colorScheme.onSurfaceVariant,
                                   ),
                                 ),
@@ -401,7 +417,9 @@ class _FechaHoraEntregaScreenState extends State<FechaHoraEntregaScreen> {
                                           ? _formatearHora(_horaInicio!)
                                           : '--:--',
                                       style: TextStyle(
-                                        fontSize: 16,
+                                        fontSize: AppTextStyles.bodyLarge(
+                                          context,
+                                        ).fontSize!,
                                         fontWeight: FontWeight.w600,
                                         color: _horaInicio != null
                                             ? colorScheme.onSurface
@@ -426,7 +444,9 @@ class _FechaHoraEntregaScreenState extends State<FechaHoraEntregaScreen> {
                             padding: const EdgeInsets.all(16),
                             decoration: BoxDecoration(
                               border: Border.all(
-                                color: colorScheme.outline.withAlpha(isDark ? 80 : 40),
+                                color: colorScheme.outline.withAlpha(
+                                  isDark ? 80 : 40,
+                                ),
                               ),
                               borderRadius: BorderRadius.circular(12),
                             ),
@@ -436,7 +456,9 @@ class _FechaHoraEntregaScreenState extends State<FechaHoraEntregaScreen> {
                                 Text(
                                   'Hasta',
                                   style: TextStyle(
-                                    fontSize: 12,
+                                    fontSize: AppTextStyles.bodySmall(
+                                      context,
+                                    ).fontSize!,
                                     color: colorScheme.onSurfaceVariant,
                                   ),
                                 ),
@@ -454,7 +476,9 @@ class _FechaHoraEntregaScreenState extends State<FechaHoraEntregaScreen> {
                                           ? _formatearHora(_horaFin!)
                                           : '--:--',
                                       style: TextStyle(
-                                        fontSize: 16,
+                                        fontSize: AppTextStyles.bodyLarge(
+                                          context,
+                                        ).fontSize!,
                                         fontWeight: FontWeight.w600,
                                         color: _horaFin != null
                                             ? colorScheme.onSurface
@@ -477,7 +501,7 @@ class _FechaHoraEntregaScreenState extends State<FechaHoraEntregaScreen> {
                   Text(
                     'Observaciones (opcional)',
                     style: TextStyle(
-                      fontSize: 16,
+                      fontSize: AppTextStyles.bodyLarge(context).fontSize!,
                       fontWeight: FontWeight.w600,
                       color: colorScheme.onSurface,
                     ),
@@ -496,13 +520,17 @@ class _FechaHoraEntregaScreenState extends State<FechaHoraEntregaScreen> {
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
                         borderSide: BorderSide(
-                          color: colorScheme.outline.withAlpha(isDark ? 80 : 40),
+                          color: colorScheme.outline.withAlpha(
+                            isDark ? 80 : 40,
+                          ),
                         ),
                       ),
                       enabledBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
                         borderSide: BorderSide(
-                          color: colorScheme.outline.withAlpha(isDark ? 80 : 40),
+                          color: colorScheme.outline.withAlpha(
+                            isDark ? 80 : 40,
+                          ),
                         ),
                       ),
                       focusedBorder: OutlineInputBorder(
@@ -521,10 +549,14 @@ class _FechaHoraEntregaScreenState extends State<FechaHoraEntregaScreen> {
                   Container(
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: colorScheme.primary.withOpacity(isDark ? 0.15 : 0.08),
+                      color: colorScheme.primary.withOpacity(
+                        isDark ? 0.15 : 0.08,
+                      ),
                       borderRadius: BorderRadius.circular(8),
                       border: Border.all(
-                        color: colorScheme.primary.withOpacity(isDark ? 0.3 : 0.2),
+                        color: colorScheme.primary.withOpacity(
+                          isDark ? 0.3 : 0.2,
+                        ),
                       ),
                     ),
                     child: Row(
@@ -539,7 +571,9 @@ class _FechaHoraEntregaScreenState extends State<FechaHoraEntregaScreen> {
                           child: Text(
                             'Fecha y horario son referenciales. El tiempo exacto se coordinará una vez aprobada tu proforma.',
                             style: TextStyle(
-                              fontSize: 13,
+                              fontSize: AppTextStyles.bodySmall(
+                                context,
+                              ).fontSize!,
                               color: colorScheme.onSurface,
                             ),
                           ),
@@ -578,9 +612,12 @@ class _FechaHoraEntregaScreenState extends State<FechaHoraEntregaScreen> {
                   borderRadius: BorderRadius.circular(12),
                 ),
               ),
-              child: const Text(
+              child: Text(
                 'Continuar al Resumen',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                style: TextStyle(
+                  fontSize: AppTextStyles.bodyLarge(context).fontSize!,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
             ),
           ),

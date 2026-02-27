@@ -289,7 +289,7 @@ class _HistorialGastosScreenState extends State<HistorialGastosScreen> {
                 'Comprobante: ${gasto.numeroComprobante}',
                 style: Theme.of(context).textTheme.labelSmall?.copyWith(
                       color: Colors.grey[500],
-                      fontSize: 10,
+                      fontSize: AppTextStyles.labelSmall(context).fontSize!,
                     ),
               ),
           ],

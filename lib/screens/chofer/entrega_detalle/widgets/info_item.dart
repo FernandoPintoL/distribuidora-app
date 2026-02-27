@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../../../config/app_text_styles.dart';
+
 class InfoItem extends StatelessWidget {
   final IconData icon;
   final String label;
@@ -43,7 +45,7 @@ class InfoItem extends StatelessWidget {
                 Text(
                   value,
                   style: TextStyle(
-                    fontSize: 14,
+                    fontSize: AppTextStyles.bodyMedium(context).fontSize!,
                     fontWeight: FontWeight.w600,
                     color: isDarkMode ? Colors.grey[100] : Colors.grey[900],
                   ),

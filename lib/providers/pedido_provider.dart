@@ -1154,6 +1154,60 @@ class PedidoProvider with ChangeNotifier {
     }
   }
 
+  /// ✅ NUEVO: Actualizar detalles de una proforma con detalles del carrito
+  Future<bool> actualizarDetallesProforma({
+    required int proformaId,
+    required List<Map<String, dynamic>> detalles,
+  }) async {
+    if (detalles.isEmpty) {
+      _errorMessage = 'El carrito no puede estar vacío';
+      notifyListeners();
+      return false;
+    }
+
+    try {
+      _isLoading = true;
+      _errorMessage = null;
+      notifyListeners();
+
+      debugPrint('📝 Actualizando proforma #$proformaId con ${detalles.length} items');
+
+      // Llamar servicio para actualizar detalles
+      final response = await _proformaService.actualizarDetalles(
+        proformaId: proformaId,
+        detalles: detalles,
+      );
+
+      if (response.success && response.data != null) {
+        // Actualizar el pedido actual con los nuevos datos
+        _pedidoActual = response.data;
+
+        // Actualizar en la lista también
+        final index = _pedidos.indexWhere((p) => p.id == proformaId);
+        if (index >= 0) {
+          _pedidos[index] = response.data!;
+        }
+
+        debugPrint('✅ Proforma #$proformaId actualizada exitosamente');
+        notifyListeners();
+        return true;
+      } else {
+        _errorMessage = response.message ?? 'Error al actualizar proforma';
+        debugPrint('❌ Error: ${response.message}');
+        notifyListeners();
+        return false;
+      }
+    } catch (e) {
+      _errorMessage = 'Error inesperado: ${e.toString()}';
+      debugPrint('❌ Error al actualizar: $e');
+      notifyListeners();
+      return false;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
   /// Resetear provider
   void reset() {
     detenerEscuchaWebSocket();

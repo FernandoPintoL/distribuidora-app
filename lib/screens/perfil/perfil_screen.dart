@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import '../../config/app_text_styles.dart';
 import '../../providers/providers.dart';
 import '../../providers/theme_provider.dart';
 import '../../services/role_based_router.dart';
@@ -295,8 +296,8 @@ class _PerfilScreenState extends State<PerfilScreen>
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: Text(
                 user?.name ?? 'Usuario',
-                style: const TextStyle(
-                  fontSize: 24,
+                style: TextStyle(
+                  fontSize: AppTextStyles.displaySmall(context).fontSize!,
                   fontWeight: FontWeight.bold,
                   color: Colors.white,
                   letterSpacing: 0.5,
@@ -327,12 +328,16 @@ class _PerfilScreenState extends State<PerfilScreen>
                     size: 16,
                   ),
                   const SizedBox(width: 8),
-                  Text(
-                    RoleBasedRouter.getRoleDescription(user),
-                    style: const TextStyle(
-                      fontSize: 14,
-                      color: Colors.white,
-                      fontWeight: FontWeight.w500,
+                  Flexible(
+                    child: Text(
+                      RoleBasedRouter.getRoleDescription(user),
+                      style: TextStyle(
+                        fontSize: AppTextStyles.bodyMedium(context).fontSize!,
+                        color: Colors.white,
+                        fontWeight: FontWeight.w500,
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ),
                 ],
@@ -382,7 +387,7 @@ class _PerfilScreenState extends State<PerfilScreen>
             Text(
               title,
               style: TextStyle(
-                fontSize: 18,
+                fontSize: AppTextStyles.headlineSmall(context).fontSize!,
                 fontWeight: FontWeight.bold,
                 color: context.textTheme.titleLarge?.color,
               ),
@@ -437,7 +442,7 @@ class _PerfilScreenState extends State<PerfilScreen>
                     Text(
                       title,
                       style: TextStyle(
-                        fontSize: 12,
+                        fontSize: AppTextStyles.bodySmall(context).fontSize!,
                         color: colorScheme.onSurfaceVariant,
                         fontWeight: FontWeight.w500,
                         letterSpacing: 0.5,
@@ -447,7 +452,7 @@ class _PerfilScreenState extends State<PerfilScreen>
                     Text(
                       value,
                       style: TextStyle(
-                        fontSize: 16,
+                        fontSize: AppTextStyles.bodyLarge(context).fontSize!,
                         fontWeight: FontWeight.w600,
                         color: context.textTheme.titleMedium?.color,
                       ),
@@ -480,16 +485,11 @@ class _PerfilScreenState extends State<PerfilScreen>
                   ? colorScheme.surfaceContainerHighest
                   : colorScheme.surfaceContainerHighest.withAlpha(100),
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(
-                color: colorScheme.outline.withAlpha(50),
-              ),
+              border: Border.all(color: colorScheme.outline.withAlpha(50)),
             ),
             child: Row(
               children: [
-                Icon(
-                  Icons.info_outline,
-                  color: colorScheme.onSurfaceVariant,
-                ),
+                Icon(Icons.info_outline, color: colorScheme.onSurfaceVariant),
                 const SizedBox(width: 12),
                 Text(
                   'Sin roles asignados',
@@ -520,7 +520,10 @@ class _PerfilScreenState extends State<PerfilScreen>
             runSpacing: 10,
             children: (roles as List<dynamic>).map((role) {
               return Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 10,
+                ),
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                     colors: [
@@ -548,10 +551,10 @@ class _PerfilScreenState extends State<PerfilScreen>
                     const SizedBox(width: 8),
                     Text(
                       _getRoleLabel(role.toString()),
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontWeight: FontWeight.w600,
                         color: Colors.white,
-                        fontSize: 14,
+                        fontSize: AppTextStyles.bodyMedium(context).fontSize!,
                       ),
                     ),
                   ],
@@ -618,7 +621,7 @@ class _PerfilScreenState extends State<PerfilScreen>
                     Text(
                       'Estado de Cuenta',
                       style: TextStyle(
-                        fontSize: 12,
+                        fontSize: AppTextStyles.bodySmall(context).fontSize!,
                         color: colorScheme.onSurfaceVariant,
                         fontWeight: FontWeight.w500,
                         letterSpacing: 0.5,
@@ -639,7 +642,9 @@ class _PerfilScreenState extends State<PerfilScreen>
                         Text(
                           isActive ? 'Activo' : 'Inactivo',
                           style: TextStyle(
-                            fontSize: 18,
+                            fontSize: AppTextStyles.headlineSmall(
+                              context,
+                            ).fontSize!,
                             fontWeight: FontWeight.bold,
                             color: statusColor,
                           ),
@@ -872,9 +877,12 @@ class _PerfilScreenState extends State<PerfilScreen>
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Text(
+                    Text(
                       'Por favor ingresa tu contraseña actual y la nueva contraseña.',
-                      style: TextStyle(fontSize: 13, color: Colors.grey),
+                      style: TextStyle(
+                        fontSize: AppTextStyles.bodySmall(context).fontSize!,
+                        color: Colors.grey,
+                      ),
                     ),
                     const SizedBox(height: 20),
                     TextFormField(
@@ -928,9 +936,7 @@ class _PerfilScreenState extends State<PerfilScreen>
                             color: Colors.grey,
                           ),
                           onPressed: () {
-                            setState(
-                              () => showNewPassword = !showNewPassword,
-                            );
+                            setState(() => showNewPassword = !showNewPassword);
                           },
                         ),
                       ),
@@ -986,7 +992,9 @@ class _PerfilScreenState extends State<PerfilScreen>
               ),
               actions: [
                 TextButton(
-                  onPressed: isLoading ? null : () => Navigator.of(dialogContext).pop(),
+                  onPressed: isLoading
+                      ? null
+                      : () => Navigator.of(dialogContext).pop(),
                   child: const Text('Cancelar'),
                 ),
                 ElevatedButton(
@@ -1015,8 +1023,9 @@ class _PerfilScreenState extends State<PerfilScreen>
                                         ? 'Contraseña actualizada correctamente'
                                         : 'Error al actualizar la contraseña',
                                   ),
-                                  backgroundColor:
-                                      success ? Colors.green : Colors.red,
+                                  backgroundColor: success
+                                      ? Colors.green
+                                      : Colors.red,
                                   duration: const Duration(seconds: 3),
                                 ),
                               );
@@ -1024,8 +1033,7 @@ class _PerfilScreenState extends State<PerfilScreen>
                           }
                         },
                   style: ElevatedButton.styleFrom(
-                    backgroundColor:
-                        isLoading ? Colors.grey : Colors.blue,
+                    backgroundColor: isLoading ? Colors.grey : Colors.blue,
                   ),
                   child: isLoading
                       ? const SizedBox(
@@ -1033,8 +1041,9 @@ class _PerfilScreenState extends State<PerfilScreen>
                           height: 20,
                           child: CircularProgressIndicator(
                             strokeWidth: 2,
-                            valueColor:
-                                AlwaysStoppedAnimation<Color>(Colors.white),
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                              Colors.white,
+                            ),
                           ),
                         )
                       : const Text('Actualizar'),
@@ -1047,7 +1056,10 @@ class _PerfilScreenState extends State<PerfilScreen>
     );
   }
 
-  Future<bool> _changePassword(String currentPassword, String newPassword) async {
+  Future<bool> _changePassword(
+    String currentPassword,
+    String newPassword,
+  ) async {
     try {
       final authService = AuthService();
       final apiService = ApiService();
@@ -1057,7 +1069,9 @@ class _PerfilScreenState extends State<PerfilScreen>
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text('Sesión expirada. Por favor inicia sesión nuevamente.'),
+              content: Text(
+                'Sesión expirada. Por favor inicia sesión nuevamente.',
+              ),
               backgroundColor: Colors.red,
               duration: Duration(seconds: 3),
             ),
@@ -1112,7 +1126,9 @@ class _PerfilScreenState extends State<PerfilScreen>
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('Error al actualizar contraseña: ${response.statusCode}'),
+              content: Text(
+                'Error al actualizar contraseña: ${response.statusCode}',
+              ),
               backgroundColor: Colors.red,
               duration: const Duration(seconds: 3),
             ),
@@ -1232,7 +1248,7 @@ class _PerfilScreenState extends State<PerfilScreen>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Row(
+          Row(
             children: [
               Icon(Icons.shopping_cart, color: Colors.white, size: 24),
               SizedBox(width: 12),
@@ -1240,7 +1256,7 @@ class _PerfilScreenState extends State<PerfilScreen>
                 'Resumen de Compras',
                 style: TextStyle(
                   color: Colors.white,
-                  fontSize: 18,
+                  fontSize: AppTextStyles.headlineSmall(context).fontSize!,
                   fontWeight: FontWeight.bold,
                 ),
               ),
@@ -1288,7 +1304,7 @@ class _PerfilScreenState extends State<PerfilScreen>
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Row(
+              Row(
                 children: [
                   Icon(Icons.business_center, color: Colors.white, size: 24),
                   SizedBox(width: 12),
@@ -1296,7 +1312,7 @@ class _PerfilScreenState extends State<PerfilScreen>
                     'Panel de Ventas',
                     style: TextStyle(
                       color: Colors.white,
-                      fontSize: 18,
+                      fontSize: AppTextStyles.headlineSmall(context).fontSize!,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
@@ -1348,7 +1364,7 @@ class _PerfilScreenState extends State<PerfilScreen>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Row(
+          Row(
             children: [
               Icon(Icons.local_shipping, color: Colors.white, size: 24),
               SizedBox(width: 12),
@@ -1356,7 +1372,7 @@ class _PerfilScreenState extends State<PerfilScreen>
                 'Panel de Entregas',
                 style: TextStyle(
                   color: Colors.white,
-                  fontSize: 18,
+                  fontSize: AppTextStyles.headlineSmall(context).fontSize!,
                   fontWeight: FontWeight.bold,
                 ),
               ),
@@ -1394,7 +1410,7 @@ class _PerfilScreenState extends State<PerfilScreen>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Row(
+          Row(
             children: [
               Icon(Icons.dashboard, color: Colors.white, size: 24),
               SizedBox(width: 12),
@@ -1402,7 +1418,7 @@ class _PerfilScreenState extends State<PerfilScreen>
                 'Panel de Administración',
                 style: TextStyle(
                   color: Colors.white,
-                  fontSize: 18,
+                  fontSize: AppTextStyles.headlineSmall(context).fontSize!,
                   fontWeight: FontWeight.bold,
                 ),
               ),
@@ -1434,18 +1450,18 @@ class _PerfilScreenState extends State<PerfilScreen>
           const SizedBox(height: 8),
           Text(
             value,
-            style: const TextStyle(
+            style: TextStyle(
               color: Colors.white,
-              fontSize: 24,
+              fontSize: AppTextStyles.displaySmall(context).fontSize!,
               fontWeight: FontWeight.bold,
             ),
           ),
           const SizedBox(height: 4),
           Text(
             label,
-            style: const TextStyle(
+            style: TextStyle(
               color: Colors.white,
-              fontSize: 12,
+              fontSize: AppTextStyles.bodySmall(context).fontSize!,
               fontWeight: FontWeight.w500,
             ),
           ),
@@ -1555,7 +1571,7 @@ class _PerfilScreenState extends State<PerfilScreen>
         title,
         style: TextStyle(
           fontWeight: FontWeight.w600,
-          fontSize: 16,
+          fontSize: AppTextStyles.bodyLarge(context).fontSize!,
           color: context.textTheme.titleMedium?.color,
         ),
       ),
@@ -1563,13 +1579,10 @@ class _PerfilScreenState extends State<PerfilScreen>
         subtitle,
         style: TextStyle(
           color: colorScheme.onSurfaceVariant,
-          fontSize: 13,
+          fontSize: AppTextStyles.bodySmall(context).fontSize!,
         ),
       ),
-      trailing: Icon(
-        Icons.chevron_right,
-        color: colorScheme.onSurfaceVariant,
-      ),
+      trailing: Icon(Icons.chevron_right, color: colorScheme.onSurfaceVariant),
       onTap: onTap,
     );
   }
@@ -1610,15 +1623,15 @@ class _PerfilScreenState extends State<PerfilScreen>
                         Icon(
                           isDarkMode ? Icons.dark_mode : Icons.light_mode,
                           size: 20,
-                          color: isDarkMode
-                              ? Colors.amber
-                              : Colors.orange,
+                          color: isDarkMode ? Colors.amber : Colors.orange,
                         ),
                         const SizedBox(width: 12),
                         Text(
                           'Modo ${isDarkMode ? 'Oscuro' : 'Claro'}',
                           style: TextStyle(
-                            fontSize: 16,
+                            fontSize: AppTextStyles.bodyLarge(
+                              context,
+                            ).fontSize!,
                             fontWeight: FontWeight.w600,
                             color: context.textTheme.titleMedium?.color,
                           ),
@@ -1631,7 +1644,7 @@ class _PerfilScreenState extends State<PerfilScreen>
                           ? 'Interfaz oscura para menos luz'
                           : 'Interfaz clara para mejor visibilidad',
                       style: TextStyle(
-                        fontSize: 13,
+                        fontSize: AppTextStyles.bodySmall(context).fontSize!,
                         color: colorScheme.onSurfaceVariant,
                         fontWeight: FontWeight.w400,
                       ),
@@ -1675,9 +1688,12 @@ class _PerfilScreenState extends State<PerfilScreen>
       child: ElevatedButton.icon(
         onPressed: () => _showLogoutDialog(context),
         icon: const Icon(Icons.logout, size: 22),
-        label: const Text(
+        label: Text(
           'Cerrar Sesión',
-          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+          style: TextStyle(
+            fontSize: AppTextStyles.bodyLarge(context).fontSize!,
+            fontWeight: FontWeight.w600,
+          ),
         ),
         style: ElevatedButton.styleFrom(
           backgroundColor: Colors.red.shade600,

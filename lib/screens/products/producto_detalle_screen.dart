@@ -917,7 +917,7 @@ class _ProductoDetalleScreenState extends State<ProductoDetalleScreen> {
                       style: TextStyle(
                         fontWeight: FontWeight.bold,
                         color: Colors.blue.shade800,
-                        fontSize: 12,
+                        fontSize: AppTextStyles.bodySmall(context).fontSize!,
                       ),
                     ),
                   ],
@@ -965,7 +965,7 @@ class _ProductoDetalleScreenState extends State<ProductoDetalleScreen> {
                         style: TextStyle(
                           fontWeight: FontWeight.bold,
                           color: Colors.orange.shade800,
-                          fontSize: 12,
+                          fontSize: AppTextStyles.bodySmall(context).fontSize!,
                         ),
                       ),
                     ),
@@ -1230,7 +1230,7 @@ class _ProductoDetalleScreenState extends State<ProductoDetalleScreen> {
                         tipo,
                         style: Theme.of(context).textTheme.labelSmall?.copyWith(
                           color: Colors.white,
-                          fontSize: 10,
+                          fontSize: AppTextStyles.labelSmall(context).fontSize!,
                         ),
                       ),
                     ),
@@ -1341,7 +1341,7 @@ class _ProductoDetalleScreenState extends State<ProductoDetalleScreen> {
                     '⚠️ Límite',
                     style: Theme.of(context).textTheme.labelSmall?.copyWith(
                           color: Colors.red.shade700,
-                          fontSize: 10,
+                          fontSize: AppTextStyles.labelSmall(context).fontSize!,
                         ),
                   ),
                 ),

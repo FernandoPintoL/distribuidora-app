@@ -114,7 +114,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                     provider.error!,
                     style: TextStyle(
                       color: isDarkMode ? Colors.red.shade400 : Colors.red,
-                      fontSize: 16,
+                      fontSize: AppTextStyles.bodyLarge(context).fontSize!,
                     ),
                     textAlign: TextAlign.center,
                   ),
@@ -145,7 +145,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                   Text(
                     'No tienes notificaciones',
                     style: TextStyle(
-                      fontSize: 18,
+                      fontSize: AppTextStyles.headlineSmall(context).fontSize!,
                       color: isDarkMode ? Colors.grey[300] : Colors.grey[700],
                       fontWeight: FontWeight.w500,
                     ),
@@ -154,7 +154,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                   Text(
                     'Te avisaremos cuando recibas nuevas notificaciones',
                     style: TextStyle(
-                      fontSize: 14,
+                      fontSize: AppTextStyles.bodyMedium(context).fontSize!,
                       color: isDarkMode ? Colors.grey[400] : Colors.grey[600],
                     ),
                     textAlign: TextAlign.center,
@@ -255,7 +255,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
             notification.title,
             style: TextStyle(
               fontWeight: notification.read ? FontWeight.normal : FontWeight.bold,
-              fontSize: 16,
+              fontSize: AppTextStyles.bodyLarge(context).fontSize!,
               color: theme.textTheme.bodyLarge?.color,
             ),
           ),
@@ -266,7 +266,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
               Text(
                 notification.message,
                 style: TextStyle(
-                  fontSize: 14,
+                  fontSize: AppTextStyles.bodyMedium(context).fontSize!,
                   color: isDarkMode ? Colors.grey[400] : Colors.grey[700],
                 ),
                 maxLines: 2,
@@ -276,7 +276,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
               Text(
                 timeago.format(notification.createdAt, locale: 'es'),
                 style: TextStyle(
-                  fontSize: 12,
+                  fontSize: AppTextStyles.bodySmall(context).fontSize!,
                   color: isDarkMode ? Colors.grey[500] : Colors.grey[600],
                 ),
               ),

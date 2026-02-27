@@ -11,6 +11,26 @@ import '../../services/estados_helpers.dart';
 import '../../services/api_service.dart';
 import '../../services/print_service.dart';
 import 'package:intl/intl.dart';
+import 'widgets/pedido_card.dart';
+import 'widgets/filtros_avanzados_modal.dart';
+import 'widgets/filtros_container.dart';
+import 'helpers/dialogs_pedidos.dart';
+import 'helpers/formatters.dart';
+import 'helpers/filtro_logic.dart';
+
+/// ✅ HELPER: Convertir hex string (#RRGGBB) a Color
+Color _hexToColor(String hexString) {
+  final buffer = StringBuffer();
+  if (hexString.length == 6 || hexString.length == 7) {
+    buffer.write('ff');
+    buffer.write(hexString.replaceFirst('#', ''));
+  } else if (hexString.length == 8 || hexString.length == 9) {
+    buffer.write(hexString.replaceFirst('#', ''));
+  } else {
+    return Colors.grey; // Fallback
+  }
+  return Color(int.parse(buffer.toString(), radix: 16));
+}
 
 /// ✅ REFACTORIZADO: Antes era solo "Proformas", ahora es "Mis Pedidos" unificado
 /// Muestra todo el ciclo: Proforma → Venta → Logística
@@ -45,6 +65,16 @@ class _PedidosHistorialScreenState extends State<PedidosHistorialScreen> {
       // Cargar estados y estadísticas dinámicamente
       final estadosProvider = context.read<EstadosProvider>();
       estadosProvider.loadEstadosYEstadisticas();
+
+      // ✅ NUEVO: Cargar proformas PENDIENTES de ayer y hoy por defecto
+      final hoy = DateTime.now();
+      final ayer = hoy.subtract(const Duration(days: 1));
+
+      setState(() {
+        _filtroEstadoSeleccionado = 'PENDIENTE';
+        _filtroFechaDesde = ayer;
+        _filtroFechaHasta = hoy;
+      });
 
       // Sincronizar el filtro local con el filtro del provider
       final pedidoProvider = context.read<PedidoProvider>();
@@ -117,7 +147,9 @@ class _PedidosHistorialScreenState extends State<PedidosHistorialScreen> {
 
       // Enviar filtros al backend (no IDs, sino los filtros aplicados)
       final pdfBytes = await apiService.descargarPdfProformasConFiltros(
-        busqueda: _searchController.text.isEmpty ? null : _searchController.text,
+        busqueda: _searchController.text.isEmpty
+            ? null
+            : _searchController.text,
         estado: _filtroEstadoSeleccionado,
         fechaDesde: _filtroFechaDesde,
         fechaHasta: _filtroFechaHasta,
@@ -150,795 +182,52 @@ class _PedidosHistorialScreenState extends State<PedidosHistorialScreen> {
     }
   }
 
-  /// ✅ MEJORADO: Construir contenedor de filtro de fechas con botones rápidos
-  Widget _buildDateFilterContainer(
-    BuildContext context,
-    ColorScheme colorScheme,
-    bool isDark,
-  ) {
-    final tieneFiltrosActivos = _filtroFechaDesde != null ||
-        _filtroFechaHasta != null ||
-        _filtroFechaVencimientoDesde != null ||
-        _filtroFechaVencimientoHasta != null ||
-        _filtroFechaEntregaSolicitadaDesde != null ||
-        _filtroFechaEntregaSolicitadaHasta != null;
-
-    return Container(
-      width: double.infinity,
-      decoration: BoxDecoration(
-        color: isDark
-            ? colorScheme.surface
-            : colorScheme.surfaceContainerHighest.withOpacity(0.3),
-        border: Border(
-          bottom: BorderSide(
-            color: colorScheme.outline.withOpacity(0.1),
-          ),
-        ),
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          // ✅ HEADER: Toggle para mostrar/ocultar filtros
-          InkWell(
-            onTap: () => setState(() => _isFilterDateExpanded = !_isFilterDateExpanded),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              child: Row(
-                children: [
-                  Icon(
-                    _isFilterDateExpanded
-                        ? Icons.expand_less
-                        : Icons.expand_more,
-                    color: colorScheme.primary,
-                  ),
-                  const SizedBox(width: 12),
-                  Icon(
-                    Icons.date_range,
-                    size: 20,
-                    color: colorScheme.primary,
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    'Filtrar por Fechas',
-                    style: context.textTheme.labelLarge?.copyWith(
-                      color: colorScheme.primary,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  const Spacer(),
-                  // Badge de filtros activos
-                  if (tieneFiltrosActivos)
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 4,
-                      ),
-                      decoration: BoxDecoration(
-                        color: colorScheme.error.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: colorScheme.error.withOpacity(0.3),
-                        ),
-                      ),
-                      child: Text(
-                        'Activo',
-                        style: context.textTheme.labelSmall?.copyWith(
-                          color: colorScheme.error,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                ],
-              ),
-            ),
-          ),
-
-          // ✅ CONTENIDO EXPANDIBLE
-          if (_isFilterDateExpanded)
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              child: SingleChildScrollView(
-                scrollDirection: Axis.vertical,
-                child: Column(
-                  children: [
-                    // ✅ BOTONES RÁPIDOS
-                    _buildQuickDateButtons(context, colorScheme, isDark),
-                    const SizedBox(height: 16),
-                    Divider(
-                      height: 1,
-                      color: colorScheme.outline.withOpacity(0.2),
-                    ),
-                    const SizedBox(height: 16),
-
-                    // ✅ FILTRO DE CREACIÓN
-                    _buildDateFilterGroupWithReset(
-                      context,
-                      'Fecha Creación',
-                      Icons.calendar_today,
-                      _filtroFechaDesde,
-                      _filtroFechaHasta,
-                      (fecha) =>
-                          setState(() => _filtroFechaDesde = fecha),
-                      (fecha) =>
-                          setState(() => _filtroFechaHasta = fecha),
-                      () => setState(() {
-                        _filtroFechaDesde = null;
-                        _filtroFechaHasta = null;
-                      }),
-                      DateTime(2020),
-                      DateTime.now(),
-                      colorScheme,
-                      isDark,
-                    ),
-                    const SizedBox(height: 12),
-
-                    // ✅ FILTRO DE VENCIMIENTO
-                    _buildDateFilterGroupWithReset(
-                      context,
-                      'Fecha Vencimiento',
-                      Icons.event_note,
-                      _filtroFechaVencimientoDesde,
-                      _filtroFechaVencimientoHasta,
-                      (fecha) =>
-                          setState(() => _filtroFechaVencimientoDesde = fecha),
-                      (fecha) =>
-                          setState(() => _filtroFechaVencimientoHasta = fecha),
-                      () => setState(() {
-                        _filtroFechaVencimientoDesde = null;
-                        _filtroFechaVencimientoHasta = null;
-                      }),
-                      DateTime(2020),
-                      DateTime(2100),
-                      colorScheme,
-                      isDark,
-                    ),
-                    const SizedBox(height: 12),
-
-                    // ✅ FILTRO DE ENTREGA SOLICITADA
-                    _buildDateFilterGroupWithReset(
-                      context,
-                      'Entrega Solicitada',
-                      Icons.local_shipping,
-                      _filtroFechaEntregaSolicitadaDesde,
-                      _filtroFechaEntregaSolicitadaHasta,
-                      (fecha) =>
-                          setState(() => _filtroFechaEntregaSolicitadaDesde = fecha),
-                      (fecha) =>
-                          setState(() => _filtroFechaEntregaSolicitadaHasta = fecha),
-                      () => setState(() {
-                        _filtroFechaEntregaSolicitadaDesde = null;
-                        _filtroFechaEntregaSolicitadaHasta = null;
-                      }),
-                      DateTime(2020),
-                      DateTime(2100),
-                      colorScheme,
-                      isDark,
-                    ),
-                    const SizedBox(height: 16),
-
-                    // ✅ BOTONES DE ACCIÓN
-                    Row(
-                      children: [
-                        if (tieneFiltrosActivos)
-                          Expanded(
-                            child: ElevatedButton.icon(
-                              onPressed: () {
-                                context.read<PedidoProvider>().loadPedidos(
-                                      estado: _filtroEstadoSeleccionado,
-                                      fechaDesde: _filtroFechaDesde,
-                                      fechaHasta: _filtroFechaHasta,
-                                      search: _searchController.text.isEmpty ? null : _searchController.text,
-                                      fechaVencimientoDesde:
-                                          _filtroFechaVencimientoDesde,
-                                      fechaVencimientoHasta:
-                                          _filtroFechaVencimientoHasta,
-                                      fechaEntregaSolicitadaDesde:
-                                          _filtroFechaEntregaSolicitadaDesde,
-                                      fechaEntregaSolicitadaHasta:
-                                          _filtroFechaEntregaSolicitadaHasta,
-                                    );
-                              },
-                              icon: const Icon(Icons.search, size: 16),
-                              label: const Text('Buscar'),
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: colorScheme.primary,
-                                foregroundColor: Colors.white,
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 16, vertical: 10),
-                              ),
-                            ),
-                          ),
-                        if (tieneFiltrosActivos) const SizedBox(width: 8),
-                        if (tieneFiltrosActivos)
-                          OutlinedButton.icon(
-                            onPressed: () {
-                              setState(() {
-                                _filtroFechaDesde = null;
-                                _filtroFechaHasta = null;
-                                _filtroFechaVencimientoDesde = null;
-                                _filtroFechaVencimientoHasta = null;
-                                _filtroFechaEntregaSolicitadaDesde = null;
-                                _filtroFechaEntregaSolicitadaHasta = null;
-                              });
-                              context.read<PedidoProvider>().loadPedidos(
-                                    estado: _filtroEstadoSeleccionado,
-                                    search: _searchController.text.isEmpty ? null : _searchController.text,
-                                  );
-                            },
-                            icon: const Icon(Icons.clear, size: 16),
-                            label: const Text('Limpiar todo'),
-                            style: OutlinedButton.styleFrom(
-                              foregroundColor: colorScheme.primary,
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 16, vertical: 10),
-                            ),
-                          ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            ),
-        ],
-      ),
-    );
+  void _aplicarFiltroEstado(String? estado) {
+    // ✅ ACTUALIZADO: Ahora acepta código String en lugar de enum EstadoPedido
+    setState(() {
+      _filtroEstadoSeleccionado = estado;
+    });
+    // ✅ NUEVO: Limpiar datos anteriores y recargar con nuevo estado
+    context.read<PedidoProvider>().aplicarFiltroEstado(estado);
+    _cargarPedidos();
   }
 
-  /// ✅ NUEVO: Botones rápidos para rangos comunes de fechas
-  Widget _buildQuickDateButtons(
-    BuildContext context,
-    ColorScheme colorScheme,
-    bool isDark,
-  ) {
-    final hoy = DateTime.now();
-    final hace7Dias = hoy.subtract(const Duration(days: 7));
-    final hace30Dias = hoy.subtract(const Duration(days: 30));
-    final primerDiaDelMes =
-        DateTime(hoy.year, hoy.month, 1);
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          '⚡ Accesos rápidos de fechas',
-          style: context.textTheme.labelSmall?.copyWith(
-            color: colorScheme.onSurface.withOpacity(0.7),
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-        const SizedBox(height: 8),
-        Wrap(
-          spacing: 8,
-          runSpacing: 8,
-          children: [
-            _buildQuickDateButton(
-              context,
-              'Hoy',
-              hoy,
-              hoy,
-              colorScheme,
-              isDark,
-            ),
-            _buildQuickDateButton(
-              context,
-              'Últimos 7 días',
-              hace7Dias,
-              hoy,
-              colorScheme,
-              isDark,
-            ),
-            _buildQuickDateButton(
-              context,
-              'Últimos 30 días',
-              hace30Dias,
-              hoy,
-              colorScheme,
-              isDark,
-            ),
-            _buildQuickDateButton(
-              context,
-              'Este mes',
-              primerDiaDelMes,
-              hoy,
-              colorScheme,
-              isDark,
-            ),
-          ],
-        ),
-      ],
-    );
-  }
-
-  /// ✅ NUEVO: Botón individual para rango rápido
-  Widget _buildQuickDateButton(
-    BuildContext context,
-    String label,
-    DateTime desde,
-    DateTime hasta,
-    ColorScheme colorScheme,
-    bool isDark,
-  ) {
-    return ElevatedButton(
-      onPressed: () {
+  /// ✅ NUEVO: Mostrar modal de filtros avanzados (fechas)
+  void _mostrarModalFiltrosAvanzados() {
+    mostrarFiltrosAvanzadosModal(
+      context,
+      filtroFechaDesde: _filtroFechaDesde,
+      filtroFechaHasta: _filtroFechaHasta,
+      filtroFechaVencimientoDesde: _filtroFechaVencimientoDesde,
+      filtroFechaVencimientoHasta: _filtroFechaVencimientoHasta,
+      filtroFechaEntregaSolicitadaDesde: _filtroFechaEntregaSolicitadaDesde,
+      filtroFechaEntregaSolicitadaHasta: _filtroFechaEntregaSolicitadaHasta,
+      onFechaDesdeChanged: (fecha) => setState(() => _filtroFechaDesde = fecha),
+      onFechaHastaChanged: (fecha) => setState(() => _filtroFechaHasta = fecha),
+      onFechaVencDesdeChanged: (fecha) =>
+          setState(() => _filtroFechaVencimientoDesde = fecha),
+      onFechaVencHastaChanged: (fecha) =>
+          setState(() => _filtroFechaVencimientoHasta = fecha),
+      onFechaEntregaDesdeChanged: (fecha) =>
+          setState(() => _filtroFechaEntregaSolicitadaDesde = fecha),
+      onFechaEntregaHastaChanged: (fecha) =>
+          setState(() => _filtroFechaEntregaSolicitadaHasta = fecha),
+      onLimpiar: () {
         setState(() {
-          _filtroFechaDesde = desde;
-          _filtroFechaHasta = hasta;
+          _filtroFechaDesde = null;
+          _filtroFechaHasta = null;
           _filtroFechaVencimientoDesde = null;
           _filtroFechaVencimientoHasta = null;
           _filtroFechaEntregaSolicitadaDesde = null;
           _filtroFechaEntregaSolicitadaHasta = null;
         });
       },
-      style: ElevatedButton.styleFrom(
-        backgroundColor: colorScheme.primary.withOpacity(0.1),
-        foregroundColor: colorScheme.primary,
-        side: BorderSide(
-          color: colorScheme.primary.withOpacity(0.3),
-        ),
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      ),
-      child: Text(label),
-    );
-  }
-
-  /// ✅ MEJORADO: Grupo de filtro de fechas con botón de reset individual
-  Widget _buildDateFilterGroupWithReset(
-    BuildContext context,
-    String label,
-    IconData icon,
-    DateTime? desde,
-    DateTime? hasta,
-    Function(DateTime?) onDesdeChanged,
-    Function(DateTime?) onHastaChanged,
-    VoidCallback onReset,
-    DateTime? minDate,
-    DateTime? maxDate,
-    ColorScheme colorScheme,
-    bool isDark,
-  ) {
-    final tieneFiltros = desde != null || hasta != null;
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-      decoration: BoxDecoration(
-        color: isDark
-            ? colorScheme.surfaceContainerHighest.withOpacity(0.5)
-            : colorScheme.primary.withOpacity(0.05),
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(
-          color: tieneFiltros
-              ? colorScheme.primary.withOpacity(0.3)
-              : colorScheme.outline.withOpacity(0.2),
-          width: 1,
-        ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          // Label con reset button
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(icon, size: 14, color: colorScheme.primary),
-                  const SizedBox(width: 6),
-                  Text(
-                    label,
-                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                          color: colorScheme.primary,
-                          fontWeight: FontWeight.w600,
-                          fontSize: 11,
-                        ),
-                  ),
-                  if (tieneFiltros) ...[
-                    const SizedBox(width: 6),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 6,
-                        vertical: 2,
-                      ),
-                      decoration: BoxDecoration(
-                        color: colorScheme.error.withOpacity(0.15),
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                      child: Text(
-                        'Activo',
-                        style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                              color: colorScheme.error,
-                              fontSize: 9,
-                              fontWeight: FontWeight.bold,
-                            ),
-                      ),
-                    ),
-                  ],
-                ],
-              ),
-              if (tieneFiltros)
-                InkWell(
-                  onTap: onReset,
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 4),
-                    child: Icon(
-                      Icons.close,
-                      size: 14,
-                      color: colorScheme.error,
-                    ),
-                  ),
-                ),
-            ],
-          ),
-          const SizedBox(height: 8),
-
-          // Botones desde/hasta
-          Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Botón Desde
-              InkWell(
-                onTap: () async {
-                  final fecha = await showDatePicker(
-                    context: context,
-                    initialDate: desde ?? DateTime.now(),
-                    firstDate: minDate ?? DateTime(2020),
-                    lastDate: maxDate ?? DateTime(2100),
-                  );
-                  if (fecha != null) {
-                    onDesdeChanged(fecha);
-                  }
-                },
-                child: Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                  decoration: BoxDecoration(
-                    color: isDark ? colorScheme.surface : Colors.white,
-                    borderRadius: BorderRadius.circular(6),
-                    border: Border.all(
-                      color: desde != null
-                          ? colorScheme.primary
-                          : colorScheme.outline.withOpacity(0.2),
-                    ),
-                  ),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        'Desde',
-                        style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                              fontSize: 9,
-                              color: colorScheme.onSurface.withOpacity(0.5),
-                            ),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        desde != null
-                            ? DateFormat('dd/MM').format(desde)
-                            : '--',
-                        style:
-                            Theme.of(context).textTheme.labelSmall?.copyWith(
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w600,
-                                  color: desde != null
-                                      ? colorScheme.primary
-                                      : colorScheme.onSurface
-                                          .withOpacity(0.6),
-                                ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              const SizedBox(width: 6),
-              // Separador
-              Text(
-                '→',
-                style: TextStyle(
-                  color: colorScheme.outline.withOpacity(0.4),
-                  fontSize: 12,
-                ),
-              ),
-              const SizedBox(width: 6),
-              // Botón Hasta
-              InkWell(
-                onTap: () async {
-                  final fecha = await showDatePicker(
-                    context: context,
-                    initialDate: hasta ?? DateTime.now(),
-                    firstDate: desde ?? minDate ?? DateTime(2020),
-                    lastDate: maxDate ?? DateTime(2100),
-                  );
-                  if (fecha != null) {
-                    onHastaChanged(fecha);
-                  }
-                },
-                child: Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                  decoration: BoxDecoration(
-                    color: isDark ? colorScheme.surface : Colors.white,
-                    borderRadius: BorderRadius.circular(6),
-                    border: Border.all(
-                      color: hasta != null
-                          ? colorScheme.primary
-                          : colorScheme.outline.withOpacity(0.2),
-                    ),
-                  ),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        'Hasta',
-                        style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                              fontSize: 9,
-                              color: colorScheme.onSurface.withOpacity(0.5),
-                            ),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        hasta != null ? DateFormat('dd/MM').format(hasta) : '--',
-                        style:
-                            Theme.of(context).textTheme.labelSmall?.copyWith(
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w600,
-                                  color: hasta != null
-                                      ? colorScheme.primary
-                                      : colorScheme.onSurface
-                                          .withOpacity(0.6),
-                                ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              const SizedBox(width: 6),
-              // Info de rango
-              if (desde != null && hasta != null)
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 4,
-                  ),
-                  decoration: BoxDecoration(
-                    color: colorScheme.tertiary.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                  child: Text(
-                    '${hasta!.difference(desde!).inDays + 1} días',
-                    style: context.textTheme.labelSmall?.copyWith(
-                      color: colorScheme.tertiary,
-                      fontSize: 9,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  /// Construir contenedor de filtros dinámicos cargados desde EstadosProvider
-  Widget _buildDynamicFilterContainer(
-    BuildContext context,
-    ColorScheme colorScheme,
-    bool isDark,
-  ) {
-    return Consumer<EstadosProvider>(
-      builder: (context, estadosProvider, _) {
-        if (estadosProvider.isLoading && estadosProvider.estados.isEmpty) {
-          return Container(
-            width: double.infinity,
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            decoration: BoxDecoration(
-              color: isDark
-                  ? colorScheme.surface
-                  : colorScheme.surfaceContainerHighest.withOpacity(0.3),
-              border: Border(
-                bottom: BorderSide(
-                  color: colorScheme.outline.withOpacity(0.1),
-                ),
-              ),
-            ),
-            child: SizedBox(
-              height: 40,
-              child: Center(
-                child: SizedBox(
-                  width: 20,
-                  height: 20,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    color: colorScheme.primary,
-                  ),
-                ),
-              ),
-            ),
-          );
-        }
-
-        final states = estadosProvider.estados;
-
-        return Container(
-          width: double.infinity,
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          decoration: BoxDecoration(
-            color: isDark
-                ? colorScheme.surface
-                : colorScheme.surfaceContainerHighest.withOpacity(0.3),
-            border: Border(
-              bottom: BorderSide(
-                color: colorScheme.outline.withOpacity(0.1),
-              ),
-            ),
-          ),
-          child: SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: Row(
-              children: [
-                _buildDynamicFilterChip(
-                  context: context,
-                  label: 'Todos',
-                  codigo: null,
-                  contador: estadosProvider.stats?.total ?? 0,
-                  isSelected: _filtroEstadoSeleccionado == null,
-                  onTap: () => _aplicarFiltroEstado(null),
-                  icon: Icons.list_alt,
-                  colorScheme: colorScheme,
-                  isDark: isDark,
-                ),
-                const SizedBox(width: 8),
-                ...states.map((estado) {
-                  final contador = estadosProvider.getContadorEstado(estado.codigo);
-                  final color = _hexToColor(estado.color);
-
-                  return Padding(
-                    padding: const EdgeInsets.only(right: 8),
-                    child: _buildDynamicFilterChip(
-                      context: context,
-                      label: estado.nombre,
-                      codigo: estado.codigo,
-                      contador: contador,
-                      isSelected: _filtroEstadoSeleccionado == estado.codigo,
-                      onTap: () => _aplicarFiltroEstado(estado.codigo),
-                      icon: _getIconoParaEstado(estado.codigo),
-                      color: color,
-                      colorScheme: colorScheme,
-                      isDark: isDark,
-                    ),
-                  );
-                }).toList(),
-              ],
-            ),
-          ),
-        );
+      onAplicar: () {
+        // ✅ NUEVO: Cargar pedidos mostrando indicador de carga
+        _cargarPedidos();
       },
+      buildDateFilterGroup: FilterContainers.buildDateFilterGroupWithReset,
     );
-  }
-
-  /// Obtener ícono según código de estado
-  IconData _getIconoParaEstado(String codigo) {
-    switch (codigo.toUpperCase()) {
-      case 'PENDIENTE':
-        return Icons.hourglass_empty;
-      case 'APROBADA':
-        return Icons.check_circle_outline;
-      case 'CONVERTIDA':
-        return Icons.loop;
-      case 'VENCIDA':
-        return Icons.schedule;
-      case 'RECHAZADA':
-        return Icons.cancel;
-      case 'PENDIENTE_ENVIO':
-      case 'PENDIENTE_RETIRO':
-        return Icons.inventory_2_outlined;
-      case 'EN_TRANSITO':
-        return Icons.local_shipping;
-      case 'ENTREGADO':
-      case 'ENTREGADA':
-        return Icons.done_all;
-      case 'PAGADO':
-        return Icons.paid_outlined;
-      default:
-        return Icons.circle;
-    }
-  }
-
-  /// Construir chip de filtro dinámico con contador
-  Widget _buildDynamicFilterChip({
-    required BuildContext context,
-    required String label,
-    required String? codigo,
-    required int contador,
-    required bool isSelected,
-    required VoidCallback onTap,
-    required IconData icon,
-    Color? color,
-    required ColorScheme colorScheme,
-    required bool isDark,
-  }) {
-    final chipColor = color ?? colorScheme.primary;
-
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(20),
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-          decoration: BoxDecoration(
-            color: isSelected
-                ? chipColor
-                : (isDark ? colorScheme.surfaceContainerHighest : Colors.white),
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(
-              color: isSelected
-                  ? chipColor
-                  : colorScheme.outline.withOpacity(0.3),
-              width: isSelected ? 2 : 1,
-            ),
-            boxShadow: isSelected
-                ? [
-                    BoxShadow(
-                      color: chipColor.withOpacity(0.3),
-                      blurRadius: 8,
-                      offset: const Offset(0, 2),
-                    ),
-                  ]
-                : null,
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
-                icon,
-                size: 16,
-                color: isSelected
-                    ? Colors.white
-                    : (isDark ? Colors.white70 : colorScheme.onSurface),
-              ),
-              const SizedBox(width: 6),
-              Text(
-                label,
-                style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                      color: isSelected
-                          ? Colors.white
-                          : (isDark ? Colors.white : colorScheme.onSurface),
-                      fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-                    ),
-              ),
-              const SizedBox(width: 6),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                decoration: BoxDecoration(
-                  color: isSelected
-                      ? Colors.white.withOpacity(0.25)
-                      : colorScheme.outline.withOpacity(0.2),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Text(
-                  '$contador',
-                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                        color: isSelected ? Colors.white : colorScheme.onSurface,
-                        fontWeight: FontWeight.bold,
-                      ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  void _aplicarFiltroEstado(String? estado) {
-    // ✅ ACTUALIZADO: Ahora acepta código String en lugar de enum EstadoPedido
-    setState(() {
-      _filtroEstadoSeleccionado = estado;
-    });
-    context.read<PedidoProvider>().aplicarFiltroEstado(estado);
   }
 
   void _limpiarBusquedaYFiltros() {
@@ -963,7 +252,8 @@ class _PedidosHistorialScreenState extends State<PedidosHistorialScreen> {
     final isDark = context.isDark;
 
     return Scaffold(
-      resizeToAvoidBottomInset: false, // ✅ NUEVO: Prevenir overflow cuando el teclado se abre
+      resizeToAvoidBottomInset:
+          false, // ✅ NUEVO: Prevenir overflow cuando el teclado se abre
       appBar: CustomGradientAppBar(
         title: 'Mi Historial de Pedidos',
         customGradient: AppGradients.getRoleGradient('cliente'),
@@ -979,6 +269,12 @@ class _PedidosHistorialScreenState extends State<PedidosHistorialScreen> {
                 tooltip: 'Descargar PDF',
               );
             },
+          ),
+          // ✅ NUEVO: Botón para filtros avanzados (fechas)
+          IconButton(
+            icon: const Icon(Icons.tune),
+            onPressed: _mostrarModalFiltrosAvanzados,
+            tooltip: 'Filtros avanzados (fechas)',
           ),
           // ✅ NUEVO: Botón de recarga
           IconButton(
@@ -1040,8 +336,8 @@ class _PedidosHistorialScreenState extends State<PedidosHistorialScreen> {
                                   autofocus: true,
                                   // ✅ CAMBIO: De onChanged a onSubmitted (Enter key o botón)
                                   onSubmitted: (query) {
-                                    final pedidoProvider =
-                                        context.read<PedidoProvider>();
+                                    final pedidoProvider = context
+                                        .read<PedidoProvider>();
                                     pedidoProvider.aplicarBusquedaCliente(
                                       query.isEmpty ? null : query,
                                     );
@@ -1055,28 +351,24 @@ class _PedidosHistorialScreenState extends State<PedidosHistorialScreen> {
                                     ),
                                     suffixIcon:
                                         _searchController.text.isNotEmpty
-                                            ? IconButton(
-                                                icon:
-                                                    const Icon(Icons.clear),
-                                                onPressed: () {
-                                                  setState(() {
-                                                    _searchController.clear();
-                                                  });
-                                                },
-                                              )
-                                            : null,
+                                        ? IconButton(
+                                            icon: const Icon(Icons.clear),
+                                            onPressed: () {
+                                              setState(() {
+                                                _searchController.clear();
+                                              });
+                                            },
+                                          )
+                                        : null,
                                     filled: true,
                                     fillColor: isDark
-                                        ? colorScheme
-                                            .surfaceContainerHighest
+                                        ? colorScheme.surfaceContainerHighest
                                         : Colors.white,
                                     border: OutlineInputBorder(
-                                      borderRadius:
-                                          BorderRadius.circular(12),
+                                      borderRadius: BorderRadius.circular(12),
                                       borderSide: BorderSide.none,
                                     ),
-                                    contentPadding:
-                                        const EdgeInsets.symmetric(
+                                    contentPadding: const EdgeInsets.symmetric(
                                       horizontal: 16,
                                       vertical: 12,
                                     ),
@@ -1087,8 +379,8 @@ class _PedidosHistorialScreenState extends State<PedidosHistorialScreen> {
                               // ✅ NUEVO: Botón para ejecutar búsqueda
                               ElevatedButton.icon(
                                 onPressed: () {
-                                  final pedidoProvider =
-                                      context.read<PedidoProvider>();
+                                  final pedidoProvider = context
+                                      .read<PedidoProvider>();
                                   pedidoProvider.aplicarBusquedaCliente(
                                     _searchController.text.isEmpty
                                         ? null
@@ -1114,14 +406,15 @@ class _PedidosHistorialScreenState extends State<PedidosHistorialScreen> {
                 ),
 
                 // ============================================================
-                // 2️⃣ FILTRO DE FECHAS - Independiente
+                // 2️⃣ FILTROS DINÁMICOS - Independiente del listado
                 // ============================================================
-                _buildDateFilterContainer(context, colorScheme, isDark),
-
-                // ============================================================
-                // 3️⃣ FILTROS DINÁMICOS - Independiente del listado
-                // ============================================================
-                _buildDynamicFilterContainer(context, colorScheme, isDark),
+                FilterContainers.buildDynamicFilterContainer(
+                  context,
+                  colorScheme,
+                  isDark,
+                  _filtroEstadoSeleccionado,
+                  (estado) => _aplicarFiltroEstado(estado),
+                ),
 
                 // ============================================================
                 // 3️⃣ BANNER DE FILTRO ACTIVO - Independiente
@@ -1184,10 +477,11 @@ class _PedidosHistorialScreenState extends State<PedidosHistorialScreen> {
           Expanded(
             child: Consumer<PedidoProvider>(
               builder: (context, pedidoProvider, _) {
-                // Estado de carga inicial
-                if (pedidoProvider.isLoading && pedidoProvider.pedidos.isEmpty) {
+                // ✅ NUEVO: Estado de carga (muestra incluso si hay datos anteriores)
+                if (pedidoProvider.isLoading) {
                   // Detectar si hay filtros activos
-                  final tieneFilTros = _filtroEstadoSeleccionado != null ||
+                  final tieneFilTros =
+                      _filtroEstadoSeleccionado != null ||
                       _searchController.text.isNotEmpty ||
                       _filtroFechaDesde != null ||
                       _filtroFechaHasta != null ||
@@ -1196,6 +490,108 @@ class _PedidosHistorialScreenState extends State<PedidosHistorialScreen> {
                       _filtroFechaEntregaSolicitadaDesde != null ||
                       _filtroFechaEntregaSolicitadaHasta != null;
 
+                  // Si hay datos anteriores, mostrar overlay de carga
+                  if (pedidoProvider.pedidos.isNotEmpty) {
+                    return Stack(
+                      children: [
+                        // Listado anterior deshabilitado
+                        Opacity(
+                          opacity: 0.5,
+                          child: IgnorePointer(
+                            child: RefreshIndicator(
+                              onRefresh: _onRefresh,
+                              color: colorScheme.primary,
+                              child: ListView(
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 8,
+                                ),
+                                children: [
+                                  // Resumen de resultados
+                                  Container(
+                                    margin: const EdgeInsets.symmetric(
+                                      horizontal: 16,
+                                      vertical: 12,
+                                    ),
+                                    padding: const EdgeInsets.all(12),
+                                    decoration: BoxDecoration(
+                                      color: colorScheme.primary.withOpacity(
+                                        0.1,
+                                      ),
+                                      borderRadius: BorderRadius.circular(8),
+                                      border: Border.all(
+                                        color: colorScheme.primary.withOpacity(
+                                          0.3,
+                                        ),
+                                      ),
+                                    ),
+                                    child: Text(
+                                      '${pedidoProvider.pedidos.length} resultado${pedidoProvider.pedidos.length != 1 ? 's' : ''} encontrado${pedidoProvider.pedidos.length != 1 ? 's' : ''}',
+                                      style: context.textTheme.bodyMedium
+                                          ?.copyWith(
+                                            color: colorScheme.primary,
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                    ),
+                                  ),
+                                  // Lista
+                                  ...pedidoProvider.pedidos
+                                      .take(3)
+                                      .map(
+                                        (pedido) => _PedidoCard(
+                                          pedido: pedido,
+                                          onTap: () {},
+                                        ),
+                                      ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                        // Overlay de carga
+                        Container(
+                          color: Colors.black.withOpacity(0.3),
+                          child: Center(
+                            child: Padding(
+                              padding: const EdgeInsets.all(32),
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  SizedBox(
+                                    width: 60,
+                                    height: 60,
+                                    child: CircularProgressIndicator(
+                                      color: colorScheme.primary,
+                                      strokeWidth: 4,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 24),
+                                  Text(
+                                    tieneFilTros
+                                        ? '🔍 Cargando con filtros...'
+                                        : '📋 Cargando estado...',
+                                    style: context.textTheme.bodyMedium
+                                        ?.copyWith(
+                                          color: colorScheme.primary,
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                    textAlign: TextAlign.center,
+                                  ),
+                                  const SizedBox(height: 8),
+                                  Text(
+                                    'Por favor espera...',
+                                    style: context.textTheme.bodySmall
+                                        ?.copyWith(color: colorScheme.outline),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    );
+                  }
+
+                  // Si no hay datos, mostrar pantalla completa de carga
                   final mensajeCarga = tieneFilTros
                       ? '🔍 Buscando pedidos con filtros...'
                       : '📋 Cargando pedidos...';
@@ -1286,11 +682,9 @@ class _PedidosHistorialScreenState extends State<PedidosHistorialScreen> {
                             if (pedidoProvider.hasMorePages)
                               Chip(
                                 label: const Text('Hay más'),
-                                backgroundColor:
-                                    colorScheme.primaryContainer,
-                                labelStyle: TextStyle(
+                                backgroundColor: colorScheme.primaryContainer,
+                                labelStyle: AppTextStyles.labelSmall(context).copyWith(
                                   color: colorScheme.onPrimaryContainer,
-                                  fontSize: 11,
                                 ),
                               ),
                           ],
@@ -1301,10 +695,10 @@ class _PedidosHistorialScreenState extends State<PedidosHistorialScreen> {
                       ListView.builder(
                         shrinkWrap: true,
                         physics: const NeverScrollableScrollPhysics(),
-                        itemCount: pedidoProvider.pedidos.length +
+                        itemCount:
+                            pedidoProvider.pedidos.length +
                             (pedidoProvider.isLoadingMore ? 1 : 0),
-                        padding:
-                            const EdgeInsets.symmetric(vertical: 0),
+                        padding: const EdgeInsets.symmetric(vertical: 0),
                         itemBuilder: (context, index) {
                           // Indicador de carga al final
                           if (index == pedidoProvider.pedidos.length) {
@@ -1353,7 +747,11 @@ class _PedidosHistorialScreenState extends State<PedidosHistorialScreen> {
   }
 
   /// Manejar acciones de impresión de proforma con PrintService
-  Future<void> _handlePrintProforma(String action, String url, String numero) async {
+  Future<void> _handlePrintProforma(
+    String action,
+    String url,
+    String numero,
+  ) async {
     try {
       // Extraer ID de la proforma de la URL
       final regExp = RegExp(r'/proformas/(\d+)/');
@@ -1448,8 +846,13 @@ class _PedidosHistorialScreenState extends State<PedidosHistorialScreen> {
 
     if (_filtroEstadoSeleccionado != null) {
       // Detectar si es estado de proforma o de venta/logística
-      final esProforma = ['PENDIENTE', 'APROBADA', 'CONVERTIDA', 'RECHAZADA', 'VENCIDA']
-          .contains(_filtroEstadoSeleccionado?.toUpperCase());
+      final esProforma = [
+        'PENDIENTE',
+        'APROBADA',
+        'CONVERTIDA',
+        'RECHAZADA',
+        'VENCIDA',
+      ].contains(_filtroEstadoSeleccionado?.toUpperCase());
 
       final categoria = esProforma ? 'proforma' : 'venta_logistica';
       final icono = esProforma ? '📋' : '🚚';
@@ -1484,7 +887,8 @@ class _PedidosHistorialScreenState extends State<PedidosHistorialScreen> {
     final isDark = context.isDark;
 
     // Detectar si hay filtros activos
-    final tieneFilTros = _filtroEstadoSeleccionado != null ||
+    final tieneFilTros =
+        _filtroEstadoSeleccionado != null ||
         _searchController.text.isNotEmpty ||
         _filtroFechaDesde != null ||
         _filtroFechaHasta != null ||
@@ -1502,10 +906,8 @@ class _PedidosHistorialScreenState extends State<PedidosHistorialScreen> {
       filtrosActivos.add('estado: $_filtroEstadoSeleccionado');
     }
     if (_filtroFechaDesde != null || _filtroFechaHasta != null) {
-      final desde =
-          _filtroFechaDesde?.toString().split(' ')[0] ?? '...';
-      final hasta =
-          _filtroFechaHasta?.toString().split(' ')[0] ?? '...';
+      final desde = _filtroFechaDesde?.toString().split(' ')[0] ?? '...';
+      final hasta = _filtroFechaHasta?.toString().split(' ')[0] ?? '...';
       filtrosActivos.add('fechas: $desde a $hasta');
     }
 
@@ -1587,8 +989,7 @@ class _PedidosHistorialScreenState extends State<PedidosHistorialScreen> {
                   _searchController.text.isEmpty) ...[
                 const SizedBox(height: 24), // Reducido de 32
                 ElevatedButton.icon(
-                  onPressed: () =>
-                      Navigator.pushNamed(context, '/products'),
+                  onPressed: () => Navigator.pushNamed(context, '/products'),
                   icon: const Icon(Icons.shopping_bag, size: 18),
                   label: const Text('Ver Productos'),
                   style: ElevatedButton.styleFrom(
@@ -1664,27 +1065,10 @@ class _PedidosHistorialScreenState extends State<PedidosHistorialScreen> {
       ),
     );
   }
-
-  /// ✅ HELPER: Convertir hex string (#RRGGBB) a Color
-  Color _hexToColor(String hexString) {
-    final buffer = StringBuffer();
-    if (hexString.length == 6 || hexString.length == 7) {
-      buffer.write('ff');
-      buffer.write(hexString.replaceFirst('#', ''));
-    } else if (hexString.length == 8 || hexString.length == 9) {
-      buffer.write(hexString.replaceFirst('#', ''));
-    } else {
-      return Colors.grey; // Fallback
-    }
-    return Color(int.parse(buffer.toString(), radix: 16));
-  }
 }
 
 /// ✅ NUEVO: Helper para mostrar diálogo de anulación de proforma
-void _mostrarDialogoAnularProforma(
-  BuildContext context,
-  Pedido proforma,
-) {
+void _mostrarDialogoAnularProforma(BuildContext context, Pedido proforma) {
   final TextEditingController motivoController = TextEditingController();
 
   showDialog(
@@ -1779,128 +1163,12 @@ class _PedidoCard extends StatelessWidget {
   final VoidCallback onTap;
   final Function(String action, String url, String numero)? onPrint;
 
-  const _PedidoCard({
-    required this.pedido,
-    required this.onTap,
-    this.onPrint,
-  });
+  const _PedidoCard({required this.pedido, required this.onTap, this.onPrint});
 
   String _formatearFecha(DateTime fecha) {
     final formatter = DateFormat('dd MMM yyyy', 'es_ES');
     return formatter.format(fecha);
   }
-
-  String _formatearHora(DateTime fecha) {
-    final formatter = DateFormat('HH:mm', 'es_ES');
-    return formatter.format(fecha);
-  }
-
-  /// ✅ HELPER: Convertir hex string (#RRGGBB) a Color
-  Color _hexToColor(String hexString) {
-    final buffer = StringBuffer();
-    if (hexString.length == 6 || hexString.length == 7) {
-      buffer.write('ff');
-      buffer.write(hexString.replaceFirst('#', ''));
-    } else if (hexString.length == 8 || hexString.length == 9) {
-      buffer.write(hexString.replaceFirst('#', ''));
-    } else {
-      return Colors.grey;
-    }
-    return Color(int.parse(buffer.toString(), radix: 16));
-  }
-
-  /// Widget para mostrar una línea de timeline con 3 estados posibles
-  Widget _buildTimelineLine(
-    BuildContext context,
-    String titulo,
-    String estado,
-    String icono,
-    Color color, {
-    bool esUltimo = false,
-  }) {
-    final isDark = context.isDark;
-    final colorScheme = context.colorScheme;
-
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // Ícono + línea vertical
-        Column(
-          children: [
-            // Ícono del estado
-            Container(
-              width: 36,
-              height: 36,
-              decoration: BoxDecoration(
-                color: color.withOpacity(0.2),
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(
-                  color: color,
-                  width: 2,
-                ),
-              ),
-              child: Center(
-                child: Text(icono, style: const TextStyle(fontSize: 18)),
-              ),
-            ),
-            // Línea vertical (si no es el último)
-            if (!esUltimo)
-              Container(
-                width: 2,
-                height: 24,
-                color: colorScheme.outline.withOpacity(0.2),
-                margin: const EdgeInsets.symmetric(vertical: 4),
-              ),
-          ],
-        ),
-        const SizedBox(width: 12),
-
-        // Información del estado
-        Expanded(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 4),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Título de la línea
-                Text(
-                  titulo,
-                  style: context.textTheme.labelSmall?.copyWith(
-                    color: colorScheme.onSurface.withOpacity(0.6),
-                    fontSize: 11,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                // Estado actual
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 4,
-                  ),
-                  decoration: BoxDecoration(
-                    color: color.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(6),
-                    border: Border.all(
-                      color: color.withOpacity(0.3),
-                    ),
-                  ),
-                  child: Text(
-                    estado,
-                    style: context.textTheme.labelSmall?.copyWith(
-                      color: color,
-                      fontWeight: FontWeight.w600,
-                      fontSize: 12,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
 
   @override
   Widget build(BuildContext context) {
@@ -1933,27 +1201,38 @@ class _PedidoCard extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // Número de pedido
+                        // ✅ ID de la proforma (pequeño, arriba)
                         Text(
-                          pedido.numero,
+                          'Folio: ${pedido.id}',
+                          style: context.textTheme.labelSmall?.copyWith(
+                            color: colorScheme.onSurface.withOpacity(0.5),
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        // ✅ CLIENTE - Resaltado en negrita (principal)
+                        Text(
+                          pedido.cliente?.nombre ?? 'Cliente desconocido',
                           style: context.textTheme.titleMedium?.copyWith(
                             fontWeight: FontWeight.bold,
                             color: colorScheme.onSurface,
                           ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
                         const SizedBox(height: 4),
-                        // Cliente
+                        // Número de pedido (secundario)
                         Row(
                           children: [
                             Icon(
-                              Icons.person_outline,
+                              Icons.receipt_long_outlined,
                               size: 12,
                               color: colorScheme.onSurface.withOpacity(0.6),
                             ),
                             const SizedBox(width: 4),
                             Expanded(
                               child: Text(
-                                pedido.cliente?.nombre ?? 'Cliente desconocido',
+                                '#${pedido.numero}',
                                 style: context.textTheme.bodySmall?.copyWith(
                                   color: colorScheme.onSurface.withOpacity(0.7),
                                 ),
@@ -1998,8 +1277,10 @@ class _PedidoCard extends StatelessWidget {
                     onSelected: (value) {
                       // ✅ CORREGIDO: Usar ApiService para obtener baseUrl dinámicamente
                       final apiService = ApiService();
-                      final baseUrl = apiService.getBaseUrl(); // http://localhost:8000/api
-                      final impresionUrl = '$baseUrl/proformas/${pedido.id}/imprimir?formato=TICKET_80&accion=$value';
+                      final baseUrl = apiService
+                          .getBaseUrl(); // http://localhost:8000/api
+                      final impresionUrl =
+                          '$baseUrl/proformas/${pedido.id}/imprimir?formato=TICKET_80&accion=$value';
 
                       if (onPrint != null) {
                         onPrint!(value, impresionUrl, pedido.numero);
@@ -2011,7 +1292,11 @@ class _PedidoCard extends StatelessWidget {
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Icon(Icons.download, size: 18, color: colorScheme.primary),
+                            Icon(
+                              Icons.download,
+                              size: 18,
+                              color: colorScheme.primary,
+                            ),
                             const SizedBox(width: 8),
                             const Text('Descargar PDF'),
                           ],
@@ -2022,7 +1307,11 @@ class _PedidoCard extends StatelessWidget {
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Icon(Icons.preview, size: 18, color: colorScheme.primary),
+                            Icon(
+                              Icons.preview,
+                              size: 18,
+                              color: colorScheme.primary,
+                            ),
                             const SizedBox(width: 8),
                             const Text('Ver en navegador'),
                           ],
@@ -2033,7 +1322,11 @@ class _PedidoCard extends StatelessWidget {
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Icon(Icons.share, size: 18, color: colorScheme.primary),
+                            Icon(
+                              Icons.share,
+                              size: 18,
+                              color: colorScheme.primary,
+                            ),
                             const SizedBox(width: 8),
                             const Text('Compartir'),
                           ],
@@ -2051,10 +1344,7 @@ class _PedidoCard extends StatelessWidget {
               ),
 
               const SizedBox(height: 16),
-              Divider(
-                height: 1,
-                color: colorScheme.outline.withOpacity(0.2),
-              ),
+              Divider(height: 1, color: colorScheme.outline.withOpacity(0.2)),
               const SizedBox(height: 16),
 
               // ═══════════════════════════════════════════════════════════════
@@ -2166,6 +1456,227 @@ class _PedidoCard extends StatelessWidget {
                     ),
                 ],
               ),
+
+              // ✅ NUEVO 2026-02-27: Estados de la venta convertida
+              if (pedido.venta != null) ...[
+                const SizedBox(height: 16),
+                Divider(height: 1, color: colorScheme.outline.withOpacity(0.2)),
+                const SizedBox(height: 16),
+                Text(
+                  '📋 Estados de Venta Convertida',
+                  style: context.textTheme.labelLarge?.copyWith(
+                    color: colorScheme.primary,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                // Estado del Documento
+                if (pedido.venta!.estadoDocumento != null)
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 8,
+                    ),
+                    margin: const EdgeInsets.only(bottom: 8),
+                    decoration: BoxDecoration(
+                      color: _hexToColor(pedido.venta!.estadoDocumento!.color)
+                          .withOpacity(0.15),
+                      border: Border.all(
+                        color: _hexToColor(pedido.venta!.estadoDocumento!.color),
+                        width: 1.5,
+                      ),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Row(
+                      children: [
+                        Text(
+                          '📄',
+                          style: context.textTheme.labelMedium,
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Documento',
+                                style: context.textTheme.labelSmall?.copyWith(
+                                  color: colorScheme.onSurface.withOpacity(0.7),
+                                ),
+                              ),
+                              Text(
+                                pedido.venta!.estadoDocumento!.nombre,
+                                style: context.textTheme.labelSmall?.copyWith(
+                                  color: _hexToColor(
+                                      pedido.venta!.estadoDocumento!.color),
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                // Estado Logístico
+                if (pedido.venta!.estadoLogistica != null)
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 8,
+                    ),
+                    margin: const EdgeInsets.only(bottom: 8),
+                    decoration: BoxDecoration(
+                      color: _hexToColor(pedido.venta!.estadoLogistica!.color)
+                          .withOpacity(0.15),
+                      border: Border.all(
+                        color: _hexToColor(pedido.venta!.estadoLogistica!.color),
+                        width: 1.5,
+                      ),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Row(
+                      children: [
+                        Text(
+                          '🚚',
+                          style: context.textTheme.labelMedium,
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Logística',
+                                style: context.textTheme.labelSmall?.copyWith(
+                                  color: colorScheme.onSurface.withOpacity(0.7),
+                                ),
+                              ),
+                              Text(
+                                pedido.venta!.estadoLogistica!.nombre,
+                                style: context.textTheme.labelSmall?.copyWith(
+                                  color: _hexToColor(
+                                      pedido.venta!.estadoLogistica!.color),
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                // ✅ NUEVO 2026-02-27: Motivo de anulación si está anulada
+                if (pedido.venta!.estadoDocumento?.codigo == 'ANULADA' &&
+                    pedido.venta!.observaciones != null &&
+                    pedido.venta!.observaciones!.isNotEmpty)
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    margin: const EdgeInsets.only(bottom: 8),
+                    decoration: BoxDecoration(
+                      color: Colors.red.withOpacity(0.1),
+                      border: Border.all(
+                        color: Colors.red.withOpacity(0.3),
+                      ),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.warning_rounded,
+                              color: Colors.red,
+                              size: 16,
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              'Motivo de Anulación',
+                              style: context.textTheme.labelSmall?.copyWith(
+                                color: Colors.red,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          pedido.venta!.observaciones!,
+                          style: context.textTheme.bodySmall,
+                        ),
+                      ],
+                    ),
+                  ),
+                // Confirmaciones de Entrega
+                if (pedido.venta!.confirmacionesEntrega.isNotEmpty) ...[
+                  const SizedBox(height: 4),
+                  Text(
+                    'Confirmaciones de Entrega',
+                    style: context.textTheme.labelSmall?.copyWith(
+                      color: colorScheme.onSurface.withOpacity(0.7),
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  ...pedido.venta!.confirmacionesEntrega.map((confirmacion) {
+                    final isConfirmado = confirmacion.estado == 'CONFIRMADO' ||
+                        confirmacion.estado == 'ENTREGADO';
+                    return Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 6,
+                      ),
+                      margin: const EdgeInsets.only(bottom: 6),
+                      decoration: BoxDecoration(
+                        color: isConfirmado
+                            ? Colors.green.withOpacity(0.1)
+                            : Colors.orange.withOpacity(0.1),
+                        border: Border.all(
+                          color: isConfirmado
+                              ? Colors.green.withOpacity(0.5)
+                              : Colors.orange.withOpacity(0.5),
+                          width: 1,
+                        ),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Row(
+                        children: [
+                          Text(
+                            isConfirmado ? '✅' : '⏳',
+                            style: context.textTheme.labelMedium,
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  '${confirmacion.chofer ?? 'Chofer'} → ${confirmacion.cliente ?? 'Cliente'}',
+                                  style: context.textTheme.labelSmall?.copyWith(
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                                if (confirmacion.fecha != null)
+                                  Text(
+                                    DateFormat('dd/MM/yy HH:mm')
+                                        .format(confirmacion.fecha!),
+                                    style: AppTextStyles.labelSmall(context).copyWith(
+                                      color:
+                                          colorScheme.onSurface.withOpacity(0.6),
+                                    ),
+                                  ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  }),
+                ],
+              ],
 
               // ═══════════════════════════════════════════════════════════════
               // 3️⃣ INFORMACIÓN ADICIONAL
@@ -2297,8 +1808,7 @@ class _PedidoCard extends StatelessWidget {
                               Expanded(
                                 child: Text(
                                   '⏰ Reserva expira ${pedido.reservaMasProximaAVencer?.tiempoRestanteFormateado ?? 'pronto'}',
-                                  style:
-                                      context.textTheme.labelSmall?.copyWith(
+                                  style: context.textTheme.labelSmall?.copyWith(
                                     color: const Color(0xFFC2410C),
                                     fontWeight: FontWeight.w500,
                                   ),
@@ -2320,10 +1830,7 @@ class _PedidoCard extends StatelessWidget {
                       pedido.estadoCodigo == 'APROBADA') &&
                   pedido.estadoCategoria == 'proforma') ...[
                 const SizedBox(height: 16),
-                Divider(
-                  height: 1,
-                  color: colorScheme.outline.withOpacity(0.2),
-                ),
+                Divider(height: 1, color: colorScheme.outline.withOpacity(0.2)),
                 const SizedBox(height: 12),
                 Row(
                   children: [
@@ -2348,8 +1855,10 @@ class _PedidoCard extends StatelessWidget {
                               ),
                             );
 
-                            final carritoProvider = context.read<CarritoProvider>();
-                            final success = await carritoProvider.cargarProformaEnCarrito(pedido);
+                            final carritoProvider = context
+                                .read<CarritoProvider>();
+                            final success = await carritoProvider
+                                .cargarProformaEnCarrito(pedido);
 
                             // Cerrar diálogo de loading
                             if (context.mounted) {

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../../config/app_text_styles.dart';
 import '../../providers/providers.dart';
 import 'entregas_asignadas_screen.dart';
 import '../perfil/perfil_screen.dart';
@@ -33,10 +34,7 @@ class _HomeChoferScreenState extends State<HomeChoferScreen> {
       flexibleSpace: Container(
         decoration: BoxDecoration(
           gradient: LinearGradient(
-            colors: [
-              Colors.blue.shade600,
-              Colors.blue.shade400,
-            ],
+            colors: [Colors.blue.shade600, Colors.blue.shade400],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
@@ -69,12 +67,15 @@ class _HomeChoferScreenState extends State<HomeChoferScreen> {
                         color: Colors.red,
                         borderRadius: BorderRadius.circular(12),
                       ),
-                      constraints: const BoxConstraints(minWidth: 18, minHeight: 18),
+                      constraints: const BoxConstraints(
+                        minWidth: 18,
+                        minHeight: 18,
+                      ),
                       child: Text(
                         unreadCount.toString(),
-                        style: const TextStyle(
+                        style: TextStyle(
                           color: Colors.white,
-                          fontSize: 10,
+                          fontSize: AppTextStyles.labelSmall(context).fontSize!,
                           fontWeight: FontWeight.bold,
                         ),
                         textAlign: TextAlign.center,
@@ -91,9 +92,7 @@ class _HomeChoferScreenState extends State<HomeChoferScreen> {
           onSelected: (value) async {
             if (value == 'perfil') {
               Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (context) => const PerfilScreen(),
-                ),
+                MaterialPageRoute(builder: (context) => const PerfilScreen()),
               );
             } else if (value == 'logout') {
               _mostrarDialogoConfirmarLogout();

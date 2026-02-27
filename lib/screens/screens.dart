@@ -23,3 +23,6 @@ export 'notifications_screen.dart';
 export 'visitas/orden_del_dia_screen.dart';
 export 'ventas/mis_ventas_screen.dart';
 export 'ventas/venta_detalle_screen.dart';
+export 'reportes/reportes_productos_danados_screen.dart';
+export 'reportes/nuevo_reporte_screen.dart';
+export 'reportes/detalle_reporte_screen.dart';

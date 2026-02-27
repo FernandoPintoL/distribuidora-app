@@ -7,19 +7,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart' as riverpod;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'models/models.dart';
 import 'providers/providers.dart';
-import 'providers/theme_provider.dart';
-import 'providers/estados_provider.dart';
-import 'providers/visita_provider.dart';
-import 'providers/productos_agrupados_provider.dart';
 import 'screens/screens.dart';
 import 'screens/carrito/carrito_abandonado_list_screen.dart';
 import 'screens/cliente/mis_direcciones_screen.dart';
 import 'screens/cliente/direccion_form_screen.dart';
 import 'screens/chofer/iniciar_ruta_screen.dart';
-import 'screens/ventas/mis_ventas_screen.dart';
-import 'screens/visitas/orden_del_dia_screen.dart';
-import 'screens/cliente/credito_cliente_screen.dart';
-import 'screens/pedidos/proforma_creacion_screen.dart'; // ✅ NUEVO: Pantalla de creación de proformas
 import 'widgets/realtime_notifications_listener.dart';
 import 'config/app_themes.dart';
 import 'services/local_notification_service.dart';
@@ -63,6 +55,9 @@ void main() async {
           ChangeNotifierProvider<ThemeProvider>.value(value: themeProvider),
           ChangeNotifierProvider(create: (_) => AuthProvider()),
           ChangeNotifierProvider(create: (_) => ProductProvider()),
+          ChangeNotifierProvider(
+            create: (_) => FiltrosProductoProvider(),
+          ), // ✅ NUEVO: Filtros de categoría y marca
           ChangeNotifierProvider(create: (_) => ClientProvider()),
           ChangeNotifierProvider(create: (_) => CarritoProvider()),
           ChangeNotifierProvider(create: (_) => PedidoProvider()),
@@ -77,6 +72,12 @@ void main() async {
           ChangeNotifierProvider(create: (_) => CajaProvider()),
           ChangeNotifierProvider(create: (_) => GastoProvider()),
           ChangeNotifierProvider(create: (_) => ProductosAgrupadsProvider()),
+          ChangeNotifierProvider(
+            create: (_) => ReporteProductoDanadoProvider(),
+          ),
+          ChangeNotifierProvider(
+            create: (_) => BannerPublicitarioProvider(),
+          ),
         ],
         child: const MyApp(),
       ),
@@ -129,7 +130,10 @@ class MyApp extends StatelessWidget {
             '/mis-direcciones': (context) => const MisDireccionesScreen(),
             '/notifications': (context) => const NotificationsScreen(),
             '/resumen-pedido': (context) => const ResumenPedidoScreen(),
-            '/proforma-creacion': (context) => const ProformaCreacionScreen(), // ✅ NUEVO: Ruta para crear proformas con combos
+            '/proforma-creacion': (context) =>
+                const ProformaCreacionScreen(), // ✅ NUEVO: Ruta para crear proformas con combos
+            '/reportes-productos-danados': (context) =>
+                const ReportesProductosDanadosScreen(), // ✅ NUEVO: Pantalla de reportes dañados
           },
           onGenerateRoute: (settings) {
             // Handle routes with arguments
@@ -177,7 +181,7 @@ class MyApp extends StatelessWidget {
                 }
                 return MaterialPageRoute(
                   builder: (context) => PedidoCreadoScreen(
-                    pedido: pedido!,  // ✅ Usar ! para indicar que no es null
+                    pedido: pedido!, // ✅ Usar ! para indicar que no es null
                     esActualizacion: esActualizacion,
                   ),
                 );
@@ -304,9 +308,7 @@ class MyApp extends StatelessWidget {
                 if (clienteId == null || clienteNombre == null) {
                   return MaterialPageRoute(
                     builder: (context) => const Scaffold(
-                      body: Center(
-                        child: Text('Error: Cliente no encontrado'),
-                      ),
+                      body: Center(child: Text('Error: Cliente no encontrado')),
                     ),
                   );
                 }

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../config/app_text_styles.dart' show AppTextStyles;
 import '../providers/providers.dart';
 import '../widgets/loading_overlay.dart';
 
@@ -424,7 +425,7 @@ class _LoginScreenState extends State<LoginScreen>
             child: Text(
               'Biometría disponible: ${_getBiometricTypesText(hasFace, hasFingerprint)}',
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                fontSize: 12,
+                fontSize: AppTextStyles.bodySmall(context).fontSize!,
                 color: colorScheme.onPrimaryContainer,
                 fontWeight: FontWeight.w500,
               ),
@@ -472,7 +473,7 @@ class _LoginScreenState extends State<LoginScreen>
               message,
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                 color: colorScheme.onErrorContainer,
-                fontSize: 14,
+                fontSize: AppTextStyles.bodyMedium(context).fontSize!,
               ),
             ),
           ),
@@ -498,9 +499,12 @@ class _LoginScreenState extends State<LoginScreen>
           elevation: 0,
           shadowColor: colorScheme.primary.withValues(alpha: 0.4),
         ),
-        child: const Text(
+        child: Text(
           'Iniciar Sesión',
-          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+          style: TextStyle(
+            fontSize: AppTextStyles.bodyLarge(context).fontSize!,
+            fontWeight: FontWeight.w600,
+          ),
         ),
       ),
     );
@@ -609,7 +613,7 @@ class _LoginScreenState extends State<LoginScreen>
               child: Text(
                 label,
                 style: TextStyle(
-                  fontSize: 16,
+                  fontSize: AppTextStyles.bodyLarge(context).fontSize!,
                   fontWeight: FontWeight.w600,
                   color: colorScheme.primary,
                 ),
@@ -632,7 +636,7 @@ class _LoginScreenState extends State<LoginScreen>
           '¿Olvidaste tu contraseña?',
           style: Theme.of(context).textTheme.bodyMedium?.copyWith(
             color: colorScheme.onSurfaceVariant,
-            fontSize: 14,
+            fontSize: AppTextStyles.bodyMedium(context).fontSize!,
           ),
         ),
         TextButton(
@@ -648,7 +652,7 @@ class _LoginScreenState extends State<LoginScreen>
             'Recuperar',
             style: TextStyle(
               color: colorScheme.primary,
-              fontSize: 14,
+              fontSize: AppTextStyles.bodyMedium(context).fontSize!,
               fontWeight: FontWeight.w600,
             ),
           ),

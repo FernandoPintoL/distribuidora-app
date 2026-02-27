@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
+import '../../config/app_text_styles.dart';
 import '../../models/models.dart';
 import '../../providers/providers.dart';
 import '../../services/gps_service.dart';
@@ -224,9 +225,14 @@ class _MarcarVisitaScreenState extends State<MarcarVisitaScreen> {
                         style: ElevatedButton.styleFrom(
                           backgroundColor: colorScheme.primary,
                         ),
-                        child: const Text(
+                        child: Text(
                           'Registrar Visita',
-                          style: TextStyle(fontSize: 16, color: Colors.white),
+                          style: TextStyle(
+                            fontSize: AppTextStyles.bodyLarge(
+                              context,
+                            ).fontSize!,
+                            color: Colors.white,
+                          ),
                         ),
                       ),
                     ),
@@ -319,13 +325,18 @@ class _MarcarVisitaScreenState extends State<MarcarVisitaScreen> {
                     children: [
                       Text(
                         'Cliente',
-                        style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                        style: TextStyle(
+                          fontSize: AppTextStyles.bodySmall(context).fontSize!,
+                          color: Colors.grey[600],
+                        ),
                       ),
                       const SizedBox(height: 4),
                       Text(
                         widget.cliente.nombre,
-                        style: const TextStyle(
-                          fontSize: 18,
+                        style: TextStyle(
+                          fontSize: AppTextStyles.headlineSmall(
+                            context,
+                          ).fontSize!,
                           fontWeight: FontWeight.bold,
                         ),
                         maxLines: 2,
@@ -336,7 +347,9 @@ class _MarcarVisitaScreenState extends State<MarcarVisitaScreen> {
                         Text(
                           'Código: ${widget.cliente.codigoCliente}',
                           style: TextStyle(
-                            fontSize: 14,
+                            fontSize: AppTextStyles.bodyMedium(
+                              context,
+                            ).fontSize!,
                             color: Colors.grey[600],
                           ),
                         ),
@@ -355,7 +368,9 @@ class _MarcarVisitaScreenState extends State<MarcarVisitaScreen> {
                             Text(
                               widget.cliente.telefono!,
                               style: TextStyle(
-                                fontSize: 14,
+                                fontSize: AppTextStyles.bodyMedium(
+                                  context,
+                                ).fontSize!,
                                 color: Colors.grey[600],
                               ),
                             ),
@@ -400,9 +415,12 @@ class _MarcarVisitaScreenState extends State<MarcarVisitaScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
+        Text(
           'Tipo de Visita *',
-          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+          style: TextStyle(
+            fontSize: AppTextStyles.bodyLarge(context).fontSize!,
+            fontWeight: FontWeight.bold,
+          ),
         ),
         const SizedBox(height: 8),
         DropdownButtonFormField<TipoVisitaPreventista>(
@@ -428,9 +446,12 @@ class _MarcarVisitaScreenState extends State<MarcarVisitaScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
+        Text(
           'Estado de Visita *',
-          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+          style: TextStyle(
+            fontSize: AppTextStyles.bodyLarge(context).fontSize!,
+            fontWeight: FontWeight.bold,
+          ),
         ),
         const SizedBox(height: 8),
         DropdownButtonFormField<EstadoVisitaPreventista>(
@@ -461,9 +482,12 @@ class _MarcarVisitaScreenState extends State<MarcarVisitaScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
+        Text(
           'Motivo de No Atención *',
-          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+          style: TextStyle(
+            fontSize: AppTextStyles.bodyLarge(context).fontSize!,
+            fontWeight: FontWeight.bold,
+          ),
         ),
         const SizedBox(height: 8),
         DropdownButtonFormField<MotivoNoAtencionVisita>(
@@ -497,9 +521,12 @@ class _MarcarVisitaScreenState extends State<MarcarVisitaScreen> {
                   color: Theme.of(context).colorScheme.primary,
                 ),
                 const SizedBox(width: 8),
-                const Text(
+                Text(
                   'Ubicación GPS',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  style: TextStyle(
+                    fontSize: AppTextStyles.bodyLarge(context).fontSize!,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ],
             ),
@@ -535,9 +562,12 @@ class _MarcarVisitaScreenState extends State<MarcarVisitaScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
+        Text(
           'Foto del Local (Opcional)',
-          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+          style: TextStyle(
+            fontSize: AppTextStyles.bodyLarge(context).fontSize!,
+            fontWeight: FontWeight.bold,
+          ),
         ),
         const SizedBox(height: 8),
         if (_fotoLocal != null)
@@ -581,9 +611,12 @@ class _MarcarVisitaScreenState extends State<MarcarVisitaScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
+        Text(
           'Observaciones (Opcional)',
-          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+          style: TextStyle(
+            fontSize: AppTextStyles.bodyLarge(context).fontSize!,
+            fontWeight: FontWeight.bold,
+          ),
         ),
         const SizedBox(height: 8),
         TextFormField(

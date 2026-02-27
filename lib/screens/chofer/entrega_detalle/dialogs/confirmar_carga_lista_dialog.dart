@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../../config/app_text_styles.dart';
 import '../../../../models/entrega.dart';
 import '../../../../providers/entrega_provider.dart';
 
@@ -17,14 +18,18 @@ class ConfirmarCargaListaDialog {
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.check_circle_outline, size: 48, color: Colors.blue),
+            const Icon(
+              Icons.check_circle_outline,
+              size: 48,
+              color: Colors.blue,
+            ),
             const SizedBox(height: 16),
             const Text('¿Toda la carga está lista para entrega?'),
             const SizedBox(height: 12),
             Text(
               'Se cambiar el estado a LISTO_PARA_ENTREGA y podrás iniciar el viaje.',
               style: TextStyle(
-                fontSize: 12,
+                fontSize: AppTextStyles.bodySmall(context).fontSize!,
                 color: isDarkMode ? Colors.grey[400] : Colors.grey[600],
                 fontStyle: FontStyle.italic,
               ),
@@ -49,7 +54,7 @@ class ConfirmarCargaListaDialog {
                     Text(
                       'Entrega',
                       style: TextStyle(
-                        fontSize: 11,
+                        fontSize: AppTextStyles.labelSmall(context).fontSize!,
                         color: isDarkMode ? Colors.grey[400] : Colors.grey[600],
                         fontWeight: FontWeight.w500,
                       ),
@@ -58,7 +63,7 @@ class ConfirmarCargaListaDialog {
                     Text(
                       entrega.numeroEntrega ?? 'N/A',
                       style: TextStyle(
-                        fontSize: 13,
+                        fontSize: AppTextStyles.bodySmall(context).fontSize!,
                         fontWeight: FontWeight.bold,
                         color: isDarkMode ? Colors.grey[100] : Colors.grey[900],
                       ),

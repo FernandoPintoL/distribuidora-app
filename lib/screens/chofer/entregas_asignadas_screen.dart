@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../../config/app_text_styles.dart';
 import '../../providers/entrega_provider.dart';
 import 'entregas_asignadas/widgets/entrega_card.dart';
 
@@ -14,21 +15,24 @@ class EntregasAsignadasScreen extends StatefulWidget {
 class _EntregasAsignadasScreenState extends State<EntregasAsignadasScreen> {
   String? _filtroEstado;
   // ✅ CAMBIO: Rango de fechas de CREACIÓN (created_at)
-  DateTime? _fechaDesde = DateTime.now();  // Por defecto: hoy
-  DateTime? _fechaHasta = DateTime.now();  // Por defecto: hoy
-  String? _searchQuery;  // ✅ NUEVO: búsqueda
-  String _searchInput = '';  // ✅ NUEVO: input temporal de búsqueda (antes de confirmar)
-  int? _localidadFiltro;  // ✅ NUEVO: localidad
-  bool _mostrarFiltros = false;  // ✅ NUEVO: control de visibilidad de filtros (inicia OCULTO)
-  bool _isRefreshing = false;  // ✅ NUEVO: Estado para recarga manual
-  final TextEditingController _searchController = TextEditingController();  // ✅ NUEVO: controller para el campo
+  DateTime? _fechaDesde = DateTime.now(); // Por defecto: hoy
+  DateTime? _fechaHasta = DateTime.now(); // Por defecto: hoy
+  String? _searchQuery; // ✅ NUEVO: búsqueda
+  String _searchInput =
+      ''; // ✅ NUEVO: input temporal de búsqueda (antes de confirmar)
+  int? _localidadFiltro; // ✅ NUEVO: localidad
+  bool _mostrarFiltros =
+      false; // ✅ NUEVO: control de visibilidad de filtros (inicia OCULTO)
+  bool _isRefreshing = false; // ✅ NUEVO: Estado para recarga manual
+  final TextEditingController _searchController =
+      TextEditingController(); // ✅ NUEVO: controller para el campo
 
   // ✅ CRÍTICO: Future estable que NO se recrea en cada rebuild
   late Future<bool> _futureEntregas;
 
   Future<void> _onCambiarFiltro(String? nuevoEstado) async {
     setState(() => _filtroEstado = nuevoEstado);
-    _cargarEntregas();  // ✅ NUEVO: Recargar entregas después de cambiar filtro
+    _cargarEntregas(); // ✅ NUEVO: Recargar entregas después de cambiar filtro
   }
 
   @override
@@ -41,16 +45,16 @@ class _EntregasAsignadasScreenState extends State<EntregasAsignadasScreen> {
   // ✅ NUEVO: Método para (re)cargar entregas sin recrear el Future
   void _cargarEntregas() {
     _futureEntregas = context.read<EntregaProvider>().obtenerEntregasAsignadas(
-          estado: _filtroEstado,
-          createdDesde: _fechaDesde != null
-              ? _fechaDesde!.toIso8601String().split('T')[0]
-              : null,
-          createdHasta: _fechaHasta != null
-              ? _fechaHasta!.toIso8601String().split('T')[0]
-              : null,
-          search: _searchQuery,
-          localidadId: _localidadFiltro,
-        );
+      estado: _filtroEstado,
+      createdDesde: _fechaDesde != null
+          ? _fechaDesde!.toIso8601String().split('T')[0]
+          : null,
+      createdHasta: _fechaHasta != null
+          ? _fechaHasta!.toIso8601String().split('T')[0]
+          : null,
+      search: _searchQuery,
+      localidadId: _localidadFiltro,
+    );
   }
 
   // ✅ NUEVO: Ejecutar búsqueda manualmente (por Enter o botón)
@@ -132,7 +136,7 @@ class _EntregasAsignadasScreenState extends State<EntregasAsignadasScreen> {
 
     if (fecha != null) {
       setState(() => _fechaDesde = fecha);
-      _cargarEntregas();  // ✅ NUEVO: Recargar entregas después de cambiar fecha
+      _cargarEntregas(); // ✅ NUEVO: Recargar entregas después de cambiar fecha
     }
   }
 
@@ -147,7 +151,7 @@ class _EntregasAsignadasScreenState extends State<EntregasAsignadasScreen> {
 
     if (fecha != null) {
       setState(() => _fechaHasta = fecha);
-      _cargarEntregas();  // ✅ NUEVO: Recargar entregas después de cambiar fecha
+      _cargarEntregas(); // ✅ NUEVO: Recargar entregas después de cambiar fecha
     }
   }
 
@@ -156,7 +160,7 @@ class _EntregasAsignadasScreenState extends State<EntregasAsignadasScreen> {
       _fechaDesde = DateTime.now();
       _fechaHasta = DateTime.now();
     });
-    _cargarEntregas();  // ✅ NUEVO: Recargar entregas después de limpiar fechas
+    _cargarEntregas(); // ✅ NUEVO: Recargar entregas después de limpiar fechas
   }
 
   @override
@@ -167,7 +171,9 @@ class _EntregasAsignadasScreenState extends State<EntregasAsignadasScreen> {
       backgroundColor: isDarkMode ? Colors.grey[900] : Colors.grey[50],
       appBar: AppBar(
         title: const Text('Entregas Asignadas'),
-        backgroundColor: isDarkMode ? Colors.grey[800] : const Color.fromARGB(255, 84, 79, 79),
+        backgroundColor: isDarkMode
+            ? Colors.grey[800]
+            : const Color.fromARGB(255, 84, 79, 79),
         elevation: 1,
         actions: [
           // ✅ NUEVO: Botón para actualizar/recargar la pantalla
@@ -181,7 +187,9 @@ class _EntregasAsignadasScreenState extends State<EntregasAsignadasScreen> {
                     duration: const Duration(milliseconds: 500),
                     child: const Icon(Icons.refresh),
                   ),
-                  tooltip: _isRefreshing ? 'Recargando...' : 'Actualizar entregas',
+                  tooltip: _isRefreshing
+                      ? 'Recargando...'
+                      : 'Actualizar entregas',
                   onPressed: _isRefreshing ? null : _refrescarEntregas,
                 );
               },
@@ -296,7 +304,9 @@ class _EntregasAsignadasScreenState extends State<EntregasAsignadasScreen> {
                           // Header con icono para expandir/contraer
                           InkWell(
                             onTap: () {
-                              setState(() => _mostrarFiltros = !_mostrarFiltros);
+                              setState(
+                                () => _mostrarFiltros = !_mostrarFiltros,
+                              );
                             },
                             child: Padding(
                               padding: const EdgeInsets.symmetric(
@@ -314,10 +324,12 @@ class _EntregasAsignadasScreenState extends State<EntregasAsignadasScreen> {
                                         color: Theme.of(context).primaryColor,
                                       ),
                                       const SizedBox(width: 8),
-                                      const Text(
+                                      Text(
                                         'Filtros',
                                         style: TextStyle(
-                                          fontSize: 16,
+                                          fontSize: AppTextStyles.bodyLarge(
+                                            context,
+                                          ).fontSize!,
                                           fontWeight: FontWeight.w600,
                                         ),
                                       ),
@@ -325,9 +337,12 @@ class _EntregasAsignadasScreenState extends State<EntregasAsignadasScreen> {
                                       if (_searchQuery != null ||
                                           _localidadFiltro != null ||
                                           _filtroEstado != null ||
-                                          (_fechaDesde != DateTime.now() || _fechaHasta != DateTime.now()))
+                                          (_fechaDesde != DateTime.now() ||
+                                              _fechaHasta != DateTime.now()))
                                         Padding(
-                                          padding: const EdgeInsets.only(left: 8),
+                                          padding: const EdgeInsets.only(
+                                            left: 8,
+                                          ),
                                           child: Container(
                                             padding: const EdgeInsets.symmetric(
                                               horizontal: 8,
@@ -340,9 +355,12 @@ class _EntregasAsignadasScreenState extends State<EntregasAsignadasScreen> {
                                             ),
                                             child: Text(
                                               '${(_searchQuery != null ? 1 : 0) + (_localidadFiltro != null ? 1 : 0) + (_filtroEstado != null ? 1 : 0) + (_fechaDesde != DateTime.now() || _fechaHasta != DateTime.now() ? 1 : 0)}',
-                                              style: const TextStyle(
+                                              style: TextStyle(
                                                 color: Colors.white,
-                                                fontSize: 12,
+                                                fontSize:
+                                                    AppTextStyles.bodySmall(
+                                                      context,
+                                                    ).fontSize!,
                                                 fontWeight: FontWeight.bold,
                                               ),
                                             ),
@@ -376,7 +394,9 @@ class _EntregasAsignadasScreenState extends State<EntregasAsignadasScreen> {
                                         child: TextField(
                                           controller: _searchController,
                                           onChanged: (value) {
-                                            setState(() => _searchInput = value);
+                                            setState(
+                                              () => _searchInput = value,
+                                            );
                                           },
                                           onSubmitted: (_) {
                                             _ejecutarBusqueda();
@@ -384,7 +404,9 @@ class _EntregasAsignadasScreenState extends State<EntregasAsignadasScreen> {
                                           decoration: InputDecoration(
                                             hintText:
                                                 '🔍 Buscar (ID, número, cliente, NIT, teléfono)',
-                                            prefixIcon: const Icon(Icons.search),
+                                            prefixIcon: const Icon(
+                                              Icons.search,
+                                            ),
                                             suffixIcon: _searchInput.isNotEmpty
                                                 ? GestureDetector(
                                                     onTap: _limpiarBusqueda,
@@ -401,21 +423,21 @@ class _EntregasAsignadasScreenState extends State<EntregasAsignadasScreen> {
                                             ),
                                             contentPadding:
                                                 const EdgeInsets.symmetric(
-                                              horizontal: 12,
-                                              vertical: 12,
-                                            ),
+                                                  horizontal: 12,
+                                                  vertical: 12,
+                                                ),
                                           ),
                                         ),
                                       ),
                                       // ✅ Botón Buscar
                                       Material(
                                         color: Theme.of(context).primaryColor,
-                                        borderRadius:
-                                            BorderRadius.circular(8),
+                                        borderRadius: BorderRadius.circular(8),
                                         child: InkWell(
                                           onTap: _ejecutarBusqueda,
-                                          borderRadius:
-                                              BorderRadius.circular(8),
+                                          borderRadius: BorderRadius.circular(
+                                            8,
+                                          ),
                                           child: Container(
                                             padding: const EdgeInsets.all(12),
                                             child: const Icon(
@@ -457,7 +479,10 @@ class _EntregasAsignadasScreenState extends State<EntregasAsignadasScreen> {
                                                 Text(
                                                   'Desde',
                                                   style: TextStyle(
-                                                    fontSize: 12,
+                                                    fontSize:
+                                                        AppTextStyles.bodySmall(
+                                                          context,
+                                                        ).fontSize!,
                                                     color: isDarkMode
                                                         ? Colors.grey[400]
                                                         : Colors.grey[600],
@@ -466,10 +491,13 @@ class _EntregasAsignadasScreenState extends State<EntregasAsignadasScreen> {
                                                 const SizedBox(height: 4),
                                                 Text(
                                                   '📅 ${_fechaDesde!.day}/${_fechaDesde!.month}/${_fechaDesde!.year}',
-                                                  style: const TextStyle(
-                                                      fontSize: 14,
-                                                      fontWeight:
-                                                          FontWeight.w600),
+                                                  style: TextStyle(
+                                                    fontSize:
+                                                        AppTextStyles.bodyMedium(
+                                                          context,
+                                                        ).fontSize!,
+                                                    fontWeight: FontWeight.w600,
+                                                  ),
                                                 ),
                                               ],
                                             ),
@@ -501,7 +529,10 @@ class _EntregasAsignadasScreenState extends State<EntregasAsignadasScreen> {
                                                 Text(
                                                   'Hasta',
                                                   style: TextStyle(
-                                                    fontSize: 12,
+                                                    fontSize:
+                                                        AppTextStyles.bodySmall(
+                                                          context,
+                                                        ).fontSize!,
                                                     color: isDarkMode
                                                         ? Colors.grey[400]
                                                         : Colors.grey[600],
@@ -510,10 +541,13 @@ class _EntregasAsignadasScreenState extends State<EntregasAsignadasScreen> {
                                                 const SizedBox(height: 4),
                                                 Text(
                                                   '📅 ${_fechaHasta!.day}/${_fechaHasta!.month}/${_fechaHasta!.year}',
-                                                  style: const TextStyle(
-                                                      fontSize: 14,
-                                                      fontWeight:
-                                                          FontWeight.w600),
+                                                  style: TextStyle(
+                                                    fontSize:
+                                                        AppTextStyles.bodyMedium(
+                                                          context,
+                                                        ).fontSize!,
+                                                    fontWeight: FontWeight.w600,
+                                                  ),
                                                 ),
                                               ],
                                             ),
@@ -534,30 +568,34 @@ class _EntregasAsignadasScreenState extends State<EntregasAsignadasScreen> {
                                   // ✅ NUEVO: Dropdown de localidad (dinámico)
                                   Consumer<EntregaProvider>(
                                     builder: (context, provider, _) {
-                                      final localidades =
-                                          provider.obtenerLocalidadesUnicas();
+                                      final localidades = provider
+                                          .obtenerLocalidadesUnicas();
 
                                       return DropdownButton<int?>(
                                         value: _localidadFiltro,
                                         isExpanded: true,
                                         hint: const Text(
-                                            '🏘️ Todas las localidades'),
+                                          '🏘️ Todas las localidades',
+                                        ),
                                         onChanged: (value) {
                                           setState(
-                                              () => _localidadFiltro = value);
+                                            () => _localidadFiltro = value,
+                                          );
                                           _cargarEntregas();
                                         },
                                         items: [
                                           const DropdownMenuItem(
                                             value: null,
                                             child: Text(
-                                                '🏘️ Todas las localidades'),
+                                              '🏘️ Todas las localidades',
+                                            ),
                                           ),
                                           ...localidades.map((loc) {
                                             return DropdownMenuItem(
                                               value: loc['id'] as int,
                                               child: Text(
-                                                  '📍 ${loc['nombre']} (${loc['codigo'] ?? 'N/A'})'),
+                                                '📍 ${loc['nombre']} (${loc['codigo'] ?? 'N/A'})',
+                                              ),
                                             );
                                           }).toList(),
                                         ],
@@ -597,7 +635,8 @@ class _EntregasAsignadasScreenState extends State<EntregasAsignadasScreen> {
                                   if (_searchQuery != null ||
                                       _localidadFiltro != null ||
                                       _filtroEstado != null ||
-                                      (_fechaDesde != DateTime.now() || _fechaHasta != DateTime.now()))
+                                      (_fechaDesde != DateTime.now() ||
+                                          _fechaHasta != DateTime.now()))
                                     ElevatedButton.icon(
                                       onPressed: () {
                                         setState(() {
@@ -609,7 +648,7 @@ class _EntregasAsignadasScreenState extends State<EntregasAsignadasScreen> {
                                           _fechaDesde = DateTime.now();
                                           _fechaHasta = DateTime.now();
                                         });
-                                        _cargarEntregas();  // ✅ NUEVO: Recargar entregas después de limpiar
+                                        _cargarEntregas(); // ✅ NUEVO: Recargar entregas después de limpiar
                                       },
                                       icon: const Icon(Icons.clear_all),
                                       label: const Text('Limpiar Todos'),
@@ -633,8 +672,7 @@ class _EntregasAsignadasScreenState extends State<EntregasAsignadasScreen> {
                                 child: Padding(
                                   padding: const EdgeInsets.all(32),
                                   child: Column(
-                                    mainAxisAlignment:
-                                        MainAxisAlignment.center,
+                                    mainAxisAlignment: MainAxisAlignment.center,
                                     children: [
                                       Icon(
                                         Icons.local_shipping,
@@ -647,7 +685,9 @@ class _EntregasAsignadasScreenState extends State<EntregasAsignadasScreen> {
                                       Text(
                                         'No hay entregas',
                                         style: TextStyle(
-                                          fontSize: 18,
+                                          fontSize: AppTextStyles.headlineSmall(
+                                            context,
+                                          ).fontSize!,
                                           fontWeight: FontWeight.w600,
                                           color: isDarkMode
                                               ? Colors.white
@@ -679,7 +719,9 @@ class _EntregasAsignadasScreenState extends State<EntregasAsignadasScreen> {
                                 final entrega = entregas[index];
                                 // ✅ CRÍTICO: Key único permite que Flutter reconstruya cuando los datos cambian
                                 return EntregaCard(
-                                  key: ValueKey('entrega_${entrega.id}_${entrega.estado}'),
+                                  key: ValueKey(
+                                    'entrega_${entrega.id}_${entrega.estado}',
+                                  ),
                                   entrega: entrega,
                                   isDarkMode: isDarkMode,
                                 );
@@ -711,7 +753,7 @@ class _EntregasAsignadasScreenState extends State<EntregasAsignadasScreen> {
           Text(
             'Error al cargar entregas',
             style: TextStyle(
-              fontSize: 16,
+              fontSize: AppTextStyles.bodyLarge(context).fontSize!,
               color: isDarkMode ? Colors.grey[300] : Colors.grey[700],
             ),
           ),
@@ -720,7 +762,7 @@ class _EntregasAsignadasScreenState extends State<EntregasAsignadasScreen> {
             Text(
               provider.errorMessage!,
               style: TextStyle(
-                fontSize: 12,
+                fontSize: AppTextStyles.bodySmall(context).fontSize!,
                 color: isDarkMode ? Colors.grey[400] : Colors.grey[600],
               ),
               textAlign: TextAlign.center,

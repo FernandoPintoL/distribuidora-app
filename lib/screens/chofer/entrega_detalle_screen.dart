@@ -363,7 +363,7 @@ class _EntregaDetalleScreenState extends State<EntregaDetalleScreen> {
               Text(
                 'Error al cargar entrega',
                 style: TextStyle(
-                  fontSize: 16,
+                  fontSize: AppTextStyles.bodyLarge(context).fontSize!,
                   color: isDarkMode ? Colors.grey[300] : Colors.grey[700],
                 ),
               ),

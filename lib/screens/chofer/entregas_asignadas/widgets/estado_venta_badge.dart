@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../../config/app_text_styles.dart';
 import '../../../../services/estados_helpers.dart';
 
 class EstadoVentaBadge extends StatelessWidget {
@@ -28,10 +29,7 @@ class EstadoVentaBadge extends StatelessWidget {
     if ((estadoLogisticoColor == null || estadoLogisticoIcon == null) &&
         estadoLogisticoId != null) {
       final id = estadoLogisticoId!;
-      final estado = EstadosHelper.getEstadoPorId(
-        'venta_logistica',
-        id,
-      );
+      final estado = EstadosHelper.getEstadoPorId('venta_logistica', id);
       if (estado != null) {
         nombre = estado.nombre;
         icono = estado.icono ?? '📦';
@@ -52,12 +50,15 @@ class EstadoVentaBadge extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Text(icono, style: const TextStyle(fontSize: 10)),
-          const SizedBox(width: 4),
+          Text(
+            icono,
+            style: const TextStyle(fontSize: 10),
+          ), // TODO: usar AppTextStyles.labelSmall),
+          SizedBox(width: 4),
           Text(
             nombre,
             style: TextStyle(
-              fontSize: 10,
+              fontSize: AppTextStyles.labelSmall(context).fontSize!,
               fontWeight: FontWeight.w600,
               color: color,
             ),

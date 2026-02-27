@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../../../config/app_text_styles.dart';
+
 class InfoRow extends StatelessWidget {
   final IconData icon;
   final String label;
@@ -20,8 +22,8 @@ class InfoRow extends StatelessWidget {
         const SizedBox(width: 8),
         Text(
           label,
-          style: const TextStyle(
-            fontSize: 12,
+          style: TextStyle(
+            fontSize: AppTextStyles.bodySmall(context).fontSize!,
             color: Colors.grey,
             fontWeight: FontWeight.w500,
           ),
@@ -30,7 +32,10 @@ class InfoRow extends StatelessWidget {
         Expanded(
           child: Text(
             value,
-            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+            style: TextStyle(
+              fontSize: AppTextStyles.bodyMedium(context).fontSize!,
+              fontWeight: FontWeight.bold,
+            ),
           ),
         ),
       ],

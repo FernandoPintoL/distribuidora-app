@@ -149,7 +149,9 @@ class _MisVentasScreenState extends State<MisVentasScreen> {
                 icon: const Icon(Icons.search),
                 onPressed: () {
                   provider.aplicarBusqueda(
-                    _searchController.text.isEmpty ? null : _searchController.text,
+                    _searchController.text.isEmpty
+                        ? null
+                        : _searchController.text,
                   );
                 },
               ),
@@ -158,9 +160,9 @@ class _MisVentasScreenState extends State<MisVentasScreen> {
           const SizedBox(height: 8),
           Text(
             'Buscar por ID, número de venta o nombre del cliente',
-            style: Theme.of(context).textTheme.labelSmall?.copyWith(
-              color: Colors.grey,
-            ),
+            style: Theme.of(
+              context,
+            ).textTheme.labelSmall?.copyWith(color: Colors.grey),
           ),
 
           const SizedBox(height: 12),
@@ -238,8 +240,8 @@ class _MisVentasScreenState extends State<MisVentasScreen> {
                 children: [
                   Text(
                     stat.$2,
-                    style: const TextStyle(
-                      fontSize: 24,
+                    style: TextStyle(
+                      fontSize: AppTextStyles.displaySmall(context).fontSize!,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
@@ -247,7 +249,7 @@ class _MisVentasScreenState extends State<MisVentasScreen> {
                   Text(
                     stat.$1,
                     style: TextStyle(
-                      fontSize: 12,
+                      fontSize: AppTextStyles.bodySmall(context).fontSize!,
                       color: Theme.of(
                         context,
                       ).colorScheme.onSurface.withOpacity(0.6),
@@ -404,7 +406,9 @@ class _MisVentasScreenState extends State<MisVentasScreen> {
                   child: Center(
                     child: Text(
                       estadoPagoIcon,
-                      style: const TextStyle(fontSize: 24),
+                      style: const TextStyle(
+                        fontSize: 24,
+                      ), // TODO: usar AppTextStyles.displaySmall,
                     ),
                   ),
                 ),
@@ -418,16 +422,16 @@ class _MisVentasScreenState extends State<MisVentasScreen> {
                     children: [
                       Text(
                         'Cmp: #${venta.id} | ${venta.numero}',
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontWeight: FontWeight.bold,
-                          fontSize: 15,
+                          fontSize: AppTextStyles.bodyMedium(context).fontSize!,
                         ),
                       ),
                       const SizedBox(height: 4),
                       Text(
                         fechaFormato,
                         style: TextStyle(
-                          fontSize: 12,
+                          fontSize: AppTextStyles.bodySmall(context).fontSize!,
                           color: colorScheme.onSurface.withOpacity(0.6),
                         ),
                       ),
@@ -440,7 +444,11 @@ class _MisVentasScreenState extends State<MisVentasScreen> {
                           if (venta.canalOrigen != null)
                             Chip(
                               label: Text('Canal: ${venta.canalOrigen}'),
-                              labelStyle: const TextStyle(fontSize: 10),
+                              labelStyle: TextStyle(
+                                fontSize: AppTextStyles.labelSmall(
+                                  context,
+                                ).fontSize!,
+                              ),
                               padding: EdgeInsets.zero,
                               materialTapTargetSize:
                                   MaterialTapTargetSize.shrinkWrap,
@@ -451,7 +459,11 @@ class _MisVentasScreenState extends State<MisVentasScreen> {
                           if (venta.politicaPago != null)
                             Chip(
                               label: Text('Política: ${venta.politicaPago}'),
-                              labelStyle: const TextStyle(fontSize: 10),
+                              labelStyle: TextStyle(
+                                fontSize: AppTextStyles.labelSmall(
+                                  context,
+                                ).fontSize!,
+                              ),
                               padding: EdgeInsets.zero,
                               materialTapTargetSize:
                                   MaterialTapTargetSize.shrinkWrap,
@@ -462,7 +474,11 @@ class _MisVentasScreenState extends State<MisVentasScreen> {
                           if (venta.tipoPago != null)
                             Chip(
                               label: Text('Tipo: ${venta.tipoPago!.nombre}'),
-                              labelStyle: const TextStyle(fontSize: 10),
+                              labelStyle: TextStyle(
+                                fontSize: AppTextStyles.labelSmall(
+                                  context,
+                                ).fontSize!,
+                              ),
                               padding: EdgeInsets.zero,
                               materialTapTargetSize:
                                   MaterialTapTargetSize.shrinkWrap,
@@ -487,7 +503,9 @@ class _MisVentasScreenState extends State<MisVentasScreen> {
                         child: Text(
                           _getEstadoPagoLabel(venta.estadoPago),
                           style: TextStyle(
-                            fontSize: 12,
+                            fontSize: AppTextStyles.bodySmall(
+                              context,
+                            ).fontSize!,
                             fontWeight: FontWeight.w600,
                             color: estadoPagoColor,
                           ),
@@ -503,9 +521,9 @@ class _MisVentasScreenState extends State<MisVentasScreen> {
                   children: [
                     Text(
                       'Bs. ${venta.total.toStringAsFixed(2)}',
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontWeight: FontWeight.bold,
-                        fontSize: 14,
+                        fontSize: AppTextStyles.bodyMedium(context).fontSize!,
                       ),
                     ),
                     const SizedBox(height: 4),
@@ -524,7 +542,9 @@ class _MisVentasScreenState extends State<MisVentasScreen> {
                         child: Text(
                           venta.estadoLogistico,
                           style: TextStyle(
-                            fontSize: 10,
+                            fontSize: AppTextStyles.labelSmall(
+                              context,
+                            ).fontSize!,
                             color: _parseColorFromHex(
                               venta.estadoLogisticoColor,
                             ),

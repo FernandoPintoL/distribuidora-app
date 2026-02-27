@@ -39,8 +39,10 @@ class _MisRutasScreenState extends State<MisRutasScreen> {
             Icon(Icons.notifications_active, color: Colors.white),
             SizedBox(width: 12),
             Expanded(
-              child: Text('📍 Nueva ruta asignada',
-                  style: TextStyle(color: Colors.white)),
+              child: Text(
+                '📍 Nueva ruta asignada',
+                style: TextStyle(color: Colors.white),
+              ),
             ),
           ],
         ),
@@ -59,8 +61,10 @@ class _MisRutasScreenState extends State<MisRutasScreen> {
             Icon(Icons.edit, color: Colors.white),
             SizedBox(width: 12),
             Expanded(
-              child:
-                  Text('📝 Ruta modificada', style: TextStyle(color: Colors.white)),
+              child: Text(
+                '📝 Ruta modificada',
+                style: TextStyle(color: Colors.white),
+              ),
             ),
           ],
         ),
@@ -79,8 +83,10 @@ class _MisRutasScreenState extends State<MisRutasScreen> {
             Icon(Icons.local_shipping, color: Colors.white),
             SizedBox(width: 12),
             Expanded(
-              child: Text('📦 Parada actualizada',
-                  style: TextStyle(color: Colors.white)),
+              child: Text(
+                '📦 Parada actualizada',
+                style: TextStyle(color: Colors.white),
+              ),
             ),
           ],
         ),
@@ -111,7 +117,9 @@ class _MisRutasScreenState extends State<MisRutasScreen> {
                       message: connected ? 'Conectado' : 'Desconectado',
                       child: Container(
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 12, vertical: 6),
+                          horizontal: 12,
+                          vertical: 6,
+                        ),
                         decoration: BoxDecoration(
                           color: connected ? Colors.green : Colors.red,
                           borderRadius: BorderRadius.circular(20),
@@ -130,9 +138,11 @@ class _MisRutasScreenState extends State<MisRutasScreen> {
                             const SizedBox(width: 8),
                             Text(
                               connected ? 'En línea' : 'Sin conexión',
-                              style: const TextStyle(
+                              style: TextStyle(
                                 color: Colors.white,
-                                fontSize: 12,
+                                fontSize: AppTextStyles.bodySmall(
+                                  context,
+                                ).fontSize!,
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
@@ -168,13 +178,18 @@ class _MisRutasScreenState extends State<MisRutasScreen> {
                     _buildFilterChip('Todas', 'todas', rutaProvider),
                     const SizedBox(width: 8),
                     _buildFilterChip(
-                        'Planificadas', 'planificada', rutaProvider),
+                      'Planificadas',
+                      'planificada',
+                      rutaProvider,
+                    ),
                     const SizedBox(width: 8),
                     _buildFilterChip(
-                        'En Progreso', 'en_progreso', rutaProvider),
+                      'En Progreso',
+                      'en_progreso',
+                      rutaProvider,
+                    ),
                     const SizedBox(width: 8),
-                    _buildFilterChip(
-                        'Completadas', 'completada', rutaProvider),
+                    _buildFilterChip('Completadas', 'completada', rutaProvider),
                   ],
                 ),
               ),
@@ -186,19 +201,26 @@ class _MisRutasScreenState extends State<MisRutasScreen> {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(Icons.directions_car,
-                            size: 64, color: Colors.grey[400]),
+                        Icon(
+                          Icons.directions_car,
+                          size: 64,
+                          color: Colors.grey[400],
+                        ),
                         const SizedBox(height: 16),
                         Text(
                           'No hay rutas $_filtroEstado',
-                          style:
-                              TextStyle(color: Colors.grey[600], fontSize: 16),
+                          style: TextStyle(
+                            color: Colors.grey[600],
+                            fontSize: 16,
+                          ),
                         ),
                         const SizedBox(height: 8),
                         Text(
                           'Las nuevas rutas aparecerán aquí',
-                          style:
-                              TextStyle(color: Colors.grey[500], fontSize: 12),
+                          style: TextStyle(
+                            color: Colors.grey[500],
+                            fontSize: 12,
+                          ),
                         ),
                       ],
                     ),
@@ -223,7 +245,10 @@ class _MisRutasScreenState extends State<MisRutasScreen> {
   }
 
   Widget _buildFilterChip(
-      String label, String value, RutaProvider rutaProvider) {
+    String label,
+    String value,
+    RutaProvider rutaProvider,
+  ) {
     final isSelected = _filtroEstado == value;
     return FilterChip(
       label: Text(label),
@@ -257,9 +282,9 @@ class _MisRutasScreenState extends State<MisRutasScreen> {
                 children: [
                   Text(
                     ruta.codigo,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontWeight: FontWeight.bold,
-                      fontSize: 16,
+                      fontSize: AppTextStyles.bodyLarge(context).fontSize!,
                     ),
                   ),
                   Text(
@@ -278,9 +303,9 @@ class _MisRutasScreenState extends State<MisRutasScreen> {
               ),
               child: Text(
                 ruta.estadoTexto,
-                style: const TextStyle(
+                style: TextStyle(
                   color: Colors.white,
-                  fontSize: 11,
+                  fontSize: AppTextStyles.labelSmall(context).fontSize!,
                   fontWeight: FontWeight.bold,
                 ),
               ),
@@ -334,8 +359,7 @@ class _MisRutasScreenState extends State<MisRutasScreen> {
                     ),
                     if (ruta.estaPlanificada)
                       ElevatedButton.icon(
-                        onPressed: () =>
-                            _iniciarRuta(ruta),
+                        onPressed: () => _iniciarRuta(ruta),
                         icon: const Icon(Icons.play_arrow),
                         label: const Text('Iniciar'),
                         style: ElevatedButton.styleFrom(
@@ -403,12 +427,18 @@ class _MisRutasScreenState extends State<MisRutasScreen> {
           const SizedBox(width: 12),
           Text(
             label,
-            style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500),
+            style: TextStyle(
+              fontSize: AppTextStyles.bodySmall(context).fontSize!,
+              fontWeight: FontWeight.w500,
+            ),
           ),
           const Spacer(),
           Text(
             value ?? 'N/A',
-            style: TextStyle(fontSize: 13, color: Colors.grey[700]),
+            style: TextStyle(
+              fontSize: AppTextStyles.bodySmall(context).fontSize!,
+              color: Colors.grey[700],
+            ),
           ),
         ],
       ),

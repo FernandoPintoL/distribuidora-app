@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../config/app_text_styles.dart';
 import '../../models/models.dart';
 import '../../services/estados_helpers.dart'; // ✅ AGREGADO para estados dinámicos
 import '../../extensions/theme_extension.dart';
@@ -33,342 +34,389 @@ class PedidoCreadoScreen extends StatelessWidget {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-              // Animación de éxito
-              Container(
-                width: 200,
-                height: 200,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: Color(0xFF4CAF50).withOpacity(isDark ? 0.15 : 0.1),
+                // Animación de éxito
+                Container(
+                  width: 200,
+                  height: 200,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: Color(0xFF4CAF50).withOpacity(isDark ? 0.15 : 0.1),
+                  ),
+                  child: Icon(
+                    Icons.check_circle,
+                    size: 120,
+                    color: Color(0xFF4CAF50),
+                  ),
                 ),
-                child: Icon(
-                  Icons.check_circle,
-                  size: 120,
-                  color: Color(0xFF4CAF50),
+
+                const SizedBox(height: 32),
+
+                // ✅ NUEVO: Título dinámico según sea creación o actualización
+                Text(
+                  esActualizacion ? 'Proforma Actualizada' : 'Proforma Creada',
+                  style: TextStyle(
+                    fontSize: AppTextStyles.displayMedium(context).fontSize!,
+                    fontWeight: FontWeight.bold,
+                    color: colorScheme.onSurface,
+                  ),
+                  textAlign: TextAlign.center,
                 ),
-              ),
 
-              const SizedBox(height: 32),
+                const SizedBox(height: 16),
 
-              // ✅ NUEVO: Título dinámico según sea creación o actualización
-              Text(
-                esActualizacion
-                    ? 'Proforma Actualizada'
-                    : 'Proforma Creada',
-                style: TextStyle(
-                  fontSize: 28,
-                  fontWeight: FontWeight.bold,
-                  color: colorScheme.onSurface,
+                // ✅ NUEVO: Mensaje dinámico según sea creación o actualización
+                Text(
+                  esActualizacion
+                      ? 'Los cambios han sido guardados exitosamente'
+                      : 'Tu pedido ha sido registrado exitosamente',
+                  style: TextStyle(
+                    fontSize: AppTextStyles.bodyLarge(context).fontSize!,
+                    color: colorScheme.onSurfaceVariant,
+                  ),
+                  textAlign: TextAlign.center,
                 ),
-                textAlign: TextAlign.center,
-              ),
 
-              const SizedBox(height: 16),
+                const SizedBox(height: 32),
 
-              // ✅ NUEVO: Mensaje dinámico según sea creación o actualización
-              Text(
-                esActualizacion
-                    ? 'Los cambios han sido guardados exitosamente'
-                    : 'Tu pedido ha sido registrado exitosamente',
-                style: TextStyle(
-                  fontSize: 16,
-                  color: colorScheme.onSurfaceVariant,
-                ),
-                textAlign: TextAlign.center,
-              ),
-
-              const SizedBox(height: 32),
-
-              // Card con información del pedido
-              Card(
-                elevation: 2,
-                color: colorScheme.surface,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.all(20),
-                  child: Column(
-                    children: [
-                      // Número de pedido con botón de impresión
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            'Número de Proforma',
-                            style: TextStyle(
-                              color: colorScheme.onSurfaceVariant,
-                              fontSize: 14,
-                            ),
-                          ),
-                          Flexible(
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Flexible(
-                                  fit: FlexFit.loose,
-                                  child: Text(
-                                    pedido.numero,
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 16,
-                                      color: colorScheme.onSurface,
-                                    ),
-                                    textAlign: TextAlign.right,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                ),
-                                const SizedBox(width: 8),
-                                // ✅ Botón de descargar/compartir impresión
-                                PopupMenuButton<String>(
-                                onSelected: (value) {
-                                  // ✅ Usar ApiService para obtener baseUrl dinámicamente
-                                  final apiService = ApiService();
-                                  final baseUrl = apiService.baseUrl; // http://localhost:8000/api
-                                  final impresionUrl = '$baseUrl/proformas/${pedido.id}/imprimir?formato=TICKET_80&accion=$value';
-
-                                  _manejarAccionImpresion(context, value, impresionUrl, pedido.numero, colorScheme, pedido.id);
-                                },
-                                itemBuilder: (BuildContext context) => [
-                                  PopupMenuItem<String>(
-                                    value: 'download',
-                                    child: Row(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        Icon(Icons.download, size: 18, color: colorScheme.primary),
-                                        const SizedBox(width: 8),
-                                        const Text('Descargar PDF'),
-                                      ],
-                                    ),
-                                  ),
-                                  PopupMenuItem<String>(
-                                    value: 'stream',
-                                    child: Row(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        Icon(Icons.preview, size: 18, color: colorScheme.primary),
-                                        const SizedBox(width: 8),
-                                        const Text('Ver en navegador'),
-                                      ],
-                                    ),
-                                  ),
-                                  PopupMenuItem<String>(
-                                    value: 'compartir',
-                                    child: Row(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        Icon(Icons.share, size: 18, color: colorScheme.primary),
-                                        const SizedBox(width: 8),
-                                        const Text('Compartir'),
-                                      ],
-                                    ),
-                                  ),
-                                ],
-                                icon: Icon(
-                                  Icons.more_vert,
-                                  size: 20,
-                                  color: colorScheme.onSurface.withOpacity(0.6),
-                                ),
-                                padding: EdgeInsets.zero,
+                // Card con información del pedido
+                Card(
+                  elevation: 2,
+                  color: colorScheme.surface,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.all(20),
+                    child: Column(
+                      children: [
+                        // Número de pedido con botón de impresión
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              'Número de Proforma',
+                              style: TextStyle(
+                                color: colorScheme.onSurfaceVariant,
+                                fontSize: AppTextStyles.bodyMedium(
+                                  context,
+                                ).fontSize!,
                               ),
-                              ],
                             ),
-                          ),
-                        ],
-                      ),
-
-                      Divider(
-                        height: 24,
-                        color: colorScheme.outline.withAlpha(isDark ? 80 : 40),
-                      ),
-
-                      // Estado
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            'Estado',
-                            style: TextStyle(
-                              color: colorScheme.onSurfaceVariant,
-                              fontSize: 14,
-                            ),
-                          ),
-                          // ✅ ACTUALIZADO: Badge dinámico usando datos del estado
-                          Flexible(
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 12,
-                                vertical: 6,
-                              ),
-                              decoration: BoxDecoration(
-                                // ✅ CORREGIDO: Convertir hex string a Color
-                                color: _hexToColor(EstadosHelper.getEstadoColor(
-                                  pedido.estadoCategoria,
-                                  pedido.estadoCodigo,
-                                )),
-                                borderRadius: BorderRadius.circular(20),
-                              ),
+                            Flexible(
                               child: Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
-                                  Text(
-                                    EstadosHelper.getEstadoIcon(
-                                      pedido.estadoCategoria,
-                                      pedido.estadoCodigo,
-                                    ),
-                                    style: const TextStyle(
-                                      fontSize: 16,
-                                    ),
-                                  ),
-                                  const SizedBox(width: 6),
                                   Flexible(
+                                    fit: FlexFit.loose,
                                     child: Text(
-                                      pedido.estadoNombre,
-                                      style: const TextStyle(
-                                        color: Colors.white,
-                                        fontWeight: FontWeight.w600,
+                                      pedido.numero,
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: AppTextStyles.bodyLarge(
+                                          context,
+                                        ).fontSize!,
+                                        color: colorScheme.onSurface,
                                       ),
+                                      textAlign: TextAlign.right,
                                       overflow: TextOverflow.ellipsis,
                                     ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  // ✅ Botón de descargar/compartir impresión
+                                  PopupMenuButton<String>(
+                                    onSelected: (value) {
+                                      // ✅ Usar ApiService para obtener baseUrl dinámicamente
+                                      final apiService = ApiService();
+                                      final baseUrl = apiService
+                                          .baseUrl; // http://localhost:8000/api
+                                      final impresionUrl =
+                                          '$baseUrl/proformas/${pedido.id}/imprimir?formato=TICKET_80&accion=$value';
+
+                                      _manejarAccionImpresion(
+                                        context,
+                                        value,
+                                        impresionUrl,
+                                        pedido.numero,
+                                        colorScheme,
+                                        pedido.id,
+                                      );
+                                    },
+                                    itemBuilder: (BuildContext context) => [
+                                      PopupMenuItem<String>(
+                                        value: 'download',
+                                        child: Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            Icon(
+                                              Icons.download,
+                                              size: 18,
+                                              color: colorScheme.primary,
+                                            ),
+                                            const SizedBox(width: 8),
+                                            const Text('Descargar PDF'),
+                                          ],
+                                        ),
+                                      ),
+                                      PopupMenuItem<String>(
+                                        value: 'stream',
+                                        child: Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            Icon(
+                                              Icons.preview,
+                                              size: 18,
+                                              color: colorScheme.primary,
+                                            ),
+                                            const SizedBox(width: 8),
+                                            const Text('Ver en navegador'),
+                                          ],
+                                        ),
+                                      ),
+                                      PopupMenuItem<String>(
+                                        value: 'compartir',
+                                        child: Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            Icon(
+                                              Icons.share,
+                                              size: 18,
+                                              color: colorScheme.primary,
+                                            ),
+                                            const SizedBox(width: 8),
+                                            const Text('Compartir'),
+                                          ],
+                                        ),
+                                      ),
+                                    ],
+                                    icon: Icon(
+                                      Icons.more_vert,
+                                      size: 20,
+                                      color: colorScheme.onSurface.withOpacity(
+                                        0.6,
+                                      ),
+                                    ),
+                                    padding: EdgeInsets.zero,
                                   ),
                                 ],
                               ),
                             ),
-                          ),
-                        ],
-                      ),
+                          ],
+                        ),
 
-                      Divider(
-                        height: 24,
-                        color: colorScheme.outline.withAlpha(isDark ? 80 : 40),
-                      ),
-
-                      // Total
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            'Total',
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.w600,
-                              color: colorScheme.onSurface,
-                            ),
+                        Divider(
+                          height: 24,
+                          color: colorScheme.outline.withAlpha(
+                            isDark ? 80 : 40,
                           ),
-                          Flexible(
-                            child: Text(
-                              'Bs. ${pedido.total.toStringAsFixed(2)}',
-                              style: const TextStyle(
-                                fontSize: 20,
-                                fontWeight: FontWeight.bold,
-                                color: Color(0xFF4CAF50),
+                        ),
+
+                        // Estado
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              'Estado',
+                              style: TextStyle(
+                                color: colorScheme.onSurfaceVariant,
+                                fontSize: AppTextStyles.bodyMedium(
+                                  context,
+                                ).fontSize!,
                               ),
-                              textAlign: TextAlign.right,
-                              overflow: TextOverflow.ellipsis,
                             ),
+                            // ✅ ACTUALIZADO: Badge dinámico usando datos del estado
+                            Flexible(
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                  vertical: 6,
+                                ),
+                                decoration: BoxDecoration(
+                                  // ✅ CORREGIDO: Convertir hex string a Color
+                                  color: _hexToColor(
+                                    EstadosHelper.getEstadoColor(
+                                      pedido.estadoCategoria,
+                                      pedido.estadoCodigo,
+                                    ),
+                                  ),
+                                  borderRadius: BorderRadius.circular(20),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Text(
+                                      EstadosHelper.getEstadoIcon(
+                                        pedido.estadoCategoria,
+                                        pedido.estadoCodigo,
+                                      ),
+                                      style: TextStyle(
+                                        fontSize: AppTextStyles.bodyLarge(
+                                          context,
+                                        ).fontSize!,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 6),
+                                    Flexible(
+                                      child: Text(
+                                        pedido.estadoNombre,
+                                        style: const TextStyle(
+                                          color: Colors.white,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+
+                        Divider(
+                          height: 24,
+                          color: colorScheme.outline.withAlpha(
+                            isDark ? 80 : 40,
                           ),
-                        ],
+                        ),
+
+                        // Total
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              'Total',
+                              style: TextStyle(
+                                fontSize: AppTextStyles.headlineSmall(
+                                  context,
+                                ).fontSize!,
+                                fontWeight: FontWeight.w600,
+                                color: colorScheme.onSurface,
+                              ),
+                            ),
+                            Flexible(
+                              child: Text(
+                                'Bs. ${pedido.total.toStringAsFixed(2)}',
+                                style: TextStyle(
+                                  fontSize: AppTextStyles.headlineMedium(
+                                    context,
+                                  ).fontSize!,
+                                  fontWeight: FontWeight.bold,
+                                  color: Color(0xFF4CAF50),
+                                ),
+                                textAlign: TextAlign.right,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+
+                const SizedBox(height: 24),
+
+                // ✅ NUEVO: Información adicional dinámica según sea creación o actualización
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: colorScheme.primary.withOpacity(
+                      isDark ? 0.15 : 0.08,
+                    ),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Icon(
+                        Icons.info_outline,
+                        color: colorScheme.primary,
+                        size: 24,
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          esActualizacion
+                              ? 'Tu proforma ha sido actualizada correctamente. Los cambios serán revisados por nuestro equipo.'
+                              : 'Tu proforma está pendiente de aprobación. Te notificaremos cuando sea aprobada y esté lista para entrega.',
+                          style: TextStyle(
+                            fontSize: AppTextStyles.bodyMedium(
+                              context,
+                            ).fontSize!,
+                            color: colorScheme.onSurface,
+                            height: 1.4,
+                          ),
+                        ),
                       ),
                     ],
                   ),
                 ),
-              ),
 
-              const SizedBox(height: 24),
+                const SizedBox(height: 32),
 
-              // ✅ NUEVO: Información adicional dinámica según sea creación o actualización
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: colorScheme.primary.withOpacity(isDark ? 0.15 : 0.08),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                // Botones
+                Column(
                   children: [
-                    Icon(
-                      Icons.info_outline,
-                      color: colorScheme.primary,
-                      size: 24,
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        onPressed: () {
+                          Navigator.pushNamedAndRemoveUntil(
+                            context,
+                            '/mis-pedidos',
+                            (route) => route.isFirst,
+                          );
+                        },
+                        style: ElevatedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        child: Text(
+                          'Ver Mis Pedidos',
+                          style: TextStyle(
+                            fontSize: AppTextStyles.bodyLarge(
+                              context,
+                            ).fontSize!,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
                     ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Text(
-                        esActualizacion
-                            ? 'Tu proforma ha sido actualizada correctamente. Los cambios serán revisados por nuestro equipo.'
-                            : 'Tu proforma está pendiente de aprobación. Te notificaremos cuando sea aprobada y esté lista para entrega.',
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: colorScheme.onSurface,
-                          height: 1.4,
+
+                    const SizedBox(height: 12),
+
+                    SizedBox(
+                      width: double.infinity,
+                      child: OutlinedButton(
+                        onPressed: () {
+                          Navigator.pushNamedAndRemoveUntil(
+                            context,
+                            '/',
+                            (route) => false,
+                          );
+                        },
+                        style: OutlinedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        child: Text(
+                          'Volver al Inicio',
+                          style: TextStyle(
+                            fontSize: AppTextStyles.bodyLarge(
+                              context,
+                            ).fontSize!,
+                            fontWeight: FontWeight.w600,
+                          ),
                         ),
                       ),
                     ),
                   ],
                 ),
-              ),
-
-              const SizedBox(height: 32),
-
-              // Botones
-              Column(
-                children: [
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      onPressed: () {
-                        Navigator.pushNamedAndRemoveUntil(
-                          context,
-                          '/mis-pedidos',
-                          (route) => route.isFirst,
-                        );
-                      },
-                      style: ElevatedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                      child: const Text(
-                        'Ver Mis Pedidos',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
-                  ),
-
-                  const SizedBox(height: 12),
-
-                  SizedBox(
-                    width: double.infinity,
-                    child: OutlinedButton(
-                      onPressed: () {
-                        Navigator.pushNamedAndRemoveUntil(
-                          context,
-                          '/',
-                          (route) => false,
-                        );
-                      },
-                      style: OutlinedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                      child: const Text(
-                        'Volver al Inicio',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ],
+              ],
             ),
           ),
         ),
@@ -417,7 +465,10 @@ class PedidoCreadoScreen extends StatelessWidget {
 
         case 'stream':
           // ✅ Ver en navegador
-          final streamUrl = impresionUrl.replaceAll('accion=stream', 'accion=stream');
+          final streamUrl = impresionUrl.replaceAll(
+            'accion=stream',
+            'accion=stream',
+          );
           if (await canLaunchUrl(Uri.parse(streamUrl))) {
             await launchUrl(
               Uri.parse(streamUrl),

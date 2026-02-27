@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../../config/app_text_styles.dart';
 import '../../../../models/entrega.dart';
 import '../../../../providers/entrega_provider.dart';
 import '../../../../services/location_service.dart';
@@ -25,7 +26,7 @@ class MarcarLlegadaDialog {
               Text(
                 entrega.direccion!,
                 style: TextStyle(
-                  fontSize: 12,
+                  fontSize: AppTextStyles.bodySmall(context).fontSize!,
                   color: isDarkMode ? Colors.grey[400] : Colors.grey[600],
                   fontStyle: FontStyle.italic,
                 ),

@@ -7,6 +7,102 @@ import 'chofer.dart';
 import 'camion.dart';
 import '../services/estados_helpers.dart';
 
+// ✅ NUEVO 2026-02-27: Clase para estado del documento
+class EstadoDocumento {
+  final int id;
+  final String codigo;
+  final String nombre;
+  final String color;
+
+  EstadoDocumento({
+    required this.id,
+    required this.codigo,
+    required this.nombre,
+    required this.color,
+  });
+
+  factory EstadoDocumento.fromJson(Map<String, dynamic> json) {
+    return EstadoDocumento(
+      id: json['id'] as int,
+      codigo: json['codigo'] as String,
+      nombre: json['nombre'] as String,
+      color: json['color'] as String? ?? '#808080',
+    );
+  }
+}
+
+// ✅ NUEVO 2026-02-27: Clase para confirmación de entrega
+class ConfirmacionEntrega {
+  final int id;
+  final String estado;
+  final DateTime? fecha;
+  final String? chofer;
+  final String? cliente;
+
+  ConfirmacionEntrega({
+    required this.id,
+    required this.estado,
+    this.fecha,
+    this.chofer,
+    this.cliente,
+  });
+
+  factory ConfirmacionEntrega.fromJson(Map<String, dynamic> json) {
+    return ConfirmacionEntrega(
+      id: json['id'] as int,
+      estado: json['estado'] as String? ?? 'PENDIENTE',
+      fecha: json['fecha'] != null
+          ? DateTime.parse(json['fecha'] as String)
+          : null,
+      chofer: json['chofer'] as String?,
+      cliente: json['cliente'] as String?,
+    );
+  }
+}
+
+// ✅ NUEVO 2026-02-27: Clase para información de venta convertida
+class PedidoVenta {
+  final int id;
+  final String numero;
+  final DateTime? fecha;
+  final EstadoDocumento? estadoDocumento;
+  final EstadoDocumento? estadoLogistica;
+  final List<ConfirmacionEntrega> confirmacionesEntrega;
+  final String? observaciones; // ✅ NUEVO 2026-02-27: Motivo de anulación u otras observaciones
+
+  PedidoVenta({
+    required this.id,
+    required this.numero,
+    this.fecha,
+    this.estadoDocumento,
+    this.estadoLogistica,
+    this.confirmacionesEntrega = const [],
+    this.observaciones,
+  });
+
+  factory PedidoVenta.fromJson(Map<String, dynamic> json) {
+    return PedidoVenta(
+      id: json['id'] as int,
+      numero: json['numero'] as String,
+      fecha: json['fecha'] != null
+          ? DateTime.parse(json['fecha'] as String)
+          : null,
+      estadoDocumento: json['estado_documento'] != null
+          ? EstadoDocumento.fromJson(json['estado_documento'] as Map<String, dynamic>)
+          : null,
+      estadoLogistica: json['estado_logistica'] != null
+          ? EstadoDocumento.fromJson(json['estado_logistica'] as Map<String, dynamic>)
+          : null,
+      confirmacionesEntrega: json['confirmaciones_entrega'] != null
+          ? (json['confirmaciones_entrega'] as List)
+              .map((c) => ConfirmacionEntrega.fromJson(c as Map<String, dynamic>))
+              .toList()
+          : [],
+      observaciones: json['observaciones'] as String?,
+    );
+  }
+}
+
 // ✅ NUEVO: Evento de timeline para visualizar el ciclo completo del pedido
 class PedidoTimelineEvent {
   final String categoria;      // proforma, venta, logistica
@@ -97,6 +193,7 @@ class Pedido {
   // ✅ NUEVO: Información de la venta cuando se convierte
   final int? ventaId;
   final String? ventaNumero;
+  final PedidoVenta? venta;
 
   Pedido({
     required this.id,
@@ -138,6 +235,7 @@ class Pedido {
     this.fechaEntregaSolicitada,
     this.ventaId,
     this.ventaNumero,
+    this.venta,
   });
 
   factory Pedido.fromJson(Map<String, dynamic> json) {
@@ -267,6 +365,9 @@ class Pedido {
         // ✅ NUEVO: Información de venta cuando se convierte
         ventaId: json['venta_id'] as int?,
         ventaNumero: json['venta_numero'] as String? ?? json['venta']?['numero'] as String?,
+        venta: json['venta'] != null
+            ? PedidoVenta.fromJson(json['venta'] as Map<String, dynamic>)
+            : null,
       );
     } catch (e) {
       debugPrint('❌ Error parsing Pedido: $e');

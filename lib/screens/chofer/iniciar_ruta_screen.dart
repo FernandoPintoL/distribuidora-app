@@ -10,10 +10,8 @@ import '../../config/config.dart';
 class IniciarRutaScreen extends StatefulWidget {
   final int entregaId;
 
-  const IniciarRutaScreen({
-    Key? key,
-    required this.entregaId,
-  }) : super(key: key);
+  const IniciarRutaScreen({Key? key, required this.entregaId})
+    : super(key: key);
 
   @override
   State<IniciarRutaScreen> createState() => _IniciarRutaScreenState();
@@ -101,7 +99,10 @@ class _IniciarRutaScreenState extends State<IniciarRutaScreen> {
       marcadores.add(
         Marker(
           markerId: const MarkerId('chofer_actual'),
-          position: LatLng(_posicionActual!.latitude, _posicionActual!.longitude),
+          position: LatLng(
+            _posicionActual!.latitude,
+            _posicionActual!.longitude,
+          ),
           infoWindow: const InfoWindow(
             title: '📍 Tu Ubicación',
             snippet: 'Ubicación actual del chofer',
@@ -122,14 +123,15 @@ class _IniciarRutaScreenState extends State<IniciarRutaScreen> {
             position: LatLng(venta.latitud!, venta.longitud!),
             infoWindow: InfoWindow(
               title: 'Venta #${venta.numero}',
-              snippet: '${venta.clienteNombre ?? "Cliente"}\nTotal: \$${venta.total.toStringAsFixed(2)}',
+              snippet:
+                  '${venta.clienteNombre ?? "Cliente"}\nTotal: \$${venta.total.toStringAsFixed(2)}',
             ),
             icon: BitmapDescriptor.defaultMarkerWithHue(
               i % 3 == 0
                   ? BitmapDescriptor.hueRed
                   : i % 3 == 1
-                      ? BitmapDescriptor.hueOrange
-                      : BitmapDescriptor.hueYellow,
+                  ? BitmapDescriptor.hueOrange
+                  : BitmapDescriptor.hueYellow,
             ),
             onTap: () {
               setState(() {
@@ -139,7 +141,9 @@ class _IniciarRutaScreenState extends State<IniciarRutaScreen> {
           ),
         );
 
-        debugPrint('[MAPA] Venta #${venta.numero}: (${venta.latitud}, ${venta.longitud})');
+        debugPrint(
+          '[MAPA] Venta #${venta.numero}: (${venta.latitud}, ${venta.longitud})',
+        );
       }
     }
 
@@ -200,8 +204,9 @@ class _IniciarRutaScreenState extends State<IniciarRutaScreen> {
     Venta? ventaSeleccionada;
     if (_ventaSeleccionadaId != null && provider.entregaActual != null) {
       try {
-        ventaSeleccionada = provider.entregaActual!.ventas
-            .firstWhere((v) => v.id == _ventaSeleccionadaId);
+        ventaSeleccionada = provider.entregaActual!.ventas.firstWhere(
+          (v) => v.id == _ventaSeleccionadaId,
+        );
       } catch (e) {
         ventaSeleccionada = null;
       }
@@ -221,13 +226,19 @@ class _IniciarRutaScreenState extends State<IniciarRutaScreen> {
                 _mapController = controller;
                 _mapController.animateCamera(
                   CameraUpdate.newLatLngZoom(
-                    LatLng(_posicionActual!.latitude, _posicionActual!.longitude),
+                    LatLng(
+                      _posicionActual!.latitude,
+                      _posicionActual!.longitude,
+                    ),
                     14,
                   ),
                 );
               },
               initialCameraPosition: CameraPosition(
-                target: LatLng(_posicionActual!.latitude, _posicionActual!.longitude),
+                target: LatLng(
+                  _posicionActual!.latitude,
+                  _posicionActual!.longitude,
+                ),
                 zoom: 14,
               ),
               markers: _marcadores,
@@ -244,7 +255,11 @@ class _IniciarRutaScreenState extends State<IniciarRutaScreen> {
                   if (_obtenienoPosicion)
                     const CircularProgressIndicator()
                   else
-                    const Icon(Icons.location_off, size: 64, color: Colors.grey),
+                    const Icon(
+                      Icons.location_off,
+                      size: 64,
+                      color: Colors.grey,
+                    ),
                   const SizedBox(height: 16),
                   Text(
                     _obtenienoPosicion
@@ -270,7 +285,9 @@ class _IniciarRutaScreenState extends State<IniciarRutaScreen> {
                         : MapType.normal;
                   });
                 },
-                tooltip: _mapType == MapType.normal ? 'Cambiar a Satélite' : 'Cambiar a Normal',
+                tooltip: _mapType == MapType.normal
+                    ? 'Cambiar a Satélite'
+                    : 'Cambiar a Normal',
                 child: Icon(
                   _mapType == MapType.normal ? Icons.satellite_alt : Icons.map,
                 ),
@@ -300,9 +317,11 @@ class _IniciarRutaScreenState extends State<IniciarRutaScreen> {
                               children: [
                                 Text(
                                   'Venta #${ventaSeleccionada.numero}',
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     fontWeight: FontWeight.bold,
-                                    fontSize: 16,
+                                    fontSize: AppTextStyles.bodyLarge(
+                                      context,
+                                    ).fontSize!,
                                   ),
                                 ),
                                 const SizedBox(height: 4),
@@ -310,7 +329,9 @@ class _IniciarRutaScreenState extends State<IniciarRutaScreen> {
                                   ventaSeleccionada.clienteNombre ?? 'Cliente',
                                   style: TextStyle(
                                     color: Colors.grey[600],
-                                    fontSize: 13,
+                                    fontSize: AppTextStyles.bodySmall(
+                                      context,
+                                    ).fontSize!,
                                   ),
                                 ),
                               ],
@@ -338,9 +359,11 @@ class _IniciarRutaScreenState extends State<IniciarRutaScreen> {
                           ),
                           Text(
                             '\$${ventaSeleccionada.total.toStringAsFixed(2)}',
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontWeight: FontWeight.bold,
-                              fontSize: 14,
+                              fontSize: AppTextStyles.bodyMedium(
+                                context,
+                              ).fontSize!,
                             ),
                           ),
                         ],
@@ -352,7 +375,9 @@ class _IniciarRutaScreenState extends State<IniciarRutaScreen> {
                           '📍 ${ventaSeleccionada.latitud!.toStringAsFixed(4)}, ${ventaSeleccionada.longitud!.toStringAsFixed(4)}',
                           style: TextStyle(
                             color: Colors.grey[600],
-                            fontSize: 12,
+                            fontSize: AppTextStyles.bodySmall(
+                              context,
+                            ).fontSize!,
                             fontFamily: 'monospace',
                           ),
                         ),
@@ -391,7 +416,9 @@ class _IniciarRutaScreenState extends State<IniciarRutaScreen> {
                           onPressed: provider.isLoading ? null : _iniciarRuta,
                           icon: const Icon(Icons.navigation),
                           label: Text(
-                            provider.isLoading ? 'Iniciando...' : 'Iniciar Ruta',
+                            provider.isLoading
+                                ? 'Iniciando...'
+                                : 'Iniciar Ruta',
                           ),
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Colors.green,
@@ -424,21 +451,15 @@ class _InfoFila extends StatelessWidget {
   final String label;
   final String valor;
 
-  const _InfoFila({
-    Key? key,
-    required this.label,
-    required this.valor,
-  }) : super(key: key);
+  const _InfoFila({Key? key, required this.label, required this.valor})
+    : super(key: key);
 
   @override
   Widget build(BuildContext context) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(
-          label,
-          style: const TextStyle(color: Colors.grey),
-        ),
+        Text(label, style: const TextStyle(color: Colors.grey)),
         Text(
           valor,
           style: const TextStyle(

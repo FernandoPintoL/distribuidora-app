@@ -1,5 +1,6 @@
 export 'auth_provider.dart';
 export 'product_provider.dart';
+export 'filtros_producto_provider.dart';  // ✅ NUEVO: Filtros de categoría y marca
 export 'client_provider.dart';
 export 'carrito_provider.dart';
 export 'pedido_provider.dart';
@@ -11,6 +12,10 @@ export 'notification_provider.dart';
 export 'ruta_provider.dart';
 export 'estados_provider.dart';
 export 'visita_provider.dart';
+export 'reporte_producto_danado_provider.dart';
 export 'cliente_credito_provider.dart';
 export 'caja_provider.dart';
 export 'gasto_provider.dart';
+export 'productos_agrupados_provider.dart';
+export 'theme_provider.dart';
+export 'banner_publicitario_provider.dart';

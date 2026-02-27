@@ -20,7 +20,8 @@ class HomeScreen extends BaseHomeScreen {
 class _HomeScreenState extends BaseHomeScreenState<HomeScreen> {
   late List<Widget> _dynamicScreens;
   late List<NavigationItem> _dynamicNavigationItems;
-  final _clientListKey = GlobalKey<State>(); // ✅ Para acceder al state de ClientListScreen
+  final _clientListKey =
+      GlobalKey<State>(); // ✅ Para acceder al state de ClientListScreen
 
   @override
   List<NavigationItem> get navigationItems => _dynamicNavigationItems;
@@ -241,8 +242,10 @@ class _DashboardPreventistaState extends State<DashboardPreventista>
                               child: Center(
                                 child: Text(
                                   userName[0].toUpperCase(),
-                                  style: const TextStyle(
-                                    fontSize: 24,
+                                  style: TextStyle(
+                                    fontSize: AppTextStyles.displaySmall(
+                                      context,
+                                    ).fontSize!,
                                     fontWeight: FontWeight.bold,
                                     color: Colors.white,
                                   ),
@@ -256,8 +259,10 @@ class _DashboardPreventistaState extends State<DashboardPreventista>
                                 children: [
                                   Text(
                                     '${_getGreeting()}, $userName',
-                                    style: const TextStyle(
-                                      fontSize: 22,
+                                    style: TextStyle(
+                                      fontSize: AppTextStyles.headlineMedium(
+                                        context,
+                                      ).fontSize!,
                                       fontWeight: FontWeight.bold,
                                       color: Colors.white,
                                     ),
@@ -266,7 +271,9 @@ class _DashboardPreventistaState extends State<DashboardPreventista>
                                   Text(
                                     'Tu panel de ventas',
                                     style: TextStyle(
-                                      fontSize: 13,
+                                      fontSize: AppTextStyles.bodySmall(
+                                        context,
+                                      ).fontSize!,
                                       color: Colors.white.withOpacity(0.85),
                                     ),
                                   ),
@@ -287,10 +294,12 @@ class _DashboardPreventistaState extends State<DashboardPreventista>
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     // Accesos Rápidos - Mejorado con gradientes
-                    const Text(
+                    Text(
                       'Acciones Rápidas',
                       style: TextStyle(
-                        fontSize: 18,
+                        fontSize: AppTextStyles.headlineSmall(
+                          context,
+                        ).fontSize!,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
@@ -365,10 +374,12 @@ class _DashboardPreventistaState extends State<DashboardPreventista>
                     const SizedBox(height: 32),
 
                     // Estadísticas con KPIs
-                    const Text(
+                    Text(
                       'Tu Desempeño',
                       style: TextStyle(
-                        fontSize: 18,
+                        fontSize: AppTextStyles.headlineSmall(
+                          context,
+                        ).fontSize!,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
@@ -377,9 +388,12 @@ class _DashboardPreventistaState extends State<DashboardPreventista>
                     Consumer<ClientProvider>(
                       builder: (context, clientProvider, child) {
                         // ✅ OPTIMIZADO: Usar dashboard stats en lugar de cargar clientes completos
-                        final totalClientes = clientProvider.dashboardTotalClientes ?? 0;
-                        final clientesActivos = clientProvider.dashboardClientesActivos ?? 0;
-                        final clientesInactivos = clientProvider.dashboardClientesInactivos ?? 0;
+                        final totalClientes =
+                            clientProvider.dashboardTotalClientes ?? 0;
+                        final clientesActivos =
+                            clientProvider.dashboardClientesActivos ?? 0;
+                        final clientesInactivos =
+                            clientProvider.dashboardClientesInactivos ?? 0;
                         final porcentajeActivos = totalClientes > 0
                             ? ((clientesActivos / totalClientes) * 100)
                                   .toStringAsFixed(1)
@@ -431,10 +445,12 @@ class _DashboardPreventistaState extends State<DashboardPreventista>
                     const SizedBox(height: 32),
 
                     // Clientes Pendientes de Visitas
-                    const Text(
+                    Text(
                       'Clientes Pendientes de Visitas',
                       style: TextStyle(
-                        fontSize: 18,
+                        fontSize: AppTextStyles.headlineSmall(
+                          context,
+                        ).fontSize!,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
@@ -453,9 +469,7 @@ class _DashboardPreventistaState extends State<DashboardPreventista>
                         final ordenDelDia = snapshot.data;
                         if (ordenDelDia == null) {
                           return Container(
-                            padding: const EdgeInsets.symmetric(
-                              vertical: 24,
-                            ),
+                            padding: const EdgeInsets.symmetric(vertical: 24),
                             child: Center(
                               child: Column(
                                 children: [
@@ -468,7 +482,9 @@ class _DashboardPreventistaState extends State<DashboardPreventista>
                                   Text(
                                     'Sin orden del día',
                                     style: TextStyle(
-                                      fontSize: 16,
+                                      fontSize: AppTextStyles.bodyLarge(
+                                        context,
+                                      ).fontSize!,
                                       fontWeight: FontWeight.bold,
                                       color: Colors.grey.shade700,
                                     ),
@@ -477,7 +493,9 @@ class _DashboardPreventistaState extends State<DashboardPreventista>
                                   Text(
                                     'No hay clientes programados para hoy',
                                     style: TextStyle(
-                                      fontSize: 13,
+                                      fontSize: AppTextStyles.bodySmall(
+                                        context,
+                                      ).fontSize!,
                                       color: Colors.grey.shade600,
                                     ),
                                   ),
@@ -514,10 +532,12 @@ class _DashboardPreventistaState extends State<DashboardPreventista>
                                   mainAxisAlignment:
                                       MainAxisAlignment.spaceBetween,
                                   children: [
-                                    const Text(
+                                    Text(
                                       'Progreso del Día',
                                       style: TextStyle(
-                                        fontSize: 16,
+                                        fontSize: AppTextStyles.bodyLarge(
+                                          context,
+                                        ).fontSize!,
                                         fontWeight: FontWeight.bold,
                                       ),
                                     ),
@@ -527,17 +547,15 @@ class _DashboardPreventistaState extends State<DashboardPreventista>
                                         vertical: 6,
                                       ),
                                       decoration: BoxDecoration(
-                                        color: progressColor.withOpacity(
-                                          0.1,
-                                        ),
-                                        borderRadius: BorderRadius.circular(
-                                          20,
-                                        ),
+                                        color: progressColor.withOpacity(0.1),
+                                        borderRadius: BorderRadius.circular(20),
                                       ),
                                       child: Text(
                                         '${resumen.porcentajeCompletado.toStringAsFixed(0)}%',
                                         style: TextStyle(
-                                          fontSize: 14,
+                                          fontSize: AppTextStyles.bodyMedium(
+                                            context,
+                                          ).fontSize!,
                                           fontWeight: FontWeight.bold,
                                           color: progressColor,
                                         ),
@@ -554,10 +572,9 @@ class _DashboardPreventistaState extends State<DashboardPreventista>
                                     minHeight: 10,
                                     value: porcentajeDecimal,
                                     backgroundColor: Colors.grey.shade200,
-                                    valueColor:
-                                        AlwaysStoppedAnimation<Color>(
-                                          progressColor,
-                                        ),
+                                    valueColor: AlwaysStoppedAnimation<Color>(
+                                      progressColor,
+                                    ),
                                   ),
                                 ),
                                 const SizedBox(height: 16),
@@ -613,10 +630,12 @@ class _DashboardPreventistaState extends State<DashboardPreventista>
                     const SizedBox(height: 32),
 
                     // ✅ NUEVO: Sección de Mis Pedidos
-                    const Text(
+                    Text(
                       'Pedidos de mis clientes',
                       style: TextStyle(
-                        fontSize: 18,
+                        fontSize: AppTextStyles.headlineSmall(
+                          context,
+                        ).fontSize!,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
@@ -737,7 +756,9 @@ class _DashboardPreventistaState extends State<DashboardPreventista>
                                               : '${stats.alertas.porVencer} pedido(s) por vencer',
                                           style: TextStyle(
                                             color: Colors.red.shade700,
-                                            fontSize: 13,
+                                            fontSize: AppTextStyles.bodySmall(
+                                              context,
+                                            ).fontSize!,
                                             fontWeight: FontWeight.w500,
                                           ),
                                         ),
@@ -795,8 +816,8 @@ class _DashboardPreventistaState extends State<DashboardPreventista>
               const SizedBox(height: 12),
               Text(
                 title,
-                style: const TextStyle(
-                  fontSize: 16,
+                style: TextStyle(
+                  fontSize: AppTextStyles.bodyLarge(context).fontSize!,
                   fontWeight: FontWeight.bold,
                   color: Colors.white,
                 ),
@@ -808,7 +829,7 @@ class _DashboardPreventistaState extends State<DashboardPreventista>
               Text(
                 subtitle,
                 style: TextStyle(
-                  fontSize: 12,
+                  fontSize: AppTextStyles.bodySmall(context).fontSize!,
                   color: Colors.white.withOpacity(0.9),
                 ),
                 textAlign: TextAlign.center,
@@ -856,7 +877,7 @@ class _DashboardPreventistaState extends State<DashboardPreventista>
                   Text(
                     title,
                     style: TextStyle(
-                      fontSize: 13,
+                      fontSize: AppTextStyles.bodySmall(context).fontSize!,
                       color: Colors.grey.shade600,
                       fontWeight: FontWeight.w500,
                     ),
@@ -864,15 +885,18 @@ class _DashboardPreventistaState extends State<DashboardPreventista>
                   const SizedBox(height: 6),
                   Text(
                     value,
-                    style: const TextStyle(
-                      fontSize: 28,
+                    style: TextStyle(
+                      fontSize: AppTextStyles.displayMedium(context).fontSize!,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
                   const SizedBox(height: 4),
                   Text(
                     subtitle,
-                    style: TextStyle(fontSize: 11, color: Colors.grey.shade500),
+                    style: TextStyle(
+                      fontSize: AppTextStyles.labelSmall(context).fontSize!,
+                      color: Colors.grey.shade500,
+                    ),
                   ),
                 ],
               ),
@@ -921,8 +945,8 @@ class _DashboardPreventistaState extends State<DashboardPreventista>
                     children: [
                       Text(
                         title,
-                        style: const TextStyle(
-                          fontSize: 14,
+                        style: TextStyle(
+                          fontSize: AppTextStyles.bodyMedium(context).fontSize!,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
@@ -930,7 +954,7 @@ class _DashboardPreventistaState extends State<DashboardPreventista>
                       Text(
                         '$current de $total',
                         style: TextStyle(
-                          fontSize: 12,
+                          fontSize: AppTextStyles.bodySmall(context).fontSize!,
                           color: Colors.grey.shade600,
                         ),
                       ),
@@ -940,7 +964,7 @@ class _DashboardPreventistaState extends State<DashboardPreventista>
                 Text(
                   '${percentage.toStringAsFixed(0)}%',
                   style: TextStyle(
-                    fontSize: 14,
+                    fontSize: AppTextStyles.bodyMedium(context).fontSize!,
                     fontWeight: FontWeight.bold,
                     color: color,
                   ),
@@ -997,8 +1021,8 @@ class _DashboardPreventistaState extends State<DashboardPreventista>
                 children: [
                   Text(
                     nombre,
-                    style: const TextStyle(
-                      fontSize: 14,
+                    style: TextStyle(
+                      fontSize: AppTextStyles.bodyMedium(context).fontSize!,
                       fontWeight: FontWeight.bold,
                     ),
                     maxLines: 1,
@@ -1013,7 +1037,9 @@ class _DashboardPreventistaState extends State<DashboardPreventista>
                         child: Text(
                           telefono,
                           style: TextStyle(
-                            fontSize: 12,
+                            fontSize: AppTextStyles.bodySmall(
+                              context,
+                            ).fontSize!,
                             color: Colors.grey.shade600,
                           ),
                           maxLines: 1,
@@ -1035,7 +1061,9 @@ class _DashboardPreventistaState extends State<DashboardPreventista>
                         child: Text(
                           localidad,
                           style: TextStyle(
-                            fontSize: 12,
+                            fontSize: AppTextStyles.bodySmall(
+                              context,
+                            ).fontSize!,
                             color: Colors.grey.shade600,
                           ),
                           maxLines: 1,
@@ -1078,7 +1106,7 @@ class _DashboardPreventistaState extends State<DashboardPreventista>
               Text(
                 value,
                 style: TextStyle(
-                  fontSize: 24,
+                  fontSize: AppTextStyles.displaySmall(context).fontSize!,
                   fontWeight: FontWeight.bold,
                   color: color,
                 ),
@@ -1089,7 +1117,7 @@ class _DashboardPreventistaState extends State<DashboardPreventista>
           Text(
             title,
             style: TextStyle(
-              fontSize: 13,
+              fontSize: AppTextStyles.bodySmall(context).fontSize!,
               color: Theme.of(context).textTheme.bodySmall?.color,
               fontWeight: FontWeight.w500,
             ),
@@ -1109,7 +1137,7 @@ class _DashboardPreventistaState extends State<DashboardPreventista>
         Text(
           count.toString(),
           style: TextStyle(
-            fontSize: 24,
+            fontSize: AppTextStyles.displaySmall(context).fontSize!,
             fontWeight: FontWeight.bold,
             color: color,
           ),
@@ -1118,7 +1146,7 @@ class _DashboardPreventistaState extends State<DashboardPreventista>
         Text(
           label,
           style: TextStyle(
-            fontSize: 12,
+            fontSize: AppTextStyles.bodySmall(context).fontSize!,
             color: Colors.grey.shade600,
             fontWeight: FontWeight.w500,
           ),

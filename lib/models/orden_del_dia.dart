@@ -1,3 +1,5 @@
+import 'localidad.dart';
+
 class OrdenDelDia {
   final String fecha;
   final String diaSemana;
@@ -61,6 +63,7 @@ class ClienteOrdenDelDia {
   final String? estadoVisita;
   final double? limiteCredito;
   final bool puedeAtenerCredito;
+  final Localidad? localidad;
 
   ClienteOrdenDelDia({
     required this.clienteId,
@@ -77,6 +80,7 @@ class ClienteOrdenDelDia {
     this.estadoVisita,
     this.limiteCredito,
     required this.puedeAtenerCredito,
+    this.localidad,
   });
 
   factory ClienteOrdenDelDia.fromJson(Map<String, dynamic> json) {
@@ -99,6 +103,9 @@ class ClienteOrdenDelDia {
           ? double.tryParse(json['limite_credito'].toString())
           : null,
       puedeAtenerCredito: json['puede_tener_credito'] ?? false,
+      localidad: json['localidad'] != null
+          ? Localidad.fromJson(json['localidad'])
+          : null,
     );
   }
 }
@@ -170,6 +177,90 @@ class ResumenOrdenDelDia {
       porcentajeCompletado: json['porcentaje_completado'] is num
           ? (json['porcentaje_completado'] as num).toDouble()
           : double.tryParse(json['porcentaje_completado'].toString()) ?? 0.0,
+    );
+  }
+}
+
+/// ✅ NUEVO: Resumen de un día de la semana para vista de semana
+class DiaSemanaResumen {
+  final String fecha;
+  final String diaSemana;
+  final int totalClientes;
+  final int visitados;
+  final int pendientes;
+  final double porcentajeCompletado;
+
+  DiaSemanaResumen({
+    required this.fecha,
+    required this.diaSemana,
+    required this.totalClientes,
+    required this.visitados,
+    required this.pendientes,
+    required this.porcentajeCompletado,
+  });
+
+  /// Helper: ¿Es hoy?
+  bool get esHoy {
+    final hoy = DateTime.now().toIso8601String().split('T')[0];
+    return fecha == hoy;
+  }
+
+  factory DiaSemanaResumen.fromJson(Map<String, dynamic> json) {
+    return DiaSemanaResumen(
+      fecha: json['fecha'] ?? '',
+      diaSemana: json['dia_semana'] ?? '',
+      totalClientes: json['total_clientes'] is int
+          ? json['total_clientes']
+          : int.tryParse(json['total_clientes'].toString()) ?? 0,
+      visitados: json['visitados'] is int
+          ? json['visitados']
+          : int.tryParse(json['visitados'].toString()) ?? 0,
+      pendientes: json['pendientes'] is int
+          ? json['pendientes']
+          : int.tryParse(json['pendientes'].toString()) ?? 0,
+      porcentajeCompletado: json['porcentaje_completado'] is num
+          ? (json['porcentaje_completado'] as num).toDouble()
+          : double.tryParse(json['porcentaje_completado'].toString()) ?? 0.0,
+    );
+  }
+}
+
+/// ✅ NUEVO: Semana completa con todos los días
+class SemanaOrdenDelDia {
+  final DateTime fechaInicio;
+  final DateTime fechaFin;
+  final List<DiaSemanaResumen> dias;
+
+  SemanaOrdenDelDia({
+    required this.fechaInicio,
+    required this.fechaFin,
+    required this.dias,
+  });
+
+  /// Helper: Obtener día actual si existe en la semana
+  DiaSemanaResumen? get diaActual {
+    try {
+      final hoy = DateTime.now().toIso8601String().split('T')[0];
+      return dias.firstWhere((d) => d.fecha == hoy);
+    } catch (e) {
+      return null;
+    }
+  }
+
+  factory SemanaOrdenDelDia.fromJson(Map<String, dynamic> json) {
+    final diasList = (json['semana'] as List?)
+            ?.map((d) => DiaSemanaResumen.fromJson(d))
+            .toList() ??
+        [];
+
+    return SemanaOrdenDelDia(
+      fechaInicio: DateTime.parse(diasList.isNotEmpty
+          ? diasList.first.fecha
+          : DateTime.now().toIso8601String()),
+      fechaFin: DateTime.parse(diasList.isNotEmpty
+          ? diasList.last.fecha
+          : DateTime.now().toIso8601String()),
+      dias: diasList,
     );
   }
 }

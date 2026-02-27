@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../../../config/app_text_styles.dart';
+
 class DatePickerField extends StatelessWidget {
   final String label;
   final DateTime? date;
@@ -46,7 +48,7 @@ class DatePickerField extends StatelessWidget {
                 Text(
                   label,
                   style: TextStyle(
-                    fontSize: 11,
+                    fontSize: AppTextStyles.labelSmall(context).fontSize!,
                     color: isDarkMode ? Colors.grey[400] : Colors.grey[600],
                   ),
                 ),
@@ -56,7 +58,7 @@ class DatePickerField extends StatelessWidget {
                       ? '${date!.day}/${date!.month}/${date!.year}'
                       : 'Seleccionar',
                   style: TextStyle(
-                    fontSize: 13,
+                    fontSize: AppTextStyles.bodySmall(context).fontSize!,
                     fontWeight: FontWeight.w600,
                     color: isDarkMode
                         ? (date != null ? Colors.white : Colors.grey[400])

@@ -14,6 +14,16 @@ class VisitaProvider with ChangeNotifier {
   bool _hasMorePages = true;
   Map<String, dynamic>? _estadisticas;
 
+  // ✅ NUEVAS propiedades para Vista de Semana
+  ViewMode _viewMode = ViewMode.day;
+  DateTime _fechaSeleccionada = DateTime.now();
+  Map<String, OrdenDelDia> _ordenesCache = {};
+  SemanaOrdenDelDia? _semanaCache;
+
+  // ✅ NUEVAS propiedades para Filtro de Localidad
+  int? _localidadSeleccionada;
+  List<Localidad> _localidades = [];
+
   // Getters
   List<VisitaPreventistaCliente> get visitas => _visitas;
   bool get isLoading => _isLoading;
@@ -21,6 +31,15 @@ class VisitaProvider with ChangeNotifier {
   bool get hasMorePages => _hasMorePages;
   int get currentPage => _currentPage;
   Map<String, dynamic>? get estadisticas => _estadisticas;
+
+  // ✅ NUEVOS getters para Vista de Semana
+  ViewMode get viewMode => _viewMode;
+  DateTime get fechaSeleccionada => _fechaSeleccionada;
+  SemanaOrdenDelDia? get semanaCache => _semanaCache;
+
+  // ✅ NUEVOS getters para Filtro de Localidad
+  int? get localidadSeleccionada => _localidadSeleccionada;
+  List<Localidad> get localidades => _localidades;
 
   /// Registrar nueva visita
   Future<bool> registrarVisita({
@@ -161,12 +180,21 @@ class VisitaProvider with ChangeNotifier {
     }
   }
 
-  /// ✅ NUEVO: Obtener orden del día
-  Future<OrdenDelDia?> obtenerOrdenDelDia() async {
+  /// ✅ MEJORADO: Obtener orden del día (con parámetro fecha opcional)
+  Future<OrdenDelDia?> obtenerOrdenDelDia({DateTime? fecha}) async {
     try {
-      final response = await _visitaService.obtenerOrdenDelDia();
+      final fechaStr = fecha?.toIso8601String().split('T')[0];
+      final cacheKey = fechaStr ?? 'hoy';
+
+      // Verificar caché primero
+      if (_ordenesCache.containsKey(cacheKey)) {
+        return _ordenesCache[cacheKey];
+      }
+
+      final response = await _visitaService.obtenerOrdenDelDia(fecha: fechaStr);
 
       if (response.success && response.data != null) {
+        _ordenesCache[cacheKey] = response.data!;
         return response.data;
       } else {
         _errorMessage = response.message ?? 'Error al cargar orden del día';
@@ -181,9 +209,94 @@ class VisitaProvider with ChangeNotifier {
     }
   }
 
+  /// ✅ NUEVO: Obtener semana completa (7 días)
+  Future<SemanaOrdenDelDia?> obtenerOrdenDelDiaSemana(
+      {DateTime? fechaInicio, DateTime? fechaFin}) async {
+    try {
+      // Si hay caché y no se especifican fechas, retornar caché
+      if (_semanaCache != null && fechaInicio == null && fechaFin == null) {
+        return _semanaCache;
+      }
+
+      final response = await _visitaService.obtenerOrdenDelDiaSemana(
+        fechaInicio: fechaInicio?.toIso8601String().split('T')[0],
+        fechaFin: fechaFin?.toIso8601String().split('T')[0],
+      );
+
+      if (response.success && response.data != null) {
+        _semanaCache = response.data;
+        return response.data;
+      } else {
+        _errorMessage =
+            response.message ?? 'Error al cargar orden del día de la semana';
+        notifyListeners();
+        return null;
+      }
+    } catch (e) {
+      _errorMessage = 'Error inesperado: ${e.toString()}';
+      notifyListeners();
+      debugPrint('Error al obtener orden del día semana: $e');
+      return null;
+    }
+  }
+
+  /// ✅ NUEVO: Cambiar fecha seleccionada
+  void seleccionarFecha(DateTime fecha) {
+    _fechaSeleccionada = fecha;
+    notifyListeners();
+  }
+
+  /// ✅ NUEVO: Cambiar modo de vista (Día/Semana)
+  void cambiarModoVista(ViewMode modo) {
+    _viewMode = modo;
+    notifyListeners();
+  }
+
+  /// ✅ NUEVO: Invalidar caché (después de cambios)
+  void invalidarCache() {
+    _ordenesCache.clear();
+    _semanaCache = null;
+    notifyListeners();
+  }
+
+  /// ✅ NUEVO: Cambiar localidad seleccionada
+  void cambiarLocalidad(int? localidadId) {
+    _localidadSeleccionada = localidadId;
+    notifyListeners();
+  }
+
+  /// ✅ NUEVO: Cargar localidades desde la orden del día
+  void cargarLocalidadesDesdeOrden(OrdenDelDia orden) {
+    final localidadesSet = <int, Localidad>{};
+
+    for (var cliente in orden.clientes) {
+      if (cliente.localidad != null) {
+        localidadesSet[cliente.localidad!.id] = cliente.localidad!;
+      }
+    }
+
+    _localidades = localidadesSet.values.toList();
+    _localidades.sort((a, b) => a.nombre.compareTo(b.nombre));
+    notifyListeners();
+  }
+
+  /// ✅ NUEVO: Obtener clientes filtrados por localidad
+  List<ClienteOrdenDelDia> obtenerClientesFiltrados(List<ClienteOrdenDelDia> clientes) {
+    if (_localidadSeleccionada == null) {
+      return clientes;
+    }
+
+    return clientes
+        .where((cliente) => cliente.localidad?.id == _localidadSeleccionada)
+        .toList();
+  }
+
   /// Limpiar error
   void clearError() {
     _errorMessage = null;
     notifyListeners();
   }
 }
+
+/// ✅ NUEVO: Enum para modo de vista
+enum ViewMode { day, week, horarios }

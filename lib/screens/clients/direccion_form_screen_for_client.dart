@@ -167,7 +167,7 @@ class _DireccionFormScreenForClientState
                     child: Text(
                       'Esta dirección se usará para entregas de pedidos del cliente',
                       style: TextStyle(
-                        fontSize: 13,
+                        fontSize: AppTextStyles.bodySmall(context).fontSize!,
                         color: Colors.blue.shade900,
                       ),
                     ),

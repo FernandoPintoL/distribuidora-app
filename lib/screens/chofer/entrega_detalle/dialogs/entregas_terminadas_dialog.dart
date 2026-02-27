@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../../config/app_text_styles.dart';
 import '../../../../models/entrega.dart';
 import '../../../../providers/entrega_provider.dart';
 
@@ -23,7 +24,7 @@ class EntregasTerminadasDialog {
             Text(
               'El estado de la entrega cambiará a ENTREGADA.',
               style: TextStyle(
-                fontSize: 12,
+                fontSize: AppTextStyles.bodySmall(context).fontSize!,
                 color: isDarkMode ? Colors.grey[400] : Colors.grey[600],
                 fontStyle: FontStyle.italic,
               ),
@@ -48,7 +49,7 @@ class EntregasTerminadasDialog {
                     Text(
                       'Entrega',
                       style: TextStyle(
-                        fontSize: 11,
+                        fontSize: AppTextStyles.labelSmall(context).fontSize!,
                         color: isDarkMode ? Colors.grey[400] : Colors.grey[600],
                         fontWeight: FontWeight.w500,
                       ),
@@ -57,7 +58,7 @@ class EntregasTerminadasDialog {
                     Text(
                       '#${entrega.numero}',
                       style: TextStyle(
-                        fontSize: 13,
+                        fontSize: AppTextStyles.bodySmall(context).fontSize!,
                         fontWeight: FontWeight.bold,
                         color: isDarkMode ? Colors.grey[100] : Colors.grey[900],
                       ),
@@ -90,7 +91,7 @@ class EntregasTerminadasDialog {
                     child: Text(
                       'Nota: Asegúrate de que todas las ventas estén marcadas como entregadas',
                       style: TextStyle(
-                        fontSize: 11,
+                        fontSize: AppTextStyles.labelSmall(context).fontSize!,
                         color: isDarkMode ? Colors.blue[300] : Colors.blue[700],
                       ),
                     ),
@@ -141,9 +142,7 @@ class EntregasTerminadasDialog {
             debugPrint('✅ Entrega finalizada correctamente');
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
-                content: const Text(
-                  '✅ Entrega finalizada correctamente.',
-                ),
+                content: const Text('✅ Entrega finalizada correctamente.'),
                 backgroundColor: Colors.green,
                 duration: const Duration(seconds: 3),
               ),

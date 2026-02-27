@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../../config/app_colors.dart';
 import '../../config/app_gradients.dart';
+import '../../config/app_text_styles.dart';
 import '../../models/credito.dart';
 import '../../extensions/theme_extension.dart';
 import '../../widgets/widgets.dart';
@@ -172,10 +173,10 @@ class _CreditosScreenState extends State<CreditosScreen>
                 ),
                 child: Text(
                   estado.replaceAll('_', ' ').toUpperCase(),
-                  style: const TextStyle(
+                  style: TextStyle(
                     color: Colors.white,
                     fontWeight: FontWeight.bold,
-                    fontSize: 12,
+                    fontSize: AppTextStyles.bodySmall(context).fontSize!,
                   ),
                 ),
               ),
@@ -269,8 +270,8 @@ class _CreditosScreenState extends State<CreditosScreen>
           const SizedBox(height: 4),
           Text(
             label,
-            style: const TextStyle(
-              fontSize: 11,
+            style: TextStyle(
+              fontSize: AppTextStyles.labelSmall(context).fontSize!,
               color: Colors.grey,
               fontWeight: FontWeight.w500,
             ),
@@ -279,7 +280,10 @@ class _CreditosScreenState extends State<CreditosScreen>
           const SizedBox(height: 4),
           Text(
             value,
-            style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
+            style: TextStyle(
+              fontSize: AppTextStyles.bodySmall(context).fontSize!,
+              fontWeight: FontWeight.bold,
+            ),
             textAlign: TextAlign.center,
           ),
         ],
@@ -467,15 +471,18 @@ class _CreditosScreenState extends State<CreditosScreen>
                   children: [
                     Text(
                       'Venta ${cuenta.ventaNumero ?? '#${cuenta.ventaId}'}',
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontWeight: FontWeight.bold,
-                        fontSize: 14,
+                        fontSize: AppTextStyles.bodyMedium(context).fontSize!,
                       ),
                     ),
                     if (cuenta.clienteNombre != null)
                       Text(
                         cuenta.clienteNombre!,
-                        style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                        style: TextStyle(
+                          fontSize: AppTextStyles.bodySmall(context).fontSize!,
+                          color: Colors.grey[600],
+                        ),
                       ),
                   ],
                 ),
@@ -493,7 +500,7 @@ class _CreditosScreenState extends State<CreditosScreen>
                     style: TextStyle(
                       color: colorVencimiento,
                       fontWeight: FontWeight.bold,
-                      fontSize: 11,
+                      fontSize: AppTextStyles.labelSmall(context).fontSize!,
                     ),
                   ),
                 ),
@@ -512,7 +519,10 @@ class _CreditosScreenState extends State<CreditosScreen>
                   children: [
                     Text(
                       'Monto Original',
-                      style: TextStyle(fontSize: 11, color: Colors.grey[600]),
+                      style: TextStyle(
+                        fontSize: AppTextStyles.labelSmall(context).fontSize!,
+                        color: Colors.grey[600],
+                      ),
                     ),
                     Text(
                       'Bs. ${cuenta.montoOriginal.toStringAsFixed(2)}',
@@ -525,7 +535,10 @@ class _CreditosScreenState extends State<CreditosScreen>
                   children: [
                     Text(
                       'Saldo Pendiente',
-                      style: TextStyle(fontSize: 11, color: Colors.grey[600]),
+                      style: TextStyle(
+                        fontSize: AppTextStyles.labelSmall(context).fontSize!,
+                        color: Colors.grey[600],
+                      ),
                     ),
                     Text(
                       'Bs. ${cuenta.saldoPendiente.toStringAsFixed(2)}',
@@ -541,7 +554,10 @@ class _CreditosScreenState extends State<CreditosScreen>
                   children: [
                     Text(
                       'Pagado',
-                      style: TextStyle(fontSize: 11, color: Colors.grey[600]),
+                      style: TextStyle(
+                        fontSize: AppTextStyles.labelSmall(context).fontSize!,
+                        color: Colors.grey[600],
+                      ),
                     ),
                     Text(
                       '${cuenta.porcentajePagado.toStringAsFixed(0)}%',
@@ -575,7 +591,10 @@ class _CreditosScreenState extends State<CreditosScreen>
                 const SizedBox(width: 6),
                 Text(
                   'Vence: ${DateFormat('dd/MM/yyyy').format(cuenta.fechaVencimiento)}',
-                  style: TextStyle(fontSize: 11, color: Colors.grey[600]),
+                  style: TextStyle(
+                    fontSize: AppTextStyles.labelSmall(context).fontSize!,
+                    color: Colors.grey[600],
+                  ),
                 ),
                 if (estaVencida) ...[
                   const Spacer(),
@@ -591,7 +610,7 @@ class _CreditosScreenState extends State<CreditosScreen>
                     child: Text(
                       'Vencido hace ${cuenta.diasVencido} días',
                       style: TextStyle(
-                        fontSize: 10,
+                        fontSize: AppTextStyles.labelSmall(context).fontSize!,
                         color: Colors.red[700],
                         fontWeight: FontWeight.bold,
                       ),
@@ -629,18 +648,24 @@ class _CreditosScreenState extends State<CreditosScreen>
                 children: [
                   Text(
                     'Bs. ${pago.monto.toStringAsFixed(2)}',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontWeight: FontWeight.bold,
-                      fontSize: 14,
+                      fontSize: AppTextStyles.bodyMedium(context).fontSize!,
                     ),
                   ),
                   Text(
                     '${pago.tipoPago.toUpperCase()} • ${pago.numeroRecibo ?? 'Sin recibo'}',
-                    style: TextStyle(fontSize: 11, color: Colors.grey[600]),
+                    style: TextStyle(
+                      fontSize: AppTextStyles.labelSmall(context).fontSize!,
+                      color: Colors.grey[600],
+                    ),
                   ),
                   Text(
                     DateFormat('dd/MM/yyyy HH:mm').format(pago.fechaPago),
-                    style: TextStyle(fontSize: 10, color: Colors.grey[500]),
+                    style: TextStyle(
+                      fontSize: AppTextStyles.labelSmall(context).fontSize!,
+                      color: Colors.grey[500],
+                    ),
                   ),
                 ],
               ),
@@ -648,7 +673,10 @@ class _CreditosScreenState extends State<CreditosScreen>
             if (pago.usuarioNombre != null)
               Text(
                 pago.usuarioNombre!,
-                style: TextStyle(fontSize: 10, color: Colors.grey[600]),
+                style: TextStyle(
+                  fontSize: AppTextStyles.labelSmall(context).fontSize!,
+                  color: Colors.grey[600],
+                ),
               ),
           ],
         ),
@@ -674,7 +702,14 @@ class _CreditosScreenState extends State<CreditosScreen>
         children: [
           Icon(icon, color: color, size: 24),
           const SizedBox(width: 12),
-          Expanded(child: Text(label, style: const TextStyle(fontSize: 12))),
+          Expanded(
+            child: Text(
+              label,
+              style: TextStyle(
+                fontSize: AppTextStyles.bodySmall(context).fontSize!,
+              ),
+            ),
+          ),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
             decoration: BoxDecoration(
@@ -683,10 +718,10 @@ class _CreditosScreenState extends State<CreditosScreen>
             ),
             child: Text(
               value,
-              style: const TextStyle(
+              style: TextStyle(
                 color: Colors.white,
                 fontWeight: FontWeight.bold,
-                fontSize: 12,
+                fontSize: AppTextStyles.bodySmall(context).fontSize!,
               ),
             ),
           ),
@@ -702,10 +737,19 @@ class _CreditosScreenState extends State<CreditosScreen>
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(label, style: const TextStyle(fontSize: 12, color: Colors.grey)),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: AppTextStyles.bodySmall(context).fontSize!,
+              color: Colors.grey[600],
+            ),
+          ),
           Text(
             value,
-            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              fontSize: AppTextStyles.bodySmall(context).fontSize!,
+            ),
           ),
         ],
       ),

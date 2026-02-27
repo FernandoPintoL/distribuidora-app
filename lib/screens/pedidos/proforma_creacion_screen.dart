@@ -60,17 +60,22 @@ class _ProformaCreacionScreenState extends State<ProformaCreacionScreen> {
       final carritoProvider = context.read<CarritoProvider>();
       final cliente = carritoProvider.clienteSeleccionado;
 
-      if (cliente == null || cliente.direcciones == null || cliente.direcciones!.isEmpty) {
-        debugPrint('⚠️ [ProformaCreacionScreen] No hay direcciones disponibles');
+      if (cliente == null ||
+          cliente.direcciones == null ||
+          cliente.direcciones!.isEmpty) {
+        debugPrint(
+          '⚠️ [ProformaCreacionScreen] No hay direcciones disponibles',
+        );
         return;
       }
 
       // Buscar dirección principal
-      final direccionPrincipal = cliente.direcciones!
-          .firstWhere(
-            (dir) => dir.esPrincipal == true,
-            orElse: () => cliente.direcciones!.first, // Fallback a la primera si no hay principal
-          );
+      final direccionPrincipal = cliente.direcciones!.firstWhere(
+        (dir) => dir.esPrincipal == true,
+        orElse: () => cliente
+            .direcciones!
+            .first, // Fallback a la primera si no hay principal
+      );
 
       setState(() {
         _direccionSeleccionada = direccionPrincipal;
@@ -80,7 +85,9 @@ class _ProformaCreacionScreenState extends State<ProformaCreacionScreen> {
         '✅ [ProformaCreacionScreen] Dirección principal seleccionada: ${direccionPrincipal.direccion}',
       );
     } catch (e) {
-      debugPrint('❌ [ProformaCreacionScreen] Error al cargar dirección principal: $e');
+      debugPrint(
+        '❌ [ProformaCreacionScreen] Error al cargar dirección principal: $e',
+      );
     }
   }
 
@@ -186,12 +193,58 @@ class _ProformaCreacionScreenState extends State<ProformaCreacionScreen> {
 
     try {
       // Obtener items del carrito - Usar producto.id directamente
+      // ✅ ACTUALIZADO: Incluir tipo_precio_id y tipo_precio_nombre del carrito calculado con rangos
       // ✅ NUEVO: Incluir combo_items_seleccionados en el payload
       final items = carritoProvider.items.map((item) {
+        // 🔑 Obtener detalles con rangos (incluyendo tipo_precio_id y tipo_precio_nombre)
+        final detalleConRango = carritoProvider.obtenerDetalleConRango(
+          item.producto.id,
+        );
+
+        debugPrint(
+          '═══════════════════════════════════════════════════════════════',
+        );
+        debugPrint(
+          '📦 [ProformaCreacion] Producto: ${item.producto.nombre} (ID: ${item.producto.id})',
+        );
+        debugPrint('   Cantidad: ${item.cantidad}');
+        debugPrint('   Precio Unitario (item): ${item.precioUnitario}');
+        debugPrint('   Subtotal: ${item.subtotal}');
+        if (detalleConRango != null) {
+          debugPrint('   ✅ Detalles con Rango:');
+          debugPrint('      - tipo_precio_id: ${detalleConRango.tipoPrecioId}');
+          debugPrint(
+            '      - tipo_precio_nombre: ${detalleConRango.tipoPrecioNombre}',
+          );
+          debugPrint(
+            '      - precio_unitario (rango): ${detalleConRango.precioUnitario}',
+          );
+          debugPrint(
+            '      - rango_aplicado: ${detalleConRango.rangoAplicado?.tipoPrecioNombre}',
+          );
+        } else {
+          debugPrint('   ❌ NO hay detalles con rango para este producto');
+        }
+        debugPrint(
+          '═══════════════════════════════════════════════════════════════',
+        );
+
+        // 🔑 CRITICAL: Usar precio_unitario del detalleConRango (endpoint) si existe
+        final precioUnitarioFinal =
+            detalleConRango?.precioUnitario ?? item.precioUnitario;
+        final subtotalFinal = precioUnitarioFinal * item.cantidad;
+
         return {
           'producto_id': item.producto.id,
           'cantidad': item.cantidad,
-          'precio_unitario': item.precioUnitario,
+          'precio_unitario': precioUnitarioFinal,
+          // ✅ CRITICAL: Recalcular subtotal usando el precio correcto del endpoint
+          'subtotal': subtotalFinal,
+          // ✅ NUEVO: Incluir tipo_precio_id y tipo_precio_nombre del cálculo de rangos
+          if (detalleConRango != null)
+            'tipo_precio_id': detalleConRango.tipoPrecioId,
+          if (detalleConRango != null)
+            'tipo_precio_nombre': detalleConRango.tipoPrecioNombre,
           if (item.comboItemsSeleccionados != null)
             'combo_items_seleccionados': item.comboItemsSeleccionados,
         };
@@ -210,7 +263,9 @@ class _ProformaCreacionScreenState extends State<ProformaCreacionScreen> {
 
       // ✅ DEBUG: Mostrar items con combo_items_seleccionados
       for (var i = 0; i < items.length; i++) {
-        debugPrint('   📦 Producto ${i+1}: ID ${items[i]['producto_id']}, Combo items: ${items[i]['combo_items_seleccionados']}');
+        debugPrint(
+          '   📦 Producto ${i + 1}: ID ${items[i]['producto_id']}, Combo items: ${items[i]['combo_items_seleccionados']}',
+        );
       }
 
       final response = await _proformaService.crearProforma(
@@ -237,10 +292,7 @@ class _ProformaCreacionScreenState extends State<ProformaCreacionScreen> {
             context,
             '/pedido-creado',
             (route) => route.isFirst,
-            arguments: {
-              'pedido': response.data,
-              'esActualizacion': false,
-            },
+            arguments: {'pedido': response.data, 'esActualizacion': false},
           );
         }
       } else {
@@ -346,7 +398,7 @@ class _ProformaCreacionScreenState extends State<ProformaCreacionScreen> {
                       Text(
                         'Nueva Proforma',
                         style: TextStyle(
-                          fontSize: 16,
+                          fontSize: AppTextStyles.bodyLarge(context).fontSize!,
                           fontWeight: FontWeight.w500,
                           color: colorScheme.onSurface,
                         ),
@@ -355,7 +407,7 @@ class _ProformaCreacionScreenState extends State<ProformaCreacionScreen> {
                       Text(
                         'Verifica que todo esté correcto antes de confirmar',
                         style: TextStyle(
-                          fontSize: 14,
+                          fontSize: AppTextStyles.bodyMedium(context).fontSize!,
                           color: colorScheme.onSurfaceVariant,
                         ),
                       ),
@@ -390,7 +442,9 @@ class _ProformaCreacionScreenState extends State<ProformaCreacionScreen> {
                       Text(
                         'Productos',
                         style: TextStyle(
-                          fontSize: 18,
+                          fontSize: AppTextStyles.headlineSmall(
+                            context,
+                          ).fontSize!,
                           fontWeight: FontWeight.bold,
                           color: colorScheme.onSurface,
                         ),
@@ -414,12 +468,18 @@ class _ProformaCreacionScreenState extends State<ProformaCreacionScreen> {
                                         color: colorScheme.surfaceVariant,
                                         borderRadius: BorderRadius.circular(8),
                                       ),
-                                      child: item.producto.imagenes != null &&
+                                      child:
+                                          item.producto.imagenes != null &&
                                               item.producto.imagenes!.isNotEmpty
                                           ? ClipRRect(
-                                              borderRadius: BorderRadius.circular(8),
+                                              borderRadius:
+                                                  BorderRadius.circular(8),
                                               child: Image.network(
-                                                item.producto.imagenes!.first.url,
+                                                item
+                                                    .producto
+                                                    .imagenes!
+                                                    .first
+                                                    .url,
                                                 fit: BoxFit.cover,
                                                 errorBuilder: (_, __, ___) =>
                                                     const Icon(Icons.image),
@@ -430,74 +490,137 @@ class _ProformaCreacionScreenState extends State<ProformaCreacionScreen> {
 
                                     const SizedBox(width: 12),
 
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        item.producto.nombre,
-                                        style: TextStyle(
-                                          fontWeight: FontWeight.w600,
-                                          color: colorScheme.onSurface,
-                                        ),
-                                      ),
-                                      const SizedBox(height: 6),
-                                      Row(
-                                        mainAxisSize: MainAxisSize.max,
-                                        children: [
-                                          Expanded(
-                                            child: Text(
-                                              'Precio: Bs. ${(item.subtotal / item.cantidad).toStringAsFixed(2)}',
-                                              style: TextStyle(
-                                                color: colorScheme.primary,
-                                                fontSize: 13,
-                                                fontWeight: FontWeight.w500,
-                                              ),
-                                              overflow: TextOverflow.ellipsis,
-                                            ),
-                                          ),
-                                          const SizedBox(width: 8),
-                                          Text(
-                                            '×${item.cantidad}',
-                                            style: TextStyle(
-                                              color: colorScheme
-                                                  .onSurfaceVariant,
-                                              fontSize: 13,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ],
-                                  ),
-                                ),
+                                    Expanded(
+                                      child: Consumer<CarritoProvider>(
+                                        builder: (context, carritoProvider, _) {
+                                          // 🔑 Obtener detalles con rango para este producto
+                                          final detalleConRango =
+                                              carritoProvider
+                                                  .obtenerDetalleConRango(
+                                                    item.producto.id,
+                                                  );
 
-                                Column(
-                                  crossAxisAlignment: CrossAxisAlignment.end,
-                                  children: [
-                                    Text(
-                                      'Bs. ${item.subtotal.toStringAsFixed(2)}',
-                                      style: TextStyle(
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 16,
-                                        color: colorScheme.onSurface,
+                                          return Column(
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.start,
+                                            children: [
+                                              Text(
+                                                item.producto.nombre,
+                                                style: TextStyle(
+                                                  fontWeight: FontWeight.w600,
+                                                  color: colorScheme.onSurface,
+                                                ),
+                                              ),
+                                              const SizedBox(height: 6),
+                                              Row(
+                                                mainAxisSize: MainAxisSize.max,
+                                                children: [
+                                                  Expanded(
+                                                    child: Column(
+                                                      crossAxisAlignment:
+                                                          CrossAxisAlignment
+                                                              .start,
+                                                      children: [
+                                                        Text(
+                                                          // 🔑 CRITICAL: Usar precio_unitario del detalleConRango (endpoint) si existe
+                                                          'Precio: Bs. ${(detalleConRango?.precioUnitario ?? (item.subtotal / item.cantidad)).toStringAsFixed(2)}',
+                                                          style: TextStyle(
+                                                            color: colorScheme
+                                                                .primary,
+                                                            fontSize:
+                                                                AppTextStyles.bodySmall(
+                                                                  context,
+                                                                ).fontSize!,
+                                                            fontWeight:
+                                                                FontWeight.w500,
+                                                          ),
+                                                          overflow: TextOverflow
+                                                              .ellipsis,
+                                                        ),
+                                                        // ✅ NUEVO: Mostrar tipo de precio
+                                                        if (detalleConRango !=
+                                                            null)
+                                                          Text(
+                                                            'Tipo: ${detalleConRango.tipoPrecioNombre}',
+                                                            style: TextStyle(
+                                                              color:
+                                                                  Colors.orange,
+                                                              fontSize:
+                                                                  AppTextStyles.labelSmall(
+                                                                    context,
+                                                                  ).fontSize!,
+                                                              fontWeight:
+                                                                  FontWeight
+                                                                      .w400,
+                                                            ),
+                                                          ),
+                                                      ],
+                                                    ),
+                                                  ),
+                                                  const SizedBox(width: 8),
+                                                  Text(
+                                                    '×${item.cantidad}',
+                                                    style: TextStyle(
+                                                      color: colorScheme
+                                                          .onSurfaceVariant,
+                                                      fontSize:
+                                                          AppTextStyles.bodySmall(
+                                                            context,
+                                                          ).fontSize!,
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                            ],
+                                          );
+                                        },
                                       ),
                                     ),
-                                    const SizedBox(height: 4),
-                                    Text(
-                                      'subtotal',
-                                      style: TextStyle(
-                                        fontSize: 11,
-                                        color:
-                                            colorScheme.onSurfaceVariant,
-                                      ),
+
+                                    Consumer<CarritoProvider>(
+                                      builder: (context, carritoProvider, _) {
+                                        // 🔑 Obtener detalles con rango para calcular subtotal
+                                        final detalleConRango = carritoProvider
+                                            .obtenerDetalleConRango(
+                                              item.producto.id,
+                                            );
+
+                                        return Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.end,
+                                          children: [
+                                            Text(
+                                              // 🔑 CRITICAL: Calcular subtotal usando precio correcto del endpoint
+                                              'Bs. ${((detalleConRango?.precioUnitario ?? (item.subtotal / item.cantidad)) * item.cantidad).toStringAsFixed(2)}',
+                                              style: TextStyle(
+                                                fontWeight: FontWeight.bold,
+                                                fontSize:
+                                                    AppTextStyles.bodyLarge(
+                                                      context,
+                                                    ).fontSize!,
+                                                color: colorScheme.onSurface,
+                                              ),
+                                            ),
+                                            const SizedBox(height: 4),
+                                            Text(
+                                              'subtotal',
+                                              style: TextStyle(
+                                                fontSize:
+                                                    AppTextStyles.labelSmall(
+                                                      context,
+                                                    ).fontSize!,
+                                                color: colorScheme
+                                                    .onSurfaceVariant,
+                                              ),
+                                            ),
+                                          ],
+                                        );
+                                      },
                                     ),
                                   ],
                                 ),
-                              ],
+                              ),
                             ),
-                          ),
-                        ),
 
                             // ✅ NUEVO: Mostrar detalles del combo si tiene items seleccionados
                             if (item.producto.esCombo &&
@@ -522,7 +645,9 @@ class _ProformaCreacionScreenState extends State<ProformaCreacionScreen> {
                               Text(
                                 'Política de Pago',
                                 style: TextStyle(
-                                  fontSize: 18,
+                                  fontSize: AppTextStyles.headlineSmall(
+                                    context,
+                                  ).fontSize!,
                                   fontWeight: FontWeight.bold,
                                   color: colorScheme.onSurface,
                                 ),
@@ -594,7 +719,9 @@ class _ProformaCreacionScreenState extends State<ProformaCreacionScreen> {
                       Text(
                         'Resumen',
                         style: TextStyle(
-                          fontSize: 18,
+                          fontSize: AppTextStyles.headlineSmall(
+                            context,
+                          ).fontSize!,
                           fontWeight: FontWeight.bold,
                           color: colorScheme.onSurface,
                         ),
@@ -611,7 +738,9 @@ class _ProformaCreacionScreenState extends State<ProformaCreacionScreen> {
                               Text(
                                 'Total',
                                 style: TextStyle(
-                                  fontSize: 20,
+                                  fontSize: AppTextStyles.headlineMedium(
+                                    context,
+                                  ).fontSize!,
                                   fontWeight: FontWeight.bold,
                                   color: colorScheme.onSurface,
                                 ),
@@ -619,7 +748,9 @@ class _ProformaCreacionScreenState extends State<ProformaCreacionScreen> {
                               Text(
                                 'Bs. ${carrito.total.toStringAsFixed(2)}',
                                 style: TextStyle(
-                                  fontSize: 20,
+                                  fontSize: AppTextStyles.headlineMedium(
+                                    context,
+                                  ).fontSize!,
                                   fontWeight: FontWeight.bold,
                                   color: Color(0xFF4CAF50),
                                 ),
@@ -671,10 +802,10 @@ class _ProformaCreacionScreenState extends State<ProformaCreacionScreen> {
                         valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                       ),
                     )
-                  : const Text(
+                  : Text(
                       'Crear Proforma',
                       style: TextStyle(
-                        fontSize: 16,
+                        fontSize: AppTextStyles.bodyLarge(context).fontSize!,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
@@ -713,11 +844,7 @@ class _ProformaCreacionScreenState extends State<ProformaCreacionScreen> {
         children: [
           Row(
             children: [
-              Icon(
-                Icons.person_outline,
-                color: colorScheme.primary,
-                size: 20,
-              ),
+              Icon(Icons.person_outline, color: colorScheme.primary, size: 20),
               const SizedBox(width: 12),
               Expanded(
                 child: Text(
@@ -823,7 +950,7 @@ class _ProformaCreacionScreenState extends State<ProformaCreacionScreen> {
         Text(
           'Tipo de Entrega',
           style: TextStyle(
-            fontSize: 18,
+            fontSize: AppTextStyles.headlineSmall(context).fontSize!,
             fontWeight: FontWeight.bold,
             color: colorScheme.onSurface,
           ),
@@ -883,7 +1010,7 @@ class _ProformaCreacionScreenState extends State<ProformaCreacionScreen> {
         child: Text(
           label,
           style: TextStyle(
-            fontSize: 14,
+            fontSize: AppTextStyles.bodyMedium(context).fontSize!,
             fontWeight: FontWeight.w600,
             color: isSelected ? color : colorScheme.onSurfaceVariant,
           ),
@@ -903,7 +1030,7 @@ class _ProformaCreacionScreenState extends State<ProformaCreacionScreen> {
         Text(
           'Dirección de Entrega',
           style: TextStyle(
-            fontSize: 18,
+            fontSize: AppTextStyles.headlineSmall(context).fontSize!,
             fontWeight: FontWeight.bold,
             color: colorScheme.onSurface,
           ),
@@ -1006,16 +1133,19 @@ class _ProformaCreacionScreenState extends State<ProformaCreacionScreen> {
 
                         if (cliente != null) {
                           // Navegar a crear nueva dirección
-                          Navigator.of(context).push(
-                            MaterialPageRoute(
-                              builder: (context) => DireccionFormScreenForClient(
-                                clientId: cliente.id,
-                              ),
-                            ),
-                          ).then((_) {
-                            // Recargar direcciones después de crear una nueva
-                            _cargarDireccionPrincipal();
-                          });
+                          Navigator.of(context)
+                              .push(
+                                MaterialPageRoute(
+                                  builder: (context) =>
+                                      DireccionFormScreenForClient(
+                                        clientId: cliente.id,
+                                      ),
+                                ),
+                              )
+                              .then((_) {
+                                // Recargar direcciones después de crear una nueva
+                                _cargarDireccionPrincipal();
+                              });
                         } else {
                           debugPrint('⚠️ No hay cliente seleccionado');
                         }
@@ -1042,7 +1172,7 @@ class _ProformaCreacionScreenState extends State<ProformaCreacionScreen> {
         Text(
           'Fecha y Hora de Entrega',
           style: TextStyle(
-            fontSize: 18,
+            fontSize: AppTextStyles.headlineSmall(context).fontSize!,
             fontWeight: FontWeight.bold,
             color: colorScheme.onSurface,
           ),
@@ -1154,7 +1284,7 @@ class _ProformaCreacionScreenState extends State<ProformaCreacionScreen> {
                       child: Text(
                         titulo,
                         style: TextStyle(
-                          fontSize: 15,
+                          fontSize: AppTextStyles.bodyMedium(context).fontSize!,
                           fontWeight: FontWeight.w600,
                           color: isSelected
                               ? displayColor
@@ -1170,7 +1300,7 @@ class _ProformaCreacionScreenState extends State<ProformaCreacionScreen> {
                   child: Text(
                     descripcion,
                     style: TextStyle(
-                      fontSize: 12,
+                      fontSize: AppTextStyles.bodySmall(context).fontSize!,
                       color: colorScheme.onSurfaceVariant,
                     ),
                   ),
@@ -1226,7 +1356,7 @@ class _ProformaCreacionScreenState extends State<ProformaCreacionScreen> {
                     style: TextStyle(
                       fontWeight: FontWeight.bold,
                       color: Colors.blue.shade700,
-                      fontSize: 13,
+                      fontSize: AppTextStyles.bodySmall(context).fontSize!,
                     ),
                   ),
                 ),
@@ -1235,9 +1365,7 @@ class _ProformaCreacionScreenState extends State<ProformaCreacionScreen> {
           ),
           Container(
             decoration: BoxDecoration(
-              border: Border(
-                top: BorderSide(color: Colors.blue.shade200),
-              ),
+              border: Border(top: BorderSide(color: Colors.blue.shade200)),
             ),
             child: Column(
               children: comboItems.asMap().entries.map((entry) {
@@ -1245,23 +1373,27 @@ class _ProformaCreacionScreenState extends State<ProformaCreacionScreen> {
                 final comboItem = entry.value;
                 // ✅ Convertir cantidad de forma segura (puede ser int o double)
                 final cantidadRaw = comboItem['cantidad'] ?? 1;
-                final cantidad = cantidadRaw is int ? cantidadRaw : (cantidadRaw as num).toInt();
+                final cantidad = cantidadRaw is int
+                    ? cantidadRaw
+                    : (cantidadRaw as num).toInt();
                 final comboItemId = comboItem['combo_item_id'] ?? 0;
-                final nombreProducto = obtenerNombreComboItem(comboItemId) ?? 'Producto';
+                final nombreProducto =
+                    obtenerNombreComboItem(comboItemId) ?? 'Producto';
                 final isLast = index == comboItems.length - 1;
 
                 // Mostrar cantidad total si el combo tiene cantidad > 1
                 final cantidadTotal = cantidad * item.cantidad;
 
                 return Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 8,
+                  ),
                   decoration: BoxDecoration(
                     border: isLast
                         ? null
                         : Border(
-                            bottom: BorderSide(
-                              color: Colors.blue.shade100,
-                            ),
+                            bottom: BorderSide(color: Colors.blue.shade100),
                           ),
                   ),
                   child: Row(
@@ -1273,7 +1405,9 @@ class _ProformaCreacionScreenState extends State<ProformaCreacionScreen> {
                             Text(
                               '• $nombreProducto',
                               style: TextStyle(
-                                fontSize: 12,
+                                fontSize: AppTextStyles.bodySmall(
+                                  context,
+                                ).fontSize!,
                                 fontWeight: FontWeight.w500,
                                 color: Colors.blue.shade900,
                               ),
@@ -1284,7 +1418,9 @@ class _ProformaCreacionScreenState extends State<ProformaCreacionScreen> {
                             Text(
                               'ID: ${comboItem['producto_id']}',
                               style: TextStyle(
-                                fontSize: 11,
+                                fontSize: AppTextStyles.labelSmall(
+                                  context,
+                                ).fontSize!,
                                 color: Colors.blue.shade600,
                               ),
                             ),
@@ -1309,7 +1445,9 @@ class _ProformaCreacionScreenState extends State<ProformaCreacionScreen> {
                               style: TextStyle(
                                 fontWeight: FontWeight.bold,
                                 color: Colors.blue.shade700,
-                                fontSize: 12,
+                                fontSize: AppTextStyles.bodySmall(
+                                  context,
+                                ).fontSize!,
                               ),
                             ),
                           ),
@@ -1317,7 +1455,9 @@ class _ProformaCreacionScreenState extends State<ProformaCreacionScreen> {
                             Text(
                               '($cantidad×${item.cantidad})',
                               style: TextStyle(
-                                fontSize: 10,
+                                fontSize: AppTextStyles.labelSmall(
+                                  context,
+                                ).fontSize!,
                                 color: Colors.blue.shade600,
                               ),
                             ),

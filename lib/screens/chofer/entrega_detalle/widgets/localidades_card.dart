@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../../config/app_text_styles.dart';
 import '../../../../models/entrega.dart';
 import '../../../../widgets/map_location_selector.dart';
 
@@ -47,7 +48,9 @@ class LocalidadesCard extends StatelessWidget {
     if (ubicaciones.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('❌ No hay ubicaciones disponibles para mostrar en el mapa'),
+          content: Text(
+            '❌ No hay ubicaciones disponibles para mostrar en el mapa',
+          ),
           duration: Duration(seconds: 2),
         ),
       );
@@ -62,7 +65,8 @@ class LocalidadesCard extends StatelessWidget {
             // No hacer nada, solo visualizar
             Navigator.pop(context);
           },
-          additionalLocations: ubicaciones, // ✅ NUEVO: Pasar ubicaciones de ventas
+          additionalLocations:
+              ubicaciones, // ✅ NUEVO: Pasar ubicaciones de ventas
         ),
       ),
     );
@@ -79,7 +83,8 @@ class LocalidadesCard extends StatelessWidget {
     final localidades = localidadesData['localidades'] as List? ?? [];
     final localidadesResumen =
         localidadesData['localidades_resumen'] as List? ?? [];
-    final cantidadLocalidades = localidadesData['cantidad_localidades'] as int? ?? 0;
+    final cantidadLocalidades =
+        localidadesData['cantidad_localidades'] as int? ?? 0;
     final esConsolidada = localidadesData['es_consolidada'] as bool? ?? false;
 
     if (cantidadLocalidades == 0) {
@@ -91,11 +96,7 @@ class LocalidadesCard extends StatelessWidget {
       child: ExpansionTile(
         title: Row(
           children: [
-            Icon(
-              Icons.location_on,
-              color: Colors.amber[600],
-              size: 20,
-            ),
+            Icon(Icons.location_on, color: Colors.amber[600], size: 20),
             const SizedBox(width: 12),
             Expanded(
               child: Column(
@@ -104,14 +105,14 @@ class LocalidadesCard extends StatelessWidget {
                   Text(
                     'Localidades de Entrega',
                     style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                   const SizedBox(height: 4),
                   Text(
                     '📍 $cantidadLocalidades localidad${cantidadLocalidades > 1 ? 'es' : ''} ${esConsolidada ? '(Entrega consolidada)' : ''}',
                     style: TextStyle(
-                      fontSize: 12,
+                      fontSize: AppTextStyles.bodySmall(context).fontSize!,
                       color: isDarkMode ? Colors.grey[400] : Colors.grey[600],
                     ),
                   ),
@@ -143,7 +144,9 @@ class LocalidadesCard extends StatelessWidget {
                   children: [
                     for (var localidad in localidades)
                       Chip(
-                        label: Text(localidad['nombre'] as String? ?? 'Sin nombre'),
+                        label: Text(
+                          localidad['nombre'] as String? ?? 'Sin nombre',
+                        ),
                         avatar: CircleAvatar(
                           backgroundColor: Colors.amber[100],
                           child: const Icon(
@@ -164,8 +167,8 @@ class LocalidadesCard extends StatelessWidget {
                   Text(
                     'Resumen por localidad:',
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          fontWeight: FontWeight.w600,
-                        ),
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                   const SizedBox(height: 8),
                   for (var resumen in localidadesResumen)
@@ -178,16 +181,18 @@ class LocalidadesCard extends StatelessWidget {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  resumen['localidad_nombre'] as String? ?? 'Sin nombre',
-                                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                        fontWeight: FontWeight.w600,
-                                      ),
+                                  resumen['localidad_nombre'] as String? ??
+                                      'Sin nombre',
+                                  style: Theme.of(context).textTheme.bodyMedium
+                                      ?.copyWith(fontWeight: FontWeight.w600),
                                 ),
                                 const SizedBox(height: 2),
                                 Text(
                                   '${resumen['cantidad_ventas']} venta${(resumen['cantidad_ventas'] as int?) != 1 ? 's' : ''}',
                                   style: TextStyle(
-                                    fontSize: 12,
+                                    fontSize: AppTextStyles.bodySmall(
+                                      context,
+                                    ).fontSize!,
                                     color: isDarkMode
                                         ? Colors.grey[400]
                                         : Colors.grey[600],
@@ -205,7 +210,9 @@ class LocalidadesCard extends StatelessWidget {
                                     .cast<String>()
                                     .join(', '),
                                 style: TextStyle(
-                                  fontSize: 11,
+                                  fontSize: AppTextStyles.labelSmall(
+                                    context,
+                                  ).fontSize!,
                                   color: isDarkMode
                                       ? Colors.grey[500]
                                       : Colors.grey[500],

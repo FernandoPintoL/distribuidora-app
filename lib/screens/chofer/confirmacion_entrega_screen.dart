@@ -666,7 +666,7 @@ class _ConfirmacionEntregaScreenState extends State<ConfirmacionEntregaScreen> {
                                 : 'Falta: Estado de pago y monto (si es pagado)',
                             style: TextStyle(
                               color: Colors.orange.shade600,
-                              fontSize: 12,
+                              fontSize: AppTextStyles.bodySmall(context).fontSize!,
                               fontWeight: FontWeight.w500,
                             ),
                           ),

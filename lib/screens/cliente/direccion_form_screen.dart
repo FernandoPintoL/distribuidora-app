@@ -126,7 +126,7 @@ class _DireccionFormScreenState extends State<DireccionFormScreen> {
                     child: Text(
                       'Esta dirección se usará para entregas de tus pedidos',
                       style: TextStyle(
-                        fontSize: 13,
+                        fontSize: AppTextStyles.bodySmall(context).fontSize!,
                         color: Colors.blue.shade900,
                       ),
                     ),

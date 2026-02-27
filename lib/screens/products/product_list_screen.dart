@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
+import '../../config/app_text_styles.dart';
 import '../../providers/providers.dart';
 import '../../models/models.dart';
 import '../../widgets/product/index.dart';
@@ -41,6 +42,10 @@ class _ProductListScreenState extends State<ProductListScreen>
     );
 
     Future.delayed(Duration.zero, () {
+      // ✅ NUEVO: Cargar filtros disponibles
+      final filtrosProvider = context.read<FiltrosProductoProvider>();
+      filtrosProvider.loadFiltros();
+
       _loadProductsIfNeeded();
       // Trigger animation when products load
       _listAnimationController.forward(from: 0.0);
@@ -89,8 +94,15 @@ class _ProductListScreenState extends State<ProductListScreen>
         _isLoadingMore = true;
         debugPrint('📍 ✅ Cargando más productos...');
 
+        final filtrosProvider = context.read<FiltrosProductoProvider>();
         productProvider
-            .loadMoreProducts(search: _searchController.text)
+            .loadMoreProducts(
+              search: _searchController.text.isEmpty
+                  ? null
+                  : _searchController.text,
+              categoryId: filtrosProvider.categoriaIdSeleccionada,
+              brandId: filtrosProvider.marcaIdSeleccionada,
+            )
             .then((_) {
               _isLoadingMore = false;
               debugPrint('📍 ✅ Carga completada, flag reseteado');
@@ -118,18 +130,28 @@ class _ProductListScreenState extends State<ProductListScreen>
 
   Future<void> _loadProducts() async {
     final productProvider = context.read<ProductProvider>();
-    await productProvider.loadProducts(search: _searchController.text);
+    final filtrosProvider = context.read<FiltrosProductoProvider>();
+    // ✅ NUEVO: Pasar filtros activos al loadProducts
+    await productProvider.loadProducts(
+      search: _searchController.text.isEmpty ? null : _searchController.text,
+      categoryId: filtrosProvider.categoriaIdSeleccionada,
+      brandId: filtrosProvider.marcaIdSeleccionada,
+    );
   }
 
   /// Refresh: Limpia el input, limpia lista y recarga productos desde el inicio
   Future<void> _refreshProducts() async {
     final productProvider = context.read<ProductProvider>();
+    final filtrosProvider = context.read<FiltrosProductoProvider>();
     // Limpiar campo de búsqueda
     _searchController.clear();
     // Limpiar lista y resetear paginador
     productProvider.clearProducts();
-    // Recargar desde página 1 sin búsqueda
-    await productProvider.loadProducts();
+    // ✅ NUEVO: Recargar desde página 1 manteniendo filtros activos
+    await productProvider.loadProducts(
+      categoryId: filtrosProvider.categoriaIdSeleccionada,
+      brandId: filtrosProvider.marcaIdSeleccionada,
+    );
   }
 
   void _onSearchChanged(String value) {
@@ -140,13 +162,20 @@ class _ProductListScreenState extends State<ProductListScreen>
   void _performSearch() {
     final productProvider = context.read<ProductProvider>();
     final searchText = _searchController.text;
-    productProvider.loadProducts(search: searchText.isEmpty ? null : searchText);
+    productProvider.loadProducts(
+      search: searchText.isEmpty ? null : searchText,
+    );
   }
 
   void _clearSearch() {
     _searchController.clear();
     final productProvider = context.read<ProductProvider>();
-    productProvider.loadProducts();
+    final filtrosProvider = context.read<FiltrosProductoProvider>();
+    // ✅ NUEVO: Limpiar búsqueda pero mantener filtros activos
+    productProvider.loadProducts(
+      categoryId: filtrosProvider.categoriaIdSeleccionada,
+      brandId: filtrosProvider.marcaIdSeleccionada,
+    );
   }
 
   Future<void> _openBarcodeScanner() async {
@@ -385,6 +414,179 @@ class _ProductListScreenState extends State<ProductListScreen>
     });
   }
 
+  // ✅ NUEVO: Mostrar filtros avanzados
+  void _showAdvancedFilters() {
+    final colorScheme = Theme.of(context).colorScheme;
+    final filtrosProvider = context.read<FiltrosProductoProvider>();
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: colorScheme.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (context) => Consumer<FiltrosProductoProvider>(
+        builder: (context, filtros, _) {
+          return SingleChildScrollView(
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Título
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'Filtros Avanzados',
+                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      IconButton(
+                        onPressed: () => Navigator.pop(context),
+                        icon: const Icon(Icons.close),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+
+                  // Sección de Categorías
+                  Text(
+                    'Categorías',
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  if (filtros.isLoading)
+                    Center(
+                      child: CircularProgressIndicator(
+                        color: colorScheme.primary,
+                      ),
+                    )
+                  else if (filtros.categorias.isEmpty)
+                    Text(
+                      'Sin categorías disponibles',
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: colorScheme.outline,
+                      ),
+                    )
+                  else
+                    Column(
+                      children: [
+                        RadioListTile<int?>(
+                          value: null,
+                          groupValue: filtros.categoriaIdSeleccionada,
+                          onChanged: (value) {
+                            filtros.seleccionarCategoria(value);
+                            Navigator.pop(context);
+                            _loadProducts();
+                          },
+                          title: const Text('Todas las categorías'),
+                          dense: true,
+                        ),
+                        ...filtros.categorias.map((cat) {
+                          final id = cat['id'] as int?;
+                          final nombre = cat['nombre'] as String?;
+                          return RadioListTile<int?>(
+                            value: id,
+                            groupValue: filtros.categoriaIdSeleccionada,
+                            onChanged: (value) {
+                              filtros.seleccionarCategoria(value);
+                              Navigator.pop(context);
+                              _loadProducts();
+                            },
+                            title: Text(nombre ?? 'Sin nombre'),
+                            dense: true,
+                          );
+                        }).toList(),
+                      ],
+                    ),
+
+                  const SizedBox(height: 24),
+
+                  // Sección de Marcas
+                  Text(
+                    'Marcas',
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  if (filtros.marcas.isEmpty)
+                    Text(
+                      'Sin marcas disponibles',
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: colorScheme.outline,
+                      ),
+                    )
+                  else
+                    Column(
+                      children: [
+                        RadioListTile<int?>(
+                          value: null,
+                          groupValue: filtros.marcaIdSeleccionada,
+                          onChanged: (value) {
+                            filtros.seleccionarMarca(value);
+                            Navigator.pop(context);
+                            _loadProducts();
+                          },
+                          title: const Text('Todas las marcas'),
+                          dense: true,
+                        ),
+                        ...filtros.marcas.map((marca) {
+                          final id = marca['id'] as int?;
+                          final nombre = marca['nombre'] as String?;
+                          return RadioListTile<int?>(
+                            value: id,
+                            groupValue: filtros.marcaIdSeleccionada,
+                            onChanged: (value) {
+                              filtros.seleccionarMarca(value);
+                              Navigator.pop(context);
+                              _loadProducts();
+                            },
+                            title: Text(nombre ?? 'Sin nombre'),
+                            dense: true,
+                          );
+                        }).toList(),
+                      ],
+                    ),
+
+                  const SizedBox(height: 24),
+
+                  // Botones de acción
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton(
+                          onPressed: () {
+                            filtros.limpiarFiltros();
+                            Navigator.pop(context);
+                            _loadProducts();
+                          },
+                          child: const Text('Limpiar filtros'),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: ElevatedButton(
+                          onPressed: () => Navigator.pop(context),
+                          child: const Text('Aplicar'),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final colorScheme = context.colorScheme;
@@ -521,6 +723,78 @@ class _ProductListScreenState extends State<ProductListScreen>
                     ),
                     tooltip: 'Buscar',
                   ),
+                ),
+                const SizedBox(width: 8),
+                // ✅ NUEVO: Botón de filtros con badge - Premium style
+                Consumer<FiltrosProductoProvider>(
+                  builder: (context, filtrosProvider, _) {
+                    final hayFiltros = filtrosProvider.hayFiltrosActivos;
+                    return Stack(
+                      alignment: Alignment.topRight,
+                      children: [
+                        Container(
+                          height: 56,
+                          width: 56,
+                          decoration: BoxDecoration(
+                            color: isDark
+                                ? colorScheme.surfaceContainerHighest
+                                : colorScheme.surfaceContainerHighest.withAlpha(
+                                    100,
+                                  ),
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(
+                              color: hayFiltros
+                                  ? colorScheme.primary.withAlpha(80)
+                                  : colorScheme.outline.withAlpha(30),
+                              width: hayFiltros ? 2 : 1,
+                            ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: hayFiltros
+                                    ? colorScheme.primary.withAlpha(20)
+                                    : Colors.black.withAlpha(6),
+                                blurRadius: 12,
+                                offset: const Offset(0, 4),
+                              ),
+                            ],
+                          ),
+                          child: IconButton(
+                            onPressed: _showAdvancedFilters,
+                            icon: Icon(
+                              Icons.tune,
+                              color: hayFiltros
+                                  ? colorScheme.primary
+                                  : colorScheme.outline,
+                              size: 24,
+                            ),
+                            tooltip: 'Filtros avanzados',
+                          ),
+                        ),
+                        if (hayFiltros)
+                          Positioned(
+                            right: -4,
+                            top: -4,
+                            child: Container(
+                              padding: const EdgeInsets.all(4),
+                              decoration: BoxDecoration(
+                                color: colorScheme.primary,
+                                shape: BoxShape.circle,
+                              ),
+                              child: Text(
+                                '${filtrosProvider.conteoFiltrosActivos}',
+                                style: TextStyle(
+                                  color: colorScheme.onPrimary,
+                                  fontSize: AppTextStyles.labelSmall(
+                                    context,
+                                  ).fontSize!,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                          ),
+                      ],
+                    );
+                  },
                 ),
                 const SizedBox(width: 8),
                 // Botón de recarga - Premium style
@@ -731,7 +1005,8 @@ class _ProductListScreenState extends State<ProductListScreen>
         .where((p) => p.esCombo != true)
         .toList();
 
-    final tieneCombosSeparados = combos.isNotEmpty && productosNormales.isNotEmpty;
+    final tieneCombosSeparados =
+        combos.isNotEmpty && productosNormales.isNotEmpty;
 
     return RefreshIndicator(
       onRefresh: _refreshProducts,
@@ -743,7 +1018,10 @@ class _ProductListScreenState extends State<ProductListScreen>
               // Sección de Combos
               if (combos.isNotEmpty) ...[
                 SliverPadding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 12,
+                  ),
                   sliver: SliverToBoxAdapter(
                     child: Text(
                       '🎁 Combos Especiales',
@@ -763,16 +1041,13 @@ class _ProductListScreenState extends State<ProductListScreen>
                       crossAxisSpacing: spacing,
                       mainAxisSpacing: spacing,
                     ),
-                    delegate: SliverChildBuilderDelegate(
-                      (context, index) {
-                        final product = combos[index];
-                        return ProductGridItem(
-                          product: product,
-                          onTap: () => _onProductTap(product),
-                        );
-                      },
-                      childCount: combos.length,
-                    ),
+                    delegate: SliverChildBuilderDelegate((context, index) {
+                      final product = combos[index];
+                      return ProductGridItem(
+                        product: product,
+                        onTap: () => _onProductTap(product),
+                      );
+                    }, childCount: combos.length),
                   ),
                 ),
               ],
@@ -781,9 +1056,14 @@ class _ProductListScreenState extends State<ProductListScreen>
               if (tieneCombosSeparados)
                 SliverToBoxAdapter(
                   child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 8,
+                    ),
                     child: Divider(
-                      color: Theme.of(context).colorScheme.outline.withAlpha(50),
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.outline.withAlpha(50),
                     ),
                   ),
                 ),
@@ -791,7 +1071,10 @@ class _ProductListScreenState extends State<ProductListScreen>
               // Sección de Productos Normales
               if (productosNormales.isNotEmpty) ...[
                 SliverPadding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 12,
+                  ),
                   sliver: SliverToBoxAdapter(
                     child: Text(
                       'Productos',
@@ -810,16 +1093,13 @@ class _ProductListScreenState extends State<ProductListScreen>
                       crossAxisSpacing: spacing,
                       mainAxisSpacing: spacing,
                     ),
-                    delegate: SliverChildBuilderDelegate(
-                      (context, index) {
-                        final product = productosNormales[index];
-                        return ProductGridItem(
-                          product: product,
-                          onTap: () => _onProductTap(product),
-                        );
-                      },
-                      childCount: productosNormales.length,
-                    ),
+                    delegate: SliverChildBuilderDelegate((context, index) {
+                      final product = productosNormales[index];
+                      return ProductGridItem(
+                        product: product,
+                        onTap: () => _onProductTap(product),
+                      );
+                    }, childCount: productosNormales.length),
                   ),
                 ),
               ],
@@ -850,6 +1130,8 @@ class _ProductListScreenState extends State<ProductListScreen>
     final productosNormales = productProvider.products
         .where((p) => p.esCombo != true)
         .toList();
+    final tieneCombosSeparados =
+        combos.isNotEmpty && productosNormales.isNotEmpty;
 
     return RefreshIndicator(
       onRefresh: _refreshProducts,
@@ -857,7 +1139,10 @@ class _ProductListScreenState extends State<ProductListScreen>
         children: [
           ListView.builder(
             controller: _scrollController,
-            itemCount: combos.length + productosNormales.length + (combos.isNotEmpty && productosNormales.isNotEmpty ? 1 : 0),
+            itemCount:
+                combos.length +
+                productosNormales.length +
+                (tieneCombosSeparados ? 1 : 0),
             padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 12),
             itemBuilder: (context, index) {
               // Sección de Combos
@@ -869,22 +1154,28 @@ class _ProductListScreenState extends State<ProductListScreen>
                 );
               }
 
-              // Separador entre combos y productos normales
-              if (index == combos.length && productosNormales.isNotEmpty) {
+              // Separador entre combos y productos normales (solo si hay ambos)
+              if (tieneCombosSeparados && index == combos.length) {
                 return Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
+                  padding: const EdgeInsets.symmetric(
+                    vertical: 16,
+                    horizontal: 16,
+                  ),
                   child: Column(
                     children: [
                       Divider(
-                        color: Theme.of(context).colorScheme.outline.withAlpha(50),
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.outline.withAlpha(50),
                         height: 1,
                       ),
                       const SizedBox(height: 8),
                       Text(
                         'Productos Regulares',
-                        style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                          color: Theme.of(context).colorScheme.outline,
-                        ),
+                        style: Theme.of(context).textTheme.labelMedium
+                            ?.copyWith(
+                              color: Theme.of(context).colorScheme.outline,
+                            ),
                       ),
                     ],
                   ),
@@ -892,7 +1183,8 @@ class _ProductListScreenState extends State<ProductListScreen>
               }
 
               // Sección de Productos Normales
-              final productIndex = index - combos.length - (combos.isNotEmpty && productosNormales.isNotEmpty ? 1 : 0);
+              final productIndex =
+                  index - combos.length - (tieneCombosSeparados ? 1 : 0);
               if (productIndex < productosNormales.length) {
                 final product = productosNormales[productIndex];
                 return ProductListItem(
@@ -1023,9 +1315,9 @@ class _ProductListScreenState extends State<ProductListScreen>
             ),
             label: Text(
               'Carrito (${carritoProvider.items.length})',
-              style: const TextStyle(
+              style: TextStyle(
                 fontWeight: FontWeight.w700,
-                fontSize: 15,
+                fontSize: AppTextStyles.bodyMedium(context).fontSize!,
                 letterSpacing: 0.5,
               ),
             ),

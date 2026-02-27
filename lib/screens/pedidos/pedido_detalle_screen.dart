@@ -14,6 +14,7 @@ import '../../config/config.dart';
 import '../../services/estados_helpers.dart'; // ✅ AGREGADO para estados dinámicos
 import '../../services/print_service.dart';
 import '../../extensions/theme_extension.dart'; // ✅ AGREGADO para dark mode
+import '../reportes/nuevo_reporte_screen.dart'; // ✅ NUEVO: Para reportar productos dañados
 
 class PedidoDetalleScreen extends StatefulWidget {
   final int pedidoId;
@@ -45,6 +46,39 @@ class _PedidoDetalleScreenState extends State<PedidoDetalleScreen> {
 
   Future<void> _onRefresh() async {
     await _cargarPedido();
+  }
+
+  /// Reportar producto dañado
+  Future<void> _reportarProductoDanado(Pedido pedido) async {
+    if (pedido.venta == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('No hay venta asociada a este pedido'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    // Navegar a la pantalla de nuevo reporte con el ID de la venta
+    final resultado = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => NuevoReporteScreen(
+          ventaId: pedido.venta!.id,
+        ),
+      ),
+    );
+
+    // Mostrar mensaje de éxito si el reporte fue creado
+    if (resultado != null && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Reporte creado exitosamente'),
+          backgroundColor: Colors.green,
+        ),
+      );
+    }
   }
 
   Future<void> _extenderReserva() async {
@@ -230,9 +264,7 @@ class _PedidoDetalleScreenState extends State<PedidoDetalleScreen> {
       if (success) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(
-              'Abriendo ticket en ${selectedFormat.label}...',
-            ),
+            content: Text('Abriendo ticket en ${selectedFormat.label}...'),
             backgroundColor: Colors.green,
             duration: const Duration(seconds: 2),
           ),
@@ -293,6 +325,145 @@ class _PedidoDetalleScreenState extends State<PedidoDetalleScreen> {
     // El diálogo ya muestra el mensaje de éxito
   }
 
+  /// ✅ NUEVO: Navegar a ProductListScreen para editar carrito y actualizar proforma
+  Future<void> _editarProductos() async {
+    final pedidoProvider = context.read<PedidoProvider>();
+    final carritoProvider = context.read<CarritoProvider>();
+    final pedido = pedidoProvider.pedidoActual;
+
+    if (pedido == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Error: Pedido no encontrado'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    try {
+      // 1. Cargar la proforma en el carrito (esto limpia y carga los items automáticamente)
+      final cargadoExitosamente = await carritoProvider.cargarProformaEnCarrito(
+        pedido,
+      );
+
+      if (!cargadoExitosamente) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                carritoProvider.errorMessage ??
+                    'Error al cargar proforma en carrito',
+              ),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+        return;
+      }
+
+      debugPrint(
+        '📥 Carrito cargado con ${pedido.items.length} items de la proforma',
+      );
+
+      // 2. Navegar a ProductListScreen y esperar resultado
+      if (!mounted) return;
+
+      final result = await Navigator.pushNamed(
+        context,
+        '/products', // ✅ CORREGIDO: usar /products (inglés) según rutas registradas
+      );
+
+      // 3. Si el usuario regresa (cambió algo), actualizar la proforma
+      if (mounted && result != null && result is bool && result) {
+        debugPrint(
+          '📝 Actualizando proforma con items del carrito modificado...',
+        );
+        await _actualizarProformaConCarrito();
+      }
+    } catch (e) {
+      debugPrint('❌ Error al editar productos: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  /// ✅ NUEVO: Actualizar la proforma con los items del carrito modificado
+  Future<void> _actualizarProformaConCarrito() async {
+    final pedidoProvider = context.read<PedidoProvider>();
+    final carritoProvider = context.read<CarritoProvider>();
+    final pedido = pedidoProvider.pedidoActual;
+
+    if (pedido == null) return;
+
+    try {
+      // Mostrar indicador de carga
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('⏳ Actualizando proforma...'),
+          backgroundColor: Colors.blue,
+          duration: Duration(seconds: 2),
+        ),
+      );
+
+      // Preparar detalles desde los items del carrito
+      final detalles = carritoProvider.items
+          .map(
+            (item) => {
+              'producto_id': item.producto.id,
+              'cantidad': item.cantidad,
+              'precio_unitario': item.precioUnitario,
+            },
+          )
+          .toList();
+
+      // Actualizar detalles de la proforma con los items del carrito
+      final success = await pedidoProvider.actualizarDetallesProforma(
+        proformaId: pedido.id,
+        detalles: detalles,
+      );
+
+      if (!mounted) return;
+
+      if (success) {
+        // Recargar pedido para obtener datos actualizados
+        await _cargarPedido();
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('✅ Proforma actualizada exitosamente'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              pedidoProvider.errorMessage ?? 'Error al actualizar proforma',
+            ),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } catch (e) {
+      debugPrint('❌ Error al actualizar proforma: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
   /// Mostrar menú de más opciones
   Future<void> _showMoreOptions(Venta venta) async {
     // TODO: Implementar después de crear diálogos adicionales
@@ -340,19 +511,13 @@ class _PedidoDetalleScreenState extends State<PedidoDetalleScreen> {
       appBar: CustomGradientAppBar(
         title: 'Detalle del Pedido',
         customGradient: AppGradients.blue,
-        actions: [
-          RefreshAction(
-            isLoading: false,
-            onRefresh: _onRefresh,
-          ),
-        ],
+        actions: [RefreshAction(isLoading: false, onRefresh: _onRefresh)],
       ),
       bottomNavigationBar: Consumer<PedidoProvider>(
         builder: (context, pedidoProvider, _) {
           final pedido = pedidoProvider.pedidoActual;
-          // ✅ ACTUALIZADO: Usar códigos de estado String en lugar de enum
-          final puedeConvertir = pedido?.estadoCodigo == 'PENDIENTE' ||
-              pedido?.estadoCodigo == 'APROBADA';
+          // ✅ ACTUALIZADO: Permitir editar solo si está en PENDIENTE
+          final puedeEditarProductos = pedido?.estadoCodigo == 'PENDIENTE';
 
           if (pedido == null) {
             return const SizedBox.shrink();
@@ -374,28 +539,15 @@ class _PedidoDetalleScreenState extends State<PedidoDetalleScreen> {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  if (puedeConvertir) ...[
+                  // ✅ NUEVO: Botón para editar productos (solo en PENDIENTE)
+                  if (puedeEditarProductos) ...[
                     ElevatedButton.icon(
-                      onPressed: pedidoProvider.isConverting
-                          ? null
-                          : _convertirAVenta,
-                      icon: pedidoProvider.isConverting
-                          ? const SizedBox(
-                              width: 20,
-                              height: 20,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                              ),
-                            )
-                          : const Icon(Icons.shopping_cart),
-                      label: Text(
-                        pedidoProvider.isConverting
-                            ? 'Convirtiendo...'
-                            : 'Convertir a Venta',
-                      ),
+                      onPressed: _editarProductos,
+                      icon: const Icon(Icons.edit),
+                      label: const Text('Editar Productos'),
                       style: ElevatedButton.styleFrom(
                         padding: const EdgeInsets.symmetric(vertical: 16),
-                        backgroundColor: Colors.blue,
+                        backgroundColor: Colors.purple,
                         minimumSize: const Size(double.infinity, 50),
                       ),
                     ),
@@ -412,6 +564,20 @@ class _PedidoDetalleScreenState extends State<PedidoDetalleScreen> {
                         minimumSize: const Size(double.infinity, 50),
                       ),
                     ),
+                  // ✅ NUEVO: Botón para reportar producto dañado (si es una venta confirmada)
+                  if (pedido.venta != null) ...[
+                    const SizedBox(height: 12),
+                    ElevatedButton.icon(
+                      onPressed: () => _reportarProductoDanado(pedido),
+                      icon: const Icon(Icons.report_problem),
+                      label: const Text('Reportar Producto Dañado'),
+                      style: ElevatedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        backgroundColor: Colors.red.shade600,
+                        minimumSize: const Size(double.infinity, 50),
+                      ),
+                    ),
+                  ],
                 ],
               ),
             ),
@@ -423,7 +589,8 @@ class _PedidoDetalleScreenState extends State<PedidoDetalleScreen> {
         children: [
           Consumer<PedidoProvider>(
             builder: (context, pedidoProvider, child) {
-              if (pedidoProvider.isLoading && pedidoProvider.pedidoActual == null) {
+              if (pedidoProvider.isLoading &&
+                  pedidoProvider.pedidoActual == null) {
                 return const Center(child: CircularProgressIndicator());
               }
 
@@ -451,6 +618,10 @@ class _PedidoDetalleScreenState extends State<PedidoDetalleScreen> {
                       if (pedido.cliente != null)
                         _buildSeccionCliente(pedido.cliente!),
 
+                      // ✅ NUEVO: Estados de venta convertida (si está convertida)
+                      if (pedido.venta != null)
+                        _buildSeccionEstadosVentaConvertida(pedido),
+
                       // ✅ NUEVO: Información de venta (si es una venta convertida)
                       Consumer<PedidoProvider>(
                         builder: (context, provider, _) {
@@ -463,14 +634,13 @@ class _PedidoDetalleScreenState extends State<PedidoDetalleScreen> {
                           if (provider.isLoadingVenta) {
                             return const Padding(
                               padding: EdgeInsets.all(16),
-                              child: Center(
-                                child: CircularProgressIndicator(),
-                              ),
+                              child: Center(child: CircularProgressIndicator()),
                             );
                           }
 
                           final venta = provider.ventaActual;
-                          if (venta != null && pedido.estadoCategoria == 'venta') {
+                          if (venta != null &&
+                              pedido.estadoCategoria == 'venta') {
                             debugPrint(
                               '✅ Mostrando VentaInfoCard: ${venta.numero}',
                             );
@@ -577,16 +747,17 @@ class _PedidoDetalleScreenState extends State<PedidoDetalleScreen> {
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: estadoColor.withOpacity(0.1),
-        border: Border(
-          bottom: BorderSide(color: estadoColor.withOpacity(0.3)),
-        ),
+        border: Border(bottom: BorderSide(color: estadoColor.withOpacity(0.3))),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             pedido.numero,
-            style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+            style: TextStyle(
+              fontSize: AppTextStyles.displaySmall(context).fontSize!,
+              fontWeight: FontWeight.bold,
+            ),
           ),
           const SizedBox(height: 12),
           Container(
@@ -604,17 +775,15 @@ class _PedidoDetalleScreenState extends State<PedidoDetalleScreen> {
                     pedido.estadoCategoria,
                     pedido.estadoCodigo,
                   ),
-                  style: const TextStyle(
-                    fontSize: 20,
-                  ),
+                  style: const TextStyle(fontSize: 20),
                 ),
                 const SizedBox(width: 8),
                 Text(
                   pedido.estadoNombre,
-                  style: const TextStyle(
+                  style: TextStyle(
                     color: Colors.white,
                     fontWeight: FontWeight.w600,
-                    fontSize: 16,
+                    fontSize: AppTextStyles.bodyLarge(context).fontSize!,
                   ),
                 ),
               ],
@@ -633,9 +802,12 @@ class _PedidoDetalleScreenState extends State<PedidoDetalleScreen> {
           Navigator.pushNamed(context, '/pedido-tracking', arguments: pedido);
         },
         icon: const Icon(Icons.location_on, size: 28),
-        label: const Text(
+        label: Text(
           'Ver Tracking en Tiempo Real',
-          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+          style: TextStyle(
+            fontSize: AppTextStyles.bodyLarge(context).fontSize!,
+            fontWeight: FontWeight.w600,
+          ),
         ),
         style: ElevatedButton.styleFrom(
           backgroundColor: Colors.blue,
@@ -656,9 +828,12 @@ class _PedidoDetalleScreenState extends State<PedidoDetalleScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             'Historial de Estados',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            style: TextStyle(
+              fontSize: AppTextStyles.headlineSmall(context).fontSize!,
+              fontWeight: FontWeight.bold,
+            ),
           ),
           const SizedBox(height: 16),
           ...pedido.historialEstados.asMap().entries.map((entry) {
@@ -692,7 +867,11 @@ class _PedidoDetalleScreenState extends State<PedidoDetalleScreen> {
                     color: estadoColor,
                     shape: BoxShape.circle,
                   ),
-                  child: Icon(estadoIcon as IconData?, color: Colors.white, size: 18),
+                  child: Icon(
+                    estadoIcon as IconData?,
+                    color: Colors.white,
+                    size: 18,
+                  ),
                 ),
               ),
               beforeLineStyle: LineStyle(
@@ -706,8 +885,8 @@ class _PedidoDetalleScreenState extends State<PedidoDetalleScreen> {
                   children: [
                     Text(
                       estadoNombre,
-                      style: const TextStyle(
-                        fontSize: 16,
+                      style: TextStyle(
+                        fontSize: AppTextStyles.bodyLarge(context).fontSize!,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
@@ -715,8 +894,10 @@ class _PedidoDetalleScreenState extends State<PedidoDetalleScreen> {
                     Text(
                       _formatearFecha(historial.fecha),
                       style: TextStyle(
-                        fontSize: 13,
-                        color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+                        fontSize: AppTextStyles.bodySmall(context).fontSize!,
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.onSurface.withOpacity(0.6),
                       ),
                     ),
                     if (historial.nombreUsuario != null) ...[
@@ -724,8 +905,10 @@ class _PedidoDetalleScreenState extends State<PedidoDetalleScreen> {
                       Text(
                         'Por: ${historial.nombreUsuario}',
                         style: TextStyle(
-                          fontSize: 12,
-                          color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
+                          fontSize: AppTextStyles.bodySmall(context).fontSize!,
+                          color: Theme.of(
+                            context,
+                          ).colorScheme.onSurface.withOpacity(0.5),
                         ),
                       ),
                     ],
@@ -735,7 +918,10 @@ class _PedidoDetalleScreenState extends State<PedidoDetalleScreen> {
                       Container(
                         padding: const EdgeInsets.all(8),
                         decoration: BoxDecoration(
-                          color: Theme.of(context).colorScheme.surfaceContainerHighest.withOpacity(0.3),
+                          color: Theme.of(context)
+                              .colorScheme
+                              .surfaceContainerHighest
+                              .withOpacity(0.3),
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Text(
@@ -797,10 +983,12 @@ class _PedidoDetalleScreenState extends State<PedidoDetalleScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text(
+                          Text(
                             'Información del Cliente',
                             style: TextStyle(
-                              fontSize: 14,
+                              fontSize: AppTextStyles.bodyMedium(
+                                context,
+                              ).fontSize!,
                               fontWeight: FontWeight.w500,
                               color: Colors.grey,
                             ),
@@ -808,8 +996,10 @@ class _PedidoDetalleScreenState extends State<PedidoDetalleScreen> {
                           const SizedBox(height: 4),
                           Text(
                             cliente.nombre,
-                            style: const TextStyle(
-                              fontSize: 18,
+                            style: TextStyle(
+                              fontSize: AppTextStyles.headlineSmall(
+                                context,
+                              ).fontSize!,
                               fontWeight: FontWeight.bold,
                             ),
                             maxLines: 2,
@@ -853,8 +1043,9 @@ class _PedidoDetalleScreenState extends State<PedidoDetalleScreen> {
                           icon: Icons.check_circle,
                           label: 'Estado',
                           value: cliente.activo ? 'Activo' : 'Inactivo',
-                          valueColor:
-                              cliente.activo ? Colors.green : Colors.red,
+                          valueColor: cliente.activo
+                              ? Colors.green
+                              : Colors.red,
                         ),
                       ),
                       const SizedBox(width: 12),
@@ -899,7 +1090,7 @@ class _PedidoDetalleScreenState extends State<PedidoDetalleScreen> {
             Text(
               label,
               style: TextStyle(
-                fontSize: 11,
+                fontSize: AppTextStyles.labelSmall(context).fontSize!,
                 color: colorScheme.onSurfaceVariant,
                 fontWeight: FontWeight.w500,
               ),
@@ -910,12 +1101,358 @@ class _PedidoDetalleScreenState extends State<PedidoDetalleScreen> {
         Text(
           value,
           style: TextStyle(
-            fontSize: 14,
+            fontSize: AppTextStyles.bodyMedium(context).fontSize!,
             fontWeight: FontWeight.w600,
             color: valueColor ?? colorScheme.onSurface,
           ),
           maxLines: 2,
           overflow: TextOverflow.ellipsis,
+        ),
+      ],
+    );
+  }
+
+  // ✅ NUEVO 2026-02-27: Widget para mostrar estados de venta convertida
+  Widget _buildSeccionEstadosVentaConvertida(Pedido pedido) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final venta = pedido.venta;
+
+    if (venta == null) {
+      return const SizedBox.shrink();
+    }
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: Card(
+        elevation: 2,
+        child: Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(12),
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                colorScheme.secondary.withOpacity(0.1),
+                colorScheme.secondary.withOpacity(0.05),
+              ],
+            ),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Título
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: colorScheme.secondary.withOpacity(0.2),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Icon(
+                        Icons.local_shipping,
+                        color: colorScheme.secondary,
+                        size: 24,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Estados de Venta Convertida',
+                            style: TextStyle(
+                              fontSize: AppTextStyles.bodyMedium(
+                                context,
+                              ).fontSize!,
+                              fontWeight: FontWeight.w500,
+                              color: colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            'Folio: #${venta.id}',
+                            style: TextStyle(
+                              fontSize: AppTextStyles.bodyLarge(
+                                context,
+                              ).fontSize!,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            '#${venta.numero}',
+                            style: TextStyle(
+                              fontSize: AppTextStyles.bodyLarge(
+                                context,
+                              ).fontSize!,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                const Divider(height: 1),
+                const SizedBox(height: 16),
+
+                // Estado del documento
+                if (venta.estadoDocumento != null) ...[
+                  _buildEstadoRow(
+                    icon: Icons.description,
+                    label: 'Estado Documento',
+                    estadoData: venta.estadoDocumento!,
+                    colorScheme: colorScheme,
+                  ),
+                  const SizedBox(height: 12),
+                ],
+
+                // Estado de logística
+                if (venta.estadoLogistica != null) ...[
+                  _buildEstadoRow(
+                    icon: Icons.local_shipping,
+                    label: 'Estado Logística',
+                    estadoData: venta.estadoLogistica!,
+                    colorScheme: colorScheme,
+                  ),
+                  const SizedBox(height: 12),
+                ],
+
+                // ✅ NUEVO 2026-02-27: Motivo de anulación si está anulada
+                if (venta.estadoDocumento?.codigo == 'ANULADA' &&
+                    venta.observaciones != null &&
+                    venta.observaciones!.isNotEmpty) ...[
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.red.withOpacity(0.1),
+                      border: Border.all(color: Colors.red.withOpacity(0.3)),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.warning_rounded,
+                              color: Colors.red,
+                              size: 18,
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              'Motivo de Anulación',
+                              style: TextStyle(
+                                fontSize: AppTextStyles.bodySmall(
+                                  context,
+                                ).fontSize!,
+                                fontWeight: FontWeight.w600,
+                                color: Colors.red,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          venta.observaciones!,
+                          style: TextStyle(
+                            fontSize: AppTextStyles.bodySmall(
+                              context,
+                            ).fontSize!,
+                            color: colorScheme.onSurface,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                ],
+
+                // Confirmaciones de entrega
+                if (venta.confirmacionesEntrega.isNotEmpty) ...[
+                  Text(
+                    'Confirmaciones de Entrega',
+                    style: TextStyle(
+                      fontSize: AppTextStyles.bodySmall(context).fontSize!,
+                      fontWeight: FontWeight.w600,
+                      color: colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  ...venta.confirmacionesEntrega.map((confirmacion) {
+                    final isCompleted =
+                        confirmacion.estado.toUpperCase() == 'COMPLETADA';
+
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 8),
+                      child: Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: isCompleted
+                              ? Colors.green.withOpacity(0.1)
+                              : Colors.orange.withOpacity(0.1),
+                          border: Border.all(
+                            color: isCompleted
+                                ? Colors.green.withOpacity(0.3)
+                                : Colors.orange.withOpacity(0.3),
+                          ),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Icon(
+                              isCompleted ? Icons.check_circle : Icons.schedule,
+                              color: isCompleted ? Colors.green : Colors.orange,
+                              size: 20,
+                            ),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    confirmacion.estado,
+                                    style: TextStyle(
+                                      fontSize: AppTextStyles.bodySmall(
+                                        context,
+                                      ).fontSize!,
+                                      fontWeight: FontWeight.w600,
+                                      color: isCompleted
+                                          ? Colors.green
+                                          : Colors.orange,
+                                    ),
+                                  ),
+                                  if (confirmacion.chofer != null) ...[
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      'Chofer: ${confirmacion.chofer}',
+                                      style: TextStyle(
+                                        fontSize: AppTextStyles.labelSmall(
+                                          context,
+                                        ).fontSize!,
+                                        color: colorScheme.onSurfaceVariant,
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ],
+                                  if (confirmacion.cliente != null) ...[
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      'Cliente: ${confirmacion.cliente}',
+                                      style: TextStyle(
+                                        fontSize: AppTextStyles.labelSmall(
+                                          context,
+                                        ).fontSize!,
+                                        color: colorScheme.onSurfaceVariant,
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ],
+                                  if (confirmacion.fecha != null) ...[
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      'Fecha: ${DateFormat('dd/MM/yyyy HH:mm').format(confirmacion.fecha!)}',
+                                      style: TextStyle(
+                                        fontSize: AppTextStyles.labelSmall(
+                                          context,
+                                        ).fontSize!,
+                                        color: colorScheme.onSurfaceVariant,
+                                      ),
+                                    ),
+                                  ],
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  }),
+                ],
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  // ✅ NUEVO: Helper para renderizar un estado con estilo
+  Widget _buildEstadoRow({
+    required IconData icon,
+    required String label,
+    required EstadoDocumento estadoData,
+    required ColorScheme colorScheme,
+  }) {
+    // Intentar parsear color hex del backend
+    Color estadoColor = Colors.grey;
+    try {
+      if (estadoData.color.startsWith('#')) {
+        estadoColor = Color(
+          int.parse(estadoData.color.replaceFirst('#', '0xff')),
+        );
+      }
+    } catch (e) {
+      debugPrint('⚠️ Error parsing color: ${estadoData.color}');
+    }
+
+    return Row(
+      children: [
+        Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: estadoColor.withOpacity(0.2),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Icon(icon, color: estadoColor, size: 20),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: AppTextStyles.labelSmall(context).fontSize!,
+                  fontWeight: FontWeight.w500,
+                  color: colorScheme.onSurfaceVariant,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      color: estadoColor.withOpacity(0.15),
+                      borderRadius: BorderRadius.circular(6),
+                      border: Border.all(color: estadoColor.withOpacity(0.3)),
+                    ),
+                    child: Text(
+                      estadoData.nombre,
+                      style: TextStyle(
+                        fontSize: AppTextStyles.bodySmall(context).fontSize!,
+                        fontWeight: FontWeight.w600,
+                        color: estadoColor,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
         ),
       ],
     );
@@ -930,9 +1467,12 @@ class _PedidoDetalleScreenState extends State<PedidoDetalleScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
+              Text(
                 'Información General',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                style: TextStyle(
+                  fontSize: AppTextStyles.headlineSmall(context).fontSize!,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
               const Divider(height: 24),
               _buildInfoRow(
@@ -972,9 +1512,12 @@ class _PedidoDetalleScreenState extends State<PedidoDetalleScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
+              Text(
                 'Dirección de Entrega',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                style: TextStyle(
+                  fontSize: AppTextStyles.headlineSmall(context).fontSize!,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
               const Divider(height: 24),
               Row(
@@ -992,8 +1535,10 @@ class _PedidoDetalleScreenState extends State<PedidoDetalleScreen> {
                       children: [
                         Text(
                           direccion.direccion,
-                          style: const TextStyle(
-                            fontSize: 16,
+                          style: TextStyle(
+                            fontSize: AppTextStyles.bodyLarge(
+                              context,
+                            ).fontSize!,
                             fontWeight: FontWeight.w600,
                           ),
                         ),
@@ -1001,14 +1546,22 @@ class _PedidoDetalleScreenState extends State<PedidoDetalleScreen> {
                           const SizedBox(height: 4),
                           Text(
                             'Ciudad: ${direccion.ciudad}',
-                            style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6)),
+                            style: TextStyle(
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.onSurfaceVariant,
+                            ),
                           ),
                         ],
                         if (direccion.departamento != null) ...[
                           const SizedBox(height: 2),
                           Text(
                             direccion.departamento!,
-                            style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6)),
+                            style: TextStyle(
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.onSurface.withOpacity(0.6),
+                            ),
                           ),
                         ],
                         if (direccion.observaciones != null &&
@@ -1020,13 +1573,16 @@ class _PedidoDetalleScreenState extends State<PedidoDetalleScreen> {
                               vertical: 4,
                             ),
                             decoration: BoxDecoration(
-                              color: Theme.of(context).colorScheme.primary.withOpacity(context.isDark ? 0.15 : 0.1),
+                              color: Theme.of(context).colorScheme.primary
+                                  .withOpacity(context.isDark ? 0.15 : 0.1),
                               borderRadius: BorderRadius.circular(4),
                             ),
                             child: Text(
                               'Obs: ${direccion.observaciones}',
                               style: TextStyle(
-                                fontSize: 12,
+                                fontSize: AppTextStyles.bodySmall(
+                                  context,
+                                ).fontSize!,
                                 color: Theme.of(context).colorScheme.primary,
                               ),
                             ),
@@ -1053,9 +1609,12 @@ class _PedidoDetalleScreenState extends State<PedidoDetalleScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
+              Text(
                 'Fecha Programada',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                style: TextStyle(
+                  fontSize: AppTextStyles.headlineSmall(context).fontSize!,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
               const Divider(height: 24),
               _buildInfoRow(
@@ -1085,9 +1644,12 @@ class _PedidoDetalleScreenState extends State<PedidoDetalleScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             'Productos',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            style: TextStyle(
+              fontSize: AppTextStyles.headlineSmall(context).fontSize!,
+              fontWeight: FontWeight.bold,
+            ),
           ),
           const SizedBox(height: 12),
           ...pedido.items.map(
@@ -1102,7 +1664,9 @@ class _PedidoDetalleScreenState extends State<PedidoDetalleScreen> {
                       width: 60,
                       height: 60,
                       decoration: BoxDecoration(
-                        color: Theme.of(context).colorScheme.surfaceContainerHighest.withOpacity(0.5),
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.surfaceContainerHighest.withOpacity(0.5),
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: item.producto?.imagenPrincipal != null
@@ -1126,22 +1690,30 @@ class _PedidoDetalleScreenState extends State<PedidoDetalleScreen> {
                         children: [
                           Text(
                             item.producto?.nombre ?? 'Producto',
-                            style: const TextStyle(fontWeight: FontWeight.w600),
+                            style: TextStyle(fontWeight: FontWeight.w600),
                           ),
                           const SizedBox(height: 4),
                           Text(
                             'Cantidad: ${item.cantidad}',
                             style: TextStyle(
-                              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
-                              fontSize: 14,
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.onSurface.withOpacity(0.6),
+                              fontSize: AppTextStyles.bodyMedium(
+                                context,
+                              ).fontSize!,
                             ),
                           ),
                           const SizedBox(height: 2),
                           Text(
                             'Bs. ${item.precioUnitario.toStringAsFixed(2)} c/u',
                             style: TextStyle(
-                              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
-                              fontSize: 13,
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.onSurface.withOpacity(0.6),
+                              fontSize: AppTextStyles.bodySmall(
+                                context,
+                              ).fontSize!,
                             ),
                           ),
                         ],
@@ -1151,9 +1723,10 @@ class _PedidoDetalleScreenState extends State<PedidoDetalleScreen> {
                     // Subtotal
                     Text(
                       'Bs. ${item.subtotal.toStringAsFixed(2)}',
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontWeight: FontWeight.bold,
-                        fontSize: 16,
+                        fontSize: AppTextStyles.bodyLarge(context).fontSize!,
+                        color: Theme.of(context).colorScheme.onSurface,
                       ),
                     ),
                   ],
@@ -1175,9 +1748,12 @@ class _PedidoDetalleScreenState extends State<PedidoDetalleScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
+              Text(
                 'Reservas de Stock',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                style: TextStyle(
+                  fontSize: AppTextStyles.headlineSmall(context).fontSize!,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
               const Divider(height: 24),
               ...pedido.reservas.map((reserva) {
@@ -1190,17 +1766,29 @@ class _PedidoDetalleScreenState extends State<PedidoDetalleScreen> {
                 Color statusColor;
 
                 if (estaVencida) {
-                  bgColor = Theme.of(context).colorScheme.error.withOpacity(context.isDark ? 0.15 : 0.1);
-                  borderColor = Theme.of(context).colorScheme.error.withOpacity(0.3);
+                  bgColor = Theme.of(
+                    context,
+                  ).colorScheme.error.withOpacity(context.isDark ? 0.15 : 0.1);
+                  borderColor = Theme.of(
+                    context,
+                  ).colorScheme.error.withOpacity(0.3);
                   statusColor = Theme.of(context).colorScheme.error;
                 } else if (isActiva) {
-                  bgColor = Colors.green.withOpacity(context.isDark ? 0.15 : 0.1);
+                  bgColor = Colors.green.withOpacity(
+                    context.isDark ? 0.15 : 0.1,
+                  );
                   borderColor = Colors.green.withOpacity(0.3);
                   statusColor = Colors.green;
                 } else {
-                  bgColor = Theme.of(context).colorScheme.surfaceContainerHighest.withOpacity(0.3);
-                  borderColor = Theme.of(context).colorScheme.outline.withOpacity(0.2);
-                  statusColor = Theme.of(context).colorScheme.onSurface.withOpacity(0.6);
+                  bgColor = Theme.of(
+                    context,
+                  ).colorScheme.surfaceContainerHighest.withOpacity(0.3);
+                  borderColor = Theme.of(
+                    context,
+                  ).colorScheme.outline.withOpacity(0.2);
+                  statusColor = Theme.of(
+                    context,
+                  ).colorScheme.onSurface.withOpacity(0.6);
                 }
 
                 return Padding(
@@ -1230,7 +1818,9 @@ class _PedidoDetalleScreenState extends State<PedidoDetalleScreen> {
                               ? 'Vencida'
                               : 'Expira en: ${reserva.tiempoRestanteFormateado}',
                           style: TextStyle(
-                            fontSize: 12,
+                            fontSize: AppTextStyles.bodySmall(
+                              context,
+                            ).fontSize!,
                             color: statusColor,
                             fontWeight: FontWeight.w500,
                           ),
@@ -1255,9 +1845,7 @@ class _PedidoDetalleScreenState extends State<PedidoDetalleScreen> {
       padding: const EdgeInsets.all(16),
       child: Card(
         elevation: 0,
-        color: isDark
-            ? colorScheme.surface
-            : colorScheme.surfaceContainer,
+        color: isDark ? colorScheme.surface : colorScheme.surfaceContainer,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(12),
           side: BorderSide(
@@ -1327,7 +1915,6 @@ class _PedidoDetalleScreenState extends State<PedidoDetalleScreen> {
                   ],
                 ),
               ), */
-
               Divider(
                 height: 20,
                 color: colorScheme.outline.withOpacity(isDark ? 0.2 : 0.15),
@@ -1335,7 +1922,10 @@ class _PedidoDetalleScreenState extends State<PedidoDetalleScreen> {
 
               // Total
               Container(
-                padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 12),
+                padding: const EdgeInsets.symmetric(
+                  vertical: 12,
+                  horizontal: 12,
+                ),
                 decoration: BoxDecoration(
                   color: colorScheme.primaryContainer.withOpacity(
                     isDark ? 0.3 : 0.2,
@@ -1377,9 +1967,7 @@ class _PedidoDetalleScreenState extends State<PedidoDetalleScreen> {
       padding: const EdgeInsets.all(16),
       child: Card(
         elevation: 0,
-        color: isDark
-            ? colorScheme.surface
-            : colorScheme.surfaceContainer,
+        color: isDark ? colorScheme.surface : colorScheme.surfaceContainer,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(12),
           side: BorderSide(
@@ -1419,7 +2007,11 @@ class _PedidoDetalleScreenState extends State<PedidoDetalleScreen> {
   Widget _buildInfoRow(IconData icon, String label, String value) {
     return Row(
       children: [
-        Icon(icon, size: 20, color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6)),
+        Icon(
+          icon,
+          size: 20,
+          color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+        ),
         const SizedBox(width: 12),
         Expanded(
           child: Column(
@@ -1427,13 +2019,18 @@ class _PedidoDetalleScreenState extends State<PedidoDetalleScreen> {
             children: [
               Text(
                 label,
-                style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6)),
+                style: TextStyle(
+                  fontSize: AppTextStyles.bodySmall(context).fontSize!,
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.onSurface.withOpacity(0.6),
+                ),
               ),
               const SizedBox(height: 2),
               Text(
                 value,
-                style: const TextStyle(
-                  fontSize: 15,
+                style: TextStyle(
+                  fontSize: AppTextStyles.bodyMedium(context).fontSize!,
                   fontWeight: FontWeight.w500,
                 ),
               ),
@@ -1449,7 +2046,11 @@ class _PedidoDetalleScreenState extends State<PedidoDetalleScreen> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.error_outline, size: 80, color: Theme.of(context).colorScheme.error),
+          Icon(
+            Icons.error_outline,
+            size: 80,
+            color: Theme.of(context).colorScheme.error,
+          ),
           const SizedBox(height: 24),
           Text(
             'Error al cargar pedido',
@@ -1461,7 +2062,9 @@ class _PedidoDetalleScreenState extends State<PedidoDetalleScreen> {
             child: Text(
               error,
               textAlign: TextAlign.center,
-              style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6)),
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+              ),
             ),
           ),
           const SizedBox(height: 32),

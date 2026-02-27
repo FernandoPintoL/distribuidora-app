@@ -373,7 +373,9 @@ class _ClientFormScreenState extends State<ClientFormScreen> {
                               try {
                                 debugPrint('📸 Comprimiendo foto de perfil...');
                                 final comprimida =
-                                    await ImageCompressionService.comprimirYValidarImagen(file);
+                                    await ImageCompressionService.comprimirYValidarImagen(
+                                      file,
+                                    );
                                 setState(() {
                                   _selectedProfilePhoto = comprimida;
                                 });
@@ -382,9 +384,12 @@ class _ClientFormScreenState extends State<ClientFormScreen> {
                                 if (mounted) {
                                   ScaffoldMessenger.of(context).showSnackBar(
                                     SnackBar(
-                                      content:
-                                          Text('Error al procesar imagen: ${e.toString()}'),
-                                      backgroundColor: Theme.of(context).colorScheme.error,
+                                      content: Text(
+                                        'Error al procesar imagen: ${e.toString()}',
+                                      ),
+                                      backgroundColor: Theme.of(
+                                        context,
+                                      ).colorScheme.error,
                                       duration: const Duration(seconds: 5),
                                     ),
                                   );
@@ -774,7 +779,9 @@ class _ClientFormScreenState extends State<ClientFormScreen> {
                                         Text(
                                           'Estado del Cliente',
                                           style: TextStyle(
-                                            fontSize: 14,
+                                            fontSize: AppTextStyles.bodyMedium(
+                                              context,
+                                            ).fontSize!,
                                             color: Colors.grey.shade700,
                                             fontWeight: FontWeight.w500,
                                           ),
@@ -783,7 +790,9 @@ class _ClientFormScreenState extends State<ClientFormScreen> {
                                         Text(
                                           _isActive ? 'Activo' : 'Inactivo',
                                           style: TextStyle(
-                                            fontSize: 16,
+                                            fontSize: AppTextStyles.bodyLarge(
+                                              context,
+                                            ).fontSize!,
                                             fontWeight: FontWeight.bold,
                                             color: _isActive
                                                 ? Colors.green.shade700
@@ -819,7 +828,7 @@ class _ClientFormScreenState extends State<ClientFormScreen> {
                                       Text(
                                         'Habilitar Crédito',
                                         style: TextStyle(
-                                          fontSize: 16,
+                                          fontSize: AppTextStyles.bodyLarge(context).fontSize!,
                                           fontWeight: FontWeight.w500,
                                           color: Theme.of(
                                             context,
@@ -829,7 +838,7 @@ class _ClientFormScreenState extends State<ClientFormScreen> {
                                       Text(
                                         'Permite que el cliente use crédito',
                                         style: TextStyle(
-                                          fontSize: 14,
+                                          fontSize: AppTextStyles.bodyMedium(context).fontSize!,
                                           color: Theme.of(
                                             context,
                                           ).colorScheme.onSurfaceVariant,
@@ -896,11 +905,16 @@ class _ClientFormScreenState extends State<ClientFormScreen> {
                       style: Theme.of(context).textTheme.titleMedium,
                     ),
                     if (_isLoadingLocalidades)
-                      const Padding(
+                      Padding(
                         padding: EdgeInsets.only(top: 8),
                         child: Text(
                           'Cargando localidades...',
-                          style: TextStyle(fontSize: 14, color: Colors.grey),
+                          style: TextStyle(
+                            fontSize: AppTextStyles.bodyMedium(
+                              context,
+                            ).fontSize!,
+                            color: Colors.grey,
+                          ),
                         ),
                       ),
                   ],
@@ -1009,7 +1023,7 @@ class _ClientFormScreenState extends State<ClientFormScreen> {
                 Text(
                   title,
                   style: TextStyle(
-                    fontSize: 18,
+                    fontSize: AppTextStyles.headlineSmall(context).fontSize!,
                     fontWeight: FontWeight.bold,
                     color: colorScheme.onPrimaryContainer,
                   ),

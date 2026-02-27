@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../config/app_text_styles.dart';
 import '../../../models/venta.dart';
 
 class ResumenVentaCard extends StatelessWidget {
@@ -40,18 +41,14 @@ class ResumenVentaCard extends StatelessWidget {
             // Encabezado
             Row(
               children: [
-                Icon(
-                  Icons.receipt_long,
-                  color: colorScheme.primary,
-                  size: 24,
-                ),
+                Icon(Icons.receipt_long, color: colorScheme.primary, size: 24),
                 const SizedBox(width: 12),
                 Text(
                   'Resumen de Venta',
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.w700,
-                        color: colorScheme.onSurface,
-                      ),
+                    fontWeight: FontWeight.w700,
+                    color: colorScheme.onSurface,
+                  ),
                 ),
               ],
             ),
@@ -111,16 +108,18 @@ class ResumenVentaCard extends StatelessWidget {
                   Text(
                     'Productos (${venta.detalles.length})',
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          fontWeight: FontWeight.w600,
-                          color: colorScheme.onSurface,
-                        ),
+                      fontWeight: FontWeight.w600,
+                      color: colorScheme.onSurface,
+                    ),
                   ),
-                  ...venta.detalles.map((detalle) => _buildDetalleItem(
-                        context,
-                        detalle,
-                        isDarkMode,
-                        colorScheme,
-                      )),
+                  ...venta.detalles.map(
+                    (detalle) => _buildDetalleItem(
+                      context,
+                      detalle,
+                      isDarkMode,
+                      colorScheme,
+                    ),
+                  ),
                 ],
               ),
 
@@ -158,19 +157,19 @@ class ResumenVentaCard extends StatelessWidget {
                     children: [
                       Text(
                         'SUBTOTAL',
-                        style:
-                            Theme.of(context).textTheme.titleMedium?.copyWith(
-                                  fontWeight: FontWeight.w700,
-                                  color: colorScheme.primary,
-                                ),
+                        style: Theme.of(context).textTheme.titleMedium
+                            ?.copyWith(
+                              fontWeight: FontWeight.w700,
+                              color: colorScheme.primary,
+                            ),
                       ),
                       Text(
                         'Bs. ${venta.subtotal.toStringAsFixed(2)}',
-                        style:
-                            Theme.of(context).textTheme.titleMedium?.copyWith(
-                                  fontWeight: FontWeight.w700,
-                                  color: colorScheme.primary,
-                                ),
+                        style: Theme.of(context).textTheme.titleMedium
+                            ?.copyWith(
+                              fontWeight: FontWeight.w700,
+                              color: colorScheme.primary,
+                            ),
                       ),
                     ],
                   ),
@@ -194,14 +193,11 @@ class ResumenVentaCard extends StatelessWidget {
     final colorScheme = Theme.of(context).colorScheme;
 
     return Row(
-      crossAxisAlignment:
-          isMultiline ? CrossAxisAlignment.start : CrossAxisAlignment.center,
+      crossAxisAlignment: isMultiline
+          ? CrossAxisAlignment.start
+          : CrossAxisAlignment.center,
       children: [
-        Icon(
-          icon,
-          size: 18,
-          color: colorScheme.primary.withValues(alpha: 0.7),
-        ),
+        Icon(icon, size: 18, color: colorScheme.primary.withValues(alpha: 0.7)),
         const SizedBox(width: 12),
         Expanded(
           child: Column(
@@ -211,18 +207,18 @@ class ResumenVentaCard extends StatelessWidget {
               Text(
                 label,
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: isDarkMode
-                          ? colorScheme.onSurfaceVariant
-                          : colorScheme.onSurfaceVariant,
-                      fontSize: 11,
-                    ),
+                  color: isDarkMode
+                      ? colorScheme.onSurfaceVariant
+                      : colorScheme.onSurfaceVariant,
+                  fontSize: AppTextStyles.labelSmall(context).fontSize!,
+                ),
               ),
               Text(
                 value,
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: colorScheme.onSurface,
-                      fontWeight: FontWeight.w500,
-                    ),
+                  color: colorScheme.onSurface,
+                  fontWeight: FontWeight.w500,
+                ),
                 maxLines: isMultiline ? 3 : 1,
                 overflow: TextOverflow.ellipsis,
               ),
@@ -264,9 +260,9 @@ class ResumenVentaCard extends StatelessWidget {
           Text(
             nombreProducto,
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: colorScheme.onSurfaceVariant,
-                  fontSize: 10,
-                ),
+              color: colorScheme.onSurfaceVariant,
+              fontSize: AppTextStyles.labelSmall(context).fontSize!,
+            ),
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
           ),
@@ -275,16 +271,16 @@ class ResumenVentaCard extends StatelessWidget {
             children: [
               Text(
                 'Cantidad: ${cantidad.toStringAsFixed(cantidad == cantidad.toInt() ? 0 : 2)}',
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: colorScheme.onSurface,
-                    ),
+                style: Theme.of(
+                  context,
+                ).textTheme.bodySmall?.copyWith(color: colorScheme.onSurface),
               ),
               Text(
                 'Bs. ${subtotal.toStringAsFixed(2)}',
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      fontWeight: FontWeight.w600,
-                      color: colorScheme.primary,
-                    ),
+                  fontWeight: FontWeight.w600,
+                  color: colorScheme.primary,
+                ),
               ),
             ],
           ),
@@ -306,17 +302,17 @@ class ResumenVentaCard extends StatelessWidget {
         Text(
           label,
           style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: isDarkMode
-                    ? colorScheme.onSurfaceVariant
-                    : colorScheme.onSurfaceVariant,
-              ),
+            color: isDarkMode
+                ? colorScheme.onSurfaceVariant
+                : colorScheme.onSurfaceVariant,
+          ),
         ),
         Text(
           value,
           style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                fontWeight: FontWeight.w600,
-                color: colorScheme.onSurface,
-              ),
+            fontWeight: FontWeight.w600,
+            color: colorScheme.onSurface,
+          ),
         ),
       ],
     );

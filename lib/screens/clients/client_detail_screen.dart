@@ -279,10 +279,10 @@ class _ClientDetailScreenState extends State<ClientDetailScreen>
       appBar: CustomGradientAppBar(
         titleWidget: Text(
           _client!.nombre,
-          style: const TextStyle(
+          style: TextStyle(
             fontWeight: FontWeight.bold,
             color: Colors.white,
-            fontSize: 18,
+            fontSize: AppTextStyles.headlineSmall(context).fontSize!,
           ),
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
@@ -293,17 +293,18 @@ class _ClientDetailScreenState extends State<ClientDetailScreen>
           ? const Center(child: CircularProgressIndicator())
           : Column(
               children: [
-                // Barra de acciones (Editar/Eliminar)
+                // Barra de acciones (Editar/Eliminar/Mapa) - Scroll horizontal para evitar overflow
                 Container(
                   color: Theme.of(context).colorScheme.surface,
                   padding: const EdgeInsets.symmetric(
                     horizontal: 16,
                     vertical: 12,
                   ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
+                  child: SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
                       Tooltip(
                         message: 'Editar cliente',
                         child: ElevatedButton.icon(
@@ -327,7 +328,7 @@ class _ClientDetailScreenState extends State<ClientDetailScreen>
                       ),
                       const SizedBox(width: 12),
                       // Mostrar botón Ver en Mapa solo en tab de Direcciones
-                      if (_tabController.index == 1)
+                      if (_tabController.index == 1) ...[
                         Tooltip(
                           message: 'Ver ubicaciones en mapa',
                           child: ElevatedButton.icon(
@@ -357,7 +358,8 @@ class _ClientDetailScreenState extends State<ClientDetailScreen>
                             ),
                           ),
                         ),
-                      if (_tabController.index == 1) const SizedBox(width: 12),
+                        const SizedBox(width: 12),
+                      ],
                       Tooltip(
                         message: 'Eliminar cliente',
                         child: ElevatedButton.icon(
@@ -380,6 +382,7 @@ class _ClientDetailScreenState extends State<ClientDetailScreen>
                         ),
                       ),
                     ],
+                    ),
                   ),
                 ),
                 // Divider
@@ -398,9 +401,9 @@ class _ClientDetailScreenState extends State<ClientDetailScreen>
                     ).colorScheme.onSurfaceVariant,
                     indicatorColor: Theme.of(context).colorScheme.primary,
                     indicatorWeight: 3,
-                    labelStyle: const TextStyle(
+                    labelStyle: TextStyle(
                       fontWeight: FontWeight.w600,
-                      fontSize: 14,
+                      fontSize: AppTextStyles.bodyMedium(context).fontSize!,
                     ),
                     tabs: const [
                       Tab(
@@ -463,7 +466,7 @@ class _ClientDetailScreenState extends State<ClientDetailScreen>
           'Agregar Dirección',
           style: TextStyle(
             fontWeight: FontWeight.w600,
-            fontSize: 16,
+            fontSize: AppTextStyles.bodyLarge(context).fontSize!,
             color: colorScheme.onPrimary,
           ),
         ),
@@ -685,7 +688,10 @@ class _ClientDetailScreenState extends State<ClientDetailScreen>
             padding: const EdgeInsets.all(16.0),
             child: Text(
               'Ubicación',
-              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              style: TextStyle(
+                fontSize: AppTextStyles.headlineSmall(context).fontSize!,
+                fontWeight: FontWeight.bold,
+              ),
             ),
           ),
           SizedBox(
@@ -736,24 +742,30 @@ class _ClientDetailScreenState extends State<ClientDetailScreen>
                         children: [
                           Text(
                             'Cliente: ${_client!.nombre}',
-                            style: const TextStyle(
-                              fontSize: 14,
+                            style: TextStyle(
+                              fontSize: AppTextStyles.bodyMedium(
+                                context,
+                              ).fontSize!,
                               fontWeight: FontWeight.w600,
                             ),
                           ),
                           if (_client!.codigoCliente != null)
                             Text(
                               'Código: ${_client!.codigoCliente}',
-                              style: const TextStyle(
-                                fontSize: 12,
+                              style: TextStyle(
+                                fontSize: AppTextStyles.bodySmall(
+                                  context,
+                                ).fontSize!,
                                 color: Colors.grey,
                               ),
                             ),
                           if (_client!.localidad != null)
                             Text(
                               'Localidad: ${_getLocalidadName()}',
-                              style: const TextStyle(
-                                fontSize: 12,
+                              style: TextStyle(
+                                fontSize: AppTextStyles.bodySmall(
+                                  context,
+                                ).fontSize!,
                                 color: Colors.grey,
                               ),
                             ),
@@ -765,7 +777,10 @@ class _ClientDetailScreenState extends State<ClientDetailScreen>
                 const SizedBox(height: 8),
                 Text(
                   'Coordenadas: ${location.latitude.toStringAsFixed(6)}, ${location.longitude.toStringAsFixed(6)}',
-                  style: const TextStyle(fontSize: 12, color: Colors.grey),
+                  style: TextStyle(
+                    fontSize: AppTextStyles.bodySmall(context).fontSize!,
+                    color: Colors.grey,
+                  ),
                 ),
                 const SizedBox(height: 8),
                 Row(
@@ -914,7 +929,7 @@ class _ClientDetailScreenState extends State<ClientDetailScreen>
                 Text(
                   title,
                   style: TextStyle(
-                    fontSize: 18,
+                    fontSize: AppTextStyles.headlineSmall(context).fontSize!,
                     fontWeight: FontWeight.bold,
                     color: colorScheme.onPrimaryContainer,
                   ),
@@ -1257,7 +1272,7 @@ class _ClientDetailScreenState extends State<ClientDetailScreen>
               'Cargando direcciones...',
               style: TextStyle(
                 color: colorScheme.onSurface.withOpacity(0.6),
-                fontSize: 14,
+                fontSize: AppTextStyles.bodyMedium(context).fontSize!,
               ),
             ),
           ],
@@ -1355,7 +1370,7 @@ class _ClientDetailScreenState extends State<ClientDetailScreen>
                       child: Text(
                         'No hay días de visita programados para este cliente',
                         style: TextStyle(
-                          fontSize: 14,
+                          fontSize: AppTextStyles.bodyMedium(context).fontSize!,
                           color: Theme.of(context).colorScheme.onSurface,
                         ),
                       ),
@@ -1401,7 +1416,7 @@ class _ClientDetailScreenState extends State<ClientDetailScreen>
                   Text(
                     'Historial Completo de Visitas',
                     style: TextStyle(
-                      fontSize: 16,
+                      fontSize: AppTextStyles.bodyLarge(context).fontSize!,
                       fontWeight: FontWeight.bold,
                       color: Theme.of(context).colorScheme.onSurface,
                     ),
@@ -1426,7 +1441,7 @@ class _ClientDetailScreenState extends State<ClientDetailScreen>
                     child: Text(
                       '${_visitas!.length}',
                       style: TextStyle(
-                        fontSize: 12,
+                        fontSize: AppTextStyles.bodySmall(context).fontSize!,
                         fontWeight: FontWeight.bold,
                         color: Theme.of(context).colorScheme.primary,
                       ),
@@ -1476,7 +1491,7 @@ class _ClientDetailScreenState extends State<ClientDetailScreen>
               Text(
                 'Cumplimiento Semanal',
                 style: TextStyle(
-                  fontSize: 13,
+                  fontSize: AppTextStyles.bodySmall(context).fontSize!,
                   fontWeight: FontWeight.w600,
                   color: color,
                 ),
@@ -1493,7 +1508,7 @@ class _ClientDetailScreenState extends State<ClientDetailScreen>
                 child: Text(
                   '$porcentajeCumplimiento%',
                   style: TextStyle(
-                    fontSize: 14,
+                    fontSize: AppTextStyles.bodyMedium(context).fontSize!,
                     fontWeight: FontWeight.bold,
                     color: color,
                   ),
@@ -1527,7 +1542,7 @@ class _ClientDetailScreenState extends State<ClientDetailScreen>
                     Text(
                       '$visitasCumplidas de $visitasProgramadas días',
                       style: TextStyle(
-                        fontSize: 13,
+                        fontSize: AppTextStyles.bodySmall(context).fontSize!,
                         fontWeight: FontWeight.w600,
                         color: Colors.grey.shade800,
                       ),
@@ -1535,7 +1550,7 @@ class _ClientDetailScreenState extends State<ClientDetailScreen>
                     Text(
                       'visitados esta semana',
                       style: TextStyle(
-                        fontSize: 11,
+                        fontSize: AppTextStyles.labelSmall(context).fontSize!,
                         color: Colors.grey.shade600,
                       ),
                     ),
@@ -1568,7 +1583,7 @@ class _ClientDetailScreenState extends State<ClientDetailScreen>
                       Text(
                         'Días pendientes:',
                         style: TextStyle(
-                          fontSize: 12,
+                          fontSize: AppTextStyles.bodySmall(context).fontSize!,
                           fontWeight: FontWeight.w600,
                           color: Colors.orange.shade700,
                         ),
@@ -1582,7 +1597,7 @@ class _ClientDetailScreenState extends State<ClientDetailScreen>
                       child: Text(
                         '• $dia',
                         style: TextStyle(
-                          fontSize: 11,
+                          fontSize: AppTextStyles.labelSmall(context).fontSize!,
                           color: Colors.orange.shade700,
                         ),
                       ),
@@ -1616,7 +1631,7 @@ class _ClientDetailScreenState extends State<ClientDetailScreen>
                       Text(
                         'Visitados:',
                         style: TextStyle(
-                          fontSize: 12,
+                          fontSize: AppTextStyles.bodySmall(context).fontSize!,
                           fontWeight: FontWeight.w600,
                           color: Colors.green.shade700,
                         ),
@@ -1641,7 +1656,9 @@ class _ClientDetailScreenState extends State<ClientDetailScreen>
                         child: Text(
                           dia,
                           style: TextStyle(
-                            fontSize: 11,
+                            fontSize: AppTextStyles.labelSmall(
+                              context,
+                            ).fontSize!,
                             fontWeight: FontWeight.w500,
                             color: Colors.green.shade700,
                           ),
@@ -1769,7 +1786,7 @@ class _ClientDetailScreenState extends State<ClientDetailScreen>
                     Text(
                       'Plan de Visitas - Esta Semana',
                       style: TextStyle(
-                        fontSize: 16,
+                        fontSize: AppTextStyles.bodyLarge(context).fontSize!,
                         fontWeight: FontWeight.bold,
                         color: colorScheme.onSurface,
                       ),
@@ -1777,7 +1794,7 @@ class _ClientDetailScreenState extends State<ClientDetailScreen>
                     Text(
                       'Cumplimiento: $visitasCumplidas de $visitasProgramadas días',
                       style: TextStyle(
-                        fontSize: 12,
+                        fontSize: AppTextStyles.bodySmall(context).fontSize!,
                         color: colorScheme.onSurface.withOpacity(0.6),
                       ),
                     ),
@@ -1796,7 +1813,7 @@ class _ClientDetailScreenState extends State<ClientDetailScreen>
                 child: Text(
                   '$porcentajeCumplimiento%',
                   style: TextStyle(
-                    fontSize: 18,
+                    fontSize: AppTextStyles.headlineSmall(context).fontSize!,
                     fontWeight: FontWeight.bold,
                     color: color,
                   ),
@@ -1922,7 +1939,9 @@ class _ClientDetailScreenState extends State<ClientDetailScreen>
                               Text(
                                 days[ventana.diaSemana],
                                 style: TextStyle(
-                                  fontSize: 14,
+                                  fontSize: AppTextStyles.bodyMedium(
+                                    context,
+                                  ).fontSize!,
                                   fontWeight: FontWeight.bold,
                                   color: colorScheme.onSurface,
                                 ),
@@ -1939,7 +1958,9 @@ class _ClientDetailScreenState extends State<ClientDetailScreen>
                                 child: Text(
                                   visitado ? 'Visitado' : 'Pendiente',
                                   style: TextStyle(
-                                    fontSize: 11,
+                                    fontSize: AppTextStyles.labelSmall(
+                                      context,
+                                    ).fontSize!,
                                     fontWeight: FontWeight.bold,
                                     color: statusTextColor,
                                   ),
@@ -1951,7 +1972,9 @@ class _ClientDetailScreenState extends State<ClientDetailScreen>
                           Text(
                             '${ventana.horaInicio} - ${ventana.horaFin}',
                             style: TextStyle(
-                              fontSize: 12,
+                              fontSize: AppTextStyles.bodySmall(
+                                context,
+                              ).fontSize!,
                               color: colorScheme.onSurface.withOpacity(0.6),
                             ),
                           ),
@@ -1985,7 +2008,9 @@ class _ClientDetailScreenState extends State<ClientDetailScreen>
                               child: Text(
                                 'Visitado: ${dateFormat.format(visita.fechaHoraVisita)}',
                                 style: TextStyle(
-                                  fontSize: 11,
+                                  fontSize: AppTextStyles.labelSmall(
+                                    context,
+                                  ).fontSize!,
                                   color: colorScheme.onSurface,
                                   fontWeight: FontWeight.w500,
                                 ),
@@ -2007,7 +2032,9 @@ class _ClientDetailScreenState extends State<ClientDetailScreen>
                                 child: Text(
                                   'Tipo: ${visita.tipoVisita.label}',
                                   style: TextStyle(
-                                    fontSize: 11,
+                                    fontSize: AppTextStyles.labelSmall(
+                                      context,
+                                    ).fontSize!,
                                     color: colorScheme.onSurface.withOpacity(
                                       0.7,
                                     ),
@@ -2126,7 +2153,7 @@ class _ClientDetailScreenState extends State<ClientDetailScreen>
               Text(
                 'Días Programados para Visita',
                 style: TextStyle(
-                  fontSize: 16,
+                  fontSize: AppTextStyles.bodyLarge(context).fontSize!,
                   fontWeight: FontWeight.bold,
                   color: Colors.blue.shade900,
                 ),
@@ -2256,14 +2283,17 @@ class _ClientDetailScreenState extends State<ClientDetailScreen>
                   Text(
                     'Plan de Visitas',
                     style: TextStyle(
-                      fontSize: 16,
+                      fontSize: AppTextStyles.bodyLarge(context).fontSize!,
                       fontWeight: FontWeight.bold,
                       color: Colors.blue.shade900,
                     ),
                   ),
                   Text(
                     'Cumplimiento: $visitasCumplidas de $visitasProgramadas días ($porcentajeCumplimiento%)',
-                    style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                    style: TextStyle(
+                      fontSize: AppTextStyles.bodySmall(context).fontSize!,
+                      color: Colors.grey.shade600,
+                    ),
                   ),
                 ],
               ),
@@ -2277,7 +2307,7 @@ class _ClientDetailScreenState extends State<ClientDetailScreen>
               child: Text(
                 '$porcentajeCumplimiento%',
                 style: TextStyle(
-                  fontSize: 18,
+                  fontSize: AppTextStyles.headlineSmall(context).fontSize!,
                   fontWeight: FontWeight.bold,
                   color: color,
                 ),
@@ -2350,8 +2380,10 @@ class _ClientDetailScreenState extends State<ClientDetailScreen>
                             children: [
                               Text(
                                 days[ventana.diaSemana],
-                                style: const TextStyle(
-                                  fontSize: 14,
+                                style: TextStyle(
+                                  fontSize: AppTextStyles.bodyMedium(
+                                    context,
+                                  ).fontSize!,
                                   fontWeight: FontWeight.bold,
                                 ),
                               ),
@@ -2369,7 +2401,9 @@ class _ClientDetailScreenState extends State<ClientDetailScreen>
                                 child: Text(
                                   visitado ? 'Visitado' : 'Pendiente',
                                   style: TextStyle(
-                                    fontSize: 11,
+                                    fontSize: AppTextStyles.labelSmall(
+                                      context,
+                                    ).fontSize!,
                                     fontWeight: FontWeight.bold,
                                     color: visitado
                                         ? Colors.green.shade700
@@ -2383,7 +2417,9 @@ class _ClientDetailScreenState extends State<ClientDetailScreen>
                           Text(
                             '${ventana.horaInicio} - ${ventana.horaFin}',
                             style: TextStyle(
-                              fontSize: 12,
+                              fontSize: AppTextStyles.bodySmall(
+                                context,
+                              ).fontSize!,
                               color: Colors.grey.shade600,
                             ),
                           ),
@@ -2414,7 +2450,9 @@ class _ClientDetailScreenState extends State<ClientDetailScreen>
                             Text(
                               'Visitado: ${dateFormat.format(visita.fechaHoraVisita)}',
                               style: TextStyle(
-                                fontSize: 11,
+                                fontSize: AppTextStyles.labelSmall(
+                                  context,
+                                ).fontSize!,
                                 color: Colors.green.shade700,
                                 fontWeight: FontWeight.w500,
                               ),
@@ -2434,7 +2472,9 @@ class _ClientDetailScreenState extends State<ClientDetailScreen>
                               Text(
                                 'Tipo: ${visita.tipoVisita.label}',
                                 style: TextStyle(
-                                  fontSize: 11,
+                                  fontSize: AppTextStyles.labelSmall(
+                                    context,
+                                  ).fontSize!,
                                   color: Colors.blue.shade700,
                                 ),
                               ),
@@ -2472,7 +2512,7 @@ class _ClientDetailScreenState extends State<ClientDetailScreen>
             Text(
               'No hay direcciones registradas',
               style: TextStyle(
-                fontSize: 18,
+                fontSize: AppTextStyles.headlineSmall(context).fontSize!,
                 fontWeight: FontWeight.w500,
                 color: colorScheme.onSurface,
               ),
@@ -2481,7 +2521,7 @@ class _ClientDetailScreenState extends State<ClientDetailScreen>
             Text(
               'Agrega la primera dirección para este cliente',
               style: TextStyle(
-                fontSize: 14,
+                fontSize: AppTextStyles.bodyMedium(context).fontSize!,
                 color: colorScheme.onSurface.withOpacity(0.6),
               ),
               textAlign: TextAlign.center,
@@ -2528,9 +2568,12 @@ class _ClientDetailScreenState extends State<ClientDetailScreen>
                 color: Colors.grey.shade300,
               ),
               const SizedBox(height: 24),
-              const Text(
+              Text(
                 'No hay visitas registradas',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w500),
+                style: TextStyle(
+                  fontSize: AppTextStyles.headlineSmall(context).fontSize!,
+                  fontWeight: FontWeight.w500,
+                ),
               ),
               const SizedBox(height: 8),
               if (tieneVentanasEntrega)
@@ -2541,7 +2584,7 @@ class _ClientDetailScreenState extends State<ClientDetailScreen>
                       Text(
                         'Este cliente tiene $diasProgramados día(s) de visita programado(s), pero aún no hay registros de visitas.',
                         style: TextStyle(
-                          fontSize: 14,
+                          fontSize: AppTextStyles.bodyMedium(context).fontSize!,
                           color: Colors.grey.shade600,
                         ),
                         textAlign: TextAlign.center,
@@ -2566,7 +2609,9 @@ class _ClientDetailScreenState extends State<ClientDetailScreen>
                               child: Text(
                                 'El preventista aún no ha registrado visitas para este cliente en los días programados.',
                                 style: TextStyle(
-                                  fontSize: 12,
+                                  fontSize: AppTextStyles.bodySmall(
+                                    context,
+                                  ).fontSize!,
                                   color: Colors.orange.shade700,
                                 ),
                               ),
@@ -2582,7 +2627,10 @@ class _ClientDetailScreenState extends State<ClientDetailScreen>
                   padding: const EdgeInsets.symmetric(horizontal: 16),
                   child: Text(
                     'No hay visitas registradas y no hay días de visita programados para este cliente.',
-                    style: TextStyle(fontSize: 14, color: Colors.grey.shade600),
+                    style: TextStyle(
+                      fontSize: AppTextStyles.bodyMedium(context).fontSize!,
+                      color: Colors.grey.shade600,
+                    ),
                     textAlign: TextAlign.center,
                   ),
                 ),
@@ -2658,7 +2706,7 @@ class _ClientDetailScreenState extends State<ClientDetailScreen>
                       child: Text(
                         direccion.direccion,
                         style: TextStyle(
-                          fontSize: 16,
+                          fontSize: AppTextStyles.bodyLarge(context).fontSize!,
                           fontWeight: FontWeight.w600,
                           color: colorScheme.onSurface,
                         ),
@@ -2695,7 +2743,9 @@ class _ClientDetailScreenState extends State<ClientDetailScreen>
                             Text(
                               'Principal',
                               style: TextStyle(
-                                fontSize: 11,
+                                fontSize: AppTextStyles.labelSmall(
+                                  context,
+                                ).fontSize!,
                                 fontWeight: FontWeight.bold,
                                 color: Colors.white,
                               ),
@@ -2722,7 +2772,9 @@ class _ClientDetailScreenState extends State<ClientDetailScreen>
                               direccion.departamento,
                           ].join(', '),
                           style: TextStyle(
-                            fontSize: 14,
+                            fontSize: AppTextStyles.bodyMedium(
+                              context,
+                            ).fontSize!,
                             color: colorScheme.onSurface.withOpacity(0.8),
                           ),
                         ),
@@ -2746,7 +2798,9 @@ class _ClientDetailScreenState extends State<ClientDetailScreen>
                           child: Text(
                             'GPS: ${direccion.latitud!.toStringAsFixed(6)}, ${direccion.longitud!.toStringAsFixed(6)}',
                             style: TextStyle(
-                              fontSize: 13,
+                              fontSize: AppTextStyles.bodySmall(
+                                context,
+                              ).fontSize!,
                               color: colorScheme.onSurface.withOpacity(0.7),
                             ),
                           ),
@@ -2781,7 +2835,9 @@ class _ClientDetailScreenState extends State<ClientDetailScreen>
                           child: Text(
                             direccion.observaciones!,
                             style: TextStyle(
-                              fontSize: 13,
+                              fontSize: AppTextStyles.bodySmall(
+                                context,
+                              ).fontSize!,
                               color: colorScheme.onSurface.withOpacity(0.7),
                             ),
                           ),
@@ -3062,7 +3118,7 @@ class _ClientDetailScreenState extends State<ClientDetailScreen>
                       Text(
                         dateFormat.format(visita.fechaHoraVisita),
                         style: TextStyle(
-                          fontSize: 14,
+                          fontSize: AppTextStyles.bodyMedium(context).fontSize!,
                           fontWeight: FontWeight.w600,
                           color: colorScheme.onSurface,
                         ),
@@ -3086,7 +3142,7 @@ class _ClientDetailScreenState extends State<ClientDetailScreen>
                   Text(
                     'Tipo: ${visita.tipoVisita.label}',
                     style: TextStyle(
-                      fontSize: 14,
+                      fontSize: AppTextStyles.bodyMedium(context).fontSize!,
                       color: colorScheme.onSurface.withOpacity(0.8),
                       fontWeight: FontWeight.w500,
                     ),
@@ -3113,7 +3169,7 @@ class _ClientDetailScreenState extends State<ClientDetailScreen>
                         ? 'Dentro de ventana horaria'
                         : 'Fuera de ventana horaria',
                     style: TextStyle(
-                      fontSize: 13,
+                      fontSize: AppTextStyles.bodySmall(context).fontSize!,
                       color: visita.dentroVentanaHoraria
                           ? Colors.green
                           : Colors.orange,
@@ -3145,7 +3201,9 @@ class _ClientDetailScreenState extends State<ClientDetailScreen>
                         child: Text(
                           visita.observaciones!,
                           style: TextStyle(
-                            fontSize: 13,
+                            fontSize: AppTextStyles.bodySmall(
+                              context,
+                            ).fontSize!,
                             color: colorScheme.onSurface.withOpacity(0.8),
                             fontStyle: FontStyle.italic,
                           ),
@@ -3158,9 +3216,11 @@ class _ClientDetailScreenState extends State<ClientDetailScreen>
 
               Divider(height: 24, color: Theme.of(context).dividerColor),
 
-              // Acciones
-              Row(
-                mainAxisAlignment: MainAxisAlignment.end,
+              // Acciones - Wrap para evitar overflow
+              Wrap(
+                alignment: WrapAlignment.end,
+                spacing: 8,
+                runSpacing: 8,
                 children: [
                   // Botón ver ubicación
                   TextButton.icon(
@@ -3174,8 +3234,7 @@ class _ClientDetailScreenState extends State<ClientDetailScreen>
                   ),
 
                   // Botón ver foto (si existe)
-                  if (visita.fotoLocal != null) ...[
-                    const SizedBox(width: 8),
+                  if (visita.fotoLocal != null)
                     TextButton.icon(
                       onPressed: () => _mostrarFotoVisita(visita.fotoLocal!),
                       icon: const Icon(Icons.photo, size: 18),
@@ -3184,7 +3243,6 @@ class _ClientDetailScreenState extends State<ClientDetailScreen>
                         foregroundColor: Colors.green,
                       ),
                     ),
-                  ],
                 ],
               ),
             ],
@@ -3225,9 +3283,9 @@ class _ClientDetailScreenState extends State<ClientDetailScreen>
           const SizedBox(width: 4),
           Text(
             estado.label,
-            style: const TextStyle(
+            style: TextStyle(
               color: Colors.white,
-              fontSize: 12,
+              fontSize: AppTextStyles.bodySmall(context).fontSize!,
               fontWeight: FontWeight.bold,
             ),
           ),

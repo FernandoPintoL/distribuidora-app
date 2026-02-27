@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../../config/app_text_styles.dart';
 import '../../../../models/entrega.dart';
 
 class HistorialEstadosCard extends StatelessWidget {
@@ -20,10 +21,9 @@ class HistorialEstadosCard extends StatelessWidget {
           children: [
             Text(
               'Historial de Estados',
-              style: Theme.of(context)
-                  .textTheme
-                  .titleMedium
-                  ?.copyWith(fontWeight: FontWeight.bold),
+              style: Theme.of(
+                context,
+              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 16),
             ListView.separated(
@@ -59,7 +59,9 @@ class HistorialEstadosCard extends StatelessWidget {
                             child: Text(
                               '${estado.estadoAnterior} → ${estado.estadoNuevo}',
                               style: TextStyle(
-                                fontSize: 12,
+                                fontSize: AppTextStyles.bodySmall(
+                                  context,
+                                ).fontSize!,
                                 fontWeight: FontWeight.bold,
                                 color: textColor,
                               ),
@@ -70,8 +72,7 @@ class HistorialEstadosCard extends StatelessWidget {
                       const SizedBox(height: 4),
                       Text(
                         estado.createdAt.toString(),
-                        style:
-                            Theme.of(context).textTheme.labelSmall?.copyWith(
+                        style: Theme.of(context).textTheme.labelSmall?.copyWith(
                           color: isDarkMode
                               ? Colors.grey[500]
                               : Colors.grey[600],
@@ -83,7 +84,9 @@ class HistorialEstadosCard extends StatelessWidget {
                         Text(
                           estado.comentario!,
                           style: TextStyle(
-                            fontSize: 12,
+                            fontSize: AppTextStyles.bodySmall(
+                              context,
+                            ).fontSize!,
                             color: isDarkMode
                                 ? Colors.grey[300]
                                 : Colors.grey[800],

@@ -1,14 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
+import '../../config/app_text_styles.dart';
 import '../../models/models.dart';
 
 class ClientMapScreen extends StatefulWidget {
   final Client client;
 
-  const ClientMapScreen({
-    super.key,
-    required this.client,
-  });
+  const ClientMapScreen({super.key, required this.client});
 
   @override
   State<ClientMapScreen> createState() => _ClientMapScreenState();
@@ -27,7 +25,8 @@ class _ClientMapScreenState extends State<ClientMapScreen> {
   }
 
   void _initializeMarkers() {
-    if (widget.client.direcciones == null || widget.client.direcciones!.isEmpty) {
+    if (widget.client.direcciones == null ||
+        widget.client.direcciones!.isEmpty) {
       return;
     }
 
@@ -56,8 +55,12 @@ class _ClientMapScreenState extends State<ClientMapScreen> {
           markerId: MarkerId('direccion_$i'),
           position: LatLng(lat, lng),
           infoWindow: InfoWindow(
-            title: direccion.esPrincipal ? '⭐ ${direccion.direccion}' : direccion.direccion,
-            snippet: '${direccion.ciudad ?? ''}, ${direccion.departamento ?? ''}'.trim(),
+            title: direccion.esPrincipal
+                ? '⭐ ${direccion.direccion}'
+                : direccion.direccion,
+            snippet:
+                '${direccion.ciudad ?? ''}, ${direccion.departamento ?? ''}'
+                    .trim(),
           ),
           icon: direccion.esPrincipal
               ? BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueGreen)
@@ -119,7 +122,7 @@ class _ClientMapScreenState extends State<ClientMapScreen> {
                   Text(
                     'No hay coordenadas disponibles',
                     style: TextStyle(
-                      fontSize: 16,
+                      fontSize: AppTextStyles.bodyLarge(context).fontSize!,
                       color: colorScheme.onSurface.withOpacity(0.6),
                     ),
                   ),
@@ -127,7 +130,7 @@ class _ClientMapScreenState extends State<ClientMapScreen> {
                   Text(
                     'Asigna coordenadas GPS a las direcciones',
                     style: TextStyle(
-                      fontSize: 14,
+                      fontSize: AppTextStyles.bodyMedium(context).fontSize!,
                       color: colorScheme.onSurface.withOpacity(0.4),
                     ),
                   ),
@@ -184,7 +187,9 @@ class _ClientMapScreenState extends State<ClientMapScreen> {
                             Text(
                               'Principal',
                               style: TextStyle(
-                                fontSize: 12,
+                                fontSize: AppTextStyles.bodySmall(
+                                  context,
+                                ).fontSize!,
                                 color: colorScheme.onSurface,
                               ),
                             ),
@@ -203,7 +208,9 @@ class _ClientMapScreenState extends State<ClientMapScreen> {
                             Text(
                               'Otras direcciones',
                               style: TextStyle(
-                                fontSize: 12,
+                                fontSize: AppTextStyles.bodySmall(
+                                  context,
+                                ).fontSize!,
                                 color: colorScheme.onSurface,
                               ),
                             ),
@@ -237,7 +244,7 @@ class _ClientMapScreenState extends State<ClientMapScreen> {
                     child: Text(
                       '${_markers.length} ubicación${_markers.length > 1 ? 'es' : ''}',
                       style: TextStyle(
-                        fontSize: 12,
+                        fontSize: AppTextStyles.bodySmall(context).fontSize!,
                         fontWeight: FontWeight.bold,
                         color: colorScheme.onPrimary,
                       ),

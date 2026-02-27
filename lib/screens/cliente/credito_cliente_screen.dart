@@ -30,8 +30,8 @@ class _CreditoClienteScreenState extends State<CreditoClienteScreen> {
 
   void _loadCreditoDetails() {
     context.read<ClienteCreditoProvider>().cargarDetallesCreditoCliente(
-          widget.clienteId,
-        );
+      widget.clienteId,
+    );
   }
 
   @override
@@ -47,9 +47,7 @@ class _CreditoClienteScreenState extends State<CreditoClienteScreen> {
       body: Consumer<ClienteCreditoProvider>(
         builder: (context, creditoProvider, child) {
           if (creditoProvider.isLoading) {
-            return const Center(
-              child: CircularProgressIndicator(),
-            );
+            return const Center(child: CircularProgressIndicator());
           }
 
           if (creditoProvider.tieneError) {
@@ -86,9 +84,7 @@ class _CreditoClienteScreenState extends State<CreditoClienteScreen> {
 
           final credito = creditoProvider.detallesCreditoCliente;
           if (credito == null) {
-            return const Center(
-              child: Text('Sin datos de crédito'),
-            );
+            return const Center(child: Text('Sin datos de crédito'));
           }
 
           return RefreshIndicator(
@@ -109,16 +105,17 @@ class _CreditoClienteScreenState extends State<CreditoClienteScreen> {
                       children: [
                         Text(
                           'Resumen de Crédito',
-                          style: Theme.of(context)
-                              .textTheme
-                              .titleLarge
-                              ?.copyWith(color: Colors.white),
+                          style: Theme.of(
+                            context,
+                          ).textTheme.titleLarge?.copyWith(color: Colors.white),
                         ),
                         const SizedBox(height: 4),
                         Text(
                           widget.clienteNombre,
-                          style: const TextStyle(
-                            fontSize: 14,
+                          style: TextStyle(
+                            fontSize: AppTextStyles.bodyMedium(
+                              context,
+                            ).fontSize!,
                             color: Colors.white70,
                           ),
                         ),
@@ -187,18 +184,18 @@ class _CreditoClienteScreenState extends State<CreditoClienteScreen> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text(
+                Text(
                   'Límite de Crédito',
                   style: TextStyle(
-                    fontSize: 14,
+                    fontSize: AppTextStyles.bodyMedium(context).fontSize!,
                     color: Colors.grey,
                     fontWeight: FontWeight.w500,
                   ),
                 ),
                 Text(
                   'Bs. ${credito.limiteCredito.toStringAsFixed(2)}',
-                  style: const TextStyle(
-                    fontSize: 18,
+                  style: TextStyle(
+                    fontSize: AppTextStyles.headlineSmall(context).fontSize!,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
@@ -251,7 +248,7 @@ class _CreditoClienteScreenState extends State<CreditoClienteScreen> {
         Text(
           value,
           style: TextStyle(
-            fontSize: 16,
+            fontSize: AppTextStyles.bodyLarge(context).fontSize!,
             fontWeight: FontWeight.bold,
             color: color,
           ),
@@ -260,7 +257,7 @@ class _CreditoClienteScreenState extends State<CreditoClienteScreen> {
         Text(
           label,
           style: TextStyle(
-            fontSize: 12,
+            fontSize: AppTextStyles.bodySmall(context).fontSize!,
             color: Colors.grey.shade600,
             fontWeight: FontWeight.w500,
           ),
@@ -281,18 +278,15 @@ class _CreditoClienteScreenState extends State<CreditoClienteScreen> {
               style: Theme.of(context).textTheme.titleLarge,
             ),
             Container(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 8,
-                vertical: 4,
-              ),
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
               decoration: BoxDecoration(
                 color: Colors.red.withOpacity(0.1),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Text(
                 '${credito.cuentasVencidas.length}',
-                style: const TextStyle(
-                  fontSize: 12,
+                style: TextStyle(
+                  fontSize: AppTextStyles.bodySmall(context).fontSize!,
                   color: Colors.red,
                   fontWeight: FontWeight.w600,
                 ),
@@ -326,18 +320,15 @@ class _CreditoClienteScreenState extends State<CreditoClienteScreen> {
               style: Theme.of(context).textTheme.titleLarge,
             ),
             Container(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 8,
-                vertical: 4,
-              ),
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
               decoration: BoxDecoration(
                 color: Colors.blue.withOpacity(0.1),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Text(
                 '${credito.cuentasPendientes.length}',
-                style: const TextStyle(
-                  fontSize: 12,
+                style: TextStyle(
+                  fontSize: AppTextStyles.bodySmall(context).fontSize!,
                   color: Colors.blue,
                   fontWeight: FontWeight.w600,
                 ),
@@ -360,10 +351,12 @@ class _CreditoClienteScreenState extends State<CreditoClienteScreen> {
   }
 
   Widget _buildCuentaCard(CuentaPorCobrar cuenta, {required bool isVencida}) {
-    final backgroundColor =
-        isVencida ? Colors.red.withOpacity(0.05) : Colors.blue.withOpacity(0.05);
-    final borderColor =
-        isVencida ? Colors.red.withOpacity(0.2) : Colors.blue.withOpacity(0.2);
+    final backgroundColor = isVencida
+        ? Colors.red.withOpacity(0.05)
+        : Colors.blue.withOpacity(0.05);
+    final borderColor = isVencida
+        ? Colors.red.withOpacity(0.2)
+        : Colors.blue.withOpacity(0.2);
     final statusColor = isVencida ? Colors.red : Colors.blue;
 
     return Container(
@@ -386,9 +379,9 @@ class _CreditoClienteScreenState extends State<CreditoClienteScreen> {
                   children: [
                     if (cuenta.venta?.numero != null)
                       Text(
-                        'Venta #${cuenta.venta!.numero}',
-                        style: const TextStyle(
-                          fontSize: 14,
+                        '#${cuenta.venta!.numero}',
+                        style: TextStyle(
+                          fontSize: AppTextStyles.bodyMedium(context).fontSize!,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
@@ -396,7 +389,7 @@ class _CreditoClienteScreenState extends State<CreditoClienteScreen> {
                       Text(
                         'Vence: ${cuenta.fechaVencimiento}',
                         style: TextStyle(
-                          fontSize: 12,
+                          fontSize: AppTextStyles.bodySmall(context).fontSize!,
                           color: Colors.grey.shade600,
                         ),
                       ),
@@ -409,7 +402,7 @@ class _CreditoClienteScreenState extends State<CreditoClienteScreen> {
                   Text(
                     'Bs. ${cuenta.saldoPendiente.toStringAsFixed(2)}',
                     style: TextStyle(
-                      fontSize: 14,
+                      fontSize: AppTextStyles.bodyMedium(context).fontSize!,
                       fontWeight: FontWeight.bold,
                       color: statusColor,
                     ),
@@ -418,7 +411,7 @@ class _CreditoClienteScreenState extends State<CreditoClienteScreen> {
                     Text(
                       '${cuenta.diasVencido} días vencido',
                       style: TextStyle(
-                        fontSize: 11,
+                        fontSize: AppTextStyles.labelSmall(context).fontSize!,
                         color: Colors.red,
                         fontWeight: FontWeight.w600,
                       ),
@@ -435,14 +428,14 @@ class _CreditoClienteScreenState extends State<CreditoClienteScreen> {
                 Text(
                   'Monto Original: Bs. ${cuenta.montoOriginal.toStringAsFixed(2)}',
                   style: TextStyle(
-                    fontSize: 11,
+                    fontSize: AppTextStyles.labelSmall(context).fontSize!,
                     color: Colors.grey.shade600,
                   ),
                 ),
                 Text(
                   'Pagado: Bs. ${(cuenta.montoOriginal - cuenta.saldoPendiente).toStringAsFixed(2)}',
                   style: TextStyle(
-                    fontSize: 11,
+                    fontSize: AppTextStyles.labelSmall(context).fontSize!,
                     color: Colors.green.shade700,
                   ),
                 ),
@@ -466,18 +459,15 @@ class _CreditoClienteScreenState extends State<CreditoClienteScreen> {
               style: Theme.of(context).textTheme.titleLarge,
             ),
             Container(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 8,
-                vertical: 4,
-              ),
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
               decoration: BoxDecoration(
                 color: Colors.green.withOpacity(0.1),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Text(
                 '${credito.historialPagos.length}',
-                style: const TextStyle(
-                  fontSize: 12,
+                style: TextStyle(
+                  fontSize: AppTextStyles.bodySmall(context).fontSize!,
                   color: Colors.green,
                   fontWeight: FontWeight.w600,
                 ),
@@ -518,8 +508,8 @@ class _CreditoClienteScreenState extends State<CreditoClienteScreen> {
                 if (pago.tipoPago?.nombre != null)
                   Text(
                     pago.tipoPago!.nombre,
-                    style: const TextStyle(
-                      fontSize: 14,
+                    style: TextStyle(
+                      fontSize: AppTextStyles.bodyMedium(context).fontSize!,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
@@ -527,7 +517,7 @@ class _CreditoClienteScreenState extends State<CreditoClienteScreen> {
                   Text(
                     'Fecha: ${pago.fechaPago}',
                     style: TextStyle(
-                      fontSize: 12,
+                      fontSize: AppTextStyles.bodySmall(context).fontSize!,
                       color: Colors.grey.shade600,
                     ),
                   ),
@@ -535,7 +525,7 @@ class _CreditoClienteScreenState extends State<CreditoClienteScreen> {
                   Text(
                     'Recibo: ${pago.numeroRecibo}',
                     style: TextStyle(
-                      fontSize: 11,
+                      fontSize: AppTextStyles.labelSmall(context).fontSize!,
                       color: Colors.grey.shade600,
                     ),
                   ),
@@ -544,8 +534,8 @@ class _CreditoClienteScreenState extends State<CreditoClienteScreen> {
           ),
           Text(
             'Bs. ${pago.monto.toStringAsFixed(2)}',
-            style: const TextStyle(
-              fontSize: 14,
+            style: TextStyle(
+              fontSize: AppTextStyles.bodyMedium(context).fontSize!,
               fontWeight: FontWeight.bold,
               color: Colors.green,
             ),

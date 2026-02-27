@@ -56,17 +56,20 @@ class _ResumenPedidoScreenState extends State<ResumenPedidoScreen> {
       final carritoProvider = context.read<CarritoProvider>();
       final cliente = carritoProvider.clienteSeleccionado;
 
-      if (cliente == null || cliente.direcciones == null || cliente.direcciones!.isEmpty) {
+      if (cliente == null ||
+          cliente.direcciones == null ||
+          cliente.direcciones!.isEmpty) {
         debugPrint('⚠️ [ResumenPedidoScreen] No hay direcciones disponibles');
         return;
       }
 
       // Buscar dirección principal
-      final direccionPrincipal = cliente.direcciones!
-          .firstWhere(
-            (dir) => dir.esPrincipal == true,
-            orElse: () => cliente.direcciones!.first, // Fallback a la primera si no hay principal
-          );
+      final direccionPrincipal = cliente.direcciones!.firstWhere(
+        (dir) => dir.esPrincipal == true,
+        orElse: () => cliente
+            .direcciones!
+            .first, // Fallback a la primera si no hay principal
+      );
 
       setState(() {
         _direccionSeleccionada = direccionPrincipal;
@@ -76,7 +79,9 @@ class _ResumenPedidoScreenState extends State<ResumenPedidoScreen> {
         '✅ [ResumenPedidoScreen] Dirección principal seleccionada: ${direccionPrincipal.direccion}',
       );
     } catch (e) {
-      debugPrint('❌ [ResumenPedidoScreen] Error al cargar dirección principal: $e');
+      debugPrint(
+        '❌ [ResumenPedidoScreen] Error al cargar dirección principal: $e',
+      );
     }
   }
 
@@ -438,8 +443,9 @@ class _ResumenPedidoScreenState extends State<ResumenPedidoScreen> {
 
     final carritoProvider = context.read<CarritoProvider>();
     final editandoProforma = carritoProvider.editandoProforma;
-    final tituloResumen =
-        editandoProforma ? 'Actualizar Proforma' : 'Resumen del Pedido';
+    final tituloResumen = editandoProforma
+        ? 'Actualizar Proforma'
+        : 'Resumen del Pedido';
 
     return Scaffold(
       appBar: CustomGradientAppBar(
@@ -477,7 +483,9 @@ class _ResumenPedidoScreenState extends State<ResumenPedidoScreen> {
                                   Text(
                                     'Actualizando Proforma',
                                     style: TextStyle(
-                                      fontSize: 16,
+                                      fontSize: AppTextStyles.bodyLarge(
+                                        context,
+                                      ).fontSize!,
                                       fontWeight: FontWeight.w600,
                                       color: colorScheme.onSurface,
                                     ),
@@ -486,7 +494,9 @@ class _ResumenPedidoScreenState extends State<ResumenPedidoScreen> {
                                   Text(
                                     '#${carritoProvider.proformaEditando?.numero ?? 'N/A'} (ID: ${carritoProvider.proformaEditandoId ?? 'N/A'})',
                                     style: TextStyle(
-                                      fontSize: 13,
+                                      fontSize: AppTextStyles.bodySmall(
+                                        context,
+                                      ).fontSize!,
                                       color: colorScheme.primary,
                                       fontWeight: FontWeight.w500,
                                     ),
@@ -500,7 +510,9 @@ class _ResumenPedidoScreenState extends State<ResumenPedidoScreen> {
                         Text(
                           'Revisa tu pedido',
                           style: TextStyle(
-                            fontSize: 16,
+                            fontSize: AppTextStyles.bodyLarge(
+                              context,
+                            ).fontSize!,
                             fontWeight: FontWeight.w500,
                             color: colorScheme.onSurface,
                           ),
@@ -512,7 +524,7 @@ class _ResumenPedidoScreenState extends State<ResumenPedidoScreen> {
                             ? 'Verifica los cambios antes de actualizar'
                             : 'Verifica que todo esté correcto antes de confirmar',
                         style: TextStyle(
-                          fontSize: 14,
+                          fontSize: AppTextStyles.bodyMedium(context).fontSize!,
                           color: colorScheme.onSurfaceVariant,
                         ),
                       ),
@@ -547,7 +559,9 @@ class _ResumenPedidoScreenState extends State<ResumenPedidoScreen> {
                       Text(
                         'Productos',
                         style: TextStyle(
-                          fontSize: 18,
+                          fontSize: AppTextStyles.headlineSmall(
+                            context,
+                          ).fontSize!,
                           fontWeight: FontWeight.bold,
                           color: colorScheme.onSurface,
                         ),
@@ -607,7 +621,9 @@ class _ResumenPedidoScreenState extends State<ResumenPedidoScreen> {
                                             'Precio: Bs. ${(item.subtotal / item.cantidad).toStringAsFixed(2)}',
                                             style: TextStyle(
                                               color: colorScheme.primary,
-                                              fontSize: 13,
+                                              fontSize: AppTextStyles.bodySmall(
+                                                context,
+                                              ).fontSize!,
                                               fontWeight: FontWeight.w500,
                                             ),
                                           ),
@@ -615,9 +631,11 @@ class _ResumenPedidoScreenState extends State<ResumenPedidoScreen> {
                                           Text(
                                             '×${item.cantidad}',
                                             style: TextStyle(
-                                              color: colorScheme
-                                                  .onSurfaceVariant,
-                                              fontSize: 13,
+                                              color:
+                                                  colorScheme.onSurfaceVariant,
+                                              fontSize: AppTextStyles.bodySmall(
+                                                context,
+                                              ).fontSize!,
                                             ),
                                           ),
                                         ],
@@ -633,7 +651,9 @@ class _ResumenPedidoScreenState extends State<ResumenPedidoScreen> {
                                       'Bs. ${item.subtotal.toStringAsFixed(2)}',
                                       style: TextStyle(
                                         fontWeight: FontWeight.bold,
-                                        fontSize: 16,
+                                        fontSize: AppTextStyles.bodyLarge(
+                                          context,
+                                        ).fontSize!,
                                         color: colorScheme.onSurface,
                                       ),
                                     ),
@@ -641,9 +661,10 @@ class _ResumenPedidoScreenState extends State<ResumenPedidoScreen> {
                                     Text(
                                       'subtotal',
                                       style: TextStyle(
-                                        fontSize: 11,
-                                        color:
-                                            colorScheme.onSurfaceVariant,
+                                        fontSize: AppTextStyles.labelSmall(
+                                          context,
+                                        ).fontSize!,
+                                        color: colorScheme.onSurfaceVariant,
                                       ),
                                     ),
                                   ],
@@ -668,7 +689,9 @@ class _ResumenPedidoScreenState extends State<ResumenPedidoScreen> {
                               Text(
                                 'Política de Pago',
                                 style: TextStyle(
-                                  fontSize: 18,
+                                  fontSize: AppTextStyles.headlineSmall(
+                                    context,
+                                  ).fontSize!,
                                   fontWeight: FontWeight.bold,
                                   color: colorScheme.onSurface,
                                 ),
@@ -740,7 +763,9 @@ class _ResumenPedidoScreenState extends State<ResumenPedidoScreen> {
                       Text(
                         'Resumen',
                         style: TextStyle(
-                          fontSize: 18,
+                          fontSize: AppTextStyles.headlineSmall(
+                            context,
+                          ).fontSize!,
                           fontWeight: FontWeight.bold,
                           color: colorScheme.onSurface,
                         ),
@@ -757,7 +782,9 @@ class _ResumenPedidoScreenState extends State<ResumenPedidoScreen> {
                               Text(
                                 'Total',
                                 style: TextStyle(
-                                  fontSize: 20,
+                                  fontSize: AppTextStyles.headlineMedium(
+                                    context,
+                                  ).fontSize!,
                                   fontWeight: FontWeight.bold,
                                   color: colorScheme.onSurface,
                                 ),
@@ -765,7 +792,9 @@ class _ResumenPedidoScreenState extends State<ResumenPedidoScreen> {
                               Text(
                                 'Bs. ${carrito.total.toStringAsFixed(2)}',
                                 style: TextStyle(
-                                  fontSize: 20,
+                                  fontSize: AppTextStyles.headlineMedium(
+                                    context,
+                                  ).fontSize!,
                                   fontWeight: FontWeight.bold,
                                   color: Color(0xFF4CAF50),
                                 ),
@@ -775,7 +804,8 @@ class _ResumenPedidoScreenState extends State<ResumenPedidoScreen> {
                         ),
                       ),
 
-                      if (carritoProvider.clienteSeleccionado
+                      if (carritoProvider
+                              .clienteSeleccionado
                               ?.puedeAtenerCredito ??
                           false)
                         _buildCreditSummaryCard(
@@ -830,8 +860,8 @@ class _ResumenPedidoScreenState extends State<ResumenPedidoScreen> {
                       editandoProforma
                           ? 'Actualizar Proforma'
                           : 'Confirmar Pedido',
-                      style: const TextStyle(
-                        fontSize: 16,
+                      style: TextStyle(
+                        fontSize: AppTextStyles.bodyLarge(context).fontSize!,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
@@ -870,11 +900,7 @@ class _ResumenPedidoScreenState extends State<ResumenPedidoScreen> {
         children: [
           Row(
             children: [
-              Icon(
-                Icons.person_outline,
-                color: colorScheme.primary,
-                size: 20,
-              ),
+              Icon(Icons.person_outline, color: colorScheme.primary, size: 20),
               const SizedBox(width: 12),
               Expanded(
                 child: Text(
@@ -980,7 +1006,7 @@ class _ResumenPedidoScreenState extends State<ResumenPedidoScreen> {
         Text(
           'Tipo de Entrega',
           style: TextStyle(
-            fontSize: 18,
+            fontSize: AppTextStyles.headlineSmall(context).fontSize!,
             fontWeight: FontWeight.bold,
             color: colorScheme.onSurface,
           ),
@@ -1040,7 +1066,7 @@ class _ResumenPedidoScreenState extends State<ResumenPedidoScreen> {
         child: Text(
           label,
           style: TextStyle(
-            fontSize: 14,
+            fontSize: AppTextStyles.bodyMedium(context).fontSize!,
             fontWeight: FontWeight.w600,
             color: isSelected ? color : colorScheme.onSurfaceVariant,
           ),
@@ -1060,7 +1086,7 @@ class _ResumenPedidoScreenState extends State<ResumenPedidoScreen> {
         Text(
           'Dirección de Entrega',
           style: TextStyle(
-            fontSize: 18,
+            fontSize: AppTextStyles.headlineSmall(context).fontSize!,
             fontWeight: FontWeight.bold,
             color: colorScheme.onSurface,
           ),
@@ -1163,16 +1189,19 @@ class _ResumenPedidoScreenState extends State<ResumenPedidoScreen> {
 
                         if (cliente != null) {
                           // Navegar a crear nueva dirección
-                          Navigator.of(context).push(
-                            MaterialPageRoute(
-                              builder: (context) => DireccionFormScreenForClient(
-                                clientId: cliente.id,
-                              ),
-                            ),
-                          ).then((_) {
-                            // Recargar direcciones después de crear una nueva
-                            _cargarDireccionPrincipal();
-                          });
+                          Navigator.of(context)
+                              .push(
+                                MaterialPageRoute(
+                                  builder: (context) =>
+                                      DireccionFormScreenForClient(
+                                        clientId: cliente.id,
+                                      ),
+                                ),
+                              )
+                              .then((_) {
+                                // Recargar direcciones después de crear una nueva
+                                _cargarDireccionPrincipal();
+                              });
                         } else {
                           debugPrint('⚠️ No hay cliente seleccionado');
                         }
@@ -1199,7 +1228,7 @@ class _ResumenPedidoScreenState extends State<ResumenPedidoScreen> {
         Text(
           'Fecha y Hora de Entrega',
           style: TextStyle(
-            fontSize: 18,
+            fontSize: AppTextStyles.headlineSmall(context).fontSize!,
             fontWeight: FontWeight.bold,
             color: colorScheme.onSurface,
           ),
@@ -1311,7 +1340,7 @@ class _ResumenPedidoScreenState extends State<ResumenPedidoScreen> {
                       child: Text(
                         titulo,
                         style: TextStyle(
-                          fontSize: 15,
+                          fontSize: AppTextStyles.bodyMedium(context).fontSize!,
                           fontWeight: FontWeight.w600,
                           color: isSelected
                               ? displayColor
@@ -1327,7 +1356,7 @@ class _ResumenPedidoScreenState extends State<ResumenPedidoScreen> {
                   child: Text(
                     descripcion,
                     style: TextStyle(
-                      fontSize: 12,
+                      fontSize: AppTextStyles.bodySmall(context).fontSize!,
                       color: colorScheme.onSurfaceVariant,
                     ),
                   ),
@@ -1349,7 +1378,9 @@ class _ResumenPedidoScreenState extends State<ResumenPedidoScreen> {
     final limiteCredito = cliente.limiteCredito ?? 0.0;
     final creditoUtilizado = cliente.creditoUtilizado ?? 0.0;
     final creditoDisponible = limiteCredito - creditoUtilizado;
-    final porcentajeUsado = limiteCredito > 0 ? (creditoUtilizado / limiteCredito) * 100 : 0.0;
+    final porcentajeUsado = limiteCredito > 0
+        ? (creditoUtilizado / limiteCredito) * 100
+        : 0.0;
 
     return Padding(
       padding: const EdgeInsets.only(top: 12),
@@ -1357,10 +1388,7 @@ class _ResumenPedidoScreenState extends State<ResumenPedidoScreen> {
         color: Colors.blue.shade50,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(12),
-          side: BorderSide(
-            color: Colors.blue.shade200,
-            width: 1,
-          ),
+          side: BorderSide(color: Colors.blue.shade200, width: 1),
         ),
         child: Padding(
           padding: const EdgeInsets.all(16),
@@ -1378,7 +1406,7 @@ class _ResumenPedidoScreenState extends State<ResumenPedidoScreen> {
                   Text(
                     'Resumen de Crédito',
                     style: TextStyle(
-                      fontSize: 14,
+                      fontSize: AppTextStyles.bodyMedium(context).fontSize!,
                       fontWeight: FontWeight.bold,
                       color: Colors.blue.shade600,
                     ),
@@ -1394,14 +1422,14 @@ class _ResumenPedidoScreenState extends State<ResumenPedidoScreen> {
                   Text(
                     'Límite de Crédito',
                     style: TextStyle(
-                      fontSize: 12,
+                      fontSize: AppTextStyles.bodySmall(context).fontSize!,
                       color: Colors.blue.shade700,
                     ),
                   ),
                   Text(
                     'Bs. ${limiteCredito.toStringAsFixed(2)}',
                     style: TextStyle(
-                      fontSize: 12,
+                      fontSize: AppTextStyles.bodySmall(context).fontSize!,
                       fontWeight: FontWeight.bold,
                       color: Colors.blue.shade700,
                     ),
@@ -1417,14 +1445,14 @@ class _ResumenPedidoScreenState extends State<ResumenPedidoScreen> {
                   Text(
                     'Utilizado',
                     style: TextStyle(
-                      fontSize: 12,
+                      fontSize: AppTextStyles.bodySmall(context).fontSize!,
                       color: Colors.orange.shade700,
                     ),
                   ),
                   Text(
                     'Bs. ${creditoUtilizado.toStringAsFixed(2)}',
                     style: TextStyle(
-                      fontSize: 12,
+                      fontSize: AppTextStyles.bodySmall(context).fontSize!,
                       fontWeight: FontWeight.bold,
                       color: Colors.orange.shade700,
                     ),
@@ -1458,7 +1486,7 @@ class _ResumenPedidoScreenState extends State<ResumenPedidoScreen> {
                   Text(
                     'Disponible',
                     style: TextStyle(
-                      fontSize: 12,
+                      fontSize: AppTextStyles.bodySmall(context).fontSize!,
                       fontWeight: FontWeight.bold,
                       color: creditoDisponible > 0
                           ? Colors.green.shade700
@@ -1468,7 +1496,7 @@ class _ResumenPedidoScreenState extends State<ResumenPedidoScreen> {
                   Text(
                     'Bs. ${creditoDisponible.toStringAsFixed(2)}',
                     style: TextStyle(
-                      fontSize: 12,
+                      fontSize: AppTextStyles.bodySmall(context).fontSize!,
                       fontWeight: FontWeight.bold,
                       color: creditoDisponible > 0
                           ? Colors.green.shade700

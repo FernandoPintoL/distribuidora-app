@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../../../../config/app_text_styles.dart';
 import '../../../../providers/entrega_estados_provider.dart';
 import 'date_picker_field.dart';
 
@@ -67,7 +68,7 @@ class FiltrosModernos extends StatelessWidget {
                       Text(
                         'Filtros',
                         style: TextStyle(
-                          fontSize: 14,
+                          fontSize: AppTextStyles.bodyMedium(context).fontSize!,
                           fontWeight: FontWeight.w600,
                           color: isDarkMode ? Colors.white : Colors.black87,
                         ),
@@ -83,10 +84,12 @@ class FiltrosModernos extends StatelessWidget {
                             color: Colors.blue,
                             borderRadius: BorderRadius.circular(12),
                           ),
-                          child: const Text(
+                          child: Text(
                             'Activo',
                             style: TextStyle(
-                              fontSize: 10,
+                              fontSize: AppTextStyles.labelSmall(
+                                context,
+                              ).fontSize!,
                               fontWeight: FontWeight.bold,
                               color: Colors.white,
                             ),
@@ -100,9 +103,7 @@ class FiltrosModernos extends StatelessWidget {
                       onFiltrosExpandidosChanged(!filtrosExpandidos);
                     },
                     child: Icon(
-                      filtrosExpandidos
-                          ? Icons.expand_less
-                          : Icons.expand_more,
+                      filtrosExpandidos ? Icons.expand_less : Icons.expand_more,
                       color: isDarkMode ? Colors.grey[400] : Colors.grey[600],
                     ),
                   ),
@@ -196,7 +197,9 @@ class FiltrosModernos extends StatelessWidget {
                             Text(
                               'Estados',
                               style: TextStyle(
-                                fontSize: 12,
+                                fontSize: AppTextStyles.bodySmall(
+                                  context,
+                                ).fontSize!,
                                 fontWeight: FontWeight.w600,
                                 color: isDarkMode
                                     ? Colors.grey[300]
@@ -216,7 +219,9 @@ class FiltrosModernos extends StatelessWidget {
                                 itemBuilder: (context, index) {
                                   // Primera opción es "Todas"
                                   if (index == 0) {
-                                    final isSelected = filtroEstado == null || filtroEstado.isEmpty;
+                                    final isSelected =
+                                        filtroEstado == null ||
+                                        filtroEstado.isEmpty;
                                     return Padding(
                                       padding: const EdgeInsets.only(
                                         left: 0,
@@ -232,7 +237,9 @@ class FiltrosModernos extends StatelessWidget {
                                                       ? Colors.grey[300]
                                                       : Colors.grey[700]),
                                             fontWeight: FontWeight.w500,
-                                            fontSize: 12,
+                                            fontSize: AppTextStyles.bodySmall(
+                                              context,
+                                            ).fontSize!,
                                           ),
                                         ),
                                         selected: isSelected,
@@ -275,7 +282,9 @@ class FiltrosModernos extends StatelessWidget {
                                                     ? Colors.grey[300]
                                                     : Colors.grey[700]),
                                           fontWeight: FontWeight.w500,
-                                          fontSize: 12,
+                                          fontSize: AppTextStyles.bodySmall(
+                                            context,
+                                          ).fontSize!,
                                         ),
                                       ),
                                       selected: isSelected,
@@ -310,7 +319,7 @@ class FiltrosModernos extends StatelessWidget {
                     Text(
                       'Rango de fechas',
                       style: TextStyle(
-                        fontSize: 12,
+                        fontSize: AppTextStyles.bodySmall(context).fontSize!,
                         fontWeight: FontWeight.w600,
                         color: isDarkMode ? Colors.grey[300] : Colors.grey[700],
                       ),

@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
+import '../../../../config/app_text_styles.dart';
 import '../../../../models/entrega.dart';
 import '../../../../models/venta.dart';
 import '../../../../providers/entrega_provider.dart';
-import '../confirmar_entrega_venta_screen.dart';  // ✅ NUEVO: Importar la nueva pantalla
+import '../confirmar_entrega_venta_screen.dart'; // ✅ NUEVO: Importar la nueva pantalla
 
 class ConfirmarVentaEntregadaDialog {
   static Future<void> show(
@@ -42,7 +43,8 @@ class _ConfirmarVentaEntregadaContent extends StatefulWidget {
 class _ConfirmarVentaEntregadaContentState
     extends State<_ConfirmarVentaEntregadaContent> {
   String _estadoEntrega = 'COMPLETA'; // ✅ NUEVO: Estado de entrega
-  final TextEditingController _observacionesController = TextEditingController(); // ✅ NUEVO
+  final TextEditingController _observacionesController =
+      TextEditingController(); // ✅ NUEVO
 
   final List<Map<String, String>> _estadosEntrega = [
     {
@@ -74,8 +76,10 @@ class _ConfirmarVentaEntregadaContentState
   @override
   Widget build(BuildContext context) {
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
-    final selectedEstado = _estadosEntrega
-        .firstWhere((e) => e['value'] == _estadoEntrega, orElse: () => _estadosEntrega[0]);
+    final selectedEstado = _estadosEntrega.firstWhere(
+      (e) => e['value'] == _estadoEntrega,
+      orElse: () => _estadosEntrega[0],
+    );
 
     return AlertDialog(
       title: const Text('Confirmar Entrega de Venta'),
@@ -85,10 +89,13 @@ class _ConfirmarVentaEntregadaContentState
           children: [
             const Icon(Icons.check_circle, size: 48, color: Colors.green),
             const SizedBox(height: 16),
-            const Text(
+            Text(
               '¿Confirmas que la venta fue entregada?',
               textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+              style: TextStyle(
+                fontSize: AppTextStyles.bodyMedium(context).fontSize!,
+                fontWeight: FontWeight.w500,
+              ),
             ),
             const SizedBox(height: 16),
 
@@ -111,7 +118,7 @@ class _ConfirmarVentaEntregadaContentState
                     Text(
                       'Venta',
                       style: TextStyle(
-                        fontSize: 11,
+                        fontSize: AppTextStyles.labelSmall(context).fontSize!,
                         color: isDarkMode ? Colors.grey[400] : Colors.grey[600],
                         fontWeight: FontWeight.w500,
                       ),
@@ -120,7 +127,7 @@ class _ConfirmarVentaEntregadaContentState
                     Text(
                       '${widget.venta.numero} - ${widget.venta.clienteNombre}',
                       style: TextStyle(
-                        fontSize: 13,
+                        fontSize: AppTextStyles.bodySmall(context).fontSize!,
                         fontWeight: FontWeight.bold,
                         color: isDarkMode ? Colors.grey[100] : Colors.grey[900],
                       ),
@@ -153,11 +160,12 @@ class _ConfirmarVentaEntregadaContentState
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
                         color: isSelected
-                            ? _getColorForStatus(estado['color']!)
-                                .withOpacity(0.15)
+                            ? _getColorForStatus(
+                                estado['color']!,
+                              ).withOpacity(0.15)
                             : isDarkMode
-                                ? Colors.grey[800]
-                                : Colors.grey[100],
+                            ? Colors.grey[800]
+                            : Colors.grey[100],
                         borderRadius: BorderRadius.circular(8),
                         border: Border.all(
                           color: isSelected
@@ -252,7 +260,7 @@ class _ConfirmarVentaEntregadaContentState
                     child: Text(
                       'Los detalles del incidente se registrarán en el sistema',
                       style: TextStyle(
-                        fontSize: 11,
+                        fontSize: AppTextStyles.labelSmall(context).fontSize!,
                         color: isDarkMode ? Colors.blue[300] : Colors.blue[700],
                       ),
                     ),
@@ -276,7 +284,8 @@ class _ConfirmarVentaEntregadaContentState
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(
                   content: Text(
-                      'Por favor, detallar el incidente o situación de la entrega'),
+                    'Por favor, detallar el incidente o situación de la entrega',
+                  ),
                   backgroundColor: Colors.orange,
                   duration: Duration(seconds: 2),
                 ),
@@ -293,9 +302,7 @@ class _ConfirmarVentaEntregadaContentState
               'observacionesLogistica': observacionesLogistica,
             });
           },
-          style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.green,
-          ),
+          style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
           child: const Text('Confirmar Entrega'),
         ),
       ],

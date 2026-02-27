@@ -6,6 +6,10 @@ import '../../providers/providers.dart';
 import '../../config/config.dart';
 import '../chofer/marcar_visita_screen.dart';
 import '../carrito/carrito_screen.dart';
+import 'widgets/semana_view.dart';
+import 'widgets/view_mode_selector.dart';
+import 'widgets/horario_view.dart';
+import 'widgets/localidad_filter.dart';
 
 class OrdenDelDiaScreen extends StatefulWidget {
   const OrdenDelDiaScreen({super.key});
@@ -75,15 +79,11 @@ class _OrdenDelDiaScreenState extends State<OrdenDelDiaScreen> {
       activo: true,
     );
 
-    debugPrint(
-      '🛒 Navegando a CarritoScreen para cliente: ${client.nombre}',
-    );
+    debugPrint('🛒 Navegando a CarritoScreen para cliente: ${client.nombre}');
 
     Navigator.of(context).push(
       MaterialPageRoute(
-        builder: (context) => CarritoScreen(
-          clientePreseleccionado: client,
-        ),
+        builder: (context) => CarritoScreen(clientePreseleccionado: client),
       ),
     );
   }
@@ -116,6 +116,36 @@ class _OrdenDelDiaScreenState extends State<OrdenDelDiaScreen> {
                           Text(
                             cliente.codigoCliente!,
                             style: Theme.of(context).textTheme.bodySmall,
+                          ),
+                        ],
+                        if (cliente.localidad != null) ...[
+                          const SizedBox(height: 4),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 2,
+                            ),
+                            decoration: BoxDecoration(
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .primaryContainer
+                                  .withOpacity(0.5),
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: Text(
+                              cliente.localidad!.nombre,
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .labelSmall
+                                  ?.copyWith(
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .onPrimaryContainer,
+                                    fontSize: 11,
+                                  ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
                           ),
                         ],
                       ],
@@ -151,7 +181,8 @@ class _OrdenDelDiaScreenState extends State<OrdenDelDiaScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       // Imagen del cliente
-                      if (cliente.fotoPerfil != null && cliente.fotoPerfil!.isNotEmpty)
+                      if (cliente.fotoPerfil != null &&
+                          cliente.fotoPerfil!.isNotEmpty)
                         ClipRRect(
                           borderRadius: BorderRadius.circular(12),
                           child: Image.network(
@@ -175,12 +206,15 @@ class _OrdenDelDiaScreenState extends State<OrdenDelDiaScreen> {
                               return Container(
                                 height: 150,
                                 color: Colors.grey[300],
-                                child: const Center(child: CircularProgressIndicator()),
+                                child: const Center(
+                                  child: CircularProgressIndicator(),
+                                ),
                               );
                             },
                           ),
                         ),
-                      if (cliente.fotoPerfil != null && cliente.fotoPerfil!.isNotEmpty)
+                      if (cliente.fotoPerfil != null &&
+                          cliente.fotoPerfil!.isNotEmpty)
                         const SizedBox(height: 20),
                       Divider(
                         color: Theme.of(context).brightness == Brightness.dark
@@ -201,11 +235,15 @@ class _OrdenDelDiaScreenState extends State<OrdenDelDiaScreen> {
                                 children: [
                                   Text(
                                     'Teléfono',
-                                    style: Theme.of(context).textTheme.labelSmall,
+                                    style: Theme.of(
+                                      context,
+                                    ).textTheme.labelSmall,
                                   ),
                                   Text(
                                     cliente.telefono!,
-                                    style: Theme.of(context).textTheme.bodyMedium,
+                                    style: Theme.of(
+                                      context,
+                                    ).textTheme.bodyMedium,
                                   ),
                                 ],
                               ),
@@ -226,11 +264,15 @@ class _OrdenDelDiaScreenState extends State<OrdenDelDiaScreen> {
                                 children: [
                                   Text(
                                     'Email',
-                                    style: Theme.of(context).textTheme.labelSmall,
+                                    style: Theme.of(
+                                      context,
+                                    ).textTheme.labelSmall,
                                   ),
                                   Text(
                                     cliente.email!,
-                                    style: Theme.of(context).textTheme.bodyMedium,
+                                    style: Theme.of(
+                                      context,
+                                    ).textTheme.bodyMedium,
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
                                   ),
@@ -247,7 +289,11 @@ class _OrdenDelDiaScreenState extends State<OrdenDelDiaScreen> {
                         Row(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Icon(Icons.location_on, size: 18, color: Colors.blue),
+                            Icon(
+                              Icons.location_on,
+                              size: 18,
+                              color: Colors.blue,
+                            ),
                             const SizedBox(width: 12),
                             Expanded(
                               child: Column(
@@ -255,16 +301,22 @@ class _OrdenDelDiaScreenState extends State<OrdenDelDiaScreen> {
                                 children: [
                                   Text(
                                     'Dirección',
-                                    style: Theme.of(context).textTheme.labelSmall,
+                                    style: Theme.of(
+                                      context,
+                                    ).textTheme.labelSmall,
                                   ),
                                   Text(
                                     cliente.direccion.direccion!,
-                                    style: Theme.of(context).textTheme.bodyMedium,
+                                    style: Theme.of(
+                                      context,
+                                    ).textTheme.bodyMedium,
                                   ),
                                   if (cliente.direccion.ciudad != null)
                                     Text(
                                       cliente.direccion.ciudad!,
-                                      style: Theme.of(context).textTheme.bodySmall,
+                                      style: Theme.of(
+                                        context,
+                                      ).textTheme.bodySmall,
                                     ),
                                 ],
                               ),
@@ -304,7 +356,11 @@ class _OrdenDelDiaScreenState extends State<OrdenDelDiaScreen> {
                         Row(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Icon(Icons.credit_card, size: 18, color: Colors.blue),
+                            Icon(
+                              Icons.credit_card,
+                              size: 18,
+                              color: Colors.blue,
+                            ),
                             const SizedBox(width: 12),
                             Expanded(
                               child: Column(
@@ -312,11 +368,15 @@ class _OrdenDelDiaScreenState extends State<OrdenDelDiaScreen> {
                                 children: [
                                   Text(
                                     'Límite de Crédito',
-                                    style: Theme.of(context).textTheme.labelSmall,
+                                    style: Theme.of(
+                                      context,
+                                    ).textTheme.labelSmall,
                                   ),
                                   Text(
                                     'Bs. ${cliente.limiteCredito?.toStringAsFixed(2) ?? 'N/A'}',
-                                    style: Theme.of(context).textTheme.bodyMedium,
+                                    style: Theme.of(
+                                      context,
+                                    ).textTheme.bodyMedium,
                                   ),
                                 ],
                               ),
@@ -541,6 +601,35 @@ class _OrdenDelDiaScreenState extends State<OrdenDelDiaScreen> {
                                         ),
                                       ),
                                     ],
+                                    if (cliente.localidad != null) ...[
+                                      const SizedBox(height: 4),
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 6,
+                                          vertical: 2,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          color: Theme.of(context)
+                                              .colorScheme
+                                              .primaryContainer
+                                              .withOpacity(0.5),
+                                          borderRadius:
+                                              BorderRadius.circular(3),
+                                        ),
+                                        child: Text(
+                                          cliente.localidad!.nombre,
+                                          style: TextStyle(
+                                            fontSize: 10,
+                                            color: Theme.of(context)
+                                                .colorScheme
+                                                .onPrimaryContainer,
+                                            fontWeight: FontWeight.w500,
+                                          ),
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ),
+                                    ],
                                   ],
                                 ),
                               ),
@@ -588,7 +677,11 @@ class _OrdenDelDiaScreenState extends State<OrdenDelDiaScreen> {
                     padding: const EdgeInsets.only(bottom: 8),
                     child: Row(
                       children: [
-                        Icon(Icons.phone, size: 16, color: Colors.grey.shade600),
+                        Icon(
+                          Icons.phone,
+                          size: 16,
+                          color: Colors.grey.shade600,
+                        ),
                         const SizedBox(width: 8),
                         Expanded(
                           child: Text(
@@ -717,6 +810,7 @@ class _OrdenDelDiaScreenState extends State<OrdenDelDiaScreen> {
         flexibleSpace: Container(
           decoration: BoxDecoration(gradient: AppGradients.teal),
         ),
+        actions: const [ViewModeSelector()],
       ),
       body: FutureBuilder<OrdenDelDia?>(
         future: _ordenDelDiaFuture,
@@ -810,145 +904,335 @@ class _OrdenDelDiaScreenState extends State<OrdenDelDiaScreen> {
               });
               await _ordenDelDiaFuture;
             },
-            child: SingleChildScrollView(
-              physics: const AlwaysScrollableScrollPhysics(),
-              child: Column(
-                children: [
-                  // ✅ Header con información del día y preventista
-                  Container(
-                    decoration: BoxDecoration(gradient: AppGradients.teal),
-                    padding: const EdgeInsets.fromLTRB(20, 20, 20, 24),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            child: Consumer<VisitaProvider>(
+              builder: (context, visitaProvider, _) {
+                // Cargar localidades desde la orden del día (fuera del build)
+                if (visitaProvider.localidades.isEmpty && ordenDelDia.clientes.isNotEmpty) {
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    visitaProvider.cargarLocalidadesDesdeOrden(ordenDelDia);
+                  });
+                }
+                // Si modo semana: cargar y mostrar semana
+                if (visitaProvider.viewMode == ViewMode.week) {
+                  return FutureBuilder<SemanaOrdenDelDia?>(
+                    future: visitaProvider.obtenerOrdenDelDiaSemana(),
+                    builder: (context, weekSnapshot) {
+                      if (weekSnapshot.connectionState ==
+                          ConnectionState.waiting) {
+                        return const Center(child: CircularProgressIndicator());
+                      }
+                      if (weekSnapshot.hasError || weekSnapshot.data == null) {
+                        return Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                Icons.error_outline,
+                                size: 64,
+                                color: Colors.red.shade300,
+                              ),
+                              const SizedBox(height: 16),
+                              Text(
+                                'Error al cargar semana',
+                                style: Theme.of(context).textTheme.titleLarge,
+                              ),
+                              const SizedBox(height: 8),
+                              ElevatedButton(
+                                onPressed: () => setState(() {}),
+                                child: const Text('Reintentar'),
+                              ),
+                            ],
+                          ),
+                        );
+                      }
+                      return SingleChildScrollView(
+                        physics: const AlwaysScrollableScrollPhysics(),
+                        child: SemanaView(
+                          semana: weekSnapshot.data!,
+                          onSelectFecha: (fecha) {
+                            visitaProvider.cambiarModoVista(ViewMode.day);
+                            visitaProvider.seleccionarFecha(fecha);
+                            visitaProvider.obtenerOrdenDelDia(fecha: fecha);
+                          },
+                        ),
+                      );
+                    },
+                  );
+                }
+
+                // Si modo horarios: mostrar timeline
+                if (visitaProvider.viewMode == ViewMode.horarios) {
+                  return FutureBuilder<OrdenDelDia?>(
+                    future: visitaProvider.obtenerOrdenDelDia(),
+                    builder: (context, daySnapshot) {
+                      if (daySnapshot.connectionState ==
+                          ConnectionState.waiting) {
+                        return const Center(child: CircularProgressIndicator());
+                      }
+                      if (daySnapshot.hasError || daySnapshot.data == null) {
+                        return Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                Icons.error_outline,
+                                size: 64,
+                                color: Colors.red.shade300,
+                              ),
+                              const SizedBox(height: 16),
+                              Text(
+                                'Error al cargar orden del día',
+                                style: Theme.of(context).textTheme.titleLarge,
+                              ),
+                              const SizedBox(height: 8),
+                              ElevatedButton(
+                                onPressed: () => setState(() {}),
+                                child: const Text('Reintentar'),
+                              ),
+                            ],
+                          ),
+                        );
+                      }
+                      return SingleChildScrollView(
+                        physics: const AlwaysScrollableScrollPhysics(),
+                        child: Column(
                           children: [
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
+                            // Filtro de Localidades
+                            if (visitaProvider.localidades.isNotEmpty)
+                              LocalidadFilter(
+                                localidades: visitaProvider.localidades,
+                              ),
+                            // Vista de Horarios
+                            Builder(
+                              builder: (context) {
+                                final clientesFiltrados = visitaProvider
+                                    .obtenerClientesFiltrados(
+                                  daySnapshot.data!.clientes,
+                                );
+
+                                final ordenFiltrada = OrdenDelDia(
+                                  fecha: daySnapshot.data!.fecha,
+                                  diaSemana: daySnapshot.data!.diaSemana,
+                                  preventista: daySnapshot.data!.preventista,
+                                  clientes: clientesFiltrados,
+                                  resumen: daySnapshot.data!.resumen,
+                                );
+
+                                return HorarioView(
+                                  ordenDelDia: ordenFiltrada,
+                                  onClienteTap: (cliente) {
+                                    _navigateToMarcarVisita(cliente);
+                                  },
+                                );
+                              },
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                  );
+                }
+
+                // Modo día: mostrar vista actual
+                return SingleChildScrollView(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  child: Column(
+                    children: [
+                      // ✅ Header con información del día y preventista
+                      Container(
+                        decoration: BoxDecoration(gradient: AppGradients.teal),
+                        padding: const EdgeInsets.fromLTRB(20, 20, 20, 24),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
-                                Text(
-                                  ordenDelDia.diaSemana,
-                                  style: const TextStyle(
-                                    fontSize: 13,
-                                    color: Colors.white70,
-                                    fontWeight: FontWeight.w500,
-                                  ),
+                                Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      ordenDelDia.diaSemana,
+                                      style: const TextStyle(
+                                        fontSize: 13,
+                                        color: Colors.white70,
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      ordenDelDia.fecha,
+                                      style: const TextStyle(
+                                        fontSize: 16,
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ],
                                 ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  ordenDelDia.fecha,
-                                  style: const TextStyle(
-                                    fontSize: 16,
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.bold,
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 12,
+                                    vertical: 6,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white.withOpacity(0.2),
+                                    borderRadius: BorderRadius.circular(20),
+                                  ),
+                                  child: Text(
+                                    ordenDelDia.preventista.nombre,
+                                    style: const TextStyle(
+                                      fontSize: 12,
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.w600,
+                                    ),
                                   ),
                                 ),
                               ],
                             ),
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 12,
-                                vertical: 6,
-                              ),
-                              decoration: BoxDecoration(
-                                color: Colors.white.withOpacity(0.2),
-                                borderRadius: BorderRadius.circular(20),
-                              ),
-                              child: Text(
-                                ordenDelDia.preventista.nombre,
-                                style: const TextStyle(
-                                  fontSize: 12,
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ),
                           ],
                         ),
-                      ],
-                    ),
-                  ),
-
-                  Padding(
-                    padding: const EdgeInsets.all(20),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // ✅ Tarjeta de Resumen
-                        _buildResumenCard(ordenDelDia.resumen),
-                        const SizedBox(height: 24),
-
-                        // ✅ Lista de Clientes
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.all(20),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(
-                              'Clientes a Visitar',
-                              style: Theme.of(context).textTheme.titleLarge,
-                            ),
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 8,
-                                vertical: 4,
+                            // ✅ Tarjeta de Resumen
+                            _buildResumenCard(ordenDelDia.resumen),
+                            const SizedBox(height: 24),
+
+                            // ✅ Filtro de Localidades
+                            if (visitaProvider.localidades.isNotEmpty)
+                              LocalidadFilter(
+                                localidades: visitaProvider.localidades,
                               ),
-                              decoration: BoxDecoration(
-                                color: Colors.blue.withOpacity(0.1),
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              child: Text(
-                                '${ordenDelDia.clientes.length} clientes',
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  color: Colors.blue.shade700,
-                                  fontWeight: FontWeight.w600,
+                            if (visitaProvider.localidades.isNotEmpty)
+                              const SizedBox(height: 16),
+
+                            // ✅ Lista de Clientes
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text(
+                                  'Clientes a Visitar',
+                                  style: Theme.of(context).textTheme.titleLarge,
                                 ),
-                              ),
+                                Builder(
+                                  builder: (context) {
+                                    final clientesFiltrados =
+                                        visitaProvider.obtenerClientesFiltrados(
+                                      ordenDelDia.clientes,
+                                    );
+                                    return Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 8,
+                                        vertical: 4,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: Colors.blue.withOpacity(0.1),
+                                        borderRadius:
+                                            BorderRadius.circular(12),
+                                      ),
+                                      child: Text(
+                                        '${clientesFiltrados.length} clientes',
+                                        style: TextStyle(
+                                          fontSize: 12,
+                                          color: Colors.blue.shade700,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                                    );
+                                  },
+                                ),
+                              ],
                             ),
+                            const SizedBox(height: 16),
+
+                            // ✅ Lista de clientes
+                            if (ordenDelDia.clientes.isEmpty)
+                              Center(
+                                child: Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 32,
+                                  ),
+                                  child: Column(
+                                    children: [
+                                      Icon(
+                                        Icons.check_circle,
+                                        size: 48,
+                                        color: Colors.green.shade300,
+                                      ),
+                                      const SizedBox(height: 12),
+                                      Text(
+                                        'No hay clientes para hoy',
+                                        style: Theme.of(
+                                          context,
+                                        ).textTheme.titleMedium,
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              )
+                            else
+                              Builder(
+                                builder: (context) {
+                                  final clientesFiltrados =
+                                      visitaProvider.obtenerClientesFiltrados(
+                                    ordenDelDia.clientes,
+                                  );
+
+                                  if (clientesFiltrados.isEmpty) {
+                                    return Center(
+                                      child: Padding(
+                                        padding: const EdgeInsets.symmetric(
+                                          vertical: 32,
+                                        ),
+                                        child: Column(
+                                          children: [
+                                            Icon(
+                                              Icons.filter_alt_off,
+                                              size: 48,
+                                              color: Colors.orange.shade300,
+                                            ),
+                                            const SizedBox(height: 12),
+                                            Text(
+                                              'No hay clientes en esta localidad',
+                                              style: Theme.of(
+                                                context,
+                                              ).textTheme.titleMedium,
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    );
+                                  }
+
+                                  return ListView.builder(
+                                    shrinkWrap: true,
+                                    physics:
+                                        const NeverScrollableScrollPhysics(),
+                                    itemCount: clientesFiltrados.length,
+                                    itemBuilder: (context, index) {
+                                      final cliente = clientesFiltrados[index];
+                                      return _buildClienteCard(
+                                        context,
+                                        cliente,
+                                        index,
+                                      );
+                                    },
+                                  );
+                                },
+                              ),
+
+                            const SizedBox(height: 20),
                           ],
                         ),
-                        const SizedBox(height: 16),
-
-                        // ✅ Lista de clientes
-                        if (ordenDelDia.clientes.isEmpty)
-                          Center(
-                            child: Padding(
-                              padding: const EdgeInsets.symmetric(vertical: 32),
-                              child: Column(
-                                children: [
-                                  Icon(
-                                    Icons.check_circle,
-                                    size: 48,
-                                    color: Colors.green.shade300,
-                                  ),
-                                  const SizedBox(height: 12),
-                                  Text(
-                                    'No hay clientes para hoy',
-                                    style: Theme.of(
-                                      context,
-                                    ).textTheme.titleMedium,
-                                  ),
-                                ],
-                              ),
-                            ),
-                          )
-                        else
-                          ListView.builder(
-                            shrinkWrap: true,
-                            physics: const NeverScrollableScrollPhysics(),
-                            itemCount: ordenDelDia.clientes.length,
-                            itemBuilder: (context, index) {
-                              final cliente = ordenDelDia.clientes[index];
-                              return _buildClienteCard(context, cliente, index);
-                            },
-                          ),
-
-                        const SizedBox(height: 20),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
-                ],
-              ),
+                );
+              },
             ),
           );
         },
@@ -957,7 +1241,7 @@ class _OrdenDelDiaScreenState extends State<OrdenDelDiaScreen> {
   }
 }
 
-  Widget _buildResumenCard(ResumenOrdenDelDia resumen) {
+Widget _buildResumenCard(ResumenOrdenDelDia resumen) {
   final porcentajeDecimal = resumen.porcentajeCompletado / 100;
   Color progressColor = Colors.red;
   if (porcentajeDecimal >= 0.75) {
@@ -1083,4 +1367,3 @@ Widget _buildStatItem({
     ],
   );
 }
-

@@ -37,7 +37,9 @@ class _CarritoScreenState extends State<CarritoScreen> {
 
     // ✅ El Enter se maneja en onSubmitted del TextField
     _searchClienteController.addListener(() {
-      debugPrint('📝 Campo de búsqueda cambió: "${_searchClienteController.text}"');
+      debugPrint(
+        '📝 Campo de búsqueda cambió: "${_searchClienteController.text}"',
+      );
     });
 
     // 🔑 FASE 3: Calcular precios CON RANGOS cuando se abre la pantalla
@@ -99,11 +101,7 @@ class _CarritoScreenState extends State<CarritoScreen> {
       } else {
         // Si el campo está vacío, cargar los primeros 20 clientes
         debugPrint('📋 Búsqueda vacía, cargando primeros 20 clientes');
-        await clientProvider.loadClients(
-          search: '',
-          active: true,
-          perPage: 20,
-        );
+        await clientProvider.loadClients(search: '', active: true, perPage: 20);
         debugPrint('✅ Cargando primeros 20 clientes (búsqueda vacía)');
       }
 
@@ -113,7 +111,9 @@ class _CarritoScreenState extends State<CarritoScreen> {
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (mounted) {
             FocusScope.of(context).requestFocus(_searchFocusNode);
-            debugPrint('📂 Focus solicitado al campo de búsqueda (después del rebuild)');
+            debugPrint(
+              '📂 Focus solicitado al campo de búsqueda (después del rebuild)',
+            );
           }
         });
       }
@@ -156,8 +156,9 @@ class _CarritoScreenState extends State<CarritoScreen> {
           try {
             final authProvider = context.read<AuthProvider>();
             final userRoles = authProvider.user?.roles ?? [];
-            isPreventista = userRoles.any((role) =>
-                role.toLowerCase() == 'preventista');
+            isPreventista = userRoles.any(
+              (role) => role.toLowerCase() == 'preventista',
+            );
           } catch (e) {
             debugPrint('❌ Error al verificar rol en CarritoScreen: $e');
           }
@@ -191,10 +192,12 @@ class _CarritoScreenState extends State<CarritoScreen> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              const Text(
+                              Text(
                                 'Editando Proforma',
                                 style: TextStyle(
-                                  fontSize: 13,
+                                  fontSize: AppTextStyles.bodySmall(
+                                    context,
+                                  ).fontSize!,
                                   fontWeight: FontWeight.w600,
                                   color: Color(0xFF2196F3),
                                 ),
@@ -202,8 +205,10 @@ class _CarritoScreenState extends State<CarritoScreen> {
                               const SizedBox(height: 2),
                               Text(
                                 '#${carritoProvider.proformaEditando?.numero ?? 'N/A'} (ID: ${carritoProvider.proformaEditandoId ?? 'N/A'})',
-                                style: const TextStyle(
-                                  fontSize: 12,
+                                style: TextStyle(
+                                  fontSize: AppTextStyles.bodySmall(
+                                    context,
+                                  ).fontSize!,
                                   fontWeight: FontWeight.w500,
                                   color: Color(0xFF2196F3),
                                 ),
@@ -252,7 +257,9 @@ class _CarritoScreenState extends State<CarritoScreen> {
                           detalleConRango: detalleConRango,
                           isPreventista: isPreventista,
                           onIncrement: () {
-                            carritoProvider.incrementarCantidad(item.producto.id);
+                            carritoProvider.incrementarCantidad(
+                              item.producto.id,
+                            );
                             mostrarErrorSiExiste(
                               context,
                               carritoProvider,
@@ -262,7 +269,9 @@ class _CarritoScreenState extends State<CarritoScreen> {
                             carritoProvider.calcularCarritoConRangos();
                           },
                           onDecrement: () {
-                            carritoProvider.decrementarCantidad(item.producto.id);
+                            carritoProvider.decrementarCantidad(
+                              item.producto.id,
+                            );
                             // Recalcular con rangos después de cambiar cantidad
                             carritoProvider.calcularCarritoConRangos();
                           },
@@ -305,9 +314,10 @@ class _CarritoScreenState extends State<CarritoScreen> {
                             Navigator.push(
                               context,
                               MaterialPageRoute(
-                                builder: (context) => producto.ProductoDetalleScreen(
-                                  producto: item.producto,
-                                ),
+                                builder: (context) =>
+                                    producto.ProductoDetalleScreen(
+                                      producto: item.producto,
+                                    ),
                               ),
                             );
                           },
@@ -345,7 +355,9 @@ class _CarritoScreenState extends State<CarritoScreen> {
 
           return FloatingActionButton(
             onPressed: () {
-              debugPrint('➕ Abriendo pantalla de productos para agregar más items');
+              debugPrint(
+                '➕ Abriendo pantalla de productos para agregar más items',
+              );
               Navigator.pushNamed(context, '/products');
             },
             tooltip: 'Agregar más productos',
@@ -400,16 +412,12 @@ class _CarritoScreenState extends State<CarritoScreen> {
         children: [
           Row(
             children: [
-              Icon(
-                Icons.person_outline,
-                size: 18,
-                color: colorScheme.primary,
-              ),
+              Icon(Icons.person_outline, size: 18, color: colorScheme.primary),
               const SizedBox(width: 8),
               Text(
                 'Creando pedido para:',
                 style: TextStyle(
-                  fontSize: 12,
+                  fontSize: AppTextStyles.bodySmall(context).fontSize!,
                   fontWeight: FontWeight.w500,
                   color: colorScheme.primary,
                 ),
@@ -440,9 +448,10 @@ class _CarritoScreenState extends State<CarritoScreen> {
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
-                      carritoProvider.clienteSeleccionado?.nombre ?? 'Cliente no especificado',
+                      carritoProvider.clienteSeleccionado?.nombre ??
+                          'Cliente no especificado',
                       style: TextStyle(
-                        fontSize: 14,
+                        fontSize: AppTextStyles.bodyMedium(context).fontSize!,
                         color: colorScheme.onSurface,
                         fontWeight: FontWeight.w500,
                       ),
@@ -463,7 +472,9 @@ class _CarritoScreenState extends State<CarritoScreen> {
             // ✅ DropdownSearch con búsqueda manual (botón + Enter)
             Consumer<ClientProvider>(
               builder: (context, clientProviderConsumer, _) {
-                debugPrint('🔄 Rebuilding DropdownSearch with ${clientProviderConsumer.clients.length} clients');
+                debugPrint(
+                  '🔄 Rebuilding DropdownSearch with ${clientProviderConsumer.clients.length} clients',
+                );
 
                 // ✅ SIMPLIFICADO: TextField en lugar de DropdownSearch
                 return TextField(
@@ -508,7 +519,9 @@ class _CarritoScreenState extends State<CarritoScreen> {
                                           perPage: 20,
                                         );
                                         setState(() => _busquedaActiva = false);
-                                        debugPrint('🔄 Recargando primeros 20 clientes');
+                                        debugPrint(
+                                          '🔄 Recargando primeros 20 clientes',
+                                        );
                                       },
                                 tooltip: 'Recargar lista',
                               ),
@@ -527,7 +540,8 @@ class _CarritoScreenState extends State<CarritoScreen> {
                                     ? null
                                     : () {
                                         debugPrint(
-                                            '🔍 Botón presionado: "${_searchClienteController.text}"');
+                                          '🔍 Botón presionado: "${_searchClienteController.text}"',
+                                        );
                                         _realizarBusquedaLocal();
                                       },
                                 tooltip: 'Buscar',
@@ -536,13 +550,13 @@ class _CarritoScreenState extends State<CarritoScreen> {
                               IconButton(
                                 icon: const Icon(Icons.person_add),
                                 onPressed: () async {
-                                  final resultado =
-                                      await Navigator.of(context).push(
-                                    MaterialPageRoute(
-                                      builder: (context) =>
-                                          const ClientFormScreen(),
-                                    ),
-                                  );
+                                  final resultado = await Navigator.of(context)
+                                      .push(
+                                        MaterialPageRoute(
+                                          builder: (context) =>
+                                              const ClientFormScreen(),
+                                        ),
+                                      );
                                   if (resultado == true && mounted) {
                                     await clientProvider.loadClients(
                                       search: '',
@@ -611,7 +625,10 @@ class _CarritoScreenState extends State<CarritoScreen> {
                     children: [
                       // ✅ NUEVO: Título de resultados
                       Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 4,
+                          vertical: 8,
+                        ),
                         child: Row(
                           children: [
                             Icon(
@@ -623,7 +640,9 @@ class _CarritoScreenState extends State<CarritoScreen> {
                             Text(
                               'Resultados de búsqueda',
                               style: TextStyle(
-                                fontSize: 13,
+                                fontSize: AppTextStyles.bodySmall(
+                                  context,
+                                ).fontSize!,
                                 fontWeight: FontWeight.w600,
                                 color: colorScheme.primary,
                               ),
@@ -641,7 +660,9 @@ class _CarritoScreenState extends State<CarritoScreen> {
                               child: Text(
                                 '${clientProvider.clients.length}',
                                 style: TextStyle(
-                                  fontSize: 12,
+                                  fontSize: AppTextStyles.bodySmall(
+                                    context,
+                                  ).fontSize!,
                                   fontWeight: FontWeight.w600,
                                   color: colorScheme.primary,
                                 ),
@@ -676,11 +697,15 @@ class _CarritoScreenState extends State<CarritoScreen> {
                               color: Colors.transparent,
                               child: InkWell(
                                 onTap: () {
-                                  carritoProvider.setClienteSeleccionado(client);
+                                  carritoProvider.setClienteSeleccionado(
+                                    client,
+                                  );
                                   _searchClienteController.clear();
                                   // ✅ Desactivar búsqueda después de seleccionar
                                   setState(() => _busquedaActiva = false);
-                                  debugPrint('✅ Cliente seleccionado desde resultados: ${client.nombre}');
+                                  debugPrint(
+                                    '✅ Cliente seleccionado desde resultados: ${client.nombre}',
+                                  );
                                 },
                                 child: Padding(
                                   padding: const EdgeInsets.symmetric(
@@ -691,13 +716,17 @@ class _CarritoScreenState extends State<CarritoScreen> {
                                     children: [
                                       Expanded(
                                         child: Column(
-                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
                                           children: [
                                             Text(
                                               '${client.nombre}$creditBadge',
                                               style: TextStyle(
                                                 fontWeight: FontWeight.w500,
-                                                fontSize: 13,
+                                                fontSize:
+                                                    AppTextStyles.bodySmall(
+                                                      context,
+                                                    ).fontSize!,
                                                 color: colorScheme.onSurface,
                                               ),
                                             ),
@@ -707,8 +736,12 @@ class _CarritoScreenState extends State<CarritoScreen> {
                                               Text(
                                                 client.telefono!,
                                                 style: TextStyle(
-                                                  fontSize: 11,
-                                                  color: colorScheme.onSurfaceVariant,
+                                                  fontSize:
+                                                      AppTextStyles.labelSmall(
+                                                        context,
+                                                      ).fontSize!,
+                                                  color: colorScheme
+                                                      .onSurfaceVariant,
                                                 ),
                                               ),
                                           ],
@@ -727,11 +760,13 @@ class _CarritoScreenState extends State<CarritoScreen> {
                                             MaterialPageRoute(
                                               builder: (context) =>
                                                   ClientDetailScreen(
-                                                client: client,
-                                              ),
+                                                    client: client,
+                                                  ),
                                             ),
                                           );
-                                          debugPrint('➡️ Navegando a detalle de ${client.nombre}');
+                                          debugPrint(
+                                            '➡️ Navegando a detalle de ${client.nombre}',
+                                          );
                                         },
                                       ),
                                     ],
@@ -772,7 +807,9 @@ class _CarritoScreenState extends State<CarritoScreen> {
                           child: Text(
                             'No se encontraron clientes que coincidan con "${_searchClienteController.text}"',
                             style: TextStyle(
-                              fontSize: 12,
+                              fontSize: AppTextStyles.bodySmall(
+                                context,
+                              ).fontSize!,
                               color: Colors.amber.shade800,
                               fontWeight: FontWeight.w500,
                             ),
@@ -815,7 +852,9 @@ class _CarritoScreenState extends State<CarritoScreen> {
                           Text(
                             '✓ ${carritoProvider.clienteSeleccionado!.nombre}',
                             style: TextStyle(
-                              fontSize: 12,
+                              fontSize: AppTextStyles.bodySmall(
+                                context,
+                              ).fontSize!,
                               color: Colors.green.shade500,
                               fontWeight: FontWeight.w600,
                             ),
@@ -836,7 +875,9 @@ class _CarritoScreenState extends State<CarritoScreen> {
                               child: Text(
                                 'Sin crédito disponible - Solo pago al contado',
                                 style: TextStyle(
-                                  fontSize: 11,
+                                  fontSize: AppTextStyles.labelSmall(
+                                    context,
+                                  ).fontSize!,
                                   color: Colors.orange.shade500,
                                   fontWeight: FontWeight.w500,
                                 ),
@@ -857,13 +898,13 @@ class _CarritoScreenState extends State<CarritoScreen> {
                           context,
                           MaterialPageRoute(
                             builder: (context) => ClientDetailScreen(
-                              client:
-                                  carritoProvider.clienteSeleccionado!,
+                              client: carritoProvider.clienteSeleccionado!,
                             ),
                           ),
                         );
                         debugPrint(
-                            '➡️ Navegando a detalle de ${carritoProvider.clienteSeleccionado!.nombre}');
+                          '➡️ Navegando a detalle de ${carritoProvider.clienteSeleccionado!.nombre}',
+                        );
                       },
                       tooltip: 'Ver detalle del cliente',
                     ),
@@ -882,16 +923,15 @@ class _CarritoScreenState extends State<CarritoScreen> {
     // ✅ CORRECTO: Usar creditoUtilizado (campo que retorna el backend)
     final creditoUtilizado = cliente.creditoUtilizado ?? 0.0;
     final creditoDisponible = limiteCredito - creditoUtilizado;
-    final porcentajeUsado = limiteCredito > 0 ? (creditoUtilizado / limiteCredito) * 100 : 0.0;
+    final porcentajeUsado = limiteCredito > 0
+        ? (creditoUtilizado / limiteCredito) * 100
+        : 0.0;
 
     return Container(
       decoration: BoxDecoration(
         color: Colors.green.shade50,
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(
-          color: Colors.green.shade200,
-          width: 1,
-        ),
+        border: Border.all(color: Colors.green.shade200, width: 1),
       ),
       padding: const EdgeInsets.all(8),
       child: Column(
@@ -904,7 +944,7 @@ class _CarritoScreenState extends State<CarritoScreen> {
               Text(
                 'Límite de Crédito',
                 style: TextStyle(
-                  fontSize: 11,
+                  fontSize: AppTextStyles.labelSmall(context).fontSize!,
                   color: Colors.green.shade700,
                   fontWeight: FontWeight.w500,
                 ),
@@ -912,7 +952,7 @@ class _CarritoScreenState extends State<CarritoScreen> {
               Text(
                 'Bs. ${limiteCredito.toStringAsFixed(2)}',
                 style: TextStyle(
-                  fontSize: 11,
+                  fontSize: AppTextStyles.labelSmall(context).fontSize!,
                   color: Colors.green.shade700,
                   fontWeight: FontWeight.bold,
                 ),
@@ -929,14 +969,14 @@ class _CarritoScreenState extends State<CarritoScreen> {
                 Text(
                   'Crédito Utilizado',
                   style: TextStyle(
-                    fontSize: 11,
+                    fontSize: AppTextStyles.labelSmall(context).fontSize!,
                     color: Colors.orange.shade600,
                   ),
                 ),
                 Text(
                   'Bs. ${creditoUtilizado.toStringAsFixed(2)}',
                   style: TextStyle(
-                    fontSize: 11,
+                    fontSize: AppTextStyles.labelSmall(context).fontSize!,
                     color: Colors.orange.shade600,
                     fontWeight: FontWeight.bold,
                   ),
@@ -971,7 +1011,7 @@ class _CarritoScreenState extends State<CarritoScreen> {
               Text(
                 'Disponible',
                 style: TextStyle(
-                  fontSize: 11,
+                  fontSize: AppTextStyles.labelSmall(context).fontSize!,
                   color: creditoDisponible > 0
                       ? Colors.green.shade600
                       : Colors.red.shade600,
@@ -981,7 +1021,7 @@ class _CarritoScreenState extends State<CarritoScreen> {
               Text(
                 'Bs. ${creditoDisponible.toStringAsFixed(2)}',
                 style: TextStyle(
-                  fontSize: 11,
+                  fontSize: AppTextStyles.labelSmall(context).fontSize!,
                   color: creditoDisponible > 0
                       ? Colors.green.shade600
                       : Colors.red.shade600,
@@ -1037,7 +1077,7 @@ class _CarritoScreenState extends State<CarritoScreen> {
                     style: TextStyle(
                       fontWeight: FontWeight.bold,
                       color: Colors.amber.shade700,
-                      fontSize: 13,
+                      fontSize: AppTextStyles.bodySmall(context).fontSize!,
                     ),
                   ),
                 ),
@@ -1046,9 +1086,7 @@ class _CarritoScreenState extends State<CarritoScreen> {
           ),
           Container(
             decoration: BoxDecoration(
-              border: Border(
-                top: BorderSide(color: Colors.amber.shade200),
-              ),
+              border: Border(top: BorderSide(color: Colors.amber.shade200)),
             ),
             child: Column(
               children: comboItems.asMap().entries.map((entry) {
@@ -1056,7 +1094,9 @@ class _CarritoScreenState extends State<CarritoScreen> {
                 final comboItem = entry.value;
                 // ✅ Convertir cantidad de forma segura (puede ser int o double)
                 final cantidadRaw = comboItem['cantidad'] ?? 1;
-                final cantidad = cantidadRaw is int ? cantidadRaw : (cantidadRaw as num).toInt();
+                final cantidad = cantidadRaw is int
+                    ? cantidadRaw
+                    : (cantidadRaw as num).toInt();
                 final comboItemId = comboItem['combo_item_id'] ?? 0;
                 final nombreProducto =
                     obtenerNombreComboItem(comboItemId) ?? 'Producto';
@@ -1066,14 +1106,15 @@ class _CarritoScreenState extends State<CarritoScreen> {
                 final cantidadTotal = cantidad * item.cantidad;
 
                 return Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 8,
+                  ),
                   decoration: BoxDecoration(
                     border: isLast
                         ? null
                         : Border(
-                            bottom: BorderSide(
-                              color: Colors.amber.shade100,
-                            ),
+                            bottom: BorderSide(color: Colors.amber.shade100),
                           ),
                   ),
                   child: Row(
@@ -1085,7 +1126,9 @@ class _CarritoScreenState extends State<CarritoScreen> {
                             Text(
                               '• $nombreProducto',
                               style: TextStyle(
-                                fontSize: 12,
+                                fontSize: AppTextStyles.bodySmall(
+                                  context,
+                                ).fontSize!,
                                 fontWeight: FontWeight.w500,
                                 color: Colors.amber.shade900,
                               ),
@@ -1096,7 +1139,9 @@ class _CarritoScreenState extends State<CarritoScreen> {
                             Text(
                               'ID: ${comboItem['producto_id']}',
                               style: TextStyle(
-                                fontSize: 11,
+                                fontSize: AppTextStyles.labelSmall(
+                                  context,
+                                ).fontSize!,
                                 color: Colors.amber.shade600,
                               ),
                             ),
@@ -1121,7 +1166,9 @@ class _CarritoScreenState extends State<CarritoScreen> {
                               style: TextStyle(
                                 fontWeight: FontWeight.bold,
                                 color: Colors.amber.shade700,
-                                fontSize: 12,
+                                fontSize: AppTextStyles.bodySmall(
+                                  context,
+                                ).fontSize!,
                               ),
                             ),
                           ),
@@ -1129,7 +1176,9 @@ class _CarritoScreenState extends State<CarritoScreen> {
                             Text(
                               '($cantidad×${item.cantidad})',
                               style: TextStyle(
-                                fontSize: 10,
+                                fontSize: AppTextStyles.labelSmall(
+                                  context,
+                                ).fontSize!,
                                 color: Colors.amber.shade600,
                               ),
                             ),

@@ -14,12 +14,10 @@ import '../login_screen.dart';
 import '../chofer/marcar_visita_screen.dart';
 
 class ClientListScreen extends StatefulWidget {
-  final VoidCallback? onBecomesVisible; // ✅ Callback cuando se selecciona esta pestaña
+  final VoidCallback?
+  onBecomesVisible; // ✅ Callback cuando se selecciona esta pestaña
 
-  const ClientListScreen({
-    super.key,
-    this.onBecomesVisible,
-  });
+  const ClientListScreen({super.key, this.onBecomesVisible});
 
   @override
   State<ClientListScreen> createState() => _ClientListScreenState();
@@ -37,7 +35,8 @@ class _ClientListScreenState extends State<ClientListScreen> {
 
   // ✅ CONFIGURACIÓN DE PAGINACIÓN
   static const int PER_PAGE = 20; // Aumentado de 5 a 20 items por página
-  static const int SCROLL_THRESHOLD = 300; // Distancia en px para trigger de carga
+  static const int SCROLL_THRESHOLD =
+      300; // Distancia en px para trigger de carga
 
   @override
   void initState() {
@@ -63,12 +62,15 @@ class _ClientListScreenState extends State<ClientListScreen> {
   void _onScroll() {
     // ✅ MEJORADO: Detector de scroll adaptable y más sensible
     final scrollPosition = _scrollController.position;
-    final distanceFromBottom = scrollPosition.maxScrollExtent - scrollPosition.pixels;
+    final distanceFromBottom =
+        scrollPosition.maxScrollExtent - scrollPosition.pixels;
 
     // Trigger cuando estamos a menos de SCROLL_THRESHOLD del final
     if (distanceFromBottom <= SCROLL_THRESHOLD) {
       if (!_isLoadingMore && _clientProvider.hasMorePages) {
-        debugPrint('📍 Scroll trigger: ${distanceFromBottom.toStringAsFixed(0)}px del final');
+        debugPrint(
+          '📍 Scroll trigger: ${distanceFromBottom.toStringAsFixed(0)}px del final',
+        );
         _loadMoreClientes();
       }
     }
@@ -178,9 +180,7 @@ class _ClientListScreenState extends State<ClientListScreen> {
     });
 
     final nextPage = _clientProvider.currentPage + 1;
-    debugPrint(
-      '📋 Cargando más clientes (página $nextPage)...',
-    );
+    debugPrint('📋 Cargando más clientes (página $nextPage)...');
 
     try {
       await _clientProvider.loadClients(
@@ -232,7 +232,7 @@ class _ClientListScreenState extends State<ClientListScreen> {
           'Clientes',
           style: TextStyle(
             fontWeight: FontWeight.w700,
-            fontSize: 20,
+            fontSize: AppTextStyles.headlineMedium(context).fontSize!,
             color: colorScheme.onSurface,
           ),
         ),
@@ -247,7 +247,9 @@ class _ClientListScreenState extends State<ClientListScreen> {
                     height: 24,
                     child: CircularProgressIndicator(
                       strokeWidth: 2,
-                      valueColor: AlwaysStoppedAnimation<Color>(colorScheme.primary),
+                      valueColor: AlwaysStoppedAnimation<Color>(
+                        colorScheme.primary,
+                      ),
                     ),
                   )
                 : Icon(Icons.refresh, color: colorScheme.primary),
@@ -274,7 +276,10 @@ class _ClientListScreenState extends State<ClientListScreen> {
                     onTap: _isLoadingClients ? null : _navigateToCreateClient,
                     borderRadius: BorderRadius.circular(12),
                     child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 8,
+                      ),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
@@ -289,7 +294,9 @@ class _ClientListScreenState extends State<ClientListScreen> {
                             style: TextStyle(
                               color: colorScheme.onPrimary,
                               fontWeight: FontWeight.w600,
-                              fontSize: 14,
+                              fontSize: AppTextStyles.bodyMedium(
+                                context,
+                              ).fontSize!,
                             ),
                           ),
                         ],
@@ -491,10 +498,12 @@ class _ClientListScreenState extends State<ClientListScreen> {
                               color: Colors.grey,
                             ),
                             const SizedBox(height: 16),
-                            const Text(
+                            Text(
                               'No hay clientes',
                               style: TextStyle(
-                                fontSize: 18,
+                                fontSize: AppTextStyles.headlineSmall(
+                                  context,
+                                ).fontSize!,
                                 color: Colors.grey,
                               ),
                             ),
@@ -519,14 +528,24 @@ class _ClientListScreenState extends State<ClientListScreen> {
                         itemCount:
                             clientProvider.clients.length +
                             (_isLoadingMore ? 1 : 0) +
-                            (clientProvider.clients.isNotEmpty && !_isLoadingMore && clientProvider.hasMorePages ? 1 : 0),
+                            (clientProvider.clients.isNotEmpty &&
+                                    !_isLoadingMore &&
+                                    clientProvider.hasMorePages
+                                ? 1
+                                : 0),
                         itemBuilder: (context, index) {
                           // ✅ NUEVO: Mostrar footer de paginación
-                          if (index == clientProvider.clients.length && !_isLoadingMore && clientProvider.hasMorePages) {
+                          if (index == clientProvider.clients.length &&
+                              !_isLoadingMore &&
+                              clientProvider.hasMorePages) {
                             final currentPage = clientProvider.currentPage;
-                            final totalPages = (clientProvider.totalItems / PER_PAGE).ceil();
+                            final totalPages =
+                                (clientProvider.totalItems / PER_PAGE).ceil();
                             return Container(
-                              padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
+                              padding: const EdgeInsets.symmetric(
+                                vertical: 16,
+                                horizontal: 16,
+                              ),
                               child: Center(
                                 child: Column(
                                   mainAxisSize: MainAxisSize.min,
@@ -534,7 +553,9 @@ class _ClientListScreenState extends State<ClientListScreen> {
                                     Text(
                                       'Página $currentPage de $totalPages',
                                       style: TextStyle(
-                                        fontSize: 12,
+                                        fontSize: AppTextStyles.bodySmall(
+                                          context,
+                                        ).fontSize!,
                                         color: Colors.grey.shade600,
                                         fontWeight: FontWeight.w500,
                                       ),
@@ -543,7 +564,9 @@ class _ClientListScreenState extends State<ClientListScreen> {
                                     Text(
                                       '⬇️ Desliza para cargar más clientes',
                                       style: TextStyle(
-                                        fontSize: 11,
+                                        fontSize: AppTextStyles.labelSmall(
+                                          context,
+                                        ).fontSize!,
                                         color: Colors.grey.shade500,
                                         fontStyle: FontStyle.italic,
                                       ),
@@ -577,7 +600,9 @@ class _ClientListScreenState extends State<ClientListScreen> {
                                     Text(
                                       'Cargando más clientes...',
                                       style: TextStyle(
-                                        fontSize: 12,
+                                        fontSize: AppTextStyles.bodySmall(
+                                          context,
+                                        ).fontSize!,
                                         color: Colors.grey.shade600,
                                       ),
                                     ),
@@ -602,7 +627,8 @@ class _ClientListScreenState extends State<ClientListScreen> {
                                 ? () => _sendWhatsAppMessage(client.telefono!)
                                 : null,
                             onEdit: () => _navigateToEditClient(client),
-                            onMarcarVisita: () => _navigateToMarcarVisita(client),
+                            onMarcarVisita: () =>
+                                _navigateToMarcarVisita(client),
                           );
                         },
                       ),
@@ -640,10 +666,14 @@ class _ClientListScreenState extends State<ClientListScreen> {
           gradient: isSelected
               ? LinearGradient(colors: [lightColor, darkColor])
               : null,
-          color: isSelected ? null : colorScheme.primaryContainer.withOpacity(0.3),
+          color: isSelected
+              ? null
+              : colorScheme.primaryContainer.withOpacity(0.3),
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
-            color: isSelected ? chipColor : colorScheme.outline.withOpacity(0.3),
+            color: isSelected
+                ? chipColor
+                : colorScheme.outline.withOpacity(0.3),
             width: isSelected ? 2 : 1,
           ),
           boxShadow: isSelected
@@ -662,15 +692,19 @@ class _ClientListScreenState extends State<ClientListScreen> {
             Icon(
               icon,
               size: 16,
-              color: isSelected ? colorScheme.onPrimary : colorScheme.onSurfaceVariant,
+              color: isSelected
+                  ? colorScheme.onPrimary
+                  : colorScheme.onSurfaceVariant,
             ),
             const SizedBox(width: 6),
             Text(
               label,
               style: TextStyle(
-                color: isSelected ? colorScheme.onPrimary : colorScheme.onSurface,
+                color: isSelected
+                    ? colorScheme.onPrimary
+                    : colorScheme.onSurface,
                 fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-                fontSize: 14,
+                fontSize: AppTextStyles.bodyMedium(context).fontSize!,
               ),
             ),
           ],
@@ -751,7 +785,9 @@ class _ClientListScreenState extends State<ClientListScreen> {
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('❌ No se pudo realizar la llamada. Intenta de nuevo.'),
+            content: Text(
+              '❌ No se pudo realizar la llamada. Intenta de nuevo.',
+            ),
             duration: Duration(seconds: 3),
           ),
         );
@@ -787,7 +823,9 @@ class _ClientListScreenState extends State<ClientListScreen> {
         debugPrint('❌ WhatsApp no está disponible en este dispositivo');
 
         // Intentar abrir el navegador como fallback
-        final webUri = Uri.parse('https://web.whatsapp.com/send?phone=$formattedNumber');
+        final webUri = Uri.parse(
+          'https://web.whatsapp.com/send?phone=$formattedNumber',
+        );
         if (await canLaunchUrl(webUri)) {
           await launchUrl(webUri, mode: LaunchMode.externalApplication);
           return;
@@ -824,7 +862,9 @@ class _ClientListScreenState extends State<ClientListScreen> {
 
   void _navigateToMarcarVisita(Client client) {
     if (!mounted) return;
-    debugPrint('📍 Navegando a MarcarVisitaScreen para cliente: ${client.nombre}');
+    debugPrint(
+      '📍 Navegando a MarcarVisitaScreen para cliente: ${client.nombre}',
+    );
     Navigator.of(context).push(
       MaterialPageRoute(
         builder: (context) => MarcarVisitaScreen(cliente: client),
@@ -969,7 +1009,7 @@ class ClientListItem extends StatelessWidget {
             child: Text(
               client.razonSocial!,
               style: TextStyle(
-                fontSize: 13,
+                fontSize: 12,
                 color: colorScheme.onSurfaceVariant,
                 fontStyle: FontStyle.italic,
               ),
@@ -986,7 +1026,10 @@ class ClientListItem extends StatelessWidget {
               const SizedBox(width: 4),
               Text(
                 client.telefono!,
-                style: TextStyle(fontSize: 12, color: colorScheme.onSurfaceVariant),
+                style: TextStyle(
+                  fontSize: 12,
+                  color: colorScheme.onSurfaceVariant,
+                ),
               ),
               const SizedBox(width: 12),
             ],
@@ -998,12 +1041,19 @@ class ClientListItem extends StatelessWidget {
             padding: const EdgeInsets.only(top: 4),
             child: Row(
               children: [
-                Icon(Icons.email, size: 14, color: colorScheme.onSurfaceVariant),
+                Icon(
+                  Icons.email,
+                  size: 14,
+                  color: colorScheme.onSurfaceVariant,
+                ),
                 const SizedBox(width: 4),
                 Expanded(
                   child: Text(
                     client.email!,
-                    style: TextStyle(fontSize: 12, color: colorScheme.onSurfaceVariant),
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: colorScheme.onSurfaceVariant,
+                    ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -1046,7 +1096,7 @@ class ClientListItem extends StatelessWidget {
                   Text(
                     'Cód: ${client.codigoCliente}',
                     style: TextStyle(
-                      fontSize: 11,
+                      fontSize: 10,
                       color: colorScheme.onSurfaceVariant,
                       fontWeight: FontWeight.w500,
                     ),
@@ -1123,8 +1173,10 @@ class ClientListItem extends StatelessWidget {
           child: Text(
             client.activo ? 'Activo' : 'Inactivo',
             style: TextStyle(
-              color: client.activo ? colorScheme.onPrimary : colorScheme.onError,
-              fontSize: 11,
+              color: client.activo
+                  ? colorScheme.onPrimary
+                  : colorScheme.onError,
+              fontSize: 10,
               fontWeight: FontWeight.bold,
             ),
           ),
@@ -1170,10 +1222,7 @@ class ClientListItem extends StatelessWidget {
               Container(
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
-                    colors: [
-                      Colors.purple,
-                      Colors.purple.withOpacity(0.8),
-                    ],
+                    colors: [Colors.purple, Colors.purple.withOpacity(0.8)],
                   ),
                   shape: BoxShape.circle,
                   boxShadow: [
@@ -1296,7 +1345,11 @@ class ClientListItem extends StatelessWidget {
         color: colorScheme.primaryContainer,
         borderRadius: BorderRadius.circular(6),
       ),
-      child: Icon(Icons.person_outline, color: colorScheme.onPrimaryContainer, size: 28),
+      child: Icon(
+        Icons.person_outline,
+        color: colorScheme.onPrimaryContainer,
+        size: 28,
+      ),
     );
   }
 

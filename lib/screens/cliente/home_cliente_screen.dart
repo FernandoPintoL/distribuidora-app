@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../../config/app_text_styles.dart';
 import '../base/base_home_screen.dart';
 import '../../models/navigation_item.dart';
 import '../../models/models.dart';
@@ -7,6 +8,7 @@ import '../../providers/providers.dart';
 import '../screens.dart';
 import '../perfil/perfil_screen.dart';
 import '../../widgets/widgets.dart';
+import 'widgets/banners_carrusel.dart';
 
 /// Pantalla principal para usuarios con rol CLIENTE
 ///
@@ -54,6 +56,8 @@ class _HomeClienteScreenState extends BaseHomeScreenState<HomeClienteScreen> {
       final pedidoProvider = context.read<PedidoProvider>();
       final notificationProvider = context.read<NotificationProvider>();
       final clientProvider = context.read<ClientProvider>();
+      final reportesProvider = context.read<ReporteProductoDanadoProvider>();
+      final bannerProvider = context.read<BannerPublicitarioProvider>();
 
       // ✅ Solo cargar estadísticas de notificaciones (contador), no las notificaciones completas
       await notificationProvider.loadStats();
@@ -65,6 +69,12 @@ class _HomeClienteScreenState extends BaseHomeScreenState<HomeClienteScreen> {
       // ✅ NUEVO: Cargar perfil del cliente actual para mostrar información de crédito
       // getClientPerfil() obtiene SOLO los datos del cliente autenticado (no requiere permisos especiales)
       await clientProvider.getClientPerfil();
+
+      // ✅ NUEVO: Cargar reportes dañados para mostrar contador en dashboard
+      await reportesProvider.cargarReportes(refresh: true);
+
+      // ✅ NUEVO: Cargar banners publicitarios para mostrar en el carrusel
+      await bannerProvider.cargarBanners();
 
       // Los productos se cargarán cuando el usuario navegue a la pestaña de Productos
 
@@ -98,6 +108,11 @@ class _DashboardTab extends StatelessWidget {
 
             const SizedBox(height: 24),
 
+            // ✅ NUEVO: Carrusel de Banners Publicitarios
+            _buildBannersCarrusel(context),
+
+            const SizedBox(height: 24),
+
             // Acciones rápidas
             _buildQuickActions(context),
 
@@ -105,6 +120,11 @@ class _DashboardTab extends StatelessWidget {
 
             // ✅ NUEVO: Botón de Mis Ventas
             _buildMisVentasButton(context),
+
+            const SizedBox(height: 24),
+
+            // ✅ NUEVO: Botón de Reportes Dañados
+            _buildReportesButton(context),
 
             const SizedBox(height: 24),
 
@@ -146,9 +166,9 @@ class _DashboardTab extends StatelessWidget {
         children: [
           Text(
             '¡Hola, $userName!',
-            style: const TextStyle(
+            style: TextStyle(
               color: Colors.white,
-              fontSize: 24,
+              fontSize: AppTextStyles.displaySmall(context).fontSize!,
               fontWeight: FontWeight.bold,
             ),
           ),
@@ -281,11 +301,11 @@ class _DashboardTab extends StatelessWidget {
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
+                    Text(
                       'Ver mis compras confirmadas',
                       style: TextStyle(
                         color: Colors.white,
-                        fontSize: 16,
+                        fontSize: AppTextStyles.bodyLarge(context).fontSize!,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
@@ -294,7 +314,7 @@ class _DashboardTab extends StatelessWidget {
                       'Pagos, logística y más',
                       style: TextStyle(
                         color: Colors.white.withOpacity(0.8),
-                        fontSize: 13,
+                        fontSize: AppTextStyles.bodySmall(context).fontSize!,
                       ),
                     ),
                   ],
@@ -312,6 +332,101 @@ class _DashboardTab extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+
+  /// ✅ NUEVO: Widget para mostrar botón de reportes dañados
+  Widget _buildReportesButton(BuildContext context) {
+    final reportesProvider = context.watch<ReporteProductoDanadoProvider>();
+    final pendientes = reportesProvider.reportes
+        .where((r) => r.estado == 'pendiente')
+        .length;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('Reportes de Productos', style: Theme.of(context).textTheme.headlineSmall),
+        const SizedBox(height: 12),
+        GestureDetector(
+          onTap: () {
+            Navigator.pushNamed(context, '/reportes-productos-danados');
+          },
+          child: Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [Colors.red.shade600, Colors.red.shade800],
+              ),
+              borderRadius: BorderRadius.circular(12),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.red.withOpacity(0.3),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Reportes de defectos',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: AppTextStyles.bodyLarge(context).fontSize!,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    if (pendientes > 0)
+                      Text(
+                        '$pendientes pendiente${pendientes != 1 ? 's' : ''}',
+                        style: TextStyle(
+                          color: Colors.white.withOpacity(0.8),
+                          fontSize: AppTextStyles.bodySmall(context).fontSize!,
+                        ),
+                      )
+                    else
+                      Text(
+                        'Ver mis reportes',
+                        style: TextStyle(
+                          color: Colors.white.withOpacity(0.8),
+                          fontSize: AppTextStyles.bodySmall(context).fontSize!,
+                        ),
+                      ),
+                  ],
+                ),
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.2),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(Icons.arrow_forward, color: Colors.white),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// ✅ NUEVO: Widget para mostrar carrusel de banners publicitarios
+  Widget _buildBannersCarrusel(BuildContext context) {
+    final bannerProvider = context.watch<BannerPublicitarioProvider>();
+
+    // Si no hay banners, no mostrar nada
+    if (bannerProvider.banners.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    return BannersCarrusel(
+      banners: bannerProvider.banners,
+      height: 180,
     );
   }
 
@@ -395,7 +510,9 @@ class _DashboardTab extends StatelessWidget {
                                 'Saldo, pagos y cuentas vencidas',
                                 style: TextStyle(
                                   color: Colors.white.withOpacity(0.8),
-                                  fontSize: 13,
+                                  fontSize: AppTextStyles.bodySmall(
+                                    context,
+                                  ).fontSize!,
                                 ),
                               ),
                             ],
@@ -420,17 +537,21 @@ class _DashboardTab extends StatelessWidget {
                       children: [
                         Text(
                           'Límite: Bs. ${(clienteActual.limiteCredito ?? 0).toStringAsFixed(2)}',
-                          style: const TextStyle(
+                          style: TextStyle(
                             color: Colors.white70,
-                            fontSize: 12,
+                            fontSize: AppTextStyles.bodySmall(
+                              context,
+                            ).fontSize!,
                           ),
                         ),
                         if (clienteActual.creditoUtilizado != null)
                           Text(
                             'Utilizado: Bs. ${clienteActual.creditoUtilizado!.toStringAsFixed(2)}',
-                            style: const TextStyle(
+                            style: TextStyle(
                               color: Colors.white70,
-                              fontSize: 12,
+                              fontSize: AppTextStyles.bodySmall(
+                                context,
+                              ).fontSize!,
                             ),
                           ),
                       ],
@@ -451,9 +572,12 @@ class _DashboardTab extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
+        Text(
           'Mis Pedidos',
-          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+          style: TextStyle(
+            fontSize: AppTextStyles.headlineSmall(context).fontSize!,
+            fontWeight: FontWeight.bold,
+          ),
         ),
         const SizedBox(height: 12),
         if (provider.isLoadingStats)
@@ -591,7 +715,9 @@ class _DashboardTab extends StatelessWidget {
                               : '${stats.alertas.porVencer} pedido(s) por vencer',
                           style: TextStyle(
                             color: Colors.orange.shade900,
-                            fontSize: 13,
+                            fontSize: AppTextStyles.bodySmall(
+                              context,
+                            ).fontSize!,
                             fontWeight: FontWeight.w500,
                           ),
                         ),
@@ -679,9 +805,11 @@ class _QuickActionCard extends StatelessWidget {
                         child: Center(
                           child: Text(
                             badgeCount! > 9 ? '9+' : '$badgeCount',
-                            style: const TextStyle(
+                            style: TextStyle(
                               color: Colors.white,
-                              fontSize: 10,
+                              fontSize: AppTextStyles.labelSmall(
+                                context,
+                              ).fontSize!,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
@@ -694,8 +822,8 @@ class _QuickActionCard extends StatelessWidget {
               Text(
                 title,
                 textAlign: TextAlign.center,
-                style: const TextStyle(
-                  fontSize: 12,
+                style: TextStyle(
+                  fontSize: AppTextStyles.bodySmall(context).fontSize!,
                   fontWeight: FontWeight.w500,
                 ),
               ),
@@ -736,8 +864,8 @@ class _StatCard extends StatelessWidget {
                 const SizedBox(width: 8),
                 Text(
                   label,
-                  style: const TextStyle(
-                    fontSize: 12,
+                  style: TextStyle(
+                    fontSize: AppTextStyles.bodySmall(context).fontSize!,
                     color: Colors.grey,
                     fontWeight: FontWeight.w500,
                   ),
@@ -748,7 +876,7 @@ class _StatCard extends StatelessWidget {
             Text(
               value,
               style: TextStyle(
-                fontSize: 24,
+                fontSize: AppTextStyles.displaySmall(context).fontSize!,
                 fontWeight: FontWeight.bold,
                 color: color,
               ),

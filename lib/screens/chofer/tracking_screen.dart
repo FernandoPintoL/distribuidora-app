@@ -79,14 +79,14 @@ class _TrackingScreenState extends State<TrackingScreen> {
                     borderRadius: BorderRadius.circular(6),
                   ),
                   child: Row(
-                    children: const [
+                    children: [
                       Icon(Icons.location_on, size: 16, color: Colors.white),
                       SizedBox(width: 6),
                       Text(
                         'Actualizar',
                         style: TextStyle(
                           color: Colors.white,
-                          fontSize: 12,
+                          fontSize: AppTextStyles.bodySmall(context).fontSize!,
                           fontWeight: FontWeight.w600,
                         ),
                       ),
@@ -101,9 +101,7 @@ class _TrackingScreenState extends State<TrackingScreen> {
       body: Consumer<EntregaProvider>(
         builder: (context, entregaProvider, _) {
           if (entregaProvider.isLoading) {
-            return const Center(
-              child: CircularProgressIndicator(),
-            );
+            return const Center(child: CircularProgressIndicator());
           }
 
           if (entregaProvider.entregas.isEmpty) {
@@ -111,16 +109,12 @@ class _TrackingScreenState extends State<TrackingScreen> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(
-                    Icons.check_circle,
-                    size: 64,
-                    color: Colors.green[400],
-                  ),
+                  Icon(Icons.check_circle, size: 64, color: Colors.green[400]),
                   const SizedBox(height: 16),
-                  const Text(
+                  Text(
                     'No hay entregas pendientes',
                     style: TextStyle(
-                      fontSize: 18,
+                      fontSize: AppTextStyles.headlineSmall(context).fontSize!,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
@@ -129,7 +123,7 @@ class _TrackingScreenState extends State<TrackingScreen> {
                     '¡Has completado todas tus entregas del día!',
                     style: TextStyle(
                       color: Colors.grey[600],
-                      fontSize: 14,
+                      fontSize: AppTextStyles.bodyMedium(context).fontSize!,
                     ),
                   ),
                   const SizedBox(height: 24),
@@ -173,9 +167,8 @@ class _TrackingScreenState extends State<TrackingScreen> {
                     children: [
                       Text(
                         'Leyenda del Mapa',
-                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.w600,
-                        ),
+                        style: Theme.of(context).textTheme.titleMedium
+                            ?.copyWith(fontWeight: FontWeight.w600),
                       ),
                       const SizedBox(height: 12),
                       _MapLegendItem(
@@ -183,25 +176,13 @@ class _TrackingScreenState extends State<TrackingScreen> {
                         label: 'Tu ubicación actual',
                       ),
                       const SizedBox(height: 8),
-                      _MapLegendItem(
-                        color: Colors.blue,
-                        label: 'Asignada',
-                      ),
+                      _MapLegendItem(color: Colors.blue, label: 'Asignada'),
                       const SizedBox(height: 8),
-                      _MapLegendItem(
-                        color: Colors.yellow,
-                        label: 'En Camino',
-                      ),
+                      _MapLegendItem(color: Colors.yellow, label: 'En Camino'),
                       const SizedBox(height: 8),
-                      _MapLegendItem(
-                        color: Colors.orange,
-                        label: 'Llegó',
-                      ),
+                      _MapLegendItem(color: Colors.orange, label: 'Llegó'),
                       const SizedBox(height: 8),
-                      _MapLegendItem(
-                        color: Colors.red,
-                        label: 'Novedad',
-                      ),
+                      _MapLegendItem(color: Colors.red, label: 'Novedad'),
                     ],
                   ),
                 ),
@@ -221,11 +202,8 @@ class _MapLegendItem extends StatelessWidget {
   final Color color;
   final String label;
 
-  const _MapLegendItem({
-    Key? key,
-    required this.color,
-    required this.label,
-  }) : super(key: key);
+  const _MapLegendItem({Key? key, required this.color, required this.label})
+    : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -244,7 +222,7 @@ class _MapLegendItem extends StatelessWidget {
         Text(
           label,
           style: TextStyle(
-            fontSize: 13,
+            fontSize: AppTextStyles.bodySmall(context).fontSize!,
             color: Colors.grey[700],
           ),
         ),

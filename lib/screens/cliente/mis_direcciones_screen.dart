@@ -51,7 +51,9 @@ class _MisDireccionesScreenState extends State<MisDireccionesScreen> {
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Eliminar Dirección'),
-        content: Text('¿Estás seguro de eliminar esta dirección?\n\n${direccion.direccion}'),
+        content: Text(
+          '¿Estás seguro de eliminar esta dirección?\n\n${direccion.direccion}',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
@@ -86,11 +88,9 @@ class _MisDireccionesScreenState extends State<MisDireccionesScreen> {
   }
 
   void _editarDireccion(ClientAddress direccion) {
-    Navigator.pushNamed(
-      context,
-      '/direccion-form',
-      arguments: direccion,
-    ).then((result) {
+    Navigator.pushNamed(context, '/direccion-form', arguments: direccion).then((
+      result,
+    ) {
       if (result == true) {
         _cargarDirecciones();
       }
@@ -107,8 +107,8 @@ class _MisDireccionesScreenState extends State<MisDireccionesScreen> {
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : _errorMessage != null
-              ? _buildErrorView()
-              : _buildDireccionesList(),
+          ? _buildErrorView()
+          : _buildDireccionesList(),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: _agregarDireccion,
         icon: const Icon(Icons.add_location),
@@ -124,11 +124,7 @@ class _MisDireccionesScreenState extends State<MisDireccionesScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              Icons.error_outline,
-              size: 64,
-              color: Colors.red.shade300,
-            ),
+            Icon(Icons.error_outline, size: 64, color: Colors.red.shade300),
             const SizedBox(height: 16),
             Text(
               _errorMessage ?? 'Error al cargar direcciones',
@@ -174,16 +170,12 @@ class _MisDireccionesScreenState extends State<MisDireccionesScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              Icons.location_off,
-              size: 80,
-              color: Colors.grey.shade300,
-            ),
+            Icon(Icons.location_off, size: 80, color: Colors.grey.shade300),
             const SizedBox(height: 24),
-            const Text(
+            Text(
               'No tienes direcciones registradas',
               style: TextStyle(
-                fontSize: 18,
+                fontSize: AppTextStyles.headlineSmall(context).fontSize!,
                 fontWeight: FontWeight.w500,
               ),
             ),
@@ -191,7 +183,7 @@ class _MisDireccionesScreenState extends State<MisDireccionesScreen> {
             Text(
               'Agrega tu primera dirección de entrega',
               style: TextStyle(
-                fontSize: 14,
+                fontSize: AppTextStyles.bodyMedium(context).fontSize!,
                 color: Colors.grey.shade600,
               ),
               textAlign: TextAlign.center,
@@ -240,8 +232,8 @@ class _MisDireccionesScreenState extends State<MisDireccionesScreen> {
                   Expanded(
                     child: Text(
                       direccion.direccion,
-                      style: const TextStyle(
-                        fontSize: 16,
+                      style: TextStyle(
+                        fontSize: AppTextStyles.bodyLarge(context).fontSize!,
                         fontWeight: FontWeight.w600,
                       ),
                       maxLines: 2,
@@ -264,7 +256,7 @@ class _MisDireccionesScreenState extends State<MisDireccionesScreen> {
                       child: Text(
                         'Principal',
                         style: TextStyle(
-                          fontSize: 11,
+                          fontSize: AppTextStyles.labelSmall(context).fontSize!,
                           fontWeight: FontWeight.bold,
                           color: Theme.of(context).primaryColor,
                         ),
@@ -280,12 +272,16 @@ class _MisDireccionesScreenState extends State<MisDireccionesScreen> {
                   padding: const EdgeInsets.only(bottom: 8),
                   child: Row(
                     children: [
-                      Icon(Icons.gps_fixed, size: 16, color: Colors.grey.shade600),
+                      Icon(
+                        Icons.gps_fixed,
+                        size: 16,
+                        color: Colors.grey.shade600,
+                      ),
                       const SizedBox(width: 8),
                       Text(
                         'Ubicación GPS registrada',
                         style: TextStyle(
-                          fontSize: 14,
+                          fontSize: AppTextStyles.bodyMedium(context).fontSize!,
                           color: Colors.grey.shade700,
                         ),
                       ),
@@ -294,7 +290,8 @@ class _MisDireccionesScreenState extends State<MisDireccionesScreen> {
                 ),
 
               // Observaciones
-              if (direccion.observaciones != null && direccion.observaciones!.isNotEmpty)
+              if (direccion.observaciones != null &&
+                  direccion.observaciones!.isNotEmpty)
                 Padding(
                   padding: const EdgeInsets.only(bottom: 8),
                   child: Row(
@@ -306,7 +303,9 @@ class _MisDireccionesScreenState extends State<MisDireccionesScreen> {
                         child: Text(
                           direccion.observaciones!,
                           style: TextStyle(
-                            fontSize: 13,
+                            fontSize: AppTextStyles.bodySmall(
+                              context,
+                            ).fontSize!,
                             color: Colors.grey.shade600,
                             fontStyle: FontStyle.italic,
                           ),
@@ -344,9 +343,7 @@ class _MisDireccionesScreenState extends State<MisDireccionesScreen> {
                     onPressed: () => _eliminarDireccion(direccion),
                     icon: const Icon(Icons.delete_outline, size: 18),
                     label: const Text('Eliminar'),
-                    style: TextButton.styleFrom(
-                      foregroundColor: Colors.red,
-                    ),
+                    style: TextButton.styleFrom(foregroundColor: Colors.red),
                   ),
                 ],
               ),

@@ -11,10 +11,7 @@ import '../../config/config.dart';
 class PedidoTrackingScreen extends StatefulWidget {
   final Pedido pedido;
 
-  const PedidoTrackingScreen({
-    super.key,
-    required this.pedido,
-  });
+  const PedidoTrackingScreen({super.key, required this.pedido});
 
   @override
   State<PedidoTrackingScreen> createState() => _PedidoTrackingScreenState();
@@ -47,7 +44,9 @@ class _PedidoTrackingScreenState extends State<PedidoTrackingScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('El tracking solo está disponible cuando el pedido está en ruta'),
+            content: Text(
+              'El tracking solo está disponible cuando el pedido está en ruta',
+            ),
             backgroundColor: Colors.orange,
           ),
         );
@@ -113,7 +112,10 @@ class _PedidoTrackingScreenState extends State<PedidoTrackingScreen> {
     final ubicacion = trackingProvider.ubicacionActual;
     final direccion = widget.pedido.direccionEntrega;
 
-    if (ubicacion != null && direccion?.latitud != null && direccion?.longitud != null && _mapController != null) {
+    if (ubicacion != null &&
+        direccion?.latitud != null &&
+        direccion?.longitud != null &&
+        _mapController != null) {
       // Calcular bounds correctamente
       final lat1 = ubicacion.latitud;
       final lon1 = ubicacion.longitud;
@@ -130,9 +132,7 @@ class _PedidoTrackingScreenState extends State<PedidoTrackingScreen> {
         northeast: LatLng(northeastLat, northeastLon),
       );
 
-      _mapController!.animateCamera(
-        CameraUpdate.newLatLngBounds(bounds, 100),
-      );
+      _mapController!.animateCamera(CameraUpdate.newLatLngBounds(bounds, 100));
     }
   }
 
@@ -158,7 +158,8 @@ class _PedidoTrackingScreenState extends State<PedidoTrackingScreen> {
       body: Consumer<TrackingProvider>(
         builder: (context, trackingProvider, _) {
           // Estado de carga inicial
-          if (trackingProvider.isLoading && trackingProvider.ubicacionActual == null) {
+          if (trackingProvider.isLoading &&
+              trackingProvider.ubicacionActual == null) {
             return const Center(child: CircularProgressIndicator());
           }
 
@@ -211,7 +212,8 @@ class _PedidoTrackingScreenState extends State<PedidoTrackingScreen> {
                 ),
 
                 // Panel de información del chofer y camión
-                if (widget.pedido.chofer != null || widget.pedido.camion != null)
+                if (widget.pedido.chofer != null ||
+                    widget.pedido.camion != null)
                   Positioned(
                     bottom: 0,
                     left: 0,
@@ -245,11 +247,13 @@ class _PedidoTrackingScreenState extends State<PedidoTrackingScreen> {
                             ),
                           ),
                           const SizedBox(width: 6),
-                          const Text(
+                          Text(
                             'En vivo',
                             style: TextStyle(
                               color: Colors.white,
-                              fontSize: 12,
+                              fontSize: AppTextStyles.bodySmall(
+                                context,
+                              ).fontSize!,
                               fontWeight: FontWeight.w600,
                             ),
                           ),
@@ -291,7 +295,9 @@ class _PedidoTrackingScreenState extends State<PedidoTrackingScreen> {
             widget.pedido.direccionEntrega!.latitud!,
             widget.pedido.direccionEntrega!.longitud!,
           ),
-          icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueGreen),
+          icon: BitmapDescriptor.defaultMarkerWithHue(
+            BitmapDescriptor.hueGreen,
+          ),
           infoWindow: InfoWindow(
             title: '📍 Tu dirección',
             snippet: widget.pedido.direccionEntrega!.direccion,
@@ -303,7 +309,10 @@ class _PedidoTrackingScreenState extends State<PedidoTrackingScreen> {
     return markers;
   }
 
-  Widget _buildInfoPanel(DistanciaEstimada? distancia, UbicacionTracking ubicacion) {
+  Widget _buildInfoPanel(
+    DistanciaEstimada? distancia,
+    UbicacionTracking ubicacion,
+  ) {
     return Column(
       children: [
         // SLA Status Card - FASE 6 (si está disponible)
@@ -327,176 +336,188 @@ class _PedidoTrackingScreenState extends State<PedidoTrackingScreen> {
           child: Column(
             children: [
               if (distancia != null) ...[
-            Padding(
-              padding: const EdgeInsets.all(16),
-              child: Row(
-                children: [
-                  // Distancia
-                  Expanded(
-                    child: Column(
-                      children: [
-                        Icon(
-                          Icons.straighten,
-                          size: 32,
-                          color: Theme.of(context).primaryColor,
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          distancia.distanciaFormateada,
-                          style: const TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        const Text(
-                          'Distancia',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: Colors.grey,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-
-                  Container(
-                    width: 1,
-                    height: 60,
-                    color: Colors.grey.shade300,
-                  ),
-
-                  // Tiempo estimado
-                  Expanded(
-                    child: Column(
-                      children: [
-                        Icon(
-                          Icons.access_time,
-                          size: 32,
-                          color: Theme.of(context).primaryColor,
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          distancia.tiempoFormateado,
-                          style: const TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        const Text(
-                          'Tiempo estimado',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: Colors.grey,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-
-                  Container(
-                    width: 1,
-                    height: 60,
-                    color: Colors.grey.shade300,
-                  ),
-
-                  // Velocidad
-                  Expanded(
-                    child: Column(
-                      children: [
-                        Icon(
-                          Icons.speed,
-                          size: 32,
-                          color: Theme.of(context).primaryColor,
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          ubicacion.velocidadFormateada,
-                          style: const TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        const Text(
-                          'Velocidad',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: Colors.grey,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-            // Alerta si está cerca
-            if (distancia.estaMuyCerca)
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Colors.green.shade50,
-                  borderRadius: const BorderRadius.only(
-                    bottomLeft: Radius.circular(12),
-                    bottomRight: Radius.circular(12),
-                  ),
-                ),
-                child: Row(
-                  children: [
-                    Icon(Icons.check_circle, color: Colors.green.shade700),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Text(
-                        '¡El camión está muy cerca!',
-                        style: TextStyle(
-                          color: Colors.green.shade900,
-                          fontWeight: FontWeight.w600,
+                Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Row(
+                    children: [
+                      // Distancia
+                      Expanded(
+                        child: Column(
+                          children: [
+                            Icon(
+                              Icons.straighten,
+                              size: 32,
+                              color: Theme.of(context).primaryColor,
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              distancia.distanciaFormateada,
+                              style: TextStyle(
+                                fontSize: AppTextStyles.headlineMedium(
+                                  context,
+                                ).fontSize!,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            Text(
+                              'Distancia',
+                              style: TextStyle(
+                                fontSize: AppTextStyles.bodySmall(
+                                  context,
+                                ).fontSize!,
+                                color: Colors.grey,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
-                    ),
-                  ],
-                ),
-              )
-            else if (distancia.estaCerca)
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Colors.orange.shade50,
-                  borderRadius: const BorderRadius.only(
-                    bottomLeft: Radius.circular(12),
-                    bottomRight: Radius.circular(12),
-                  ),
-                ),
-                child: Row(
-                  children: [
-                    Icon(Icons.location_on, color: Colors.orange.shade700),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Text(
-                        'El camión se está acercando',
-                        style: TextStyle(
-                          color: Colors.orange.shade900,
-                          fontWeight: FontWeight.w600,
+
+                      Container(
+                        width: 1,
+                        height: 60,
+                        color: Colors.grey.shade300,
+                      ),
+
+                      // Tiempo estimado
+                      Expanded(
+                        child: Column(
+                          children: [
+                            Icon(
+                              Icons.access_time,
+                              size: 32,
+                              color: Theme.of(context).primaryColor,
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              distancia.tiempoFormateado,
+                              style: TextStyle(
+                                fontSize: AppTextStyles.headlineMedium(
+                                  context,
+                                ).fontSize!,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            Text(
+                              'Tiempo estimado',
+                              style: TextStyle(
+                                fontSize: AppTextStyles.bodySmall(
+                                  context,
+                                ).fontSize!,
+                                color: Colors.grey,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
-                    ),
-                  ],
+
+                      Container(
+                        width: 1,
+                        height: 60,
+                        color: Colors.grey.shade300,
+                      ),
+
+                      // Velocidad
+                      Expanded(
+                        child: Column(
+                          children: [
+                            Icon(
+                              Icons.speed,
+                              size: 32,
+                              color: Theme.of(context).primaryColor,
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              ubicacion.velocidadFormateada,
+                              style: TextStyle(
+                                fontSize: AppTextStyles.headlineMedium(
+                                  context,
+                                ).fontSize!,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            Text(
+                              'Velocidad',
+                              style: TextStyle(
+                                fontSize: AppTextStyles.bodySmall(
+                                  context,
+                                ).fontSize!,
+                                color: Colors.grey,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-          ] else ...[
-            // Sin información de distancia
-            const Padding(
-              padding: EdgeInsets.all(16),
-              child: Text(
-                'Calculando distancia...',
-                style: TextStyle(color: Colors.grey),
-              ),
-            ),
-          ],
-        ],
-      ),
+
+                // Alerta si está cerca
+                if (distancia.estaMuyCerca)
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.green.shade50,
+                      borderRadius: const BorderRadius.only(
+                        bottomLeft: Radius.circular(12),
+                        bottomRight: Radius.circular(12),
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(Icons.check_circle, color: Colors.green.shade700),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Text(
+                            '¡El camión está muy cerca!',
+                            style: TextStyle(
+                              color: Colors.green.shade900,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  )
+                else if (distancia.estaCerca)
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.orange.shade50,
+                      borderRadius: const BorderRadius.only(
+                        bottomLeft: Radius.circular(12),
+                        bottomRight: Radius.circular(12),
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(Icons.location_on, color: Colors.orange.shade700),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Text(
+                            'El camión se está acercando',
+                            style: TextStyle(
+                              color: Colors.orange.shade900,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+              ] else ...[
+                // Sin información de distancia
+                const Padding(
+                  padding: EdgeInsets.all(16),
+                  child: Text(
+                    'Calculando distancia...',
+                    style: TextStyle(color: Colors.grey),
+                  ),
+                ),
+              ],
+            ],
+          ),
         ),
       ],
     );
@@ -525,7 +546,7 @@ class _PedidoTrackingScreenState extends State<PedidoTrackingScreen> {
                   style: TextStyle(
                     fontWeight: FontWeight.bold,
                     color: Colors.blue[900],
-                    fontSize: 14,
+                    fontSize: AppTextStyles.bodyMedium(context).fontSize!,
                   ),
                 ),
               ),
@@ -544,13 +565,19 @@ class _PedidoTrackingScreenState extends State<PedidoTrackingScreen> {
                 if (widget.pedido.direccionEntrega?.ciudad != null)
                   Row(
                     children: [
-                      Icon(Icons.location_on, color: Colors.grey[600], size: 16),
+                      Icon(
+                        Icons.location_on,
+                        color: Colors.grey[600],
+                        size: 16,
+                      ),
                       const SizedBox(width: 8),
                       Expanded(
                         child: Text(
                           'Entrega en: ${widget.pedido.direccionEntrega?.ciudad}',
                           style: TextStyle(
-                            fontSize: 12,
+                            fontSize: AppTextStyles.bodySmall(
+                              context,
+                            ).fontSize!,
                             color: Colors.grey[700],
                           ),
                         ),
@@ -566,7 +593,7 @@ class _PedidoTrackingScreenState extends State<PedidoTrackingScreen> {
                       child: Text(
                         'Recuerda estar atento a tu teléfono',
                         style: TextStyle(
-                          fontSize: 12,
+                          fontSize: AppTextStyles.bodySmall(context).fontSize!,
                           color: Colors.grey[700],
                         ),
                       ),
@@ -599,10 +626,10 @@ class _PedidoTrackingScreenState extends State<PedidoTrackingScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             'Información de Entrega',
             style: TextStyle(
-              fontSize: 16,
+              fontSize: AppTextStyles.bodyLarge(context).fontSize!,
               fontWeight: FontWeight.bold,
             ),
           ),
@@ -621,25 +648,28 @@ class _PedidoTrackingScreenState extends State<PedidoTrackingScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
+                      Text(
                         'Chofer',
                         style: TextStyle(
-                          fontSize: 12,
+                          fontSize: AppTextStyles.bodySmall(context).fontSize!,
                           color: Colors.grey,
                         ),
                       ),
                       Text(
                         widget.pedido.chofer!.nombreCompleto,
-                        style: const TextStyle(
-                          fontSize: 16,
+                        style: TextStyle(
+                          fontSize: AppTextStyles.bodyLarge(context).fontSize!,
                           fontWeight: FontWeight.w600,
                         ),
                       ),
-                      if (widget.pedido.chofer!.telefono != null && widget.pedido.chofer!.telefono!.isNotEmpty)
+                      if (widget.pedido.chofer!.telefono != null &&
+                          widget.pedido.chofer!.telefono!.isNotEmpty)
                         Text(
                           widget.pedido.chofer!.telefono ?? "N/A",
-                          style: const TextStyle(
-                            fontSize: 13,
+                          style: TextStyle(
+                            fontSize: AppTextStyles.bodySmall(
+                              context,
+                            ).fontSize!,
                             color: Colors.grey,
                           ),
                         ),
@@ -653,7 +683,9 @@ class _PedidoTrackingScreenState extends State<PedidoTrackingScreen> {
                     // TODO: Implementar llamada telefónica
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
-                        content: Text('Llamar a ${widget.pedido.chofer!.telefono}'),
+                        content: Text(
+                          'Llamar a ${widget.pedido.chofer!.telefono}',
+                        ),
                       ),
                     );
                   },
@@ -669,31 +701,34 @@ class _PedidoTrackingScreenState extends State<PedidoTrackingScreen> {
               children: [
                 CircleAvatar(
                   backgroundColor: Colors.blue.shade100,
-                  child: Icon(Icons.local_shipping, color: Colors.blue.shade700),
+                  child: Icon(
+                    Icons.local_shipping,
+                    color: Colors.blue.shade700,
+                  ),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
+                      Text(
                         'Vehículo',
                         style: TextStyle(
-                          fontSize: 12,
+                          fontSize: AppTextStyles.bodySmall(context).fontSize!,
                           color: Colors.grey,
                         ),
                       ),
                       Text(
                         widget.pedido.camion!.descripcion,
-                        style: const TextStyle(
-                          fontSize: 16,
+                        style: TextStyle(
+                          fontSize: AppTextStyles.bodyLarge(context).fontSize!,
                           fontWeight: FontWeight.w600,
                         ),
                       ),
                       Text(
                         'Placa: ${widget.pedido.camion!.placaFormateada}',
-                        style: const TextStyle(
-                          fontSize: 13,
+                        style: TextStyle(
+                          fontSize: AppTextStyles.bodySmall(context).fontSize!,
                           color: Colors.grey,
                         ),
                       ),
@@ -713,16 +748,12 @@ class _PedidoTrackingScreenState extends State<PedidoTrackingScreen> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(
-            Icons.location_off,
-            size: 80,
-            color: Colors.grey.shade400,
-          ),
+          Icon(Icons.location_off, size: 80, color: Colors.grey.shade400),
           const SizedBox(height: 24),
-          const Text(
+          Text(
             'Ubicación no disponible',
             style: TextStyle(
-              fontSize: 20,
+              fontSize: AppTextStyles.headlineMedium(context).fontSize!,
               fontWeight: FontWeight.bold,
             ),
           ),
@@ -747,9 +778,12 @@ class _PedidoTrackingScreenState extends State<PedidoTrackingScreen> {
         children: [
           const Icon(Icons.error_outline, size: 80, color: Colors.red),
           const SizedBox(height: 24),
-          const Text(
+          Text(
             'Error al cargar tracking',
-            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+            style: TextStyle(
+              fontSize: AppTextStyles.headlineMedium(context).fontSize!,
+              fontWeight: FontWeight.bold,
+            ),
           ),
           const SizedBox(height: 12),
           Padding(

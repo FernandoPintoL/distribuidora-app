@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import 'dart:io';
 import 'package:path_provider/path_provider.dart';
 import 'package:http/http.dart' as http;
+import '../../config/app_text_styles.dart';
 import '../../models/models.dart';
 import '../../providers/providers.dart';
 import '../../services/print_service.dart';
@@ -137,14 +138,15 @@ class _VentaDetalleScreenState extends State<VentaDetalleScreen> {
                                 children: [
                                   Text(
                                     'Folio #${venta.id} | ${venta.numero}',
-                                    style: Theme.of(context).textTheme.titleLarge,
+                                    style: Theme.of(
+                                      context,
+                                    ).textTheme.titleLarge,
                                   ),
                                   const SizedBox(height: 4),
                                   Text(
                                     venta.fecha.toString().split(' ')[0],
-                                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                      color: Colors.grey,
-                                    ),
+                                    style: Theme.of(context).textTheme.bodySmall
+                                        ?.copyWith(color: Colors.grey),
                                   ),
                                 ],
                               ),
@@ -155,25 +157,36 @@ class _VentaDetalleScreenState extends State<VentaDetalleScreen> {
                                 Text(
                                   'Bs. ${venta.total.toStringAsFixed(2)}',
                                   style: TextStyle(
-                                    fontSize: 18,
+                                    fontSize: AppTextStyles.headlineSmall(
+                                      context,
+                                    ).fontSize!,
                                     fontWeight: FontWeight.bold,
-                                    color: Theme.of(context).brightness == Brightness.dark
-                                      ? Colors.greenAccent
-                                      : Colors.green,
+                                    color:
+                                        Theme.of(context).brightness ==
+                                            Brightness.dark
+                                        ? Colors.greenAccent
+                                        : Colors.green,
                                   ),
                                 ),
                                 const SizedBox(height: 4),
                                 Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 8,
+                                    vertical: 4,
+                                  ),
                                   decoration: BoxDecoration(
-                                    color: Theme.of(context).brightness == Brightness.dark
-                                      ? Colors.grey[700]
-                                      : Colors.grey[200],
+                                    color:
+                                        Theme.of(context).brightness ==
+                                            Brightness.dark
+                                        ? Colors.grey[700]
+                                        : Colors.grey[200],
                                     borderRadius: BorderRadius.circular(4),
                                   ),
                                   child: Text(
                                     venta.estadoPago,
-                                    style: Theme.of(context).textTheme.labelSmall,
+                                    style: Theme.of(
+                                      context,
+                                    ).textTheme.labelSmall,
                                   ),
                                 ),
                               ],
@@ -200,14 +213,17 @@ class _VentaDetalleScreenState extends State<VentaDetalleScreen> {
                                     // Avatar con iniciales
                                     CircleAvatar(
                                       radius: 32,
-                                      backgroundColor:
-                                          Theme.of(context).primaryColor,
+                                      backgroundColor: Theme.of(
+                                        context,
+                                      ).primaryColor,
                                       child: Text(
                                         (venta.clienteNombre ?? 'C')
                                             .substring(0, 1)
                                             .toUpperCase(),
-                                        style: const TextStyle(
-                                          fontSize: 24,
+                                        style: TextStyle(
+                                          fontSize: AppTextStyles.displaySmall(
+                                            context,
+                                          ).fontSize!,
                                           fontWeight: FontWeight.bold,
                                           color: Colors.white,
                                         ),
@@ -223,9 +239,12 @@ class _VentaDetalleScreenState extends State<VentaDetalleScreen> {
                                           Text(
                                             venta.clienteNombre ??
                                                 'Cliente desconocido',
-                                            style: const TextStyle(
+                                            style: TextStyle(
                                               fontWeight: FontWeight.bold,
-                                              fontSize: 14,
+                                              fontSize:
+                                                  AppTextStyles.bodyMedium(
+                                                    context,
+                                                  ).fontSize!,
                                             ),
                                             maxLines: 2,
                                             overflow: TextOverflow.ellipsis,
@@ -233,12 +252,13 @@ class _VentaDetalleScreenState extends State<VentaDetalleScreen> {
                                           const SizedBox(height: 2),
                                           Text(
                                             'NIT: ${venta.cliente ?? 'N/A'}',
-                                            style: Theme.of(context)
-                                                .textTheme
-                                                .bodySmall,
+                                            style: Theme.of(
+                                              context,
+                                            ).textTheme.bodySmall,
                                           ),
                                           if (venta.clienteLocalidad != null &&
-                                              venta.clienteLocalidad!
+                                              venta
+                                                  .clienteLocalidad!
                                                   .isNotEmpty) ...[
                                             const SizedBox(height: 2),
                                             Text(
@@ -247,11 +267,13 @@ class _VentaDetalleScreenState extends State<VentaDetalleScreen> {
                                                   .textTheme
                                                   .bodySmall
                                                   ?.copyWith(
-                                                    color: Theme.of(context)
-                                                            .brightness ==
-                                                        Brightness.dark
-                                                      ? Colors.greenAccent
-                                                      : Colors.green,
+                                                    color:
+                                                        Theme.of(
+                                                              context,
+                                                            ).brightness ==
+                                                            Brightness.dark
+                                                        ? Colors.greenAccent
+                                                        : Colors.green,
                                                     fontWeight: FontWeight.w500,
                                                   ),
                                               maxLines: 1,
@@ -282,10 +304,13 @@ class _VentaDetalleScreenState extends State<VentaDetalleScreen> {
                                           crossAxisAlignment:
                                               CrossAxisAlignment.start,
                                           children: [
-                                            const Text(
+                                            Text(
                                               'Dirección de Entrega',
                                               style: TextStyle(
-                                                fontSize: 11,
+                                                fontSize:
+                                                    AppTextStyles.labelSmall(
+                                                      context,
+                                                    ).fontSize!,
                                                 fontWeight: FontWeight.w600,
                                                 color: Colors.grey,
                                               ),
@@ -293,8 +318,11 @@ class _VentaDetalleScreenState extends State<VentaDetalleScreen> {
                                             const SizedBox(height: 2),
                                             Text(
                                               venta.direccion!,
-                                              style: const TextStyle(
-                                                fontSize: 13,
+                                              style: TextStyle(
+                                                fontSize:
+                                                    AppTextStyles.bodySmall(
+                                                      context,
+                                                    ).fontSize!,
                                                 fontWeight: FontWeight.w500,
                                               ),
                                               maxLines: 2,
@@ -310,17 +338,24 @@ class _VentaDetalleScreenState extends State<VentaDetalleScreen> {
                                       venta.longitud != null) ...[
                                     const SizedBox(height: 8),
                                     Row(
-                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.spaceBetween,
                                       children: [
                                         Expanded(
                                           child: Text(
                                             '🧭 ${venta.latitud!.toStringAsFixed(4)}, ${venta.longitud!.toStringAsFixed(4)}',
                                             style: TextStyle(
-                                              fontSize: 11,
-                                              color: Theme.of(context).brightness ==
-                                                  Brightness.dark
-                                                ? Colors.grey[400]
-                                                : Colors.grey[600],
+                                              fontSize:
+                                                  AppTextStyles.labelSmall(
+                                                    context,
+                                                  ).fontSize!,
+                                              color:
+                                                  Theme.of(
+                                                        context,
+                                                      ).brightness ==
+                                                      Brightness.dark
+                                                  ? Colors.grey[400]
+                                                  : Colors.grey[600],
                                             ),
                                           ),
                                         ),
@@ -362,9 +397,9 @@ class _VentaDetalleScreenState extends State<VentaDetalleScreen> {
                                         color: Colors.green,
                                         onPressed: () =>
                                             PhoneUtils.llamarCliente(
-                                          context,
-                                          venta.clienteTelefono,
-                                        ),
+                                              context,
+                                              venta.clienteTelefono,
+                                            ),
                                       ),
                                       // Botón WhatsApp
                                       _buildContactButton(
@@ -374,9 +409,9 @@ class _VentaDetalleScreenState extends State<VentaDetalleScreen> {
                                         color: Colors.green[600]!,
                                         onPressed: () =>
                                             PhoneUtils.enviarWhatsApp(
-                                          context,
-                                          venta.clienteTelefono,
-                                        ),
+                                              context,
+                                              venta.clienteTelefono,
+                                            ),
                                       ),
                                       // Botón Descargar PDF
                                       _buildContactButton(
@@ -415,11 +450,15 @@ class _VentaDetalleScreenState extends State<VentaDetalleScreen> {
                             Expanded(
                               child: Row(
                                 children: [
-                                  const Icon(Icons.check_circle_outline, size: 18),
+                                  const Icon(
+                                    Icons.check_circle_outline,
+                                    size: 18,
+                                  ),
                                   const SizedBox(width: 8),
                                   Expanded(
                                     child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
                                       children: [
                                         const Text(
                                           'Estado Documento',
@@ -427,7 +466,9 @@ class _VentaDetalleScreenState extends State<VentaDetalleScreen> {
                                         ),
                                         Text(
                                           venta.estadoLogistico,
-                                          style: const TextStyle(fontWeight: FontWeight.bold),
+                                          style: const TextStyle(
+                                            fontWeight: FontWeight.bold,
+                                          ),
                                         ),
                                       ],
                                     ),
@@ -438,19 +479,26 @@ class _VentaDetalleScreenState extends State<VentaDetalleScreen> {
                             Expanded(
                               child: Row(
                                 children: [
-                                  const Icon(Icons.local_shipping_outlined, size: 18),
+                                  const Icon(
+                                    Icons.local_shipping_outlined,
+                                    size: 18,
+                                  ),
                                   const SizedBox(width: 8),
                                   Expanded(
                                     child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
                                       children: [
                                         const Text(
                                           'Estado Logístico',
                                           style: TextStyle(fontSize: 12),
                                         ),
                                         Text(
-                                          venta.estadoLogisticoCodigo ?? 'SIN_ENTREGA',
-                                          style: const TextStyle(fontWeight: FontWeight.bold),
+                                          venta.estadoLogisticoCodigo ??
+                                              'SIN_ENTREGA',
+                                          style: const TextStyle(
+                                            fontWeight: FontWeight.bold,
+                                          ),
                                           overflow: TextOverflow.ellipsis,
                                         ),
                                       ],
@@ -543,17 +591,21 @@ class _VentaDetalleScreenState extends State<VentaDetalleScreen> {
                                         color: Colors.grey[200],
                                         child: Center(
                                           child: Column(
-                                            mainAxisAlignment: MainAxisAlignment.center,
+                                            mainAxisAlignment:
+                                                MainAxisAlignment.center,
                                             children: [
                                               Icon(
-                                                Icons.image_not_supported_outlined,
+                                                Icons
+                                                    .image_not_supported_outlined,
                                                 size: 48,
                                                 color: Colors.grey[400],
                                               ),
                                               const SizedBox(height: 8),
                                               Text(
                                                 'Imagen no disponible',
-                                                style: TextStyle(color: Colors.grey[600]),
+                                                style: TextStyle(
+                                                  color: Colors.grey[600],
+                                                ),
                                               ),
                                             ],
                                           ),
@@ -566,9 +618,14 @@ class _VentaDetalleScreenState extends State<VentaDetalleScreen> {
                                         color: Colors.grey[200],
                                         child: Center(
                                           child: CircularProgressIndicator(
-                                            value: loadingProgress.expectedTotalBytes != null
-                                                ? loadingProgress.cumulativeBytesLoaded /
-                                                    loadingProgress.expectedTotalBytes!
+                                            value:
+                                                loadingProgress
+                                                        .expectedTotalBytes !=
+                                                    null
+                                                ? loadingProgress
+                                                          .cumulativeBytesLoaded /
+                                                      loadingProgress
+                                                          .expectedTotalBytes!
                                                 : null,
                                           ),
                                         ),
@@ -672,18 +729,22 @@ class _VentaDetalleScreenState extends State<VentaDetalleScreen> {
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            const Text(
+                            Text(
                               'Total:',
                               style: TextStyle(
                                 fontWeight: FontWeight.bold,
-                                fontSize: 16,
+                                fontSize: AppTextStyles.bodyLarge(
+                                  context,
+                                ).fontSize!,
                               ),
                             ),
                             Text(
                               'Bs. ${venta.total.toStringAsFixed(2)}',
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontWeight: FontWeight.bold,
-                                fontSize: 16,
+                                fontSize: AppTextStyles.bodyLarge(
+                                  context,
+                                ).fontSize!,
                                 color: Colors.green,
                               ),
                             ),
@@ -723,11 +784,7 @@ class _VentaDetalleScreenState extends State<VentaDetalleScreen> {
                 shape: BoxShape.circle,
                 color: color.withValues(alpha: 0.15),
               ),
-              child: Icon(
-                icon,
-                color: color,
-                size: 20,
-              ),
+              child: Icon(icon, color: color, size: 20),
             ),
           ),
         ),
@@ -735,7 +792,7 @@ class _VentaDetalleScreenState extends State<VentaDetalleScreen> {
         Text(
           label,
           style: TextStyle(
-            fontSize: 11,
+            fontSize: AppTextStyles.labelSmall(context).fontSize!,
             fontWeight: FontWeight.w600,
             color: color,
           ),
@@ -794,10 +851,7 @@ class _VentaDetalleScreenState extends State<VentaDetalleScreen> {
       );
 
       if (await canLaunchUrl(googleMapsUrl)) {
-        await launchUrl(
-          googleMapsUrl,
-          mode: LaunchMode.externalApplication,
-        );
+        await launchUrl(googleMapsUrl, mode: LaunchMode.externalApplication);
       } else {
         final mapsUrl = Uri.parse(
           'geo:$latitud,$longitud?q=$latitud,$longitud',
@@ -807,18 +861,16 @@ class _VentaDetalleScreenState extends State<VentaDetalleScreen> {
         } else {
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('❌ No se pudo abrir Google Maps'),
-              ),
+              const SnackBar(content: Text('❌ No se pudo abrir Google Maps')),
             );
           }
         }
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('❌ Error: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('❌ Error: $e')));
       }
     }
   }
@@ -897,12 +949,16 @@ class _VentaDetalleScreenState extends State<VentaDetalleScreen> {
     // Extraer datos de la entrega
     final entregaId = _entregaData?['id'];
     final numeroEntrega = _entregaData?['numero_entrega'] ?? 'N/A';
-    final estadoEntrega = _entregaData?['tipo_novedad']?['nombre'] ?? 'Desconocido';
-    final estadoColor = _getEstadoEntregaColor(_entregaData?['tipo_novedad']?['codigo'] ?? '');
+    final estadoEntrega =
+        _entregaData?['tipo_novedad']?['nombre'] ?? 'Desconocido';
+    final estadoColor = _getEstadoEntregaColor(
+      _entregaData?['tipo_novedad']?['codigo'] ?? '',
+    );
 
     // Datos del chofer
     final choferNombre = _entregaData?['chofer']?['nombre'] ?? 'Sin asignar';
-    final choferTelefono = _entregaData?['chofer']?['usuario']?['telefono'] ?? '';
+    final choferTelefono =
+        _entregaData?['chofer']?['usuario']?['telefono'] ?? '';
 
     // Datos del vehículo
     final vehiculoPlaca = _entregaData?['vehiculo']?['placa'] ?? 'N/A';
@@ -916,26 +972,29 @@ class _VentaDetalleScreenState extends State<VentaDetalleScreen> {
 
     // ✅ NUEVA: Extraer confirmacionesVentas (última confirmación)
     final confirmacionesVentas = _entregaData?['confirmacionesVentas'] as List?;
-    final ultimaConfirmacion = confirmacionesVentas != null && confirmacionesVentas.isNotEmpty
+    final ultimaConfirmacion =
+        confirmacionesVentas != null && confirmacionesVentas.isNotEmpty
         ? confirmacionesVentas.last as Map
         : null;
     final tipoEntrega = ultimaConfirmacion?['tipo_entrega'];
     final tipoNovedad = ultimaConfirmacion?['tipo_novedad'];
-    final observacionesLogistica = ultimaConfirmacion?['observaciones_logistica'];
+    final observacionesLogistica =
+        ultimaConfirmacion?['observaciones_logistica'];
     final firmaDigitalUrl = ultimaConfirmacion?['firma_digital_url'];
-    final productosDevueltos = ultimaConfirmacion?['productos_devueltos'] as List? ?? [];  // ✅ NUEVO 2026-02-17: Productos devueltos
-    final montoDevuelto = ultimaConfirmacion?['monto_devuelto'];  // ✅ NUEVO 2026-02-17: Monto devuelto
-    final montoAceptado = ultimaConfirmacion?['monto_aceptado'];  // ✅ NUEVO 2026-02-17: Monto aceptado
+    final productosDevueltos =
+        ultimaConfirmacion?['productos_devueltos'] as List? ??
+        []; // ✅ NUEVO 2026-02-17: Productos devueltos
+    final montoDevuelto =
+        ultimaConfirmacion?['monto_devuelto']; // ✅ NUEVO 2026-02-17: Monto devuelto
+    final montoAceptado =
+        ultimaConfirmacion?['monto_aceptado']; // ✅ NUEVO 2026-02-17: Monto aceptado
 
     return Column(
       children: [
         // Título de la sección
         Row(
           children: [
-            Icon(Icons.local_shipping_outlined,
-              color: estadoColor,
-              size: 24,
-            ),
+            Icon(Icons.local_shipping_outlined, color: estadoColor, size: 24),
             const SizedBox(width: 12),
             Text(
               'Detalles de Entrega',
@@ -964,21 +1023,23 @@ class _VentaDetalleScreenState extends State<VentaDetalleScreen> {
                       children: [
                         Text(
                           'Entrega #$numeroEntrega',
-                          style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
+                          style: Theme.of(context).textTheme.titleSmall
+                              ?.copyWith(fontWeight: FontWeight.bold),
                         ),
                         const SizedBox(height: 4),
                         Text(
                           'ID: $entregaId',
-                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: Colors.grey,
-                          ),
+                          style: Theme.of(
+                            context,
+                          ).textTheme.bodySmall?.copyWith(color: Colors.grey),
                         ),
                       ],
                     ),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 6,
+                      ),
                       decoration: BoxDecoration(
                         color: estadoColor.withValues(alpha: 0.2),
                         border: Border.all(color: estadoColor),
@@ -987,7 +1048,7 @@ class _VentaDetalleScreenState extends State<VentaDetalleScreen> {
                       child: Text(
                         estadoEntrega,
                         style: TextStyle(
-                          fontSize: 12,
+                          fontSize: AppTextStyles.bodySmall(context).fontSize!,
                           fontWeight: FontWeight.bold,
                           color: estadoColor,
                         ),
@@ -1004,7 +1065,9 @@ class _VentaDetalleScreenState extends State<VentaDetalleScreen> {
                   icon: Icons.person_outline,
                   label: 'Chofer',
                   value: choferNombre,
-                  secondaryValue: choferTelefono.isNotEmpty ? choferTelefono : null,
+                  secondaryValue: choferTelefono.isNotEmpty
+                      ? choferTelefono
+                      : null,
                   onSecondaryTap: choferTelefono.isNotEmpty
                       ? () => PhoneUtils.llamarCliente(context, choferTelefono)
                       : null,
@@ -1073,7 +1136,8 @@ class _VentaDetalleScreenState extends State<VentaDetalleScreen> {
                     const SizedBox(height: 12),
                   ],
                   // Tipo de Novedad (si aplica)
-                  if (tipoNovedad != null && tipoNovedad.toString().isNotEmpty) ...[
+                  if (tipoNovedad != null &&
+                      tipoNovedad.toString().isNotEmpty) ...[
                     _buildEntregaInfoRow(
                       context,
                       icon: Icons.info_outlined,
@@ -1083,23 +1147,29 @@ class _VentaDetalleScreenState extends State<VentaDetalleScreen> {
                     const SizedBox(height: 12),
                   ],
                   // ✅ NUEVO 2026-02-17: Productos Devueltos en DEVOLUCION_PARCIAL
-                  if (tipoNovedad?.toString().toUpperCase() == 'DEVOLUCION_PARCIAL' && productosDevueltos.isNotEmpty) ...[
+                  if (tipoNovedad?.toString().toUpperCase() ==
+                          'DEVOLUCION_PARCIAL' &&
+                      productosDevueltos.isNotEmpty) ...[
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
                           '📦 Productos Devueltos',
-                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            fontSize: 11,
-                            color: Colors.grey,
-                            fontWeight: FontWeight.w600,
-                          ),
+                          style: Theme.of(context).textTheme.bodySmall
+                              ?.copyWith(
+                                fontSize: AppTextStyles.labelSmall(
+                                  context,
+                                ).fontSize!,
+                                color: Colors.grey,
+                                fontWeight: FontWeight.w600,
+                              ),
                         ),
                         const SizedBox(height: 8),
                         Container(
                           width: double.infinity,
                           decoration: BoxDecoration(
-                            color: Theme.of(context).brightness == Brightness.dark
+                            color:
+                                Theme.of(context).brightness == Brightness.dark
                                 ? Colors.orange[900]?.withValues(alpha: 0.2)
                                 : Colors.orange[50],
                             borderRadius: BorderRadius.circular(8),
@@ -1109,12 +1179,17 @@ class _VentaDetalleScreenState extends State<VentaDetalleScreen> {
                           ),
                           child: Column(
                             children: [
-                              ...productosDevueltos.asMap().entries.map((entry) {
+                              ...productosDevueltos.asMap().entries.map((
+                                entry,
+                              ) {
                                 final producto = entry.value as Map?;
                                 final index = entry.key;
-                                final nombre = producto?['producto_nombre'] ?? 'Producto desconocido';
+                                final nombre =
+                                    producto?['producto_nombre'] ??
+                                    'Producto desconocido';
                                 final cantidad = producto?['cantidad'] ?? 0;
-                                final precioUnitario = producto?['precio_unitario'] ?? 0;
+                                final precioUnitario =
+                                    producto?['precio_unitario'] ?? 0;
                                 final subtotal = producto?['subtotal'] ?? 0;
 
                                 return Column(
@@ -1122,39 +1197,53 @@ class _VentaDetalleScreenState extends State<VentaDetalleScreen> {
                                     Padding(
                                       padding: const EdgeInsets.all(12),
                                       child: Column(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
                                         children: [
                                           Text(
                                             nombre,
-                                            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                              fontWeight: FontWeight.w600,
-                                            ),
+                                            style: Theme.of(context)
+                                                .textTheme
+                                                .bodyMedium
+                                                ?.copyWith(
+                                                  fontWeight: FontWeight.w600,
+                                                ),
                                           ),
                                           const SizedBox(height: 6),
                                           Row(
-                                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                            mainAxisAlignment:
+                                                MainAxisAlignment.spaceBetween,
                                             children: [
                                               Text(
                                                 'Cantidad: $cantidad',
-                                                style: Theme.of(context).textTheme.bodySmall,
+                                                style: Theme.of(
+                                                  context,
+                                                ).textTheme.bodySmall,
                                               ),
                                               Text(
                                                 'Unitario: \$${precioUnitario.toStringAsFixed(2)}',
-                                                style: Theme.of(context).textTheme.bodySmall,
+                                                style: Theme.of(
+                                                  context,
+                                                ).textTheme.bodySmall,
                                               ),
                                             ],
                                           ),
                                           const SizedBox(height: 6),
                                           Row(
-                                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                            mainAxisAlignment:
+                                                MainAxisAlignment.spaceBetween,
                                             children: [
                                               const SizedBox.shrink(),
                                               Text(
                                                 'Subtotal: \$${subtotal.toStringAsFixed(2)}',
-                                                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                                  fontWeight: FontWeight.w600,
-                                                  color: Colors.orange,
-                                                ),
+                                                style: Theme.of(context)
+                                                    .textTheme
+                                                    .bodySmall
+                                                    ?.copyWith(
+                                                      fontWeight:
+                                                          FontWeight.w600,
+                                                      color: Colors.orange,
+                                                    ),
                                               ),
                                             ],
                                           ),
@@ -1179,7 +1268,9 @@ class _VentaDetalleScreenState extends State<VentaDetalleScreen> {
                             width: double.infinity,
                             padding: const EdgeInsets.all(12),
                             decoration: BoxDecoration(
-                              color: Theme.of(context).brightness == Brightness.dark
+                              color:
+                                  Theme.of(context).brightness ==
+                                      Brightness.dark
                                   ? Colors.grey[700]?.withValues(alpha: 0.3)
                                   : Colors.grey[100],
                               borderRadius: BorderRadius.circular(8),
@@ -1189,36 +1280,48 @@ class _VentaDetalleScreenState extends State<VentaDetalleScreen> {
                               children: [
                                 if (montoDevuelto != null)
                                   Row(
-                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceBetween,
                                     children: [
                                       Text(
                                         'Total Devuelto:',
-                                        style: Theme.of(context).textTheme.bodySmall,
+                                        style: Theme.of(
+                                          context,
+                                        ).textTheme.bodySmall,
                                       ),
                                       Text(
                                         '\$${(montoDevuelto is num ? montoDevuelto : 0).toStringAsFixed(2)}',
-                                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                          fontWeight: FontWeight.w600,
-                                          color: Colors.red,
-                                        ),
+                                        style: Theme.of(context)
+                                            .textTheme
+                                            .bodySmall
+                                            ?.copyWith(
+                                              fontWeight: FontWeight.w600,
+                                              color: Colors.red,
+                                            ),
                                       ),
                                     ],
                                   ),
                                 if (montoAceptado != null) ...[
                                   const SizedBox(height: 6),
                                   Row(
-                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceBetween,
                                     children: [
                                       Text(
                                         'Monto Aceptado:',
-                                        style: Theme.of(context).textTheme.bodySmall,
+                                        style: Theme.of(
+                                          context,
+                                        ).textTheme.bodySmall,
                                       ),
                                       Text(
                                         '\$${(montoAceptado is num ? montoAceptado : 0).toStringAsFixed(2)}',
-                                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                          fontWeight: FontWeight.w600,
-                                          color: Colors.green,
-                                        ),
+                                        style: Theme.of(context)
+                                            .textTheme
+                                            .bodySmall
+                                            ?.copyWith(
+                                              fontWeight: FontWeight.w600,
+                                              color: Colors.green,
+                                            ),
                                       ),
                                     ],
                                   ),
@@ -1232,24 +1335,29 @@ class _VentaDetalleScreenState extends State<VentaDetalleScreen> {
                     ),
                   ],
                   // Observaciones
-                  if (observacionesLogistica != null && observacionesLogistica.toString().isNotEmpty) ...[
+                  if (observacionesLogistica != null &&
+                      observacionesLogistica.toString().isNotEmpty) ...[
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
                           '📝 Observaciones',
-                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            fontSize: 11,
-                            color: Colors.grey,
-                            fontWeight: FontWeight.w600,
-                          ),
+                          style: Theme.of(context).textTheme.bodySmall
+                              ?.copyWith(
+                                fontSize: AppTextStyles.labelSmall(
+                                  context,
+                                ).fontSize!,
+                                color: Colors.grey,
+                                fontWeight: FontWeight.w600,
+                              ),
                         ),
                         const SizedBox(height: 8),
                         Container(
                           width: double.infinity,
                           padding: const EdgeInsets.all(12),
                           decoration: BoxDecoration(
-                            color: Theme.of(context).brightness == Brightness.dark
+                            color:
+                                Theme.of(context).brightness == Brightness.dark
                                 ? Colors.grey[700]?.withValues(alpha: 0.3)
                                 : Colors.amber[50],
                             borderRadius: BorderRadius.circular(8),
@@ -1267,21 +1375,27 @@ class _VentaDetalleScreenState extends State<VentaDetalleScreen> {
                     ),
                   ],
                   // Firma Digital (si existe)
-                  if (firmaDigitalUrl != null && firmaDigitalUrl.toString().isNotEmpty) ...[
+                  if (firmaDigitalUrl != null &&
+                      firmaDigitalUrl.toString().isNotEmpty) ...[
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
                           '✍️ Firma Digital',
-                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            fontSize: 11,
-                            color: Colors.grey,
-                            fontWeight: FontWeight.w600,
-                          ),
+                          style: Theme.of(context).textTheme.bodySmall
+                              ?.copyWith(
+                                fontSize: AppTextStyles.labelSmall(
+                                  context,
+                                ).fontSize!,
+                                color: Colors.grey,
+                                fontWeight: FontWeight.w600,
+                              ),
                         ),
                         const SizedBox(height: 8),
                         GestureDetector(
-                          onTap: () => _mostrarVisorImagenes(context, [firmaDigitalUrl.toString()], 0),
+                          onTap: () => _mostrarVisorImagenes(context, [
+                            firmaDigitalUrl.toString(),
+                          ], 0),
                           child: Container(
                             decoration: BoxDecoration(
                               border: Border.all(color: Colors.grey[300]!),
@@ -1298,18 +1412,24 @@ class _VentaDetalleScreenState extends State<VentaDetalleScreen> {
                                     height: 80,
                                     color: Colors.grey[200],
                                     child: const Center(
-                                      child: Icon(Icons.broken_image, color: Colors.grey),
+                                      child: Icon(
+                                        Icons.broken_image,
+                                        color: Colors.grey,
+                                      ),
                                     ),
                                   );
                                 },
-                                loadingBuilder: (context, child, loadingProgress) {
-                                  if (loadingProgress == null) return child;
-                                  return Container(
-                                    height: 80,
-                                    color: Colors.grey[200],
-                                    child: const Center(child: CircularProgressIndicator()),
-                                  );
-                                },
+                                loadingBuilder:
+                                    (context, child, loadingProgress) {
+                                      if (loadingProgress == null) return child;
+                                      return Container(
+                                        height: 80,
+                                        color: Colors.grey[200],
+                                        child: const Center(
+                                          child: CircularProgressIndicator(),
+                                        ),
+                                      );
+                                    },
                               ),
                             ),
                           ),
@@ -1362,7 +1482,7 @@ class _VentaDetalleScreenState extends State<VentaDetalleScreen> {
               Text(
                 label,
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  fontSize: 11,
+                  fontSize: AppTextStyles.labelSmall(context).fontSize!,
                   color: Colors.grey,
                   fontWeight: FontWeight.w600,
                 ),
@@ -1370,9 +1490,9 @@ class _VentaDetalleScreenState extends State<VentaDetalleScreen> {
               const SizedBox(height: 2),
               Text(
                 value,
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  fontWeight: FontWeight.w500,
-                ),
+                style: Theme.of(
+                  context,
+                ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w500),
                 overflow: TextOverflow.ellipsis,
               ),
               if (secondaryValue != null) ...[
@@ -1382,9 +1502,11 @@ class _VentaDetalleScreenState extends State<VentaDetalleScreen> {
                   child: Text(
                     secondaryValue,
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      fontSize: 11,
+                      fontSize: AppTextStyles.labelSmall(context).fontSize!,
                       color: onSecondaryTap != null ? Colors.blue : Colors.grey,
-                      decoration: onSecondaryTap != null ? TextDecoration.underline : null,
+                      decoration: onSecondaryTap != null
+                          ? TextDecoration.underline
+                          : null,
                     ),
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -1436,7 +1558,8 @@ class _VentaDetalleScreenState extends State<VentaDetalleScreen> {
     if (_entregaData != null) {
       // Obtener fotos de confirmaciones
       if (_entregaData?['confirmacionesVentas'] != null) {
-        for (var confirmacion in _entregaData?['confirmacionesVentas'] as List) {
+        for (var confirmacion
+            in _entregaData?['confirmacionesVentas'] as List) {
           final conf = confirmacion as Map;
 
           // Fotos de la entrega
@@ -1450,7 +1573,8 @@ class _VentaDetalleScreenState extends State<VentaDetalleScreen> {
           }
 
           // Firma digital
-          if (conf['firma_digital_url'] != null && conf['firma_digital_url'].toString().isNotEmpty) {
+          if (conf['firma_digital_url'] != null &&
+              conf['firma_digital_url'].toString().isNotEmpty) {
             imagenes.add(conf['firma_digital_url'].toString());
           }
         }
@@ -1474,9 +1598,12 @@ class _VentaDetalleScreenState extends State<VentaDetalleScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             '📸 Imágenes de la Entrega',
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            style: TextStyle(
+              fontSize: AppTextStyles.bodyLarge(context).fontSize!,
+              fontWeight: FontWeight.bold,
+            ),
           ),
           const SizedBox(height: 12),
           SingleChildScrollView(
@@ -1489,7 +1616,8 @@ class _VentaDetalleScreenState extends State<VentaDetalleScreen> {
                 return Padding(
                   padding: const EdgeInsets.only(right: 12),
                   child: GestureDetector(
-                    onTap: () => _mostrarVisorImagenes(context, imagenes, index),
+                    onTap: () =>
+                        _mostrarVisorImagenes(context, imagenes, index),
                     child: Container(
                       width: 100,
                       height: 100,
@@ -1505,14 +1633,19 @@ class _VentaDetalleScreenState extends State<VentaDetalleScreen> {
                           errorBuilder: (context, error, stackTrace) {
                             return Container(
                               color: Colors.grey[200],
-                              child: const Icon(Icons.broken_image, color: Colors.grey),
+                              child: const Icon(
+                                Icons.broken_image,
+                                color: Colors.grey,
+                              ),
                             );
                           },
                           loadingBuilder: (context, child, loadingProgress) {
                             if (loadingProgress == null) return child;
                             return Container(
                               color: Colors.grey[200],
-                              child: const Center(child: CircularProgressIndicator()),
+                              child: const Center(
+                                child: CircularProgressIndicator(),
+                              ),
                             );
                           },
                         ),
@@ -1549,9 +1682,9 @@ class _VentaDetalleScreenState extends State<VentaDetalleScreen> {
   /// Descargar imagen a dispositivo
   Future<void> _descargarImagen(String imagenUrl) async {
     try {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('⏳ Descargando imagen...')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('⏳ Descargando imagen...')));
 
       // Obtener directorio de documentos
       final directorio = await getApplicationDocumentsDirectory();
@@ -1581,9 +1714,9 @@ class _VentaDetalleScreenState extends State<VentaDetalleScreen> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('❌ Error: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('❌ Error: $e')));
       }
     }
   }
@@ -1690,11 +1823,16 @@ class _ImagenViewerModalState extends State<_ImagenViewerModal> {
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Icon(Icons.broken_image,
-                                color: Colors.grey, size: 80),
+                            Icon(
+                              Icons.broken_image,
+                              color: Colors.grey,
+                              size: 80,
+                            ),
                             SizedBox(height: 16),
-                            Text('Error al cargar imagen',
-                                style: TextStyle(color: Colors.grey)),
+                            Text(
+                              'Error al cargar imagen',
+                              style: TextStyle(color: Colors.grey),
+                            ),
                           ],
                         ),
                       ),
@@ -1729,8 +1867,11 @@ class _ImagenViewerModalState extends State<_ImagenViewerModal> {
                         color: Colors.black54,
                         borderRadius: BorderRadius.circular(8),
                       ),
-                      child: const Icon(Icons.chevron_left,
-                          color: Colors.white, size: 32),
+                      child: const Icon(
+                        Icons.chevron_left,
+                        color: Colors.white,
+                        size: 32,
+                      ),
                     ),
                   ),
                 ),
@@ -1751,8 +1892,11 @@ class _ImagenViewerModalState extends State<_ImagenViewerModal> {
                         color: Colors.black54,
                         borderRadius: BorderRadius.circular(8),
                       ),
-                      child: const Icon(Icons.chevron_right,
-                          color: Colors.white, size: 32),
+                      child: const Icon(
+                        Icons.chevron_right,
+                        color: Colors.white,
+                        size: 32,
+                      ),
                     ),
                   ),
                 ),

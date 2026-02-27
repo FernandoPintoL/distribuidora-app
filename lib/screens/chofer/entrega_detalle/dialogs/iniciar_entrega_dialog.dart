@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../../config/app_text_styles.dart';
 import '../../../../models/entrega.dart';
 import '../../../../providers/entrega_provider.dart';
 
@@ -23,7 +24,7 @@ class IniciarEntregaDialog {
             Text(
               'Se cambiar el estado a EN_RUTA y se actualizarán los estados de las ventas.',
               style: TextStyle(
-                fontSize: 12,
+                fontSize: AppTextStyles.bodySmall(context).fontSize!,
                 color: isDarkMode ? Colors.grey[400] : Colors.grey[600],
                 fontStyle: FontStyle.italic,
               ),
@@ -48,7 +49,7 @@ class IniciarEntregaDialog {
                     Text(
                       'Cliente',
                       style: TextStyle(
-                        fontSize: 11,
+                        fontSize: AppTextStyles.labelSmall(context).fontSize!,
                         color: isDarkMode ? Colors.grey[400] : Colors.grey[600],
                         fontWeight: FontWeight.w500,
                       ),
@@ -57,7 +58,7 @@ class IniciarEntregaDialog {
                     Text(
                       entrega.cliente!,
                       style: TextStyle(
-                        fontSize: 13,
+                        fontSize: AppTextStyles.bodySmall(context).fontSize!,
                         fontWeight: FontWeight.bold,
                         color: isDarkMode ? Colors.grey[100] : Colors.grey[900],
                       ),
@@ -109,9 +110,7 @@ class IniciarEntregaDialog {
             debugPrint('✅ Entrega iniciada correctamente');
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
-                content: const Text(
-                  '✅ Entrega iniciada correctamente.',
-                ),
+                content: const Text('✅ Entrega iniciada correctamente.'),
                 backgroundColor: Colors.green,
                 duration: const Duration(seconds: 3),
               ),

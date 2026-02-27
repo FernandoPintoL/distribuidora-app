@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
+import '../../config/app_text_styles.dart';
 import '../../models/models.dart';
 import '../../providers/providers.dart';
 import 'visita_detalle_screen.dart';
@@ -105,7 +106,8 @@ class _MisVisitasHistorialScreenState extends State<MisVisitasHistorialScreen> {
                   : ListView.builder(
                       controller: _scrollController,
                       padding: const EdgeInsets.all(16),
-                      itemCount: visitaProvider.visitas.length +
+                      itemCount:
+                          visitaProvider.visitas.length +
                           (visitaProvider.hasMorePages ? 1 : 0),
                       itemBuilder: (context, index) {
                         if (index == visitaProvider.visitas.length) {
@@ -137,10 +139,10 @@ class _MisVisitasHistorialScreenState extends State<MisVisitasHistorialScreen> {
         padding: const EdgeInsets.all(16),
         child: Column(
           children: [
-            const Text(
+            Text(
               'Resumen',
               style: TextStyle(
-                fontSize: 18,
+                fontSize: AppTextStyles.headlineSmall(context).fontSize!,
                 fontWeight: FontWeight.bold,
               ),
             ),
@@ -177,7 +179,7 @@ class _MisVisitasHistorialScreenState extends State<MisVisitasHistorialScreen> {
         Text(
           value,
           style: TextStyle(
-            fontSize: 24,
+            fontSize: AppTextStyles.displaySmall(context).fontSize!,
             fontWeight: FontWeight.bold,
             color: color,
           ),
@@ -186,7 +188,7 @@ class _MisVisitasHistorialScreenState extends State<MisVisitasHistorialScreen> {
         Text(
           label,
           style: TextStyle(
-            fontSize: 12,
+            fontSize: AppTextStyles.bodySmall(context).fontSize!,
             color: Colors.grey[600],
           ),
         ),
@@ -218,8 +220,8 @@ class _MisVisitasHistorialScreenState extends State<MisVisitasHistorialScreen> {
                   Expanded(
                     child: Text(
                       visita.cliente?.nombre ?? 'Cliente N/A',
-                      style: const TextStyle(
-                        fontSize: 16,
+                      style: TextStyle(
+                        fontSize: AppTextStyles.bodyLarge(context).fontSize!,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
@@ -255,7 +257,7 @@ class _MisVisitasHistorialScreenState extends State<MisVisitasHistorialScreen> {
                       'Fuera de horario',
                       style: TextStyle(
                         color: Colors.orange,
-                        fontSize: 12,
+                        fontSize: AppTextStyles.bodySmall(context).fontSize!,
                       ),
                     ),
                   ],
@@ -284,7 +286,7 @@ class _MisVisitasHistorialScreenState extends State<MisVisitasHistorialScreen> {
         estado.label,
         style: TextStyle(
           color: color,
-          fontSize: 12,
+          fontSize: AppTextStyles.bodySmall(context).fontSize!,
           fontWeight: FontWeight.bold,
         ),
       ),
@@ -296,16 +298,12 @@ class _MisVisitasHistorialScreenState extends State<MisVisitasHistorialScreen> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(
-            Icons.assignment_outlined,
-            size: 80,
-            color: Colors.grey[400],
-          ),
+          Icon(Icons.assignment_outlined, size: 80, color: Colors.grey[400]),
           const SizedBox(height: 16),
           Text(
             'No hay visitas registradas',
             style: TextStyle(
-              fontSize: 16,
+              fontSize: AppTextStyles.bodyLarge(context).fontSize!,
               color: Colors.grey[600],
             ),
           ),
@@ -323,10 +321,10 @@ class _MisVisitasHistorialScreenState extends State<MisVisitasHistorialScreen> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
+              Text(
                 'Filtros',
                 style: TextStyle(
-                  fontSize: 20,
+                  fontSize: AppTextStyles.headlineMedium(context).fontSize!,
                   fontWeight: FontWeight.bold,
                 ),
               ),
@@ -340,10 +338,7 @@ class _MisVisitasHistorialScreenState extends State<MisVisitasHistorialScreen> {
                   border: OutlineInputBorder(),
                 ),
                 items: [
-                  const DropdownMenuItem(
-                    value: null,
-                    child: Text('Todos'),
-                  ),
+                  const DropdownMenuItem(value: null, child: Text('Todos')),
                   ...EstadoVisitaPreventista.values.map((estado) {
                     return DropdownMenuItem(
                       value: estado,
@@ -366,10 +361,7 @@ class _MisVisitasHistorialScreenState extends State<MisVisitasHistorialScreen> {
                   border: OutlineInputBorder(),
                 ),
                 items: [
-                  const DropdownMenuItem(
-                    value: null,
-                    child: Text('Todos'),
-                  ),
+                  const DropdownMenuItem(value: null, child: Text('Todos')),
                   ...TipoVisitaPreventista.values.map((tipo) {
                     return DropdownMenuItem(
                       value: tipo,

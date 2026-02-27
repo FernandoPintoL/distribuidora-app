@@ -1,14 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import '../../config/app_text_styles.dart';
 import '../../models/models.dart';
 
 class VisitaDetalleScreen extends StatelessWidget {
   final VisitaPreventistaCliente visita;
 
-  const VisitaDetalleScreen({
-    super.key,
-    required this.visita,
-  });
+  const VisitaDetalleScreen({super.key, required this.visita});
 
   @override
   Widget build(BuildContext context) {
@@ -30,31 +28,28 @@ class VisitaDetalleScreen extends StatelessWidget {
             const SizedBox(height: 24),
 
             // Información básica
-            _buildInfoSection(
-              'Información Básica',
-              [
-                {
-                  'label': 'Cliente',
-                  'value': visita.cliente?.nombre ?? 'N/A',
-                  'icon': Icons.business,
-                },
-                {
-                  'label': 'Fecha y Hora',
-                  'value': dateFormat.format(visita.fechaHoraVisita),
-                  'icon': Icons.calendar_today,
-                },
-                {
-                  'label': 'Tipo de Visita',
-                  'value': visita.tipoVisita.label,
-                  'icon': Icons.local_offer,
-                },
-                {
-                  'label': 'Estado',
-                  'value': visita.estadoVisita.label,
-                  'icon': Icons.check_circle,
-                },
-              ],
-            ),
+            _buildInfoSection('Información Básica', [
+              {
+                'label': 'Cliente',
+                'value': visita.cliente?.nombre ?? 'N/A',
+                'icon': Icons.business,
+              },
+              {
+                'label': 'Fecha y Hora',
+                'value': dateFormat.format(visita.fechaHoraVisita),
+                'icon': Icons.calendar_today,
+              },
+              {
+                'label': 'Tipo de Visita',
+                'value': visita.tipoVisita.label,
+                'icon': Icons.local_offer,
+              },
+              {
+                'label': 'Estado',
+                'value': visita.estadoVisita.label,
+                'icon': Icons.check_circle,
+              },
+            ]),
             const SizedBox(height: 24),
 
             // Ubicación GPS
@@ -71,13 +66,13 @@ class VisitaDetalleScreen extends StatelessWidget {
             const SizedBox(height: 24),
 
             // Observaciones (si existen)
-            if (visita.observaciones != null && visita.observaciones!.isNotEmpty)
+            if (visita.observaciones != null &&
+                visita.observaciones!.isNotEmpty)
               _buildObservacionesSection(),
             const SizedBox(height: 24),
 
             // Foto (si existe)
-            if (visita.fotoLocal != null)
-              _buildFotoSection(),
+            if (visita.fotoLocal != null) _buildFotoSection(),
             const SizedBox(height: 24),
 
             // Información de timestamps
@@ -105,7 +100,7 @@ class VisitaDetalleScreen extends StatelessWidget {
                     children: [
                       Text(
                         visita.cliente?.nombre ?? 'Cliente',
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 20,
                           fontWeight: FontWeight.bold,
                         ),
@@ -159,7 +154,7 @@ class VisitaDetalleScreen extends StatelessWidget {
       children: [
         Text(
           title,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.bold,
           ),
@@ -167,55 +162,47 @@ class VisitaDetalleScreen extends StatelessWidget {
         const SizedBox(height: 12),
         Card(
           child: Column(
-            children: List.generate(
-              items.length,
-              (index) {
-                final item = items[index];
-                final isLast = index == items.length - 1;
+            children: List.generate(items.length, (index) {
+              final item = items[index];
+              final isLast = index == items.length - 1;
 
-                return Column(
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.all(12),
-                      child: Row(
-                        children: [
-                          Icon(
-                            item['icon'],
-                            color: Colors.grey[600],
-                            size: 20,
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  item['label'],
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    color: Colors.grey[600],
-                                  ),
+              return Column(
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.all(12),
+                    child: Row(
+                      children: [
+                        Icon(item['icon'], color: Colors.grey[600], size: 20),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                item['label'],
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.grey[600],
                                 ),
-                                const SizedBox(height: 2),
-                                Text(
-                                  item['value'],
-                                  style: const TextStyle(
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w500,
-                                  ),
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                item['value'],
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w500,
                                 ),
-                              ],
-                            ),
+                              ),
+                            ],
                           ),
-                        ],
-                      ),
+                        ),
+                      ],
                     ),
-                    if (!isLast)
-                      Divider(height: 1, color: Colors.grey[300]),
-                  ],
-                );
-              },
-            ),
+                  ),
+                  if (!isLast) Divider(height: 1, color: Colors.grey[300]),
+                ],
+              );
+            }),
           ),
         ),
       ],
@@ -226,7 +213,7 @@ class VisitaDetalleScreen extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
+        Text(
           'Ubicación GPS',
           style: TextStyle(
             fontSize: 18,
@@ -242,15 +229,12 @@ class VisitaDetalleScreen extends StatelessWidget {
               children: [
                 Row(
                   children: [
-                    Icon(
-                      Icons.location_on,
-                      color: colorScheme.primary,
-                    ),
+                    Icon(Icons.location_on, color: colorScheme.primary),
                     const SizedBox(width: 12),
                     Expanded(
                       child: Text(
                         '${visita.latitud.toStringAsFixed(6)}, ${visita.longitud.toStringAsFixed(6)}',
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.w500,
                         ),
@@ -278,7 +262,7 @@ class VisitaDetalleScreen extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
+        Text(
           'Motivo de No Atención',
           style: TextStyle(
             fontSize: 18,
@@ -300,7 +284,7 @@ class VisitaDetalleScreen extends StatelessWidget {
               Expanded(
                 child: Text(
                   visita.motivoNoAtencion?.label ?? 'N/A',
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w500,
                   ),
@@ -325,7 +309,7 @@ class VisitaDetalleScreen extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
+        Text(
           'Validación de Horario',
           style: TextStyle(
             fontSize: 18,
@@ -365,7 +349,7 @@ class VisitaDetalleScreen extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
+        Text(
           'Observaciones',
           style: TextStyle(
             fontSize: 18,
@@ -378,7 +362,7 @@ class VisitaDetalleScreen extends StatelessWidget {
             padding: const EdgeInsets.all(16),
             child: Text(
               visita.observaciones!,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 14,
                 height: 1.5,
               ),
@@ -397,7 +381,7 @@ class VisitaDetalleScreen extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
+        Text(
           'Foto del Local',
           style: TextStyle(
             fontSize: 18,
@@ -415,9 +399,7 @@ class VisitaDetalleScreen extends StatelessWidget {
               return Container(
                 height: 200,
                 color: Colors.grey[300],
-                child: const Center(
-                  child: Icon(Icons.image_not_supported),
-                ),
+                child: const Center(child: Icon(Icons.image_not_supported)),
               );
             },
             loadingBuilder: (context, child, loadingProgress) {
@@ -428,7 +410,7 @@ class VisitaDetalleScreen extends StatelessWidget {
                   child: CircularProgressIndicator(
                     value: loadingProgress.expectedTotalBytes != null
                         ? loadingProgress.cumulativeBytesLoaded /
-                            loadingProgress.expectedTotalBytes!
+                              loadingProgress.expectedTotalBytes!
                         : null,
                   ),
                 ),
@@ -444,7 +426,7 @@ class VisitaDetalleScreen extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
+        Text(
           'Información de Sistema',
           style: TextStyle(
             fontSize: 18,

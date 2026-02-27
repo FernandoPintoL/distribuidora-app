@@ -652,6 +652,54 @@ class ProformaService {
     }
   }
 
+  /// ✅ NUEVO: Actualizar detalles de una proforma existente
+  /// Permite cambiar los productos y cantidades de una proforma en estado PENDIENTE
+  Future<ApiResponse<Pedido>> actualizarDetalles({
+    required int proformaId,
+    required List<Map<String, dynamic>> detalles,
+  }) async {
+    try {
+      debugPrint('📝 Actualizando detalles de proforma #$proformaId');
+
+      final response = await _apiService.put(
+        '/proformas/$proformaId/actualizar-detalles',
+        data: {
+          'detalles': detalles,
+        },
+      );
+
+      final Map<String, dynamic> responseData = response.data as Map<String, dynamic>;
+
+      if (responseData['success'] == true && responseData['data'] != null) {
+        final proforma = Pedido.fromJson(responseData['data'] as Map<String, dynamic>);
+
+        return ApiResponse<Pedido>(
+          success: true,
+          message: responseData['message'] as String? ?? 'Detalles actualizados exitosamente',
+          data: proforma,
+        );
+      } else {
+        return ApiResponse<Pedido>(
+          success: false,
+          message: responseData['message'] as String? ?? 'Error al actualizar detalles',
+          data: null,
+        );
+      }
+    } on DioException catch (e) {
+      return ApiResponse<Pedido>(
+        success: false,
+        message: _getErrorMessage(e),
+        data: null,
+      );
+    } catch (e) {
+      return ApiResponse<Pedido>(
+        success: false,
+        message: 'Error inesperado: ${e.toString()}',
+        data: null,
+      );
+    }
+  }
+
   // Helper para extraer mensaje de error de DioException
   String _getErrorMessage(DioException e) {
     if (e.response != null) {

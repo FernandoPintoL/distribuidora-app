@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../../config/app_text_styles.dart';
 import '../../../../services/print_service.dart';
 
 class ProductosGenericosCard extends StatefulWidget {
@@ -12,8 +13,7 @@ class ProductosGenericosCard extends StatefulWidget {
   }) : super(key: key);
 
   @override
-  State<ProductosGenericosCard> createState() =>
-      _ProductosGenericosCardState();
+  State<ProductosGenericosCard> createState() => _ProductosGenericosCardState();
 }
 
 class _ProductosGenericosCardState extends State<ProductosGenericosCard> {
@@ -101,7 +101,7 @@ class _ProductosGenericosCardState extends State<ProductosGenericosCard> {
                   Text(
                     '${widget.productos.length} articulos',
                     style: TextStyle(
-                      fontSize: 12,
+                      fontSize: AppTextStyles.bodySmall(context).fontSize!,
                       color: isDarkMode ? Colors.grey[400] : Colors.grey[600],
                     ),
                   ),
@@ -120,14 +120,16 @@ class _ProductosGenericosCardState extends State<ProductosGenericosCard> {
                   ),
                   label: Text(
                     _isDownloading ? 'Descargando...' : 'PDF 58mm',
-                    style: const TextStyle(fontSize: 12),
+                    style: const TextStyle(
+                      fontSize: 12,
+                    ), // TODO: usar AppTextStyles.bodySmall,
                   ),
                   style: ElevatedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(horizontal: 12),
                     backgroundColor: Theme.of(context).primaryColor,
-                    disabledBackgroundColor: Theme.of(context)
-                        .primaryColor
-                        .withValues(alpha: 0.5),
+                    disabledBackgroundColor: Theme.of(
+                      context,
+                    ).primaryColor.withValues(alpha: 0.5),
                   ),
                 ),
               ),
@@ -152,9 +154,9 @@ class _ProductosGenericosCardState extends State<ProductosGenericosCard> {
                         vertical: 8,
                       ),
                       decoration: BoxDecoration(
-                        color: Theme.of(context)
-                            .primaryColor
-                            .withValues(alpha: 0.1),
+                        color: Theme.of(
+                          context,
+                        ).primaryColor.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(6),
                       ),
                       child: Row(
@@ -170,7 +172,9 @@ class _ProductosGenericosCardState extends State<ProductosGenericosCard> {
                           Text(
                             '${productosVenta.length} articulos',
                             style: TextStyle(
-                              fontSize: 12,
+                              fontSize: AppTextStyles.bodySmall(
+                                context,
+                              ).fontSize!,
                               color: isDarkMode
                                   ? Colors.grey[400]
                                   : Colors.grey[600],
@@ -185,23 +189,27 @@ class _ProductosGenericosCardState extends State<ProductosGenericosCard> {
                       final p = pEntry.value;
                       final isLast = idx == productosVenta.length - 1;
 
-                      final nombre = p['producto_nombre'] as String? ??
+                      final nombre =
+                          p['producto_nombre'] as String? ??
                           'Producto desconocido';
-                      final cantidad = double.tryParse(
+                      final cantidad =
+                          double.tryParse(
                             (p['cantidad'] is num
                                     ? p['cantidad']
                                     : p['cantidad'])
                                 .toString(),
                           ) ??
                           0;
-                      final unitario = double.tryParse(
+                      final unitario =
+                          double.tryParse(
                             (p['precio_unitario'] is num
                                     ? p['precio_unitario']
                                     : p['precio_unitario'])
                                 .toString(),
                           ) ??
                           0;
-                      final subtotal = double.tryParse(
+                      final subtotal =
+                          double.tryParse(
                             (p['subtotal'] is num
                                     ? p['subtotal']
                                     : p['subtotal'])
@@ -228,7 +236,9 @@ class _ProductosGenericosCardState extends State<ProductosGenericosCard> {
                                     '${cantidad % 1 == 0 ? cantidad.toInt() : cantidad}x',
                                     style: TextStyle(
                                       fontWeight: FontWeight.bold,
-                                      fontSize: 12,
+                                      fontSize: AppTextStyles.bodySmall(
+                                        context,
+                                      ).fontSize!,
                                       color: isDarkMode
                                           ? Colors.blue[300]
                                           : Colors.blue,
@@ -239,8 +249,7 @@ class _ProductosGenericosCardState extends State<ProductosGenericosCard> {
                               const SizedBox(width: 12),
                               Expanded(
                                 child: Column(
-                                  crossAxisAlignment:
-                                      CrossAxisAlignment.start,
+                                  crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Text(
                                       nombre,
@@ -248,7 +257,9 @@ class _ProductosGenericosCardState extends State<ProductosGenericosCard> {
                                       overflow: TextOverflow.ellipsis,
                                       style: TextStyle(
                                         fontWeight: FontWeight.w600,
-                                        fontSize: 12,
+                                        fontSize: AppTextStyles.bodySmall(
+                                          context,
+                                        ).fontSize!,
                                         color: isDarkMode
                                             ? Colors.grey[100]
                                             : Colors.grey[900],
@@ -264,7 +275,9 @@ class _ProductosGenericosCardState extends State<ProductosGenericosCard> {
                                     'Bs. ${subtotal.toStringAsFixed(2)}',
                                     style: TextStyle(
                                       fontWeight: FontWeight.w600,
-                                      fontSize: 12,
+                                      fontSize: AppTextStyles.bodySmall(
+                                        context,
+                                      ).fontSize!,
                                       color: isDarkMode
                                           ? Colors.grey[100]
                                           : Colors.grey[900],
@@ -273,7 +286,9 @@ class _ProductosGenericosCardState extends State<ProductosGenericosCard> {
                                   Text(
                                     'Bs. ${unitario.toStringAsFixed(2)} c/u',
                                     style: TextStyle(
-                                      fontSize: 11,
+                                      fontSize: AppTextStyles.labelSmall(
+                                        context,
+                                      ).fontSize!,
                                       color: isDarkMode
                                           ? Colors.grey[500]
                                           : Colors.grey[600],
