@@ -47,25 +47,115 @@ class _FechaHoraSelectorModalState extends State<FechaHoraSelectorModal> {
     super.dispose();
   }
 
-  Future<void> _seleccionarFecha() async {
+  // ✅ NUEVO: Obtener fechas válidas (Hoy, Mañana, Lunes si aplica)
+  Map<String, DateTime> _obtenerFechasDisponibles() {
     final DateTime now = DateTime.now();
-    final DateTime firstDate = DateTime(now.year, now.month, now.day);
-    final DateTime lastDate = now.add(const Duration(days: 30));
+    final DateTime hoy = DateTime(now.year, now.month, now.day);
+    final DateTime manana = hoy.add(const Duration(days: 1));
 
-    final DateTime? picked = await showDatePicker(
+    final Map<String, DateTime> fechas = {'Hoy': hoy};
+
+    // Mañana: 1=Lunes, 2=Martes, ..., 6=Sábado, 7=Domingo
+    if (manana.weekday < 6) {
+      // Si mañana es Lunes-Viernes, agregarlo
+      fechas['Mañana'] = manana;
+    } else if (manana.weekday == 6) {
+      // Si mañana es Sábado, agregar Lunes (2 días después)
+      fechas['Lunes'] = hoy.add(const Duration(days: 3));
+    } else if (manana.weekday == 7) {
+      // Si mañana es Domingo, agregar Lunes (1 día después de domingo)
+      fechas['Lunes'] = hoy.add(const Duration(days: 2));
+    }
+
+    return fechas;
+  }
+
+  Future<void> _seleccionarFecha() async {
+    final fechasDisponibles = _obtenerFechasDisponibles();
+    final colorScheme = Theme.of(context).colorScheme;
+
+    if (!mounted) return;
+
+    // Mostrar diálogo con opciones de fechas disponibles
+    final resultado = await showDialog<DateTime>(
       context: context,
-      initialDate: _fechaSeleccionada ?? firstDate,
-      firstDate: firstDate,
-      lastDate: lastDate,
-      locale: const Locale('es', 'ES'),
-      helpText: 'Selecciona la fecha',
-      cancelText: 'Cancelar',
-      confirmText: 'Aceptar',
+      builder: (context) => AlertDialog(
+        title: const Text('📅 Selecciona fecha de entrega'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            ...fechasDisponibles.entries.map((entry) {
+              final nombreFecha = entry.key;
+              final fecha = entry.value;
+              final diasSemana = [
+                'Lunes',
+                'Martes',
+                'Miércoles',
+                'Jueves',
+                'Viernes',
+                'Sábado',
+                'Domingo',
+              ];
+              final nombreDia = diasSemana[fecha.weekday - 1];
+              final fechaFormato =
+                  '${fecha.day}/${fecha.month}/${fecha.year}';
+
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: ElevatedButton(
+                  onPressed: () => Navigator.pop(context, fecha),
+                  style: ElevatedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    backgroundColor: _fechaSeleccionada?.year == fecha.year &&
+                            _fechaSeleccionada?.month == fecha.month &&
+                            _fechaSeleccionada?.day == fecha.day
+                        ? colorScheme.primary
+                        : colorScheme.surfaceVariant,
+                  ),
+                  child: Column(
+                    children: [
+                      Text(
+                        nombreFecha,
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: _fechaSeleccionada?.year == fecha.year &&
+                                  _fechaSeleccionada?.month == fecha.month &&
+                                  _fechaSeleccionada?.day == fecha.day
+                              ? colorScheme.onPrimary
+                              : colorScheme.onSurface,
+                        ),
+                      ),
+                      Text(
+                        '$nombreDia, $fechaFormato',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: _fechaSeleccionada?.year == fecha.year &&
+                                  _fechaSeleccionada?.month == fecha.month &&
+                                  _fechaSeleccionada?.day == fecha.day
+                              ? colorScheme.onPrimary
+                              : colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            }).toList(),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancelar'),
+          ),
+        ],
+      ),
     );
 
-    if (picked != null) {
+    if (resultado != null) {
       setState(() {
-        _fechaSeleccionada = picked;
+        _fechaSeleccionada = resultado;
       });
     }
   }
