@@ -233,19 +233,23 @@ class PedidoService {
     DateTime? fechaEntregaSolicitadaHasta,
   }) async {
     try {
+      // ✅ NUEVO: Por defecto, solicitar proformas de ayer y hoy
+      final now = DateTime.now();
+      final ayer = now.subtract(const Duration(days: 1));
+      final manana = now.add(const Duration(days: 1));
+
+      final desde = fechaDesde ?? DateTime(ayer.year, ayer.month, ayer.day);
+      final hasta = fechaHasta ?? DateTime(now.year, now.month, now.day);
+
       final queryParams = <String, dynamic>{'page': page, 'per_page': perPage};
 
       if (estado != null) {
         queryParams['estado'] = estado;
       }
 
-      if (fechaDesde != null) {
-        queryParams['fecha_desde'] = fechaDesde.toIso8601String();
-      }
-
-      if (fechaHasta != null) {
-        queryParams['fecha_hasta'] = fechaHasta.toIso8601String();
-      }
+      // ✅ ACTUALIZADO: Usar formato de fecha simple y agregar 1 día a hasta
+      queryParams['fecha_desde'] = desde.toIso8601String().split('T')[0];
+      queryParams['fecha_hasta'] = manana.toIso8601String().split('T')[0];
 
       // ✅ ACTUALIZADO: Cambiar de 'cliente' a 'search' para búsqueda unificada
       if (search != null && search.isNotEmpty) {
