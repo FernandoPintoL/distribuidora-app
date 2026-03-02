@@ -491,7 +491,7 @@ class ApiService {
       }
 
       final response = await _dio.get(
-        '/api/reportes/productos-vendidos',
+        '/reportes/productos-vendidos',
         queryParameters: params,
       );
 
@@ -533,7 +533,7 @@ class ApiService {
       params['accion'] = 'download';
 
       final response = await _dio.get(
-        '/api/ventas/reporte-productos-vendidos/imprimir',
+        '/ventas/reporte-productos-vendidos/imprimir',
         queryParameters: params,
         options: Options(
           responseType: ResponseType.bytes,
