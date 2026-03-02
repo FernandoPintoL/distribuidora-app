@@ -26,3 +26,4 @@ export 'ventas/venta_detalle_screen.dart';
 export 'reportes/reportes_productos_danados_screen.dart';
 export 'reportes/nuevo_reporte_screen.dart';
 export 'reportes/detalle_reporte_screen.dart';
+export 'reporte_ventas_screen.dart'; // ✅ NUEVO: Reporte de productos vendidos

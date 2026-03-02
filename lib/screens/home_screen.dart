@@ -8,6 +8,8 @@ import 'clients/client_list_screen.dart';
 import 'perfil/perfil_screen.dart';
 import '../widgets/widgets.dart';
 import '../config/config.dart';
+import '../services/api_service.dart';
+import '../services/print_service.dart';
 
 /// Pantalla principal para usuarios con rol ADMIN/PREVENTISTA
 class HomeScreen extends BaseHomeScreen {
@@ -311,7 +313,7 @@ class _DashboardPreventistaState extends State<DashboardPreventista>
                       crossAxisCount: 2,
                       mainAxisSpacing: 16,
                       crossAxisSpacing: 16,
-                      childAspectRatio: 1.15,
+                      childAspectRatio: 0.95,
                       children: [
                         _buildGradientCard(
                           context,
@@ -367,6 +369,26 @@ class _DashboardPreventistaState extends State<DashboardPreventista>
                           gradient: AppGradients.teal,
                           onTap: () {
                             Navigator.pushNamed(context, '/orden-del-dia');
+                          },
+                        ),
+                        // ✅ NUEVO: Stock Disponible PDF
+                        _buildGradientCard(
+                          context,
+                          title: 'Stock Disponible',
+                          subtitle: 'Descargar PDF',
+                          icon: Icons.file_download_outlined,
+                          gradient: AppGradients.red,
+                          onTap: () => _descargarStockDisponiblePdf(),
+                        ),
+                        // ✅ NUEVO: Reporte Productos Vendidos
+                        _buildGradientCard(
+                          context,
+                          title: 'Reporte de Ventas',
+                          subtitle: 'Productos Vendidos',
+                          icon: Icons.bar_chart_outlined,
+                          gradient: AppGradients.teal,
+                          onTap: () {
+                            Navigator.pushNamed(context, '/reporte-productos-vendidos');
                           },
                         ),
                       ],
@@ -782,6 +804,45 @@ class _DashboardPreventistaState extends State<DashboardPreventista>
     );
   }
 
+  /// ✅ NUEVO: Descargar PDF de stock disponible
+  /// Obtiene el PDF desde la API, lo abre en el visor de PDFs del dispositivo
+  /// Muestra un indicador de carga y maneja errores
+  void _descargarStockDisponiblePdf() async {
+    // Mostrar loading
+    if (!mounted) return;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Descargando PDF...'),
+        duration: Duration(seconds: 10),
+      ),
+    );
+
+    try {
+      // Descargar PDF
+      final bytes = await ApiService().descargarStockDisponiblePdf();
+
+      // Abrir PDF
+      if (mounted) {
+        await PrintService().abrirPdfDesdeBytes(
+          pdfBytes: bytes,
+          nombreArchivo: 'stock-disponible.pdf',
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error al descargar: ${e.toString()}'),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 5),
+          ),
+        );
+      }
+      debugPrint('❌ Error descargando PDF: $e');
+    }
+  }
+
   Widget _buildGradientCard(
     BuildContext context, {
     required String title,
@@ -796,7 +857,7 @@ class _DashboardPreventistaState extends State<DashboardPreventista>
         onTap: onTap,
         borderRadius: BorderRadius.circular(16),
         splashColor: Colors.white.withOpacity(0.3),
-        child: Container(
+          child: Container(
           decoration: BoxDecoration(
             gradient: gradient,
             borderRadius: BorderRadius.circular(16),
@@ -808,12 +869,12 @@ class _DashboardPreventistaState extends State<DashboardPreventista>
               ),
             ],
           ),
-          padding: const EdgeInsets.all(20),
+          padding: const EdgeInsets.all(16),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Icon(icon, size: 32, color: Colors.white),
-              const SizedBox(height: 12),
+              const SizedBox(height: 8),
               Text(
                 title,
                 style: TextStyle(
@@ -825,7 +886,7 @@ class _DashboardPreventistaState extends State<DashboardPreventista>
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
               ),
-              const SizedBox(height: 4),
+              const SizedBox(height: 2),
               Text(
                 subtitle,
                 style: TextStyle(
@@ -833,6 +894,8 @@ class _DashboardPreventistaState extends State<DashboardPreventista>
                   color: Colors.white.withOpacity(0.9),
                 ),
                 textAlign: TextAlign.center,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
             ],
           ),

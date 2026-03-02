@@ -259,7 +259,7 @@ class _PedidosHistorialScreenState extends State<PedidosHistorialScreen> {
         customGradient: AppGradients.getRoleGradient('cliente'),
         actions: [
           // ✅ NUEVO: Botón de impresión/descarga de PDF
-          Consumer<PedidoProvider>(
+          /*Consumer<PedidoProvider>(
             builder: (context, pedidoProvider, _) {
               return IconButton(
                 icon: const Icon(Icons.print),
@@ -269,7 +269,7 @@ class _PedidosHistorialScreenState extends State<PedidosHistorialScreen> {
                 tooltip: 'Descargar PDF',
               );
             },
-          ),
+          ),*/
           // ✅ NUEVO: Botón para filtros avanzados (fechas)
           IconButton(
             icon: const Icon(Icons.tune),

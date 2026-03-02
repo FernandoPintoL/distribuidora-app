@@ -78,6 +78,9 @@ void main() async {
           ChangeNotifierProvider(
             create: (_) => BannerPublicitarioProvider(),
           ),
+          ChangeNotifierProvider(
+            create: (_) => ReporteVentasProvider(), // ✅ NUEVO: Reporte de productos vendidos
+          ),
         ],
         child: const MyApp(),
       ),
@@ -134,6 +137,8 @@ class MyApp extends StatelessWidget {
                 const ProformaCreacionScreen(), // ✅ NUEVO: Ruta para crear proformas con combos
             '/reportes-productos-danados': (context) =>
                 const ReportesProductosDanadosScreen(), // ✅ NUEVO: Pantalla de reportes dañados
+            '/reporte-productos-vendidos': (context) =>
+                const ReporteVentasScreen(), // ✅ NUEVO: Pantalla de reporte de productos vendidos
           },
           onGenerateRoute: (settings) {
             // Handle routes with arguments

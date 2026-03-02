@@ -116,20 +116,11 @@ class _DashboardTab extends StatelessWidget {
             // Acciones rápidas
             _buildQuickActions(context),
 
-            const SizedBox(height: 24),
-
             // ✅ NUEVO: Botón de Mis Ventas
-            _buildMisVentasButton(context),
-
-            const SizedBox(height: 24),
-
-            // ✅ NUEVO: Botón de Reportes Dañados
-            _buildReportesButton(context),
-
-            const SizedBox(height: 24),
+            //_buildMisVentasButton(context),
 
             // ✅ NUEVO: Widget de Crédito (si aplica)
-            _buildCreditoResumenSection(context, authProvider),
+            // _buildCreditoResumenSection(context, authProvider),
 
             const SizedBox(height: 24),
 
@@ -137,9 +128,13 @@ class _DashboardTab extends StatelessWidget {
             _buildProformasStats(context, pedidoProvider),
 
             const SizedBox(height: 24),
+            // ✅ NUEVO: Botón de Reportes Dañados
+            _buildReportesButton(context),
+
+            const SizedBox(height: 24),
 
             // Enlace a ver todos los pedidos
-            _buildViewAllPedidosButton(context),
+            //_buildViewAllPedidosButton(context),
           ],
         ),
       ),
@@ -218,22 +213,6 @@ class _DashboardTab extends StatelessWidget {
             const SizedBox(width: 12),
             Expanded(
               child: _QuickActionCard(
-                icon: Icons.shopping_cart,
-                title: 'Mi Carrito',
-                color: Colors.orange,
-                onTap: () {
-                  // El carrito sí navega a otra página
-                  Navigator.pushNamed(context, '/carrito');
-                },
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 12),
-        Row(
-          children: [
-            Expanded(
-              child: _QuickActionCard(
                 icon: Icons.receipt_long,
                 title: 'Mis Pedidos',
                 color: Colors.blue,
@@ -243,24 +222,17 @@ class _DashboardTab extends StatelessWidget {
                 },
               ),
             ),
-            const SizedBox(width: 12),
-            Expanded(
+            /*Expanded(
               child: _QuickActionCard(
-                icon: Icons.local_shipping,
-                title: 'Seguimiento',
-                color: Colors.purple,
-                badgeCount:
-                    pedidosEnRuta, // Mostrar cantidad de pedidos en ruta
+                icon: Icons.shopping_cart,
+                title: 'Mi Carrito',
+                color: Colors.orange,
                 onTap: () {
-                  // ✅ ACTUALIZADO: Usar código de estado String en lugar de enum
-                  // Aplicar filtro de pedidos EN_RUTA y navegar al tab
-                  context.read<PedidoProvider>().aplicarFiltroEstado('EN_RUTA');
-
-                  // Navegar al tab de Mis Pedidos (índice 2)
-                  homeState?.navigateToIndex(2);
+                  // El carrito sí navega a otra página
+                  Navigator.pushNamed(context, '/carrito');
                 },
               ),
-            ),
+            ),*/
           ],
         ),
       ],
@@ -636,59 +608,16 @@ class _DashboardTab extends StatelessWidget {
                   const SizedBox(width: 12),
                   Expanded(
                     child: _StatCard(
-                      icon: Icons.check_circle,
-                      label: 'Aprobados',
-                      value: '${stats.porEstado.aprobada}',
-                      color: Colors.green,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              Row(
-                children: [
-                  Expanded(
-                    child: _StatCard(
                       icon: Icons.local_shipping,
                       label: 'Convertidos',
                       value: '${stats.porEstado.convertida}',
                       color: Colors.teal,
                     ),
                   ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: _StatCard(
-                      icon: Icons.shopping_bag,
-                      label: 'Total',
-                      value: '${stats.total}',
-                      color: Colors.blue,
-                    ),
-                  ),
                 ],
               ),
               const SizedBox(height: 12),
-              Row(
-                children: [
-                  Expanded(
-                    child: _StatCard(
-                      icon: Icons.attach_money,
-                      label: 'Monto Total',
-                      value: 'Bs. ${stats.montoTotal.toStringAsFixed(0)}',
-                      color: Colors.purple,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: _StatCard(
-                      icon: Icons.attach_money,
-                      label: 'Convertidos',
-                      value:
-                          'Bs. ${stats.montosPorEstado.convertida.toStringAsFixed(0)}',
-                      color: Colors.teal.shade600,
-                    ),
-                  ),
-                ],
-              ),
+              
               // Alerta si hay vencidas o por vencer
               if (stats.alertas.tieneAlertas) ...[
                 const SizedBox(height: 16),

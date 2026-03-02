@@ -440,6 +440,117 @@ class ApiService {
     }
   }
 
+  /// ✅ NUEVO: Descargar PDF de stock disponible para preventistas
+  /// Retorna lista de bytes (binario) del PDF
+  Future<List<int>> descargarStockDisponiblePdf() async {
+    try {
+      final url = '$baseUrl/app/stock/pdf';
+
+      final response = await _dio.get(
+        url,
+        options: Options(
+          responseType: ResponseType.bytes,
+          contentType: 'application/pdf',
+        ),
+      );
+
+      if (response.statusCode == 200) {
+        return response.data as List<int>;
+      } else {
+        throw Exception('Error: ${response.statusCode}');
+      }
+    } catch (e) {
+      debugPrint('❌ Error descargando PDF stock disponible: $e');
+      rethrow;
+    }
+  }
+
+  /// ✅ NUEVO: Obtener reporte de productos vendidos (JSON)
+  /// GET /api/reportes/productos-vendidos
+  /// Retorna datos del reporte para mostrar en pantalla
+  Future<Map<String, dynamic>> getReporteProductosVendidos({
+    DateTime? fechaDesde,
+    DateTime? fechaHasta,
+    int? usuarioCreadorId,
+    int? clienteId,
+  }) async {
+    try {
+      final params = <String, dynamic>{};
+
+      if (fechaDesde != null) {
+        params['fecha_desde'] = fechaDesde.toIso8601String().split('T')[0];
+      }
+      if (fechaHasta != null) {
+        params['fecha_hasta'] = fechaHasta.toIso8601String().split('T')[0];
+      }
+      if (usuarioCreadorId != null) {
+        params['usuario_creador_id'] = usuarioCreadorId;
+      }
+      if (clienteId != null) {
+        params['cliente_id'] = clienteId;
+      }
+
+      final response = await _dio.get(
+        '/api/reportes/productos-vendidos',
+        queryParameters: params,
+      );
+
+      if (response.statusCode == 200 && response.data['success'] == true) {
+        return response.data as Map<String, dynamic>;
+      } else {
+        throw Exception('Error: ${response.data['error'] ?? 'Unknown error'}');
+      }
+    } catch (e) {
+      debugPrint('❌ Error obteniendo reporte productos vendidos: $e');
+      rethrow;
+    }
+  }
+
+  /// ✅ NUEVO: Descargar PDF del reporte de productos vendidos
+  /// GET /ventas/reporte-productos-vendidos/imprimir
+  /// Retorna lista de bytes (binario) del PDF
+  Future<List<int>> descargarReporteProductosVendidosPdf({
+    DateTime? fechaDesde,
+    DateTime? fechaHasta,
+    int? usuarioCreadorId,
+    int? clienteId,
+  }) async {
+    try {
+      final params = <String, dynamic>{};
+
+      if (fechaDesde != null) {
+        params['fecha_desde'] = fechaDesde.toIso8601String().split('T')[0];
+      }
+      if (fechaHasta != null) {
+        params['fecha_hasta'] = fechaHasta.toIso8601String().split('T')[0];
+      }
+      if (usuarioCreadorId != null) {
+        params['usuario_creador_id'] = usuarioCreadorId;
+      }
+      if (clienteId != null) {
+        params['cliente_id'] = clienteId;
+      }
+      params['accion'] = 'download';
+
+      final response = await _dio.get(
+        '/api/ventas/reporte-productos-vendidos/imprimir',
+        queryParameters: params,
+        options: Options(
+          responseType: ResponseType.bytes,
+        ),
+      );
+
+      if (response.statusCode == 200) {
+        return response.data as List<int>;
+      } else {
+        throw Exception('Error: ${response.statusCode}');
+      }
+    } catch (e) {
+      debugPrint('❌ Error descargando PDF reporte productos vendidos: $e');
+      rethrow;
+    }
+  }
+
   // Singleton con inicialización lazy
   static ApiService? _instance;
 

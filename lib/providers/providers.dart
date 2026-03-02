@@ -13,6 +13,7 @@ export 'ruta_provider.dart';
 export 'estados_provider.dart';
 export 'visita_provider.dart';
 export 'reporte_producto_danado_provider.dart';
+export 'reporte_ventas_provider.dart'; // ✅ NUEVO: Reporte de productos vendidos
 export 'cliente_credito_provider.dart';
 export 'caja_provider.dart';
 export 'gasto_provider.dart';
