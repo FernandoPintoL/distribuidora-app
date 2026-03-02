@@ -137,16 +137,34 @@ class ProformaService {
     int page = 1,
     int perPage = 15,
     String? estado, // PENDIENTE, APROBADA, RECHAZADA, CONVERTIDA, VENCIDA
+    DateTime? fechaDesde,
+    DateTime? fechaHasta,
   }) async {
     try {
+      // ✅ NUEVO: Por defecto, solicitar proformas de ayer y hoy
+      final now = DateTime.now();
+      final ayer = now.subtract(const Duration(days: 1));
+      final manana = now.add(const Duration(days: 1));
+
+      final desde = fechaDesde ?? DateTime(ayer.year, ayer.month, ayer.day);
+      final hasta = fechaHasta ?? DateTime(now.year, now.month, now.day);
+
       final queryParams = <String, dynamic>{
         'page': page,
         'per_page': perPage,
+        // ✅ NUEVO: Enviar fechas en formato ISO
+        'fecha_desde': desde.toIso8601String().split('T')[0],
+        // ✅ IMPORTANTE: Agregar 1 día a fecha_hasta para que sea inclusiva en el backend
+        'fecha_hasta': manana.toIso8601String().split('T')[0],
       };
 
       if (estado != null) {
         queryParams['estado'] = estado;
       }
+
+      debugPrint(
+        '📋 [ProformaService] Obteniendo proformas - Desde: ${queryParams['fecha_desde']} Hasta: ${queryParams['fecha_hasta']} Estado: $estado',
+      );
 
       final response = await _apiService.get(
         '/proformas',
