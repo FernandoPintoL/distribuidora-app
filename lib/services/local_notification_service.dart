@@ -436,10 +436,20 @@ class LocalNotificationService {
     required String numero,
     String? clientName,
   }) async {
+    // ✅ NUEVO: Extraer solo el ID numérico (últimos dígitos)
+    // De "PRO-20260302-0413" extraer "413"
+    final idNumerico = numero.contains('-')
+        ? numero.split('-').last
+        : numero;
+
+    final mensaje = clientName != null
+        ? 'Proforma #$idNumerico aprobada del cliente $clientName'
+        : 'Proforma #$idNumerico ha sido aprobada';
+
     await _showNotification(
       id: numero.hashCode,
       title: '✅ Proforma Aprobada',
-      body: 'La proforma $numero ha sido aprobada${clientName != null ? ' - Cliente: $clientName' : ''}',
+      body: mensaje,
       channelId: 'proformas',
       payload: 'proforma_$numero',
     );
@@ -463,11 +473,31 @@ class LocalNotificationService {
   Future<void> showProformaConvertedNotification({
     required String numero,
     String? ventaNumero,
+    String? clientName,
   }) async {
+    // ✅ NUEVO: Extraer solo los IDs numéricos
+    // De "PRO-20260302-0413" extraer "413"
+    // De "VEN20260302-0600" extraer "600"
+    final proformaId = numero.contains('-')
+        ? numero.split('-').last
+        : numero;
+
+    final ventaId = ventaNumero?.contains('-') == true
+        ? ventaNumero!.split('-').last
+        : ventaNumero;
+
+    final mensaje = clientName != null && ventaId != null
+        ? 'Pedido #$ventaId confirmado del cliente $clientName (Proforma #$proformaId)'
+        : clientName != null
+            ? 'Pedido confirmado del cliente $clientName (Proforma #$proformaId)'
+            : ventaId != null
+                ? 'Proforma #$proformaId se convirtió en pedido #$ventaId'
+                : 'Proforma #$proformaId se convirtió en pedido';
+
     await _showNotification(
       id: numero.hashCode,
-      title: '🛒 Proforma Convertida',
-      body: 'La proforma $numero se convirtió en venta${ventaNumero != null ? ' #$ventaNumero' : ''}',
+      title: '✅ Pedido Confirmado',
+      body: mensaje,
       channelId: 'proformas',
       payload: 'proforma_$numero',
     );

@@ -832,18 +832,180 @@ class _ProductListScreenState extends State<ProductListScreen>
             ),
           ),
 
-          // Chips de categoría (placeholder - necesitarías cargar categorías)
-          /* Container(
-            height: 50,
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            child: ListView(
-              scrollDirection: Axis.horizontal,
-              children: [
-                _buildCategoryChip('Todas', null),
-                // Agregar más categorías dinámicamente
-              ],
-            ),
-          ), */
+          // ✅ NUEVO: Chips de filtros horizontales para Categorías y Marcas
+          Consumer<FiltrosProductoProvider>(
+            builder: (context, filtrosProvider, _) {
+              return Column(
+                children: [
+                  // Sección de Categorías
+                  if (filtrosProvider.categorias.isNotEmpty) ...[
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+                      child: Align(
+                        alignment: Alignment.centerLeft,
+                        child: Text(
+                          'Categorías',
+                          style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                            color: colorScheme.onSurfaceVariant,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ),
+                    SizedBox(
+                      height: 40,
+                      child: ListView.builder(
+                        scrollDirection: Axis.horizontal,
+                        padding: const EdgeInsets.symmetric(horizontal: 12),
+                        itemCount: filtrosProvider.categorias.length + 1,
+                        itemBuilder: (context, index) {
+                          if (index == 0) {
+                            // Chip "Todas"
+                            final isSelected =
+                                filtrosProvider.categoriaIdSeleccionada == null;
+                            return Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 4),
+                              child: ChoiceChip(
+                                label: const Text('Todas'),
+                                selected: isSelected,
+                                onSelected: (selected) {
+                                  filtrosProvider.seleccionarCategoria(null);
+                                  _loadProducts();
+                                },
+                                backgroundColor: colorScheme.surfaceContainerHighest,
+                                selectedColor: colorScheme.primary,
+                                labelStyle: TextStyle(
+                                  color: isSelected
+                                      ? colorScheme.onPrimary
+                                      : colorScheme.onSurfaceVariant,
+                                  fontWeight:
+                                      isSelected ? FontWeight.w600 : FontWeight.w500,
+                                ),
+                              ),
+                            );
+                          }
+
+                          final category = filtrosProvider.categorias[index - 1];
+                          final categoryId = category['id'] as int?;
+                          final categoryName = category['nombre'] as String? ?? '';
+                          final isSelected =
+                              filtrosProvider.categoriaIdSeleccionada == categoryId;
+
+                          return Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 4),
+                            child: ChoiceChip(
+                              label: Text(categoryName),
+                              selected: isSelected,
+                              onSelected: (selected) {
+                                if (selected) {
+                                  filtrosProvider.seleccionarCategoria(categoryId);
+                                  _loadProducts();
+                                }
+                              },
+                              backgroundColor: colorScheme.surfaceContainerHighest,
+                              selectedColor: colorScheme.primary,
+                              labelStyle: TextStyle(
+                                color: isSelected
+                                    ? colorScheme.onPrimary
+                                    : colorScheme.onSurfaceVariant,
+                                fontWeight: isSelected
+                                    ? FontWeight.w600
+                                    : FontWeight.w500,
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                  ],
+
+                  // Sección de Marcas
+                  if (filtrosProvider.marcas.isNotEmpty) ...[
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+                      child: Align(
+                        alignment: Alignment.centerLeft,
+                        child: Text(
+                          'Marcas',
+                          style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                            color: colorScheme.onSurfaceVariant,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ),
+                    SizedBox(
+                      height: 40,
+                      child: ListView.builder(
+                        scrollDirection: Axis.horizontal,
+                        padding: const EdgeInsets.symmetric(horizontal: 12),
+                        itemCount: filtrosProvider.marcas.length + 1,
+                        itemBuilder: (context, index) {
+                          if (index == 0) {
+                            // Chip "Todas"
+                            final isSelected =
+                                filtrosProvider.marcaIdSeleccionada == null;
+                            return Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 4),
+                              child: ChoiceChip(
+                                label: const Text('Todas'),
+                                selected: isSelected,
+                                onSelected: (selected) {
+                                  filtrosProvider.seleccionarMarca(null);
+                                  _loadProducts();
+                                },
+                                backgroundColor: colorScheme.surfaceContainerHighest,
+                                selectedColor: colorScheme.secondary,
+                                labelStyle: TextStyle(
+                                  color: isSelected
+                                      ? colorScheme.onSecondary
+                                      : colorScheme.onSurfaceVariant,
+                                  fontWeight:
+                                      isSelected ? FontWeight.w600 : FontWeight.w500,
+                                ),
+                              ),
+                            );
+                          }
+
+                          final marca = filtrosProvider.marcas[index - 1];
+                          final marcaId = marca['id'] as int?;
+                          final marcaNombre = marca['nombre'] as String? ?? '';
+                          final isSelected =
+                              filtrosProvider.marcaIdSeleccionada == marcaId;
+
+                          return Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 4),
+                            child: ChoiceChip(
+                              label: Text(marcaNombre),
+                              selected: isSelected,
+                              onSelected: (selected) {
+                                if (selected) {
+                                  filtrosProvider.seleccionarMarca(marcaId);
+                                  _loadProducts();
+                                }
+                              },
+                              backgroundColor: colorScheme.surfaceContainerHighest,
+                              selectedColor: colorScheme.secondary,
+                              labelStyle: TextStyle(
+                                color: isSelected
+                                    ? colorScheme.onSecondary
+                                    : colorScheme.onSurfaceVariant,
+                                fontWeight: isSelected
+                                    ? FontWeight.w600
+                                    : FontWeight.w500,
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                  ],
+                ],
+              );
+            },
+          ),
 
           // Lista de productos
           Expanded(
@@ -1343,5 +1505,28 @@ class _ProductListScreenState extends State<ProductListScreen>
         return const SizedBox.shrink();
       },
     );
+  }
+
+  // ✅ NUEVO: Helper para obtener nombre de categoría por ID
+  String _getCategoryNameById(int? categoryId, List<dynamic> categories) {
+    if (categoryId == null) return '';
+    try {
+      final category =
+          categories.firstWhere((c) => c['id'] == categoryId, orElse: () => {});
+      return (category['nombre'] as String?) ?? 'Sin nombre';
+    } catch (e) {
+      return 'Categoría $categoryId';
+    }
+  }
+
+  // ✅ NUEVO: Helper para obtener nombre de marca por ID
+  String _getBrandNameById(int? brandId, List<dynamic> brands) {
+    if (brandId == null) return '';
+    try {
+      final brand = brands.firstWhere((b) => b['id'] == brandId, orElse: () => {});
+      return (brand['nombre'] as String?) ?? 'Sin nombre';
+    } catch (e) {
+      return 'Marca $brandId';
+    }
   }
 }

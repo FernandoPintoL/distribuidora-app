@@ -15,6 +15,7 @@ import '../../services/estados_helpers.dart'; // ✅ AGREGADO para estados diná
 import '../../services/print_service.dart';
 import '../../extensions/theme_extension.dart'; // ✅ AGREGADO para dark mode
 import '../reportes/nuevo_reporte_screen.dart'; // ✅ NUEVO: Para reportar productos dañados
+import '../ventas/venta_detalle_screen.dart'; // ✅ NUEVO: Para ver detalles de venta
 
 class PedidoDetalleScreen extends StatefulWidget {
   final int pedidoId;
@@ -475,6 +476,20 @@ class _PedidoDetalleScreenState extends State<PedidoDetalleScreen> {
     );
   }
 
+  /// ✅ NUEVO: Navegar a detalles de venta
+  Future<void> _irADetallesVenta(int ventaId) async {
+    if (!mounted) return;
+
+    await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => VentaDetalleScreen(
+          ventaId: ventaId,
+        ),
+      ),
+    );
+  }
+
   String _formatearFecha(DateTime fecha) {
     final formatter = DateFormat('dd MMM yyyy, HH:mm', 'es_ES');
     return formatter.format(fecha);
@@ -567,15 +582,34 @@ class _PedidoDetalleScreenState extends State<PedidoDetalleScreen> {
                   // ✅ NUEVO: Botón para reportar producto dañado (si es una venta confirmada)
                   if (pedido.venta != null) ...[
                     const SizedBox(height: 12),
-                    ElevatedButton.icon(
-                      onPressed: () => _reportarProductoDanado(pedido),
-                      icon: const Icon(Icons.report_problem),
-                      label: const Text('Reportar Producto Dañado'),
-                      style: ElevatedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        backgroundColor: Colors.red.shade600,
-                        minimumSize: const Size(double.infinity, 50),
-                      ),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: ElevatedButton.icon(
+                            onPressed: () => _irADetallesVenta(pedido.venta!.id),
+                            icon: const Icon(Icons.receipt_long),
+                            label: const Text('Ver Venta'),
+                            style: ElevatedButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(vertical: 16),
+                              backgroundColor: Colors.blue,
+                              minimumSize: const Size(double.infinity, 50),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: ElevatedButton.icon(
+                            onPressed: () => _reportarProductoDanado(pedido),
+                            icon: const Icon(Icons.report_problem),
+                            label: const Text('Reportar'),
+                            style: ElevatedButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(vertical: 16),
+                              backgroundColor: Colors.red.shade600,
+                              minimumSize: const Size(double.infinity, 50),
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ],

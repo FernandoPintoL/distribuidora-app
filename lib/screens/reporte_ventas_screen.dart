@@ -22,7 +22,7 @@ class _ReporteVentasScreenState extends State<ReporteVentasScreen> {
     super.initState();
     final ahora = DateTime.now();
     _fechaHasta = ahora;
-    _fechaDesde = ahora.subtract(const Duration(days: 30));
+    _fechaDesde = DateTime(ahora.year, ahora.month, 1);
 
     // Cargar reporte con fechas por defecto
     WidgetsBinding.instance.addPostFrameCallback((_) {

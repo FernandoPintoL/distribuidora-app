@@ -7,6 +7,7 @@ class Venta {
   final String? cliente;
   final String? clienteNombre;
   final String? clienteTelefono; // Nuevo: Teléfono del cliente
+  final String? clienteRazonSocial; // ✅ NUEVO: Razón social del cliente
   final String? clienteLocalidad; // ✅ DEPRECADO: Usar clienteLocalidadObj en su lugar
   final Localidad? clienteLocalidadObj; // ✅ NUEVO: Localidad completa del cliente
   final double total;
@@ -46,6 +47,7 @@ class Venta {
     this.cliente,
     this.clienteNombre,
     this.clienteTelefono,
+    this.clienteRazonSocial,  // ✅ NUEVO: Razón social del cliente
     this.clienteLocalidad,
     this.clienteLocalidadObj,  // ✅ NUEVO
     required this.total,
@@ -74,15 +76,17 @@ class Venta {
   });
 
   factory Venta.fromJson(Map<String, dynamic> json) {
-    // Extraer nombre, teléfono y localidad del cliente si es un objeto
+    // Extraer nombre, teléfono, razón social y localidad del cliente si es un objeto
     String? clienteNom;
     String? clienteTel;
+    String? clienteRazonSoc;  // ✅ NUEVO: Razón social del cliente
     String? clienteLocalidadNom;
     Localidad? clienteLocalidadObj;  // ✅ NUEVO: Objeto Localidad completo
     if (json['cliente'] is Map<String, dynamic>) {
       final clienteObj = json['cliente'] as Map<String, dynamic>;
       clienteNom = clienteObj['nombre'] as String?;
       clienteTel = clienteObj['telefono'] as String?;
+      clienteRazonSoc = clienteObj['razon_social'] as String?;  // ✅ NUEVO: Extraer razón social
       // ✅ NUEVO: Extraer localidad del cliente
       if (clienteObj['localidad'] is Map<String, dynamic>) {
         final localidadObj = clienteObj['localidad'] as Map<String, dynamic>;
@@ -179,6 +183,7 @@ class Venta {
       cliente: json['cliente'] is String ? json['cliente'] as String? : null,
       clienteNombre: clienteNom,
       clienteTelefono: clienteTel,
+      clienteRazonSocial: clienteRazonSoc,  // ✅ NUEVO: Razón social del cliente
       clienteLocalidad: clienteLocalidadNom,
       clienteLocalidadObj: clienteLocalidadObj,  // ✅ NUEVO: Objeto Localidad completo
       total: _parseDouble(json['total']),

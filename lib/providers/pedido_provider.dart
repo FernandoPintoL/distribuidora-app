@@ -787,9 +787,11 @@ class PedidoProvider with ChangeNotifier {
     final ventaId = data['venta_id'] as int;
     debugPrint('🔄 Proforma #$proformaId convertida a venta #$ventaId');
 
-    // Recargar el pedido para obtener la data actualizada
+    // ✅ CORREGIDO: Recargar usando proformaId (pedido), no ventaId
+    // El pedido con ID=proformaId ahora tiene estadoCategoria='venta'
+    // loadPedido() luego llamará a loadVentaForPedido() para cargar los datos completos
     if (proformaId != null) {
-      loadPedido(ventaId);
+      loadPedido(proformaId);
     }
   }
 

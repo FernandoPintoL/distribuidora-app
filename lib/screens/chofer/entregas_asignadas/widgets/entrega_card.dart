@@ -5,6 +5,7 @@ import '../../../../models/entrega.dart';
 import '../../../../services/api_service.dart';
 import '../../../../widgets/chofer/productos_agrupados_widget.dart';
 import '../../../../widgets/map_location_selector.dart';
+import '../../../../screens/ventas/venta_detalle_screen.dart'; // ✅ NUEVO: Para navegar a detalles
 import 'estado_venta_badge.dart';
 import 'info_row.dart';
 
@@ -681,6 +682,10 @@ class _EntregaCardState extends State<EntregaCard> {
             title: venta.clienteNombre ?? 'Cliente #${venta.cliente}',
             subtitle: venta.numero,
             isSelected: false,
+            // ✅ MEJORADO: Agregar información adicional para mostrar en el mapa
+            razonSocial: venta.clienteRazonSocial,  // ✅ Ahora obtiene del modelo Venta
+            telefono: venta.clienteTelefono,
+            ventaId: venta.id,
           ),
         );
       }
@@ -707,6 +712,17 @@ class _EntregaCardState extends State<EntregaCard> {
           },
           additionalLocations:
               ubicaciones, // ✅ NUEVO: Pasar ubicaciones de ventas
+          // ✅ NUEVO: Navegar a detalles de venta cuando se toca un marcador
+          onVentaSelected: (ventaId) {
+            debugPrint('🗺️ Abriendo detalles de venta #$ventaId desde mapa');
+            Navigator.pop(context); // Cerrar mapa primero
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => VentaDetalleScreen(ventaId: ventaId),
+              ),
+            );
+          },
         ),
       ),
     );

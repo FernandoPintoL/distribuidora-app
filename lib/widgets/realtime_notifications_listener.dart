@@ -38,6 +38,9 @@ class _RealtimeNotificationsListenerState
   @override
   void initState() {
     super.initState();
+    // ✅ NUEVO: Log de inicialización
+    debugPrint('🔌 [RealtimeNotificationsListener] initState - Iniciando escucha de WebSocket');
+    debugPrint('   WebSocket conectado: ${_webSocketService.isConnected}');
     _iniciarEscucha();
   }
 
@@ -51,22 +54,33 @@ class _RealtimeNotificationsListenerState
   }
 
   void _iniciarEscucha() {
+    debugPrint('🔔 [RealtimeNotificationsListener] Iniciando escucha de eventos de WebSocket');
+
     // Escuchar eventos de proformas
     _proformaSubscription = _webSocketService.proformaStream.listen((event) {
       final type = event['type'] as String;
       final data = event['data'] as Map<String, dynamic>;
 
+      debugPrint('📬 [RealtimeNotificationsListener] Evento recibido: type=$type');
+      debugPrint('   Data: $data');
+
       switch (type) {
         case 'created':
           // No mostrar notificación (el usuario acaba de crear)
+          debugPrint('ℹ️ Proforma creada (sin notificación)');
           break;
         case 'approved':
+          // ✅ RESTAURADO: Mostrar notificación cuando proforma es aprobada
+          debugPrint('✅ Proforma aprobada - Mostrando notificación');
           _mostrarNotificacionProformaAprobada(data);
           break;
         case 'rejected':
+          debugPrint('❌ Proforma rechazada - Mostrando notificación');
           _mostrarNotificacionProformaRechazada(data);
           break;
         case 'converted':
+          // ✅ NUEVO: Escuchar evento de conversión que incluye cliente_nombre y venta_id
+          debugPrint('🔄 Proforma convertida - Mostrando notificación');
           _mostrarNotificacionProformaConvertida(data);
           break;
       }
@@ -127,6 +141,7 @@ class _RealtimeNotificationsListenerState
     });
   }
 
+  // ✅ Mostrar notificación cuando una proforma es APROBADA desde el panel
   void _mostrarNotificacionProformaAprobada(Map<String, dynamic> data) {
     final numero = data['numero'] as String?;
     final clientName = data['cliente_nombre'] as String?;
@@ -143,44 +158,6 @@ class _RealtimeNotificationsListenerState
 
     // ✅ Recargar solo las estadísticas (contador) sin cargar todas las notificaciones
     context.read<NotificationProvider>().loadStats();
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Row(
-          children: [
-            const Icon(Icons.check_circle, color: Colors.white, size: 24),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Text(
-                    '¡Proforma Aprobada!',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16,
-                    ),
-                  ),
-                  if (numero != null)
-                    Text('Proforma $numero ha sido aprobada'),
-                ],
-              ),
-            ),
-          ],
-        ),
-        backgroundColor: Colors.green,
-        duration: const Duration(seconds: 5),
-        behavior: SnackBarBehavior.floating,
-        action: SnackBarAction(
-          label: 'VER',
-          textColor: Colors.white,
-          onPressed: () {
-            // TODO: Navegar a detalles de proforma
-          },
-        ),
-      ),
-    );
   }
 
   void _mostrarNotificacionProformaRechazada(Map<String, dynamic> data) {
@@ -239,52 +216,26 @@ class _RealtimeNotificationsListenerState
   }
 
   void _mostrarNotificacionProformaConvertida(Map<String, dynamic> data) {
-    final numero = data['numero'] as String?;
+    // ✅ NUEVO: Extraer datos completos del evento de conversión
+    final proformaNumero = data['proforma_numero'] as String?;
     final ventaNumero = data['venta_numero'] as String?;
+    final clienteNombre = data['cliente_nombre'] as String?;
+    final ventaId = data['venta_id'] as int?;
 
     if (!mounted) return;
 
     // ✅ Mostrar notificación NATIVA del sistema
-    if (numero != null) {
+    if (proformaNumero != null && ventaId != null) {
+      // Pasar todos los datos a la notificación
       _notificationService.showProformaConvertedNotification(
-        numero: numero,
+        numero: proformaNumero,
         ventaNumero: ventaNumero,
+        clientName: clienteNombre,
       );
     }
 
     // ✅ Recargar solo las estadísticas (contador) sin cargar todas las notificaciones
     context.read<NotificationProvider>().loadStats();
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Row(
-          children: [
-            const Icon(Icons.shopping_cart, color: Colors.white, size: 24),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Text(
-                    '¡Pedido Confirmado!',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16,
-                    ),
-                  ),
-                  if (ventaNumero != null)
-                    Text('Pedido $ventaNumero creado exitosamente'),
-                ],
-              ),
-            ),
-          ],
-        ),
-        backgroundColor: Colors.blue,
-        duration: const Duration(seconds: 5),
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
   }
 
   void _mostrarNotificacionEnvioProgramado(Map<String, dynamic> data) {

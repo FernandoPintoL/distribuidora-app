@@ -10,6 +10,10 @@ class MapLocation {
   final String title;
   final String? subtitle;
   final bool isSelected; // ✅ Para diferenciar la ubicación seleccionada
+  // ✅ MEJORADO: Campos adicionales para mostrar más información en el mapa
+  final String? razonSocial;
+  final String? telefono;
+  final int? ventaId;
 
   MapLocation({
     required this.latitude,
@@ -17,6 +21,9 @@ class MapLocation {
     required this.title,
     this.subtitle,
     this.isSelected = false,
+    this.razonSocial,
+    this.telefono,
+    this.ventaId,
   });
 }
 
@@ -25,6 +32,7 @@ class MapLocationSelector extends StatefulWidget {
   final double? initialLongitude;
   final Function(double, double, String?) onLocationSelected;
   final List<MapLocation>? additionalLocations; // ✅ NUEVO 2026-02-18: Ubicaciones adicionales (ventas)
+  final Function(int ventaId)? onVentaSelected; // ✅ NUEVO: Callback cuando se toca una venta en el mapa
 
   const MapLocationSelector({
     super.key,
@@ -32,6 +40,7 @@ class MapLocationSelector extends StatefulWidget {
     this.initialLongitude,
     required this.onLocationSelected,
     this.additionalLocations, // ✅ NUEVO
+    this.onVentaSelected, // ✅ NUEVO
   });
 
   @override
@@ -187,12 +196,34 @@ class _MapLocationSelectorState extends State<MapLocationSelector> {
   }
 
   /// ✅ NUEVO 2026-02-18: Agregar marcador para ubicaciones adicionales (ventas)
-  /// ✅ MEJORADO 2026-02-17: Mostrar información completa (cliente + venta) con mejor formato
+  /// ✅ MEJORADO: Mostrar información completa (cliente, razón social, teléfono, venta, ID)
   void _addAdditionalMarker(MapLocation location) {
     final markerId = MarkerId('venta_${location.hashCode}');
 
     // ✅ NUEVO 2026-02-17: Guardar el ID del primer marker para mostrar infoWindow automáticamente
     _markerIdToShowInfoWindow ??= markerId.value;
+
+    // ✅ Construir snippet compacto en una sola línea (sin saltos de línea)
+    final snippetParts = <String>[];
+
+    if (location.razonSocial != null && location.razonSocial!.isNotEmpty) {
+      snippetParts.add('🏢 ${location.razonSocial}');
+    }
+
+    if (location.telefono != null && location.telefono!.isNotEmpty) {
+      snippetParts.add('📱 ${location.telefono}');
+    }
+
+    if (location.subtitle != null && location.subtitle!.isNotEmpty) {
+      snippetParts.add('📦 ${location.subtitle}');
+    }
+
+    if (location.ventaId != null) {
+      snippetParts.add('🔑 ${location.ventaId}');
+    }
+
+    // ✅ Usar separador '|' sin saltos de línea para mejor compatibilidad
+    final snippet = snippetParts.isEmpty ? 'Sin información' : snippetParts.join(' | ');
 
     _markers.add(
       Marker(
@@ -200,9 +231,17 @@ class _MapLocationSelectorState extends State<MapLocationSelector> {
         position: LatLng(location.latitude, location.longitude),
         infoWindow: InfoWindow(
           title: '👤 ${location.title}',
-          snippet: '📦 ${location.subtitle}',
+          snippet: snippet,
           onTap: () {
-            debugPrint('📍 Ubicación: ${location.title} | Venta: ${location.subtitle}');
+            debugPrint(
+              '📍 Cliente: ${location.title} | Razón Social: ${location.razonSocial} | \n'
+              'Teléfono: ${location.telefono} | Venta: ${location.subtitle} | ID: ${location.ventaId}',
+            );
+
+            // ✅ NUEVO: Llamar callback si existe ventaId y se proporcionó onVentaSelected
+            if (location.ventaId != null && widget.onVentaSelected != null) {
+              widget.onVentaSelected!(location.ventaId!);
+            }
           },
         ),
         icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed),
