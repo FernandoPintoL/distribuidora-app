@@ -123,7 +123,7 @@ class PedidoTimelineEvent {
 class Pedido {
   final int id;
   final String numero;
-  final int clienteId;
+  final int? clienteId;
   final Client? cliente;
   final int? direccionId;
   final ClientAddress? direccionEntrega;
@@ -277,7 +277,7 @@ class Pedido {
       return Pedido(
         id: json['id'] as int,
         numero: json['numero'] as String,
-        clienteId: json['cliente_id'] as int,
+        clienteId: json['cliente_id'] as int?,
         cliente: json['cliente'] != null
             ? Client.fromJson(json['cliente'] as Map<String, dynamic>)
             : null,

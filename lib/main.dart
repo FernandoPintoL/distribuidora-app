@@ -132,9 +132,7 @@ class MyApp extends StatelessWidget {
             '/mis-ventas': (context) => const MisVentasScreen(),
             '/mis-direcciones': (context) => const MisDireccionesScreen(),
             '/notifications': (context) => const NotificationsScreen(),
-            '/resumen-pedido': (context) => const ResumenPedidoScreen(),
-            '/proforma-creacion': (context) =>
-                const ProformaCreacionScreen(), // ✅ NUEVO: Ruta para crear proformas con combos
+            '/resumen-pedido': (context) => const ResumenPedidoScreen(), // ✅ Clientes y Preventistas
             '/reportes-productos-danados': (context) =>
                 const ReportesProductosDanadosScreen(), // ✅ NUEVO: Pantalla de reportes dañados
             '/reporte-productos-vendidos': (context) =>
@@ -275,10 +273,12 @@ class MyApp extends StatelessWidget {
                     ),
                   );
                 }
+                // ✅ CAMBIO 2026-03-05: Usar ConfirmarEntregaVentaScreen en lugar de ConfirmacionEntregaScreen (eliminado)
                 return MaterialPageRoute(
-                  builder: (context) => ConfirmacionEntregaScreen(
-                    entregaId: entregaId!,
-                    ventaId: ventaId,
+                  builder: (context) => Scaffold(
+                    body: Center(
+                      child: Text('Abrir desde resumen de entregas o tarjeta de ventas asignadas'),
+                    ),
                   ),
                 );
 

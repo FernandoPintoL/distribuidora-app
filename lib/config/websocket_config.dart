@@ -25,17 +25,24 @@ class WebSocketConfig {
   static const String eventProformaCreated = 'proforma.creada';
   static const String eventProformaApproved = 'proforma.aprobada';
   static const String eventProformaRejected = 'proforma.rechazada';
+  static const String eventProformaUpdated = 'proforma.actualizada'; // ✅ NUEVO
   static const String eventProformaConverted = 'proforma.convertida';
   static const String eventProformaCoordinationUpdated = 'proforma.coordinacion.actualizada'; // NUEVO
 
+  // Eventos de entregas
+  // ✅ Sincronizados con Node.js WebSocket Server
+  static const String eventEntregaCreada = 'entrega.creada'; // ✅ NUEVO: Cuando se crea una entrega consolidada
+  static const String eventVentaAsignadaEntrega = 'venta.asignada.entrega'; // ✅ NUEVO: Cuando venta es asignada a entrega
+  static const String eventReporteCargoGenerado = 'reporte.cargo_generado'; // ✅ NUEVO: Cuando se genera reporte de carga
+
   // Eventos de Ventas (Tracking de estado logístico)
   // ✅ Cliente recibe notificación de cambios en su venta
-  static const String eventVentaEstadoCambio = 'venta.estado_cambio';
-  static const String eventVentaEnTransito = 'venta.en_transito';
+  static const String eventVentaEstadoCambio = 'venta.estado-cambio'; // Cambio: venta.estado_cambio → venta.estado-cambio
+  static const String eventVentaEnTransito = 'venta.en-transito'; // Cambio: venta.en_transito → venta.en-transito
   static const String eventVentaEntregada = 'venta.entregada';
   static const String eventVentaProblema = 'venta.problema';
-  static const String eventVentaPreparacionCarga = 'venta:preparacion-carga'; // ✅ NUEVO: Cuando venta entra en PREPARACION_CARGA
-  static const String eventVentaListoParaEntrega = 'venta:listo-para-entrega'; // ✅ NUEVO: Cuando venta cambia a PENDIENTE_ENVIO
+  static const String eventVentaPreparacionCarga = 'venta.preparacion-carga'; // Cambio: venta:preparacion-carga → venta.preparacion-carga
+  static const String eventVentaListoParaEntrega = 'venta.listo-para-entrega'; // Cambio: venta:listo-para-entrega → venta.listo-para-entrega
 
   // Eventos de Stock
   static const String eventStockReserved = 'stock_reserved';
@@ -56,7 +63,8 @@ class WebSocketConfig {
 
   // Eventos de Entregas/Cargas (flujo de preparación y carga)
   // ✅ Sincronizados con Laravel Broadcast EntregaWebSocketService
-  static const String eventEntregaAsignada = 'entrega:asignada'; // ✅ NUEVO: Entrega consolidada asignada al chofer
+  static const String eventEntregaAsignada = 'entrega.asignada'; // ✅ Cambio: entrega:asignada → entrega.asignada
+  static const String eventEntregaEstadoCambio = 'entrega.estado-cambio'; // ✅ NUEVO: Cuando entrega cambia de estado
   static const String eventEntregaProgramada = 'entrega.programada';
   static const String eventEntregaEnPreparacionCarga = 'entrega.preparacion_carga';
   static const String eventEntregaEnCarga = 'entrega.en_carga';

@@ -1124,16 +1124,9 @@ void _mostrarDialogoAnularProforma(BuildContext context, Pedido proforma) {
               motivo,
             );
 
-            if (result) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(
-                    'Proforma #${proforma.numero} anulada exitosamente',
-                  ),
-                  backgroundColor: Colors.green,
-                ),
-              );
-            } else {
+            // ✅ No mostrar snackbar en caso de éxito
+            // La notificación nativa será mostrada por el listener de WebSocket
+            if (!result) {
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
                   content: Text(
@@ -1865,7 +1858,12 @@ class _PedidoCard extends StatelessWidget {
                               Navigator.pop(context);
 
                               if (success) {
-                                Navigator.pushNamed(context, '/carrito');
+                                // ✅ ACTUALIZADO: Navegar a /products con carrito cargado para editar
+                                Navigator.pushNamedAndRemoveUntil(
+                                  context,
+                                  '/products',
+                                  (route) => route.isFirst,
+                                );
                               } else {
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   SnackBar(

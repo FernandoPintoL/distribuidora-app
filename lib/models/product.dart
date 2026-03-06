@@ -227,6 +227,67 @@ class Product {
     if (value is num) return value.toDouble();
     return null;
   }
+
+  /// ✅ NUEVO: copyWith para modificar propiedades del producto
+  Product copyWith({
+    int? id,
+    String? nombre,
+    String? codigo,
+    String? sku,
+    String? descripcion,
+    Category? categoria,
+    Brand? marca,
+    Supplier? proveedor,
+    UnitMeasure? unidadMedida,
+    bool? activo,
+    double? precioCompra,
+    double? precioVenta,
+    int? stockMinimo,
+    int? stockMaximo,
+    int? cantidadMinima,
+    int? limiteVenta,
+    List<ProductImage>? imagenes,
+    List<String>? codigosBarra,
+    StockWarehouse? stockPrincipal,
+    List<StockWarehouse>? stockPorAlmacenes,
+    List<Precio>? precios,
+    bool? esCombo,
+    List<ComboItem>? comboItems,
+    List<ComboGrupo>? comboGrupos,
+    int? capacidad,
+    int? tipoPrecioIdRecomendado,
+    String? tipoPrecioNombreRecomendado,
+  }) {
+    return Product(
+      id: id ?? this.id,
+      nombre: nombre ?? this.nombre,
+      codigo: codigo ?? this.codigo,
+      sku: sku ?? this.sku,
+      descripcion: descripcion ?? this.descripcion,
+      categoria: categoria ?? this.categoria,
+      marca: marca ?? this.marca,
+      proveedor: proveedor ?? this.proveedor,
+      unidadMedida: unidadMedida ?? this.unidadMedida,
+      activo: activo ?? this.activo,
+      precioCompra: precioCompra ?? this.precioCompra,
+      precioVenta: precioVenta ?? this.precioVenta,
+      stockMinimo: stockMinimo ?? this.stockMinimo,
+      stockMaximo: stockMaximo ?? this.stockMaximo,
+      cantidadMinima: cantidadMinima ?? this.cantidadMinima,
+      limiteVenta: limiteVenta ?? this.limiteVenta,
+      imagenes: imagenes ?? this.imagenes,
+      codigosBarra: codigosBarra ?? this.codigosBarra,
+      stockPrincipal: stockPrincipal ?? this.stockPrincipal,
+      stockPorAlmacenes: stockPorAlmacenes ?? this.stockPorAlmacenes,
+      precios: precios ?? this.precios,
+      esCombo: esCombo ?? this.esCombo,
+      comboItems: comboItems ?? this.comboItems,
+      comboGrupos: comboGrupos ?? this.comboGrupos,
+      capacidad: capacidad ?? this.capacidad,
+      tipoPrecioIdRecomendado: tipoPrecioIdRecomendado ?? this.tipoPrecioIdRecomendado,
+      tipoPrecioNombreRecomendado: tipoPrecioNombreRecomendado ?? this.tipoPrecioNombreRecomendado,
+    );
+  }
 }
 
 class Category {
@@ -381,6 +442,27 @@ class StockWarehouse {
       'lote': lote,
       'fecha_vencimiento': fechaVencimiento,
     };
+  }
+
+  /// ✅ NUEVO: copyWith para modificar propiedades del stock
+  StockWarehouse copyWith({
+    int? almacenId,
+    String? almacenNombre,
+    num? cantidad,
+    num? cantidadDisponible,
+    num? cantidadReservada,
+    String? lote,
+    String? fechaVencimiento,
+  }) {
+    return StockWarehouse(
+      almacenId: almacenId ?? this.almacenId,
+      almacenNombre: almacenNombre ?? this.almacenNombre,
+      cantidad: cantidad ?? this.cantidad,
+      cantidadDisponible: cantidadDisponible ?? this.cantidadDisponible,
+      cantidadReservada: cantidadReservada ?? this.cantidadReservada,
+      lote: lote ?? this.lote,
+      fechaVencimiento: fechaVencimiento ?? this.fechaVencimiento,
+    );
   }
 }
 

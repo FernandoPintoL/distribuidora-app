@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'dart:convert'; // ✅ NUEVO 2026-03-05: Para base64Decode
+import 'dart:typed_data'; // ✅ NUEVO 2026-03-05: Para Uint8List
 import '../../models/entrega.dart';
 import '../../models/venta.dart';
 import '../../providers/entrega_provider.dart';
@@ -6,6 +8,15 @@ import '../../services/entrega_service.dart';
 import '../../widgets/widgets.dart';
 import '../../config/config.dart';
 import '../chofer/entrega_detalle/confirmar_entrega_venta_screen.dart';
+// ✅ NUEVO 2026-03-05: Widgets extraídos para reducir duplicidad
+import 'resumen_pagos_widgets/dark_mode_container.dart';
+import 'resumen_pagos_widgets/money_row.dart';
+import 'resumen_pagos_widgets/status_badge.dart';
+import 'resumen_pagos_widgets/section_header.dart';
+import 'resumen_pagos_widgets/product_line_item.dart';
+import 'resumen_pagos_widgets/info_box.dart';
+import 'resumen_pagos_widgets/photo_gallery.dart';
+import 'resumen_pagos_widgets/money_text.dart';
 
 class ResumenPagosEntregaScreen extends StatefulWidget {
   final Entrega entrega;
@@ -62,6 +73,40 @@ class _ResumenPagosEntregaScreenState extends State<ResumenPagosEntregaScreen> {
       return response.data;
     }
     return null;
+  }
+
+  /// ✅ NUEVO 2026-03-05: Convertir a int de forma segura (maneja String e int)
+  int? _convertirAInt(dynamic value) {
+    if (value == null) return null;
+    if (value is int) return value;
+    if (value is String) {
+      return int.tryParse(value);
+    }
+    if (value is double) {
+      return value.toInt();
+    }
+    return null;
+  }
+
+  /// ✅ NUEVO 2026-03-05: Decodificar base64 a bytes para mostrar imagen
+  Uint8List _decodificarBase64(String base64String) {
+    // Remover prefijo de data URI si existe
+    String cleanBase64 = base64String.replaceAll(
+      RegExp(r'^data:image/[^;]+;base64,'),
+      '',
+    );
+
+    try {
+      return base64Decode(cleanBase64);
+    } catch (_) {
+      // Si falla, intentar sin limpiar
+      try {
+        return base64Decode(base64String);
+      } catch (__) {
+        // Retornar bytes vacíos si falla todo
+        return Uint8List(0);
+      }
+    }
   }
 
   @override
@@ -141,6 +186,7 @@ class _ResumenPagosEntregaScreenState extends State<ResumenPagosEntregaScreen> {
     final porcentajeRecibido = resumen['porcentaje_recibido'] as num? ?? 0;
     final pagos = (resumen['pagos'] as List?) ?? [];
     final sinRegistrar = (resumen['sin_registrar'] as List?) ?? [];
+    final cliente = resumen['cliente'] as Map<String, dynamic>? ?? {};
 
     final diferenciaNegativa = diferencia < 0;
 
@@ -269,67 +315,81 @@ class _ResumenPagosEntregaScreenState extends State<ResumenPagosEntregaScreen> {
                     ),
                   ],
                 ),
+                const SizedBox(height: 16),
+                // ✅ NUEVO 2026-03-05: Resumen de totales por tipo de pago
+                Divider(color: Colors.white.withValues(alpha: 0.3), height: 1),
+                const SizedBox(height: 12),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: (() {
+                    final Map<String, Map<String, dynamic>> totalPorTipo = {};
+                    for (final pagoGroup in pagos) {
+                      final tipoPago = pagoGroup['tipo_pago'] as String;
+                      final tipoPagoCodigo =
+                          pagoGroup['tipo_pago_codigo'] as String;
+                      final totalPago = pagoGroup['total'] as num;
+
+                      if (!totalPorTipo.containsKey(tipoPago)) {
+                        totalPorTipo[tipoPago] = {
+                          'monto': 0.0,
+                          'codigo': tipoPagoCodigo,
+                        };
+                      }
+                      totalPorTipo[tipoPago]!['monto'] =
+                          (totalPorTipo[tipoPago]!['monto'] as double) +
+                          totalPago.toDouble();
+                    }
+
+                    return totalPorTipo.entries.map((entry) {
+                      final tipo = entry.key;
+                      final datos = entry.value;
+                      final monto = datos['monto'] as double;
+                      final codigo = datos['codigo'] as String;
+                      final icono = _obtenerIconoPago(codigo);
+
+                      return Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 6,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.15),
+                          borderRadius: BorderRadius.circular(6),
+                          border: Border.all(
+                            color: Colors.white.withValues(alpha: 0.3),
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(icono, size: 16, color: Colors.white),
+                            const SizedBox(width: 4),
+                            Text(
+                              '$tipo: Bs. ${monto.toStringAsFixed(2)}',
+                              style: TextStyle(
+                                fontSize: AppTextStyles.labelSmall(
+                                  context,
+                                ).fontSize,
+                                fontWeight: FontWeight.w600,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    }).toList();
+                  })(),
+                ),
               ],
             ),
           ),
 
           const SizedBox(height: 24),
 
-          // ✅ SECCIÓN DE PAGOS POR TIPO
+          // ✅ SECCIÓN 1: VENTAS DE LA ENTREGA (PRINCIPAL — PRIMERO)
           Text(
-            'Pagos Registrados',
-            style: Theme.of(
-              context,
-            ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
-          ),
-          const SizedBox(height: 12),
-
-          if (pagos.isEmpty)
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: isDarkMode ? Colors.grey[800] : Colors.grey[100],
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Center(
-                child: Text(
-                  'No hay pagos registrados',
-                  style: TextStyle(
-                    color: isDarkMode ? Colors.grey[400] : Colors.grey[600],
-                  ),
-                ),
-              ),
-            )
-          else
-            ...pagos.map((pago) {
-              final tipoPago = pago['tipo_pago'] as String;
-              final tipoPagoCodigo = pago['tipo_pago_codigo'] as String;
-              final totalPago = pago['total'] as num;
-              final cantidadVentas = pago['cantidad_ventas'] as num;
-              final ventas = pago['ventas'] as List;
-
-              final iconoPago = _obtenerIconoPago(tipoPagoCodigo);
-              final colorPago = _obtenerColorPago(tipoPagoCodigo);
-
-              return Padding(
-                padding: const EdgeInsets.only(bottom: 12),
-                child: _buildPagoCard(
-                  icono: iconoPago,
-                  color: colorPago,
-                  tipo: tipoPago,
-                  total: totalPago.toDouble(),
-                  cantidad: cantidadVentas.toInt(),
-                  ventas: ventas,
-                  isDarkMode: isDarkMode,
-                ),
-              );
-            }).toList(),
-
-          const SizedBox(height: 24),
-
-          // ✅ NUEVA 2026-02-15: SECCIÓN DE DETALLE DE VENTAS CON PAGOS EDITABLES
-          Text(
-            'Detalle de Ventas',
+            'Ventas de la Entrega',
             style: Theme.of(
               context,
             ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
@@ -338,7 +398,7 @@ class _ResumenPagosEntregaScreenState extends State<ResumenPagosEntregaScreen> {
 
           // ✅ MEJORADO 2026-02-16: Agrupar por venta (no por tipo de pago)
           if (pagos.isNotEmpty)
-            ..._construirVentasConPagos(pagos, isDarkMode)
+            ..._construirVentasConPagos(pagos, cliente, isDarkMode)
           else
             Container(
               padding: const EdgeInsets.all(16),
@@ -358,7 +418,7 @@ class _ResumenPagosEntregaScreenState extends State<ResumenPagosEntregaScreen> {
 
           const SizedBox(height: 24),
 
-          // ✅ SECCIÓN DE VENTAS SIN PAGO REGISTRADO
+          // ✅ SECCIÓN 2: VENTAS SIN PAGO REGISTRADO (SI EXISTEN)
           if (sinRegistrar.isNotEmpty) ...[
             Text(
               'Ventas Sin Pago Registrado',
@@ -387,6 +447,7 @@ class _ResumenPagosEntregaScreenState extends State<ResumenPagosEntregaScreen> {
                 ),
                 itemBuilder: (_, index) {
                   final venta = sinRegistrar[index];
+                  final ventaId = venta['venta_id'] as int;
                   final ventaNumero = venta['venta_numero'] as String;
                   final monto = venta['monto'] as num;
 
@@ -398,31 +459,50 @@ class _ResumenPagosEntregaScreenState extends State<ResumenPagosEntregaScreen> {
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Venta $ventaNumero',
-                              style: TextStyle(
-                                fontSize: AppTextStyles.bodyMedium(
-                                  context,
-                                ).fontSize!,
-                                fontWeight: FontWeight.w500,
-                                color: isDarkMode
-                                    ? Colors.grey[200]
-                                    : Colors.grey[800],
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Venta $ventaNumero',
+                                style: TextStyle(
+                                  fontSize: AppTextStyles.bodyMedium(
+                                    context,
+                                  ).fontSize!,
+                                  fontWeight: FontWeight.w500,
+                                  color: isDarkMode
+                                      ? Colors.grey[200]
+                                      : Colors.grey[800],
+                                ),
                               ),
-                            ),
-                          ],
+                              const SizedBox(height: 4),
+                              Text(
+                                'Bs. ${monto.toStringAsFixed(2)}',
+                                style: TextStyle(
+                                  fontSize: AppTextStyles.bodySmall(
+                                    context,
+                                  ).fontSize!,
+                                  fontWeight: FontWeight.w600,
+                                  color: Colors.orange[700],
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
-                        Text(
-                          'Bs. ${monto.toStringAsFixed(2)}',
-                          style: TextStyle(
-                            fontSize: AppTextStyles.bodyMedium(
-                              context,
-                            ).fontSize!,
-                            fontWeight: FontWeight.w600,
-                            color: Colors.orange[700],
+                        // ✅ Botón de edición para confirmar entrega
+                        SizedBox(
+                          height: 36,
+                          child: ElevatedButton.icon(
+                            onPressed: () {
+                              _navegarAConfirmarEntrega(context, ventaId);
+                            },
+                            icon: const Icon(Icons.edit, size: 16),
+                            label: const Text('Confirmar'),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.orange[600],
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(horizontal: 12),
+                            ),
                           ),
                         ),
                       ],
@@ -433,37 +513,17 @@ class _ResumenPagosEntregaScreenState extends State<ResumenPagosEntregaScreen> {
             ),
             const SizedBox(height: 24),
           ],
-
-          // ✅ BOTONES DE ACCIÓN
-          Row(
-            children: [
-              Expanded(
-                child: OutlinedButton.icon(
-                  onPressed: () => Navigator.pop(context),
-                  icon: const Icon(Icons.arrow_back),
-                  label: const Text('Atrás'),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: ElevatedButton.icon(
-                  onPressed: () {
-                    setState(() => _cargarResumen());
-                  },
-                  icon: const Icon(Icons.refresh),
-                  label: const Text('Actualizar'),
-                  style: ElevatedButton.styleFrom(backgroundColor: Colors.blue),
-                ),
-              ),
-            ],
-          ),
         ],
       ),
     );
   }
 
   // ✅ NUEVO 2026-02-16: Construir tarjetas de ventas agrupadas por venta_id
-  List<Widget> _construirVentasConPagos(List<dynamic> pagos, bool isDarkMode) {
+  List<Widget> _construirVentasConPagos(
+    List<dynamic> pagos,
+    Map<String, dynamic> cliente,
+    bool isDarkMode,
+  ) {
     // Agrupar todas las ventas únicas con sus pagos
     final Map<int, Map<String, dynamic>> ventasMap = {};
 
@@ -486,7 +546,20 @@ class _ResumenPagosEntregaScreenState extends State<ResumenPagosEntregaScreen> {
                 ?.cast<Map<String, dynamic>>() ??
             [];
 
+        // ✅ NUEVO 2026-03-05: Extraer cliente específico de la venta (no el global)
+        final clienteVenta = venta['cliente'] as Map<String, dynamic>? ?? {};
+
         if (ventaId > 0) {
+          // ✅ NUEVA 2026-03-05: Extraer productos devueltos e info de devolución (SIEMPRE, para preservar en múltiples pagos)
+          final productosDevueltos =
+              (venta['productos_devueltos'] as List?) ?? [];
+          final montoDevuelto = venta['monto_devuelto'] as num? ?? 0;
+          final montoAceptado = venta['monto_aceptado'] as num? ?? ventaTotal;
+          // ✅ NUEVO 2026-03-05: Extraer campos de novedad
+          final tiendaAbierta = venta['tienda_abierta'] as bool?;
+          final clientePresente = venta['cliente_presente'] as bool?;
+          final motivoRechazo = venta['motivo_rechazo'] as String?;
+
           if (!ventasMap.containsKey(ventaId)) {
             ventasMap[ventaId] = {
               'venta_id': ventaId,
@@ -500,13 +573,41 @@ class _ResumenPagosEntregaScreenState extends State<ResumenPagosEntregaScreen> {
               'observaciones_logistica': observacionesLogistica,
               'firma_digital_url': firmaDigitalUrl,
               'detalles': detalles,
+              // ✅ NUEVO 2026-03-05: Guardar cliente específico de la venta
+              'cliente': clienteVenta,
+              // ✅ NUEVA 2026-03-05: Guardar productos devueltos e info de devolución
+              'productos_devueltos': productosDevueltos,
+              'monto_devuelto': montoDevuelto,
+              'monto_aceptado': montoAceptado,
+              // ✅ NUEVO 2026-03-05: Guardar campos de novedad
+              'tienda_abierta': tiendaAbierta,
+              'cliente_presente': clientePresente,
+              'motivo_rechazo': motivoRechazo,
             };
+          } else {
+            // ✅ FIX 2026-03-05: Si la venta ya existe (múltiples pagos), asegurar que productos_devueltos se preserve
+            if (productosDevueltos.isNotEmpty) {
+              ventasMap[ventaId]!['productos_devueltos'] = productosDevueltos;
+              ventasMap[ventaId]!['monto_devuelto'] = montoDevuelto;
+              ventasMap[ventaId]!['monto_aceptado'] = montoAceptado;
+            }
+            // ✅ NUEVO 2026-03-05: Actualizar campos de novedad en venta existente
+            if (tiendaAbierta != null) {
+              ventasMap[ventaId]!['tienda_abierta'] = tiendaAbierta;
+            }
+            if (clientePresente != null) {
+              ventasMap[ventaId]!['cliente_presente'] = clientePresente;
+            }
+            if (motivoRechazo != null) {
+              ventasMap[ventaId]!['motivo_rechazo'] = motivoRechazo;
+            }
           }
 
           // Agregar pago a la venta
           ventasMap[ventaId]!['pagos'].add({
             'tipo_pago': pagoGroup['tipo_pago'],
             'tipo_pago_id': pagoGroup['tipo_pago_id'],
+            'tipo_pago_codigo': pagoGroup['tipo_pago_codigo'],
             'monto': venta['monto_recibido'] as num? ?? 0,
             'referencia': venta['referencia'] as String? ?? '',
           });
@@ -531,6 +632,23 @@ class _ResumenPagosEntregaScreenState extends State<ResumenPagosEntregaScreen> {
       final observacionesLogistica =
           ventaData['observaciones_logistica'] as String? ?? '';
       final detalles = (ventaData['detalles'] as List?) ?? [];
+      // ✅ NUEVA 2026-03-05: Campos de novedad
+      final tiendaAbierta = ventaData['tienda_abierta'] as bool?;
+      final clientePresente = ventaData['cliente_presente'] as bool?;
+      final motivoRechazo = ventaData['motivo_rechazo'] as String?;
+      // ✅ NUEVA 2026-03-05: Productos devueltos en devolución parcial
+      final productosDevueltosRaw = ventaData['productos_devueltos'];
+      final productosDevueltos = (productosDevueltosRaw is List)
+          ? (productosDevueltosRaw as List).cast<Map<String, dynamic>>()
+          : [];
+      final montoDevuelto =
+          (ventaData['monto_devuelto'] as num?)?.toDouble() ?? 0.0;
+      final montoAceptado =
+          (ventaData['monto_aceptado'] as num?)?.toDouble() ?? 0.0;
+
+      debugPrint(
+        '📦 [VENTA $ventaId] tipo_novedad=$tipoNovedad, productosDevueltos=${productosDevueltos.length}, montoDevuelto=$montoDevuelto, ventaData.keys=${ventaData.keys.toList()}',
+      );
 
       return Padding(
         padding: const EdgeInsets.only(bottom: 12),
@@ -568,7 +686,7 @@ class _ResumenPagosEntregaScreenState extends State<ResumenPagosEntregaScreen> {
                                 ).fontSize!,
                                 fontWeight: FontWeight.w700,
                                 color: isDarkMode
-                                    ? Colors.grey[100]
+                                    ? Colors.white
                                     : Colors.grey[900],
                               ),
                             ),
@@ -580,53 +698,71 @@ class _ResumenPagosEntregaScreenState extends State<ResumenPagosEntregaScreen> {
                                   context,
                                 ).fontSize!,
                                 color: isDarkMode
-                                    ? Colors.grey[400]
-                                    : Colors.grey[600],
+                                    ? Colors.grey[300]
+                                    : Colors.grey[700],
                                 fontFamily: 'monospace',
+                                fontWeight: FontWeight.w500,
                               ),
                             ),
-                            const SizedBox(height: 6),
-                            // Estado de entrega
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 8,
-                                vertical: 4,
+                            const SizedBox(height: 8),
+                            // 👤 Información del cliente
+                            Text(
+                              cliente['nombre_completo'] as String? ??
+                                  cliente['nombre'] as String? ??
+                                  'Cliente desconocido',
+                              style: TextStyle(
+                                fontSize: AppTextStyles.bodySmall(
+                                  context,
+                                ).fontSize!,
+                                fontWeight: FontWeight.w600,
+                                color: isDarkMode
+                                    ? Colors.amber[300]
+                                    : Colors.amber[800],
                               ),
-                              decoration: BoxDecoration(
-                                color: tipoEntrega == 'COMPLETA'
-                                    ? Colors.green[100]
-                                    : Colors.orange[100],
-                                borderRadius: BorderRadius.circular(6),
+                            ),
+                            if ((cliente['email'] as String? ?? '')
+                                    .isNotEmpty ||
+                                (cliente['telefono'] as String? ?? '')
+                                    .isNotEmpty) ...[
+                              const SizedBox(height: 2),
+                              Text(
+                                [
+                                  if ((cliente['email'] as String? ?? '')
+                                      .isNotEmpty)
+                                    cliente['email'],
+                                  if ((cliente['telefono'] as String? ?? '')
+                                      .isNotEmpty)
+                                    cliente['telefono'],
+                                ].join(' • '),
+                                style: TextStyle(
+                                  fontSize: AppTextStyles.labelSmall(
+                                    context,
+                                  ).fontSize!,
+                                  color: isDarkMode
+                                      ? Colors.grey[400]
+                                      : Colors.grey[700],
+                                  fontWeight: FontWeight.w500,
+                                ),
                               ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Icon(
-                                    tipoEntrega == 'COMPLETA'
-                                        ? Icons.check_circle
-                                        : Icons.warning,
-                                    size: 14,
-                                    color: tipoEntrega == 'COMPLETA'
-                                        ? Colors.green[700]
-                                        : Colors.orange[700],
-                                  ),
-                                  const SizedBox(width: 4),
-                                  Text(
-                                    tipoEntrega == 'COMPLETA'
-                                        ? '✅ Completa'
-                                        : '⚠️ Con Novedad${tipoNovedad != null ? ': $tipoNovedad' : ''}',
-                                    style: TextStyle(
-                                      fontSize: AppTextStyles.labelSmall(
-                                        context,
-                                      ).fontSize!,
-                                      fontWeight: FontWeight.w600,
-                                      color: tipoEntrega == 'COMPLETA'
-                                          ? Colors.green[700]
-                                          : Colors.orange[700],
+                            ],
+                            const SizedBox(height: 8),
+                            // ✅ NUEVO 2026-03-05: Badges de tipo entrega y tipo novedad
+                            Wrap(
+                              spacing: 8,
+                              runSpacing: 4,
+                              children: [
+                                // Badge 1: Tipo de Entrega
+                                tipoEntrega == 'COMPLETA'
+                                    ? StatusBadge.completa()
+                                    : StatusBadge.novedad(),
+                                // Badge 2: Tipo de Novedad (si existe)
+                                if (tipoNovedad != null)
+                                  StatusBadge.tipoNovedad(
+                                    tipoNovedad: _obtenerNombreTipoNovedad(
+                                      tipoNovedad,
                                     ),
                                   ),
-                                ],
-                              ),
+                              ],
                             ),
                           ],
                         ),
@@ -668,35 +804,77 @@ class _ResumenPagosEntregaScreenState extends State<ResumenPagosEntregaScreen> {
                                 isEditing: true,
                                 tipoEntregaExistente: tipoEntrega,
                                 tipoNovedadExistente: tipoNovedad,
+                                // ✅ NUEVO 2026-03-05: Pasar cliente global (ya tiene datos correctos) y tipo de pago
+                                cliente: cliente,
+                                tipoPago: pagos.isNotEmpty
+                                    ? {
+                                        'id': _convertirAInt(
+                                          pagos[0]['tipo_pago_id'],
+                                        ),
+                                        'nombre':
+                                            pagos[0]['tipo_pago'] as String? ??
+                                            'No especificado',
+                                        'codigo':
+                                            pagos[0]['tipo_pago_codigo']
+                                                as String?,
+                                      }
+                                    : null,
+                                // ✅ NUEVO 2026-03-05: Pasar información previa de fotos, observaciones y pagos
+                                fotosExistentes: fotos.cast<String>(),
+                                observacionesExistentes: observacionesLogistica,
+                                pagosExistentes: pagos
+                                    .map(
+                                      (pago) => {
+                                        'tipo_pago_id': pago['tipo_pago_id'],
+                                        'monto': pago['monto'],
+                                        'referencia': pago['referencia'],
+                                      },
+                                    )
+                                    .toList(),
+                                // ✅ NUEVA 2026-03-05: Pasar campos de novedad
+                                tiendaAbiertaExistente: tiendaAbierta,
+                                clientePresenteExistente: clientePresente,
+                                motivoRechazoExistente: motivoRechazo,
+                                // ✅ NUEVO 2026-03-05: Pasar productos devueltos existentes para DEVOLUCION_PARCIAL
+                                productosDevueltosExistentes: productosDevueltos
+                                    .cast<Map<String, dynamic>>(),
                               ),
                             ),
-                          ).then((_) {
-                            // Recargar el resumen cuando vuelve
-                            _cargarResumen();
+                          ).then((result) {
+                            // ✅ Si hubo cambios (result == true), recargar y retornar a pantalla anterior
+                            if (result == true) {
+                              debugPrint(
+                                '📝 [RESUMEN_PAGOS] Cambios detectados, recargando resumen...',
+                              );
+                              setState(() {
+                                _cargarResumen();
+                              });
+                              // Esperar a que se cargue el resumen, luego retornar
+                              Future.delayed(
+                                const Duration(milliseconds: 1000),
+                                () {
+                                  if (mounted) {
+                                    debugPrint(
+                                      '✅ [RESUMEN_PAGOS] Resumen recargado, retornando true...',
+                                    );
+                                    Navigator.pop(context, true);
+                                  }
+                                },
+                              );
+                            } else {
+                              // Si no hubo cambios, solo recargar el resumen
+                              debugPrint(
+                                '📝 [RESUMEN_PAGOS] Sin cambios detectados, recargando resumen...',
+                              );
+                              setState(() {
+                                _cargarResumen();
+                              });
+                            }
                           });
                         },
                         tooltip: '📦 Cambiar Tipo Entrega',
                         color: Colors.orange[600],
                       ),
-                      // ✅ Botón editar pagos (solo para Entrega Completa o Devolución Parcial)
-                      if (tipoEntrega == 'COMPLETA' ||
-                          tipoNovedad == 'DEVOLUCION_PARCIAL')
-                        IconButton(
-                          icon: const Icon(Icons.edit_outlined, size: 22),
-                          onPressed: () {
-                            _mostrarDialogoCorregirPagos(
-                              context: context,
-                              entregaId: widget.entrega.id,
-                              ventaId: ventaId,
-                              ventaNumero: ventaNumero,
-                              clienteNombre: 'Venta #$ventaId',
-                              total: total,
-                              desglose: pagos,
-                            );
-                          },
-                          tooltip: '✏️ Editar Pagos',
-                          color: Colors.blue[600],
-                        ),
                     ],
                   ),
 
@@ -708,77 +886,260 @@ class _ResumenPagosEntregaScreenState extends State<ResumenPagosEntregaScreen> {
                   const SizedBox(height: 12),
 
                   // 💰 Total de la venta
+                  // ✅ NUEVO 2026-03-05: Mostrar total ajustado para DEVOLUCION_PARCIAL
                   Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 10,
-                    ),
+                    padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
                       color: isDarkMode
-                          ? Colors.blue[900]?.withOpacity(0.3)
-                          : Colors.blue[50],
+                          ? Colors.green[900]?.withOpacity(0.2)
+                          : Colors.green[50],
                       borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: Colors.blue[400]!, width: 1),
+                      border: Border.all(color: Colors.green[400]!, width: 1),
                     ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          '💰 Total de la Venta',
-                          style: TextStyle(
-                            fontSize: AppTextStyles.bodySmall(
-                              context,
-                            ).fontSize!,
-                            fontWeight: FontWeight.w600,
-                            color: isDarkMode
-                                ? Colors.blue[200]
-                                : Colors.blue[800],
-                          ),
-                        ),
-                        Text(
-                          'Bs. ${total.toStringAsFixed(2)}',
-                          style: TextStyle(
-                            fontSize: AppTextStyles.bodyMedium(
-                              context,
-                            ).fontSize!,
-                            fontWeight: FontWeight.bold,
-                            color: isDarkMode
-                                ? Colors.blue[100]
-                                : Colors.blue[900],
-                          ),
+                        SectionHeader.total(isDarkMode: isDarkMode),
+                        const SizedBox(height: 4),
+                        MoneyRow(
+                          label: 'Monto Total',
+                          amount: tipoNovedad == 'DEVOLUCION_PARCIAL'
+                              ? montoAceptado
+                              : total,
+                          isDarkMode: isDarkMode,
+                          amountColor:
+                              tipoNovedad == 'DEVOLUCION_PARCIAL' &&
+                                  montoDevuelto > 0
+                              ? (isDarkMode
+                                    ? Colors.green[300]
+                                    : Colors.green[700])
+                              : (isDarkMode
+                                    ? Colors.green[100]
+                                    : Colors.green[900]),
+                          rightWidget:
+                              tipoNovedad == 'DEVOLUCION_PARCIAL' &&
+                                  montoDevuelto > 0
+                              ? Column(
+                                  crossAxisAlignment: CrossAxisAlignment.end,
+                                  children: [
+                                    MoneyText.medium(
+                                      montoAceptado,
+                                      isDarkMode: isDarkMode,
+                                      color: isDarkMode
+                                          ? Colors.green[300]
+                                          : Colors.green[700],
+                                    ),
+                                    Padding(
+                                      padding: const EdgeInsets.only(top: 4),
+                                      child: Text(
+                                        '↩️ -Bs. ${montoDevuelto.toStringAsFixed(2)}',
+                                        style: TextStyle(
+                                          fontSize: 12,
+                                          color: Colors.red[700],
+                                          fontWeight: FontWeight.w700,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                )
+                              : null,
                         ),
                       ],
                     ),
                   ),
                   const SizedBox(height: 12),
-
-                  // ✅ NUEVO 2026-02-17: Reporte de productos en esta venta
-                  // Pasar detalles desde venta, no desde pagos
-                  _buildReporteProductosConDetalles(
-                    ventaId: ventaId,
-                    detalles: detalles.cast<Map<String, dynamic>>(),
-                    isDarkMode: isDarkMode,
-                    fotos: fotos.cast<String>(),
-                    observacionesLogistica: observacionesLogistica,
-                    tipoNovedad:
-                        tipoNovedad, // ✅ NUEVO 2026-02-17: Pasar tipo_novedad para destacar devoluciones
-                  ),
-                  const SizedBox(height: 12),
-
-                  // ✅ Desglose de pagos (solo para Devolución Parcial)
+                  // ✅ Mostrar productos solo si hay devoluciones
                   if (tipoNovedad == 'DEVOLUCION_PARCIAL') ...[
-                    Text(
-                      '💳 Pagos Registrados',
-                      style: TextStyle(
-                        fontSize: AppTextStyles.bodySmall(context).fontSize!,
-                        fontWeight: FontWeight.w600,
-                        color: isDarkMode ? Colors.grey[300] : Colors.grey[700],
+                    // ✅ NUEVO 2026-03-05: Mostrar productos devueltos en devolución parcial
+                    if (productosDevueltos.isNotEmpty) ...[
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: isDarkMode
+                              ? Colors.red[900]?.withOpacity(0.2)
+                              : Colors.red[50],
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: Colors.red[400]!, width: 1),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            SectionHeader.productosDevueltos(
+                              isDarkMode: isDarkMode,
+                            ),
+                            const SizedBox(height: 12),
+                            ...productosDevueltos.map((producto) {
+                              final nombreProducto =
+                                  producto['producto_nombre'] ?? 'N/A';
+                              final cantidad = producto['cantidad'] ?? 0;
+                              final precioUnitario =
+                                  (producto['precio_unitario'] as num?)
+                                      ?.toDouble() ??
+                                  0.0;
+                              final subtotal =
+                                  (producto['subtotal'] as num?)?.toDouble() ??
+                                  0.0;
+                              return ProductLineItem(
+                                productName: nombreProducto,
+                                quantity: cantidad is int
+                                    ? cantidad.toDouble()
+                                    : cantidad,
+                                unitPrice: precioUnitario,
+                                subtotal: subtotal,
+                                isDarkMode: isDarkMode,
+                                subtotalColor: isDarkMode
+                                    ? Colors.red[200]!
+                                    : Colors.red[800]!,
+                              );
+                            }).toList(),
+                            const SizedBox(height: 8),
+                            Divider(color: Colors.red[300], height: 1),
+                            const SizedBox(height: 8),
+                            MoneyRow(
+                              label: 'Monto Devuelto:',
+                              amount: montoDevuelto,
+                              isDarkMode: isDarkMode,
+                              amountColor: isDarkMode
+                                  ? Colors.red[200]!
+                                  : Colors.red[800]!,
+                            ),
+                            const SizedBox(height: 4),
+                            MoneyRow(
+                              label: 'Monto Aceptado:',
+                              amount: montoAceptado,
+                              isDarkMode: isDarkMode,
+                              amountColor: isDarkMode
+                                  ? Colors.green[200]!
+                                  : Colors.green[800]!,
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                    ],
+                  ],
+
+                  // ✅ Desglose de pagos (para Entrega Completa y Devolución Parcial)
+                  if (pagos.isNotEmpty &&
+                      (tipoEntrega == 'COMPLETA' ||
+                          tipoNovedad == 'DEVOLUCION_PARCIAL')) ...[
+                    SectionHeader.pagos(isDarkMode: isDarkMode),
+                    const SizedBox(height: 8),
+                    // ✅ NUEVO 2026-03-05: Chips de pagos (tipo + monto)
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: pagos.map((pago) {
+                        final tipoPago = pago['tipo_pago'] as String;
+                        final tipoPagoCodigo =
+                            pago['tipo_pago_codigo'] as String? ?? '';
+                        final monto =
+                            (pago['monto'] as num?)?.toDouble() ?? 0.0;
+                        final iconoPago = _obtenerIconoPago(tipoPagoCodigo);
+
+                        return Chip(
+                          avatar: Icon(
+                            iconoPago,
+                            size: 16,
+                            color: isDarkMode
+                                ? Colors.grey[300]
+                                : Colors.grey[700],
+                          ),
+                          label: Text(
+                            '$tipoPago • Bs. ${monto.toStringAsFixed(2)}',
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                              color: isDarkMode
+                                  ? Colors.white
+                                  : Colors.grey[900],
+                            ),
+                          ),
+                          backgroundColor: isDarkMode
+                              ? Colors.blue[900]?.withOpacity(0.3)
+                              : Colors.blue[50],
+                          side: BorderSide(color: Colors.blue[300]!, width: 1),
+                        );
+                      }).toList(),
+                    ),
+                    const SizedBox(height: 12),
+                    // ✅ NUEVO 2026-03-05: Mostrar Total Esperado y Total Recibido
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: isDarkMode
+                            ? Colors.green[900]?.withOpacity(0.2)
+                            : Colors.green[50],
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: Colors.green[400]!, width: 1),
+                      ),
+                      child: Column(
+                        children: [
+                          // Total Esperado (ajustado si es DEVOLUCION_PARCIAL)
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                '💰 Total Esperado:',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                  color: isDarkMode
+                                      ? Colors.blue[300]
+                                      : Colors.blue[700],
+                                ),
+                              ),
+                              Text(
+                                // Mostrar total ajustado si es DEVOLUCION_PARCIAL
+                                tipoNovedad == 'DEVOLUCION_PARCIAL'
+                                    ? 'Bs. ${montoAceptado.toStringAsFixed(2)}'
+                                    : 'Bs. ${total.toStringAsFixed(2)}',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                  color: isDarkMode
+                                      ? Colors.blue[200]
+                                      : Colors.blue[900],
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 8),
+                          Divider(color: Colors.green[300], height: 1),
+                          const SizedBox(height: 8),
+                          // Total Recibido
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                '✅ Total Recibido:',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                  color: isDarkMode
+                                      ? Colors.green[300]
+                                      : Colors.green[800],
+                                ),
+                              ),
+                              Text(
+                                'Bs. ${pagos.fold<double>(0.0, (sum, p) => sum + ((p['monto'] as num?)?.toDouble() ?? 0.0)).toStringAsFixed(2)}',
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.bold,
+                                  color: isDarkMode
+                                      ? Colors.green[200]
+                                      : Colors.green[900],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
                       ),
                     ),
-                    const SizedBox(height: 8),
+                    const SizedBox(height: 12),
                   ] else if (tipoNovedad != null &&
                       [
-                        'RECHAZADA',
+                        'RECHAZADO',
                         'CLIENTE_CERRADO',
                         'NO_CONTACTADO',
                       ].contains(tipoNovedad)) ...[
@@ -806,7 +1167,7 @@ class _ResumenPagosEntregaScreenState extends State<ResumenPagosEntregaScreen> {
                           const SizedBox(width: 8),
                           Expanded(
                             child: Text(
-                              'No se espera pago por ${tipoNovedad == 'RECHAZADA'
+                              'No se espera pago por ${tipoNovedad == 'RECHAZADO'
                                   ? 'rechazo total'
                                   : tipoNovedad == 'CLIENTE_CERRADO'
                                   ? 'cliente cerrado'
@@ -825,117 +1186,59 @@ class _ResumenPagosEntregaScreenState extends State<ResumenPagosEntregaScreen> {
                     const SizedBox(height: 12),
                   ],
 
-                  if (pagos.isNotEmpty && tipoNovedad == 'DEVOLUCION_PARCIAL')
-                    Column(
-                      children: pagos.asMap().entries.map((entry) {
-                        final pago = entry.value;
-                        final tipoPago = pago['tipo_pago'] as String;
-                        final monto = pago['monto'] as num;
-                        final isLast = entry.key == pagos.length - 1;
+                  // ✅ NUEVO 2026-03-05: Mostrar fotos si las hay (CLIENTE_CERRADO, etc.)
+                  if (fotos.isNotEmpty) ...[
+                    SectionHeader(
+                      title: 'Fotos de Confirmación (${fotos.length})',
+                      emoji: '📸',
+                      isDarkMode: isDarkMode,
+                      padding: const EdgeInsets.only(bottom: 8),
+                    ),
+                    DarkModeContainer(
+                      child: PhotoGallery(
+                        photos: fotos,
+                        buildPhoto: (foto) {
+                          final fotoUrl = foto as String;
+                          final esBase64 =
+                              fotoUrl.startsWith('data:') ||
+                              fotoUrl.startsWith('/9j/') ||
+                              fotoUrl.startsWith('iVBORw0KGgo');
 
-                        return Padding(
-                          padding: EdgeInsets.only(bottom: isLast ? 0 : 8),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Expanded(
-                                child: Padding(
-                                  padding: const EdgeInsets.only(left: 8),
-                                  child: Text(
-                                    '└─ $tipoPago',
-                                    style: TextStyle(
-                                      fontSize: AppTextStyles.bodySmall(
-                                        context,
-                                      ).fontSize!,
-                                      color: isDarkMode
-                                          ? Colors.grey[300]
-                                          : Colors.grey[700],
+                          final widget = esBase64
+                              ? Image.memory(
+                                  _decodificarBase64(fotoUrl),
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (_, __, ___) => Container(
+                                    color: Colors.grey[300],
+                                    child: const Icon(
+                                      Icons.image_not_supported,
+                                      color: Colors.grey,
                                     ),
                                   ),
-                                ),
-                              ),
-                              Text(
-                                'Bs. ${monto.toStringAsFixed(2)}',
-                                style: TextStyle(
-                                  fontSize: AppTextStyles.bodySmall(
-                                    context,
-                                  ).fontSize!,
-                                  fontWeight: FontWeight.w600,
-                                  color: Colors.blue[600],
-                                ),
-                              ),
-                            ],
-                          ),
-                        );
-                      }).toList(),
-                    )
-                  // ✅ Solo mostrar "Sin pagos registrados" si es Devolución Parcial pero no tiene pagos
-                  else if (pagos.isEmpty && tipoNovedad == 'DEVOLUCION_PARCIAL')
-                    Container(
-                      padding: const EdgeInsets.all(10),
-                      decoration: BoxDecoration(
-                        color: isDarkMode
-                            ? Colors.orange[900]?.withOpacity(0.2)
-                            : Colors.orange[50],
-                        borderRadius: BorderRadius.circular(6),
-                        border: Border.all(
-                          color: isDarkMode
-                              ? Colors.orange[700]!
-                              : Colors.orange[200]!,
-                        ),
-                      ),
-                      child: Center(
-                        child: Text(
-                          '⚠️ Sin pagos registrados',
-                          style: TextStyle(
-                            fontSize: AppTextStyles.bodySmall(
-                              context,
-                            ).fontSize!,
-                            color: Colors.orange[700],
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ),
-                    ),
+                                )
+                              : Image.network(
+                                  fotoUrl,
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (_, __, ___) => Container(
+                                    color: Colors.grey[300],
+                                    child: const Icon(
+                                      Icons.image_not_supported,
+                                      color: Colors.grey,
+                                    ),
+                                  ),
+                                );
 
-                  const SizedBox(height: 12),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 10,
+                          return GestureDetector(
+                            onTap: () => _mostrarFotoGrande(context, fotoUrl, esBase64),
+                            child: widget,
+                          );
+                        },
+                        isDarkMode: isDarkMode,
+                      ),
+                      isDarkMode: isDarkMode,
                     ),
-                    decoration: BoxDecoration(
-                      color: isDarkMode ? Colors.grey[800] : Colors.grey[50],
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          '📊 Total de Pagos:',
-                          style: TextStyle(
-                            fontSize: AppTextStyles.bodySmall(
-                              context,
-                            ).fontSize!,
-                            fontWeight: FontWeight.w600,
-                            color: isDarkMode
-                                ? Colors.grey[200]
-                                : Colors.grey[800],
-                          ),
-                        ),
-                        Text(
-                          'Bs. ${total.toStringAsFixed(2)}',
-                          style: TextStyle(
-                            fontSize: AppTextStyles.bodyMedium(
-                              context,
-                            ).fontSize!,
-                            fontWeight: FontWeight.w700,
-                            color: Colors.green[600],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
+                    const SizedBox(height: 12),
+                  ],
                 ],
               ),
             ),
@@ -943,506 +1246,6 @@ class _ResumenPagosEntregaScreenState extends State<ResumenPagosEntregaScreen> {
         ),
       );
     }).toList();
-  }
-
-  // ✅ NUEVO 2026-02-17: Construir sección de reporte de productos para cada venta
-  Widget _buildReporteProductos(
-    int ventaId,
-    List<Map<String, dynamic>> pagos,
-    bool isDarkMode,
-  ) {
-    // Extraer detalles (productos) del primer pago que los contenga
-    List<Map<String, dynamic>> detalles = [];
-    if (pagos.isNotEmpty) {
-      final primerPago = pagos.first;
-      if (primerPago.containsKey('detalles') &&
-          primerPago['detalles'] is List) {
-        detalles = List<Map<String, dynamic>>.from(
-          primerPago['detalles'] as List,
-        );
-      }
-    }
-
-    // Si no hay detalles, mostrar vacío
-    if (detalles.isEmpty) {
-      return Container(
-        padding: const EdgeInsets.all(10),
-        decoration: BoxDecoration(
-          color: isDarkMode
-              ? Colors.grey[900]?.withOpacity(0.3)
-              : Colors.grey[50],
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(
-            color: isDarkMode ? Colors.grey[700]! : Colors.grey[200]!,
-          ),
-        ),
-        child: Center(
-          child: Text(
-            '📦 Sin productos',
-            style: TextStyle(
-              fontSize: AppTextStyles.bodySmall(context).fontSize!,
-              color: isDarkMode ? Colors.grey[400] : Colors.grey[600],
-              fontStyle: FontStyle.italic,
-            ),
-          ),
-        ),
-      );
-    }
-
-    // Construir lista de productos
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // Header
-        Text(
-          '📦 Productos (${detalles.length})',
-          style: TextStyle(
-            fontSize: AppTextStyles.bodySmall(context).fontSize!,
-            fontWeight: FontWeight.w600,
-            color: isDarkMode ? Colors.grey[300] : Colors.grey[700],
-          ),
-        ),
-        const SizedBox(height: 8),
-
-        // Lista de productos
-        Container(
-          decoration: BoxDecoration(
-            color: isDarkMode
-                ? Colors.grey[900]?.withOpacity(0.3)
-                : Colors.blue[50],
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(
-              color: isDarkMode ? Colors.blue[800]! : Colors.blue[200]!,
-            ),
-          ),
-          child: Column(
-            children: detalles.asMap().entries.map((entry) {
-              final detalle = entry.value;
-              final isLast = entry.key == detalles.length - 1;
-
-              final productoNombre =
-                  detalle['producto_nombre'] as String? ??
-                  'Producto desconocido';
-              final productoCodiogo =
-                  detalle['producto_codigo'] as String? ?? '';
-              final cantidad = (detalle['cantidad'] as num?) ?? 0;
-              final precioUnitario = (detalle['precio_unitario'] as num?) ?? 0;
-              final subtotal = (detalle['subtotal'] as num?) ?? 0;
-
-              return Column(
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.all(10),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // Nombre y código del producto
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    productoNombre,
-                                    style: TextStyle(
-                                      fontSize: AppTextStyles.bodySmall(
-                                        context,
-                                      ).fontSize!,
-                                      fontWeight: FontWeight.w600,
-                                      color: isDarkMode
-                                          ? Colors.grey[200]
-                                          : Colors.grey[900],
-                                    ),
-                                    maxLines: 2,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                  if (productoCodiogo.isNotEmpty)
-                                    Text(
-                                      '#$productoCodiogo',
-                                      style: TextStyle(
-                                        fontSize: AppTextStyles.labelSmall(
-                                          context,
-                                        ).fontSize!,
-                                        color: isDarkMode
-                                            ? Colors.grey[500]
-                                            : Colors.grey[600],
-                                      ),
-                                    ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 8),
-
-                        // Cantidad, precio unitario y subtotal
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            // Cantidad
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    'Cantidad',
-                                    style: TextStyle(
-                                      fontSize: AppTextStyles.labelSmall(
-                                        context,
-                                      ).fontSize!,
-                                      color: isDarkMode
-                                          ? Colors.grey[500]
-                                          : Colors.grey[600],
-                                    ),
-                                  ),
-                                  Text(
-                                    cantidad.toString(),
-                                    style: TextStyle(
-                                      fontSize: AppTextStyles.bodySmall(
-                                        context,
-                                      ).fontSize!,
-                                      fontWeight: FontWeight.w600,
-                                      color: isDarkMode
-                                          ? Colors.grey[300]
-                                          : Colors.grey[800],
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-
-                            // Precio unitario
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    'Precio Unit.',
-                                    style: TextStyle(
-                                      fontSize: AppTextStyles.labelSmall(
-                                        context,
-                                      ).fontSize!,
-                                      color: isDarkMode
-                                          ? Colors.grey[500]
-                                          : Colors.grey[600],
-                                    ),
-                                  ),
-                                  Text(
-                                    'Bs. ${precioUnitario.toStringAsFixed(2)}',
-                                    style: TextStyle(
-                                      fontSize: AppTextStyles.bodySmall(
-                                        context,
-                                      ).fontSize!,
-                                      fontWeight: FontWeight.w600,
-                                      color: isDarkMode
-                                          ? Colors.grey[300]
-                                          : Colors.grey[800],
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-
-                            // Subtotal
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.end,
-                                children: [
-                                  Text(
-                                    'Subtotal',
-                                    style: TextStyle(
-                                      fontSize: AppTextStyles.labelSmall(
-                                        context,
-                                      ).fontSize!,
-                                      color: isDarkMode
-                                          ? Colors.grey[500]
-                                          : Colors.grey[600],
-                                    ),
-                                  ),
-                                  Text(
-                                    'Bs. ${subtotal.toStringAsFixed(2)}',
-                                    style: TextStyle(
-                                      fontSize: AppTextStyles.bodySmall(
-                                        context,
-                                      ).fontSize!,
-                                      fontWeight: FontWeight.w700,
-                                      color: isDarkMode
-                                          ? Colors.green[400]
-                                          : Colors.green[700],
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-
-                  // Separador (si no es el último)
-                  if (!isLast)
-                    Divider(
-                      color: isDarkMode ? Colors.grey[700] : Colors.blue[200],
-                      height: 1,
-                      thickness: 1,
-                    ),
-                ],
-              );
-            }).toList(),
-          ),
-        ),
-      ],
-    );
-  }
-
-  // ✅ NUEVO 2026-02-17: Construir reporte de productos con detalles, fotos y observaciones
-  Widget _buildReporteProductosConDetalles({
-    required int ventaId,
-    required List<Map<String, dynamic>> detalles,
-    required bool isDarkMode,
-    required List<String> fotos,
-    required String observacionesLogistica,
-    required String? tipoNovedad,
-  }) {
-    // Si no hay detalles, mostrar vacío
-    if (detalles.isEmpty && fotos.isEmpty && observacionesLogistica.isEmpty) {
-      return const SizedBox.shrink();
-    }
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // ✅ Mostrar fotos si existen
-        if (fotos.isNotEmpty) ...[
-          const SizedBox(height: 8),
-          Text(
-            '📸 Fotos (${fotos.length})',
-            style: TextStyle(
-              fontSize: AppTextStyles.bodySmall(context).fontSize!,
-              fontWeight: FontWeight.w600,
-              color: isDarkMode ? Colors.grey[300] : Colors.grey[700],
-            ),
-          ),
-          const SizedBox(height: 8),
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: Row(
-              children: fotos.map((fotoUrl) {
-                return Padding(
-                  padding: const EdgeInsets.only(right: 8),
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(6),
-                    child: Image.network(
-                      fotoUrl,
-                      width: 80,
-                      height: 80,
-                      fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) {
-                        return Container(
-                          width: 80,
-                          height: 80,
-                          decoration: BoxDecoration(
-                            color: isDarkMode
-                                ? Colors.grey[700]
-                                : Colors.grey[200],
-                            borderRadius: BorderRadius.circular(6),
-                          ),
-                          child: const Icon(
-                            Icons.image_not_supported,
-                            size: 20,
-                          ),
-                        );
-                      },
-                    ),
-                  ),
-                );
-              }).toList(),
-            ),
-          ),
-        ],
-
-        // ✅ Mostrar observaciones si existen
-        if (observacionesLogistica.isNotEmpty) ...[
-          const SizedBox(height: 12),
-          Text(
-            '📝 Observaciones',
-            style: TextStyle(
-              fontSize: AppTextStyles.bodySmall(context).fontSize!,
-              fontWeight: FontWeight.w600,
-              color: isDarkMode ? Colors.grey[300] : Colors.grey[700],
-            ),
-          ),
-          const SizedBox(height: 6),
-          Container(
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              color: isDarkMode
-                  ? Colors.orange[900]?.withOpacity(0.2)
-                  : Colors.orange[50],
-              borderRadius: BorderRadius.circular(6),
-              border: Border.all(color: Colors.orange[300]!),
-            ),
-            child: Text(
-              observacionesLogistica,
-              style: TextStyle(
-                fontSize: AppTextStyles.bodySmall(context).fontSize!,
-                color: isDarkMode ? Colors.orange[200] : Colors.orange[900],
-              ),
-            ),
-          ),
-        ],
-
-        // ✅ Mostrar productos si existen
-        if (detalles.isNotEmpty) ...[
-          const SizedBox(height: 12),
-          // ✅ Título diferenciado según tipo de novedad
-          Text(
-            (tipoNovedad ?? '') == 'DEVOLUCION_PARCIAL'
-                ? '📦 Productos Devueltos (${detalles.length})'
-                : '📦 Productos (${detalles.length})',
-            style: TextStyle(
-              fontSize: AppTextStyles.bodySmall(context).fontSize!,
-              fontWeight: FontWeight.w600,
-              color: (tipoNovedad ?? '') == 'DEVOLUCION_PARCIAL'
-                  ? (isDarkMode ? Colors.orange[300] : Colors.orange[800])
-                  : (isDarkMode ? Colors.grey[300] : Colors.grey[700]),
-            ),
-          ),
-          const SizedBox(height: 8),
-          Container(
-            decoration: BoxDecoration(
-              // ✅ Colores diferenciados para DEVOLUCION_PARCIAL
-              color: (tipoNovedad ?? '') == 'DEVOLUCION_PARCIAL'
-                  ? (isDarkMode
-                        ? Colors.orange[900]?.withOpacity(0.2)
-                        : Colors.orange[50])
-                  : (isDarkMode
-                        ? Colors.grey[900]?.withOpacity(0.3)
-                        : Colors.blue[50]),
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(
-                color: (tipoNovedad ?? '') == 'DEVOLUCION_PARCIAL'
-                    ? (isDarkMode ? Colors.orange[700]! : Colors.orange[200]!)
-                    : (isDarkMode ? Colors.blue[800]! : Colors.blue[200]!),
-              ),
-            ),
-            child: Column(
-              children: detalles.asMap().entries.map((entry) {
-                final detalle = entry.value;
-                final isLast = entry.key == detalles.length - 1;
-
-                final productoNombre =
-                    detalle['producto_nombre'] as String? ??
-                    'Producto desconocido';
-                final productoCodiogo =
-                    detalle['producto_codigo'] as String? ?? '';
-                final cantidad = (detalle['cantidad'] as num?) ?? 0;
-                final precioUnitario =
-                    (detalle['precio_unitario'] as num?) ?? 0;
-                final subtotal = (detalle['subtotal'] as num?) ?? 0;
-
-                return Column(
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.all(10),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          // Nombre y código del producto
-                          Text(
-                            productoNombre,
-                            style: TextStyle(
-                              fontSize: AppTextStyles.bodySmall(
-                                context,
-                              ).fontSize!,
-                              fontWeight: FontWeight.w600,
-                              color: isDarkMode
-                                  ? Colors.grey[200]
-                                  : Colors.grey[900],
-                            ),
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                          if (productoCodiogo.isNotEmpty)
-                            Text(
-                              '#$productoCodiogo',
-                              style: TextStyle(
-                                fontSize: AppTextStyles.labelSmall(
-                                  context,
-                                ).fontSize!,
-                                color: isDarkMode
-                                    ? Colors.grey[500]
-                                    : Colors.grey[600],
-                              ),
-                            ),
-                          const SizedBox(height: 6),
-                          // Cantidad x Precio Unitario = Subtotal
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Text(
-                                'Cant: ${cantidad.toInt()}',
-                                style: TextStyle(
-                                  fontSize: AppTextStyles.labelSmall(
-                                    context,
-                                  ).fontSize!,
-                                  color: isDarkMode
-                                      ? Colors.grey[400]
-                                      : Colors.grey[700],
-                                ),
-                              ),
-                              Text(
-                                'Bs. ${precioUnitario.toStringAsFixed(2)}',
-                                style: TextStyle(
-                                  fontSize: AppTextStyles.labelSmall(
-                                    context,
-                                  ).fontSize!,
-                                  color: isDarkMode
-                                      ? Colors.grey[400]
-                                      : Colors.grey[700],
-                                ),
-                              ),
-                              Text(
-                                'Bs. ${subtotal.toStringAsFixed(2)}',
-                                style: TextStyle(
-                                  fontSize: AppTextStyles.labelSmall(
-                                    context,
-                                  ).fontSize!,
-                                  fontWeight: FontWeight.w700,
-                                  color: isDarkMode
-                                      ? Colors.green[400]
-                                      : Colors.green[700],
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-                    if (!isLast)
-                      Divider(
-                        color: (tipoNovedad ?? '') == 'DEVOLUCION_PARCIAL'
-                            ? (isDarkMode
-                                  ? Colors.orange[700]
-                                  : Colors.orange[200])
-                            : (isDarkMode
-                                  ? Colors.grey[700]
-                                  : Colors.blue[200]),
-                        height: 1,
-                        thickness: 1,
-                      ),
-                  ],
-                );
-              }).toList(),
-            ),
-          ),
-        ],
-      ],
-    );
   }
 
   // ✅ NUEVO 2026-02-15: Diálogo para corregir pagos de una venta específica
@@ -2035,7 +1838,7 @@ class _ResumenPagosEntregaScreenState extends State<ResumenPagosEntregaScreen> {
 
       // Validar que cada pago tenga tipo_pago_id válido
       for (final pago in desglose) {
-        final tipoPagoId = pago['tipo_pago_id'] as int?;
+        final tipoPagoId = _convertirAInt(pago['tipo_pago_id']);
         if (tipoPagoId == null || tipoPagoId == 0) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
@@ -2116,8 +1919,12 @@ class _ResumenPagosEntregaScreenState extends State<ResumenPagosEntregaScreen> {
         // Ejecutar callback de limpieza
         onFinish?.call();
 
-        // Recargar el resumen
-        _cargarResumen();
+        // ✅ Recargar el resumen con setState para forzar rebuild
+        if (mounted) {
+          setState(() {
+            _cargarResumen();
+          });
+        }
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -2143,134 +1950,6 @@ class _ResumenPagosEntregaScreenState extends State<ResumenPagosEntregaScreen> {
     }
   }
 
-  Widget _buildPagoCard({
-    required IconData icono,
-    required Color color,
-    required String tipo,
-    required double total,
-    required int cantidad,
-    required List<dynamic> ventas,
-    required bool isDarkMode,
-  }) {
-    return Container(
-      decoration: BoxDecoration(
-        color: isDarkMode ? Colors.grey[800] : Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: isDarkMode ? Colors.grey[700]! : Colors.grey[200]!,
-        ),
-      ),
-      child: ExpansionTile(
-        leading: Container(
-          padding: const EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            color: color.withValues(alpha: 0.2),
-            shape: BoxShape.circle,
-          ),
-          child: Icon(icono, color: color, size: 24),
-        ),
-        title: Text(
-          tipo,
-          style: TextStyle(
-            fontSize: AppTextStyles.bodyLarge(context).fontSize!,
-            fontWeight: FontWeight.w600,
-            color: isDarkMode ? Colors.grey[100] : Colors.grey[900],
-          ),
-        ),
-        subtitle: Text(
-          '$cantidad venta${cantidad > 1 ? 's' : ''}',
-          style: TextStyle(
-            fontSize: AppTextStyles.bodySmall(context).fontSize!,
-            color: isDarkMode ? Colors.grey[400] : Colors.grey[600],
-          ),
-        ),
-        trailing: Text(
-          'Bs. ${total.toStringAsFixed(2)}',
-          style: TextStyle(
-            fontSize: AppTextStyles.bodyLarge(context).fontSize!,
-            fontWeight: FontWeight.bold,
-            color: color,
-          ),
-        ),
-        children: [
-          Divider(
-            color: isDarkMode ? Colors.grey[700] : Colors.grey[200],
-            height: 1,
-          ),
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: ListView.separated(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              itemCount: ventas.length,
-              separatorBuilder: (_, __) => const SizedBox(height: 8),
-              itemBuilder: (_, index) {
-                final venta = ventas[index];
-                final ventaNumero = venta['venta_numero'] as String;
-                final montoRecibido = venta['monto_recibido'] as num;
-                final tipoEntrega = venta['tipo_entrega'] as String;
-
-                return Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: isDarkMode ? Colors.grey[700] : Colors.grey[50],
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Venta $ventaNumero',
-                              style: TextStyle(
-                                fontSize: AppTextStyles.bodySmall(
-                                  context,
-                                ).fontSize!,
-                                fontWeight: FontWeight.w500,
-                                color: isDarkMode
-                                    ? Colors.grey[200]
-                                    : Colors.grey[800],
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              tipoEntrega == 'COMPLETA'
-                                  ? '✅ Entrega Completa'
-                                  : '⚠️ Con Novedad',
-                              style: TextStyle(
-                                fontSize: AppTextStyles.labelSmall(
-                                  context,
-                                ).fontSize!,
-                                color: tipoEntrega == 'COMPLETA'
-                                    ? Colors.green[600]
-                                    : Colors.orange[600],
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      Text(
-                        'Bs. ${montoRecibido.toStringAsFixed(2)}',
-                        style: TextStyle(
-                          fontSize: AppTextStyles.bodySmall(context).fontSize!,
-                          fontWeight: FontWeight.w600,
-                          color: color,
-                        ),
-                      ),
-                    ],
-                  ),
-                );
-              },
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
   IconData _obtenerIconoPago(String codigo) {
     switch (codigo.toUpperCase()) {
       case 'EFECTIVO':
@@ -2287,19 +1966,133 @@ class _ResumenPagosEntregaScreenState extends State<ResumenPagosEntregaScreen> {
     }
   }
 
-  Color _obtenerColorPago(String codigo) {
-    switch (codigo.toUpperCase()) {
-      case 'EFECTIVO':
-        return Colors.green;
-      case 'TRANSFERENCIA':
-      case 'QR':
-        return Colors.blue;
-      case 'TARJETA':
-        return Colors.purple;
-      case 'CHEQUE':
-        return Colors.orange;
+  // ✅ NUEVO 2026-03-05: Traducir tipos de novedad a nombres legibles
+  String _obtenerNombreTipoNovedad(String? tipo) {
+    if (tipo == null) return '';
+    switch (tipo.toUpperCase()) {
+      case 'DEVOLUCION_PARCIAL':
+        return 'Devolución Parcial';
+      case 'CLIENTE_CERRADO':
+        return 'Cliente Cerrado';
+      case 'NO_CONTACTADO':
+        return 'No Contactado';
+      case 'RECHAZADO':
+        return 'Rechazado';
       default:
-        return Colors.grey;
+        return tipo;
     }
+  }
+
+  // ✅ NUEVO 2026-03-05: Mostrar foto en grande con diálogo fullscreen
+  void _mostrarFotoGrande(
+    BuildContext context,
+    String fotoUrl,
+    bool esBase64,
+  ) {
+    showDialog(
+      context: context,
+      builder: (context) => Dialog(
+        backgroundColor: Colors.transparent,
+        insetPadding: const EdgeInsets.all(10),
+        child: Stack(
+          children: [
+            // Fondo oscuro
+            GestureDetector(
+              onTap: () => Navigator.pop(context),
+              child: Container(
+                color: Colors.black87,
+              ),
+            ),
+            // Foto al centro
+            Center(
+              child: esBase64
+                  ? Image.memory(
+                      _decodificarBase64(fotoUrl),
+                      fit: BoxFit.contain,
+                      errorBuilder: (_, __, ___) => Container(
+                        color: Colors.grey[300],
+                        child: const Icon(
+                          Icons.image_not_supported,
+                          color: Colors.grey,
+                          size: 64,
+                        ),
+                      ),
+                    )
+                  : Image.network(
+                      fotoUrl,
+                      fit: BoxFit.contain,
+                      errorBuilder: (_, __, ___) => Container(
+                        color: Colors.grey[300],
+                        child: const Icon(
+                          Icons.image_not_supported,
+                          color: Colors.grey,
+                          size: 64,
+                        ),
+                      ),
+                    ),
+            ),
+            // Botón cerrar
+            Positioned(
+              top: 10,
+              right: 10,
+              child: GestureDetector(
+                onTap: () => Navigator.pop(context),
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: Colors.black54,
+                    shape: BoxShape.circle,
+                  ),
+                  padding: const EdgeInsets.all(10),
+                  child: const Icon(
+                    Icons.close,
+                    color: Colors.white,
+                    size: 28,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// ✅ NUEVO: Navegar a pantalla de confirmación de entrega para editar una venta sin registrar
+  void _navegarAConfirmarEntrega(BuildContext context, int ventaId) {
+    final venta = widget.entrega.ventas.firstWhere(
+      (v) => v.id == ventaId,
+      orElse: () => Venta(
+        id: ventaId,
+        numero: 'VEN-$ventaId',
+        clienteNombre: '',
+        subtotal: 0,
+        impuesto: 0,
+        total: 0,
+        descuento: 0,
+        estadoLogistico: '',
+        estadoPago: '',
+        fecha: DateTime.now(),
+        detalles: const [],
+      ),
+    );
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => ConfirmarEntregaVentaScreen(
+          entrega: widget.entrega,
+          venta: venta,
+          provider: widget.provider,
+          isEditing: true, // Modo edición para volver a subir
+        ),
+      ),
+    ).then((result) {
+      // Si se guardó correctamente, recargar el resumen
+      if (result == true) {
+        setState(() {
+          _cargarResumen();
+        });
+      }
+    });
   }
 }

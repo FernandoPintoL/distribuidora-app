@@ -94,7 +94,7 @@ class PedidoCreadoScreen extends StatelessWidget {
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             Text(
-                              'Número de Proforma',
+                              'Folio:',
                               style: TextStyle(
                                 color: colorScheme.onSurfaceVariant,
                                 fontSize: AppTextStyles.bodyMedium(
@@ -109,7 +109,7 @@ class PedidoCreadoScreen extends StatelessWidget {
                                   Flexible(
                                     fit: FlexFit.loose,
                                     child: Text(
-                                      pedido.numero,
+                                      '#' + pedido.id.toString(),
                                       style: TextStyle(
                                         fontWeight: FontWeight.bold,
                                         fontSize: AppTextStyles.bodyLarge(

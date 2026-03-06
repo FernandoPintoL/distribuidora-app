@@ -32,6 +32,12 @@ class _ProformaCreacionScreenState extends State<ProformaCreacionScreen> {
   TimeOfDay? _horaFin;
   String _observaciones = '';
 
+  // ✅ NUEVO: Estado para turno de entrega
+  String _turnoSeleccionado = 'MORNING'; // MORNING (08:00-12:00) o AFTERNOON (14:00-18:00)
+  int? _horaEspecificaSeleccionada; // Hora específica dentro del rango (8-12 o 14-18)
+  static const String TURNO_MORNING = 'MORNING';
+  static const String TURNO_AFTERNOON = 'AFTERNOON';
+
   // Política de pago
   String _politicaPago = 'CONTRA_ENTREGA'; // Default
   static const String POLITICA_ANTICIPADO = 'ANTICIPADO_100';
@@ -47,8 +53,12 @@ class _ProformaCreacionScreenState extends State<ProformaCreacionScreen> {
     // Inicializar fecha/hora por defecto
     final now = DateTime.now();
     _fechaProgramada = DateTime(now.year, now.month, now.day);
-    _horaInicio = const TimeOfDay(hour: 9, minute: 0);
-    _horaFin = const TimeOfDay(hour: 17, minute: 0);
+
+    // ✅ ACTUALIZADO: Inicializar turno MORNING y hora específica por defecto (08:00)
+    _turnoSeleccionado = TURNO_MORNING;
+    _horaEspecificaSeleccionada = 8; // Hora específica: 8 AM
+    _horaInicio = const TimeOfDay(hour: 8, minute: 0);
+    _horaFin = const TimeOfDay(hour: 8, minute: 0);
 
     // ✅ NUEVO: Cargar automáticamente la dirección principal del cliente
     _cargarDireccionPrincipal();
@@ -91,6 +101,18 @@ class _ProformaCreacionScreenState extends State<ProformaCreacionScreen> {
     }
   }
 
+  // ✅ Obtener cantidad de direcciones del cliente
+  int _obtenerCantidadDirecciones() {
+    try {
+      final carritoProvider = context.read<CarritoProvider>();
+      final cliente = carritoProvider.clienteSeleccionado;
+      return cliente?.direcciones?.length ?? 0;
+    } catch (e) {
+      debugPrint('❌ Error al obtener cantidad de direcciones: $e');
+      return 0;
+    }
+  }
+
   // ✅ Mostrar selector de dirección como modal
   void _mostrarSelectorDireccion() async {
     final carritoProvider = context.read<CarritoProvider>();
@@ -129,24 +151,144 @@ class _ProformaCreacionScreenState extends State<ProformaCreacionScreen> {
   }
 
   // ✅ Mostrar selector de fecha/hora como dialog
-  void _mostrarSelectorFechaHora() async {
-    final resultado = await showDialog<Map<String, dynamic>>(
+  // ✅ Obtener fechas disponibles (Hoy, Mañana, Lunes)
+  Map<String, DateTime> _obtenerFechasDisponibles() {
+    final DateTime now = DateTime.now();
+    final DateTime hoy = DateTime(now.year, now.month, now.day);
+    final DateTime manana = hoy.add(const Duration(days: 1));
+
+    final Map<String, DateTime> fechas = {'Hoy': hoy};
+
+    if (manana.weekday < 6) {
+      fechas['Mañana'] = manana;
+    } else if (manana.weekday == 6) {
+      fechas['Lunes'] = hoy.add(const Duration(days: 3));
+    } else if (manana.weekday == 7) {
+      fechas['Lunes'] = hoy.add(const Duration(days: 2));
+    }
+
+    return fechas;
+  }
+
+  // ✅ Verificar si la fecha es estándar
+  bool _esFechaEstandar(DateTime fecha) {
+    final fechasDisponibles = _obtenerFechasDisponibles();
+    return fechasDisponibles.values.any((f) =>
+        f.year == fecha.year &&
+        f.month == fecha.month &&
+        f.day == fecha.day);
+  }
+
+  // ✅ Seleccionar fecha personalizada
+  Future<void> _seleccionarFechaPersonalizada() async {
+    final DateTime? picked = await showDatePicker(
       context: context,
-      builder: (context) => FechaHoraSelectorModal(
-        fechaInicial: _fechaProgramada,
-        horaInicioInicial: _horaInicio,
-        horaFinInicial: _horaFin,
-        observacionesInicial: _observaciones,
-      ),
+      initialDate: _fechaProgramada ?? DateTime.now(),
+      firstDate: DateTime.now(),
+      lastDate: DateTime.now().add(const Duration(days: 365)),
+      helpText: 'Selecciona una fecha personalizada',
     );
 
-    if (resultado != null && mounted) {
+    if (picked != null && mounted) {
       setState(() {
-        _fechaProgramada = resultado['fecha'];
-        _horaInicio = resultado['horaInicio'];
-        _horaFin = resultado['horaFin'];
-        _observaciones = resultado['observaciones'] ?? '';
+        _fechaProgramada = picked;
       });
+    }
+  }
+
+  // ✅ Seleccionar hora inicio
+  Future<void> _seleccionarHoraInicio() async {
+    final TimeOfDay? picked = await showTimePicker(
+      context: context,
+      initialTime: _horaInicio ?? TimeOfDay.now(),
+      helpText: 'Hora de inicio',
+    );
+
+    if (picked != null && mounted) {
+      setState(() {
+        _horaInicio = picked;
+      });
+    }
+  }
+
+  // ✅ Seleccionar hora fin
+  Future<void> _seleccionarHoraFin() async {
+    final TimeOfDay? picked = await showTimePicker(
+      context: context,
+      initialTime: _horaFin ?? TimeOfDay.now(),
+      helpText: 'Hora de fin',
+    );
+
+    if (picked != null && mounted) {
+      setState(() {
+        _horaFin = picked;
+      });
+    }
+  }
+
+  // ✅ Formatear fecha
+  String _formatearFecha(DateTime fecha) {
+    final meses = [
+      'Enero',
+      'Febrero',
+      'Marzo',
+      'Abril',
+      'Mayo',
+      'Junio',
+      'Julio',
+      'Agosto',
+      'Septiembre',
+      'Octubre',
+      'Noviembre',
+      'Diciembre',
+    ];
+
+    final dias = [
+      'Lunes',
+      'Martes',
+      'Miércoles',
+      'Jueves',
+      'Viernes',
+      'Sábado',
+      'Domingo',
+    ];
+
+    final diaSemana = dias[fecha.weekday - 1];
+    final dia = fecha.day;
+    final mes = meses[fecha.month - 1];
+    final anio = fecha.year;
+
+    return '$diaSemana, $dia de $mes de $anio';
+  }
+
+  // ✅ Formatear hora
+  String _formatearHora(TimeOfDay hora) {
+    final hour = hora.hour.toString().padLeft(2, '0');
+    final minute = hora.minute.toString().padLeft(2, '0');
+    return '$hour:$minute';
+  }
+
+  // ✅ NUEVO: Actualizar turno y hora específica
+  void _actualizarHorasPorTurno(String turno) {
+    setState(() {
+      _turnoSeleccionado = turno;
+      // Resetear la hora específica seleccionada
+      if (turno == TURNO_MORNING) {
+        _horaEspecificaSeleccionada = 8;
+        _horaInicio = const TimeOfDay(hour: 8, minute: 0);
+      } else {
+        _horaEspecificaSeleccionada = 14;
+        _horaInicio = const TimeOfDay(hour: 14, minute: 0);
+      }
+    });
+  }
+
+  // ✅ Obtener rango de horas según turno
+  List<int> _obtenerHorasDisponibles() {
+    if (_turnoSeleccionado == TURNO_MORNING) {
+      return [8, 9, 10, 11, 12];
+    } else {
+      return [14, 15, 16, 17, 18];
     }
   }
 
@@ -340,32 +482,6 @@ class _ProformaCreacionScreenState extends State<ProformaCreacionScreen> {
         );
       }
     }
-  }
-
-  // ✅ Métodos auxiliares de formato
-  String _formatearFecha(DateTime fecha) {
-    final meses = [
-      'Ene',
-      'Feb',
-      'Mar',
-      'Abr',
-      'May',
-      'Jun',
-      'Jul',
-      'Ago',
-      'Sep',
-      'Oct',
-      'Nov',
-      'Dic',
-    ];
-
-    return '${fecha.day} ${meses[fecha.month - 1]} ${fecha.year}';
-  }
-
-  String _formatearHora(TimeOfDay hora) {
-    final hour = hora.hour.toString().padLeft(2, '0');
-    final minute = hora.minute.toString().padLeft(2, '0');
-    return '$hour:$minute';
   }
 
   @override
@@ -633,78 +749,87 @@ class _ProformaCreacionScreenState extends State<ProformaCreacionScreen> {
 
                       const SizedBox(height: 24),
 
-                      // ✅ Sección de Política de Pago
+                      // ✅ Sección de Crédito (solo si el cliente puede usar crédito)
                       Consumer<CarritoProvider>(
                         builder: (context, carritoProvider, _) {
                           final clienteSeleccionado = carritoProvider
                               .getClienteSeleccionado();
+                          final usarCredito = _politicaPago == POLITICA_CREDITO;
+
+                          // Solo mostrar si el cliente tiene crédito habilitado
+                          if (clienteSeleccionado == null ||
+                              !clienteSeleccionado.puedeAtenerCredito) {
+                            return const SizedBox.shrink();
+                          }
 
                           return Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text(
-                                'Política de Pago',
-                                style: TextStyle(
-                                  fontSize: AppTextStyles.headlineSmall(
-                                    context,
-                                  ).fontSize!,
-                                  fontWeight: FontWeight.bold,
-                                  color: colorScheme.onSurface,
-                                ),
-                              ),
-                              const SizedBox(height: 12),
                               Card(
-                                color: colorScheme.surface,
+                                color: usarCredito
+                                    ? Colors.green.shade50
+                                    : colorScheme.surfaceVariant,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                  side: usarCredito
+                                      ? BorderSide(
+                                          color: Colors.green.shade300,
+                                          width: 2,
+                                        )
+                                      : BorderSide.none,
+                                ),
                                 child: Padding(
                                   padding: const EdgeInsets.all(16),
-                                  child: Column(
+                                  child: Row(
                                     children: [
-                                      _buildPoliticaPagoOption(
-                                        context,
-                                        value: POLITICA_ANTICIPADO,
-                                        titulo: 'Pago Anticipado (100%)',
-                                        descripcion:
-                                            'Pagar antes de la preparación del pedido',
-                                        icono: Icons.money,
-                                        colorScheme: colorScheme,
+                                      Icon(
+                                        Icons.credit_card,
+                                        color: usarCredito
+                                            ? Colors.green.shade600
+                                            : colorScheme.onSurfaceVariant,
+                                        size: 24,
                                       ),
-                                      const Divider(height: 24),
-
-                                      _buildPoliticaPagoOption(
-                                        context,
-                                        value: POLITICA_MEDIO_MEDIO,
-                                        titulo: 'Pago Mitad-Mitad (50%-50%)',
-                                        descripcion:
-                                            '50% anticipado + 50% contra entrega',
-                                        icono: Icons.balance,
-                                        colorScheme: colorScheme,
-                                      ),
-                                      const Divider(height: 24),
-
-                                      _buildPoliticaPagoOption(
-                                        context,
-                                        value: POLITICA_CONTRA_ENTREGA,
-                                        titulo: 'Contra Entrega',
-                                        descripcion:
-                                            'Pagar al recibir el pedido',
-                                        icono: Icons.local_shipping,
-                                        colorScheme: colorScheme,
-                                      ),
-                                      const Divider(height: 24),
-
-                                      if (clienteSeleccionado != null &&
-                                          clienteSeleccionado
-                                              .puedeAtenerCredito)
-                                        _buildPoliticaPagoOption(
-                                          context,
-                                          value: POLITICA_CREDITO,
-                                          titulo: 'Solicitar Crédito',
-                                          descripcion:
+                                      const SizedBox(width: 12),
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                              'Solicitar Crédito',
+                                              style: context.textTheme.bodyMedium
+                                                  ?.copyWith(
+                                                fontWeight: FontWeight.w600,
+                                                color: usarCredito
+                                                    ? Colors.green.shade700
+                                                    : colorScheme.onSurface,
+                                              ),
+                                            ),
+                                            const SizedBox(height: 4),
+                                            Text(
                                               'Límite disponible: Bs. ${clienteSeleccionado.limiteCredito?.toStringAsFixed(2) ?? '0.00'}',
-                                          icono: Icons.credit_card,
-                                          color: Colors.green.shade500,
-                                          colorScheme: colorScheme,
+                                              style: context.textTheme.bodySmall
+                                                  ?.copyWith(
+                                                color: usarCredito
+                                                    ? Colors.green.shade600
+                                                    : colorScheme
+                                                        .onSurfaceVariant,
+                                              ),
+                                            ),
+                                          ],
                                         ),
+                                      ),
+                                      Switch(
+                                        value: usarCredito,
+                                        activeColor: Colors.green.shade600,
+                                        onChanged: (value) {
+                                          setState(() {
+                                            _politicaPago = value
+                                                ? POLITICA_CREDITO
+                                                : POLITICA_CONTRA_ENTREGA;
+                                          });
+                                        },
+                                      ),
                                     ],
                                   ),
                                 ),
@@ -1023,7 +1148,101 @@ class _ProformaCreacionScreenState extends State<ProformaCreacionScreen> {
   // ✅ Widget: Selector Dirección
   Widget _buildDireccionSection() {
     final colorScheme = context.colorScheme;
+    final cantidadDirecciones = _obtenerCantidadDirecciones();
 
+    // 1️⃣ SIN DIRECCIONES: Mostrar advertencia para registrar
+    if (cantidadDirecciones == 0) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Dirección de Entrega',
+            style: TextStyle(
+              fontSize: AppTextStyles.headlineSmall(context).fontSize!,
+              fontWeight: FontWeight.bold,
+              color: colorScheme.onSurface,
+            ),
+          ),
+          const SizedBox(height: 12),
+          Card(
+            color: colorScheme.errorContainer,
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                children: [
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.warning_rounded,
+                        color: colorScheme.error,
+                        size: 24,
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Sin dirección registrada',
+                              style: context.textTheme.bodyMedium?.copyWith(
+                                fontWeight: FontWeight.w600,
+                                color: colorScheme.onErrorContainer,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              'Registra una dirección para continuar',
+                              style: context.textTheme.bodySmall?.copyWith(
+                                color: colorScheme.onErrorContainer,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  SizedBox(
+                    width: double.infinity,
+                    child: OutlinedButton.icon(
+                      onPressed: () {
+                        final carritoProvider = context.read<CarritoProvider>();
+                        final cliente = carritoProvider.clienteSeleccionado;
+
+                        if (cliente != null) {
+                          Navigator.of(context)
+                              .push(
+                                MaterialPageRoute(
+                                  builder: (context) =>
+                                      DireccionFormScreenForClient(
+                                        clientId: cliente.id,
+                                      ),
+                                ),
+                              )
+                              .then((_) {
+                                _cargarDireccionPrincipal();
+                                setState(() {});
+                              });
+                        }
+                      },
+                      icon: const Icon(Icons.add_location),
+                      label: const Text('Registrar Dirección'),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      );
+    }
+
+    // 2️⃣ UNA DIRECCIÓN: No mostrar nada, usar automáticamente
+    if (cantidadDirecciones == 1) {
+      return const SizedBox.shrink();
+    }
+
+    // 3️⃣ 2+ DIRECCIONES: Mostrar selector
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -1127,12 +1346,10 @@ class _ProformaCreacionScreenState extends State<ProformaCreacionScreen> {
                   Expanded(
                     child: OutlinedButton.icon(
                       onPressed: () {
-                        // Obtener el cliente seleccionado
                         final carritoProvider = context.read<CarritoProvider>();
                         final cliente = carritoProvider.clienteSeleccionado;
 
                         if (cliente != null) {
-                          // Navegar a crear nueva dirección
                           Navigator.of(context)
                               .push(
                                 MaterialPageRoute(
@@ -1143,11 +1360,9 @@ class _ProformaCreacionScreenState extends State<ProformaCreacionScreen> {
                                 ),
                               )
                               .then((_) {
-                                // Recargar direcciones después de crear una nueva
                                 _cargarDireccionPrincipal();
+                                setState(() {});
                               });
-                        } else {
-                          debugPrint('⚠️ No hay cliente seleccionado');
                         }
                       },
                       icon: const Icon(Icons.add_location),
@@ -1162,70 +1377,343 @@ class _ProformaCreacionScreenState extends State<ProformaCreacionScreen> {
     );
   }
 
-  // ✅ Widget: Selector Fecha/Hora
+  // ✅ Widget: Selector Fecha/Hora Expandido
   Widget _buildFechaHoraSection() {
     final colorScheme = context.colorScheme;
+    final authProvider = context.read<AuthProvider>();
+    final user = authProvider.user;
+    final esPreventista = user?.roles?.contains('preventista') ?? false;
+    final fechasDisponibles = _obtenerFechasDisponibles();
+
+    bool usarFechaPersonalizada = false;
+    if (_fechaProgramada != null) {
+      usarFechaPersonalizada = !_esFechaEstandar(_fechaProgramada!);
+    }
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          'Fecha y Hora de Entrega',
-          style: TextStyle(
-            fontSize: AppTextStyles.headlineSmall(context).fontSize!,
-            fontWeight: FontWeight.bold,
-            color: colorScheme.onSurface,
-          ),
-        ),
-        const SizedBox(height: 12),
-        GestureDetector(
-          onTap: _mostrarSelectorFechaHora,
-          child: Card(
-            color: colorScheme.surface,
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Row(
+        // Título con toggle de fecha personalizada
+        Row(
+          children: [
+            Text(
+              'Fecha y Hora de Entrega',
+              style: TextStyle(
+                fontSize: AppTextStyles.headlineSmall(context).fontSize!,
+                fontWeight: FontWeight.bold,
+                color: colorScheme.onSurface,
+              ),
+            ),
+            const Spacer(),
+            // ✅ Toggle para preventistas
+            if (esPreventista)
+              Row(
                 children: [
-                  Icon(
-                    Icons.calendar_today,
-                    color: colorScheme.primary,
-                    size: 24,
+                  Text(
+                    'Otra fecha',
+                    style: context.textTheme.bodySmall?.copyWith(
+                      color: colorScheme.onSurfaceVariant,
+                    ),
                   ),
-                  const SizedBox(width: 12),
-                  Expanded(
+                  const SizedBox(width: 8),
+                  Switch(
+                    value: usarFechaPersonalizada,
+                    onChanged: (value) {
+                      setState(() {
+                        if (value) {
+                          _seleccionarFechaPersonalizada();
+                        } else {
+                          final now = DateTime.now();
+                          _fechaProgramada =
+                              DateTime(now.year, now.month, now.day);
+                        }
+                      });
+                    },
+                  ),
+                ],
+              ),
+          ],
+        ),
+        const SizedBox(height: 16),
+
+        // ✅ SECCIÓN 1: Fechas estándar
+        if (!usarFechaPersonalizada) ...[
+          Text(
+            'Selecciona una fecha',
+            style: context.textTheme.bodyMedium?.copyWith(
+              fontWeight: FontWeight.w500,
+              color: colorScheme.onSurface,
+            ),
+          ),
+          const SizedBox(height: 8),
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: fechasDisponibles.entries.map((entry) {
+                final nombreFecha = entry.key;
+                final fecha = entry.value;
+                final isSelected = _fechaProgramada?.year == fecha.year &&
+                    _fechaProgramada?.month == fecha.month &&
+                    _fechaProgramada?.day == fecha.day;
+
+                final diasSemana = [
+                  'Lunes',
+                  'Martes',
+                  'Miércoles',
+                  'Jueves',
+                  'Viernes',
+                  'Sábado',
+                  'Domingo',
+                ];
+                final nombreDia = diasSemana[fecha.weekday - 1];
+                final fechaFormato = '${fecha.day}/${fecha.month}';
+
+                return Padding(
+                  padding: const EdgeInsets.only(right: 8),
+                  child: ElevatedButton(
+                    onPressed: () {
+                      setState(() {
+                        _fechaProgramada = fecha;
+                      });
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: isSelected
+                          ? colorScheme.primary
+                          : colorScheme.surfaceVariant,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 12,
+                      ),
+                    ),
                     child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
                       children: [
                         Text(
-                          _fechaProgramada != null
-                              ? _formatearFecha(_fechaProgramada!)
-                              : 'Seleccionar fecha',
-                          style: context.textTheme.bodyMedium?.copyWith(
-                            fontWeight: FontWeight.w600,
-                            color: colorScheme.onSurface,
+                          nombreFecha,
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: isSelected
+                                ? colorScheme.onPrimary
+                                : colorScheme.onSurface,
                           ),
                         ),
-                        if (_horaInicio != null && _horaFin != null) ...[
-                          const SizedBox(height: 4),
-                          Text(
-                            '🕐 ${_formatearHora(_horaInicio!)} - ${_formatearHora(_horaFin!)}',
-                            style: context.textTheme.bodySmall?.copyWith(
-                              color: colorScheme.primary,
-                            ),
+                        Text(
+                          '$nombreDia\n$fechaFormato',
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: isSelected
+                                ? colorScheme.onPrimary
+                                : colorScheme.onSurfaceVariant,
                           ),
-                        ],
+                          textAlign: TextAlign.center,
+                        ),
                       ],
                     ),
                   ),
+                );
+              }).toList(),
+            ),
+          ),
+          const SizedBox(height: 20),
+
+          // ✅ NUEVO: Sección de Turno de Entrega
+          Text(
+            'Selecciona un turno',
+            style: context.textTheme.bodyMedium?.copyWith(
+              fontWeight: FontWeight.w500,
+              color: colorScheme.onSurface,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              Expanded(
+                child: ElevatedButton.icon(
+                  onPressed: () => _actualizarHorasPorTurno(TURNO_MORNING),
+                  icon: const Icon(Icons.sunny),
+                  label: const Text('Mañana\n8:00 - 12:00'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: _turnoSeleccionado == TURNO_MORNING
+                        ? Colors.orange.shade500
+                        : colorScheme.surfaceVariant,
+                    foregroundColor: _turnoSeleccionado == TURNO_MORNING
+                        ? Colors.white
+                        : colorScheme.onSurface,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: ElevatedButton.icon(
+                  onPressed: () => _actualizarHorasPorTurno(TURNO_AFTERNOON),
+                  icon: const Icon(Icons.wb_twilight),
+                  label: const Text('Tarde\n14:00 - 18:00'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: _turnoSeleccionado == TURNO_AFTERNOON
+                        ? Colors.purple.shade500
+                        : colorScheme.surfaceVariant,
+                    foregroundColor: _turnoSeleccionado == TURNO_AFTERNOON
+                        ? Colors.white
+                        : colorScheme.onSurface,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+
+          // ✅ Mostrar horas del turno seleccionado
+          Card(
+            color: colorScheme.surface,
+            child: Padding(
+              padding: const EdgeInsets.all(12),
+              child: Row(
+                children: [
                   Icon(
-                    Icons.arrow_forward_ios,
-                    size: 16,
-                    color: colorScheme.onSurfaceVariant,
+                    Icons.schedule,
+                    color: colorScheme.primary,
+                    size: 20,
+                  ),
+                  const SizedBox(width: 12),
+                  Text(
+                    'Horario: ${_formatearHora(_horaInicio!)} - ${_formatearHora(_horaFin!)}',
+                    style: context.textTheme.bodyMedium?.copyWith(
+                      fontWeight: FontWeight.w600,
+                      color: colorScheme.onSurface,
+                    ),
+                  ),
+                  const Spacer(),
+                  Text(
+                    'Ajustable',
+                    style: context.textTheme.bodySmall?.copyWith(
+                      color: colorScheme.onSurfaceVariant,
+                    ),
                   ),
                 ],
               ),
             ),
           ),
+        ] else ...[
+          // ✅ SECCIÓN 2: Fecha personalizada (preventistas)
+          Text(
+            'Fecha seleccionada',
+            style: context.textTheme.bodyMedium?.copyWith(
+              fontWeight: FontWeight.w500,
+              color: colorScheme.onSurface,
+            ),
+          ),
+          const SizedBox(height: 8),
+          GestureDetector(
+            onTap: _seleccionarFechaPersonalizada,
+            child: Card(
+              color: colorScheme.surfaceVariant,
+              child: Padding(
+                padding: const EdgeInsets.all(12),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.calendar_today,
+                      color: colorScheme.primary,
+                      size: 20,
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        _fechaProgramada != null
+                            ? _formatearFecha(_fechaProgramada!)
+                            : 'Seleccionar fecha',
+                        style: context.textTheme.bodyMedium?.copyWith(
+                          color: colorScheme.onSurface,
+                        ),
+                      ),
+                    ),
+                    Icon(
+                      Icons.edit,
+                      color: colorScheme.primary,
+                      size: 18,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ],
+
+        const SizedBox(height: 20),
+
+        // ✅ SECCIÓN 3: Seleccionar Hora Específica
+        Text(
+          'Selecciona la hora',
+          style: context.textTheme.bodyMedium?.copyWith(
+            fontWeight: FontWeight.w500,
+            color: colorScheme.onSurface,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: _obtenerHorasDisponibles().map((hora) {
+            final isSelected = _horaEspecificaSeleccionada == hora;
+            return ElevatedButton(
+              onPressed: () {
+                setState(() {
+                  _horaEspecificaSeleccionada = hora;
+                  _horaInicio = TimeOfDay(hour: hora, minute: 0);
+                  _horaFin = TimeOfDay(hour: hora, minute: 0);
+                });
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: isSelected
+                    ? colorScheme.primary
+                    : colorScheme.surfaceVariant,
+                foregroundColor: isSelected
+                    ? colorScheme.onPrimary
+                    : colorScheme.onSurface,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 12,
+                ),
+              ),
+              child: Text(
+                '$hora:00',
+                style: TextStyle(
+                  fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                  fontSize: 16,
+                ),
+              ),
+            );
+          }).toList(),
+        ),
+
+        const SizedBox(height: 20),
+
+        // ✅ SECCIÓN 4: Observaciones
+        Text(
+          'Observaciones (Opcional)',
+          style: context.textTheme.bodyMedium?.copyWith(
+            fontWeight: FontWeight.w500,
+            color: colorScheme.onSurface,
+          ),
+        ),
+        const SizedBox(height: 8),
+        TextField(
+          decoration: InputDecoration(
+            hintText: 'Ej: Entregar entre semana, no sábado...',
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            contentPadding: const EdgeInsets.all(12),
+          ),
+          maxLines: 2,
+          onChanged: (value) {
+            setState(() {
+              _observaciones = value;
+            });
+          },
+          controller: TextEditingController(text: _observaciones),
         ),
       ],
     );

@@ -855,6 +855,11 @@ class EntregaService {
     String? tipoConfirmacion,  // COMPLETA o CON_NOVEDAD
     // ✅ NUEVA 2026-02-15: Productos rechazados en devolución parcial
     List<Map<String, dynamic>>? productosRechazados,  // Array de {detalle_venta_id, nombre_producto, cantidad, precio_unitario, subtotal}
+    // ✅ NUEVA 2026-03-05: Campos de novedad
+    String? tipoNovedad,  // CLIENTE_CERRADO, DEVOLUCION_PARCIAL, RECHAZADO, NO_CONTACTADO
+    bool? tiendaAbierta,
+    bool? clientePresente,
+    String? motivoRechazo,
   }) async {
     try {
       final data = <String, dynamic>{
@@ -871,6 +876,11 @@ class EntregaService {
         if (tipoConfirmacion != null) 'tipo_confirmacion': tipoConfirmacion,  // COMPLETA o CON_NOVEDAD
         // ✅ NUEVA 2026-02-15: Productos rechazados en devolución parcial
         if (productosRechazados != null && productosRechazados.isNotEmpty) 'productos_rechazados': productosRechazados,  // Array de productos rechazados
+        // ✅ NUEVA 2026-03-05: Campos de novedad
+        if (tipoNovedad != null) 'tipo_novedad': tipoNovedad,
+        if (tiendaAbierta != null) 'tienda_abierta': tiendaAbierta,
+        if (clientePresente != null) 'cliente_presente': clientePresente,
+        if (motivoRechazo != null) 'motivo_rechazo': motivoRechazo,
       };
 
       final response = await _apiService.post(

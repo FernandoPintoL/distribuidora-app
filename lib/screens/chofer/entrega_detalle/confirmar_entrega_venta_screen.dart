@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
-import 'dart:convert' show base64Encode;
+import 'dart:convert' show base64Encode, base64Decode;
+import 'dart:typed_data';
 import 'package:flutter/services.dart'; // ✅ Necesario para FilteringTextInputFormatter
 import '../../../config/app_text_styles.dart';
 import '../../../models/entrega.dart';
@@ -10,61 +11,10 @@ import '../../../providers/entrega_provider.dart';
 import '../../../services/image_compression_service.dart'; // ✅ NUEVO: Para comprimir imágenes
 import '../../../services/entrega_service.dart'; // ✅ NUEVO: Para obtener tipos de pago
 
-// ✅ NUEVA 2026-02-12: Modelo para pagos múltiples
-class PagoEntrega {
-  int tipoPagoId;
-  double monto;
-  String? referencia;
-
-  PagoEntrega({required this.tipoPagoId, required this.monto, this.referencia});
-
-  Map<String, dynamic> toJson() => {
-    'tipo_pago_id': tipoPagoId,
-    'monto': monto,
-    'referencia': referencia,
-  };
-}
-
-// ✅ NUEVA 2026-02-15: Modelo para productos rechazados en devolución parcial
-class ProductoRechazado {
-  int detalleVentaId;
-  int? productoId; // ✅ NUEVO: ID del producto (requerido por backend)
-  String nombreProducto;
-  double cantidadOriginal; // ✅ Cantidad original en la venta
-  double cantidadRechazada; // ✅ Cantidad que el cliente rechaza (editable)
-  double precioUnitario;
-  double subtotalOriginal;
-
-  ProductoRechazado({
-    required this.detalleVentaId,
-    this.productoId, // ✅ NUEVO: Opcional en constructor, requerido en JSON
-    required this.nombreProducto,
-    required this.cantidadOriginal,
-    required this.cantidadRechazada,
-    required this.precioUnitario,
-    required this.subtotalOriginal,
-  });
-
-  /// Calcular el subtotal basado en cantidad rechazada
-  double get subtotalRechazado => cantidadRechazada * precioUnitario;
-
-  /// Calcular cantidad entregada
-  double get cantidadEntregada => cantidadOriginal - cantidadRechazada;
-
-  Map<String, dynamic> toJson() => {
-    'producto_id': productoId ?? 0, // ✅ Backend lo requiere
-    'producto_nombre': nombreProducto, // ✅ Backend espera producto_nombre
-    'cantidad':
-        cantidadRechazada, // ✅ CAMBIO: Backend espera "cantidad" (lo rechazado)
-    'precio_unitario': precioUnitario, // ✅ Backend lo requiere
-    'subtotal':
-        subtotalRechazado, // ✅ CAMBIO: Backend espera "subtotal" (no subtotal_rechazado)
-    // ✅ CAMPOS OPCIONALES PARA AUDITORÍA (no requeridos por validación):
-    'detalle_venta_id': detalleVentaId,
-    'cantidad_original': cantidadOriginal,
-    'cantidad_entregada': cantidadEntregada,
-  };
-}
+// ✅ Importar widgets separados para mayor mantenibilidad
+import 'confirmar_entrega_widgets/formulario_completa_widget.dart';
+import 'confirmar_entrega_widgets/formulario_novedad_widget.dart';
+import 'confirmar_entrega_widgets/models.dart';
 
 class ConfirmarEntregaVentaScreen extends StatefulWidget {
   final Entrega entrega;
@@ -76,6 +26,23 @@ class ConfirmarEntregaVentaScreen extends StatefulWidget {
   final String? tipoEntregaExistente;
   final String? tipoNovedadExistente;
 
+  // ✅ NUEVO 2026-03-05: Información del cliente y tipo de pago desde resumen
+  final Map<String, dynamic>? cliente;
+  final Map<String, dynamic>? tipoPago;
+
+  // ✅ NUEVO 2026-03-05: Información previa de fotos, observaciones y pagos para edición
+  final List<String> fotosExistentes;
+  final String observacionesExistentes;
+  final List<Map<String, dynamic>> pagosExistentes;
+
+  // ✅ NUEVA 2026-03-05: Campos de novedad existentes
+  final bool? tiendaAbiertaExistente;
+  final bool? clientePresenteExistente;
+  final String? motivoRechazoExistente;
+
+  // ✅ NUEVO 2026-03-05: Productos devueltos existentes en modo edición
+  final List<Map<String, dynamic>> productosDevueltosExistentes;
+
   const ConfirmarEntregaVentaScreen({
     Key? key,
     required this.entrega,
@@ -84,6 +51,15 @@ class ConfirmarEntregaVentaScreen extends StatefulWidget {
     this.isEditing = false,
     this.tipoEntregaExistente,
     this.tipoNovedadExistente,
+    this.cliente,
+    this.tipoPago,
+    this.fotosExistentes = const [],
+    this.observacionesExistentes = '',
+    this.tiendaAbiertaExistente,
+    this.clientePresenteExistente,
+    this.motivoRechazoExistente,
+    this.productosDevueltosExistentes = const [],
+    this.pagosExistentes = const [],
   }) : super(key: key);
 
   @override
@@ -94,17 +70,25 @@ class ConfirmarEntregaVentaScreen extends StatefulWidget {
 class _ConfirmarEntregaVentaScreenState
     extends State<ConfirmarEntregaVentaScreen> {
   // Estados de la pantalla
-  int _paso = 1; // 1: Seleccionar tipo, 2: Detalles de novedad, 3: Confirmación
+  int _paso = 1; // 1: Seleccionar tipo + detalles, 2: Confirmación
 
   // Datos capturados
-  String? _tipoEntrega; // COMPLETA o CON_NOVEDAD
+  String _tipoEntrega =
+      'COMPLETA'; // ✅ NUEVO 2026-03-05: Inicializar con COMPLETA
   String?
-  _tipoNovedad; // CLIENTE_CERRADO, DEVOLUCION_PARCIAL, RECHAZADA, NO_CONTACTADO
+  _tipoNovedad; // CLIENTE_CERRADO, DEVOLUCION_PARCIAL, RECHAZADO
+
+  // ✅ NUEVA 2026-03-05: Campos de novedad
+  bool _tiendaAbierta = false;
+  bool _clientePresente = false;
+  String? _motivoRechazo;
+
   final TextEditingController _observacionesController =
       TextEditingController();
   final TextEditingController _montoController = TextEditingController();
   final TextEditingController _referenciaController = TextEditingController();
-  List<File> _fotosCapturadas = [];
+  // ✅ FIX 2026-03-05: Manejar tanto File (fotos nuevas) como String (URLs/base64 de API)
+  List<dynamic> _fotosCapturadas = [];
 
   final ImagePicker _imagePicker = ImagePicker();
   final EntregaService _entregaService =
@@ -116,6 +100,7 @@ class _ConfirmarEntregaVentaScreenState
   List<PagoEntrega> _pagos = []; // Lista de pagos múltiples
   bool _esCredito = false; // ✅ CAMBIO: Checkbox en lugar de input de monto
   String _tipoConfirmacion = 'COMPLETA'; // COMPLETA o CON_NOVEDAD
+  int? _tipoPagoSeleccionado; // ✅ NUEVO: Mantener selección de tipo de pago entre rebuilds
 
   // ✅ NUEVA 2026-02-15: Productos rechazados en devolución parcial
   List<ProductoRechazado> _productosRechazados =
@@ -141,7 +126,7 @@ class _ConfirmarEntregaVentaScreenState
       'description': 'El cliente rechazó parte de la mercancía',
     },
     {
-      'value': 'RECHAZADA',
+      'value': 'RECHAZADO',
       'label': '❌ Rechazo Total',
       'description': 'El cliente rechazó toda la mercancía',
     },
@@ -152,20 +137,101 @@ class _ConfirmarEntregaVentaScreenState
     super.initState();
     _cargarTiposPago();
 
-    // ✅ NUEVO 2026-02-13: Si la venta es a crédito, pre-marcar el checkbox
-    if (widget.venta.estadoPago == 'CREDITO') {
+    // ✅ DEBUG: Verificar que cliente y tipoPago llegan correctamente
+    debugPrint('👤 [CLIENTE DATA] cliente: ${widget.cliente}');
+    debugPrint('💳 [TIPO PAGO DATA] tipoPago: ${widget.tipoPago}');
+
+    // ✅ NUEVO 2026-03-05: Detectar si es crédito desde widget.tipoPago o widget.venta.estadoPago
+    final esCredito =
+        (widget.tipoPago?['codigo']?.toString().toUpperCase().contains(
+              'CREDITO',
+            ) ??
+            false) ||
+        widget.venta.estadoPago == 'CREDITO';
+
+    if (esCredito) {
       _esCredito = true;
       debugPrint(
-        '💳 [VENTA CRÉDITO] Venta #${widget.venta.numero} es a crédito - pre-marcando checkbox',
+        '💳 [VENTA CRÉDITO] Venta #${widget.venta.numero} es a crédito - no mostrar sección pagos',
       );
     }
 
     // ✅ NUEVO 2026-02-21: Si está en modo edición, cargar datos existentes
     if (widget.isEditing && widget.tipoEntregaExistente != null) {
-      _tipoEntrega = widget.tipoEntregaExistente;
+      _tipoEntrega = widget.tipoEntregaExistente!;
       _tipoNovedad = widget.tipoNovedadExistente;
+      // ✅ FIX 2026-03-05: Si hay novedad existente, tipo_confirmacion debe ser CON_NOVEDAD
+      if (_tipoNovedad != null) {
+        _tipoConfirmacion = 'CON_NOVEDAD';
+      } else {
+        _tipoConfirmacion = 'COMPLETA';
+      }
+
+      // ✅ NUEVA 2026-03-05: Sin Paso 1/2, mostrar directo el formulario seleccionable
+
+      // ✅ NUEVO 2026-03-05: Cargar productos devueltos existentes para DEVOLUCION_PARCIAL
+      if (_tipoNovedad == 'DEVOLUCION_PARCIAL' &&
+          widget.productosDevueltosExistentes.isNotEmpty) {
+        _productosRechazados = widget.productosDevueltosExistentes
+            .map((prod) => ProductoRechazado(
+                  detalleVentaId: prod['detalle_venta_id'] as int? ??
+                      (prod['id'] as int?) ??
+                      0,
+                  productoId: prod['producto_id'] as int?,
+                  nombreProducto:
+                      prod['producto_nombre'] as String? ?? 'Desconocido',
+                  cantidadOriginal:
+                      (prod['cantidad_original'] as num?)?.toDouble() ?? 0,
+                  cantidadRechazada:
+                      (prod['cantidad'] as num?)?.toDouble() ?? 0,
+                  precioUnitario:
+                      (prod['precio_unitario'] as num?)?.toDouble() ?? 0,
+                  subtotalOriginal:
+                      (prod['subtotal'] as num?)?.toDouble() ?? 0,
+                ))
+            .toList();
+        debugPrint(
+            '✅ Cargados ${_productosRechazados.length} productos devueltos existentes');
+      }
       debugPrint(
-        '📝 [EDITAR ENTREGA] Cargando datos existentes: tipo=$_tipoEntrega, novedad=$_tipoNovedad',
+        '📝 [EDITAR ENTREGA] Cargando datos existentes: tipo=$_tipoEntrega, novedad=$_tipoNovedad, confirmacion=$_tipoConfirmacion',
+      );
+
+      // ✅ NUEVO 2026-03-05: Cargar fotos existentes (URLs/base64 de API)
+      if (widget.fotosExistentes.isNotEmpty) {
+        _fotosCapturadas = List<dynamic>.from(widget.fotosExistentes);
+        debugPrint(
+          '📸 [FOTOS CARGADAS] ${_fotosCapturadas.length} fotos existentes cargadas (URLs/base64)',
+        );
+      }
+
+      // ✅ NUEVO 2026-03-05: Cargar observaciones existentes
+      if (widget.observacionesExistentes.isNotEmpty) {
+        _observacionesController.text = widget.observacionesExistentes;
+        debugPrint(
+          '📝 [OBSERVACIONES CARGADAS] Observaciones existentes cargadas',
+        );
+      }
+
+      // ✅ NUEVA 2026-03-05: Cargar campos de novedad existentes
+      if (widget.tiendaAbiertaExistente != null) {
+        _tiendaAbierta = widget.tiendaAbiertaExistente!;
+      }
+      if (widget.clientePresenteExistente != null) {
+        _clientePresente = widget.clientePresenteExistente!;
+      }
+      if (widget.motivoRechazoExistente != null) {
+        _motivoRechazo = widget.motivoRechazoExistente;
+      }
+      debugPrint(
+        '⚠️ [CAMPOS NOVEDAD CARGADOS] tienda_abierta=$_tiendaAbierta, cliente_presente=$_clientePresente, motivo_rechazo=$_motivoRechazo',
+      );
+
+      // ✅ FIX 2026-03-05: NO cargar pagosExistentes en _pagos
+      // _pagos debe contener SOLO pagos NUEVOS que el usuario agrega
+      // Los pagos existentes se mantienen en el backend automáticamente
+      debugPrint(
+        '💳 [PAGOS MODO EDICIÓN] No se cargan pagos existentes - _pagos inicia vacío para nuevos pagos',
       );
     }
   }
@@ -186,6 +252,106 @@ class _ConfirmarEntregaVentaScreenState
     super.dispose();
   }
 
+  /// ✅ FIX 2026-03-05: Convertir dinámicamente a int (maneja String, int, double, null)
+  int _convertirAInt(dynamic value) {
+    if (value == null) return 0;
+    if (value is int) return value;
+    if (value is String) {
+      return int.tryParse(value) ?? 0;
+    }
+    if (value is double) return value.toInt();
+    return 0;
+  }
+
+  /// ✅ FIX 2026-03-05: Decodificar base64 a bytes para mostrar imagen
+  Uint8List _decodificarBase64(String base64String) {
+    // Remover prefijo de data URI si existe
+    String cleanBase64 = base64String.replaceAll(
+      RegExp(r'^data:image/[^;]+;base64,'),
+      '',
+    );
+
+    try {
+      return base64Decode(cleanBase64);
+    } catch (_) {
+      // Si falla, intentar sin limpiar
+      try {
+        return base64Decode(base64String);
+      } catch (_) {
+        // Retornar bytes vacíos si falla todo
+        return Uint8List(0);
+      }
+    }
+  }
+
+  /// ✅ FIX 2026-03-05: Constructor inteligente de imagen que maneja File, URL y base64
+  Widget _construirImagenFoto(
+    dynamic foto, {
+    double? width,
+    double? height,
+    BoxFit fit = BoxFit.cover,
+  }) {
+    if (foto is File) {
+      // Foto local capturada
+      return Image.file(
+        foto,
+        width: width,
+        height: height,
+        fit: fit,
+        errorBuilder: (context, error, stackTrace) => Container(
+          width: width ?? double.infinity,
+          height: height,
+          color: Colors.grey[300],
+          child: const Icon(Icons.error),
+        ),
+      );
+    } else if (foto is String) {
+      // URL o base64 de API
+      final esBase64 =
+          foto.startsWith('data:') ||
+          foto.startsWith('/9j/') ||
+          foto.startsWith('iVBORw0KGgo');
+
+      if (esBase64) {
+        // Base64
+        return Image.memory(
+          _decodificarBase64(foto),
+          width: width,
+          height: height,
+          fit: fit,
+          errorBuilder: (context, error, stackTrace) => Container(
+            width: width ?? double.infinity,
+            height: height,
+            color: Colors.grey[300],
+            child: const Icon(Icons.image_not_supported),
+          ),
+        );
+      } else {
+        // URL
+        return Image.network(
+          foto,
+          width: width,
+          height: height,
+          fit: fit,
+          errorBuilder: (context, error, stackTrace) => Container(
+            width: width ?? double.infinity,
+            height: height,
+            color: Colors.grey[300],
+            child: const Icon(Icons.image_not_supported),
+          ),
+        );
+      }
+    } else {
+      // Tipo desconocido
+      return Container(
+        width: width ?? double.infinity,
+        height: height,
+        color: Colors.grey[300],
+        child: const Icon(Icons.error),
+      );
+    }
+  }
+
   /// Cargar tipos de pago disponibles
   Future<void> _cargarTiposPago() async {
     setState(() => _cargandoTiposPago = true);
@@ -195,7 +361,14 @@ class _ConfirmarEntregaVentaScreenState
 
       if (response.success && response.data != null) {
         setState(() {
-          _tiposPago = response.data!.cast<Map<String, dynamic>>();
+          // Filtrar: excluir tipo de pago CREDITO en pantalla de confirmación
+          _tiposPago = (response.data as List)
+              .cast<Map<String, dynamic>>()
+              .where((tipo) {
+                final codigo = (tipo['codigo'] as String?)?.toUpperCase();
+                return codigo == null || !codigo.contains('CREDITO');
+              })
+              .toList();
           _cargandoTiposPago = false;
         });
       } else {
@@ -322,7 +495,13 @@ class _ConfirmarEntregaVentaScreenState
     if (_pagos.isEmpty) return null;
 
     double totalRecibido = _pagos.fold(0.0, (sum, pago) => sum + pago.monto);
-    double saldoPendiente = widget.venta.total - totalRecibido;
+
+    // ✅ CORREGIDO 2026-03-05: Considerar monto ajustado en DEVOLUCION_PARCIAL
+    double montoRechazado = _tipoNovedad == 'DEVOLUCION_PARCIAL'
+        ? _productosRechazados.fold(0.0, (sum, p) => sum + p.subtotalRechazado)
+        : 0.0;
+    double totalAjustado = widget.venta.total - montoRechazado;
+    double saldoPendiente = totalAjustado - totalRecibido;
 
     if (saldoPendiente <= 0) return null;
 
@@ -537,7 +716,6 @@ class _ConfirmarEntregaVentaScreenState
 
   /// ✅ NUEVA 2026-02-15: Formulario para agregar pago
   Widget _buildPagoForm({bool isDarkMode = false}) {
-    int? tipoPagoSeleccionado;
     final tiposDisponibles = _obtenerTiposPagoDisponibles();
 
     return StatefulBuilder(
@@ -575,7 +753,7 @@ class _ConfirmarEntregaVentaScreenState
                     const Center(child: CircularProgressIndicator())
                   else if (tiposDisponibles.isNotEmpty)
                     DropdownButtonFormField<int>(
-                      value: tipoPagoSeleccionado,
+                      value: _tipoPagoSeleccionado,
                       decoration: InputDecoration(
                         labelText: 'Tipo de Pago',
                         hintText: 'Selecciona método',
@@ -592,7 +770,7 @@ class _ConfirmarEntregaVentaScreenState
                         );
                       }).toList(),
                       onChanged: (value) {
-                        setFormState(() => tipoPagoSeleccionado = value);
+                        setState(() => _tipoPagoSeleccionado = value);
                       },
                     )
                   else
@@ -666,7 +844,7 @@ class _ConfirmarEntregaVentaScreenState
                       width: double.infinity,
                       child: ElevatedButton.icon(
                         onPressed:
-                            tipoPagoSeleccionado == null ||
+                            _tipoPagoSeleccionado == null ||
                                 _montoController.text.isEmpty
                             ? null
                             : () {
@@ -689,7 +867,7 @@ class _ConfirmarEntregaVentaScreenState
                                   setState(() {
                                     _pagos.add(
                                       PagoEntrega(
-                                        tipoPagoId: tipoPagoSeleccionado!,
+                                        tipoPagoId: _tipoPagoSeleccionado!,
                                         monto: monto,
                                         referencia:
                                             _referenciaController
@@ -703,8 +881,8 @@ class _ConfirmarEntregaVentaScreenState
 
                                   _montoController.clear();
                                   _referenciaController.clear();
-                                  setFormState(
-                                    () => tipoPagoSeleccionado = null,
+                                  setState(
+                                    () => _tipoPagoSeleccionado = null,
                                   );
 
                                   ScaffoldMessenger.of(context).showSnackBar(
@@ -761,6 +939,99 @@ class _ConfirmarEntregaVentaScreenState
     );
   }
 
+  /// ✅ NUEVO 2026-03-05: Construir botón de acción dinámico para AppBar
+  Widget _construirBotonAccion() {
+    // Si está en modo edición, siempre mostrar botón de guardar
+    if (widget.isEditing) {
+      final puedGuardar = _validarDatos();
+      return Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Tooltip(
+            message: puedGuardar
+                ? 'Guardar cambios'
+                : 'Completa los datos requeridos',
+            child: ElevatedButton.icon(
+              onPressed: puedGuardar ? _guardarCambiosTipoEntrega : null,
+              icon: const Icon(Icons.save, size: 18),
+              label: const Text('Guardar'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.blue,
+                disabledBackgroundColor: Colors.grey[400],
+                foregroundColor: Colors.white,
+                disabledForegroundColor: Colors.grey[600],
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 8,
+                ),
+              ),
+            ),
+          ),
+        ],
+      );
+    }
+
+    // En paso 1, 2 o 3, mostrar botón de confirmar con validaciones
+    final puedeConfirmar = _validarDatos();
+
+    if (!puedeConfirmar) {
+      final razonError = _obtenerRazonError();
+      return Tooltip(
+        message: razonError,
+        child: IconButton(
+          icon: const Icon(Icons.check_circle_outline),
+          onPressed: null,
+          color: Colors.grey,
+          disabledColor: Colors.grey,
+          tooltip: razonError,
+        ),
+      );
+    }
+
+    return ElevatedButton.icon(
+      onPressed: _confirmarEntrega,
+      icon: const Icon(Icons.save, size: 18),
+      label: const Text('Guardar'),
+      style: ElevatedButton.styleFrom(
+        backgroundColor: Colors.blue,
+        foregroundColor: Colors.white,
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      ),
+    );
+  }
+
+  /// ✅ NUEVO 2026-03-05: Validar que todos los datos requeridos estén completos
+  bool _validarDatos() {
+    if (_tipoEntrega == 'COMPLETA') {
+      // Para entrega completa: requiere pagos O crédito, y fotos si es cliente cerrado
+      if (!_esCredito && _pagos.isEmpty) return false;
+    } else if (_tipoEntrega == 'CON_NOVEDAD') {
+      // Para novedad: requiere tipo de novedad
+      if (_tipoNovedad == null) return false;
+      // Si es cliente cerrado: requiere fotos
+      if (_tipoNovedad == 'CLIENTE_CERRADO' && _fotosCapturadas.isEmpty)
+        return false;
+    }
+    return true;
+  }
+
+  /// ✅ NUEVO 2026-03-05: Obtener razón del error de validación
+  String _obtenerRazonError() {
+    if (_tipoEntrega == 'COMPLETA') {
+      if (!_esCredito && _pagos.isEmpty) {
+        return 'Registra un pago o marca como crédito';
+      }
+    } else if (_tipoEntrega == 'CON_NOVEDAD') {
+      if (_tipoNovedad == null) {
+        return 'Selecciona un tipo de novedad';
+      }
+      if (_tipoNovedad == 'CLIENTE_CERRADO' && _fotosCapturadas.isEmpty) {
+        return 'Captura al menos una foto';
+      }
+    }
+    return 'Completa los datos requeridos';
+  }
+
   /// Confirmar entrega
   Future<void> _confirmarEntrega() async {
     // ✅ NUEVO: Validar que Cliente Cerrado/No Disponible requiere fotos
@@ -788,11 +1059,14 @@ class _ConfirmarEntregaVentaScreenState
         );
       }
 
-      // Convertir fotos a base64 si existen
+      // ✅ FIX 2026-03-05: Convertir SOLO fotos nuevas a base64 (dejar el merge al backend)
+      // Para edición: enviar SOLO las fotos que son File (nuevas), no las String (existentes)
       List<String>? fotosBase64;
-      if (_fotosCapturadas.isNotEmpty) {
+      final fotosNuevas = _fotosCapturadas.whereType<File>().toList();
+
+      if (fotosNuevas.isNotEmpty) {
         fotosBase64 = [];
-        for (final foto in _fotosCapturadas) {
+        for (final foto in fotosNuevas) {
           final bytes = await foto.readAsBytes();
           final base64 = _bytesToBase64(bytes);
           fotosBase64.add(base64);
@@ -856,6 +1130,23 @@ class _ConfirmarEntregaVentaScreenState
         );
       }
 
+      // ✅ NUEVA 2026-03-05: Limpiar campos según tipo de confirmación
+      String? tipoNovedadFinal = _tipoNovedad;
+      bool? tiendaAbiertaFinal = _tiendaAbierta;
+      bool? clientePresenteFinal = _clientePresente;
+      String? motivoRechazoFinal = _motivoRechazo;
+
+      // Si es COMPLETA, no enviar campos de novedad
+      if (_tipoConfirmacion == 'COMPLETA') {
+        tipoNovedadFinal = null;
+        tiendaAbiertaFinal = null;
+        clientePresenteFinal = null;
+        motivoRechazoFinal = null;
+        debugPrint('✅ COMPLETA: Limpiando campos de novedad');
+      } else {
+        debugPrint('✅ CON_NOVEDAD: Enviando campos de novedad');
+      }
+
       final success = await widget.provider.confirmarVentaEntregada(
         widget.entrega.id,
         widget.venta.id,
@@ -873,6 +1164,11 @@ class _ConfirmarEntregaVentaScreenState
         tipoConfirmacion: _tipoConfirmacion,
         // ✅ NUEVA 2026-02-15: Enviar productos rechazados para devolución parcial
         productosRechazados: productosRechazadosArray,
+        // ✅ NUEVA 2026-03-05: Enviar campos de novedad SOLO si es CON_NOVEDAD
+        tipoNovedad: tipoNovedadFinal,
+        tiendaAbierta: tiendaAbiertaFinal,
+        clientePresente: clientePresenteFinal,
+        motivoRechazo: motivoRechazoFinal,
       );
 
       if (mounted) {
@@ -887,10 +1183,13 @@ class _ConfirmarEntregaVentaScreenState
               duration: Duration(seconds: 3),
             ),
           );
-          // Cerrar la pantalla después de 1.5s
+          // Recargar datos de entrega para que pantalla anterior vea cambios
+          await widget.provider.obtenerEntrega(widget.entrega.id);
+
+          // Cerrar la pantalla después de 1.5s, retornando true para indicar cambio
           await Future.delayed(const Duration(milliseconds: 1500));
           if (mounted) {
-            Navigator.pop(context);
+            Navigator.pop(context, true); // ✅ NUEVO: Retornar true para indicar que hubo cambios
           }
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -933,7 +1232,7 @@ class _ConfirmarEntregaVentaScreenState
       }
 
       // Si es CON_NOVEDAD, validar que haya seleccionado tipo de novedad
-      if (_tipoEntrega == 'NOVEDAD' && _tipoNovedad == null) {
+      if (_tipoEntrega == 'CON_NOVEDAD' && _tipoNovedad == null) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('⚠️ Debes seleccionar un tipo de novedad'),
@@ -956,21 +1255,96 @@ class _ConfirmarEntregaVentaScreenState
       debugPrint('📝 [EDITAR ENTREGA] Guardando cambios:');
       debugPrint('   - Tipo: $_tipoEntrega');
       debugPrint('   - Novedad: $_tipoNovedad');
+      debugPrint('   - Fotos: ${_fotosCapturadas.length}');
+      debugPrint('   - Observaciones: ${_observacionesController.text}');
 
-      // Llamar al provider para guardar
-      await widget.provider.cambiarTipoEntrega(
-        entregaId: widget.entrega.id,
-        ventaId: widget.venta.id,
-        tipoEntrega: _tipoEntrega == 'COMPLETA' ? 'COMPLETA' : 'CON_NOVEDAD',
-        tipoNovedad: _tipoNovedad,
+      // ✅ FIX 2026-03-05: Convertir SOLO fotos nuevas a base64
+      List<String>? fotosBase64;
+      final fotosNuevas = _fotosCapturadas.whereType<File>().toList();
+
+      if (fotosNuevas.isNotEmpty) {
+        fotosBase64 = [];
+        for (final foto in fotosNuevas) {
+          final bytes = await foto.readAsBytes();
+          final base64 = _bytesToBase64(bytes);
+          fotosBase64.add(base64);
+        }
+      }
+
+      final observacionesFinales = _construirObservacionesFinales();
+
+      // ✅ FIX 2026-03-05: En modo edición, solo enviar pagos si hay nuevos
+      List<Map<String, dynamic>>? pagosArray;
+      if (_pagos.isNotEmpty) {
+        pagosArray = _pagos.map((pago) => pago.toJson()).toList();
+      }
+
+      // ✅ NUEVA 2026-03-05: Construir array de productos rechazados (FALTABA en edición)
+      final productosRechazadosArray = _productosRechazados
+          .map((prod) => prod.toJson())
+          .toList();
+
+      debugPrint('📦 PRODUCTOS RECHAZADOS EN EDICIÓN:');
+      debugPrint('   - Total: ${productosRechazadosArray.length}');
+      if (productosRechazadosArray.isNotEmpty) {
+        for (var prod in productosRechazadosArray) {
+          debugPrint(
+            '   - ${prod['producto_nombre']}: ${prod['cantidad_rechazada']}/${prod['cantidad_original']}',
+          );
+        }
+      }
+
+      // ✅ NUEVA 2026-03-05: Limpiar campos según tipo de confirmación
+      final tipoConfirmacionFinal = _tipoEntrega == 'COMPLETA'
+          ? 'COMPLETA'
+          : 'CON_NOVEDAD';
+
+      String? tipoNovedadFinal = _tipoNovedad;
+      bool? tiendaAbiertaFinal = _tiendaAbierta;
+      bool? clientePresenteFinal = _clientePresente;
+      String? motivoRechazoFinal = _motivoRechazo;
+
+      // Si es COMPLETA, no enviar campos de novedad
+      if (tipoConfirmacionFinal == 'COMPLETA') {
+        tipoNovedadFinal = null;
+        tiendaAbiertaFinal = null;
+        clientePresenteFinal = null;
+        motivoRechazoFinal = null;
+        debugPrint('✅ EDICIÓN COMPLETA: Limpiando campos de novedad');
+      } else {
+        debugPrint('✅ EDICIÓN CON_NOVEDAD: Enviando campos de novedad');
+      }
+
+      // ✅ FIX 2026-03-05: Llamar a confirmarVentaEntregada() en lugar de cambiarTipoEntrega()
+      // para registrar TODAS las fotos, observaciones y pagos
+      final success = await widget.provider.confirmarVentaEntregada(
+        widget.entrega.id,
+        widget.venta.id,
+        onSuccess: (mensaje) {
+          debugPrint('✅ Venta actualizada: $mensaje');
+        },
+        onError: (error) {
+          debugPrint('❌ Error: $error');
+        },
+        fotosBase64: fotosBase64,
+        observacionesLogistica: observacionesFinales,
+        pagos: pagosArray,
+        esCredito: _esCredito,
+        tipoConfirmacion: tipoConfirmacionFinal,
+        // ✅ NUEVA 2026-03-05: Enviar productos rechazados (ANTES FALTABA)
+        productosRechazados: productosRechazadosArray,
+        // ✅ NUEVA 2026-03-05: Enviar campos de novedad SOLO si es CON_NOVEDAD
+        tipoNovedad: tipoNovedadFinal,
+        tiendaAbierta: tiendaAbiertaFinal,
+        clientePresente: clientePresenteFinal,
+        motivoRechazo: motivoRechazoFinal,
       );
 
       if (mounted) {
         Navigator.pop(context); // Cerrar loading
 
-        if (widget.provider.isLoading == false &&
-            widget.provider.errorMessage == null) {
-          // Éxito
+        if (success) {
+          // Éxito - mostrar mensaje y cerrar
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(
@@ -985,9 +1359,13 @@ class _ConfirmarEntregaVentaScreenState
             ),
           );
 
-          // Cerrar pantalla
+          // Recargar datos de entrega para que pantalla anterior vea cambios
+          await widget.provider.obtenerEntrega(widget.entrega.id);
+
+          // Cerrar pantalla después de 1.5s, retornando true para indicar cambio
+          await Future.delayed(const Duration(milliseconds: 1500));
           if (mounted) {
-            Navigator.pop(context);
+            Navigator.pop(context, true); // ✅ NUEVO: Retornar true para indicar que hubo cambios
           }
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -1029,305 +1407,210 @@ class _ConfirmarEntregaVentaScreenState
       child: Scaffold(
         appBar: AppBar(
           title: Text(
-            _paso == 1
-                ? (widget.isEditing
-                      ? '✏️ Editar Tipo de Entrega F.${widget.venta.id}'
-                      : 'Entrega a Venta F.${widget.venta.id}')
-                : _tipoEntrega == 'NOVEDAD'
-                ? 'Registrar Novedad'
-                : 'Confirmar Entrega',
+            widget.isEditing
+                ? '✏️ Editar Entrega F.${widget.venta.id}'
+                : 'Entrega a Venta F.${widget.venta.id}',
           ),
           centerTitle: true,
           elevation: 0,
           leading: IconButton(
             icon: const Icon(Icons.arrow_back),
             onPressed: () {
-              if (_paso > 1) {
-                setState(() => _paso--);
-              } else {
-                Navigator.pop(context);
-              }
+              Navigator.pop(context);
             },
           ),
-          // ✅ NUEVO: Botón de confirmación en AppBar (solo en PASO 2 o 3)
-          actions: [
-            if (_paso > 1)
-              Padding(
-                padding: const EdgeInsets.only(right: 8),
-                child: Center(
-                  child:
-                      _paso == 2 &&
-                          _tipoEntrega == 'CON_NOVEDAD' &&
-                          _tipoNovedad == null
-                      ? Tooltip(
-                          message: 'Selecciona un tipo de novedad',
-                          child: IconButton(
-                            icon: const Icon(Icons.check_circle_outline),
-                            onPressed: null,
-                            color: Colors.grey,
-                            disabledColor: Colors.grey,
-                          ),
-                        )
-                      : _paso == 2 &&
-                            _tipoEntrega == 'CON_NOVEDAD' &&
-                            (_tipoNovedad == 'CLIENTE_CERRADO' &&
-                                _fotosCapturadas.isEmpty)
-                      ? Tooltip(
-                          message: 'Captura al menos una foto',
-                          child: IconButton(
-                            icon: const Icon(Icons.check_circle_outline),
-                            onPressed: null,
-                            color: Colors.grey,
-                            disabledColor: Colors.grey,
-                          ),
-                        )
-                      : // ✅ FIXED: Cambiar _paso == 3 por _paso == 2 para habilitar botón cuando pagos están completos
-                        _paso == 2 &&
-                            (_tipoEntrega == 'COMPLETA' &&
-                                _pagos.isEmpty &&
-                                !_esCredito)
-                      ? Tooltip(
-                          message: 'Registra un pago o marca como crédito',
-                          child: IconButton(
-                            icon: const Icon(Icons.check_circle_outline),
-                            onPressed: null,
-                            color: Colors.grey,
-                            disabledColor: Colors.grey,
-                          ),
-                        )
-                      : IconButton(
-                          icon: const Icon(Icons.check_circle),
-                          onPressed: widget.isEditing
-                              ? _guardarCambiosTipoEntrega
-                              : _confirmarEntrega,
-                          color: Colors.green,
-                          tooltip: widget.isEditing
-                              ? 'Guardar cambios'
-                              : 'Confirmar y guardar',
-                        ),
-                ),
-              ),
-          ],
-        ),
-        body: SafeArea(
-          child: _paso == 1
-              ? _buildPasoSeleccionar(context, isDarkMode)
-              : _tipoEntrega == 'COMPLETA'
-              ? _buildPasoConfirmacionCompleta(context, isDarkMode)
-              : _buildPasoNovedad(context, isDarkMode),
-        ),
-      ),
-    );
-  }
-
-  // PASO 1: Seleccionar tipo de entrega
-  Widget _buildPasoSeleccionar(BuildContext context, bool isDarkMode) {
-    return SingleChildScrollView(
-      child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          children: [
-            // Información de la venta
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Theme.of(context).primaryColor.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                  color: Theme.of(context).primaryColor.withOpacity(0.3),
-                ),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+          // ✅ NUEVA 2026-03-05: Selector simple de tipo de entrega en AppBar
+          bottom: PreferredSize(
+            preferredSize: const Size.fromHeight(60),
+            child: Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  // ✅ Encabezado con indicador de crédito si aplica
-                  Row(
-                    children: [
-                      Text(
-                        'Venta a Entregar Folio: ${widget.venta.id}',
-                        style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                          fontWeight: FontWeight.w500,
-                        ),
+                  // ✅ SIMPLIFICADO: SegmentedButton para elegir tipo
+                  SegmentedButton<String>(
+                    selected: {_tipoEntrega},
+                    onSelectionChanged: (Set<String> newSelection) {
+                      setState(() {
+                        _tipoEntrega = newSelection.first;
+                        // ✅ Limpiar campos cuando cambia de tipo
+                        if (_tipoEntrega == 'COMPLETA') {
+                          _tipoNovedad = null;
+                          _tiendaAbierta = false;
+                          _clientePresente = false;
+                          _motivoRechazo = null;
+                          _productosRechazados.clear();
+                          debugPrint('✅ Cambiado a COMPLETA - campos de novedad limpiados');
+                        } else {
+                          _pagos.clear();
+                          debugPrint('✅ Cambiado a CON_NOVEDAD - pagos limpiados');
+                        }
+                      });
+                    },
+                    segments: const [
+                      ButtonSegment(
+                        value: 'COMPLETA',
+                        label: Text('✅ Completa'),
+                        icon: Icon(Icons.check_circle),
                       ),
-                      const SizedBox(width: 8),
-                      // ✅ NUEVO: Badge si es a crédito
-                      if (widget.venta.estadoPago == 'CREDITO')
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 4,
-                          ),
-                          decoration: BoxDecoration(
-                            color: Colors.orange[100],
-                            border: Border.all(color: Colors.orange[700]!),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Text(
-                            '💳 CRÉDITO',
-                            style: TextStyle(
-                              fontSize: AppTextStyles.labelSmall(
-                                context,
-                              ).fontSize!,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.orange[900],
-                            ),
-                          ),
-                        ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  Column(
-                    children: [
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Número:',
-                            style: TextStyle(
-                              fontSize: AppTextStyles.bodySmall(
-                                context,
-                              ).fontSize!,
-                              color: Colors.grey[600],
-                            ),
-                          ),
-                          Text(
-                            widget.venta.numero,
-                            style: TextStyle(
-                              fontSize: AppTextStyles.bodyLarge(
-                                context,
-                              ).fontSize!,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ],
-                      ),
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Cliente:',
-                            style: TextStyle(
-                              fontSize: AppTextStyles.bodySmall(
-                                context,
-                              ).fontSize!,
-                              color: Colors.grey[600],
-                            ),
-                          ),
-                          Text(
-                            widget.venta.clienteNombre ?? 'Sin nombre',
-                            style: TextStyle(
-                              fontSize: AppTextStyles.bodyMedium(
-                                context,
-                              ).fontSize!,
-                              fontWeight: FontWeight.w500,
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ],
+                      ButtonSegment(
+                        value: 'NOVEDAD',
+                        label: Text('⚠️ Con Novedad'),
+                        icon: Icon(Icons.warning),
                       ),
                     ],
                   ),
                 ],
               ),
             ),
-            const SizedBox(height: 40),
-
-            // Instrucción
-            Text(
-              '¿Cómo fue la entrega?',
-              style: Theme.of(
-                context,
-              ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w600),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 10),
-            Text(
-              'Selecciona el estado de la entrega para registrar los detalles',
-              style: TextStyle(
-                fontSize: AppTextStyles.bodyMedium(context).fontSize!,
-                color: Colors.grey[600],
-              ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 40),
-
-            // Botón Entrega Completa
-            SizedBox(
-              width: double.infinity,
-              height: 120,
-              child: Material(
-                color: Colors.green,
-                borderRadius: BorderRadius.circular(12),
-                child: InkWell(
-                  onTap: () {
-                    setState(() {
-                      _tipoEntrega = 'COMPLETA';
-                      _paso = 2;
-                    });
-                  },
-                  borderRadius: BorderRadius.circular(12),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Icon(
-                        Icons.check_circle,
-                        size: 40,
-                        color: Colors.white,
-                      ),
-                      const SizedBox(height: 12),
-                      Text(
-                        'Entrega Completa',
-                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                          color: Colors.white,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-            const SizedBox(height: 20),
-
-            // Botón Entrega con Novedad
-            SizedBox(
-              width: double.infinity,
-              height: 120,
-              child: Material(
-                color: Colors.orange,
-                borderRadius: BorderRadius.circular(12),
-                child: InkWell(
-                  onTap: () {
-                    setState(() {
-                      _tipoEntrega = 'NOVEDAD';
-                      _paso = 2;
-                    });
-                  },
-                  borderRadius: BorderRadius.circular(12),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Icon(
-                        Icons.warning_amber,
-                        size: 40,
-                        color: Colors.white,
-                      ),
-                      const SizedBox(height: 12),
-                      Text(
-                        'Entrega con Novedad',
-                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                          color: Colors.white,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
+          ),
+          // ✅ NUEVO: Botón de confirmación/guardado en AppBar
+          actions: [
+            Padding(
+              padding: const EdgeInsets.only(right: 16),
+              child: Center(child: _construirBotonAccion()),
             ),
           ],
         ),
+        body: SafeArea(
+          child:
+              // ✅ SIMPLIFICADO: SIEMPRE mostrar el formulario según tipo seleccionado (sin Paso 1)
+              _tipoEntrega == 'COMPLETA'
+                  ? FormularioCompletaWidget(
+                      venta: widget.venta,
+                      isDarkMode: isDarkMode,
+                      fotosCapturadas: _fotosCapturadas,
+                      tiposPago: _tiposPago,
+                      pagos: _pagos,
+                      esCredito: _esCredito,
+                      observacionesController: _observacionesController,
+                      tipoNovedad: _tipoNovedad,
+                      buildResumenMontos: (total) => _buildResumenMontos(total),
+                      buildPagoForm: (ctx, dark) => _buildPagoForm(isDarkMode: dark),
+                    )
+                  : FormularioNovedadWidget(
+                      screenContext: context,
+                      isDarkMode: isDarkMode,
+                      tipoNovedad: _tipoNovedad,
+                      tiposNovedad: _tiposNovedad,
+                      venta: widget.venta,
+                      observacionesController: _observacionesController,
+                      fotosCapturadas: _fotosCapturadas,
+                      eliminarFoto: _eliminarFoto,
+                      capturarFoto: _capturarFoto,
+                      construirImagenFoto: (foto) => _construirImagenFoto(foto),
+                      buildTablaProductosRechazados: (ctx, dark) => _buildTablaProductosRechazados(isDarkMode: dark),
+                      buildResumenMontos: (total) => _buildResumenMontos(total),
+                      buildPagoForm: (ctx, dark) => _buildPagoForm(isDarkMode: dark),
+                      pagos: _pagos,
+                      tiposPago: _tiposPago,
+                      onTipoNovedadChanged: (value) {
+                        setState(() {
+                          _tipoNovedad = value;
+                          _productosRechazados.clear();
+                          _cantidadRechazadaControllers.clear();
+                        });
+                      },
+                    ),
+        ),
+      ),
+    );
+  }
+
+  // ✅ NUEVO 2026-03-05: Resumen de pagos existentes (modo edición)
+  Widget _buildResumenPagosExistentes({required bool isDarkMode}) {
+    double totalPagado = 0;
+    for (final pago in widget.pagosExistentes) {
+      totalPagado += (pago['monto'] as num?)?.toDouble() ?? 0;
+    }
+
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.blue[50],
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: Colors.blue[300]!),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.check_circle, color: Colors.blue[700], size: 20),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  'Pagos Registrados',
+                  style: TextStyle(
+                    fontWeight: FontWeight.w600,
+                    color: Colors.blue[700],
+                  ),
+                ),
+              ),
+              Text(
+                'Bs. ${totalPagado.toStringAsFixed(2)}',
+                style: TextStyle(
+                  fontWeight: FontWeight.w600,
+                  color: Colors.blue[700],
+                  fontSize: 14,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          ...widget.pagosExistentes.map((pago) {
+            final tipoPagoId = _convertirAInt(pago['tipo_pago_id']);
+            final monto = (pago['monto'] as num?)?.toDouble() ?? 0;
+            final referencia = (pago['referencia'] as String?) ?? '';
+
+            // Buscar nombre del tipo de pago
+            final tipoPagoNombre =
+                _tiposPago.firstWhere(
+                  (tp) => tp['id'] == tipoPagoId,
+                  orElse: () => {'nombre': 'Tipo Pago #$tipoPagoId'},
+                )['nombre'] ??
+                'Desconocido';
+
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 6),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          tipoPagoNombre,
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w500,
+                            color: Colors.grey[800],
+                          ),
+                        ),
+                        if (referencia.isNotEmpty)
+                          Text(
+                            'Ref: $referencia',
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: Colors.grey[600],
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                  Text(
+                    'Bs. ${monto.toStringAsFixed(2)}',
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.blue[700],
+                    ),
+                  ),
+                ],
+              ),
+            );
+          }).toList(),
+        ],
       ),
     );
   }
@@ -1616,64 +1899,10 @@ class _ConfirmarEntregaVentaScreenState
                       ],
                     ),
 
-                  // ✅ CAMBIO 2026-02-13: Solo mostrar formulario de pago si es COMPLETA
-                  if (_tipoEntrega == 'COMPLETA') ...[
-                    // ✅ NUEVA: Formulario para agregar nuevo pago
-                    // Si es a crédito, mostrar aviso; si no, mostrar formulario
-                    if (widget.venta.estadoPago == 'CREDITO')
-                      Container(
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: Colors.orange[50],
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(
-                            color: Colors.orange[300]!,
-                            width: 2,
-                          ),
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              children: [
-                                Icon(
-                                  Icons.info,
-                                  color: Colors.orange[700],
-                                  size: 20,
-                                ),
-                                const SizedBox(width: 8),
-                                Text(
-                                  'Venta a Crédito',
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.orange[900],
-                                    fontSize: AppTextStyles.bodyMedium(
-                                      context,
-                                    ).fontSize!,
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 8),
-                            Text(
-                              'Esta venta es una promesa de pago. El cliente NO paga ahora.',
-                              style: TextStyle(
-                                color: Colors.orange[700],
-                                fontSize: AppTextStyles.bodySmall(
-                                  context,
-                                ).fontSize!,
-                              ),
-                            ),
-                          ],
-                        ),
-                      )
-                    else
-                      _buildPagoForm(isDarkMode: isDarkMode),
-
-                    const SizedBox(height: 24),
-
-                    // ✅ NUEVA: Sección de crédito (checkbox)
-                    _buildSeccionCredito(),
+                  // ✅ CAMBIO 2026-02-13: Solo mostrar formulario de pago si es COMPLETA y NO es crédito
+                  if (_tipoEntrega == 'COMPLETA' && widget.venta.estadoPago != 'CREDITO') ...[
+                    // ✅ Mostrar formulario de pagos SOLO si NO es a crédito
+                    _buildPagoForm(isDarkMode: isDarkMode),
 
                     const SizedBox(height: 24),
                     Text(
@@ -1843,6 +2072,10 @@ class _ConfirmarEntregaVentaScreenState
 
   // PASO 2: Registro de Novedad
   Widget _buildPasoNovedad(BuildContext context, bool isDarkMode) {
+    // ✅ NUEVA 2026-03-05: Detectar si es novedad SIMPLE (solo fotos + observaciones)
+    final esNovedadSimple = _tipoNovedad == 'CLIENTE_CERRADO' || _tipoNovedad == 'RECHAZADO';
+    final fotosObligatorias = _tipoNovedad == 'CLIENTE_CERRADO';
+
     return Column(
       children: [
         Expanded(
@@ -1904,6 +2137,7 @@ class _ConfirmarEntregaVentaScreenState
                                     if (value != null) {
                                       setState(() {
                                         _tipoNovedad = value;
+                                        _tipoConfirmacion = 'CON_NOVEDAD';
                                       });
                                     }
                                   },
@@ -1951,14 +2185,175 @@ class _ConfirmarEntregaVentaScreenState
 
                   const SizedBox(height: 24),
 
-                  // ✅ NUEVA 2026-02-15: Mostrar tabla de productos SOLO para devolución parcial
-                  if (_tipoNovedad == 'DEVOLUCION_PARCIAL')
-                    Column(
-                      children: [
-                        _buildTablaProductosRechazados(isDarkMode: isDarkMode),
-                        const SizedBox(height: 24),
-                      ],
+                  // ✅ NUEVA 2026-03-05: Si es NOVEDAD SIMPLE (CLIENTE_CERRADO o RECHAZADO)
+                  // No mostrar tabla de productos ni resumen de montos
+                  if (!esNovedadSimple) ...[
+                    // ✅ Mostrar tabla de productos SOLO para devolución parcial
+                    if (_tipoNovedad == 'DEVOLUCION_PARCIAL')
+                      Column(
+                        children: [
+                          _buildTablaProductosRechazados(isDarkMode: isDarkMode),
+                          const SizedBox(height: 24),
+                        ],
+                      ),
+
+                    // Resumen de montos (SOLO si NO es novedad simple)
+                    // ✅ NUEVA 2026-03-05: Con total ajustado para DEVOLUCION_PARCIAL
+                    _buildResumenMontos(
+                      _tipoNovedad == 'DEVOLUCION_PARCIAL'
+                          ? (widget.venta.total -
+                                _productosRechazados.fold(
+                                  0.0,
+                                  (sum, p) => sum + p.subtotalRechazado,
+                                ))
+                          : widget.venta.total,
                     ),
+
+                    const SizedBox(height: 24),
+
+                    // ✅ Sección de Pagos SOLO para Devolución Parcial y NO crédito
+                    if (_tipoNovedad == 'DEVOLUCION_PARCIAL' && widget.venta.estadoPago != 'CREDITO') ...[
+                      Text(
+                        '💳 Registrar Pagos (Múltiples Métodos)',
+                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+
+                      // Lista de pagos registrados
+                      if (_pagos.isNotEmpty)
+                        Column(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                color: isDarkMode
+                                    ? Colors.blue[900]!.withOpacity(0.2)
+                                    : Colors.blue.withOpacity(0.05),
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(
+                                  color: isDarkMode
+                                      ? Colors.blue[700]!.withOpacity(0.5)
+                                      : Colors.blue.withOpacity(0.2),
+                                ),
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    '✅ Pagos Registrados (${_pagos.length})',
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.w600,
+                                      fontSize: AppTextStyles.bodyMedium(
+                                        context,
+                                      ).fontSize!,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  ..._pagos.asMap().entries.map((entry) {
+                                    final idx = entry.key;
+                                    final pago = entry.value;
+                                    final tipoNombre =
+                                        _tiposPago.firstWhere(
+                                          (t) => t['id'] == pago.tipoPagoId,
+                                          orElse: () => {'nombre': 'Desconocido'},
+                                        )['nombre'] ??
+                                        'Desconocido';
+
+                                    return Padding(
+                                      padding: const EdgeInsets.only(bottom: 8),
+                                      child: Row(
+                                        children: [
+                                          Expanded(
+                                            child: Column(
+                                              crossAxisAlignment:
+                                                  CrossAxisAlignment.start,
+                                              children: [
+                                                Text(
+                                                  tipoNombre,
+                                                  style: const TextStyle(
+                                                    fontWeight: FontWeight.w500,
+                                                  ),
+                                                ),
+                                                Text(
+                                                  'Bs. ${pago.monto.toStringAsFixed(2)}',
+                                                  style: TextStyle(
+                                                    color: isDarkMode
+                                                        ? Colors.blue[300]
+                                                        : Colors.blue[700],
+                                                    fontWeight: FontWeight.w600,
+                                                  ),
+                                                ),
+                                                if (pago.referencia != null &&
+                                                    pago.referencia!.isNotEmpty)
+                                                  Text(
+                                                    'Ref: ${pago.referencia}',
+                                                    style: TextStyle(
+                                                      fontSize:
+                                                          AppTextStyles.labelSmall(
+                                                            context,
+                                                          ).fontSize!,
+                                                      color: Colors.grey[600],
+                                                    ),
+                                                  ),
+                                              ],
+                                            ),
+                                          ),
+                                          IconButton(
+                                            icon: const Icon(
+                                              Icons.delete_outline,
+                                            ),
+                                            onPressed: () {
+                                              setState(() {
+                                                _pagos.removeAt(idx);
+                                              });
+                                            },
+                                            color: Colors.red,
+                                            tooltip: 'Eliminar pago',
+                                          ),
+                                        ],
+                                      ),
+                                    );
+                                  }).toList(),
+                                  const SizedBox(height: 8),
+                                  Divider(color: Colors.blue.withOpacity(0.3)),
+                                  const SizedBox(height: 8),
+                                  Row(
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Text(
+                                        'Total Recibido:',
+                                        style: const TextStyle(
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                                      Text(
+                                        'Bs. ${_pagos.fold(0.0, (sum, p) => sum + p.monto).toStringAsFixed(2)}',
+                                        style: TextStyle(
+                                          color: Colors.blue[700],
+                                          fontWeight: FontWeight.w700,
+                                          fontSize: AppTextStyles.bodyLarge(
+                                            context,
+                                          ).fontSize!,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(height: 16),
+                          ],
+                        ),
+
+                      // Formulario para agregar nuevo pago
+                      _buildPagoForm(isDarkMode: isDarkMode),
+
+                      const SizedBox(height: 24),
+                    ],
+                  ],
 
                   // Campo de Observaciones
                   Text(
@@ -1987,20 +2382,6 @@ class _ConfirmarEntregaVentaScreenState
                       ),
                       contentPadding: const EdgeInsets.all(12),
                     ),
-                  ),
-
-                  const SizedBox(height: 24),
-
-                  // ✅ NUEVA 2026-02-12: Resumen de montos (también en Novedad)
-                  // ✅ MEJORADA 2026-02-15: Si hay devolución parcial, usar monto entregado
-                  _buildResumenMontos(
-                    _tipoNovedad == 'DEVOLUCION_PARCIAL'
-                        ? (widget.venta.total -
-                              _productosRechazados.fold(
-                                0.0,
-                                (sum, p) => sum + p.subtotalRechazado,
-                              ))
-                        : widget.venta.total,
                   ),
 
                   const SizedBox(height: 24),
@@ -2062,9 +2443,8 @@ class _ConfirmarEntregaVentaScreenState
                               children: [
                                 ClipRRect(
                                   borderRadius: BorderRadius.circular(8),
-                                  child: Image.file(
+                                  child: _construirImagenFoto(
                                     _fotosCapturadas[index],
-                                    fit: BoxFit.cover,
                                   ),
                                 ),
                                 Positioned(
@@ -2109,8 +2489,8 @@ class _ConfirmarEntregaVentaScreenState
 
                   const SizedBox(height: 24),
 
-                  // ✅ NUEVA 2026-02-15: Sección de Pagos SOLO para Devolución Parcial
-                  if (_tipoNovedad == 'DEVOLUCION_PARCIAL') ...[
+                  // ✅ NUEVA 2026-02-15: Sección de Pagos SOLO para Devolución Parcial y NO sea crédito
+                  if (_tipoNovedad == 'DEVOLUCION_PARCIAL' && widget.venta.estadoPago != 'CREDITO') ...[
                     Text(
                       '💳 Registrar Pagos (Múltiples Métodos)',
                       style: Theme.of(context).textTheme.titleMedium?.copyWith(
@@ -2246,62 +2626,10 @@ class _ConfirmarEntregaVentaScreenState
                         ],
                       ),
 
-                    // ✅ NUEVA: Formulario para agregar nuevo pago
-                    // Si es a crédito, mostrar aviso; si no, mostrar formulario
-                    if (widget.venta.estadoPago == 'CREDITO')
-                      Container(
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: Colors.orange[50],
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(
-                            color: Colors.orange[300]!,
-                            width: 2,
-                          ),
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              children: [
-                                Icon(
-                                  Icons.info,
-                                  color: Colors.orange[700],
-                                  size: 20,
-                                ),
-                                const SizedBox(width: 8),
-                                Text(
-                                  'Venta a Crédito',
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.orange[900],
-                                    fontSize: AppTextStyles.bodyMedium(
-                                      context,
-                                    ).fontSize!,
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 8),
-                            Text(
-                              'Esta venta es una promesa de pago. El cliente NO paga ahora.',
-                              style: TextStyle(
-                                color: Colors.orange[700],
-                                fontSize: AppTextStyles.bodySmall(
-                                  context,
-                                ).fontSize!,
-                              ),
-                            ),
-                          ],
-                        ),
-                      )
-                    else
-                      _buildPagoForm(isDarkMode: isDarkMode),
+                    // ✅ Formulario para agregar nuevo pago (SOLO si NO es crédito)
+                    _buildPagoForm(isDarkMode: isDarkMode),
 
                     const SizedBox(height: 24),
-
-                    // ✅ NUEVA: Sección de crédito (checkbox)
-                    _buildSeccionCredito(),
                   ], // ✅ Cierre de if (_tipoNovedad == 'DEVOLUCION_PARCIAL')
                 ],
               ),
@@ -2769,25 +3097,31 @@ class _ConfirmarEntregaVentaScreenState
     );
   }
 
-  /// ✅ MEJORADA 2026-02-15: Resumen de montos de la venta con estados visuales mejorados
+  /// ✅ MEJORADA 2026-03-05: Resumen de montos de la venta con total ajustado para DEVOLUCION_PARCIAL
   Widget _buildResumenMontos(double totalVenta) {
-    // Calcular totales
+    // ✅ NUEVO 2026-03-05: Calcular total ajustado si es DEVOLUCION_PARCIAL
+    double montoRechazado = _tipoNovedad == 'DEVOLUCION_PARCIAL'
+        ? _productosRechazados.fold(0.0, (sum, p) => sum + p.subtotalRechazado)
+        : 0.0;
+    double totalAjustado = totalVenta - montoRechazado;
+
+    // Calcular totales usando el total ajustado
     double totalRecibido = _pagos.fold(0.0, (sum, pago) => sum + pago.monto);
     double montoCredito = _esCredito
-        ? (totalVenta - totalRecibido).clamp(0.0, double.infinity)
+        ? (totalAjustado - totalRecibido).clamp(0.0, double.infinity)
         : 0;
     double totalComprometido = totalRecibido + montoCredito;
     double faltaPorRecibir = _esCredito
         ? 0
-        : (totalVenta - totalRecibido).clamp(0.0, double.infinity);
-    double porcentajePagado = totalVenta > 0
-        ? (totalRecibido / totalVenta * 100)
+        : (totalAjustado - totalRecibido).clamp(0.0, double.infinity);
+    double porcentajePagado = totalAjustado > 0
+        ? (totalRecibido / totalAjustado * 100)
         : 0;
 
-    // Determinar estado
+    // Determinar estado (usando totalAjustado)
     bool estaPerfecto =
-        (totalRecibido + montoCredito) >= totalVenta && totalRecibido > 0;
-    bool esParcial = totalRecibido > 0 && totalRecibido < totalVenta;
+        (totalRecibido + montoCredito) >= totalAjustado && totalRecibido > 0;
+    bool esParcial = totalRecibido > 0 && totalRecibido < totalAjustado;
     bool esCredito = totalRecibido == 0 && _esCredito;
     bool faltaRegistrar = totalRecibido == 0 && !_esCredito;
 
@@ -2904,6 +3238,7 @@ class _ConfirmarEntregaVentaScreenState
           const SizedBox(height: 16),
 
           // Total de la venta (prominente) - mejorado si está pagado
+          // ✅ NUEVO 2026-03-05: Mostrar total ajustado para DEVOLUCION_PARCIAL
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
@@ -2929,15 +3264,30 @@ class _ConfirmarEntregaVentaScreenState
                         fontWeight: FontWeight.w500,
                       ),
                     ),
+                    // Mostrar total original si es DEVOLUCION_PARCIAL
+                    if (montoRechazado > 0)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 4),
+                        child: Text(
+                          'Orig: Bs. ${totalVenta.toStringAsFixed(2)}',
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: Colors.grey[600],
+                            decoration: TextDecoration.lineThrough,
+                          ),
+                        ),
+                      ),
                     const SizedBox(height: 4),
                     Text(
-                      'Bs. ${totalVenta.toStringAsFixed(2)}',
+                      'Bs. ${totalAjustado.toStringAsFixed(2)}',
                       style: TextStyle(
                         fontSize: AppTextStyles.displaySmall(context).fontSize!,
                         fontWeight: FontWeight.w700,
                         color: estaPerfecto
                             ? Colors.green[700]
-                            : Theme.of(context).primaryColor,
+                            : (montoRechazado > 0
+                                ? Colors.green[600]
+                                : Theme.of(context).primaryColor),
                       ),
                     ),
                   ],
@@ -3184,8 +3534,8 @@ class _ConfirmarEntregaVentaScreenState
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(8),
                   child: LinearProgressIndicator(
-                    value: totalVenta > 0
-                        ? (totalRecibido / totalVenta).clamp(0.0, 1.0)
+                    value: totalAjustado > 0
+                        ? (totalRecibido / totalAjustado).clamp(0.0, 1.0)
                         : 0,
                     minHeight: 8,
                     backgroundColor: Colors.grey[300],

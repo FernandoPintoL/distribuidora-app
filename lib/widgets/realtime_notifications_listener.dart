@@ -33,6 +33,8 @@ class _RealtimeNotificationsListenerState
   StreamSubscription? _proformaSubscription;
   StreamSubscription? _envioSubscription;
   StreamSubscription? _entregaSubscription; // ✅ NUEVO para entregas consolidadas
+  StreamSubscription? _cargoSubscription; // ✅ NUEVO para reportes de carga
+  StreamSubscription? _ventaSubscription; // ✅ NUEVO para eventos de ventas
   StreamSubscription? _creditoSubscription; // ✅ NUEVA FASE 3 para créditos
 
   @override
@@ -49,6 +51,8 @@ class _RealtimeNotificationsListenerState
     _proformaSubscription?.cancel();
     _envioSubscription?.cancel();
     _entregaSubscription?.cancel(); // ✅ Cancelar suscripción de entregas
+    _cargoSubscription?.cancel(); // ✅ Cancelar suscripción de carga
+    _ventaSubscription?.cancel(); // ✅ Cancelar suscripción de ventas
     _creditoSubscription?.cancel(); // ✅ Cancelar suscripción de créditos
     super.dispose();
   }
@@ -66,8 +70,9 @@ class _RealtimeNotificationsListenerState
 
       switch (type) {
         case 'created':
-          // No mostrar notificación (el usuario acaba de crear)
-          debugPrint('ℹ️ Proforma creada (sin notificación)');
+          // ✅ NUEVO: Mostrar notificación si NO es el creador
+          // Si el usuario actual es el creador, no mostrar (ya sabe que la creó)
+          _mostrarNotificacionProformaCreada(data);
           break;
         case 'approved':
           // ✅ RESTAURADO: Mostrar notificación cuando proforma es aprobada
@@ -77,6 +82,12 @@ class _RealtimeNotificationsListenerState
         case 'rejected':
           debugPrint('❌ Proforma rechazada - Mostrando notificación');
           _mostrarNotificacionProformaRechazada(data);
+          break;
+        case 'updated':
+        case 'actualizada':
+          // ✅ NUEVO: Mostrar notificación cuando proforma es actualizada
+          debugPrint('📝 Proforma actualizada - Mostrando notificación');
+          _mostrarNotificacionProformaActualizada(data);
           break;
         case 'converted':
           // ✅ NUEVO: Escuchar evento de conversión que incluye cliente_nombre y venta_id
@@ -116,8 +127,58 @@ class _RealtimeNotificationsListenerState
       final data = event['data'] as Map<String, dynamic>;
 
       switch (type) {
+        case 'creada':
+          // ✅ NUEVO: Mostrar notificación cuando se crea una entrega consolidada
+          debugPrint('🚚 Entrega consolidada creada - Mostrando notificación');
+          _mostrarNotificacionEntregaCreada(data);
+          break;
         case 'asignada':
           _mostrarNotificacionEntregaAsignada(data);
+          break;
+        case 'venta_asignada':
+          // ✅ NUEVO: Mostrar notificación cuando venta es asignada a entrega
+          debugPrint('📦 Venta asignada a entrega - Mostrando notificación');
+          _mostrarNotificacionVentaAsignadaAEntrega(data);
+          break;
+      }
+    });
+
+    // ✅ NUEVO: Escuchar eventos de carga (reportes de carga)
+    _cargoSubscription = _webSocketService.cargoStream.listen((event) {
+      final type = event['type'] as String;
+      final data = event['data'] as Map<String, dynamic>;
+
+      switch (type) {
+        case 'reporte_generado':
+          // ✅ NUEVO: Mostrar notificación cuando se genera un reporte de carga
+          debugPrint('📋 Reporte de carga generado - Mostrando notificación');
+          _mostrarNotificacionReporteCargoGenerado(data);
+          break;
+      }
+    });
+
+    // ✅ NUEVO: Escuchar eventos de ventas (tracking logístico)
+    _ventaSubscription = _webSocketService.ventaStream.listen((event) {
+      final type = event['type'] as String;
+      final data = event['data'] as Map<String, dynamic>;
+
+      switch (type) {
+        case 'estado_cambio':
+          // ✅ NUEVO: Mostrar notificación cuando estado de venta cambia
+          debugPrint('📊 Venta cambió estado - Mostrando notificación');
+          _mostrarNotificacionVentaEstadoCambio(data);
+          break;
+        case 'en_transito':
+          _mostrarNotificacionVentaEnTransito(data);
+          break;
+        case 'entregada':
+          _mostrarNotificacionVentaEntregada(data);
+          break;
+        case 'preparacion_carga':
+          _mostrarNotificacionVentaPreparacionCarga(data);
+          break;
+        case 'listo_para_entrega':
+          _mostrarNotificacionVentaListoParaEntrega(data);
           break;
       }
     });
@@ -142,6 +203,52 @@ class _RealtimeNotificationsListenerState
   }
 
   // ✅ Mostrar notificación cuando una proforma es APROBADA desde el panel
+  // ✅ NUEVO: Mostrar notificación cuando se crea una proforma
+  void _mostrarNotificacionProformaCreada(Map<String, dynamic> data) {
+    final numero = data['numero'] as String?;
+    final proformaNumero = data['proforma_numero'] as String? ?? numero;
+    final clientName = data['cliente']?['nombre'] as String? ??
+        data['cliente_nombre'] as String?;
+    final total = data['total'] as num?;
+
+    if (!mounted) return;
+
+    // ✅ Mostrar notificación NATIVA del sistema
+    if (proformaNumero != null) {
+      _notificationService.showProformaCreatedNotification(
+        numero: proformaNumero,
+        clientName: clientName,
+        total: total?.toDouble() ?? 0,
+      );
+    }
+
+    // ✅ Recargar solo las estadísticas (contador)
+    context.read<NotificationProvider>().loadStats();
+  }
+
+  // ✅ NUEVO: Mostrar notificación cuando se actualiza una proforma
+  void _mostrarNotificacionProformaActualizada(Map<String, dynamic> data) {
+    final numero = data['numero'] as String?;
+    final proformaNumero = data['proforma_numero'] as String? ?? numero;
+    final clientName = data['cliente']?['nombre'] as String? ??
+        data['cliente_nombre'] as String?;
+    final total = data['total'] as num?;
+
+    if (!mounted) return;
+
+    // ✅ Mostrar notificación NATIVA del sistema
+    if (proformaNumero != null) {
+      _notificationService.showProformaUpdatedNotification(
+        numero: proformaNumero,
+        clientName: clientName,
+        total: total?.toDouble() ?? 0,
+      );
+    }
+
+    // ✅ Recargar solo las estadísticas (contador)
+    context.read<NotificationProvider>().loadStats();
+  }
+
   void _mostrarNotificacionProformaAprobada(Map<String, dynamic> data) {
     final numero = data['numero'] as String?;
     final clientName = data['cliente_nombre'] as String?;
@@ -166,7 +273,8 @@ class _RealtimeNotificationsListenerState
 
     if (!mounted) return;
 
-    // ✅ Mostrar notificación NATIVA del sistema
+    // ✅ Mostrar SOLO notificación NATIVA del sistema
+    // No mostrar snackbar (la notificación nativa es suficiente)
     if (numero != null) {
       _notificationService.showProformaRejectedNotification(
         numero: numero,
@@ -174,53 +282,15 @@ class _RealtimeNotificationsListenerState
       );
     }
 
-    // ✅ Recargar solo las estadísticas (contador) sin cargar todas las notificaciones
+    // ✅ Recargar solo las estadísticas (contador)
     context.read<NotificationProvider>().loadStats();
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Row(
-          children: [
-            const Icon(Icons.cancel, color: Colors.white, size: 24),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Text(
-                    'Proforma Rechazada',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16,
-                    ),
-                  ),
-                  if (numero != null) Text('Proforma $numero'),
-                  if (motivo != null)
-                    Text(
-                      motivo,
-                      style: const TextStyle(fontSize: 12),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                ],
-              ),
-            ),
-          ],
-        ),
-        backgroundColor: Colors.red,
-        duration: const Duration(seconds: 6),
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
   }
 
   void _mostrarNotificacionProformaConvertida(Map<String, dynamic> data) {
     // ✅ NUEVO: Extraer datos completos del evento de conversión
     final proformaNumero = data['proforma_numero'] as String?;
-    final ventaNumero = data['venta_numero'] as String?;
-    final clienteNombre = data['cliente_nombre'] as String?;
     final ventaId = data['venta_id'] as int?;
+    final clienteNombre = data['cliente_nombre'] as String?;
 
     if (!mounted) return;
 
@@ -229,7 +299,7 @@ class _RealtimeNotificationsListenerState
       // Pasar todos los datos a la notificación
       _notificationService.showProformaConvertedNotification(
         numero: proformaNumero,
-        ventaNumero: ventaNumero,
+        ventaId: ventaId,
         clientName: clienteNombre,
       );
     }
@@ -500,12 +570,93 @@ class _RealtimeNotificationsListenerState
 
     // ✅ Recargar estadísticas
     context.read<NotificationProvider>().loadStats();
+  }
 
+  /// ✅ NUEVO: Mostrar notificación de entrega consolidada creada
+  void _mostrarNotificacionEntregaCreada(Map<String, dynamic> data) {
+    final entregaId = data['entrega_id'] as int?;
+    final entregaNumero = data['entrega_numero'] as String?;
+    final estado = data['estado'] as String?;
+    final choferNombre = data['chofer_nombre'] as String?;
+    final vehiculoPlaca = data['vehiculo_placa'] as String?;
+    final ventasCount = data['ventas_count'] as int?;
+
+    if (!mounted) return;
+
+    // ✅ Mostrar notificación NATIVA del sistema
+    if (entregaId != null && entregaNumero != null) {
+      _notificationService.showEntregaCreatedNotification(
+        entregaId: entregaId,
+        numeroEntrega: entregaNumero,
+        choferNombre: choferNombre,
+        vehiculoPlaca: vehiculoPlaca,
+        ventasCount: ventasCount,
+      );
+    }
+
+    // ✅ Recargar estadísticas
+    context.read<NotificationProvider>().loadStats();
+  }
+
+  /// ✅ NUEVO: Mostrar notificación de venta asignada a entrega
+  void _mostrarNotificacionVentaAsignadaAEntrega(Map<String, dynamic> data) {
+    final ventaId = data['venta_id'] as int?;
+    final entregaId = data['entrega_id'] as int?;
+    final clienteNombre = data['cliente_nombre'] as String?;
+    final choferNombre = data['chofer_nombre'] as String?;
+    final vehiculoPlaca = data['vehiculo_placa'] as String?;
+
+    if (!mounted) return;
+
+    // ✅ Mostrar notificación NATIVA del sistema
+    if (ventaId != null && entregaId != null) {
+      _notificationService.showVentaAsignadaAEntregaNotification(
+        ventaId: ventaId,
+        entregaId: entregaId,
+        clientName: clienteNombre,
+        choferName: choferNombre,
+        vehiculoPlaca: vehiculoPlaca,
+      );
+    }
+
+    // ✅ Recargar estadísticas
+    context.read<NotificationProvider>().loadStats();
+  }
+
+  /// ✅ NUEVO: Mostrar notificación de reporte de carga generado
+  void _mostrarNotificacionReporteCargoGenerado(Map<String, dynamic> data) {
+    final entregaId = data['entrega_id'] as int?;
+    final entregaNumero = data['entrega_numero'] as String?;
+    final reporteId = data['reporte_id'] as int?;
+    final reporteNumero = data['reporte_numero'] as String?;
+    final estado = data['estado'] as String?;
+    final choferNombre = data['chofer_nombre'] as String?;
+    final vehiculoPlaca = data['vehiculo_placa'] as String?;
+    final ventasCount = data['ventas_count'] as int?;
+
+    if (!mounted) return;
+
+    // ✅ Mostrar notificación NATIVA del sistema
+    if (reporteId != null && reporteNumero != null) {
+      _notificationService.showReporteCargoGeneradoNotification(
+        reporteId: reporteId,
+        reporteNumero: reporteNumero,
+        entregaNumero: entregaNumero,
+        choferNombre: choferNombre,
+        vehiculoPlaca: vehiculoPlaca,
+        ventasCount: ventasCount,
+      );
+    }
+
+    // ✅ Recargar estadísticas
+    context.read<NotificationProvider>().loadStats();
+
+    // ✅ Mostrar snackbar para UI
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Row(
           children: [
-            const Icon(Icons.local_shipping, color: Colors.white, size: 24),
+            const Icon(Icons.assignment, color: Colors.white, size: 24),
             const SizedBox(width: 12),
             Expanded(
               child: Column(
@@ -513,38 +664,26 @@ class _RealtimeNotificationsListenerState
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   const Text(
-                    '🚚 ¡Nueva Entrega Asignada!',
+                    '📋 Reporte de Carga Generado',
                     style: TextStyle(
                       fontWeight: FontWeight.bold,
                       fontSize: 16,
                     ),
                   ),
-                  if (numeroEntrega != null)
-                    Text('Entrega: $numeroEntrega'),
-                  if (pesoKg != null)
-                    Text('Peso: ${pesoKg.toStringAsFixed(1)} kg'),
-                  if (vehiculoPlaca != null)
-                    Text('Vehículo: $vehiculoPlaca'),
-                  const SizedBox(height: 4),
-                  const Text(
-                    'Por favor inicia la carga de mercadería',
-                    style: TextStyle(fontSize: 12),
-                  ),
+                  if (reporteNumero != null)
+                    Text('Reporte: $reporteNumero'),
+                  if (entregaNumero != null)
+                    Text('Entrega: $entregaNumero'),
+                  if (ventasCount != null)
+                    Text('Ventas cargadas: $ventasCount'),
                 ],
               ),
             ),
           ],
         ),
         backgroundColor: Colors.green,
-        duration: const Duration(seconds: 7),
+        duration: const Duration(seconds: 6),
         behavior: SnackBarBehavior.floating,
-        action: SnackBarAction(
-          label: 'VER',
-          textColor: Colors.white,
-          onPressed: () {
-            // TODO: Navegar a pantalla de carga de entrega
-          },
-        ),
       ),
     );
   }
@@ -727,6 +866,138 @@ class _RealtimeNotificationsListenerState
         behavior: SnackBarBehavior.floating,
       ),
     );
+  }
+
+  /// ✅ NUEVO: Mostrar notificación cuando estado de venta cambia
+  /// ✅ Actualizado: Incluye ID de venta (Folio) y entrega asignada
+  void _mostrarNotificacionVentaEstadoCambio(Map<String, dynamic> data) {
+    final ventaNumero = data['venta_numero'] as String?;
+    final ventaId = data['venta_id'] as int?;
+    final estadoNuevo = data['estado_nuevo'] as Map<String, dynamic>?;
+    final clienteNombre = data['cliente_nombre'] as String?;
+
+    // ✅ NUEVO: Obtener información de entrega asignada
+    final entrega = data['entrega'] as Map<String, dynamic>?;
+    final entregaId = entrega?['id'] as int?;
+    final entregaNumero = entrega?['numero_entrega'] as String?;
+
+    if (!mounted) return;
+
+    final estadoLabel = estadoNuevo?['nombre'] as String? ?? 'Cambió estado';
+    final stateEmoji = _getEstadoEmoji(estadoNuevo?['codigo'] as String? ?? '');
+
+    // ✅ Mostrar notificación NATIVA del sistema
+    if (ventaNumero != null) {
+      _notificationService.showVentaEstadoCambioNotification(
+        ventaNumero: ventaNumero,
+        ventaId: ventaId ?? 0,  // Usar 0 como fallback si no viene el ID
+        nuevoEstado: estadoLabel,
+        clienteNombre: clienteNombre,
+        entregaId: entregaId,  // ✅ NUEVO: Pasar ID de entrega
+        entregaNumero: entregaNumero,  // ✅ NUEVO: Pasar número de entrega
+      );
+    }
+
+    // ✅ Recargar estadísticas
+    context.read<NotificationProvider>().loadStats();
+  }
+
+  /// ✅ NUEVO: Mostrar notificación cuando venta entra en tránsito
+  void _mostrarNotificacionVentaEnTransito(Map<String, dynamic> data) {
+    final ventaNumero = data['venta_numero'] as String?;
+    final clienteNombre = data['cliente_nombre'] as String?;
+
+    if (!mounted) return;
+
+    // ✅ Mostrar notificación NATIVA del sistema
+    if (ventaNumero != null) {
+      _notificationService.showVentaEnTransitoNotification(
+        ventaNumero: ventaNumero,
+        clienteNombre: clienteNombre,
+      );
+    }
+
+    // ✅ Recargar estadísticas
+    context.read<NotificationProvider>().loadStats();
+  }
+
+  /// ✅ NUEVO: Mostrar notificación cuando venta es entregada
+  void _mostrarNotificacionVentaEntregada(Map<String, dynamic> data) {
+    final ventaNumero = data['venta_numero'] as String?;
+    final clienteNombre = data['cliente_nombre'] as String?;
+
+    if (!mounted) return;
+
+    // ✅ Mostrar notificación NATIVA del sistema
+    if (ventaNumero != null) {
+      _notificationService.showVentaEntregadaNotification(
+        ventaNumero: ventaNumero,
+        clienteNombre: clienteNombre,
+      );
+    }
+
+    // ✅ Recargar estadísticas
+    context.read<NotificationProvider>().loadStats();
+  }
+
+  /// ✅ NUEVO: Mostrar notificación cuando venta entra en preparación de carga
+  void _mostrarNotificacionVentaPreparacionCarga(Map<String, dynamic> data) {
+    final ventaNumero = data['venta_numero'] as String?;
+    final clienteNombre = data['cliente_nombre'] as String?;
+
+    if (!mounted) return;
+
+    // ✅ Mostrar notificación NATIVA del sistema
+    if (ventaNumero != null) {
+      _notificationService.showVentaPreparacionCargaNotification(
+        ventaNumero: ventaNumero,
+        clienteNombre: clienteNombre,
+      );
+    }
+
+    // ✅ Recargar estadísticas
+    context.read<NotificationProvider>().loadStats();
+  }
+
+  /// ✅ NUEVO: Mostrar notificación cuando venta está lista para entrega
+  void _mostrarNotificacionVentaListoParaEntrega(Map<String, dynamic> data) {
+    final ventaNumero = data['venta_numero'] as String?;
+    final clienteNombre = data['cliente_nombre'] as String?;
+
+    if (!mounted) return;
+
+    // ✅ Mostrar notificación NATIVA del sistema
+    if (ventaNumero != null) {
+      _notificationService.showVentaListoParaEntregaNotification(
+        ventaNumero: ventaNumero,
+        clienteNombre: clienteNombre,
+      );
+    }
+
+    // ✅ Recargar estadísticas
+    context.read<NotificationProvider>().loadStats();
+  }
+
+  /// ✅ Helper: Obtener emoji según estado
+  String _getEstadoEmoji(String estado) {
+    switch (estado) {
+      case 'PENDIENTE_PAGO':
+        return '💰';
+      case 'PAGADA':
+        return '✅';
+      case 'EN_PREPARACION':
+        return '📦';
+      case 'PENDIENTE_ENVIO':
+        return '🚚';
+      case 'EN_TRANSITO':
+        return '📍';
+      case 'ENTREGADA':
+        return '✅';
+      case 'CANCELADA':
+        return '❌';
+      default:
+        return '📊';
+    }
   }
 
   @override

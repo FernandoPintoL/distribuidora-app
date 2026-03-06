@@ -556,24 +556,61 @@ class ProformaService {
     required int proformaId,
     required int clienteId,
     required List<Map<String, dynamic>> items,
+    required String tipoEntrega,
+    required DateTime fechaProgramada,
+    int? direccionId,
+    TimeOfDay? horaInicio,
+    TimeOfDay? horaFin,
     String? observaciones,
+    String politicaPago = 'CONTRA_ENTREGA',
   }) async {
     try {
       debugPrint('📝 Actualizando proforma #$proformaId');
 
+      // Preparar el cuerpo de la petición
+      final Map<String, dynamic> requestBody = {
+        'cliente_id': clienteId,
+        'productos': items,
+        'tipo_entrega': tipoEntrega,
+        'fecha_programada': fechaProgramada.toIso8601String(),
+        'politica_pago': politicaPago,
+      };
+
+      // Agregar dirección SOLO si es DELIVERY
+      if (tipoEntrega == 'DELIVERY' && direccionId != null) {
+        requestBody['direccion_entrega_solicitada_id'] = direccionId;
+      }
+
+      // Agregar campos opcionales si están presentes
+      if (horaInicio != null) {
+        requestBody['hora_inicio_preferida'] =
+            '${horaInicio.hour.toString().padLeft(2, '0')}:${horaInicio.minute.toString().padLeft(2, '0')}';
+      }
+
+      if (horaFin != null) {
+        requestBody['hora_fin_preferida'] =
+            '${horaFin.hour.toString().padLeft(2, '0')}:${horaFin.minute.toString().padLeft(2, '0')}';
+      }
+
+      if (observaciones != null && observaciones.isNotEmpty) {
+        requestBody['observaciones'] = observaciones;
+      }
+
       final response = await _apiService.put(
         '/proformas/$proformaId',
-        data: {
-          'cliente_id': clienteId,
-          'items': items,
-          'observaciones': observaciones,
-        },
+        data: requestBody,
       );
 
       final Map<String, dynamic> responseData = response.data as Map<String, dynamic>;
 
       if (responseData['success'] == true && responseData['data'] != null) {
-        final proforma = Pedido.fromJson(responseData['data'] as Map<String, dynamic>);
+        // Backend wraps proforma data inside data.proforma
+        final proformaData = responseData['data'] is Map<String, dynamic> &&
+                (responseData['data'] as Map<String, dynamic>).containsKey('proforma')
+            ? (responseData['data'] as Map<String, dynamic>)['proforma']
+            : responseData['data'];
+
+        final proforma = Pedido.fromJson(proformaData as Map<String, dynamic>);
 
         debugPrint('✅ Proforma actualizada: ${proforma.numero}');
         return ApiResponse<Pedido>(

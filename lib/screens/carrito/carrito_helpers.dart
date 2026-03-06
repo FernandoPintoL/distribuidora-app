@@ -181,17 +181,14 @@ void continuarCompra(BuildContext context) async {
     carritoProvider.setClienteSeleccionado(cliente);
     debugPrint('✅ [CarritoScreen] Cliente cargado en provider: ${cliente.nombre}');
 
-    // ✅ ACTUALIZADO: Navegar según tipo de usuario
-    // - Preventista: Navega a /proforma-creacion (nuevo flujo con combos)
-    // - Cliente: Navega a /resumen-pedido (flujo tradicional)
+    // ✅ ACTUALIZADO: Navegar a ResumenPedidoScreen unificada
+    // - Ambos (Preventista y Cliente) usan la misma pantalla
+    // - La pantalla adapta su UI/lógica según el rol del usuario
     if (context.mounted) {
-      if (isPreventista) {
-        debugPrint('🎯 Preventista detectado, navegando a pantalla de creación de proforma');
-        Navigator.pushNamed(context, '/proforma-creacion');
-      } else {
-        debugPrint('🎯 Cliente detectado, navegando a resumen de pedido');
-        Navigator.pushNamed(context, '/resumen-pedido');
-      }
+      debugPrint(
+        '🎯 Navegando a resumen de pedido (Preventista: $isPreventista)',
+      );
+      Navigator.pushNamed(context, '/resumen-pedido');
     }
   } catch (e) {
     debugPrint('❌ Error al cargar cliente en continuarCompra: $e');

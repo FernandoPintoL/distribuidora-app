@@ -1111,6 +1111,11 @@ class EntregaProvider with ChangeNotifier, EntregaTrackingMixin {
     String? tipoConfirmacion,  // COMPLETA o CON_NOVEDAD
     // ✅ NUEVA 2026-02-15: Productos rechazados en devolución parcial
     List<Map<String, dynamic>>? productosRechazados,  // Array de {detalle_venta_id, nombre_producto, cantidad, precio_unitario, subtotal}
+    // ✅ NUEVA 2026-03-05: Campos de novedad
+    String? tipoNovedad,  // CLIENTE_CERRADO, DEVOLUCION_PARCIAL, RECHAZADO, NO_CONTACTADO
+    bool? tiendaAbierta,
+    bool? clientePresente,
+    String? motivoRechazo,
   }) async {
     _isLoading = true;
     _errorMessage = null;
@@ -1138,6 +1143,11 @@ class EntregaProvider with ChangeNotifier, EntregaTrackingMixin {
         tipoConfirmacion: tipoConfirmacion,  // COMPLETA o CON_NOVEDAD
         // ✅ NUEVA 2026-02-15: Productos rechazados en devolución parcial
         productosRechazados: productosRechazados,  // Array de productos rechazados
+        // ✅ NUEVA 2026-03-05: Campos de novedad
+        tipoNovedad: tipoNovedad,
+        tiendaAbierta: tiendaAbierta,
+        clientePresente: clientePresente,
+        motivoRechazo: motivoRechazo,
       );
 
       if (response.success) {
@@ -1706,5 +1716,10 @@ class EntregaProvider with ChangeNotifier, EntregaTrackingMixin {
       _isLoading = false;
       notifyListeners();
     }
+  }
+
+  // ✅ NUEVO 2026-03-05: Método para obtener resumen de pagos de una entrega
+  Future<ApiResponse<Map<String, dynamic>>> obtenerResumenPagos(int entregaId) async {
+    return await _entregaService.obtenerResumenPagos(entregaId);
   }
 }

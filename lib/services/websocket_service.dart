@@ -234,6 +234,15 @@ class WebSocketService {
       _handleEvent(WebSocketConfig.eventProformaApproved, data);
     });
 
+    _socket!.on(WebSocketConfig.eventProformaUpdated, (data) {
+      debugPrint('📝 Proforma actualizada: $data');
+      _proformaController.add({
+        'type': 'updated',
+        'data': data,
+      });
+      _handleEvent(WebSocketConfig.eventProformaUpdated, data);
+    });
+
     _socket!.on(WebSocketConfig.eventProformaRejected, (data) {
       debugPrint('❌ Proforma rechazada: $data');
       _proformaController.add({
@@ -368,6 +377,62 @@ class WebSocketService {
         'data': data,
       });
       _handleEvent(WebSocketConfig.eventEntregaRechazada, data);
+    });
+
+    // ✅ NUEVO: Evento entrega consolidada creada
+    _socket!.on(WebSocketConfig.eventEntregaCreada, (data) {
+      debugPrint('🚚 NUEVA ENTREGA CONSOLIDADA CREADA');
+      debugPrint('   Entrega ID: ${data['entrega_id']}');
+      debugPrint('   Número: ${data['entrega_numero']}');
+      debugPrint('   Chofer: ${data['chofer_nombre']}');
+      debugPrint('   Vehículo: ${data['vehiculo_placa']}');
+      debugPrint('   Cantidad Ventas: ${data['ventas_count']}');
+      _entregaController.add({
+        'type': 'creada',
+        'data': data,
+      });
+      _handleEvent(WebSocketConfig.eventEntregaCreada, data);
+    });
+
+    // ✅ NUEVO: Evento cambio de estado de entrega
+    _socket!.on(WebSocketConfig.eventEntregaEstadoCambio, (data) {
+      debugPrint('📊 ENTREGA CAMBIO DE ESTADO');
+      debugPrint('   Entrega ID: ${data['entrega_id']}');
+      debugPrint('   Número: ${data['numero_entrega']}');
+      debugPrint('   Estado Nuevo: ${data['estado_nuevo']}');
+      debugPrint('   Chofer: ${data['chofer']?['nombre']}');
+      debugPrint('   Cantidad Ventas: ${data['cantidad_ventas']}');
+      debugPrint('   Monto Total: ${data['monto_total']}');
+      _entregaController.add({
+        'type': 'estado_cambio',
+        'data': data,
+      });
+      _handleEvent(WebSocketConfig.eventEntregaEstadoCambio, data);
+    });
+
+    // ✅ NUEVO: Evento venta asignada a entrega
+    _socket!.on(WebSocketConfig.eventVentaAsignadaEntrega, (data) {
+      debugPrint('📦 Venta asignada a entrega: Folio ${data['venta_id']} → Entrega ${data['entrega_id']}');
+      _entregaController.add({
+        'type': 'venta_asignada',
+        'data': data,
+      });
+      _handleEvent(WebSocketConfig.eventVentaAsignadaEntrega, data);
+    });
+
+    // ✅ NUEVO: Evento reporte de carga generado
+    _socket!.on(WebSocketConfig.eventReporteCargoGenerado, (data) {
+      debugPrint('📋 REPORTE DE CARGA GENERADO');
+      debugPrint('   Entrega ID: ${data['entrega_id']}');
+      debugPrint('   Entrega Número: ${data['entrega_numero']}');
+      debugPrint('   Reporte ID: ${data['reporte_id']}');
+      debugPrint('   Reporte Número: ${data['reporte_numero']}');
+      debugPrint('   Cantidad Ventas: ${data['ventas_count']}');
+      _cargoController.add({
+        'type': 'reporte_generado',
+        'data': data,
+      });
+      _handleEvent(WebSocketConfig.eventReporteCargoGenerado, data);
     });
 
     // Eventos de Rutas (nuevos)

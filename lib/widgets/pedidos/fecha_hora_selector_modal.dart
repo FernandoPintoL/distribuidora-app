@@ -9,6 +9,7 @@ class FechaHoraSelectorModal extends StatefulWidget {
   final TimeOfDay? horaInicioInicial;
   final TimeOfDay? horaFinInicial;
   final String? observacionesInicial;
+  final bool esPreventista;
 
   const FechaHoraSelectorModal({
     super.key,
@@ -16,6 +17,7 @@ class FechaHoraSelectorModal extends StatefulWidget {
     this.horaInicioInicial,
     this.horaFinInicial,
     this.observacionesInicial,
+    this.esPreventista = false,
   });
 
   @override
@@ -27,6 +29,7 @@ class _FechaHoraSelectorModalState extends State<FechaHoraSelectorModal> {
   late TimeOfDay? _horaInicio;
   late TimeOfDay? _horaFin;
   late TextEditingController _observacionesController;
+  late bool _usarFechaPersonalizada;
 
   @override
   void initState() {
@@ -39,6 +42,20 @@ class _FechaHoraSelectorModalState extends State<FechaHoraSelectorModal> {
     _horaFin = widget.horaFinInicial ?? const TimeOfDay(hour: 17, minute: 0);
     _observacionesController =
         TextEditingController(text: widget.observacionesInicial ?? '');
+
+    // ✅ Determinar si la fecha seleccionada es personalizada (no es hoy/mañana/lunes)
+    _usarFechaPersonalizada = _fechaSeleccionada != null
+        ? !_esFechaEstandar(_fechaSeleccionada!)
+        : false;
+  }
+
+  // ✅ Verificar si la fecha es estándar (Hoy, Mañana o Lunes)
+  bool _esFechaEstandar(DateTime fecha) {
+    final fechasDisponibles = _obtenerFechasDisponibles();
+    return fechasDisponibles.values.any((f) =>
+        f.year == fecha.year &&
+        f.month == fecha.month &&
+        f.day == fecha.day);
   }
 
   @override
@@ -142,6 +159,22 @@ class _FechaHoraSelectorModalState extends State<FechaHoraSelectorModal> {
                 ),
               );
             }).toList(),
+            // ✅ Botón para fecha personalizada (solo si es preventista)
+            if (widget.esPreventista) ...[
+              const SizedBox(height: 12),
+              ElevatedButton.icon(
+                onPressed: () async {
+                  Navigator.pop(context);
+                  await _seleccionarFechaPersonalizada();
+                },
+                icon: const Icon(Icons.edit_calendar),
+                label: const Text('Otra fecha'),
+                style: ElevatedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  backgroundColor: colorScheme.tertiary.withOpacity(0.3),
+                ),
+              ),
+            ],
           ],
         ),
         actions: [
@@ -156,6 +189,25 @@ class _FechaHoraSelectorModalState extends State<FechaHoraSelectorModal> {
     if (resultado != null) {
       setState(() {
         _fechaSeleccionada = resultado;
+        _usarFechaPersonalizada = false;
+      });
+    }
+  }
+
+  // ✅ Seleccionar fecha personalizada (solo preventistas)
+  Future<void> _seleccionarFechaPersonalizada() async {
+    final DateTime? picked = await showDatePicker(
+      context: context,
+      initialDate: _fechaSeleccionada ?? DateTime.now(),
+      firstDate: DateTime.now(),
+      lastDate: DateTime.now().add(const Duration(days: 365)),
+      helpText: 'Selecciona una fecha personalizada',
+    );
+
+    if (picked != null && mounted) {
+      setState(() {
+        _fechaSeleccionada = picked;
+        _usarFechaPersonalizada = true;
       });
     }
   }
@@ -313,16 +365,52 @@ class _FechaHoraSelectorModalState extends State<FechaHoraSelectorModal> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     // Seleccionar Fecha
-                    Text(
-                      'Fecha',
-                      style: context.textTheme.bodyMedium?.copyWith(
-                        fontWeight: FontWeight.w600,
-                        color: colorScheme.onSurface,
-                      ),
+                    Row(
+                      children: [
+                        Text(
+                          'Fecha',
+                          style: context.textTheme.bodyMedium?.copyWith(
+                            fontWeight: FontWeight.w600,
+                            color: colorScheme.onSurface,
+                          ),
+                        ),
+                        const Spacer(),
+                        // ✅ Toggle para fecha personalizada (solo preventistas)
+                        if (widget.esPreventista)
+                          Row(
+                            children: [
+                              Text(
+                                'Otra fecha',
+                                style: context.textTheme.bodySmall?.copyWith(
+                                  color: colorScheme.onSurfaceVariant,
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Switch(
+                                value: _usarFechaPersonalizada,
+                                onChanged: (value) {
+                                  setState(() {
+                                    _usarFechaPersonalizada = value;
+                                    if (value) {
+                                      _seleccionarFechaPersonalizada();
+                                    } else {
+                                      // Volver a la primera fecha estándar (hoy)
+                                      final now = DateTime.now();
+                                      _fechaSeleccionada =
+                                          DateTime(now.year, now.month, now.day);
+                                    }
+                                  });
+                                },
+                              ),
+                            ],
+                          ),
+                      ],
                     ),
                     const SizedBox(height: 8),
                     GestureDetector(
-                      onTap: _seleccionarFecha,
+                      onTap: _usarFechaPersonalizada
+                          ? _seleccionarFechaPersonalizada
+                          : _seleccionarFecha,
                       child: Card(
                         color: colorScheme.surfaceVariant,
                         shape: RoundedRectangleBorder(

@@ -59,16 +59,9 @@ void mostrarDialogoAnularProforma(BuildContext context, Pedido proforma) {
               motivo,
             );
 
-            if (result) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(
-                    'Proforma #${proforma.numero} anulada exitosamente',
-                  ),
-                  backgroundColor: Colors.green,
-                ),
-              );
-            } else {
+            // ✅ No mostrar snackbar en caso de éxito
+            // La notificación nativa será mostrada por el listener de WebSocket
+            if (!result) {
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
                   content: Text(

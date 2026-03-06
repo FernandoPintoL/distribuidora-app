@@ -30,6 +30,7 @@ class Venta {
   final double? latitud; // Latitud de entrega
   final double? longitud; // Longitud de entrega
   final String? direccion; // Dirección de entrega completa
+  final String? direccionObservaciones; // ✅ NUEVO 2026-03-05: Observaciones de la dirección
 
   // ✅ NUEVO: Campos de pago y origen
   final String? canalOrigen; // Canal de venta: PRESENCIAL, ONLINE, etc.
@@ -40,6 +41,9 @@ class Venta {
   final int? entregaId; // ID de la entrega asignada a esta venta
   final String? numeroEntrega; // Número de entrega (ej: ENT-20260217-001)
   final String? estadoEntrega; // Estado de la entrega (ASIGNADA, EN_CAMINO, ENTREGADO, etc)
+  final String? tipoEntrega; // ✅ NUEVO (2026-03-05): Tipo de entrega (COMPLETA, CON_NOVEDAD)
+  final String? tipoNovedad; // ✅ NUEVO (2026-03-05): Tipo de novedad (CLIENTE_CERRADO, DEVOLUCION_PARCIAL, etc)
+  final List<Map<String, dynamic>> confirmaciones; // ✅ NUEVO (2026-03-05): Confirmaciones de entrega
 
   Venta({
     required this.id,
@@ -67,12 +71,16 @@ class Venta {
     this.latitud,
     this.longitud,
     this.direccion,
+    this.direccionObservaciones, // ✅ NUEVO
     this.canalOrigen,
     this.politicaPago,
     this.tipoPago,
     this.entregaId,
     this.numeroEntrega,
     this.estadoEntrega,
+    this.tipoEntrega, // ✅ NUEVO
+    this.tipoNovedad, // ✅ NUEVO
+    this.confirmaciones = const [], // ✅ NUEVO
   });
 
   factory Venta.fromJson(Map<String, dynamic> json) {
@@ -154,11 +162,13 @@ class Venta {
       dirCliente = json['direccion_cliente'] as Map<String, dynamic>;
     }
 
+    String? direccionObservacionesValue;
     if (dirCliente != null) {
       latEntrega = (dirCliente['latitud'] as num?)?.toDouble();
       lngEntrega = (dirCliente['longitud'] as num?)?.toDouble();
       direccionEntrega = dirCliente['direccion'] as String?;
-      // print('[VENTA_PARSE] direccionCliente encontrada: lat=$latEntrega, lng=$lngEntrega, dir=$direccionEntrega');
+      direccionObservacionesValue = dirCliente['observaciones'] as String?; // ✅ NUEVO 2026-03-05
+      // print('[VENTA_PARSE] direccionCliente encontrada: lat=$latEntrega, lng=$lngEntrega, dir=$direccionEntrega, obs=$direccionObservacionesValue');
     } else {
       // print('[VENTA_PARSE] NO se encontró direccionCliente en JSON. Keys: ${json.keys.toList()}');
     }
@@ -205,12 +215,36 @@ class Venta {
       latitud: latEntrega,
       longitud: lngEntrega,
       direccion: direccionEntrega,
+      direccionObservaciones: direccionObservacionesValue, // ✅ NUEVO 2026-03-05
       canalOrigen: json['canal_origen'] as String?,
       politicaPago: json['politica_pago'] as String?,
       tipoPago: tipoPago,
       entregaId: json['entrega_id'] as int?,
       numeroEntrega: json['numero_entrega'] as String?,
-      estadoEntrega: json['estado_entrega'] as String?,
+      // ✅ CORREGIDO 2026-03-05: Extraer código de estado_entrega (es un objeto, no string)
+      estadoEntrega: (() {
+        if (json['estado_entrega'] is Map<String, dynamic>) {
+          return (json['estado_entrega'] as Map<String, dynamic>)['codigo'] as String?;
+        }
+        return json['estado_entrega'] as String?;
+      })(),
+      // ✅ CORREGIDO 2026-03-05: Extraer tipo_entrega y tipo_novedad de la primera confirmación
+      tipoEntrega: (() {
+        final confirmaciones = (json['confirmaciones'] as List<dynamic>?)?.cast<Map<String, dynamic>>() ?? [];
+        if (confirmaciones.isNotEmpty) {
+          return confirmaciones.first['tipo_entrega'] as String?;
+        }
+        return json['tipo_entrega'] as String?;
+      })(),
+      tipoNovedad: (() {
+        final confirmaciones = (json['confirmaciones'] as List<dynamic>?)?.cast<Map<String, dynamic>>() ?? [];
+        if (confirmaciones.isNotEmpty) {
+          return confirmaciones.first['tipo_novedad'] as String?;
+        }
+        return json['tipo_novedad'] as String?;
+      })(),
+      confirmaciones: (json['confirmaciones'] as List<dynamic>?)
+          ?.cast<Map<String, dynamic>>() ?? [], // ✅ NUEVO: Confirmaciones de entrega
     );
   }
 

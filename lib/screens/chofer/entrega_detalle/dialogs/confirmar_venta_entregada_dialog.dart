@@ -12,17 +12,76 @@ class ConfirmarVentaEntregadaDialog {
     Venta venta,
     EntregaProvider provider,
   ) async {
+    // ✅ Cargar información del cliente y tipo de pago desde el backend
+    Map<String, dynamic>? cliente;
+    Map<String, dynamic>? tipoPago;
+
+    try {
+      final response = await provider.obtenerResumenPagos(entrega.id);
+      if (response.success && response.data != null) {
+        final resumen = response.data as Map<String, dynamic>;
+        final pagos = resumen['pagos'] as List<dynamic>? ?? [];
+
+        // Buscar la venta específica dentro de los grupos de pagos
+        Map<String, dynamic>? ventaEnResumen;
+        String? tipoPagoDelGrupo;
+        int? tipoPagoIdDelGrupo;
+        String? tipoPagoCodigoDelGrupo;
+
+        for (final pagoGroup in pagos) {
+          final ventasEnGrupo = pagoGroup['ventas'] as List<dynamic>? ?? [];
+          try {
+            ventaEnResumen = ventasEnGrupo
+                .cast<Map<String, dynamic>>()
+                .firstWhere((v) => v['venta_id'] == venta.id);
+
+            if (ventaEnResumen != null) {
+              // Obtener tipo de pago del grupo
+              tipoPagoDelGrupo = pagoGroup['tipo_pago'] as String?;
+              tipoPagoIdDelGrupo = pagoGroup['tipo_pago_id'] as int?;
+              tipoPagoCodigoDelGrupo = pagoGroup['tipo_pago_codigo'] as String?;
+              break;
+            }
+          } catch (e) {
+            // La venta no está en este grupo de pagos, continuar
+            continue;
+          }
+        }
+
+        if (ventaEnResumen != null) {
+          // Extraer cliente de la venta
+          cliente = ventaEnResumen['cliente'] as Map<String, dynamic>?;
+
+          // Extraer tipo de pago del grupo
+          if (tipoPagoIdDelGrupo != null) {
+            tipoPago = {
+              'id': tipoPagoIdDelGrupo,
+              'nombre': tipoPagoDelGrupo ?? 'No especificado',
+              'codigo': tipoPagoCodigoDelGrupo,
+            };
+          }
+        }
+      }
+    } catch (e) {
+      debugPrint('Error al cargar información de venta: $e');
+      // Continuar sin cliente/tipoPago si hay error
+    }
+
     // ✅ NUEVO: Navegar a la nueva pantalla en lugar de mostrar un dialog
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => ConfirmarEntregaVentaScreen(
-          entrega: entrega,
-          venta: venta,
-          provider: provider,
+    if (context.mounted) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => ConfirmarEntregaVentaScreen(
+            entrega: entrega,
+            venta: venta,
+            provider: provider,
+            cliente: cliente,
+            tipoPago: tipoPago,
+          ),
         ),
-      ),
-    );
+      );
+    }
   }
 }
 

@@ -157,6 +157,24 @@ class CarritoProvider with ChangeNotifier {
           if (response.success && response.data != null) {
             productoActualizado = response.data!;
             debugPrint('✅ Stock obtenido para ${productoActualizado.nombre}: ${productoActualizado.stockPrincipal?.cantidad}');
+
+            // ✅ NUEVO: Si este producto ya está en la proforma, ajustar cantidadDisponible
+            // para incluir la cantidad reservada (ya que será valida para editar)
+            if (productoActualizado.stockPrincipal != null) {
+              final cantidadEnProforma = item.cantidad;
+              final stockDisponibleAjustado =
+                (productoActualizado.stockPrincipal!.cantidadDisponible ?? 0) + cantidadEnProforma;
+
+              // Crear nuevo StockProducto con cantidad ajustada
+              productoActualizado = productoActualizado.copyWith(
+                stockPrincipal: productoActualizado.stockPrincipal!.copyWith(
+                  cantidadDisponible: stockDisponibleAjustado,
+                ),
+              );
+
+              debugPrint('📌 [CarritoProvider] Stock ajustado para ${productoActualizado.nombre}: '
+                '${stockDisponibleAjustado} (${productoActualizado.stockPrincipal!.cantidadDisponible} + $cantidadEnProforma reservada)');
+            }
           } else {
             debugPrint('⚠️ No se pudo obtener stock para ${item.producto!.nombre}, usando datos de proforma');
           }
@@ -244,6 +262,16 @@ class CarritoProvider with ChangeNotifier {
     debugPrint('👤 CarritoProvider inicializado para usuario: $usuarioId');
   }
 
+  // ✅ NUEVO: Verificar si un producto ya existe en la proforma que se está editando
+  // Esto permite agregar más cantidad sin verificar stock (ya está reservado)
+  bool _productoExisteEnProforma(int productoId) {
+    if (!editandoProforma || _proformaEditando == null) {
+      return false; // No está editando ninguna proforma
+    }
+
+    return _proformaEditando!.items.any((item) => item.productoId == productoId);
+  }
+
   // Agregar producto al carrito con validación de stock
   void agregarProducto(
     Product producto, {
@@ -277,20 +305,30 @@ class CarritoProvider with ChangeNotifier {
       return;
     }
 
-    // Validar stock disponible
-    final stockDisponible = producto.stockPrincipal?.cantidadDisponible ?? 0;
-    final stockDispInt = (stockDisponible as num).toInt();
+    // ✅ NUEVO: Si estamos editando una proforma y el producto ya está en ella, permitir sin verificar stock
+    // (ya está reservado para esa proforma)
+    final productoEnProforma = _productoExisteEnProforma(producto.id);
 
-    if (cantidad > stockDispInt) {
-      _errorMessage =
-          'Stock insuficiente. Disponible: $stockDispInt ${producto.unidadMedida?.nombre ?? 'unidades'}';
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        notifyListeners();
-      });
+    if (productoEnProforma) {
       debugPrint(
-        '❌ Error al agregar $cantidad de ${producto.nombre}: $_errorMessage',
+        '📌 [CarritoProvider] Producto ${producto.nombre} ya está en proforma #${_proformaEditando!.numero}, permitiendo cantidad sin verificar stock',
       );
-      return;
+    } else {
+      // Validar stock disponible solo si es un producto nuevo
+      final stockDisponible = producto.stockPrincipal?.cantidadDisponible ?? 0;
+      final stockDispInt = (stockDisponible as num).toInt();
+
+      if (cantidad > stockDispInt) {
+        _errorMessage =
+            'Stock insuficiente. Disponible: $stockDispInt ${producto.unidadMedida?.nombre ?? 'unidades'}';
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          notifyListeners();
+        });
+        debugPrint(
+          '❌ Error al agregar $cantidad de ${producto.nombre}: $_errorMessage',
+        );
+        return;
+      }
     }
 
     List<CarritoItem> nuevosItems = List.from(_carrito.items);
@@ -334,16 +372,23 @@ class CarritoProvider with ChangeNotifier {
     if (itemExistente != null) {
       // Si ya existe, validar que la nueva cantidad total no exceda el stock
       final nuevaCantidadTotal = itemExistente.cantidad + cantidad;
-      if (nuevaCantidadTotal > stockDispInt) {
-        _errorMessage =
-            'Cantidad total excede el stock disponible. Máximo disponible: $stockDispInt, actualmente en carrito: ${itemExistente.cantidad}';
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          notifyListeners();
-        });
-        debugPrint(
-          '❌ Error al agregar más de ${producto.nombre}: $_errorMessage',
-        );
-        return;
+
+      // ✅ Si estamos editando una proforma que ya tiene este producto, permitir sin validar stock
+      if (!productoEnProforma) {
+        final stockDisponible = producto.stockPrincipal?.cantidadDisponible ?? 0;
+        final stockDispInt = (stockDisponible as num).toInt();
+
+        if (nuevaCantidadTotal > stockDispInt) {
+          _errorMessage =
+              'Cantidad total excede el stock disponible. Máximo disponible: $stockDispInt, actualmente en carrito: ${itemExistente.cantidad}';
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            notifyListeners();
+          });
+          debugPrint(
+            '❌ Error al agregar más de ${producto.nombre}: $_errorMessage',
+          );
+          return;
+        }
       }
 
       // Si pasa la validación, actualizar la cantidad
@@ -1089,6 +1134,8 @@ class CarritoProvider with ChangeNotifier {
           proformaId: _proformaEditando!.id,
           clienteId: _clienteSeleccionado!.id,
           items: itemsData,
+          tipoEntrega: 'DELIVERY',
+          fechaProgramada: _proformaEditando!.fechaEntregaSolicitada ?? DateTime.now(),
           observaciones: null,
         );
 
