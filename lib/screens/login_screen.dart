@@ -379,9 +379,12 @@ class _LoginScreenState extends State<LoginScreen>
           activeColor: colorScheme.primary,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
         ),
-        Text(
-          'Recordar mis credenciales',
-          style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontSize: 14),
+        Expanded(
+          child: Text(
+            'Recordar mis credenciales',
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontSize: 14),
+            overflow: TextOverflow.ellipsis,
+          ),
         ),
         const Spacer(),
         if (_biometricAvailable && _biometricEnabled)

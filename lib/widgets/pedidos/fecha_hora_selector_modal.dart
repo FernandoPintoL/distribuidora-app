@@ -38,8 +38,31 @@ class _FechaHoraSelectorModalState extends State<FechaHoraSelectorModal> {
 
     _fechaSeleccionada =
         widget.fechaInicial ?? DateTime(now.year, now.month, now.day);
-    _horaInicio = widget.horaInicioInicial ?? const TimeOfDay(hour: 9, minute: 0);
-    _horaFin = widget.horaFinInicial ?? const TimeOfDay(hour: 17, minute: 0);
+
+    // ✅ Validar horas mínimas si la fecha es "Hoy"
+    final horaActual = now.hour;
+    final hoy = DateTime(now.year, now.month, now.day);
+    final esHoy = _fechaSeleccionada?.year == hoy.year &&
+        _fechaSeleccionada?.month == hoy.month &&
+        _fechaSeleccionada?.day == hoy.day;
+
+    // Si es hoy, usar la hora actual como mínimo
+    if (esHoy) {
+      _horaInicio = widget.horaInicioInicial ?? TimeOfDay(hour: horaActual, minute: 0);
+      // Asegurarse de que horaInicio sea válida (>= hora actual)
+      if (_horaInicio!.hour < horaActual) {
+        _horaInicio = TimeOfDay(hour: horaActual, minute: 0);
+      }
+      _horaFin = widget.horaFinInicial ?? TimeOfDay(hour: horaActual + 4, minute: 0);
+      // Asegurarse de que horaFin sea válida (>= hora actual)
+      if (_horaFin!.hour < horaActual) {
+        _horaFin = TimeOfDay(hour: horaActual, minute: 0);
+      }
+    } else {
+      _horaInicio = widget.horaInicioInicial ?? const TimeOfDay(hour: 9, minute: 0);
+      _horaFin = widget.horaFinInicial ?? const TimeOfDay(hour: 17, minute: 0);
+    }
+
     _observacionesController =
         TextEditingController(text: widget.observacionesInicial ?? '');
 
@@ -73,12 +96,9 @@ class _FechaHoraSelectorModalState extends State<FechaHoraSelectorModal> {
     final Map<String, DateTime> fechas = {'Hoy': hoy};
 
     // Mañana: 1=Lunes, 2=Martes, ..., 6=Sábado, 7=Domingo
-    if (manana.weekday < 6) {
-      // Si mañana es Lunes-Viernes, agregarlo
+    if (manana.weekday < 7) {
+      // Si mañana es Lunes-Sábado, agregarlo
       fechas['Mañana'] = manana;
-    } else if (manana.weekday == 6) {
-      // Si mañana es Sábado, agregar Lunes (2 días después)
-      fechas['Lunes'] = hoy.add(const Duration(days: 3));
     } else if (manana.weekday == 7) {
       // Si mañana es Domingo, agregar Lunes (1 día después de domingo)
       fechas['Lunes'] = hoy.add(const Duration(days: 2));
@@ -190,6 +210,25 @@ class _FechaHoraSelectorModalState extends State<FechaHoraSelectorModal> {
       setState(() {
         _fechaSeleccionada = resultado;
         _usarFechaPersonalizada = false;
+
+        // ✅ Validar horas si la nueva fecha es "Hoy"
+        final now = DateTime.now();
+        final horaActual = now.hour;
+        final hoy = DateTime(now.year, now.month, now.day);
+        final esHoy = resultado.year == hoy.year &&
+            resultado.month == hoy.month &&
+            resultado.day == hoy.day;
+
+        if (esHoy) {
+          // Si la hora de inicio es anterior a la hora actual, ajustarla
+          if (_horaInicio!.hour < horaActual) {
+            _horaInicio = TimeOfDay(hour: horaActual, minute: 0);
+          }
+          // Si la hora de fin es anterior a la hora actual, ajustarla
+          if (_horaFin!.hour < horaActual) {
+            _horaFin = TimeOfDay(hour: horaActual, minute: 0);
+          }
+        }
       });
     }
   }
@@ -208,17 +247,48 @@ class _FechaHoraSelectorModalState extends State<FechaHoraSelectorModal> {
       setState(() {
         _fechaSeleccionada = picked;
         _usarFechaPersonalizada = true;
+
+        // ✅ Validar horas si la nueva fecha es "Hoy"
+        final now = DateTime.now();
+        final horaActual = now.hour;
+        final hoy = DateTime(now.year, now.month, now.day);
+        final esHoy = picked.year == hoy.year &&
+            picked.month == hoy.month &&
+            picked.day == hoy.day;
+
+        if (esHoy) {
+          // Si la hora de inicio es anterior a la hora actual, ajustarla
+          if (_horaInicio!.hour < horaActual) {
+            _horaInicio = TimeOfDay(hour: horaActual, minute: 0);
+          }
+          // Si la hora de fin es anterior a la hora actual, ajustarla
+          if (_horaFin!.hour < horaActual) {
+            _horaFin = TimeOfDay(hour: horaActual, minute: 0);
+          }
+        }
       });
     }
   }
 
   Future<void> _seleccionarHoraInicio() async {
+    // Determinar hora mínima: si es hoy, no permitir horas pasadas
+    int? minHour;
+    final now = DateTime.now();
+    final hoy = DateTime(now.year, now.month, now.day);
+
+    if (_fechaSeleccionada?.year == hoy.year &&
+        _fechaSeleccionada?.month == hoy.month &&
+        _fechaSeleccionada?.day == hoy.day) {
+      minHour = now.hour;
+    }
+
     final TimeOfDay? picked = await showCustomTimePicker(
       context: context,
       initialTime: _horaInicio ?? TimeOfDay.now(),
       helpText: 'Hora de inicio',
       cancelText: 'Cancelar',
       confirmText: 'Aceptar',
+      minHour: minHour,
     );
 
     if (picked != null && mounted) {
@@ -229,12 +299,24 @@ class _FechaHoraSelectorModalState extends State<FechaHoraSelectorModal> {
   }
 
   Future<void> _seleccionarHoraFin() async {
+    // Determinar hora mínima: si es hoy, no permitir horas pasadas
+    int? minHour;
+    final now = DateTime.now();
+    final hoy = DateTime(now.year, now.month, now.day);
+
+    if (_fechaSeleccionada?.year == hoy.year &&
+        _fechaSeleccionada?.month == hoy.month &&
+        _fechaSeleccionada?.day == hoy.day) {
+      minHour = now.hour;
+    }
+
     final TimeOfDay? picked = await showCustomTimePicker(
       context: context,
       initialTime: _horaFin ?? TimeOfDay.now(),
       helpText: 'Hora de fin',
       cancelText: 'Cancelar',
       confirmText: 'Aceptar',
+      minHour: minHour,
     );
 
     if (picked != null && mounted) {

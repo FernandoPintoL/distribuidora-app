@@ -4,3 +4,7 @@ export 'carrito_resumen_totales.dart';
 export 'carrito_action_buttons.dart';
 export 'carrito_item_card.dart';
 export 'carrito_item_ahorro_section.dart';
+export 'carrito_cliente_selector.dart';
+export 'carrito_credit_info_card.dart';
+export 'carrito_combo_detalles.dart';
+export 'carrito_editando_proforma_banner.dart';

@@ -865,11 +865,16 @@ class _PerfilScreenState extends State<PerfilScreen>
         return StatefulBuilder(
           builder: (BuildContext context, StateSetter setState) {
             return AlertDialog(
-              title: const Row(
+              title: Row(
                 children: [
-                  Icon(Icons.lock_outline, color: Colors.blue),
-                  SizedBox(width: 12),
-                  Text('Cambiar Contraseña'),
+                  const Icon(Icons.lock_outline, color: Colors.blue),
+                  const SizedBox(width: 12),
+                  const Expanded(
+                    child: Text(
+                      'Cambiar Contraseña',
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
                 ],
               ),
               content: Form(

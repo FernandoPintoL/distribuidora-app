@@ -155,10 +155,8 @@ class _ResumenPedidoScreenState extends State<ResumenPedidoScreen> {
 
     final Map<String, DateTime> fechas = {'Hoy': hoy};
 
-    if (manana.weekday < 6) {
+    if (manana.weekday < 7) {
       fechas['Mañana'] = manana;
-    } else if (manana.weekday == 6) {
-      fechas['Lunes'] = hoy.add(const Duration(days: 3));
     } else if (manana.weekday == 7) {
       fechas['Lunes'] = hoy.add(const Duration(days: 2));
     }
@@ -1572,44 +1570,48 @@ class _ResumenPedidoScreenState extends State<ResumenPedidoScreen> {
         // Título con toggle de fecha personalizada
         Row(
           children: [
-            Text(
-              'Fecha y Hora de Entrega',
-              style: TextStyle(
-                fontSize: AppTextStyles.headlineSmall(context).fontSize!,
-                fontWeight: FontWeight.bold,
-                color: colorScheme.onSurface,
+            Expanded(
+              child: Text(
+                'Fecha y Hora de Entrega',
+                style: TextStyle(
+                  fontSize: AppTextStyles.headlineSmall(context).fontSize!,
+                  fontWeight: FontWeight.bold,
+                  color: colorScheme.onSurface,
+                ),
               ),
             ),
-            const Spacer(),
             // ✅ Toggle para preventistas
             if (esPreventista)
-              Row(
-                children: [
-                  Text(
-                    'Otra fecha',
-                    style: context.textTheme.bodySmall?.copyWith(
-                      color: colorScheme.onSurfaceVariant,
+              Flexible(
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      'Otra fecha',
+                      style: context.textTheme.bodySmall?.copyWith(
+                        color: colorScheme.onSurfaceVariant,
+                      ),
                     ),
-                  ),
-                  const SizedBox(width: 8),
-                  Switch(
-                    value: usarFechaPersonalizada,
-                    onChanged: (value) {
-                      setState(() {
-                        if (value) {
-                          _seleccionarFechaPersonalizada();
-                        } else {
-                          final now = DateTime.now();
-                          _fechaProgramada = DateTime(
-                            now.year,
-                            now.month,
-                            now.day,
-                          );
-                        }
-                      });
-                    },
-                  ),
-                ],
+                    const SizedBox(width: 8),
+                    Switch(
+                      value: usarFechaPersonalizada,
+                      onChanged: (value) {
+                        setState(() {
+                          if (value) {
+                            _seleccionarFechaPersonalizada();
+                          } else {
+                            final now = DateTime.now();
+                            _fechaProgramada = DateTime(
+                              now.year,
+                              now.month,
+                              now.day,
+                            );
+                          }
+                        });
+                      },
+                    ),
+                  ],
+                ),
               ),
           ],
         ),

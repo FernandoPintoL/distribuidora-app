@@ -188,6 +188,7 @@ class PedidoProvider with ChangeNotifier {
   }
 
   /// Cargar más pedidos (siguiente página)
+  /// ✅ ACTUALIZADO: Incluir todos los filtros (vencimiento, entrega) para paginación correcta
   Future<void> loadMorePedidos() async {
     if (_isLoadingMore || !_hasMorePages || _isLoading) return;
 
@@ -204,7 +205,11 @@ class PedidoProvider with ChangeNotifier {
         estado: _filtroEstado,
         fechaDesde: _filtroFechaDesde,
         fechaHasta: _filtroFechaHasta,
-        search: _filtroBusqueda,  // ✅ ACTUALIZADO: Usar 'search' para búsqueda unificada
+        search: _filtroBusqueda,
+        fechaVencimientoDesde: _filtroFechaVencimientoDesde,
+        fechaVencimientoHasta: _filtroFechaVencimientoHasta,
+        fechaEntregaSolicitadaDesde: _filtroFechaEntregaSolicitadaDesde,
+        fechaEntregaSolicitadaHasta: _filtroFechaEntregaSolicitadaHasta,
       );
 
       if (response.success && response.data != null) {

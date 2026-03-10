@@ -186,7 +186,6 @@ class _ResumenPagosEntregaScreenState extends State<ResumenPagosEntregaScreen> {
     final porcentajeRecibido = resumen['porcentaje_recibido'] as num? ?? 0;
     final pagos = (resumen['pagos'] as List?) ?? [];
     final sinRegistrar = (resumen['sin_registrar'] as List?) ?? [];
-    final cliente = resumen['cliente'] as Map<String, dynamic>? ?? {};
 
     final diferenciaNegativa = diferencia < 0;
 
@@ -228,55 +227,62 @@ class _ResumenPagosEntregaScreenState extends State<ResumenPagosEntregaScreen> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Total Esperado',
-                          style: TextStyle(
-                            fontSize: AppTextStyles.bodySmall(
-                              context,
-                            ).fontSize!,
-                            color: Colors.white.withValues(alpha: 0.8),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Total Esperado',
+                            style: TextStyle(
+                              fontSize: AppTextStyles.bodySmall(
+                                context,
+                              ).fontSize!,
+                              color: Colors.white.withValues(alpha: 0.8),
+                            ),
                           ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          'Bs. ${totalEsperado.toStringAsFixed(2)}',
-                          style: TextStyle(
-                            fontSize: AppTextStyles.headlineMedium(
-                              context,
-                            ).fontSize!,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
+                          const SizedBox(height: 4),
+                          Text(
+                            'Bs. ${totalEsperado.toStringAsFixed(2)}',
+                            style: TextStyle(
+                              fontSize: AppTextStyles.headlineMedium(
+                                context,
+                              ).fontSize!,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                            ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.end,
-                      children: [
-                        Text(
-                          'Total Recibido',
-                          style: TextStyle(
-                            fontSize: AppTextStyles.bodySmall(
-                              context,
-                            ).fontSize!,
-                            color: Colors.white.withValues(alpha: 0.8),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [
+                          Text(
+                            'Total Recibido',
+                            textAlign: TextAlign.right,
+                            style: TextStyle(
+                              fontSize: AppTextStyles.bodySmall(
+                                context,
+                              ).fontSize!,
+                              color: Colors.white.withValues(alpha: 0.8),
+                            ),
                           ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          'Bs. ${totalRecibido.toStringAsFixed(2)}',
-                          style: TextStyle(
-                            fontSize: AppTextStyles.headlineMedium(
-                              context,
-                            ).fontSize!,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
+                          const SizedBox(height: 4),
+                          Text(
+                            'Bs. ${totalRecibido.toStringAsFixed(2)}',
+                            textAlign: TextAlign.right,
+                            style: TextStyle(
+                              fontSize: AppTextStyles.headlineMedium(
+                                context,
+                              ).fontSize!,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                            ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ],
                 ),
@@ -398,7 +404,7 @@ class _ResumenPagosEntregaScreenState extends State<ResumenPagosEntregaScreen> {
 
           // ✅ MEJORADO 2026-02-16: Agrupar por venta (no por tipo de pago)
           if (pagos.isNotEmpty)
-            ..._construirVentasConPagos(pagos, cliente, isDarkMode)
+            ..._construirVentasConPagos(pagos, isDarkMode)
           else
             Container(
               padding: const EdgeInsets.all(16),
@@ -448,8 +454,13 @@ class _ResumenPagosEntregaScreenState extends State<ResumenPagosEntregaScreen> {
                 itemBuilder: (_, index) {
                   final venta = sinRegistrar[index];
                   final ventaId = venta['venta_id'] as int;
-                  final ventaNumero = venta['venta_numero'] as String;
                   final monto = venta['monto'] as num;
+                  final clienteData =
+                      venta['cliente'] as Map<String, dynamic>? ?? {};
+                  final clienteNombre =
+                      clienteData['nombre_completo'] as String? ??
+                      clienteData['nombre'] as String? ??
+                      'Cliente desconocido';
 
                   return Padding(
                     padding: const EdgeInsets.symmetric(
@@ -464,7 +475,7 @@ class _ResumenPagosEntregaScreenState extends State<ResumenPagosEntregaScreen> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                'Venta $ventaNumero',
+                                clienteNombre,
                                 style: TextStyle(
                                   fontSize: AppTextStyles.bodyMedium(
                                     context,
@@ -476,15 +487,31 @@ class _ResumenPagosEntregaScreenState extends State<ResumenPagosEntregaScreen> {
                                 ),
                               ),
                               const SizedBox(height: 4),
-                              Text(
-                                'Bs. ${monto.toStringAsFixed(2)}',
-                                style: TextStyle(
-                                  fontSize: AppTextStyles.bodySmall(
-                                    context,
-                                  ).fontSize!,
-                                  fontWeight: FontWeight.w600,
-                                  color: Colors.orange[700],
-                                ),
+                              Row(
+                                children: [
+                                  Text(
+                                    'Venta #$ventaId',
+                                    style: TextStyle(
+                                      fontSize: AppTextStyles.bodySmall(
+                                        context,
+                                      ).fontSize!,
+                                      color: isDarkMode
+                                          ? Colors.grey[400]
+                                          : Colors.grey[600],
+                                    ),
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Text(
+                                    'Bs. ${monto.toStringAsFixed(2)}',
+                                    style: TextStyle(
+                                      fontSize: AppTextStyles.bodySmall(
+                                        context,
+                                      ).fontSize!,
+                                      fontWeight: FontWeight.w600,
+                                      color: Colors.orange[700],
+                                    ),
+                                  ),
+                                ],
                               ),
                             ],
                           ),
@@ -501,7 +528,9 @@ class _ResumenPagosEntregaScreenState extends State<ResumenPagosEntregaScreen> {
                             style: ElevatedButton.styleFrom(
                               backgroundColor: Colors.orange[600],
                               foregroundColor: Colors.white,
-                              padding: const EdgeInsets.symmetric(horizontal: 12),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                              ),
                             ),
                           ),
                         ),
@@ -519,11 +548,7 @@ class _ResumenPagosEntregaScreenState extends State<ResumenPagosEntregaScreen> {
   }
 
   // ✅ NUEVO 2026-02-16: Construir tarjetas de ventas agrupadas por venta_id
-  List<Widget> _construirVentasConPagos(
-    List<dynamic> pagos,
-    Map<String, dynamic> cliente,
-    bool isDarkMode,
-  ) {
+  List<Widget> _construirVentasConPagos(List<dynamic> pagos, bool isDarkMode) {
     // Agrupar todas las ventas únicas con sus pagos
     final Map<int, Map<String, dynamic>> ventasMap = {};
 
@@ -627,6 +652,8 @@ class _ResumenPagosEntregaScreenState extends State<ResumenPagosEntregaScreen> {
       final tipoNovedad = ventaData['tipo_novedad'] as String?;
       final pagos = ventaData['pagos'] as List<Map<String, dynamic>>;
       final total = ventaData['total'] as double;
+      final clienteVentaData =
+          ventaData['cliente'] as Map<String, dynamic>? ?? <String, dynamic>{};
       // ✅ NUEVO 2026-02-17: Campos de confirmación de entrega
       final fotos = (ventaData['fotos'] as List?) ?? [];
       final observacionesLogistica =
@@ -707,8 +734,8 @@ class _ResumenPagosEntregaScreenState extends State<ResumenPagosEntregaScreen> {
                             const SizedBox(height: 8),
                             // 👤 Información del cliente
                             Text(
-                              cliente['nombre_completo'] as String? ??
-                                  cliente['nombre'] as String? ??
+                              clienteVentaData['nombre_completo'] as String? ??
+                                  clienteVentaData['nombre'] as String? ??
                                   'Cliente desconocido',
                               style: TextStyle(
                                 fontSize: AppTextStyles.bodySmall(
@@ -720,19 +747,22 @@ class _ResumenPagosEntregaScreenState extends State<ResumenPagosEntregaScreen> {
                                     : Colors.amber[800],
                               ),
                             ),
-                            if ((cliente['email'] as String? ?? '')
+                            if ((clienteVentaData['email'] as String? ?? '')
                                     .isNotEmpty ||
-                                (cliente['telefono'] as String? ?? '')
+                                (clienteVentaData['telefono'] as String? ?? '')
                                     .isNotEmpty) ...[
                               const SizedBox(height: 2),
                               Text(
                                 [
-                                  if ((cliente['email'] as String? ?? '')
+                                  if ((clienteVentaData['email'] as String? ??
+                                          '')
                                       .isNotEmpty)
-                                    cliente['email'],
-                                  if ((cliente['telefono'] as String? ?? '')
+                                    clienteVentaData['email'],
+                                  if ((clienteVentaData['telefono']
+                                              as String? ??
+                                          '')
                                       .isNotEmpty)
-                                    cliente['telefono'],
+                                    clienteVentaData['telefono'],
                                 ].join(' • '),
                                 style: TextStyle(
                                   fontSize: AppTextStyles.labelSmall(
@@ -804,8 +834,8 @@ class _ResumenPagosEntregaScreenState extends State<ResumenPagosEntregaScreen> {
                                 isEditing: true,
                                 tipoEntregaExistente: tipoEntrega,
                                 tipoNovedadExistente: tipoNovedad,
-                                // ✅ NUEVO 2026-03-05: Pasar cliente global (ya tiene datos correctos) y tipo de pago
-                                cliente: cliente,
+                                // ✅ NUEVO 2026-03-05: Pasar cliente específico de la venta y tipo de pago
+                                cliente: clienteVentaData,
                                 tipoPago: pagos.isNotEmpty
                                     ? {
                                         'id': _convertirAInt(
@@ -883,11 +913,11 @@ class _ResumenPagosEntregaScreenState extends State<ResumenPagosEntregaScreen> {
                     color: isDarkMode ? Colors.grey[700] : Colors.grey[300],
                     height: 1,
                   ),
-                  const SizedBox(height: 12),
+                  // const SizedBox(height: 12),
 
                   // 💰 Total de la venta
                   // ✅ NUEVO 2026-03-05: Mostrar total ajustado para DEVOLUCION_PARCIAL
-                  Container(
+                  /*Container(
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
                       color: isDarkMode
@@ -899,7 +929,7 @@ class _ResumenPagosEntregaScreenState extends State<ResumenPagosEntregaScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        SectionHeader.total(isDarkMode: isDarkMode),
+                        // SectionHeader.total(isDarkMode: isDarkMode),
                         const SizedBox(height: 4),
                         MoneyRow(
                           label: 'Monto Total',
@@ -946,8 +976,8 @@ class _ResumenPagosEntregaScreenState extends State<ResumenPagosEntregaScreen> {
                         ),
                       ],
                     ),
-                  ),
-                  const SizedBox(height: 12),
+                  ),*/
+                  const SizedBox(height: 4),
                   // ✅ Mostrar productos solo si hay devoluciones
                   if (tipoNovedad == 'DEVOLUCION_PARCIAL') ...[
                     // ✅ NUEVO 2026-03-05: Mostrar productos devueltos en devolución parcial
@@ -967,7 +997,7 @@ class _ResumenPagosEntregaScreenState extends State<ResumenPagosEntregaScreen> {
                             SectionHeader.productosDevueltos(
                               isDarkMode: isDarkMode,
                             ),
-                            const SizedBox(height: 12),
+                            const SizedBox(height: 4),
                             ...productosDevueltos.map((producto) {
                               final nombreProducto =
                                   producto['producto_nombre'] ?? 'N/A';
@@ -1024,7 +1054,7 @@ class _ResumenPagosEntregaScreenState extends State<ResumenPagosEntregaScreen> {
                       (tipoEntrega == 'COMPLETA' ||
                           tipoNovedad == 'DEVOLUCION_PARCIAL')) ...[
                     SectionHeader.pagos(isDarkMode: isDarkMode),
-                    const SizedBox(height: 8),
+                    // const SizedBox(height: 8),
                     // ✅ NUEVO 2026-03-05: Chips de pagos (tipo + monto)
                     Wrap(
                       spacing: 8,
@@ -1229,7 +1259,8 @@ class _ResumenPagosEntregaScreenState extends State<ResumenPagosEntregaScreen> {
                                 );
 
                           return GestureDetector(
-                            onTap: () => _mostrarFotoGrande(context, fotoUrl, esBase64),
+                            onTap: () =>
+                                _mostrarFotoGrande(context, fotoUrl, esBase64),
                             child: widget,
                           );
                         },
@@ -1246,708 +1277,6 @@ class _ResumenPagosEntregaScreenState extends State<ResumenPagosEntregaScreen> {
         ),
       );
     }).toList();
-  }
-
-  // ✅ NUEVO 2026-02-15: Diálogo para corregir pagos de una venta específica
-  void _mostrarDialogoCorregirPagos({
-    required BuildContext context,
-    required int entregaId,
-    required int ventaId,
-    required String ventaNumero,
-    required String clienteNombre,
-    required double total,
-    required List<dynamic> desglose,
-  }) {
-    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
-
-    // ✅ ACTUALIZADO 2026-02-15: Mapear desglose real a estructura editable
-    List<Map<String, dynamic>> pagosEditables = [];
-
-    // Procesar desglose actual
-    if (desglose.isNotEmpty) {
-      for (final pago in desglose) {
-        final tipoPago = pago['tipo_pago'] as String?;
-        final monto = (pago['monto'] as num?)?.toDouble() ?? 0.0;
-        final referencia = pago['referencia'] as String? ?? '';
-
-        // Buscar el tipo de pago en la lista para obtener el ID
-        int tipoPagoId = 0;
-        if (tipoPago != null && tiposPago.isNotEmpty) {
-          try {
-            final tipoEncontrado = tiposPago.firstWhere(
-              (t) =>
-                  (t['nombre'] as String).toUpperCase() ==
-                  tipoPago.toUpperCase(),
-              orElse: () => {'id': 0, 'nombre': tipoPago},
-            );
-            tipoPagoId = tipoEncontrado['id'] as int? ?? 0;
-          } catch (_) {
-            tipoPagoId = 0;
-          }
-        }
-
-        pagosEditables.add({
-          'tipo_pago_id': tipoPagoId,
-          'tipo_pago_nombre': tipoPago ?? 'SIN_TIPO',
-          'monto': monto,
-          'referencia': referencia,
-          'registrado': true, // Marca como ya registrado
-        });
-      }
-    }
-
-    // ✅ FIX 2026-02-21: Controllers se crean FUERA del builder para persistir entre rebuilds
-    final Map<int, TextEditingController> montoControllers =
-        <int, TextEditingController>{};
-    for (int i = 0; i < pagosEditables.length; i++) {
-      montoControllers[i] = TextEditingController(
-        text: (pagosEditables[i]['monto'] as double).toStringAsFixed(2),
-      );
-    }
-
-    showDialog(
-      context: context,
-      builder: (BuildContext dialogContext) {
-        return StatefulBuilder(
-          builder: (context, setStateDialog) {
-            final totalRecibidoActual = pagosEditables.fold(
-              0.0,
-              (sum, p) => sum + (p['monto'] as double),
-            );
-            final montoPendienteActual = (total - totalRecibidoActual).clamp(
-              0.0,
-              double.infinity,
-            );
-
-            return Dialog(
-              backgroundColor: isDarkMode ? Colors.grey[900] : Colors.white,
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.all(20),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Encabezado
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          '✏️ Corregir Pagos',
-                          style: TextStyle(
-                            fontSize: AppTextStyles.headlineSmall(
-                              context,
-                            ).fontSize!,
-                            fontWeight: FontWeight.w600,
-                            color: isDarkMode
-                                ? Colors.grey[100]
-                                : Colors.grey[900],
-                          ),
-                        ),
-                        IconButton(
-                          icon: const Icon(Icons.close),
-                          onPressed: () {
-                            // Limpiar controllers al cerrar
-                            for (final controller in montoControllers.values) {
-                              controller.dispose();
-                            }
-                            Navigator.pop(context);
-                          },
-                          color: isDarkMode
-                              ? Colors.grey[400]
-                              : Colors.grey[600],
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      'Venta $ventaNumero - $clienteNombre',
-                      style: TextStyle(
-                        fontSize: AppTextStyles.bodySmall(context).fontSize!,
-                        color: isDarkMode ? Colors.grey[400] : Colors.grey[600],
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-
-                    // Información de totales
-                    Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: isDarkMode ? Colors.grey[800] : Colors.grey[50],
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Text(
-                                'Total Venta:',
-                                style: TextStyle(
-                                  fontSize: AppTextStyles.bodySmall(
-                                    context,
-                                  ).fontSize!,
-                                  fontWeight: FontWeight.w500,
-                                  color: isDarkMode
-                                      ? Colors.grey[300]
-                                      : Colors.grey[700],
-                                ),
-                              ),
-                              Text(
-                                'Bs. ${total.toStringAsFixed(2)}',
-                                style: TextStyle(
-                                  fontSize: AppTextStyles.bodyMedium(
-                                    context,
-                                  ).fontSize!,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.green,
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 8),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Text(
-                                'Total Recibido:',
-                                style: TextStyle(
-                                  fontSize: AppTextStyles.bodySmall(
-                                    context,
-                                  ).fontSize!,
-                                  fontWeight: FontWeight.w500,
-                                  color: isDarkMode
-                                      ? Colors.grey[300]
-                                      : Colors.grey[700],
-                                ),
-                              ),
-                              Text(
-                                'Bs. ${totalRecibidoActual.toStringAsFixed(2)}',
-                                style: TextStyle(
-                                  fontSize: AppTextStyles.bodyMedium(
-                                    context,
-                                  ).fontSize!,
-                                  fontWeight: FontWeight.bold,
-                                  color: isDarkMode
-                                      ? Colors.blue[400]
-                                      : Colors.blue[700],
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 8),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Text(
-                                'Monto Pendiente:',
-                                style: TextStyle(
-                                  fontSize: AppTextStyles.bodySmall(
-                                    context,
-                                  ).fontSize!,
-                                  fontWeight: FontWeight.w500,
-                                  color: isDarkMode
-                                      ? Colors.grey[300]
-                                      : Colors.grey[700],
-                                ),
-                              ),
-                              Text(
-                                'Bs. ${montoPendienteActual.toStringAsFixed(2)}',
-                                style: TextStyle(
-                                  fontSize: AppTextStyles.bodyMedium(
-                                    context,
-                                  ).fontSize!,
-                                  fontWeight: FontWeight.bold,
-                                  color: montoPendienteActual > 0
-                                      ? (isDarkMode
-                                            ? Colors.red[400]
-                                            : Colors.red[700])
-                                      : (isDarkMode
-                                            ? Colors.green[400]
-                                            : Colors.green[700]),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-
-                    // ✅ ACTUALIZADO: Mostrar qué se ha registrado de cada venta
-                    Text(
-                      'Pagos de esta Venta',
-                      style: TextStyle(
-                        fontSize: AppTextStyles.bodySmall(context).fontSize!,
-                        fontWeight: FontWeight.w600,
-                        color: isDarkMode ? Colors.grey[200] : Colors.grey[800],
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-
-                    if (pagosEditables.isEmpty)
-                      Container(
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: isDarkMode
-                              ? Colors.orange[900]?.withOpacity(0.2)
-                              : Colors.orange[50],
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(
-                            color: isDarkMode
-                                ? Colors.orange[700]!
-                                : Colors.orange[200]!,
-                          ),
-                        ),
-                        child: Center(
-                          child: Text(
-                            '⚠️ Sin pagos registrados aún',
-                            style: TextStyle(
-                              color: Colors.orange[700],
-                              fontSize: AppTextStyles.bodySmall(
-                                context,
-                              ).fontSize!,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        ),
-                      )
-                    else
-                      ...List<int>.generate(
-                        pagosEditables.length,
-                        (i) => i,
-                      ).map((index) {
-                        final pago = pagosEditables[index];
-                        final esRegistrado =
-                            pago['registrado'] as bool? ?? false;
-
-                        return Padding(
-                          padding: const EdgeInsets.only(bottom: 10),
-                          child: Container(
-                            padding: const EdgeInsets.all(10),
-                            decoration: BoxDecoration(
-                              color: isDarkMode
-                                  ? Colors.grey[800]
-                                  : Colors.grey[50],
-                              borderRadius: BorderRadius.circular(8),
-                              border: Border.all(
-                                color: esRegistrado
-                                    ? Colors.green[400]!
-                                    : (isDarkMode
-                                          ? Colors.grey[700]!
-                                          : Colors.grey[300]!),
-                                width: esRegistrado ? 2 : 1,
-                              ),
-                            ),
-                            child: Column(
-                              children: [
-                                // Encabezado con estado
-                                Row(
-                                  children: [
-                                    if (esRegistrado)
-                                      Container(
-                                        padding: const EdgeInsets.symmetric(
-                                          horizontal: 6,
-                                          vertical: 2,
-                                        ),
-                                        decoration: BoxDecoration(
-                                          color: Colors.green[100],
-                                          borderRadius: BorderRadius.circular(
-                                            4,
-                                          ),
-                                        ),
-                                        child: Text(
-                                          '✅ Registrado',
-                                          style: TextStyle(
-                                            fontSize: AppTextStyles.labelSmall(
-                                              context,
-                                            ).fontSize!,
-                                            fontWeight: FontWeight.w600,
-                                            color: Colors.green[700],
-                                          ),
-                                        ),
-                                      )
-                                    else
-                                      Container(
-                                        padding: const EdgeInsets.symmetric(
-                                          horizontal: 6,
-                                          vertical: 2,
-                                        ),
-                                        decoration: BoxDecoration(
-                                          color: Colors.blue[100],
-                                          borderRadius: BorderRadius.circular(
-                                            4,
-                                          ),
-                                        ),
-                                        child: Text(
-                                          '+ Nuevo',
-                                          style: TextStyle(
-                                            fontSize: AppTextStyles.labelSmall(
-                                              context,
-                                            ).fontSize!,
-                                            fontWeight: FontWeight.w600,
-                                            color: Colors.blue[700],
-                                          ),
-                                        ),
-                                      ),
-                                    const Spacer(),
-                                    Text(
-                                      'Bs. ${(pago['monto'] as double).toStringAsFixed(2)}',
-                                      style: TextStyle(
-                                        fontSize: AppTextStyles.bodyMedium(
-                                          context,
-                                        ).fontSize!,
-                                        fontWeight: FontWeight.bold,
-                                        color: Colors.blue[600],
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                                const SizedBox(height: 8),
-                                // Campos editables
-                                Row(
-                                  children: [
-                                    Expanded(
-                                      flex: 2,
-                                      child: DropdownButton<int>(
-                                        value: pago['tipo_pago_id'] ?? 0,
-                                        isExpanded: true,
-                                        items: [
-                                          const DropdownMenuItem<int>(
-                                            value: 0,
-                                            child: Text('Seleccionar tipo...'),
-                                          ),
-                                          ...tiposPago.map(
-                                            (tipo) => DropdownMenuItem<int>(
-                                              value: tipo['id'] as int,
-                                              child: Text(
-                                                tipo['nombre'] as String,
-                                              ),
-                                            ),
-                                          ),
-                                        ],
-                                        onChanged: (newValue) {
-                                          if (newValue != null &&
-                                              newValue != 0) {
-                                            final tipoSeleccionado = tiposPago
-                                                .firstWhere(
-                                                  (t) => t['id'] == newValue,
-                                                  orElse: () => {
-                                                    'id': newValue,
-                                                    'nombre': 'OTRO',
-                                                  },
-                                                );
-                                            setStateDialog(() {
-                                              pagosEditables[index]['tipo_pago_id'] =
-                                                  newValue;
-                                              pagosEditables[index]['tipo_pago_nombre'] =
-                                                  tipoSeleccionado['nombre'];
-                                            });
-                                          }
-                                        },
-                                      ),
-                                    ),
-                                    const SizedBox(width: 8),
-                                    Expanded(
-                                      flex: 1,
-                                      child: TextField(
-                                        keyboardType:
-                                            const TextInputType.numberWithOptions(
-                                              decimal: true,
-                                            ),
-                                        decoration: InputDecoration(
-                                          hintText: 'Monto',
-                                          hintStyle: TextStyle(
-                                            color: isDarkMode
-                                                ? Colors.grey[500]
-                                                : Colors.grey[400],
-                                          ),
-                                          contentPadding:
-                                              const EdgeInsets.symmetric(
-                                                horizontal: 8,
-                                                vertical: 8,
-                                              ),
-                                          border: OutlineInputBorder(
-                                            borderRadius: BorderRadius.circular(
-                                              4,
-                                            ),
-                                          ),
-                                        ),
-                                        controller: montoControllers[index]!,
-                                        onChanged: (value) {
-                                          setStateDialog(() {
-                                            pagosEditables[index]['monto'] =
-                                                double.tryParse(value) ?? 0.0;
-                                          });
-                                        },
-                                      ),
-                                    ),
-                                    const SizedBox(width: 8),
-                                    IconButton(
-                                      icon: const Icon(
-                                        Icons.delete_outline,
-                                        color: Colors.red,
-                                      ),
-                                      onPressed: () {
-                                        setStateDialog(() {
-                                          // Dispose el controller del pago que se elimina
-                                          montoControllers[index]?.dispose();
-                                          montoControllers.remove(index);
-
-                                          // Remover el pago
-                                          pagosEditables.removeAt(index);
-
-                                          // Reconstruir mapa de controllers con índices válidos
-                                          final newControllers =
-                                              <int, TextEditingController>{};
-                                          for (
-                                            int i = 0;
-                                            i < pagosEditables.length;
-                                            i++
-                                          ) {
-                                            // Usar el controller existente o crear uno nuevo
-                                            if (i < index &&
-                                                montoControllers.containsKey(
-                                                  i,
-                                                )) {
-                                              newControllers[i] =
-                                                  montoControllers[i]!;
-                                            } else if (i >= index &&
-                                                montoControllers.containsKey(
-                                                  i + 1,
-                                                )) {
-                                              newControllers[i] =
-                                                  montoControllers[i + 1]!;
-                                            } else {
-                                              newControllers[i] =
-                                                  TextEditingController(
-                                                    text:
-                                                        (pagosEditables[i]['monto']
-                                                                as double)
-                                                            .toStringAsFixed(2),
-                                                  );
-                                            }
-                                          }
-                                          montoControllers.clear();
-                                          montoControllers.addAll(
-                                            newControllers,
-                                          );
-                                        });
-                                      },
-                                      iconSize: 20,
-                                    ),
-                                  ],
-                                ),
-                              ],
-                            ),
-                          ),
-                        );
-                      }).toList(),
-
-                    const SizedBox(height: 12),
-
-                    // Botón agregar pago
-                    OutlinedButton.icon(
-                      onPressed: () {
-                        setStateDialog(() {
-                          pagosEditables.add({
-                            'tipo_pago_id': 0,
-                            'tipo_pago_nombre': '',
-                            'monto': 0.0,
-                            'referencia': '',
-                          });
-                          // Crear controller para el nuevo pago
-                          final newIndex = pagosEditables.length - 1;
-                          montoControllers[newIndex] = TextEditingController(
-                            text: '0.00',
-                          );
-                        });
-                      },
-                      icon: const Icon(Icons.add),
-                      label: const Text('Agregar Pago'),
-                    ),
-
-                    const SizedBox(height: 16),
-
-                    // Botones de acción
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.end,
-                      children: [
-                        OutlinedButton(
-                          onPressed: () {
-                            // Limpiar todos los controllers al cancelar
-                            for (final controller in montoControllers.values) {
-                              controller.dispose();
-                            }
-                            Navigator.pop(context);
-                          },
-                          child: const Text('Cancelar'),
-                        ),
-                        const SizedBox(width: 8),
-                        ElevatedButton(
-                          onPressed: () {
-                            // Guardar y después limpiar controllers
-                            _guardarPagosCorregidos(
-                              context: context,
-                              entregaId: entregaId,
-                              ventaId: ventaId,
-                              desglose: pagosEditables,
-                              onFinish: () {
-                                // Limpiar controllers después de guardar
-                                for (final controller
-                                    in montoControllers.values) {
-                                  controller.dispose();
-                                }
-                              },
-                            );
-                          },
-                          child: const Text('Guardar'),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            );
-          },
-        );
-      },
-    );
-  }
-
-  // ✅ NUEVO 2026-02-15: Guardar pagos corregidos en el backend
-  Future<void> _guardarPagosCorregidos({
-    required BuildContext context,
-    required int entregaId,
-    required int ventaId,
-    required List<Map<String, dynamic>> desglose,
-    VoidCallback? onFinish,
-  }) async {
-    try {
-      // Validar que haya al menos un pago
-      if (desglose.isEmpty) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('⚠️ Debe agregar al menos un pago'),
-            duration: Duration(seconds: 2),
-            backgroundColor: Colors.orange,
-          ),
-        );
-        return;
-      }
-
-      // Validar que cada pago tenga tipo_pago_id válido
-      for (final pago in desglose) {
-        final tipoPagoId = _convertirAInt(pago['tipo_pago_id']);
-        if (tipoPagoId == null || tipoPagoId == 0) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text(
-                '⚠️ Todos los pagos deben tener un tipo seleccionado',
-              ),
-              duration: Duration(seconds: 2),
-              backgroundColor: Colors.orange,
-            ),
-          );
-          return;
-        }
-        if (((pago['monto'] as double?) ?? 0) <= 0) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text(
-                '⚠️ Todos los pagos deben tener un monto mayor a 0',
-              ),
-              duration: Duration(seconds: 2),
-              backgroundColor: Colors.orange,
-            ),
-          );
-          return;
-        }
-      }
-
-      // Mostrar loading
-      if (!context.mounted) return;
-      showDialog(
-        context: context,
-        barrierDismissible: false,
-        builder: (ctx) => const AlertDialog(
-          content: Row(
-            children: [
-              CircularProgressIndicator(),
-              SizedBox(width: 16),
-              Text('Guardando pagos...'),
-            ],
-          ),
-        ),
-      );
-
-      // Preparar desglose para enviar al API
-      final desgloseParaApi = desglose
-          .map(
-            (pago) => {
-              'tipo_pago_id': pago['tipo_pago_id'],
-              'tipo_pago_nombre': pago['tipo_pago_nombre'],
-              'monto': pago['monto'],
-              'referencia': pago['referencia'] ?? '',
-            },
-          )
-          .toList();
-
-      // Llamar al API
-      final response = await _entregaService.corregirPagoVenta(
-        entregaId: entregaId,
-        ventaId: ventaId,
-        desglosePagos: desgloseParaApi,
-      );
-
-      if (!context.mounted) return;
-      Navigator.pop(context); // Cerrar loading dialog
-
-      if (response.success) {
-        // Cerrar el dialog de corrección
-        Navigator.pop(context);
-
-        // Mostrar éxito
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('✅ Pagos corregidos exitosamente'),
-            duration: Duration(seconds: 2),
-            backgroundColor: Colors.green,
-          ),
-        );
-
-        // Ejecutar callback de limpieza
-        onFinish?.call();
-
-        // ✅ Recargar el resumen con setState para forzar rebuild
-        if (mounted) {
-          setState(() {
-            _cargarResumen();
-          });
-        }
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              '❌ Error: ${response.message ?? 'No se pudieron guardar los pagos'}',
-            ),
-            duration: const Duration(seconds: 3),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    } catch (e) {
-      if (!context.mounted) return;
-      Navigator.pop(context); // Cerrar loading dialog
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('❌ Error: ${e.toString()}'),
-          duration: const Duration(seconds: 3),
-          backgroundColor: Colors.red,
-        ),
-      );
-    }
   }
 
   IconData _obtenerIconoPago(String codigo) {
@@ -1984,11 +1313,7 @@ class _ResumenPagosEntregaScreenState extends State<ResumenPagosEntregaScreen> {
   }
 
   // ✅ NUEVO 2026-03-05: Mostrar foto en grande con diálogo fullscreen
-  void _mostrarFotoGrande(
-    BuildContext context,
-    String fotoUrl,
-    bool esBase64,
-  ) {
+  void _mostrarFotoGrande(BuildContext context, String fotoUrl, bool esBase64) {
     showDialog(
       context: context,
       builder: (context) => Dialog(
@@ -1999,9 +1324,7 @@ class _ResumenPagosEntregaScreenState extends State<ResumenPagosEntregaScreen> {
             // Fondo oscuro
             GestureDetector(
               onTap: () => Navigator.pop(context),
-              child: Container(
-                color: Colors.black87,
-              ),
+              child: Container(color: Colors.black87),
             ),
             // Foto al centro
             Center(
@@ -2043,11 +1366,7 @@ class _ResumenPagosEntregaScreenState extends State<ResumenPagosEntregaScreen> {
                     shape: BoxShape.circle,
                   ),
                   padding: const EdgeInsets.all(10),
-                  child: const Icon(
-                    Icons.close,
-                    color: Colors.white,
-                    size: 28,
-                  ),
+                  child: const Icon(Icons.close, color: Colors.white, size: 28),
                 ),
               ),
             ),

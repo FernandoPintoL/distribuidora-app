@@ -33,6 +33,22 @@ android {
         freeCompilerArgs += listOf("-Xjvm-default=all")
     }
 
+    // Leer credenciales de keystore desde archivo de propiedades
+    val keystoreFile = rootProject.file("keystore.properties")
+    val keystoreProperties = Properties()
+    if (keystoreFile.exists()) {
+        keystoreProperties.load(FileInputStream(keystoreFile))
+    }
+
+    signingConfigs {
+        create("release") {
+            keyAlias = keystoreProperties.getProperty("keyAlias")
+            keyPassword = keystoreProperties.getProperty("keyPassword")
+            storeFile = keystoreFile.parentFile?.let { File(it, keystoreProperties.getProperty("storeFile")) }
+            storePassword = keystoreProperties.getProperty("storePassword")
+        }
+    }
+
     defaultConfig {
         // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
         applicationId = "com.distribuidora.paucara.distribuidora"
@@ -60,9 +76,7 @@ android {
 
     buildTypes {
         release {
-            // TODO: Add your own signing config for the release build.
-            // Signing with the debug keys for now, so `flutter run --release` works.
-            signingConfig = signingConfigs.getByName("debug")
+            signingConfig = signingConfigs.getByName("release")
         }
     }
 }

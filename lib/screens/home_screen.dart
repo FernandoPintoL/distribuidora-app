@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:share_plus/share_plus.dart';
+import 'package:path_provider/path_provider.dart';
+import 'dart:io';
+import 'dart:typed_data';
 import 'base/base_home_screen.dart';
 import '../models/navigation_item.dart';
 import '../models/orden_del_dia.dart';
@@ -371,14 +375,14 @@ class _DashboardPreventistaState extends State<DashboardPreventista>
                             Navigator.pushNamed(context, '/orden-del-dia');
                           },
                         ),
-                        // ✅ NUEVO: Stock Disponible PDF
+                        // ✅ ACTUALIZADO: Stock Disponible (PDF/Imagen)
                         _buildGradientCard(
                           context,
                           title: 'Stock Disponible',
-                          subtitle: 'Descargar PDF',
+                          subtitle: 'Descargar',
                           icon: Icons.file_download_outlined,
                           gradient: AppGradients.red,
-                          onTap: () => _descargarStockDisponiblePdf(),
+                          onTap: () => _mostrarOpcionesDescargarStock(),
                         ),
                         // ✅ NUEVO: Reporte Productos Vendidos
                         _buildGradientCard(
@@ -388,7 +392,10 @@ class _DashboardPreventistaState extends State<DashboardPreventista>
                           icon: Icons.bar_chart_outlined,
                           gradient: AppGradients.teal,
                           onTap: () {
-                            Navigator.pushNamed(context, '/reporte-productos-vendidos');
+                            Navigator.pushNamed(
+                              context,
+                              '/reporte-productos-vendidos',
+                            );
                           },
                         ),
                       ],
@@ -804,11 +811,53 @@ class _DashboardPreventistaState extends State<DashboardPreventista>
     );
   }
 
+  /// ✅ NUEVO: Modal para seleccionar formato (PDF o Imagen)
+  void _mostrarOpcionesDescargarStock() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      builder: (context) {
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: Text(
+                  'Stock Disponible',
+                  style: Theme.of(context).textTheme.titleLarge,
+                ),
+              ),
+              ListTile(
+                leading: const Icon(Icons.picture_as_pdf),
+                title: const Text('Descargar como PDF'),
+                subtitle: const Text('Para compartir o guardar'),
+                onTap: () {
+                  Navigator.pop(context);
+                  _descargarStockDisponiblePdf();
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.image),
+                title: const Text('Descargar como Imagen'),
+                subtitle: const Text('PNG - Más fácil de compartir'),
+                onTap: () {
+                  Navigator.pop(context);
+                  _descargarStockDisponibleImagen();
+                },
+              ),
+              const SizedBox(height: 8),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
   /// ✅ NUEVO: Descargar PDF de stock disponible
   /// Obtiene el PDF desde la API, lo abre en el visor de PDFs del dispositivo
   /// Muestra un indicador de carga y maneja errores
   void _descargarStockDisponiblePdf() async {
-    // Mostrar loading
     if (!mounted) return;
 
     ScaffoldMessenger.of(context).showSnackBar(
@@ -819,10 +868,8 @@ class _DashboardPreventistaState extends State<DashboardPreventista>
     );
 
     try {
-      // Descargar PDF
       final bytes = await ApiService().descargarStockDisponiblePdf();
 
-      // Abrir PDF
       if (mounted) {
         await PrintService().abrirPdfDesdeBytes(
           pdfBytes: bytes,
@@ -843,6 +890,163 @@ class _DashboardPreventistaState extends State<DashboardPreventista>
     }
   }
 
+  /// ✅ NUEVO: Descargar imagen de stock disponible
+  /// Obtiene la imagen desde la API, la guarda en Downloads
+  void _descargarStockDisponibleImagen() async {
+    if (!mounted) return;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Descargando imagen...'),
+        duration: Duration(seconds: 10),
+      ),
+    );
+
+    try {
+      final bytes = await ApiService().descargarStockDisponibleImagen();
+
+      if (mounted) {
+        // Mostrar preview con opciones de compartir/guardar
+        _mostrarImagenConOpciones(bytes);
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error al descargar: ${e.toString()}'),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 5),
+          ),
+        );
+      }
+      debugPrint('❌ Error descargando imagen: $e');
+    }
+  }
+
+  /// ✅ NUEVO: Mostrar imagen con opciones
+  void _mostrarImagenConOpciones(List<int> imageBytes) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      builder: (context) => Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(16),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(12),
+              child: Image.memory(
+                Uint8List.fromList(imageBytes),
+                fit: BoxFit.contain,
+                height: 400,
+              ),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Row(
+              children: [
+                Expanded(
+                  child: ElevatedButton.icon(
+                    onPressed: () {
+                      Navigator.pop(context);
+                      _compartirImagenWhatsApp(imageBytes);
+                    },
+                    icon: const Icon(Icons.share),
+                    label: const Text('WhatsApp'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.green,
+                      foregroundColor: Colors.white,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: ElevatedButton.icon(
+                    onPressed: () {
+                      Navigator.pop(context);
+                      _compartirImagen(imageBytes);
+                    },
+                    icon: const Icon(Icons.share_outlined),
+                    label: const Text('Compartir'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.blue,
+                      foregroundColor: Colors.white,
+                    ),
+                  ),
+                ),
+                /* const SizedBox(width: 8),
+                Expanded(
+                  child: ElevatedButton.icon(
+                    onPressed: () {
+                      Navigator.pop(context);
+                      _guardarImagenEnDispositivo(imageBytes);
+                    },
+                    icon: const Icon(Icons.download),
+                    label: const Text('Guardar'),
+                  ),
+                ), */
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _compartirImagenWhatsApp(List<int> imageBytes) async {
+    try {
+      final tempDir = await getTemporaryDirectory();
+      final file = File('${tempDir.path}/stock-disponible.png');
+      await file.writeAsBytes(imageBytes);
+      await Share.shareXFiles([XFile(file.path)]);
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
+        );
+      }
+    }
+  }
+
+  void _compartirImagen(List<int> imageBytes) async {
+    try {
+      final tempDir = await getTemporaryDirectory();
+      final file = File('${tempDir.path}/stock-disponible.png');
+      await file.writeAsBytes(imageBytes);
+      await Share.shareXFiles([XFile(file.path)]);
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
+        );
+      }
+    }
+  }
+
+  void _guardarImagenEnDispositivo(List<int> imageBytes) async {
+    try {
+      final success = await PrintService().guardarImageenEnDescargas(
+        imageBytes: imageBytes,
+        nombreArchivo: 'stock-disponible.png',
+      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(success ? '✅ Guardada' : '❌ Error'),
+            backgroundColor: success ? Colors.green : Colors.red,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
+        );
+      }
+    }
+  }
+
   Widget _buildGradientCard(
     BuildContext context, {
     required String title,
@@ -857,7 +1061,7 @@ class _DashboardPreventistaState extends State<DashboardPreventista>
         onTap: onTap,
         borderRadius: BorderRadius.circular(16),
         splashColor: Colors.white.withOpacity(0.3),
-          child: Container(
+        child: Container(
           decoration: BoxDecoration(
             gradient: gradient,
             borderRadius: BorderRadius.circular(16),
@@ -869,12 +1073,13 @@ class _DashboardPreventistaState extends State<DashboardPreventista>
               ),
             ],
           ),
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.all(10),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisSize: MainAxisSize.min,
             children: [
               Icon(icon, size: 32, color: Colors.white),
-              const SizedBox(height: 8),
+              const SizedBox(height: 5),
               Text(
                 title,
                 style: TextStyle(

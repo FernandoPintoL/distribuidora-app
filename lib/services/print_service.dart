@@ -477,6 +477,62 @@ class PrintService {
       return false;
     }
   }
+
+  /// ✅ NUEVO: Guardar imagen en carpeta visible del dispositivo
+  ///
+  /// Parámetros:
+  /// - imageBytes: Bytes de la imagen a guardar
+  /// - nombreArchivo: Nombre del archivo a guardar
+  ///
+  /// Guarda en: /storage/emulated/0/Download/ (carpeta pública visible)
+  Future<bool> guardarImageenEnDescargas({
+    required List<int> imageBytes,
+    required String nombreArchivo,
+  }) async {
+    try {
+      // ✅ Intentar guardar en /storage/emulated/0/Download/ (público y visible)
+      final downloadDir = Directory('/storage/emulated/0/Download');
+
+      // Crear directorio si no existe
+      if (!await downloadDir.exists()) {
+        await downloadDir.create(recursive: true);
+      }
+
+      final filePath = '${downloadDir.path}/$nombreArchivo';
+      final file = File(filePath);
+      await file.writeAsBytes(imageBytes);
+
+      debugPrint('✅ Imagen guardada exitosamente');
+      debugPrint('📁 Ubicación: $filePath');
+      debugPrint('📱 Accesible desde: Archivo > Download');
+
+      return true;
+
+    } catch (e) {
+      debugPrint('❌ Error guardando imagen en Download: $e');
+      debugPrint('⏮️ Intentando guardar en Downloads estándar...');
+
+      try {
+        // Fallback a Downloads estándar
+        final Directory? downloadsDir = await getDownloadsDirectory();
+
+        if (downloadsDir != null) {
+          final filePath = '${downloadsDir.path}/$nombreArchivo';
+          final file = File(filePath);
+          await file.writeAsBytes(imageBytes);
+
+          debugPrint('✅ Imagen guardada en Downloads');
+          debugPrint('📁 Ubicación: $filePath');
+          return true;
+        }
+
+        return false;
+      } catch (fallbackError) {
+        debugPrint('❌ Error en fallback: $fallbackError');
+        return false;
+      }
+    }
+  }
 }
 
 /// Extensión para ApiService para obtener baseUrl

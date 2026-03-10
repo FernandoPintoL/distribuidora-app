@@ -23,63 +23,59 @@ class ProductInfoWidget extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Nombre con badge de COMBO si aplica
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  product.nombre,
-                  style: context.textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w700,
-                    fontSize: isGridView ? 15 : 15,
-                    height: 1.3,
-                    letterSpacing: 0.2,
-                    color: colorScheme.onSurface,
-                  ),
-                  maxLines: isGridView ? 2 : 2,
-                  overflow: TextOverflow.ellipsis,
+          // Nombre del producto
+          Text(
+            product.nombre,
+            style: context.textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.w700,
+              fontSize: isGridView ? 15 : 15,
+              height: 1.3,
+              letterSpacing: 0.2,
+              color: colorScheme.onSurface,
+            ),
+            maxLines: isGridView ? 2 : 2,
+            overflow: TextOverflow.ellipsis,
+          ),
+
+          // ✅ Badge de COMBO (debajo del nombre)
+          if (product.esCombo)
+            Padding(
+              padding: const EdgeInsets.only(top: 6.0),
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 8,
+                  vertical: 4,
                 ),
-              ),
-              // ✅ NUEVO: Badge de COMBO
-              if (product.esCombo)
-                Padding(
-                  padding: const EdgeInsets.only(left: 8.0),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 4,
+                decoration: BoxDecoration(
+                  color: Colors.amber.shade600,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(
+                    color: Colors.amber.shade700,
+                    width: 0.5,
+                  ),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.card_giftcard,
+                      size: 12,
+                      color: Colors.white,
                     ),
-                    decoration: BoxDecoration(
-                      color: Colors.amber.shade600,
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(
-                        color: Colors.amber.shade700,
-                        width: 0.5,
+                    const SizedBox(width: 3),
+                    Text(
+                      'COMBO',
+                      style: context.textTheme.labelSmall?.copyWith(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w700,
+                        color: Colors.white,
                       ),
                     ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          Icons.card_giftcard,
-                          size: 12,
-                          color: Colors.white,
-                        ),
-                        const SizedBox(width: 3),
-                        Text(
-                          'COMBO',
-                          style: context.textTheme.labelSmall?.copyWith(
-                            fontSize: 10,
-                            fontWeight: FontWeight.w700,
-                            color: Colors.white,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
+                  ],
                 ),
-            ],
-          ),
+              ),
+            ),
+
           const SizedBox(height: 6),
 
           // SKU, Marca y Categoría en fila

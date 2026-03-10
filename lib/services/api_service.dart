@@ -465,6 +465,32 @@ class ApiService {
     }
   }
 
+  /// ✅ NUEVO: Descargar imagen PNG de stock disponible
+  /// Retorna lista de bytes (binario) de la imagen PNG
+  Future<List<int>> descargarStockDisponibleImagen() async {
+    try {
+      final url = '$baseUrl/app/stock/imagen';
+
+      final response = await _dio.get(
+        url,
+        options: Options(
+          responseType: ResponseType.bytes,
+          contentType: 'image/png',
+        ),
+      );
+
+      if (response.statusCode == 200) {
+        debugPrint('✅ Imagen descargada: ${response.data.length} bytes');
+        return response.data as List<int>;
+      } else {
+        throw Exception('Error: ${response.statusCode}');
+      }
+    } catch (e) {
+      debugPrint('❌ Error descargando imagen stock disponible: $e');
+      rethrow;
+    }
+  }
+
   /// ✅ NUEVO: Obtener reporte de productos vendidos (JSON)
   /// GET /api/reportes/productos-vendidos
   /// Retorna datos del reporte para mostrar en pantalla

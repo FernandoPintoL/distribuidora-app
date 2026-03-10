@@ -8,6 +8,7 @@ Future<TimeOfDay?> showCustomTimePicker({
   String? helpText,
   String? cancelText,
   String? confirmText,
+  int? minHour,
 }) async {
   try {
     // Esperar a que el frame actual termine
@@ -80,26 +81,34 @@ Future<TimeOfDay?> showCustomTimePicker({
                                 itemExtent: 40,
                                 diameterRatio: 1.2,
                                 onSelectedItemChanged: (index) {
-                                  setState(() {
-                                    selectedTime = selectedTime.replacing(hour: index);
-                                  });
+                                  // Solo permitir cambio si la hora no está en el pasado
+                                  if (minHour == null || index >= minHour) {
+                                    setState(() {
+                                      selectedTime = selectedTime.replacing(hour: index);
+                                    });
+                                  }
                                 },
                                 children: List<Widget>.generate(
                                   24,
-                                  (index) => Center(
-                                    child: Text(
-                                      index.toString().padLeft(2, '0'),
-                                      style: TextStyle(
-                                        fontSize: 18,
-                                        fontWeight: selectedTime.hour == index
-                                            ? FontWeight.bold
-                                            : FontWeight.normal,
-                                        color: selectedTime.hour == index
-                                            ? Theme.of(context).primaryColor
-                                            : Colors.grey,
+                                  (index) {
+                                    final isDisabled = minHour != null && index < minHour;
+                                    return Center(
+                                      child: Text(
+                                        index.toString().padLeft(2, '0'),
+                                        style: TextStyle(
+                                          fontSize: 18,
+                                          fontWeight: selectedTime.hour == index
+                                              ? FontWeight.bold
+                                              : FontWeight.normal,
+                                          color: isDisabled
+                                              ? Colors.grey.withValues(alpha: 0.3)
+                                              : selectedTime.hour == index
+                                                  ? Theme.of(context).primaryColor
+                                                  : Colors.grey,
+                                        ),
                                       ),
-                                    ),
-                                  ),
+                                    );
+                                  },
                                 ),
                               ),
                             ),
@@ -152,8 +161,9 @@ Future<TimeOfDay?> showCustomTimePicker({
                           ),
                           const SizedBox(width: 8),
                           ElevatedButton(
-                            onPressed: () =>
-                                Navigator.pop(context, selectedTime),
+                            onPressed: (minHour == null || selectedTime.hour >= minHour)
+                                ? () => Navigator.pop(context, selectedTime)
+                                : null,
                             child: Text(confirmText ?? 'Aceptar'),
                           ),
                         ],

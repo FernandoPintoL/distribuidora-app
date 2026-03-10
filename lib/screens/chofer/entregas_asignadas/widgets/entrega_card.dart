@@ -61,9 +61,10 @@ class _EntregaCardState extends State<EntregaCard> {
                         children: [
                           Text(
                             entrega.tipoWorkIcon,
-                            style: const TextStyle(
+                            /* style: const TextStyle(
                               fontSize: 18,
-                            ), // TODO: usar AppTextStyles.headlineSmall,
+                            ), */
+                            // TODO: usar AppTextStyles.headlineSmall,
                           ),
                           const SizedBox(width: 8),
                           Expanded(
@@ -683,7 +684,8 @@ class _EntregaCardState extends State<EntregaCard> {
             subtitle: venta.numero,
             isSelected: false,
             // ✅ MEJORADO: Agregar información adicional para mostrar en el mapa
-            razonSocial: venta.clienteRazonSocial,  // ✅ Ahora obtiene del modelo Venta
+            razonSocial:
+                venta.clienteRazonSocial, // ✅ Ahora obtiene del modelo Venta
             telefono: venta.clienteTelefono,
             ventaId: venta.id,
           ),

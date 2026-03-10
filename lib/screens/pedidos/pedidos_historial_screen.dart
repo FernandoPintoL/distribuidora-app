@@ -671,7 +671,7 @@ class _PedidosHistorialScreenState extends State<PedidosHistorialScreen> {
                           children: [
                             Expanded(
                               child: Text(
-                                '${pedidoProvider.pedidos.length} resultado${pedidoProvider.pedidos.length != 1 ? 's' : ''} encontrado${pedidoProvider.pedidos.length != 1 ? 's' : ''}',
+                                '${pedidoProvider.pedidos.length} de ${pedidoProvider.totalItems} resultado${pedidoProvider.totalItems != 1 ? 's' : ''}',
                                 style: context.textTheme.bodyMedium?.copyWith(
                                   color: colorScheme.primary,
                                   fontWeight: FontWeight.w600,
@@ -697,28 +697,55 @@ class _PedidosHistorialScreenState extends State<PedidosHistorialScreen> {
                         physics: const NeverScrollableScrollPhysics(),
                         itemCount:
                             pedidoProvider.pedidos.length +
-                            (pedidoProvider.isLoadingMore ? 1 : 0),
+                            (pedidoProvider.isLoadingMore || !pedidoProvider.hasMorePages ? 1 : 0),
                         padding: const EdgeInsets.symmetric(vertical: 0),
                         itemBuilder: (context, index) {
-                          // Indicador de carga al final
+                          // Elemento final: carga o fin de lista
                           if (index == pedidoProvider.pedidos.length) {
-                            return Padding(
-                              padding: const EdgeInsets.all(16),
-                              child: Center(
-                                child: Column(
-                                  children: [
-                                    CircularProgressIndicator(
-                                      color: colorScheme.primary,
-                                    ),
-                                    const SizedBox(height: 8),
-                                    Text(
-                                      'Cargando más pedidos...',
-                                      style: context.textTheme.bodySmall,
-                                    ),
-                                  ],
+                            // Indicador de carga
+                            if (pedidoProvider.isLoadingMore) {
+                              return Padding(
+                                padding: const EdgeInsets.all(16),
+                                child: Center(
+                                  child: Column(
+                                    children: [
+                                      CircularProgressIndicator(
+                                        color: colorScheme.primary,
+                                      ),
+                                      const SizedBox(height: 8),
+                                      Text(
+                                        'Cargando más pedidos...',
+                                        style: context.textTheme.bodySmall,
+                                      ),
+                                    ],
+                                  ),
                                 ),
-                              ),
-                            );
+                              );
+                            }
+                            // Mensaje de fin de lista
+                            else {
+                              return Padding(
+                                padding: const EdgeInsets.all(16),
+                                child: Center(
+                                  child: Column(
+                                    children: [
+                                      Icon(
+                                        Icons.done_all,
+                                        color: colorScheme.outline.withOpacity(0.5),
+                                        size: 32,
+                                      ),
+                                      const SizedBox(height: 8),
+                                      Text(
+                                        'No hay más proformas',
+                                        style: context.textTheme.bodySmall?.copyWith(
+                                          color: colorScheme.outline.withOpacity(0.6),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              );
+                            }
                           }
 
                           final pedido = pedidoProvider.pedidos[index];

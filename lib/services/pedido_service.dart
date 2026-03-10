@@ -241,12 +241,12 @@ class PedidoService {
 
       // ✅ ACTUALIZADO: Solo agregar fechas si el usuario las proporciona explícitamente
       if (fechaDesde != null) {
-        queryParams['fecha_desde'] = fechaDesde.toIso8601String().split('T')[0];
+        queryParams['fecha_desde'] = _formatearFecha(fechaDesde);
       }
 
       if (fechaHasta != null) {
         final manana = fechaHasta.add(const Duration(days: 1));
-        queryParams['fecha_hasta'] = manana.toIso8601String().split('T')[0];
+        queryParams['fecha_hasta'] = _formatearFecha(manana);
       }
 
       // ✅ ACTUALIZADO: Cambiar de 'cliente' a 'search' para búsqueda unificada
@@ -256,19 +256,19 @@ class PedidoService {
 
       // ✅ NUEVO: Agregar filtros de fechas específicas
       if (fechaVencimientoDesde != null) {
-        queryParams['fecha_vencimiento_desde'] = fechaVencimientoDesde.toIso8601String();
+        queryParams['fecha_vencimiento_desde'] = _formatearFecha(fechaVencimientoDesde);
       }
 
       if (fechaVencimientoHasta != null) {
-        queryParams['fecha_vencimiento_hasta'] = fechaVencimientoHasta.toIso8601String();
+        queryParams['fecha_vencimiento_hasta'] = _formatearFecha(fechaVencimientoHasta);
       }
 
       if (fechaEntregaSolicitadaDesde != null) {
-        queryParams['fecha_entrega_solicitada_desde'] = fechaEntregaSolicitadaDesde.toIso8601String();
+        queryParams['fecha_entrega_solicitada_desde'] = _formatearFecha(fechaEntregaSolicitadaDesde);
       }
 
       if (fechaEntregaSolicitadaHasta != null) {
-        queryParams['fecha_entrega_solicitada_hasta'] = fechaEntregaSolicitadaHasta.toIso8601String();
+        queryParams['fecha_entrega_solicitada_hasta'] = _formatearFecha(fechaEntregaSolicitadaHasta);
       }
 
       final response = await _apiService.get(
@@ -435,5 +435,11 @@ class PedidoService {
     } else {
       return 'Error de red: ${e.message}';
     }
+  }
+
+  /// ✅ Helper para formatear DateTime a string en formato YYYY-MM-DD
+  /// Convierte DateTime a formato de fecha solo (sin hora)
+  String _formatearFecha(DateTime fecha) {
+    return '${fecha.year}-${fecha.month.toString().padLeft(2, '0')}-${fecha.day.toString().padLeft(2, '0')}';
   }
 }

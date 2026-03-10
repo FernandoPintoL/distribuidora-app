@@ -10,6 +10,7 @@ import '../../config/config.dart';
 import '../../services/url_launcher_service.dart';
 import 'client_detail_screen.dart';
 import 'client_form_screen.dart';
+import 'client_map_screen.dart';
 import '../login_screen.dart';
 import '../chofer/marcar_visita_screen.dart';
 
@@ -629,6 +630,7 @@ class _ClientListScreenState extends State<ClientListScreen> {
                             onEdit: () => _navigateToEditClient(client),
                             onMarcarVisita: () =>
                                 _navigateToMarcarVisita(client),
+                            onViewMap: () => _navigateToClientMap(client),
                           );
                         },
                       ),
@@ -871,6 +873,18 @@ class _ClientListScreenState extends State<ClientListScreen> {
       ),
     );
   }
+
+  void _navigateToClientMap(Client client) {
+    if (!mounted) return;
+    debugPrint(
+      '🗺️ Navegando a ClientMapScreen para cliente: ${client.nombre}',
+    );
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => ClientMapScreen(client: client),
+      ),
+    );
+  }
 }
 
 class ClientListItem extends StatelessWidget {
@@ -880,6 +894,7 @@ class ClientListItem extends StatelessWidget {
   final VoidCallback? onWhatsApp;
   final VoidCallback? onEdit;
   final VoidCallback? onMarcarVisita;
+  final VoidCallback? onViewMap;
 
   const ClientListItem({
     super.key,
@@ -889,6 +904,7 @@ class ClientListItem extends StatelessWidget {
     this.onWhatsApp,
     this.onEdit,
     this.onMarcarVisita,
+    this.onViewMap,
   });
 
   @override
@@ -1024,11 +1040,15 @@ class ClientListItem extends StatelessWidget {
             if (client.telefono != null && client.telefono!.isNotEmpty) ...[
               Icon(Icons.phone, size: 14, color: colorScheme.onSurfaceVariant),
               const SizedBox(width: 4),
-              Text(
-                client.telefono!,
-                style: TextStyle(
-                  fontSize: 12,
-                  color: colorScheme.onSurfaceVariant,
+              Expanded(
+                child: Text(
+                  client.telefono!,
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: colorScheme.onSurfaceVariant,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
               const SizedBox(width: 12),
@@ -1076,7 +1096,7 @@ class ClientListItem extends StatelessWidget {
                     color: colorScheme.onSurfaceVariant,
                   ),
                   const SizedBox(width: 4),
-                  Flexible(
+                  Expanded(
                     child: Text(
                       _getLocalidadName(client.localidad),
                       style: TextStyle(
@@ -1093,12 +1113,16 @@ class ClientListItem extends StatelessWidget {
                 ],
                 if (client.codigoCliente != null &&
                     client.codigoCliente!.isNotEmpty)
-                  Text(
-                    'Cód: ${client.codigoCliente}',
-                    style: TextStyle(
-                      fontSize: 10,
-                      color: colorScheme.onSurfaceVariant,
-                      fontWeight: FontWeight.w500,
+                  Flexible(
+                    child: Text(
+                      'Cód: ${client.codigoCliente}',
+                      style: TextStyle(
+                        fontSize: 10,
+                        color: colorScheme.onSurfaceVariant,
+                        fontWeight: FontWeight.w500,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ),
               ],
@@ -1184,117 +1208,90 @@ class ClientListItem extends StatelessWidget {
 
         const SizedBox(height: 8),
 
-        // Botones de acción rápida
-        Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // Botón de edición rápida
-            Container(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [
-                    colorScheme.tertiary,
-                    colorScheme.tertiary.withOpacity(0.8),
-                  ],
-                ),
-                shape: BoxShape.circle,
-                boxShadow: [
-                  BoxShadow(
-                    color: colorScheme.tertiary.withOpacity(0.3),
-                    blurRadius: 6,
-                    offset: const Offset(0, 2),
-                  ),
+        // Menú de acciones
+        PopupMenuButton<String>(
+          icon: Icon(
+            Icons.more_vert,
+            color: colorScheme.onSurfaceVariant,
+            size: 20,
+          ),
+          offset: const Offset(-100, 0),
+          onSelected: (value) {
+            switch (value) {
+              case 'edit':
+                onEdit?.call();
+                break;
+              case 'map':
+                onViewMap?.call();
+                break;
+              case 'visita':
+                onMarcarVisita?.call();
+                break;
+              case 'call':
+                onCall?.call();
+                break;
+              case 'whatsapp':
+                onWhatsApp?.call();
+                break;
+            }
+          },
+          itemBuilder: (BuildContext context) => [
+            PopupMenuItem(
+              value: 'edit',
+              child: Row(
+                children: [
+                  Icon(Icons.edit, size: 18, color: colorScheme.tertiary),
+                  const SizedBox(width: 12),
+                  Text('Editar'),
                 ],
               ),
-              child: IconButton(
-                icon: Icon(Icons.edit, color: colorScheme.onTertiary, size: 18),
-                onPressed: onEdit,
-                tooltip: 'Editar',
-                padding: const EdgeInsets.all(8),
-                constraints: const BoxConstraints(),
-              ),
             ),
-
-            const SizedBox(width: 6),
-
-            // Botón de marcar visita
-            if (onMarcarVisita != null)
-              Container(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [Colors.purple, Colors.purple.withOpacity(0.8)],
-                  ),
-                  shape: BoxShape.circle,
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.purple.withOpacity(0.3),
-                      blurRadius: 6,
-                      offset: const Offset(0, 2),
-                    ),
+            if (onViewMap != null)
+              PopupMenuItem(
+                value: 'map',
+                child: Row(
+                  children: [
+                    Icon(Icons.location_on, size: 18, color: Colors.green),
+                    const SizedBox(width: 12),
+                    Text('Ver Mapa'),
                   ],
                 ),
-                child: IconButton(
-                  icon: Icon(
-                    Icons.assignment_turned_in,
-                    color: Colors.white,
-                    size: 18,
-                  ),
-                  onPressed: onMarcarVisita,
-                  tooltip: 'Marcar Visita',
-                  padding: const EdgeInsets.all(8),
-                  constraints: const BoxConstraints(),
+              ),
+            if (onMarcarVisita != null)
+              PopupMenuItem(
+                value: 'visita',
+                child: Row(
+                  children: [
+                    Icon(Icons.assignment_turned_in, size: 18, color: Colors.purple),
+                    const SizedBox(width: 12),
+                    Text('Marcar Visita'),
+                  ],
+                ),
+              ),
+            if (onCall != null && client.telefono != null && client.telefono!.isNotEmpty)
+              PopupMenuItem(
+                value: 'call',
+                child: Row(
+                  children: [
+                    Icon(Icons.call, size: 18, color: colorScheme.primary),
+                    const SizedBox(width: 12),
+                    Text('Llamar'),
+                  ],
+                ),
+              ),
+            if (onWhatsApp != null && client.telefono != null && client.telefono!.isNotEmpty)
+              PopupMenuItem(
+                value: 'whatsapp',
+                child: Row(
+                  children: [
+                    Icon(Icons.message, size: 18, color: Colors.green),
+                    const SizedBox(width: 12),
+                    Text('WhatsApp'),
+                  ],
                 ),
               ),
           ],
         ),
-
-        // Acciones (llamar y WhatsApp)
-        if (client.telefono != null && client.telefono!.isNotEmpty) ...[
-          const SizedBox(height: 8),
-          Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              if (onCall != null)
-                Container(
-                  decoration: BoxDecoration(
-                    color: colorScheme.primaryContainer,
-                    shape: BoxShape.circle,
-                  ),
-                  child: IconButton(
-                    icon: Icon(
-                      Icons.call,
-                      color: colorScheme.onPrimaryContainer,
-                      size: 18,
-                    ),
-                    onPressed: onCall,
-                    tooltip: 'Llamar',
-                    padding: const EdgeInsets.all(6),
-                    constraints: const BoxConstraints(),
-                  ),
-                ),
-              if (onWhatsApp != null) ...[
-                const SizedBox(width: 6),
-                Container(
-                  decoration: BoxDecoration(
-                    color: colorScheme.primaryContainer,
-                    shape: BoxShape.circle,
-                  ),
-                  child: IconButton(
-                    icon: Icon(
-                      Icons.message,
-                      color: colorScheme.onPrimaryContainer,
-                      size: 18,
-                    ),
-                    onPressed: onWhatsApp,
-                    tooltip: 'WhatsApp',
-                    padding: const EdgeInsets.all(6),
-                    constraints: const BoxConstraints(),
-                  ),
-                ),
-              ],
-            ],
-          ),
-        ],
       ],
     );
   }

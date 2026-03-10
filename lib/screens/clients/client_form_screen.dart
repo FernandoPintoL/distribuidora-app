@@ -1020,12 +1020,15 @@ class _ClientFormScreenState extends State<ClientFormScreen> {
                   child: Icon(icon, color: colorScheme.onPrimary, size: 24),
                 ),
                 const SizedBox(width: 16),
-                Text(
-                  title,
-                  style: TextStyle(
-                    fontSize: AppTextStyles.headlineSmall(context).fontSize!,
-                    fontWeight: FontWeight.bold,
-                    color: colorScheme.onPrimaryContainer,
+                Expanded(
+                  child: Text(
+                    title,
+                    style: TextStyle(
+                      fontSize: AppTextStyles.headlineSmall(context).fontSize!,
+                      fontWeight: FontWeight.bold,
+                      color: colorScheme.onPrimaryContainer,
+                    ),
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
               ],

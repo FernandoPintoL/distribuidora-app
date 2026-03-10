@@ -25,13 +25,20 @@ class PaginatedResponse<T> {
         // Formato estándar paginado
         paginatedData = PaginatedData.fromJson(json['data'], fromJson);
       } else if (json['data'] is List) {
-        // Formato de lista directa (sin paginación)
-        /* debugPrint(
-          '⚠️ Data es una lista directa, creando PaginatedData simple',
-        ); */
+        // ✅ ACTUALIZADO: Buscar 'meta' para obtener el total real
         final dataList = json['data'] as List;
+
+        // Buscar paginación en 'meta' si existe
+        Map<String, dynamic>? meta = json['meta'] is Map<String, dynamic>
+          ? json['meta'] as Map<String, dynamic>
+          : null;
+
+        if (meta != null) {
+          debugPrint('📊 Detected list with meta: total=${meta['total']}');
+        }
+
         paginatedData = PaginatedData(
-          currentPage: 1,
+          currentPage: meta?['current_page'] ?? 1,
           data: dataList.map((item) {
             if (item is Map<String, dynamic>) {
               return fromJson(item);
@@ -41,8 +48,9 @@ class PaginatedResponse<T> {
               throw Exception('Invalid item type: ${item.runtimeType}');
             }
           }).toList(),
-          perPage: dataList.length,
-          total: dataList.length,
+          perPage: meta?['per_page'] ?? dataList.length,
+          total: meta?['total'] ?? dataList.length,
+          lastPage: meta?['last_page'],
         );
       }
     }
@@ -129,9 +137,28 @@ class PaginatedData<T> {
       );
     }
 
+    // ✅ ACTUALIZADO: Buscar paginación en 'meta' primero, luego en nivel superior
+    Map<String, dynamic> paginationSource = {};
+    if (json.containsKey('meta') && json['meta'] is Map<String, dynamic>) {
+      paginationSource = json['meta'] as Map<String, dynamic>;
+      debugPrint('📊 Paginación encontrada en "meta": total=${paginationSource['total']}, current_page=${paginationSource['current_page']}');
+    } else if (json.containsKey('current_page')) {
+      paginationSource = json;
+      debugPrint('📊 Paginación encontrada en nivel superior');
+    } else {
+      debugPrint('⚠️ No se encontró información de paginación');
+    }
+
     try {
+      final currentPage = paginationSource['current_page'] ?? 1;
+      final perPage = paginationSource['per_page'] ?? 20;
+      final total = paginationSource['total'] ?? 0;
+      final lastPage = paginationSource['last_page'];
+
+      debugPrint('📊 Valores extraídos: currentPage=$currentPage, perPage=$perPage, total=$total, lastPage=$lastPage');
+
       return PaginatedData(
-        currentPage: json['current_page'] ?? 1,
+        currentPage: currentPage,
         data: dataList.map((item) {
           try {
             if (item is Map<String, dynamic>) {
@@ -147,9 +174,9 @@ class PaginatedData<T> {
             rethrow;
           }
         }).toList(),
-        perPage: json['per_page'] ?? 20,
-        total: json['total'] ?? 0,
-        lastPage: json['last_page'],
+        perPage: perPage,
+        total: total,
+        lastPage: lastPage,
       );
     } catch (e) {
       debugPrint('❌ Error in PaginatedData.fromJson: $e');
