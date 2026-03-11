@@ -846,6 +846,15 @@ class _DashboardPreventistaState extends State<DashboardPreventista>
                   _descargarStockDisponibleImagen();
                 },
               ),
+              ListTile(
+                leading: const Icon(Icons.share_outlined),
+                title: const Text('Compartir Catálogo en Línea'),
+                subtitle: const Text('Link público de precios'),
+                onTap: () {
+                  Navigator.pop(context);
+                  _compartirCatalogoPreciosPublico();
+                },
+              ),
               const SizedBox(height: 8),
             ],
           ),
@@ -1044,6 +1053,28 @@ class _DashboardPreventistaState extends State<DashboardPreventista>
           SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
         );
       }
+    }
+  }
+
+  /// ✅ NUEVO: Compartir catálogo de precios público
+  void _compartirCatalogoPreciosPublico() async {
+    try {
+      final publicLink = 'http://localhost:8000/public/precios';
+      await Share.share(
+        'Consulta nuestro catálogo de precios en línea:\n\n$publicLink',
+        subject: 'Catálogo de Precios - Distribuidora Paucara',
+      );
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error al compartir: ${e.toString()}'),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 5),
+          ),
+        );
+      }
+      debugPrint('❌ Error compartiendo catálogo: $e');
     }
   }
 
