@@ -14,6 +14,7 @@ import 'screens/cliente/direccion_form_screen.dart';
 import 'screens/chofer/iniciar_ruta_screen.dart';
 import 'widgets/realtime_notifications_listener.dart';
 import 'config/app_themes.dart';
+import 'config/app_urls.dart';
 import 'services/local_notification_service.dart';
 import 'services/background_notification_service.dart';
 
@@ -32,6 +33,9 @@ void main() async {
   // Load environment variables before initializing services/UI
   await dotenv.load(fileName: ".env");
   // debugPrint('✅ .env loaded');
+
+  // ✅ NUEVO: Inicializar URLs centralizadas
+  AppUrls.initialize();
 
   final themeProvider = ThemeProvider();
   await themeProvider.init();

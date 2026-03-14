@@ -491,6 +491,57 @@ class ApiService {
     }
   }
 
+  /// ✅ NUEVO: Descargar PDF de stock disponible CON STOCK
+  /// Retorna lista de bytes (binario) del PDF con columna de stock
+  Future<List<int>> descargarStockDisponiblePdfConStock() async {
+    try {
+      final url = '$baseUrl/app/stock/pdf?incluir_stock=1';
+
+      final response = await _dio.get(
+        url,
+        options: Options(
+          responseType: ResponseType.bytes,
+          contentType: 'application/pdf',
+        ),
+      );
+
+      if (response.statusCode == 200) {
+        return response.data as List<int>;
+      } else {
+        throw Exception('Error: ${response.statusCode}');
+      }
+    } catch (e) {
+      debugPrint('❌ Error descargando PDF stock con stock: $e');
+      rethrow;
+    }
+  }
+
+  /// ✅ NUEVO: Descargar imagen PNG de stock disponible CON STOCK
+  /// Retorna lista de bytes (binario) de la imagen PNG con columna de stock
+  Future<List<int>> descargarStockDisponibleImagenConStock() async {
+    try {
+      final url = '$baseUrl/app/stock/imagen?incluir_stock=1';
+
+      final response = await _dio.get(
+        url,
+        options: Options(
+          responseType: ResponseType.bytes,
+          contentType: 'image/png',
+        ),
+      );
+
+      if (response.statusCode == 200) {
+        debugPrint('✅ Imagen con stock descargada: ${response.data.length} bytes');
+        return response.data as List<int>;
+      } else {
+        throw Exception('Error: ${response.statusCode}');
+      }
+    } catch (e) {
+      debugPrint('❌ Error descargando imagen stock con stock: $e');
+      rethrow;
+    }
+  }
+
   /// ✅ NUEVO: Obtener reporte de productos vendidos (JSON)
   /// GET /api/reportes/productos-vendidos
   /// Retorna datos del reporte para mostrar en pantalla

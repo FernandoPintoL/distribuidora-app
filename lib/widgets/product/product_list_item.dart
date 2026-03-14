@@ -5,6 +5,7 @@ import '../../providers/providers.dart';
 import '../../utils/stock_status.dart';
 import '../../extensions/theme_extension.dart';
 import '../product/index.dart';
+import '../common/quantity_input_widget.dart';
 
 /// Widget para mostrar un producto en vista de lista
 class ProductListItem extends StatefulWidget {
@@ -27,8 +28,6 @@ class _ProductListItemState extends State<ProductListItem>
   late Animation<double> _scaleAnimation;
   late AnimationController _bounceController;
   late Animation<double> _bounceAnimation;
-  late TextEditingController _cantidadController;
-  late FocusNode _cantidadFocusNode;
 
   @override
   void initState() {
@@ -55,18 +54,12 @@ class _ProductListItemState extends State<ProductListItem>
         ]).animate(
           CurvedAnimation(parent: _bounceController, curve: Curves.elasticOut),
         );
-
-    // ✅ NUEVO: Controller para entrada de cantidad
-    _cantidadController = TextEditingController(text: '1');
-    _cantidadFocusNode = FocusNode();
   }
 
   @override
   void dispose() {
     _scaleController.dispose();
     _bounceController.dispose();
-    _cantidadController.dispose();
-    _cantidadFocusNode.dispose();
     super.dispose();
   }
 
@@ -86,17 +79,23 @@ class _ProductListItemState extends State<ProductListItem>
 
     if (itemsObligatorios.isEmpty) return null;
 
-    return itemsObligatorios.map((i) => {
-      'combo_item_id': i.id,
-      'producto_id': i.productoId,
-      'cantidad': i.cantidad,
-    }).toList();
+    return itemsObligatorios
+        .map(
+          (i) => {
+            'combo_item_id': i.id,
+            'producto_id': i.productoId,
+            'cantidad': i.cantidad,
+          },
+        )
+        .toList();
   }
 
   void _incrementQuantity() {
     final stock = _getMainWarehouseStock();
     final carritoProvider = context.read<CarritoProvider>();
-    final cantidadActual = carritoProvider.obtenerCantidadProducto(widget.product.id);
+    final cantidadActual = carritoProvider.obtenerCantidadProducto(
+      widget.product.id,
+    );
 
     if (cantidadActual < stock) {
       // Trigger bounce animation
@@ -107,16 +106,22 @@ class _ProductListItemState extends State<ProductListItem>
         widget.product,
         comboItemsSeleccionados: _construirComboItemsObligatorios(),
       );
+      // ✅ NUEVO: Recalcular con rangos después de cambiar cantidad
+      carritoProvider.calcularCarritoConRangos();
     }
   }
 
   void _decrementQuantity() {
     final carritoProvider = context.read<CarritoProvider>();
-    final cantidadActual = carritoProvider.obtenerCantidadProducto(widget.product.id);
+    final cantidadActual = carritoProvider.obtenerCantidadProducto(
+      widget.product.id,
+    );
 
     if (cantidadActual > 0) {
       // Decrementar del carrito (esto dispara notifyListeners en el provider)
       carritoProvider.decrementarCantidad(widget.product.id);
+      // ✅ NUEVO: Recalcular con rangos después de cambiar cantidad
+      carritoProvider.calcularCarritoConRangos();
     }
   }
 
@@ -126,8 +131,7 @@ class _ProductListItemState extends State<ProductListItem>
     final stock = _getMainWarehouseStock();
 
     if (valor.isEmpty) {
-      // Si está vacío, eliminar del carrito
-      carritoProvider.eliminarProducto(widget.product.id);
+      // Si está vacío, no hacer nada (permitir que el usuario borre)
       return;
     }
 
@@ -135,20 +139,22 @@ class _ProductListItemState extends State<ProductListItem>
 
     // Validar que no exceda el stock
     if (cantidadIngresada <= 0) {
-      // Si es 0 o negativo, eliminar del carrito
-      carritoProvider.eliminarProducto(widget.product.id);
+      // Si es 0 o negativo, no hacer nada
       return;
     }
 
     if (cantidadIngresada > stock) {
-      // Si excede stock, ajustar al máximo disponible y actualizar UI
-      _cantidadController.text = stock.toString();
+      // Si excede stock, ajustar al máximo disponible
       carritoProvider.actualizarCantidad(widget.product.id, stock);
+      // ✅ NUEVO: Recalcular con rangos después de cambiar cantidad
+      carritoProvider.calcularCarritoConRangos();
       return;
     }
 
     // ✅ NUEVO: Actualizar cantidad directamente
     carritoProvider.actualizarCantidad(widget.product.id, cantidadIngresada);
+    // ✅ NUEVO: Recalcular con rangos después de cambiar cantidad
+    carritoProvider.calcularCarritoConRangos();
   }
 
   @override
@@ -168,13 +174,14 @@ class _ProductListItemState extends State<ProductListItem>
             stock > 0;
 
         // ✅ NUEVO: Obtener cantidad actual del carrito (sincronizada globalmente)
-        final _quantity = carritoProvider.obtenerCantidadProducto(widget.product.id);
+        final _quantity = carritoProvider.obtenerCantidadProducto(
+          widget.product.id,
+        );
 
-        // ✅ NUEVO: Sincronizar el controller con la cantidad del provider
-        // (solo si el usuario no está escribiendo actualmente)
-        if (!_cantidadFocusNode.hasFocus) {
-          _cantidadController.text = _quantity.toString();
-        }
+        // ✅ NUEVO: Obtener detalles con rango de precios
+        final detalleConRango = carritoProvider.obtenerDetalleConRango(
+          widget.product.id,
+        );
 
         // Verificar si el usuario es preventista
         bool isPreventista = false;
@@ -201,185 +208,120 @@ class _ProductListItemState extends State<ProductListItem>
         final brownBorder = brownColor.withAlpha(120);
 
         return Card(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      elevation: 4,
-      color: _quantity > 0
-          ? brownColorLight
-          : (isDark ? colorScheme.surface : Colors.white),
-      shadowColor: brownShadow,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-        side: BorderSide(
+          margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          elevation: 4,
           color: _quantity > 0
-              ? brownBorder
-              : colorScheme.outline.withAlpha(20),
-          width: _quantity > 0 ? 2 : 1,
-        ),
-      ),
-      child: InkWell(
-        onTap: widget.onTap,
-        borderRadius: BorderRadius.circular(16),
-        splashColor: colorScheme.primary.withAlpha(30),
-        highlightColor: colorScheme.primary.withAlpha(15),
-        onTapDown: (_) => _scaleController.forward(),
-        onTapUp: (_) => _scaleController.reverse(),
-        onTapCancel: () => _scaleController.reverse(),
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: IntrinsicHeight(
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                ProductImageWidget(product: widget.product),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      ProductInfoWidget(product: widget.product),
-                      // Badge de cantidad disponible para preventistas
-                      if (isPreventista)
-                        Padding(
-                          padding: const EdgeInsets.only(top: 6.0),
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 10,
-                              vertical: 4,
-                            ),
-                            decoration: BoxDecoration(
-                              color: colorScheme.primaryContainer.withAlpha(
-                                200,
-                              ),
-                              borderRadius: BorderRadius.circular(8),
-                              border: Border.all(
-                                color: colorScheme.primary.withAlpha(150),
-                                width: 0.5,
-                              ),
-                            ),
-                            child: Text(
-                              '📦 Disp.: $cantidadDisponible ${widget.product.unidadMedida?.nombre ?? ""}',
-                              style: context.textTheme.bodySmall?.copyWith(
-                                fontSize: 11,
-                                fontWeight: FontWeight.w600,
-                                color: colorScheme.onPrimaryContainer,
-                              ),
-                            ),
-                          ),
-                        ),
-                    ],
-                  ),
-                ),
-                const SizedBox(width: 8),
-                // Stock badge y botón/cantidad
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.end,
+              ? brownColorLight
+              : (isDark ? colorScheme.surface : Colors.white),
+          shadowColor: brownShadow,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+            side: BorderSide(
+              color: _quantity > 0
+                  ? brownBorder
+                  : colorScheme.outline.withAlpha(20),
+              width: _quantity > 0 ? 2 : 1,
+            ),
+          ),
+          child: InkWell(
+            onTap: widget.onTap,
+            borderRadius: BorderRadius.circular(16),
+            splashColor: colorScheme.primary.withAlpha(30),
+            highlightColor: colorScheme.primary.withAlpha(15),
+            onTapDown: (_) => _scaleController.forward(),
+            onTapUp: (_) => _scaleController.reverse(),
+            onTapCancel: () => _scaleController.reverse(),
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: IntrinsicHeight(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    /* ProductStockBadgeWidget(
-                    stock: stock,
-                    status: stockStatus,
-                  ),
-                  const SizedBox(height: 6), */
-                    if (canAddToCart)
-                      if (_quantity == 0)
-                        ScaleTransition(
-                          scale: _bounceAnimation,
-                          child: SizedBox(
-                            width: 44,
-                            height: 44,
-                            child: IconButton(
-                              onPressed: _incrementQuantity,
-                              icon: const Icon(Icons.add_shopping_cart),
-                              style: IconButton.styleFrom(
-                                backgroundColor: brownColor,
-                                foregroundColor: Colors.white,
-                                elevation: 3,
-                                shadowColor: brownColor.withAlpha(40),
-                              ),
-                              tooltip: 'Agregar al carrito',
-                            ),
-                          ),
-                        )
-                      else
-                        Container(
-                          decoration: BoxDecoration(
-                            color: brownColor.withAlpha(20),
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: brownColor, width: 1.5),
-                          ),
-                          child: Row(
+                    Row(
+                      children: [
+                        ProductImageWidget(product: widget.product),
+                        const SizedBox(width: 12),
+                        Flexible(
+                          fit: FlexFit.loose,
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              SizedBox(
-                                width: 32,
-                                height: 32,
-                                child: IconButton(
-                                  onPressed: _decrementQuantity,
-                                  icon: const Icon(Icons.remove, size: 16),
-                                  padding: EdgeInsets.zero,
-                                  style: IconButton.styleFrom(
-                                    foregroundColor: brownColor,
-                                  ),
-                                ),
+                              ProductInfoWidget(
+                                product: widget.product,
+                                cantidad: _quantity,
+                                detalleConRango: detalleConRango,
                               ),
-                              SizedBox(
-                                width: 40,
-                                height: 32,
-                                child: Container(
-                                  margin: const EdgeInsets.symmetric(
-                                      horizontal: 2),
-                                  decoration: BoxDecoration(
-                                    color: Colors.white.withAlpha(200),
-                                    borderRadius: BorderRadius.circular(6),
-                                  ),
-                                  child: TextField(
-                                    controller: _cantidadController,
-                                    focusNode: _cantidadFocusNode,
-                                    textAlign: TextAlign.center,
-                                    keyboardType: TextInputType.number,
-                                    onChanged: _actualizarCantidadDesdeInput,
-                                    style: context.textTheme.labelMedium
-                                        ?.copyWith(
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 12,
-                                          color: brownColor,
-                                        ),
-                                    decoration: InputDecoration(
-                                      contentPadding:
-                                          const EdgeInsets.symmetric(
-                                        horizontal: 4,
-                                        vertical: 4,
+                              // Badge de cantidad disponible para preventistas
+                              if (isPreventista)
+                                Padding(
+                                  padding: const EdgeInsets.only(top: 6.0),
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 4,
+                                      vertical: 2,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: colorScheme.primaryContainer.withAlpha(
+                                        200,
                                       ),
-                                      border: InputBorder.none,
-                                      hintText: '1',
-                                      hintStyle: TextStyle(
-                                        color: brownColor.withAlpha(50),
-                                        fontSize: 12,
+                                      borderRadius: BorderRadius.circular(8),
+                                      border: Border.all(
+                                        color: colorScheme.primary.withAlpha(150),
+                                        width: 0.5,
+                                      ),
+                                    ),
+                                    child: Text(
+                                      '📦 Disp.: $cantidadDisponible ${widget.product.unidadMedida?.nombre ?? ""}',
+                                      style: context.textTheme.bodyLarge?.copyWith(
+                                        fontWeight: FontWeight.w600,
+                                        color: colorScheme.onPrimaryContainer,
                                       ),
                                     ),
                                   ),
                                 ),
-                              ),
-                              SizedBox(
-                                width: 32,
-                                height: 32,
-                                child: IconButton(
-                                  onPressed: _incrementQuantity,
-                                  icon: const Icon(Icons.add, size: 16),
-                                  padding: EdgeInsets.zero,
-                                  style: IconButton.styleFrom(
-                                    foregroundColor: brownColor,
-                                  ),
-                                ),
-                              ),
                             ],
                           ),
                         ),
+                        const SizedBox(width: 4,),
+                        if (_quantity == 0)
+                          ScaleTransition(
+                            scale: _bounceAnimation,
+                            child: SizedBox(
+                              width: 44,
+                              height: 44,
+                              child: IconButton(
+                                onPressed: _incrementQuantity,
+                                icon: const Icon(Icons.add_shopping_cart),
+                                style: IconButton.styleFrom(
+                                  backgroundColor: brownColor,
+                                  foregroundColor: Colors.white,
+                                  elevation: 3,
+                                  shadowColor: brownColor.withAlpha(40),
+                                ),
+                                tooltip: 'Agregar al carrito',
+                              ),
+                            ),
+                          )
+                      ]
+                    ),
+                    const SizedBox(height: 8),
+                    // Stock badge y botón/cantidad
+                    if (canAddToCart && _quantity > 0)
+                      QuantityInputWidget(
+                        quantity: _quantity,
+                        maxQuantity: stock,
+                        onIncrement: _incrementQuantity,
+                        onDecrement: _decrementQuantity,
+                        onChanged: _actualizarCantidadDesdeInput,
+                        primaryColor: brownColor,
+                        fullWidth: true,
+                      ),
                   ],
                 ),
-              ],
+              ),
             ),
           ),
-        ),
-      ),
         );
       },
     );

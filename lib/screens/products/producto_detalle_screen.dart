@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../models/models.dart';
+import '../../models/detalle_carrito_con_rango.dart';
 import '../../providers/providers.dart';
 import '../../widgets/widgets.dart';
+import '../../widgets/common/quantity_input_widget.dart';
 import '../../config/config.dart';
 import '../../extensions/theme_extension.dart';
 
@@ -147,6 +149,9 @@ class _ProductoDetalleScreenState extends State<ProductoDetalleScreen> {
         comboItemsSeleccionados: _construirComboItems(),
       );
 
+      // ✅ NUEVO: Recalcular con rangos después de cambiar cantidad
+      carritoProvider.calcularCarritoConRangos();
+
       // ✅ NUEVO: Sincronizar el input
       setState(() {
         _cantidad = cantidadActual + 1;
@@ -162,6 +167,9 @@ class _ProductoDetalleScreenState extends State<ProductoDetalleScreen> {
     if (cantidadActual > 0) {
       // Decrementar 1 unidad del carrito
       carritoProvider.decrementarCantidad(widget.producto.id);
+
+      // ✅ NUEVO: Recalcular con rangos después de cambiar cantidad
+      carritoProvider.calcularCarritoConRangos();
 
       // ✅ NUEVO: Sincronizar el input
       setState(() {
@@ -193,45 +201,29 @@ class _ProductoDetalleScreenState extends State<ProductoDetalleScreen> {
       _mostrarError('La cantidad no puede exceder el stock disponible ($stock)');
       _cantidadController.text = stock.toString();
       carritoProvider.actualizarCantidad(widget.producto.id, stock);
+      // ✅ NUEVO: Recalcular con rangos después de cambiar cantidad
+      carritoProvider.calcularCarritoConRangos();
       setState(() => _cantidad = stock);
       return;
     }
 
     // ✅ Actualizar cantidad directamente en el carrito
     carritoProvider.actualizarCantidad(widget.producto.id, cantidadIngresada);
+    // ✅ NUEVO: Recalcular con rangos después de cambiar cantidad
+    carritoProvider.calcularCarritoConRangos();
     setState(() => _cantidad = cantidadIngresada);
   }
 
-  // ✅ NUEVO: Manejar cuando el usuario pierde el foco del input
+  // ✅ ACTUALIZADO: El QuantityInputWidget maneja la validación internamente
+  // Este método ya no es necesario, pero lo mantenemos para compatibilidad
   void _onFocusLostCantidad() {
-    final carritoProvider = context.read<CarritoProvider>();
-    final stock =
-        (widget.producto.stockPrincipal?.cantidadDisponible ?? 0 as num).toInt();
-    final valor = _cantidadController.text.trim();
-
-    // Si dejó el campo vacío o con 0, eliminar del carrito
-    if (valor.isEmpty || int.tryParse(valor) == null || int.tryParse(valor)! <= 0) {
+    // La validación ahora se hace dentro de QuantityInputWidget
+    // Este método solo se llama si el campo se queda vacío
+    if (_cantidad <= 0) {
+      final carritoProvider = context.read<CarritoProvider>();
       carritoProvider.eliminarProducto(widget.producto.id);
-      setState(() {
-        _cantidad = 1;
-        _cantidadController.text = '1';
-      });
-      return;
+      setState(() => _cantidad = 1);
     }
-
-    final cantidadIngresada = int.tryParse(valor) ?? 1;
-
-    // Ajustar si excede stock
-    if (cantidadIngresada > stock) {
-      _cantidadController.text = stock.toString();
-      carritoProvider.actualizarCantidad(widget.producto.id, stock);
-      setState(() => _cantidad = stock);
-      return;
-    }
-
-    // Actualizar con el valor final
-    carritoProvider.actualizarCantidad(widget.producto.id, cantidadIngresada);
-    setState(() => _cantidad = cantidadIngresada);
   }
 
   Future<void> _agregarAlCarrito() async {
@@ -463,34 +455,113 @@ class _ProductoDetalleScreenState extends State<ProductoDetalleScreen> {
   }
 
   Widget _buildNombreYPrecio() {
-    final colorScheme = context.colorScheme;
+    return Consumer<CarritoProvider>(
+      builder: (context, carritoProvider, _) {
+        final colorScheme = context.colorScheme;
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          widget.producto.nombre,
-          style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                fontWeight: FontWeight.bold,
+        // ✅ NUEVO: Obtener detalles con rango de precios
+        final detalleConRango = carritoProvider.obtenerDetalleConRango(
+          widget.producto.id,
+        );
+
+        // ✅ NUEVO: Calcular descuentos y precios
+        final tipoPrecionNombre = detalleConRango?.tipoPrecioNombre.toUpperCase() ?? '';
+        final bool esDescuento = detalleConRango != null &&
+            _cantidad > 0 &&
+            tipoPrecionNombre.contains('DESCUENTO');
+        final bool esEspecial = detalleConRango != null &&
+            _cantidad > 0 &&
+            tipoPrecionNombre.contains('ESPECIAL');
+        final bool tieneDescuento = esDescuento || esEspecial;
+
+        final precioActual = detalleConRango?.precioUnitario ?? widget.producto.precioVenta ?? 0.0;
+        final subtotal = precioActual * _cantidad;
+        final precioOriginal = widget.producto.precioVenta ?? 0.0;
+
+        // Colores para cada tipo de descuento
+        final colorDescuento = esDescuento ? Colors.orange : (esEspecial ? Colors.green : colorScheme.primary);
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              widget.producto.nombre,
+              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+            ),
+            const SizedBox(height: 8),
+            if (widget.producto.codigo.isNotEmpty)
+              Text(
+                'Código: ${widget.producto.codigo}',
+                style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                      color: colorScheme.onSurfaceVariant,
+                    ),
               ),
-        ),
-        const SizedBox(height: 8),
-        if (widget.producto.codigo.isNotEmpty)
-          Text(
-            'Código: ${widget.producto.codigo}',
-            style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                  color: colorScheme.onSurfaceVariant,
+            const SizedBox(height: 12),
+            // ✅ NUEVO: Mostrar precio original tachado si hay descuento
+            if (tieneDescuento)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 4.0),
+                child: Text(
+                  'Bs ${precioOriginal.toStringAsFixed(2)}',
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: Colors.grey,
+                    decoration: TextDecoration.lineThrough,
+                  ),
                 ),
-          ),
-        const SizedBox(height: 12),
-        Text(
-          'Bs ${(widget.producto.precioVenta ?? 0).toStringAsFixed(2)}',
-          style: Theme.of(context).textTheme.displaySmall?.copyWith(
-                fontWeight: FontWeight.bold,
-                color: Colors.green.shade400,
               ),
-        ),
-      ],
+            // ✅ NUEVO: Mostrar precio actual con color según tipo
+            Row(
+              children: [
+                Text(
+                  'Bs ${precioActual.toStringAsFixed(2)}',
+                  style: Theme.of(context).textTheme.displaySmall?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: colorDescuento,
+                      ),
+                ),
+                // ✅ NUEVO: Mostrar tipo de precio si aplica rango
+                if (detalleConRango != null && _cantidad > 0)
+                  Padding(
+                    padding: const EdgeInsets.only(left: 12.0),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: colorDescuento.withAlpha(100),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Text(
+                        detalleConRango!.tipoPrecioNombre,
+                        style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                          fontWeight: FontWeight.w700,
+                          color: esDescuento
+                              ? Colors.orange.shade900
+                              : (esEspecial ? Colors.green.shade900 : colorScheme.onPrimaryContainer),
+                        ),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+            // ✅ NUEVO: Mostrar subtotal si hay cantidad
+            if (_cantidad > 0 && detalleConRango != null)
+              Padding(
+                padding: const EdgeInsets.only(top: 8.0),
+                child: Text(
+                  'Subtotal: Bs ${subtotal.toStringAsFixed(2)}',
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    color: colorDescuento,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+          ],
+        );
+      },
     );
   }
 
@@ -744,83 +815,15 @@ class _ProductoDetalleScreenState extends State<ProductoDetalleScreen> {
                         ),
                       )
                     else
-                      // Mostrar controles +/- + TextField si ya está en carrito
-                      Container(
-                        decoration: BoxDecoration(
-                          color: brownColor.withAlpha(20),
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: brownColor, width: 1.5),
-                        ),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            SizedBox(
-                              width: 48,
-                              height: 48,
-                              child: IconButton(
-                                onPressed: _decrementarCantidad,
-                                icon: const Icon(Icons.remove, size: 20),
-                                style: IconButton.styleFrom(
-                                  foregroundColor: brownColor,
-                                ),
-                              ),
-                            ),
-                            // ✅ NUEVO: TextField para entrada directa de cantidad
-                            Expanded(
-                              child: Container(
-                                margin:
-                                    const EdgeInsets.symmetric(horizontal: 8),
-                                decoration: BoxDecoration(
-                                  color: Colors.white,
-                                  borderRadius: BorderRadius.circular(8),
-                                  border: Border.all(
-                                    color: brownColor.withAlpha(40),
-                                  ),
-                                ),
-                                child: TextField(
-                                  controller: _cantidadController,
-                                  focusNode: _cantidadFocusNode,
-                                  textAlign: TextAlign.center,
-                                  keyboardType: TextInputType.number,
-                                  onChanged: _actualizarCantidad,
-                                  // ✅ NUEVO: Validar cuando el usuario pierde el foco
-                                  onSubmitted: (_) {
-                                    _onFocusLostCantidad();
-                                  },
-                                  style: Theme.of(context)
-                                      .textTheme
-                                      .headlineSmall
-                                      ?.copyWith(
-                                        fontWeight: FontWeight.bold,
-                                        color: brownColor,
-                                      ),
-                                  decoration: InputDecoration(
-                                    contentPadding: const EdgeInsets.symmetric(
-                                      horizontal: 8,
-                                      vertical: 12,
-                                    ),
-                                    border: InputBorder.none,
-                                    hintText: '1',
-                                    hintStyle: TextStyle(
-                                      color: brownColor.withAlpha(50),
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ),
-                            SizedBox(
-                              width: 48,
-                              height: 48,
-                              child: IconButton(
-                                onPressed: _incrementarCantidad,
-                                icon: const Icon(Icons.add, size: 20),
-                                style: IconButton.styleFrom(
-                                  foregroundColor: brownColor,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
+                      // ✅ NUEVO: Usar el QuantityInputWidget moderno
+                      QuantityInputWidget(
+                        quantity: _cantidad,
+                        maxQuantity: (widget.producto.stockPrincipal?.cantidadDisponible ?? 0 as num).toInt(),
+                        onIncrement: _incrementarCantidad,
+                        onDecrement: _decrementarCantidad,
+                        onChanged: _actualizarCantidad,
+                        primaryColor: brownColor,
+                        fullWidth: true,
                       ),
                   ],
                 )

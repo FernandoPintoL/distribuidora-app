@@ -3,6 +3,54 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geocoding/geocoding.dart';
 import '../services/location_service.dart';
 
+// ✅ NUEVO 2026-03-12: Helper para convertir color hex a hue de BitmapDescriptor
+double _hexToHue(String? hexColor) {
+  if (hexColor == null || hexColor.isEmpty) {
+    return BitmapDescriptor.hueRed; // Default red if no color provided
+  }
+
+  try {
+    // Remover # si existe
+    final cleanHex = hexColor.replaceFirst('#', '');
+    final rgb = int.parse(cleanHex, radix: 16);
+
+    // Extraer componentes RGB
+    final r = ((rgb >> 16) & 0xFF) / 255.0;
+    final g = ((rgb >> 8) & 0xFF) / 255.0;
+    final b = (rgb & 0xFF) / 255.0;
+
+    // Convertir RGB a HSL
+    final max = [r, g, b].reduce((a, b) => a > b ? a : b);
+    final min = [r, g, b].reduce((a, b) => a < b ? a : b);
+    final h = _calculateHue(r, g, b, max, min);
+
+    return h;
+  } catch (e) {
+    debugPrint('❌ Error convirtiendo color hex a hue: $hexColor - $e');
+    return BitmapDescriptor.hueRed;
+  }
+}
+
+// ✅ Helper para calcular hue en HSL
+double _calculateHue(double r, double g, double b, double max, double min) {
+  final delta = max - min;
+
+  double hue = 0.0;
+  if (delta != 0) {
+    if (max == r) {
+      hue = 60 * ((g - b) / delta % 6);
+    } else if (max == g) {
+      hue = 60 * ((b - r) / delta + 2);
+    } else {
+      hue = 60 * ((r - g) / delta + 4);
+    }
+  }
+
+  // Normalizar a rango 0-359.999
+  if (hue < 0) hue += 360;
+  return hue;
+}
+
 // ✅ NUEVO 2026-02-18: Modelo para representar un punto de ubicación en el mapa
 class MapLocation {
   final double latitude;
@@ -14,6 +62,7 @@ class MapLocation {
   final String? razonSocial;
   final String? telefono;
   final int? ventaId;
+  final String? markerColor; // ✅ NUEVO 2026-03-12: Color hex para el pin en el mapa (ej: "#FF6B6B")
 
   MapLocation({
     required this.latitude,
@@ -24,6 +73,7 @@ class MapLocation {
     this.razonSocial,
     this.telefono,
     this.ventaId,
+    this.markerColor,
   });
 }
 
@@ -225,6 +275,9 @@ class _MapLocationSelectorState extends State<MapLocationSelector> {
     // ✅ Usar separador '|' sin saltos de línea para mejor compatibilidad
     final snippet = snippetParts.isEmpty ? 'Sin información' : snippetParts.join(' | ');
 
+    // ✅ NUEVO 2026-03-12: Convertir color hex a hue para el pin
+    final markerHue = _hexToHue(location.markerColor);
+
     _markers.add(
       Marker(
         markerId: markerId,
@@ -235,7 +288,7 @@ class _MapLocationSelectorState extends State<MapLocationSelector> {
           onTap: () {
             debugPrint(
               '📍 Cliente: ${location.title} | Razón Social: ${location.razonSocial} | \n'
-              'Teléfono: ${location.telefono} | Venta: ${location.subtitle} | ID: ${location.ventaId}',
+              'Teléfono: ${location.telefono} | Venta: ${location.subtitle} | ID: ${location.ventaId} | Color: ${location.markerColor}',
             );
 
             // ✅ NUEVO: Llamar callback si existe ventaId y se proporcionó onVentaSelected
@@ -244,7 +297,7 @@ class _MapLocationSelectorState extends State<MapLocationSelector> {
             }
           },
         ),
-        icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed),
+        icon: BitmapDescriptor.defaultMarkerWithHue(markerHue),
       ),
     );
   }
@@ -334,9 +387,37 @@ class _MapLocationSelectorState extends State<MapLocationSelector> {
           -57.5759,
         ); // Posición inicial en Asunción, Paraguay
 
+    // ✅ NUEVO 2026-03-12: Calcular cantidad de ubicaciones adicionales (ventas)
+    final cantidadVentas = widget.additionalLocations?.length ?? 0;
+
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Seleccionar ubicación'),
+        title: Row(
+          children: [
+            const Text('Mapa de Entregas'),
+            const SizedBox(width: 12),
+            // ✅ NUEVO: Badge con cantidad de ventas
+            if (cantidadVentas > 0)
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 8,
+                  vertical: 4,
+                ),
+                decoration: BoxDecoration(
+                  color: Colors.orange[600],
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(
+                  '$cantidadVentas ${cantidadVentas == 1 ? 'venta' : 'ventas'}',
+                  style: const TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
+                ),
+              ),
+          ],
+        ),
         actions: [
           IconButton(
             onPressed: _toggleMapType,

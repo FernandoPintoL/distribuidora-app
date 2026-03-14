@@ -663,6 +663,102 @@ class _EntregasAsignadasScreenState extends State<EntregasAsignadasScreen> {
                         ],
                       ),
                     ),
+                    // ✅ NUEVO 2026-03-12: Panel de estadísticas (cantidad de entregas y ventas)
+                    Container(
+                      color: isDarkMode ? Colors.grey[750] : Colors.grey[50],
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                      child: Row(
+                        children: [
+                          // Tarjeta de entregas
+                          Expanded(
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                                vertical: 12,
+                              ),
+                              decoration: BoxDecoration(
+                                color: isDarkMode ? Colors.blue[900] : Colors.blue[50],
+                                border: Border.all(
+                                  color: isDarkMode ? Colors.blue[700]! : Colors.blue[200]!,
+                                  width: 1,
+                                ),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Entregas',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w500,
+                                      color: isDarkMode
+                                          ? Colors.blue[300]
+                                          : Colors.blue[700],
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    '${entregas.length}',
+                                    style: TextStyle(
+                                      fontSize: 24,
+                                      fontWeight: FontWeight.bold,
+                                      color: isDarkMode
+                                          ? Colors.blue[100]
+                                          : Colors.blue[900],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          // Tarjeta de ventas totales
+                          Expanded(
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                                vertical: 12,
+                              ),
+                              decoration: BoxDecoration(
+                                color: isDarkMode ? Colors.green[900] : Colors.green[50],
+                                border: Border.all(
+                                  color: isDarkMode ? Colors.green[700]! : Colors.green[200]!,
+                                  width: 1,
+                                ),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Ventas Totales',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w500,
+                                      color: isDarkMode
+                                          ? Colors.green[300]
+                                          : Colors.green[700],
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    '${entregas.fold<int>(0, (sum, e) => sum + ((e.ventas?.length ?? 0) as int))}',
+                                    style: TextStyle(
+                                      fontSize: 24,
+                                      fontWeight: FontWeight.bold,
+                                      color: isDarkMode
+                                          ? Colors.green[100]
+                                          : Colors.green[900],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
                     // Listado
                     Expanded(
                       child: entregas.isEmpty

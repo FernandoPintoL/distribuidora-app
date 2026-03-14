@@ -12,6 +12,7 @@ import 'clients/client_list_screen.dart';
 import 'perfil/perfil_screen.dart';
 import '../widgets/widgets.dart';
 import '../config/config.dart';
+import '../config/app_urls.dart';
 import '../services/api_service.dart';
 import '../services/print_service.dart';
 
@@ -818,45 +819,84 @@ class _DashboardPreventistaState extends State<DashboardPreventista>
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       builder: (context) {
         return SafeArea(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
               Padding(
                 padding: const EdgeInsets.all(16),
                 child: Text(
-                  'Stock Disponible',
+                  'Stock y Lista de Precios Disponibles',
                   style: Theme.of(context).textTheme.titleLarge,
                 ),
               ),
               ListTile(
                 leading: const Icon(Icons.picture_as_pdf),
-                title: const Text('Descargar como PDF'),
+                title: const Text('Descargar Lista de Precios como PDF'),
                 subtitle: const Text('Para compartir o guardar'),
                 onTap: () {
                   Navigator.pop(context);
                   _descargarStockDisponiblePdf();
                 },
               ),
-              ListTile(
+              /*ListTile(
                 leading: const Icon(Icons.image),
-                title: const Text('Descargar como Imagen'),
+                title: const Text('Descargar Lista de Precios como Imagen'),
                 subtitle: const Text('PNG - Más fácil de compartir'),
                 onTap: () {
                   Navigator.pop(context);
                   _descargarStockDisponibleImagen();
                 },
+              ),*/
+              const Divider(height: 1),
+              const Padding(
+                padding: EdgeInsets.all(12),
+                child: Text(
+                  'Lista de precios con Stock disponible',
+                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.grey),
+                ),
               ),
               ListTile(
+                leading: const Icon(Icons.picture_as_pdf),
+                title: const Text('Lista de precios con Stock disponible como PDF'),
+                subtitle: const Text('Incluye columna de stock disponible'),
+                onTap: () {
+                  Navigator.pop(context);
+                  _descargarStockDisponiblePdfConStock();
+                },
+              ),
+              /*ListTile(
+                leading: const Icon(Icons.image),
+                title: const Text('Lista de precios con Stock disponible como Imagen'),
+                subtitle: const Text('PNG con stock disponible'),
+                onTap: () {
+                  Navigator.pop(context);
+                  _descargarStockDisponibleImagenConStock();
+                },
+              ),*/
+              const Divider(height: 1),
+              ListTile(
                 leading: const Icon(Icons.share_outlined),
-                title: const Text('Compartir Catálogo en Línea'),
+                title: const Text('Compartir Catálogo en Línea de lista de precios'),
                 subtitle: const Text('Link público de precios'),
                 onTap: () {
                   Navigator.pop(context);
                   _compartirCatalogoPreciosPublico();
                 },
               ),
+              // ✅ NUEVO: Compartir Stock Disponible
+              ListTile(
+                leading: const Icon(Icons.inventory_2_outlined),
+                title: const Text('Compartir Lista de precios con Stock Disponible'),
+                subtitle: const Text('Link público de stock'),
+                onTap: () {
+                  Navigator.pop(context);
+                  _compartirStockDisponiblePublico();
+                },
+              ),
               const SizedBox(height: 8),
             ],
+            ),
           ),
         );
       },
@@ -1059,7 +1099,7 @@ class _DashboardPreventistaState extends State<DashboardPreventista>
   /// ✅ NUEVO: Compartir catálogo de precios público
   void _compartirCatalogoPreciosPublico() async {
     try {
-      final publicLink = 'http://localhost:8000/public/precios';
+      final publicLink = AppUrls.publicPricesUrl;
       await Share.share(
         'Consulta nuestro catálogo de precios en línea:\n\n$publicLink',
         subject: 'Catálogo de Precios - Distribuidora Paucara',
@@ -1075,6 +1115,94 @@ class _DashboardPreventistaState extends State<DashboardPreventista>
         );
       }
       debugPrint('❌ Error compartiendo catálogo: $e');
+    }
+  }
+
+  /// ✅ NUEVO: Compartir stock disponible público
+  void _compartirStockDisponiblePublico() async {
+    try {
+      final publicLink = AppUrls.publicStockUrl;
+      await Share.share(
+        'Consulta nuestro stock disponible en línea:\n\n$publicLink',
+        subject: 'Stock Disponible - Distribuidora Paucara',
+      );
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error al compartir: ${e.toString()}'),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 5),
+          ),
+        );
+      }
+      debugPrint('❌ Error compartiendo stock: $e');
+    }
+  }
+
+  /// ✅ NUEVO: Descargar PDF de stock disponible CON STOCK
+  void _descargarStockDisponiblePdfConStock() async {
+    if (!mounted) return;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Descargando PDF con stock...'),
+        duration: Duration(seconds: 10),
+      ),
+    );
+
+    try {
+      final bytes = await ApiService().descargarStockDisponiblePdfConStock();
+
+      if (mounted) {
+        await PrintService().abrirPdfDesdeBytes(
+          pdfBytes: bytes,
+          nombreArchivo: 'stock-disponible-con-stock.pdf',
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error al descargar: ${e.toString()}'),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 5),
+          ),
+        );
+      }
+      debugPrint('❌ Error descargando PDF con stock: $e');
+    }
+  }
+
+  /// ✅ NUEVO: Descargar imagen de stock disponible CON STOCK
+  void _descargarStockDisponibleImagenConStock() async {
+    if (!mounted) return;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Descargando imagen con stock...'),
+        duration: Duration(seconds: 10),
+      ),
+    );
+
+    try {
+      final bytes = await ApiService().descargarStockDisponibleImagenConStock();
+
+      if (mounted) {
+        // Mostrar preview con opciones de compartir/guardar
+        _mostrarImagenConOpciones(bytes);
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error al descargar: ${e.toString()}'),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 5),
+          ),
+        );
+      }
+      debugPrint('❌ Error descargando imagen con stock: $e');
     }
   }
 

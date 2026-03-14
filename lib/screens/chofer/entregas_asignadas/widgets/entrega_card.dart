@@ -688,6 +688,8 @@ class _EntregaCardState extends State<EntregaCard> {
                 venta.clienteRazonSocial, // ✅ Ahora obtiene del modelo Venta
             telefono: venta.clienteTelefono,
             ventaId: venta.id,
+            // ✅ NUEVO 2026-03-12: Pasar color del estado logístico
+            markerColor: venta.estadoLogisticoColor,
           ),
         );
       }

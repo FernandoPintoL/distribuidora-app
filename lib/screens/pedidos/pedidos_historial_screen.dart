@@ -32,6 +32,105 @@ Color _hexToColor(String hexString) {
   return Color(int.parse(buffer.toString(), radix: 16));
 }
 
+/// ✅ HELPER: Estilos de texto responsivos adaptables a zoom y tamaño de dispositivo
+class ResponsiveTextStyles {
+  static double getScaleFactor(BuildContext context) {
+    final textScaleFactor = MediaQuery.textScaleFactorOf(context);
+    final screenWidth = MediaQuery.of(context).size.width;
+
+    // Ajustar basado en ancho de pantalla
+    double sizeMultiplier = 1.0;
+    if (screenWidth < 360) {
+      sizeMultiplier = 0.9; // Pantallas muy pequeñas
+    } else if (screenWidth > 600) {
+      sizeMultiplier = 1.1; // Tablets
+    }
+
+    return textScaleFactor * sizeMultiplier;
+  }
+
+  // ✅ Títulos grandes (pantalla principal)
+  static TextStyle titleLarge(BuildContext context) {
+    final scale = getScaleFactor(context);
+    return TextStyle(
+      fontSize: 18 * scale,
+      fontWeight: FontWeight.w600,
+      height: 1.3,
+    );
+  }
+
+  // ✅ Títulos medianos
+  static TextStyle titleMedium(BuildContext context) {
+    final scale = getScaleFactor(context);
+    return TextStyle(
+      fontSize: 16 * scale,
+      fontWeight: FontWeight.w600,
+      height: 1.3,
+    );
+  }
+
+  // ✅ Cuerpo principal - Texto normal
+  static TextStyle bodyLarge(BuildContext context) {
+    final scale = getScaleFactor(context);
+    return TextStyle(
+      fontSize: 14 * scale,
+      fontWeight: FontWeight.w500,
+      height: 1.4,
+    );
+  }
+
+  // ✅ Cuerpo normal
+  static TextStyle bodyMedium(BuildContext context) {
+    final scale = getScaleFactor(context);
+    return TextStyle(
+      fontSize: 13 * scale,
+      fontWeight: FontWeight.w400,
+      height: 1.4,
+    );
+  }
+
+  // ✅ Cuerpo pequeño - Etiquetas, secundario
+  static TextStyle bodySmall(BuildContext context) {
+    final scale = getScaleFactor(context);
+    return TextStyle(
+      fontSize: 12 * scale,
+      fontWeight: FontWeight.w400,
+      height: 1.4,
+    );
+  }
+
+  // ✅ Etiquetas en chips
+  static TextStyle labelSmall(BuildContext context) {
+    final scale = getScaleFactor(context);
+    return TextStyle(
+      fontSize: 11 * scale,
+      fontWeight: FontWeight.w500,
+      height: 1.3,
+    );
+  }
+
+  // ✅ Valores numéricos (montos)
+  static TextStyle valueLarge(BuildContext context) {
+    final scale = getScaleFactor(context);
+    return TextStyle(
+      fontSize: 16 * scale,
+      fontWeight: FontWeight.bold,
+      height: 1.2,
+      letterSpacing: -0.5,
+    );
+  }
+
+  // ✅ Valores pequeños
+  static TextStyle valueSmall(BuildContext context) {
+    final scale = getScaleFactor(context);
+    return TextStyle(
+      fontSize: 12 * scale,
+      fontWeight: FontWeight.w600,
+      height: 1.2,
+    );
+  }
+}
+
 /// ✅ REFACTORIZADO: Antes era solo "Proformas", ahora es "Mis Pedidos" unificado
 /// Muestra todo el ciclo: Proforma → Venta → Logística
 class PedidosHistorialScreen extends StatefulWidget {
@@ -66,14 +165,14 @@ class _PedidosHistorialScreenState extends State<PedidosHistorialScreen> {
       final estadosProvider = context.read<EstadosProvider>();
       estadosProvider.loadEstadosYEstadisticas();
 
-      // ✅ NUEVO: Cargar proformas PENDIENTES de ayer y hoy por defecto
+      // ✅ ACTUALIZADO: Cargar proformas PENDIENTES con fecha_entrega_solicitada=hoy por defecto
       final hoy = DateTime.now();
-      final ayer = hoy.subtract(const Duration(days: 1));
 
       setState(() {
         _filtroEstadoSeleccionado = 'PENDIENTE';
-        _filtroFechaDesde = ayer;
-        _filtroFechaHasta = hoy;
+        // ✅ CAMBIO: Usar fecha de entrega solicitada en lugar de fecha de creación
+        _filtroFechaEntregaSolicitadaDesde = hoy;
+        _filtroFechaEntregaSolicitadaHasta = hoy;
       });
 
       // Sincronizar el filtro local con el filtro del provider
@@ -446,9 +545,8 @@ class _PedidosHistorialScreenState extends State<PedidosHistorialScreen> {
                         Expanded(
                           child: Text(
                             _getFiltroActivoText(),
-                            style: context.textTheme.bodyMedium?.copyWith(
+                            style: ResponsiveTextStyles.titleLarge(context).copyWith(
                               color: colorScheme.onSurface,
-                              fontWeight: FontWeight.w500,
                             ),
                           ),
                         ),
@@ -467,6 +565,8 @@ class _PedidosHistorialScreenState extends State<PedidosHistorialScreen> {
                       ],
                     ),
                   ),
+                  // ✅ NUEVO: Chips de filtros activos
+                  _buildFiltrosChips(),
               ],
             ),
           ),
@@ -526,8 +626,8 @@ class _PedidosHistorialScreenState extends State<PedidosHistorialScreen> {
                                     ),
                                     child: Text(
                                       '${pedidoProvider.pedidos.length} resultado${pedidoProvider.pedidos.length != 1 ? 's' : ''} encontrado${pedidoProvider.pedidos.length != 1 ? 's' : ''}',
-                                      style: context.textTheme.bodyMedium
-                                          ?.copyWith(
+                                      style: DefaultTextStyle.of(context).style
+                                          .copyWith(
                                             color: colorScheme.primary,
                                             fontWeight: FontWeight.w600,
                                           ),
@@ -569,8 +669,8 @@ class _PedidosHistorialScreenState extends State<PedidosHistorialScreen> {
                                     tieneFilTros
                                         ? '🔍 Cargando con filtros...'
                                         : '📋 Cargando estado...',
-                                    style: context.textTheme.bodyMedium
-                                        ?.copyWith(
+                                    style: DefaultTextStyle.of(context).style
+                                        .copyWith(
                                           color: colorScheme.primary,
                                           fontWeight: FontWeight.w500,
                                         ),
@@ -579,8 +679,8 @@ class _PedidosHistorialScreenState extends State<PedidosHistorialScreen> {
                                   const SizedBox(height: 8),
                                   Text(
                                     'Por favor espera...',
-                                    style: context.textTheme.bodySmall
-                                        ?.copyWith(color: colorScheme.outline),
+                                    style: DefaultTextStyle.of(context).style
+                                        .copyWith(color: colorScheme.outline),
                                   ),
                                 ],
                               ),
@@ -614,16 +714,15 @@ class _PedidosHistorialScreenState extends State<PedidosHistorialScreen> {
                           const SizedBox(height: 24),
                           Text(
                             mensajeCarga,
-                            style: context.textTheme.bodyMedium?.copyWith(
+                            style: ResponsiveTextStyles.bodyLarge(context).copyWith(
                               color: colorScheme.primary,
-                              fontWeight: FontWeight.w500,
                             ),
                             textAlign: TextAlign.center,
                           ),
                           const SizedBox(height: 8),
                           Text(
                             'Por favor espera...',
-                            style: context.textTheme.bodySmall?.copyWith(
+                            style: ResponsiveTextStyles.bodyMedium(context).copyWith(
                               color: colorScheme.outline,
                             ),
                           ),
@@ -672,10 +771,10 @@ class _PedidosHistorialScreenState extends State<PedidosHistorialScreen> {
                             Expanded(
                               child: Text(
                                 '${pedidoProvider.pedidos.length} de ${pedidoProvider.totalItems} resultado${pedidoProvider.totalItems != 1 ? 's' : ''}',
-                                style: context.textTheme.bodyMedium?.copyWith(
-                                  color: colorScheme.primary,
-                                  fontWeight: FontWeight.w600,
-                                ),
+                                style: ResponsiveTextStyles.bodyLarge(context)
+                                    .copyWith(
+                                      color: colorScheme.primary,
+                                    ),
                               ),
                             ),
                             // Mostrar indicador si hay más páginas
@@ -683,9 +782,10 @@ class _PedidosHistorialScreenState extends State<PedidosHistorialScreen> {
                               Chip(
                                 label: const Text('Hay más'),
                                 backgroundColor: colorScheme.primaryContainer,
-                                labelStyle: AppTextStyles.labelSmall(context).copyWith(
-                                  color: colorScheme.onPrimaryContainer,
-                                ),
+                                labelStyle: AppTextStyles.labelSmall(context)
+                                    .copyWith(
+                                      color: colorScheme.onPrimaryContainer,
+                                    ),
                               ),
                           ],
                         ),
@@ -697,7 +797,10 @@ class _PedidosHistorialScreenState extends State<PedidosHistorialScreen> {
                         physics: const NeverScrollableScrollPhysics(),
                         itemCount:
                             pedidoProvider.pedidos.length +
-                            (pedidoProvider.isLoadingMore || !pedidoProvider.hasMorePages ? 1 : 0),
+                            (pedidoProvider.isLoadingMore ||
+                                    !pedidoProvider.hasMorePages
+                                ? 1
+                                : 0),
                         padding: const EdgeInsets.symmetric(vertical: 0),
                         itemBuilder: (context, index) {
                           // Elemento final: carga o fin de lista
@@ -715,7 +818,11 @@ class _PedidosHistorialScreenState extends State<PedidosHistorialScreen> {
                                       const SizedBox(height: 8),
                                       Text(
                                         'Cargando más pedidos...',
-                                        style: context.textTheme.bodySmall,
+                                        style: ResponsiveTextStyles.bodyMedium(
+                                          context,
+                                        ).copyWith(
+                                          color: colorScheme.primary,
+                                        ),
                                       ),
                                     ],
                                   ),
@@ -731,14 +838,19 @@ class _PedidosHistorialScreenState extends State<PedidosHistorialScreen> {
                                     children: [
                                       Icon(
                                         Icons.done_all,
-                                        color: colorScheme.outline.withOpacity(0.5),
+                                        color: colorScheme.outline.withOpacity(
+                                          0.5,
+                                        ),
                                         size: 32,
                                       ),
                                       const SizedBox(height: 8),
                                       Text(
                                         'No hay más proformas',
-                                        style: context.textTheme.bodySmall?.copyWith(
-                                          color: colorScheme.outline.withOpacity(0.6),
+                                        style: ResponsiveTextStyles.bodySmall(
+                                          context,
+                                        ).copyWith(
+                                          color: colorScheme.outline
+                                              .withOpacity(0.6),
                                         ),
                                       ),
                                     ],
@@ -872,7 +984,6 @@ class _PedidosHistorialScreenState extends State<PedidosHistorialScreen> {
     }
 
     if (_filtroEstadoSeleccionado != null) {
-      // Detectar si es estado de proforma o de venta/logística
       final esProforma = [
         'PENDIENTE',
         'APROBADA',
@@ -889,6 +1000,7 @@ class _PedidosHistorialScreenState extends State<PedidosHistorialScreen> {
       );
     }
 
+    // ✅ MEJORADO: Incluir todos los filtros de fecha
     if (_filtroFechaDesde != null || _filtroFechaHasta != null) {
       final desdeText = _filtroFechaDesde != null
           ? DateFormat('dd/MM').format(_filtroFechaDesde!)
@@ -898,7 +1010,7 @@ class _PedidosHistorialScreenState extends State<PedidosHistorialScreen> {
           : '';
 
       if (_filtroFechaDesde != null && _filtroFechaHasta != null) {
-        filtros.add('📅 $desdeText - $hastaText');
+        filtros.add('📅 Creación: $desdeText - $hastaText');
       } else if (_filtroFechaDesde != null) {
         filtros.add('📅 Desde: $desdeText');
       } else if (_filtroFechaHasta != null) {
@@ -906,7 +1018,201 @@ class _PedidosHistorialScreenState extends State<PedidosHistorialScreen> {
       }
     }
 
+    if (_filtroFechaVencimientoDesde != null ||
+        _filtroFechaVencimientoHasta != null) {
+      final desdeText = _filtroFechaVencimientoDesde != null
+          ? DateFormat('dd/MM').format(_filtroFechaVencimientoDesde!)
+          : '';
+      final hastaText = _filtroFechaVencimientoHasta != null
+          ? DateFormat('dd/MM').format(_filtroFechaVencimientoHasta!)
+          : '';
+
+      if (_filtroFechaVencimientoDesde != null &&
+          _filtroFechaVencimientoHasta != null) {
+        filtros.add('⏰ Vencimiento: $desdeText - $hastaText');
+      }
+    }
+
+    if (_filtroFechaEntregaSolicitadaDesde != null ||
+        _filtroFechaEntregaSolicitadaHasta != null) {
+      final desdeText = _filtroFechaEntregaSolicitadaDesde != null
+          ? DateFormat('dd/MM').format(_filtroFechaEntregaSolicitadaDesde!)
+          : '';
+      final hastaText = _filtroFechaEntregaSolicitadaHasta != null
+          ? DateFormat('dd/MM').format(_filtroFechaEntregaSolicitadaHasta!)
+          : '';
+
+      if (_filtroFechaEntregaSolicitadaDesde != null &&
+          _filtroFechaEntregaSolicitadaHasta != null) {
+        if (desdeText == hastaText) {
+          filtros.add('🚚 Entrega: $desdeText');
+        } else {
+          filtros.add('🚚 Entrega: $desdeText - $hastaText');
+        }
+      }
+    }
+
     return filtros.isEmpty ? 'Sin filtros aplicados' : filtros.join(' • ');
+  }
+
+  /// ✅ NUEVO: Widget de chips removibles para filtros
+  Widget _buildFiltrosChips() {
+    final colorScheme = context.colorScheme;
+    final chips = <Widget>[];
+
+    if (_filtroEstadoSeleccionado != null) {
+      chips.add(
+        Chip(
+          label: Text(
+            '📋 Estado: $_filtroEstadoSeleccionado',
+            style: ResponsiveTextStyles.bodySmall(context),
+          ),
+          backgroundColor: colorScheme.primaryContainer,
+          labelStyle: TextStyle(color: colorScheme.onPrimaryContainer),
+          onDeleted: () {
+            setState(() => _filtroEstadoSeleccionado = null);
+            _cargarPedidos();
+          },
+        ),
+      );
+    }
+
+    // ✅ FILTRO: Fecha de Creación
+    if (_filtroFechaDesde != null || _filtroFechaHasta != null) {
+      final desdeText = _filtroFechaDesde != null
+          ? DateFormat('dd/MM').format(_filtroFechaDesde!)
+          : '';
+      final hastaText = _filtroFechaHasta != null
+          ? DateFormat('dd/MM').format(_filtroFechaHasta!)
+          : '';
+
+      final texto = _filtroFechaDesde != null && _filtroFechaHasta != null
+          ? desdeText == hastaText
+              ? '📅 Creación: $desdeText'
+              : '📅 Creación: $desdeText - $hastaText'
+          : '📅 Creación';
+
+      chips.add(
+        Chip(
+          label: Text(
+            texto,
+            style: ResponsiveTextStyles.bodySmall(context),
+          ),
+          backgroundColor: Colors.green.withOpacity(0.2),
+          labelStyle: TextStyle(color: Colors.green[700]),
+          onDeleted: () {
+            setState(() {
+              _filtroFechaDesde = null;
+              _filtroFechaHasta = null;
+            });
+            _cargarPedidos();
+          },
+        ),
+      );
+    }
+
+    // ✅ FILTRO: Fecha de Entrega Solicitada
+    if (_filtroFechaEntregaSolicitadaDesde != null ||
+        _filtroFechaEntregaSolicitadaHasta != null) {
+      final desdeText = _filtroFechaEntregaSolicitadaDesde != null
+          ? DateFormat('dd/MM').format(_filtroFechaEntregaSolicitadaDesde!)
+          : '';
+      final hastaText = _filtroFechaEntregaSolicitadaHasta != null
+          ? DateFormat('dd/MM').format(_filtroFechaEntregaSolicitadaHasta!)
+          : '';
+
+      final texto = _filtroFechaEntregaSolicitadaDesde != null &&
+              _filtroFechaEntregaSolicitadaHasta != null
+          ? desdeText == hastaText
+              ? '🚚 Entrega Solicitada: $desdeText'
+              : '🚚 Entrega Solicitada: $desdeText - $hastaText'
+          : '🚚 Entrega Solicitada';
+
+      chips.add(
+        Chip(
+          label: Text(
+            texto,
+            style: ResponsiveTextStyles.bodySmall(context),
+          ),
+          backgroundColor: Colors.orange.withOpacity(0.2),
+          labelStyle: TextStyle(color: Colors.orange[700]),
+          onDeleted: () {
+            setState(() {
+              _filtroFechaEntregaSolicitadaDesde = null;
+              _filtroFechaEntregaSolicitadaHasta = null;
+            });
+            _cargarPedidos();
+          },
+        ),
+      );
+    }
+
+    // ✅ FILTRO: Fecha de Vencimiento
+    if (_filtroFechaVencimientoDesde != null ||
+        _filtroFechaVencimientoHasta != null) {
+      final desdeText = _filtroFechaVencimientoDesde != null
+          ? DateFormat('dd/MM').format(_filtroFechaVencimientoDesde!)
+          : '';
+      final hastaText = _filtroFechaVencimientoHasta != null
+          ? DateFormat('dd/MM').format(_filtroFechaVencimientoHasta!)
+          : '';
+
+      final texto = _filtroFechaVencimientoDesde != null &&
+              _filtroFechaVencimientoHasta != null
+          ? desdeText == hastaText
+              ? '⏰ Vencimiento: $desdeText'
+              : '⏰ Vencimiento: $desdeText - $hastaText'
+          : '⏰ Vencimiento';
+
+      chips.add(
+        Chip(
+          label: Text(
+            texto,
+            style: ResponsiveTextStyles.bodySmall(context),
+          ),
+          backgroundColor: Colors.red.withOpacity(0.2),
+          labelStyle: TextStyle(color: Colors.red[700]),
+          onDeleted: () {
+            setState(() {
+              _filtroFechaVencimientoDesde = null;
+              _filtroFechaVencimientoHasta = null;
+            });
+            _cargarPedidos();
+          },
+        ),
+      );
+    }
+
+    // ✅ FILTRO: Búsqueda
+    if (_searchController.text.isNotEmpty) {
+      chips.add(
+        Chip(
+          label: Text(
+            '🔍 "${_searchController.text}"',
+            style: ResponsiveTextStyles.bodySmall(context),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+          backgroundColor: Colors.blue.withOpacity(0.2),
+          labelStyle: TextStyle(color: Colors.blue[700]),
+          onDeleted: () {
+            setState(() => _searchController.clear());
+            _cargarPedidos();
+          },
+        ),
+      );
+    }
+
+    if (chips.isEmpty) return const SizedBox.shrink();
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: Wrap(
+        spacing: 8,
+        runSpacing: 8,
+        children: chips,
+      ),
+    );
   }
 
   Widget _buildEmptyState() {
@@ -957,9 +1263,8 @@ class _PedidosHistorialScreenState extends State<PedidosHistorialScreen> {
                 tieneFilTros
                     ? '😔 No se encontraron pedidos'
                     : '📭 No tienes pedidos aún',
-                style: context.textTheme.titleMedium?.copyWith(
+                style: ResponsiveTextStyles.titleLarge(context).copyWith(
                   color: colorScheme.onSurface,
-                  fontWeight: FontWeight.w600,
                 ),
                 textAlign: TextAlign.center,
               ),
@@ -972,36 +1277,66 @@ class _PedidosHistorialScreenState extends State<PedidosHistorialScreen> {
                       tieneFilTros
                           ? 'Intenta ajustar tus filtros de búsqueda'
                           : 'Crea tu primer pedido desde el catálogo',
-                      style: context.textTheme.bodySmall?.copyWith(
-                        color: context.textTheme.bodySmall?.color,
+                      style: ResponsiveTextStyles.bodyMedium(context).copyWith(
+                        color: colorScheme.onSurface.withOpacity(0.7),
                       ),
                       textAlign: TextAlign.center,
                     ),
-                    // Mostrar filtros activos
+                    // ✅ MEJORADO: Mostrar filtros activos con mejor tipografía
                     if (tieneFilTros && filtrosActivos.isNotEmpty) ...[
                       const SizedBox(height: 12),
                       Container(
-                        padding: const EdgeInsets.all(8),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 10,
+                        ),
                         decoration: BoxDecoration(
                           color: colorScheme.errorContainer.withOpacity(0.3),
-                          borderRadius: BorderRadius.circular(6),
+                          border: Border.all(
+                            color: colorScheme.error.withOpacity(0.2),
+                            width: 1,
+                          ),
+                          borderRadius: BorderRadius.circular(8),
                         ),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'Filtros activos:',
-                              style: context.textTheme.labelSmall?.copyWith(
+                              '🔍 Filtros activos:',
+                              style: ResponsiveTextStyles.bodyLarge(context)
+                                  .copyWith(
+                                color: colorScheme.error,
                                 fontWeight: FontWeight.w600,
                               ),
                             ),
-                            const SizedBox(height: 4),
+                            const SizedBox(height: 8),
                             ...filtrosActivos.map(
                               (filtro) => Padding(
-                                padding: const EdgeInsets.only(top: 2),
-                                child: Text(
-                                  '• $filtro',
-                                  style: context.textTheme.bodySmall,
+                                padding: const EdgeInsets.only(bottom: 4),
+                                child: Row(
+                                  children: [
+                                    Text(
+                                      '•',
+                                      style: ResponsiveTextStyles.bodyMedium(
+                                        context,
+                                      ).copyWith(
+                                        color: colorScheme.error,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Expanded(
+                                      child: Text(
+                                        filtro,
+                                        style:
+                                            ResponsiveTextStyles.bodyMedium(
+                                          context,
+                                        ).copyWith(
+                                          color: colorScheme.onSurface,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               ),
                             ),
@@ -1055,9 +1390,8 @@ class _PedidosHistorialScreenState extends State<PedidosHistorialScreen> {
               const SizedBox(height: 16), // Reducido de 24
               Text(
                 'Error al cargar pedidos',
-                style: context.textTheme.titleMedium?.copyWith(
+                style: ResponsiveTextStyles.titleMedium(context).copyWith(
                   color: colorScheme.onSurface,
-                  fontWeight: FontWeight.w600,
                 ),
                 textAlign: TextAlign.center,
               ),
@@ -1067,8 +1401,8 @@ class _PedidosHistorialScreenState extends State<PedidosHistorialScreen> {
                 child: Text(
                   error,
                   textAlign: TextAlign.center,
-                  style: context.textTheme.bodySmall?.copyWith(
-                    color: context.textTheme.bodySmall?.color,
+                  style: ResponsiveTextStyles.bodyMedium(context).copyWith(
+                    color: colorScheme.onSurface,
                   ),
                 ),
               ),
@@ -1224,7 +1558,7 @@ class _PedidoCard extends StatelessWidget {
                         // ✅ ID de la proforma (pequeño, arriba)
                         Text(
                           'Folio: ${pedido.id}',
-                          style: context.textTheme.labelSmall?.copyWith(
+                          style: DefaultTextStyle.of(context).style.copyWith(
                             color: colorScheme.onSurface.withOpacity(0.5),
                             fontWeight: FontWeight.w500,
                           ),
@@ -1233,7 +1567,7 @@ class _PedidoCard extends StatelessWidget {
                         // ✅ CLIENTE - Resaltado en negrita (principal)
                         Text(
                           pedido.cliente?.nombre ?? 'Cliente desconocido',
-                          style: context.textTheme.titleMedium?.copyWith(
+                          style: DefaultTextStyle.of(context).style.copyWith(
                             fontWeight: FontWeight.bold,
                             color: colorScheme.onSurface,
                           ),
@@ -1253,9 +1587,12 @@ class _PedidoCard extends StatelessWidget {
                             Expanded(
                               child: Text(
                                 '#${pedido.numero}',
-                                style: context.textTheme.bodySmall?.copyWith(
-                                  color: colorScheme.onSurface.withOpacity(0.7),
-                                ),
+                                style: DefaultTextStyle.of(context).style
+                                    .copyWith(
+                                      color: colorScheme.onSurface.withOpacity(
+                                        0.7,
+                                      ),
+                                    ),
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                               ),
@@ -1274,8 +1611,7 @@ class _PedidoCard extends StatelessWidget {
                       children: [
                         Text(
                           'Bs. ${pedido.total.toStringAsFixed(2)}',
-                          style: context.textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.bold,
+                          style: ResponsiveTextStyles.valueLarge(context).copyWith(
                             color: isDark
                                 ? const Color(0xFF4ADE80)
                                 : const Color(0xFF16A34A),
@@ -1284,7 +1620,7 @@ class _PedidoCard extends StatelessWidget {
                         const SizedBox(height: 4),
                         Text(
                           _formatearFecha(pedido.fechaCreacion),
-                          style: context.textTheme.labelSmall?.copyWith(
+                          style: ResponsiveTextStyles.bodySmall(context).copyWith(
                             color: colorScheme.onSurface.withOpacity(0.6),
                           ),
                         ),
@@ -1400,7 +1736,7 @@ class _PedidoCard extends StatelessWidget {
                     ),
                     child: Text(
                       pedido.esVenta ? '✅ Convertida' : pedido.estadoCodigo,
-                      style: context.textTheme.labelSmall?.copyWith(
+                      style: DefaultTextStyle.of(context).style.copyWith(
                         color: _hexToColor(
                           EstadosHelper.getEstadoColor(
                             pedido.estadoCategoria,
@@ -1429,7 +1765,7 @@ class _PedidoCard extends StatelessWidget {
                       ),
                       child: Text(
                         '🛍️ ${pedido.ventaNumero}',
-                        style: context.textTheme.labelSmall?.copyWith(
+                        style: DefaultTextStyle.of(context).style.copyWith(
                           color: colorScheme.primary,
                           fontWeight: FontWeight.w600,
                         ),
@@ -1463,7 +1799,7 @@ class _PedidoCard extends StatelessWidget {
                       ),
                       child: Text(
                         '🚚 ${pedido.estadoNombre}',
-                        style: context.textTheme.labelSmall?.copyWith(
+                        style: DefaultTextStyle.of(context).style.copyWith(
                           color: _hexToColor(
                             EstadosHelper.getEstadoColor(
                               pedido.estadoCategoria,
@@ -1484,7 +1820,7 @@ class _PedidoCard extends StatelessWidget {
                 const SizedBox(height: 16),
                 Text(
                   '📋 Estados de Venta Convertida',
-                  style: context.textTheme.labelLarge?.copyWith(
+                  style: DefaultTextStyle.of(context).style.copyWith(
                     color: colorScheme.primary,
                     fontWeight: FontWeight.w600,
                   ),
@@ -1499,20 +1835,20 @@ class _PedidoCard extends StatelessWidget {
                     ),
                     margin: const EdgeInsets.only(bottom: 8),
                     decoration: BoxDecoration(
-                      color: _hexToColor(pedido.venta!.estadoDocumento!.color)
-                          .withOpacity(0.15),
+                      color: _hexToColor(
+                        pedido.venta!.estadoDocumento!.color,
+                      ).withOpacity(0.15),
                       border: Border.all(
-                        color: _hexToColor(pedido.venta!.estadoDocumento!.color),
+                        color: _hexToColor(
+                          pedido.venta!.estadoDocumento!.color,
+                        ),
                         width: 1.5,
                       ),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Row(
                       children: [
-                        Text(
-                          '📄',
-                          style: context.textTheme.labelMedium,
-                        ),
+                        Text('📄', style: DefaultTextStyle.of(context).style),
                         const SizedBox(width: 8),
                         Expanded(
                           child: Column(
@@ -1520,17 +1856,22 @@ class _PedidoCard extends StatelessWidget {
                             children: [
                               Text(
                                 'Documento',
-                                style: context.textTheme.labelSmall?.copyWith(
-                                  color: colorScheme.onSurface.withOpacity(0.7),
-                                ),
+                                style: DefaultTextStyle.of(context).style
+                                    .copyWith(
+                                      color: colorScheme.onSurface.withOpacity(
+                                        0.7,
+                                      ),
+                                    ),
                               ),
                               Text(
                                 pedido.venta!.estadoDocumento!.nombre,
-                                style: context.textTheme.labelSmall?.copyWith(
-                                  color: _hexToColor(
-                                      pedido.venta!.estadoDocumento!.color),
-                                  fontWeight: FontWeight.w600,
-                                ),
+                                style: DefaultTextStyle.of(context).style
+                                    .copyWith(
+                                      color: _hexToColor(
+                                        pedido.venta!.estadoDocumento!.color,
+                                      ),
+                                      fontWeight: FontWeight.w600,
+                                    ),
                               ),
                             ],
                           ),
@@ -1547,20 +1888,20 @@ class _PedidoCard extends StatelessWidget {
                     ),
                     margin: const EdgeInsets.only(bottom: 8),
                     decoration: BoxDecoration(
-                      color: _hexToColor(pedido.venta!.estadoLogistica!.color)
-                          .withOpacity(0.15),
+                      color: _hexToColor(
+                        pedido.venta!.estadoLogistica!.color,
+                      ).withOpacity(0.15),
                       border: Border.all(
-                        color: _hexToColor(pedido.venta!.estadoLogistica!.color),
+                        color: _hexToColor(
+                          pedido.venta!.estadoLogistica!.color,
+                        ),
                         width: 1.5,
                       ),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Row(
                       children: [
-                        Text(
-                          '🚚',
-                          style: context.textTheme.labelMedium,
-                        ),
+                        Text('🚚', style: DefaultTextStyle.of(context).style),
                         const SizedBox(width: 8),
                         Expanded(
                           child: Column(
@@ -1568,17 +1909,22 @@ class _PedidoCard extends StatelessWidget {
                             children: [
                               Text(
                                 'Logística',
-                                style: context.textTheme.labelSmall?.copyWith(
-                                  color: colorScheme.onSurface.withOpacity(0.7),
-                                ),
+                                style: DefaultTextStyle.of(context).style
+                                    .copyWith(
+                                      color: colorScheme.onSurface.withOpacity(
+                                        0.7,
+                                      ),
+                                    ),
                               ),
                               Text(
                                 pedido.venta!.estadoLogistica!.nombre,
-                                style: context.textTheme.labelSmall?.copyWith(
-                                  color: _hexToColor(
-                                      pedido.venta!.estadoLogistica!.color),
-                                  fontWeight: FontWeight.w600,
-                                ),
+                                style: DefaultTextStyle.of(context).style
+                                    .copyWith(
+                                      color: _hexToColor(
+                                        pedido.venta!.estadoLogistica!.color,
+                                      ),
+                                      fontWeight: FontWeight.w600,
+                                    ),
                               ),
                             ],
                           ),
@@ -1595,9 +1941,7 @@ class _PedidoCard extends StatelessWidget {
                     margin: const EdgeInsets.only(bottom: 8),
                     decoration: BoxDecoration(
                       color: Colors.red.withOpacity(0.1),
-                      border: Border.all(
-                        color: Colors.red.withOpacity(0.3),
-                      ),
+                      border: Border.all(color: Colors.red.withOpacity(0.3)),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Column(
@@ -1613,17 +1957,18 @@ class _PedidoCard extends StatelessWidget {
                             const SizedBox(width: 8),
                             Text(
                               'Motivo de Anulación',
-                              style: context.textTheme.labelSmall?.copyWith(
-                                color: Colors.red,
-                                fontWeight: FontWeight.w600,
-                              ),
+                              style: DefaultTextStyle.of(context).style
+                                  .copyWith(
+                                    color: Colors.red,
+                                    fontWeight: FontWeight.w600,
+                                  ),
                             ),
                           ],
                         ),
                         const SizedBox(height: 6),
                         Text(
                           pedido.venta!.observaciones!,
-                          style: context.textTheme.bodySmall,
+                          style: DefaultTextStyle.of(context).style,
                         ),
                       ],
                     ),
@@ -1633,14 +1978,15 @@ class _PedidoCard extends StatelessWidget {
                   const SizedBox(height: 4),
                   Text(
                     'Confirmaciones de Entrega',
-                    style: context.textTheme.labelSmall?.copyWith(
+                    style: DefaultTextStyle.of(context).style.copyWith(
                       color: colorScheme.onSurface.withOpacity(0.7),
                       fontWeight: FontWeight.w600,
                     ),
                   ),
                   const SizedBox(height: 8),
                   ...pedido.venta!.confirmacionesEntrega.map((confirmacion) {
-                    final isConfirmado = confirmacion.estado == 'CONFIRMADO' ||
+                    final isConfirmado =
+                        confirmacion.estado == 'CONFIRMADO' ||
                         confirmacion.estado == 'ENTREGADO';
                     return Container(
                       padding: const EdgeInsets.symmetric(
@@ -1664,7 +2010,7 @@ class _PedidoCard extends StatelessWidget {
                         children: [
                           Text(
                             isConfirmado ? '✅' : '⏳',
-                            style: context.textTheme.labelMedium,
+                            style: DefaultTextStyle.of(context).style,
                           ),
                           const SizedBox(width: 8),
                           Expanded(
@@ -1673,20 +2019,22 @@ class _PedidoCard extends StatelessWidget {
                               children: [
                                 Text(
                                   '${confirmacion.chofer ?? 'Chofer'} → ${confirmacion.cliente ?? 'Cliente'}',
-                                  style: context.textTheme.labelSmall?.copyWith(
-                                    fontWeight: FontWeight.w500,
-                                  ),
+                                  style: DefaultTextStyle.of(
+                                    context,
+                                  ).style.copyWith(fontWeight: FontWeight.w500),
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
                                 ),
                                 if (confirmacion.fecha != null)
                                   Text(
-                                    DateFormat('dd/MM/yy HH:mm')
-                                        .format(confirmacion.fecha!),
-                                    style: AppTextStyles.labelSmall(context).copyWith(
-                                      color:
-                                          colorScheme.onSurface.withOpacity(0.6),
-                                    ),
+                                    DateFormat(
+                                      'dd/MM/yy HH:mm',
+                                    ).format(confirmacion.fecha!),
+                                    style: AppTextStyles.labelSmall(context)
+                                        .copyWith(
+                                          color: colorScheme.onSurface
+                                              .withOpacity(0.6),
+                                        ),
                                   ),
                               ],
                             ),
@@ -1730,7 +2078,7 @@ class _PedidoCard extends StatelessWidget {
                           const SizedBox(width: 8),
                           Text(
                             '${pedido.cantidadItems} productos',
-                            style: context.textTheme.labelSmall?.copyWith(
+                            style: DefaultTextStyle.of(context).style.copyWith(
                               color: colorScheme.onSurface.withOpacity(0.7),
                             ),
                           ),
@@ -1752,9 +2100,12 @@ class _PedidoCard extends StatelessWidget {
                             Expanded(
                               child: Text(
                                 pedido.direccionEntrega!.direccion,
-                                style: context.textTheme.labelSmall?.copyWith(
-                                  color: colorScheme.onSurface.withOpacity(0.7),
-                                ),
+                                style: DefaultTextStyle.of(context).style
+                                    .copyWith(
+                                      color: colorScheme.onSurface.withOpacity(
+                                        0.7,
+                                      ),
+                                    ),
                                 maxLines: 2,
                                 overflow: TextOverflow.ellipsis,
                               ),
@@ -1776,9 +2127,12 @@ class _PedidoCard extends StatelessWidget {
                             const SizedBox(width: 8),
                             Text(
                               '📅 Vencimiento: ${_formatearFecha(pedido.fechaVencimiento!)}',
-                              style: context.textTheme.labelSmall?.copyWith(
-                                color: colorScheme.onSurface.withOpacity(0.7),
-                              ),
+                              style: DefaultTextStyle.of(context).style
+                                  .copyWith(
+                                    color: colorScheme.onSurface.withOpacity(
+                                      0.7,
+                                    ),
+                                  ),
                             ),
                           ],
                         ),
@@ -1797,9 +2151,12 @@ class _PedidoCard extends StatelessWidget {
                             const SizedBox(width: 8),
                             Text(
                               '🚚 Entrega Solicitada: ${_formatearFecha(pedido.fechaEntregaSolicitada!)}',
-                              style: context.textTheme.labelSmall?.copyWith(
-                                color: colorScheme.onSurface.withOpacity(0.7),
-                              ),
+                              style: DefaultTextStyle.of(context).style
+                                  .copyWith(
+                                    color: colorScheme.onSurface.withOpacity(
+                                      0.7,
+                                    ),
+                                  ),
                             ),
                           ],
                         ),
@@ -1828,10 +2185,11 @@ class _PedidoCard extends StatelessWidget {
                               Expanded(
                                 child: Text(
                                   '⏰ Reserva expira ${pedido.reservaMasProximaAVencer?.tiempoRestanteFormateado ?? 'pronto'}',
-                                  style: context.textTheme.labelSmall?.copyWith(
-                                    color: const Color(0xFFC2410C),
-                                    fontWeight: FontWeight.w500,
-                                  ),
+                                  style: DefaultTextStyle.of(context).style
+                                      .copyWith(
+                                        color: const Color(0xFFC2410C),
+                                        fontWeight: FontWeight.w500,
+                                      ),
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
                                 ),

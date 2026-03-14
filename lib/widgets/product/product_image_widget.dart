@@ -144,7 +144,6 @@ class ProductImageWidget extends StatelessWidget {
                   product.categoria!.nombre.substring(0, 1).toUpperCase(),
                   style: const TextStyle(
                     color: Colors.white,
-                    fontSize: 10,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
