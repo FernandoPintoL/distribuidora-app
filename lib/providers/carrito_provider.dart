@@ -1370,7 +1370,34 @@ class CarritoProvider with ChangeNotifier {
           _detallesConRango[detalle.productoId] = detalle;
         }
 
+        // ✅ CRÍTICO: Actualizar precios unitarios de items en el carrito
+        // La respuesta del API contiene los precios calculados según rangos
+        final itemsActualizados = _carrito.items.map((item) {
+          final detalleActualizado = carritoConRangos.detalles
+              .firstWhere(
+                (d) => d.productoId == item.producto.id,
+                orElse: () => null as dynamic,
+              );
+
+          if (detalleActualizado != null) {
+            debugPrint(
+              '💰 Actualizando precio de "${item.producto.nombre}": '
+              '${item.precioUnitario} → ${detalleActualizado.precioUnitario} Bs',
+            );
+            return item.copyWith(
+              precioUnitario: detalleActualizado.precioUnitario,
+            );
+          }
+          return item;
+        }).toList();
+
+        // Actualizar carrito con items recalculados
+        _carrito = _carrito.copyWith(items: itemsActualizados);
+
         debugPrint('✅ Carrito calculado con éxito');
+        debugPrint(
+          '   Subtotal: ${_carrito.subtotal.toStringAsFixed(2)} Bs',
+        );
         debugPrint(
           '   Ahorro disponible: ${carritoConRangos.ahorroDisponible.toStringAsFixed(2)} Bs',
         );

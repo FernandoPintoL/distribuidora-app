@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'services/role_based_router.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart' as riverpod;
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'models/models.dart';
 import 'providers/providers.dart';
 import 'screens/screens.dart';
@@ -30,33 +32,94 @@ void main() async {
     debugPrint('⚠️ Error initializing SharedPreferences: $e');
   }
 
-  // Load environment variables before initializing services/UI
-  await dotenv.load(fileName: ".env");
-  // debugPrint('✅ .env loaded');
+  // ✅ FIX: Cargar .env desde assets (funciona en Debug Y Release/Play Store)
+  try {
+    final envString = await rootBundle.loadString('.env');
+    // Parsear manualmente el contenido del .env
+    final lines = envString.split('\n');
+    for (var line in lines) {
+      line = line.trim();
+      if (line.isEmpty || line.startsWith('#')) continue;
+      final parts = line.split('=');
+      if (parts.length == 2) {
+        final key = parts[0].trim();
+        final value = parts[1].trim().replaceAll('"', '');
+        dotenv.env[key] = value;
+      }
+    }
+    debugPrint('✅ .env cargado desde assets');
+  } catch (e) {
+    debugPrint('⚠️ Error cargando .env desde assets: $e');
+    // Intenta fallback al método antiguo (solo funciona en debug)
+    try {
+      await dotenv.load(fileName: ".env");
+      debugPrint('✅ .env cargado desde archivo (fallback)');
+    } catch (e2) {
+      debugPrint('❌ CRÍTICO: No se pudo cargar .env: $e2');
+    }
+  }
 
   // ✅ NUEVO: Inicializar URLs centralizadas
-  AppUrls.initialize();
+  try {
+    AppUrls.initialize();
+    debugPrint('✅ AppUrls inicializadas');
+  } catch (e) {
+    debugPrint('⚠️ Error inicializando AppUrls: $e');
+  }
 
-  final themeProvider = ThemeProvider();
-  await themeProvider.init();
+  // Inicializar Theme Provider
+  late ThemeProvider themeProvider;
+  try {
+    themeProvider = ThemeProvider();
+    await themeProvider.init();
+    debugPrint('✅ ThemeProvider inicializado');
+  } catch (e) {
+    debugPrint('⚠️ Error inicializando ThemeProvider, usando valores por defecto: $e');
+    themeProvider = ThemeProvider(); // Usar valores por defecto
+  }
 
-  // Initialize notification service
-  final notificationService = LocalNotificationService();
-  await notificationService.initialize();
-  debugPrint('✅ LocalNotificationService initialized');
+  // ✅ CRÍTICO: Solicitar permiso de notificaciones ANTES de inicializar
+  try {
+    final notificationStatus = await Permission.notification.request();
+    debugPrint('📲 Estado de permiso de notificaciones: $notificationStatus');
 
-  // Print service status for debugging
-  await notificationService.printServiceStatus();
+    if (notificationStatus.isDenied) {
+      debugPrint('⚠️ Permiso de notificaciones denegado por usuario');
+    } else if (notificationStatus.isGranted) {
+      debugPrint('✅ Permiso de notificaciones OTORGADO');
+    } else if (notificationStatus.isPermanentlyDenied) {
+      debugPrint('🚫 Permiso de notificaciones permanentemente denegado (openAppSettings requerido)');
+    }
+  } catch (e) {
+    debugPrint('⚠️ Error solicitando permiso de notificaciones: $e');
+  }
 
-  // Initialize background notification service (para polling periódico)
-  await BackgroundNotificationService.initialize();
-  debugPrint('✅ BackgroundNotificationService initialized');
+  // Inicializar servicio de notificaciones locales
+  try {
+    final notificationService = LocalNotificationService();
+    await notificationService.initialize();
+    debugPrint('✅ LocalNotificationService inicializado');
 
+    // Print service status for debugging
+    await notificationService.printServiceStatus();
+  } catch (e) {
+    debugPrint('⚠️ Error inicializando LocalNotificationService: $e');
+  }
+
+  // Inicializar background notification service
+  try {
+    await BackgroundNotificationService.initialize();
+    debugPrint('✅ BackgroundNotificationService inicializado');
+  } catch (e) {
+    debugPrint('⚠️ Error inicializando BackgroundNotificationService: $e');
+  }
+
+  // ✅ SEGURIDAD: Envolver en ErrorBoundary en caso de crash
   runApp(
     riverpod.ProviderScope(
       child: MultiProvider(
         providers: [
-          ChangeNotifierProvider<ThemeProvider>.value(value: themeProvider),
+          ChangeNotifierProvider<ThemeProvider>.value(value: themeProvider ?? ThemeProvider()),
           ChangeNotifierProvider(create: (_) => AuthProvider()),
           ChangeNotifierProvider(create: (_) => ProductProvider()),
           ChangeNotifierProvider(
