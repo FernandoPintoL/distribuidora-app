@@ -21,8 +21,9 @@ class ProductListViewBuilder extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // ✅ NUEVO: Separar combos de productos normales
+    // ✅ MEJORADO (2026-04-24): Filtrar combos con capacidad > 0
     final combos = productProvider.products
-        .where((p) => p.esCombo == true)
+        .where((p) => p.esCombo == true && (p.capacidad ?? 0) > 0)
         .toList();
     final productosNormales = productProvider.products
         .where((p) => p.esCombo != true)

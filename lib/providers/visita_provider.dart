@@ -24,6 +24,12 @@ class VisitaProvider with ChangeNotifier {
   int? _localidadSeleccionada;
   List<Localidad> _localidades = [];
 
+  // ✅ NUEVAS propiedades para Filtros Avanzados
+  String _clienteSearchText = '';
+  int? _clienteSeleccionado;
+  String? _horarioInicio;
+  String? _horarioFin;
+
   // Getters
   List<VisitaPreventistaCliente> get visitas => _visitas;
   bool get isLoading => _isLoading;
@@ -40,6 +46,12 @@ class VisitaProvider with ChangeNotifier {
   // ✅ NUEVOS getters para Filtro de Localidad
   int? get localidadSeleccionada => _localidadSeleccionada;
   List<Localidad> get localidades => _localidades;
+
+  // ✅ NUEVOS getters para Filtros Avanzados
+  String get clienteSearchText => _clienteSearchText;
+  int? get clienteSeleccionado => _clienteSeleccionado;
+  String? get horarioInicio => _horarioInicio;
+  String? get horarioFin => _horarioFin;
 
   /// Registrar nueva visita
   Future<bool> registrarVisita({
@@ -180,21 +192,36 @@ class VisitaProvider with ChangeNotifier {
     }
   }
 
-  /// ✅ MEJORADO: Obtener orden del día (con parámetro fecha opcional)
+  /// ✅ MEJORADO: Obtener orden del día con filtros avanzados
+  /// Si hay filtros activos, ignora la caché
   Future<OrdenDelDia?> obtenerOrdenDelDia({DateTime? fecha}) async {
     try {
       final fechaStr = fecha?.toIso8601String().split('T')[0];
       final cacheKey = fechaStr ?? 'hoy';
 
-      // Verificar caché primero
-      if (_ordenesCache.containsKey(cacheKey)) {
+      // Verificar si hay filtros activos
+      final tieneFiltrActivos = _clienteSearchText.isNotEmpty ||
+          _horarioInicio != null ||
+          _horarioFin != null;
+
+      // Solo usar caché si NO hay filtros activos
+      if (!tieneFiltrActivos && _ordenesCache.containsKey(cacheKey)) {
         return _ordenesCache[cacheKey];
       }
 
-      final response = await _visitaService.obtenerOrdenDelDia(fecha: fechaStr);
+      // Llamar al servicio con filtros
+      final response = await _visitaService.obtenerOrdenDelDia(
+        fecha: fechaStr,
+        clienteNombre: tieneFiltrActivos ? _clienteSearchText : null,
+        horaInicio: tieneFiltrActivos ? _horarioInicio : null,
+        horaFin: tieneFiltrActivos ? _horarioFin : null,
+      );
 
       if (response.success && response.data != null) {
-        _ordenesCache[cacheKey] = response.data!;
+        // Solo cachear si NO hay filtros activos
+        if (!tieneFiltrActivos) {
+          _ordenesCache[cacheKey] = response.data!;
+        }
         return response.data;
       } else {
         _errorMessage = response.message ?? 'Error al cargar orden del día';
@@ -280,15 +307,85 @@ class VisitaProvider with ChangeNotifier {
     notifyListeners();
   }
 
-  /// ✅ NUEVO: Obtener clientes filtrados por localidad
+  /// ✅ MEJORADO: Obtener clientes filtrados por localidad + filtros avanzados
   List<ClienteOrdenDelDia> obtenerClientesFiltrados(List<ClienteOrdenDelDia> clientes) {
-    if (_localidadSeleccionada == null) {
-      return clientes;
+    var clientesFiltrados = clientes;
+
+    // Filtro por localidad
+    if (_localidadSeleccionada != null) {
+      clientesFiltrados = clientesFiltrados
+          .where((c) => c.localidad?.id == _localidadSeleccionada)
+          .toList();
     }
 
-    return clientes
-        .where((cliente) => cliente.localidad?.id == _localidadSeleccionada)
-        .toList();
+    // Aplicar filtros avanzados
+    clientesFiltrados = aplicarFiltros(clientesFiltrados);
+
+    return clientesFiltrados;
+  }
+
+  /// ✅ NUEVO: Filtrar por búsqueda de cliente
+  void filtrarPorCliente(String searchText) {
+    _clienteSearchText = searchText;
+    notifyListeners();
+  }
+
+  /// ✅ NUEVO: Filtrar por rango de horarios
+  void filtrarPorHorario(String? inicio, String? fin) {
+    _horarioInicio = inicio;
+    _horarioFin = fin;
+    notifyListeners();
+  }
+
+  /// ✅ NUEVO: Limpiar todos los filtros
+  void limpiarFiltros() {
+    _clienteSearchText = '';
+    _clienteSeleccionado = null;
+    _horarioInicio = null;
+    _horarioFin = null;
+    notifyListeners();
+  }
+
+  /// ✅ NUEVO: Aplicar todos los filtros a una lista de clientes
+  List<ClienteOrdenDelDia> aplicarFiltros(List<ClienteOrdenDelDia> clientes) {
+    var clientesFiltrados = clientes;
+
+    // Filtro por localidad
+    if (_localidadSeleccionada != null) {
+      clientesFiltrados = clientesFiltrados
+          .where((c) => c.localidad?.id == _localidadSeleccionada)
+          .toList();
+    }
+
+    // Filtro por búsqueda de cliente
+    if (_clienteSearchText.isNotEmpty) {
+      final searchLower = _clienteSearchText.toLowerCase();
+      clientesFiltrados = clientesFiltrados
+          .where((c) =>
+              c.nombre.toLowerCase().contains(searchLower) ||
+              (c.codigoCliente?.toLowerCase().contains(searchLower) ?? false))
+          .toList();
+    }
+
+    // Filtro por rango de horarios
+    if (_horarioInicio != null || _horarioFin != null) {
+      clientesFiltrados = clientesFiltrados.where((c) {
+        final horaInicio = c.ventanaHoraria.horaInicio;
+        if (horaInicio == null) return false;
+
+        if (_horarioInicio != null && horaInicio.compareTo(_horarioInicio!) < 0) {
+          return false;
+        }
+
+        if (_horarioFin != null && horaInicio.compareTo(_horarioFin!) > 0) {
+          return false;
+        }
+
+        return true;
+      }).toList();
+    }
+
+    return clientesFiltrados;
   }
 
   /// Limpiar error

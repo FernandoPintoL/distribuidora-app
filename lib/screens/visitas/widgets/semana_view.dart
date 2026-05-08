@@ -19,6 +19,7 @@ class SemanaView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Consumer<VisitaProvider>(
       builder: (context, visitaProvider, _) {
@@ -59,6 +60,7 @@ class SemanaView extends StatelessWidget {
                       dia,
                       esHoy,
                       colorScheme,
+                      isDark,
                     );
                   },
                 ),
@@ -77,15 +79,22 @@ class SemanaView extends StatelessWidget {
     DiaSemanaResumen dia,
     bool esHoy,
     ColorScheme colorScheme,
+    bool isDark,
   ) {
+    final cardColor = esHoy
+        ? colorScheme.primaryContainer
+        : (isDark ? Colors.grey.shade900 : Colors.white);
+
+    final borderColor = isDark ? Colors.grey.shade700 : Colors.grey.shade200;
+
     return Card(
-      elevation: esHoy ? 4 : 2,
-      color: esHoy ? colorScheme.primaryContainer : Colors.white,
+      elevation: esHoy ? 4 : (isDark ? 1 : 2),
+      color: cardColor,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
         side: esHoy
             ? BorderSide(color: colorScheme.primary, width: 2)
-            : BorderSide.none,
+            : BorderSide(color: borderColor, width: 1),
       ),
       child: InkWell(
         onTap: () {

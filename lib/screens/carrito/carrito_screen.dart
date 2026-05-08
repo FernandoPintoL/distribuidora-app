@@ -108,6 +108,58 @@ class _CarritoScreenState extends State<CarritoScreen> {
                     onClose: () => carritoProvider.limpiarError(),
                   ),
 
+                // ✅ NUEVO: Mostrar contador de items en el carrito (considerando combos)
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
+                  child: Builder(
+                    builder: (context) {
+                      // Calcular cantidad total de items considerando combos
+                      int totalItems = 0;
+                      for (final item in carritoProvider.items) {
+                        if (item.producto.esCombo && item.comboItemsSeleccionados != null && item.comboItemsSeleccionados!.isNotEmpty) {
+                          // Combo: Sumar cantidad de todos sus componentes * cantidad del combo
+                          for (final comboItem in item.comboItemsSeleccionados!) {
+                            final comboItemCantidad = comboItem['cantidad'] ?? 1;
+                            final cantidad = comboItemCantidad is int
+                              ? comboItemCantidad
+                              : (comboItemCantidad as num).toInt();
+                            totalItems += cantidad * item.cantidad.toInt();
+                          }
+                        } else {
+                          // Producto simple: contar su cantidad
+                          totalItems += item.cantidad.toInt();
+                        }
+                      }
+
+                      final esValido = totalItems >= 5;
+                      return Row(
+                        children: [
+                          Text(
+                            '📦 Total de items: ',
+                            style: Theme.of(context).textTheme.bodySmall,
+                          ),
+                          Text(
+                            '$totalItems',
+                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              fontWeight: FontWeight.bold,
+                              color: esValido ? Colors.green : Colors.orange,
+                            ),
+                          ),
+                          if (!esValido) ...[
+                            Text(
+                              ' (mínimo 5)',
+                              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                color: Colors.orange,
+                                fontSize: 11,
+                              ),
+                            ),
+                          ],
+                        ],
+                      );
+                    },
+                  ),
+                ),
+
                 // Lista de items del carrito (ahora con shrinkWrap en SingleChildScrollView)
                 ListView.builder(
                   shrinkWrap: true,

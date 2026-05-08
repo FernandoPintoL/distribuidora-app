@@ -10,6 +10,7 @@ import 'widgets/semana_view.dart';
 import 'widgets/view_mode_selector.dart';
 import 'widgets/horario_view.dart';
 import 'widgets/localidad_filter.dart';
+import 'widgets/filtros_avanzados.dart';
 
 class OrdenDelDiaScreen extends StatefulWidget {
   const OrdenDelDiaScreen({super.key});
@@ -29,7 +30,9 @@ class _OrdenDelDiaScreenState extends State<OrdenDelDiaScreen> {
 
   void _loadOrdenDelDia() {
     final visitaProvider = context.read<VisitaProvider>();
-    _ordenDelDiaFuture = visitaProvider.obtenerOrdenDelDia();
+    _ordenDelDiaFuture = visitaProvider.obtenerOrdenDelDia(
+      fecha: visitaProvider.fechaSeleccionada,
+    );
   }
 
   /// Navega a MarcarVisitaScreen para registrar una visita
@@ -93,6 +96,12 @@ class _OrdenDelDiaScreenState extends State<OrdenDelDiaScreen> {
     showModalBottomSheet(
       context: context,
       builder: (BuildContext context) {
+        final isDark = Theme.of(context).brightness == Brightness.dark;
+        final dividerColor = isDark ? Colors.grey.shade700 : Colors.grey.shade200;
+        final bgErrorImage = isDark ? Colors.grey.shade800 : Colors.grey.shade200;
+        final iconErrorImage = isDark ? Colors.grey.shade400 : Colors.grey.shade600;
+        final iconColor = Theme.of(context).colorScheme.primary;
+
         return Container(
           padding: const EdgeInsets.all(20),
           child: Column(
@@ -193,11 +202,11 @@ class _OrdenDelDiaScreenState extends State<OrdenDelDiaScreen> {
                             errorBuilder: (context, error, stackTrace) {
                               return Container(
                                 height: 150,
-                                color: Colors.grey[300],
+                                color: bgErrorImage,
                                 child: Icon(
                                   Icons.person,
                                   size: 60,
-                                  color: Colors.grey[600],
+                                  color: iconErrorImage,
                                 ),
                               );
                             },
@@ -205,7 +214,7 @@ class _OrdenDelDiaScreenState extends State<OrdenDelDiaScreen> {
                               if (loadingProgress == null) return child;
                               return Container(
                                 height: 150,
-                                color: Colors.grey[300],
+                                color: bgErrorImage,
                                 child: const Center(
                                   child: CircularProgressIndicator(),
                                 ),
@@ -216,18 +225,14 @@ class _OrdenDelDiaScreenState extends State<OrdenDelDiaScreen> {
                       if (cliente.fotoPerfil != null &&
                           cliente.fotoPerfil!.isNotEmpty)
                         const SizedBox(height: 20),
-                      Divider(
-                        color: Theme.of(context).brightness == Brightness.dark
-                            ? Colors.grey.shade700
-                            : Colors.grey.shade200,
-                      ),
+                      Divider(color: dividerColor),
                       const SizedBox(height: 16),
 
                       // Detalles de contacto
                       if (cliente.telefono != null) ...[
                         Row(
                           children: [
-                            Icon(Icons.phone, size: 18, color: Colors.blue),
+                            Icon(Icons.phone, size: 18, color: iconColor),
                             const SizedBox(width: 12),
                             Expanded(
                               child: Column(
@@ -256,7 +261,7 @@ class _OrdenDelDiaScreenState extends State<OrdenDelDiaScreen> {
                       if (cliente.email != null) ...[
                         Row(
                           children: [
-                            Icon(Icons.email, size: 18, color: Colors.blue),
+                            Icon(Icons.email, size: 18, color: iconColor),
                             const SizedBox(width: 12),
                             Expanded(
                               child: Column(
@@ -292,7 +297,7 @@ class _OrdenDelDiaScreenState extends State<OrdenDelDiaScreen> {
                             Icon(
                               Icons.location_on,
                               size: 18,
-                              color: Colors.blue,
+                              color: iconColor,
                             ),
                             const SizedBox(width: 12),
                             Expanded(
@@ -330,14 +335,14 @@ class _OrdenDelDiaScreenState extends State<OrdenDelDiaScreen> {
                       Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Icon(Icons.access_time, size: 18, color: Colors.blue),
+                          Icon(Icons.access_time, size: 18, color: iconColor),
                           const SizedBox(width: 12),
                           Expanded(
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  'Ventana Horaria',
+                                  'Horario de Visita: ',
                                   style: Theme.of(context).textTheme.labelSmall,
                                 ),
                                 Text(
@@ -359,7 +364,7 @@ class _OrdenDelDiaScreenState extends State<OrdenDelDiaScreen> {
                             Icon(
                               Icons.credit_card,
                               size: 18,
-                              color: Colors.blue,
+                              color: iconColor,
                             ),
                             const SizedBox(width: 12),
                             Expanded(
@@ -390,11 +395,7 @@ class _OrdenDelDiaScreenState extends State<OrdenDelDiaScreen> {
               ),
 
               const SizedBox(height: 20),
-              Divider(
-                color: Theme.of(context).brightness == Brightness.dark
-                    ? Colors.grey.shade700
-                    : Colors.grey.shade200,
-              ),
+              Divider(color: dividerColor),
               const SizedBox(height: 16),
 
               // Botones de acción (sticky at bottom, not scrollable)
@@ -444,10 +445,6 @@ class _OrdenDelDiaScreenState extends State<OrdenDelDiaScreen> {
                       },
                       icon: const Icon(Icons.shopping_cart),
                       label: const Text('Registrar Pedido'),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.blue,
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                      ),
                     ),
                   ),
                 ],
@@ -470,6 +467,10 @@ class _OrdenDelDiaScreenState extends State<OrdenDelDiaScreen> {
     final statusIcon = estadoVisitado ? Icons.check_circle : Icons.schedule;
     final statusText = estadoVisitado ? 'Visitado' : 'Pendiente';
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final secondaryTextColor = isDark ? Colors.grey.shade400 : Colors.grey.shade700;
+    final tertiaryTextColor = isDark ? Colors.grey.shade500 : Colors.grey.shade600;
+    final bgErrorImage = isDark ? Colors.grey.shade800 : Colors.grey.shade200;
+    final iconErrorImage = isDark ? Colors.grey.shade400 : Colors.grey.shade600;
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
@@ -524,18 +525,18 @@ class _OrdenDelDiaScreenState extends State<OrdenDelDiaScreen> {
                             fit: BoxFit.cover,
                             errorBuilder: (context, error, stackTrace) {
                               return Container(
-                                color: Colors.grey[300],
+                                color: bgErrorImage,
                                 child: Icon(
                                   Icons.person,
                                   size: 35,
-                                  color: Colors.grey[600],
+                                  color: iconErrorImage,
                                 ),
                               );
                             },
                             loadingBuilder: (context, child, loadingProgress) {
                               if (loadingProgress == null) return child;
                               return Container(
-                                color: Colors.grey[300],
+                                color: bgErrorImage,
                                 child: const Center(
                                   child: SizedBox(
                                     width: 24,
@@ -556,7 +557,7 @@ class _OrdenDelDiaScreenState extends State<OrdenDelDiaScreen> {
                         height: 70,
                         decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(8),
-                          color: Colors.grey[300],
+                          color: bgErrorImage,
                           border: Border.all(
                             color: statusColor.withOpacity(0.3),
                             width: 2,
@@ -565,7 +566,7 @@ class _OrdenDelDiaScreenState extends State<OrdenDelDiaScreen> {
                         child: Icon(
                           Icons.person,
                           size: 35,
-                          color: Colors.grey[600],
+                          color: iconErrorImage,
                         ),
                       ),
                     const SizedBox(width: 12),
@@ -596,7 +597,7 @@ class _OrdenDelDiaScreenState extends State<OrdenDelDiaScreen> {
                                         cliente.codigoCliente!,
                                         style: TextStyle(
                                           fontSize: 12,
-                                          color: Colors.grey.shade600,
+                                          color: tertiaryTextColor,
                                           fontWeight: FontWeight.w500,
                                         ),
                                       ),
@@ -680,7 +681,7 @@ class _OrdenDelDiaScreenState extends State<OrdenDelDiaScreen> {
                         Icon(
                           Icons.phone,
                           size: 16,
-                          color: Colors.grey.shade600,
+                          color: tertiaryTextColor,
                         ),
                         const SizedBox(width: 8),
                         Expanded(
@@ -688,7 +689,7 @@ class _OrdenDelDiaScreenState extends State<OrdenDelDiaScreen> {
                             cliente.telefono!,
                             style: TextStyle(
                               fontSize: 13,
-                              color: Colors.grey.shade700,
+                              color: secondaryTextColor,
                             ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
@@ -708,7 +709,7 @@ class _OrdenDelDiaScreenState extends State<OrdenDelDiaScreen> {
                         Icon(
                           Icons.location_on,
                           size: 16,
-                          color: Colors.grey.shade600,
+                          color: tertiaryTextColor,
                         ),
                         const SizedBox(width: 8),
                         Expanded(
@@ -719,7 +720,7 @@ class _OrdenDelDiaScreenState extends State<OrdenDelDiaScreen> {
                                 cliente.direccion.direccion!,
                                 style: TextStyle(
                                   fontSize: 13,
-                                  color: Colors.grey.shade700,
+                                  color: secondaryTextColor,
                                 ),
                                 maxLines: 2,
                                 overflow: TextOverflow.ellipsis,
@@ -729,7 +730,7 @@ class _OrdenDelDiaScreenState extends State<OrdenDelDiaScreen> {
                                   cliente.direccion.ciudad!,
                                   style: TextStyle(
                                     fontSize: 12,
-                                    color: Colors.grey.shade600,
+                                    color: tertiaryTextColor,
                                   ),
                                 ),
                             ],
@@ -759,11 +760,11 @@ class _OrdenDelDiaScreenState extends State<OrdenDelDiaScreen> {
                               Icon(
                                 Icons.access_time,
                                 size: 16,
-                                color: Colors.blue,
+                                color: Theme.of(context).colorScheme.primary,
                               ),
                               const SizedBox(width: 8),
                               Text(
-                                'Ventana: ${cliente.ventanaHoraria.horaInicio} - ${cliente.ventanaHoraria.horaFin}',
+                                'Horario de Visita: ${cliente.ventanaHoraria.horaInicio} - ${cliente.ventanaHoraria.horaFin}',
                                 style: const TextStyle(
                                   fontSize: 12,
                                   fontWeight: FontWeight.w600,
@@ -827,7 +828,7 @@ class _OrdenDelDiaScreenState extends State<OrdenDelDiaScreen> {
                   Icon(
                     Icons.error_outline,
                     size: 64,
-                    color: Colors.red.shade300,
+                    color: Theme.of(context).colorScheme.error,
                   ),
                   const SizedBox(height: 16),
                   Text(
@@ -863,7 +864,7 @@ class _OrdenDelDiaScreenState extends State<OrdenDelDiaScreen> {
                   Icon(
                     Icons.warning_amber_outlined,
                     size: 64,
-                    color: Colors.orange.shade300,
+                    color: Colors.orange,
                   ),
                   const SizedBox(height: 16),
                   Text(
@@ -929,7 +930,7 @@ class _OrdenDelDiaScreenState extends State<OrdenDelDiaScreen> {
                               Icon(
                                 Icons.error_outline,
                                 size: 64,
-                                color: Colors.red.shade300,
+                                color: Theme.of(context).colorScheme.error,
                               ),
                               const SizedBox(height: 16),
                               Text(
@@ -952,7 +953,9 @@ class _OrdenDelDiaScreenState extends State<OrdenDelDiaScreen> {
                           onSelectFecha: (fecha) {
                             visitaProvider.cambiarModoVista(ViewMode.day);
                             visitaProvider.seleccionarFecha(fecha);
-                            visitaProvider.obtenerOrdenDelDia(fecha: fecha);
+                            setState(() {
+                              _loadOrdenDelDia();
+                            });
                           },
                         ),
                       );
@@ -977,7 +980,7 @@ class _OrdenDelDiaScreenState extends State<OrdenDelDiaScreen> {
                               Icon(
                                 Icons.error_outline,
                                 size: 64,
-                                color: Colors.red.shade300,
+                                color: Theme.of(context).colorScheme.error,
                               ),
                               const SizedBox(height: 16),
                               Text(
@@ -1001,6 +1004,7 @@ class _OrdenDelDiaScreenState extends State<OrdenDelDiaScreen> {
                             if (visitaProvider.localidades.isNotEmpty)
                               LocalidadFilter(
                                 localidades: visitaProvider.localidades,
+                                clientes: daySnapshot.data!.clientes,
                               ),
                             // Vista de Horarios
                             Builder(
@@ -1106,31 +1110,40 @@ class _OrdenDelDiaScreenState extends State<OrdenDelDiaScreen> {
                             if (visitaProvider.localidades.isNotEmpty)
                               LocalidadFilter(
                                 localidades: visitaProvider.localidades,
+                                clientes: ordenDelDia.clientes,
                               ),
                             if (visitaProvider.localidades.isNotEmpty)
-                              const SizedBox(height: 16),
+                              const SizedBox(height: 12),
+
+                            // ✅ Filtros Avanzados (Cliente, Horario)
+                            FiltrosAvanzados(
+                              clientes: ordenDelDia.clientes,
+                            ),
+                            const SizedBox(height: 16),
 
                             // ✅ Lista de Clientes
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Text(
-                                  'Clientes a Visitar',
-                                  style: Theme.of(context).textTheme.titleLarge,
-                                ),
-                                Builder(
-                                  builder: (context) {
-                                    final clientesFiltrados =
-                                        visitaProvider.obtenerClientesFiltrados(
-                                      ordenDelDia.clientes,
-                                    );
-                                    return Container(
+                            Builder(
+                              builder: (context) {
+                                final isDark = Theme.of(context).brightness == Brightness.dark;
+                                final clientesFiltrados =
+                                    visitaProvider.obtenerClientesFiltrados(
+                                  ordenDelDia.clientes,
+                                );
+                                final primaryColor = Theme.of(context).colorScheme.primary;
+                                return Row(
+                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Text(
+                                      'Clientes a Visitar (${clientesFiltrados.length})',
+                                      style: Theme.of(context).textTheme.titleLarge,
+                                    ),
+                                    Container(
                                       padding: const EdgeInsets.symmetric(
                                         horizontal: 8,
                                         vertical: 4,
                                       ),
                                       decoration: BoxDecoration(
-                                        color: Colors.blue.withOpacity(0.1),
+                                        color: primaryColor.withOpacity(0.1),
                                         borderRadius:
                                             BorderRadius.circular(12),
                                       ),
@@ -1138,14 +1151,16 @@ class _OrdenDelDiaScreenState extends State<OrdenDelDiaScreen> {
                                         '${clientesFiltrados.length} clientes',
                                         style: TextStyle(
                                           fontSize: 12,
-                                          color: Colors.blue.shade700,
+                                          color: isDark
+                                              ? primaryColor.withOpacity(0.8)
+                                              : primaryColor,
                                           fontWeight: FontWeight.w600,
                                         ),
                                       ),
-                                    );
-                                  },
-                                ),
-                              ],
+                                    ),
+                                  ],
+                                );
+                              },
                             ),
                             const SizedBox(height: 16),
 
@@ -1161,7 +1176,7 @@ class _OrdenDelDiaScreenState extends State<OrdenDelDiaScreen> {
                                       Icon(
                                         Icons.check_circle,
                                         size: 48,
-                                        color: Colors.green.shade300,
+                                        color: Colors.green,
                                       ),
                                       const SizedBox(height: 12),
                                       Text(
@@ -1193,7 +1208,7 @@ class _OrdenDelDiaScreenState extends State<OrdenDelDiaScreen> {
                                             Icon(
                                               Icons.filter_alt_off,
                                               size: 48,
-                                              color: Colors.orange.shade300,
+                                              color: Colors.orange,
                                             ),
                                             const SizedBox(height: 12),
                                             Text(
@@ -1316,16 +1331,19 @@ Widget _buildResumenCard(ResumenOrdenDelDia resumen) {
                 mainAxisAlignment: MainAxisAlignment.spaceAround,
                 children: [
                   _buildStatItem(
+                    context,
                     count: resumen.totalClientes,
                     label: 'Total',
                     color: Colors.blue,
                   ),
                   _buildStatItem(
+                    context,
                     count: resumen.visitados,
                     label: 'Visitados',
                     color: Colors.green,
                   ),
                   _buildStatItem(
+                    context,
                     count: resumen.pendientes,
                     label: 'Pendientes',
                     color: Colors.orange,
@@ -1340,11 +1358,15 @@ Widget _buildResumenCard(ResumenOrdenDelDia resumen) {
   );
 }
 
-Widget _buildStatItem({
+Widget _buildStatItem(
+  BuildContext context, {
   required int count,
   required String label,
   required Color color,
 }) {
+  final isDark = Theme.of(context).brightness == Brightness.dark;
+  final textColor = isDark ? Colors.grey.shade400 : Colors.grey.shade600;
+
   return Column(
     children: [
       Text(
@@ -1360,7 +1382,7 @@ Widget _buildStatItem({
         label,
         style: TextStyle(
           fontSize: 12,
-          color: Colors.grey.shade600,
+          color: textColor,
           fontWeight: FontWeight.w500,
         ),
       ),

@@ -238,12 +238,41 @@ class VisitaService {
     }
   }
 
-  /// ✅ MEJORADO: Obtener orden del día (con parámetro fecha opcional)
-  Future<ApiResponse<OrdenDelDia>> obtenerOrdenDelDia({String? fecha}) async {
+  /// ✅ MEJORADO: Obtener orden del día con filtros avanzados
+  /// Parámetros opcionales:
+  /// - fecha: YYYY-MM-DD (default: hoy)
+  /// - cliente_nombre: búsqueda por nombre o código
+  /// - cliente_codigo: búsqueda por código
+  /// - hora_inicio: HH:MM (filtra ventanas >= esta hora)
+  /// - hora_fin: HH:MM (filtra ventanas <= esta hora)
+  /// - preventista_id: filtra por preventista
+  Future<ApiResponse<OrdenDelDia>> obtenerOrdenDelDia({
+    String? fecha,
+    String? clienteNombre,
+    String? clienteCodigo,
+    String? horaInicio,
+    String? horaFin,
+    int? preventistaId,
+  }) async {
     try {
       final params = <String, dynamic>{};
       if (fecha != null) {
         params['fecha'] = fecha;
+      }
+      if (clienteNombre != null && clienteNombre.isNotEmpty) {
+        params['cliente_nombre'] = clienteNombre;
+      }
+      if (clienteCodigo != null && clienteCodigo.isNotEmpty) {
+        params['cliente_codigo'] = clienteCodigo;
+      }
+      if (horaInicio != null && horaInicio.isNotEmpty) {
+        params['hora_inicio'] = horaInicio;
+      }
+      if (horaFin != null && horaFin.isNotEmpty) {
+        params['hora_fin'] = horaFin;
+      }
+      if (preventistaId != null) {
+        params['preventista_id'] = preventistaId;
       }
 
       final response = await _apiService.get(

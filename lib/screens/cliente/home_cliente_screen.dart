@@ -50,37 +50,49 @@ class _HomeClienteScreenState extends BaseHomeScreenState<HomeClienteScreen> {
 
   @override
   Future<void> loadInitialData() async {
-    if (!mounted) return;
+    debugPrint('🚀 [HOME] Iniciando carga de datos iniciales...');
+
+    if (!mounted) {
+      debugPrint('❌ [HOME] Widget no está montado, abortando carga');
+      return;
+    }
 
     try {
+      debugPrint('📦 [HOME] Obteniendo providers...');
       final pedidoProvider = context.read<PedidoProvider>();
       final notificationProvider = context.read<NotificationProvider>();
       final clientProvider = context.read<ClientProvider>();
       final reportesProvider = context.read<ReporteProductoDanadoProvider>();
       final bannerProvider = context.read<BannerPublicitarioProvider>();
+      debugPrint('✅ [HOME] Providers obtenidos correctamente');
 
-      // ✅ Solo cargar estadísticas de notificaciones (contador), no las notificaciones completas
+      debugPrint('📊 [HOME] Cargando estadísticas de notificaciones...');
       await notificationProvider.loadStats();
+      debugPrint('✅ [HOME] Notificaciones cargadas');
 
-      // ✅ Solo cargar estadísticas de pedidos al iniciar (ligero y rápido)
-      // Las proformas completas se cargarán cuando el usuario navegue al tab
+      debugPrint('📋 [HOME] Cargando estadísticas de pedidos...');
       await pedidoProvider.loadStats();
+      debugPrint('✅ [HOME] Pedidos cargados');
 
-      // ✅ NUEVO: Cargar perfil del cliente actual para mostrar información de crédito
-      // getClientPerfil() obtiene SOLO los datos del cliente autenticado (no requiere permisos especiales)
+      debugPrint('👤 [HOME] Cargando perfil del cliente...');
       await clientProvider.getClientPerfil();
+      debugPrint('✅ [HOME] Perfil cargado');
 
-      // ✅ NUEVO: Cargar reportes dañados para mostrar contador en dashboard
+      debugPrint('📝 [HOME] Cargando reportes dañados...');
       await reportesProvider.cargarReportes(refresh: true);
+      debugPrint('✅ [HOME] Reportes cargados');
 
-      // ✅ NUEVO: Cargar banners publicitarios para mostrar en el carrusel
+      debugPrint('🎨 [HOME] Cargando banners publicitarios...');
       await bannerProvider.cargarBanners();
+      debugPrint('✅ [HOME] Banners cargados: ${bannerProvider.banners.length}');
+      if (bannerProvider.errorMessage != null) {
+        debugPrint('⚠️ [HOME] Error banners: ${bannerProvider.errorMessage}');
+      }
 
-      // Los productos se cargarán cuando el usuario navegue a la pestaña de Productos
-
-      // Las notificaciones completas se cargarán solo cuando el usuario abra la pantalla de notificaciones
+      debugPrint('✅ [HOME] Todos los datos cargados exitosamente');
     } catch (e) {
-      debugPrint('❌ Error cargando datos iniciales: $e');
+      debugPrint('❌ [HOME] ERROR en loadInitialData: $e');
+      debugPrint('📍 Stack: $e');
     }
   }
 }
@@ -105,34 +117,27 @@ class _DashboardTab extends StatelessWidget {
           children: [
             // Bienvenida
             _buildWelcomeBanner(context, authProvider.user?.name ?? 'Cliente'),
-
+            const SizedBox(height: 24),
+            // Acciones rápidas
+            _buildQuickActions(context),
             const SizedBox(height: 24),
 
             // ✅ NUEVO: Carrusel de Banners Publicitarios
             _buildBannersCarrusel(context),
-
             const SizedBox(height: 24),
-
-            // Acciones rápidas
-            _buildQuickActions(context),
-
             // ✅ NUEVO: Botón de Mis Ventas
             //_buildMisVentasButton(context),
 
             // ✅ NUEVO: Widget de Crédito (si aplica)
             // _buildCreditoResumenSection(context, authProvider),
 
-            const SizedBox(height: 24),
-
             // Estadísticas de mis pedidos
             _buildProformasStats(context, pedidoProvider),
-
             const SizedBox(height: 24),
             // ✅ NUEVO: Botón de Reportes Dañados
-            _buildReportesButton(context),
+            // _buildReportesButton(context),
 
             const SizedBox(height: 24),
-
             // Enlace a ver todos los pedidos
             //_buildViewAllPedidosButton(context),
           ],
@@ -391,11 +396,61 @@ class _DashboardTab extends StatelessWidget {
   Widget _buildBannersCarrusel(BuildContext context) {
     final bannerProvider = context.watch<BannerPublicitarioProvider>();
 
-    // Si no hay banners, no mostrar nada
+    // Mostrar loader mientras carga
+    if (bannerProvider.isLoading) {
+      return Container(
+        height: 180,
+        decoration: BoxDecoration(
+          color: Colors.grey.shade100,
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: const Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              CircularProgressIndicator(),
+              SizedBox(height: 12),
+              Text(
+                'Cargando banners publicitarios...',
+                style: TextStyle(color: Colors.grey, fontSize: 14),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    // Mostrar error si existe
+    if (bannerProvider.errorMessage != null && bannerProvider.banners.isEmpty) {
+      return Container(
+        height: 180,
+        decoration: BoxDecoration(
+          color: Colors.red.shade50,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.red.shade200),
+        ),
+        child: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.error_outline, color: Colors.red.shade700, size: 32),
+              const SizedBox(height: 8),
+              Text(
+                'Error cargando banners',
+                style: TextStyle(color: Colors.red.shade700, fontSize: 14),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    // Si no hay banners
     if (bannerProvider.banners.isEmpty) {
       return const SizedBox.shrink();
     }
 
+    // Mostrar carrusel
     return BannersCarrusel(
       banners: bannerProvider.banners,
       height: 180,
@@ -609,7 +664,7 @@ class _DashboardTab extends StatelessWidget {
                   Expanded(
                     child: _StatCard(
                       icon: Icons.local_shipping,
-                      label: 'Convertidos',
+                      label: 'Convertidos/Aprobados',
                       value: '${stats.porEstado.convertida}',
                       color: Colors.teal,
                     ),

@@ -9,6 +9,9 @@ class ViewModeSelector extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final inactiveIconColor = isDark ? Colors.grey.shade500 : Colors.grey;
+
     return Consumer<VisitaProvider>(
       builder: (context, visitaProvider, _) {
         final isDay = visitaProvider.viewMode == ViewMode.day;
@@ -32,7 +35,7 @@ class ViewModeSelector extends StatelessWidget {
                         size: 20,
                         color: isDay
                             ? Theme.of(context).colorScheme.primary
-                            : Colors.grey,
+                            : inactiveIconColor,
                       ),
                       const SizedBox(width: 12),
                       const Text('Día'),
@@ -48,7 +51,7 @@ class ViewModeSelector extends StatelessWidget {
                         size: 20,
                         color: visitaProvider.viewMode == ViewMode.week
                             ? Theme.of(context).colorScheme.primary
-                            : Colors.grey,
+                            : inactiveIconColor,
                       ),
                       const SizedBox(width: 12),
                       const Text('Semana'),
@@ -64,7 +67,7 @@ class ViewModeSelector extends StatelessWidget {
                         size: 20,
                         color: visitaProvider.viewMode == ViewMode.horarios
                             ? Theme.of(context).colorScheme.primary
-                            : Colors.grey,
+                            : inactiveIconColor,
                       ),
                       const SizedBox(width: 12),
                       const Text('Horarios'),

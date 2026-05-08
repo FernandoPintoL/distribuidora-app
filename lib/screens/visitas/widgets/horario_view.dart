@@ -16,6 +16,7 @@ class HorarioView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     // Obtener rango de horas (de 6:00 AM a 8:00 PM)
     final startHour = 6;
@@ -83,6 +84,7 @@ class HorarioView extends StatelessWidget {
                                 context,
                                 cliente,
                                 colorScheme,
+                                isDark,
                               ),
                             );
                           }).toList(),
@@ -94,19 +96,26 @@ class HorarioView extends StatelessWidget {
                             vertical: 8,
                           ),
                           decoration: BoxDecoration(
-                            color: colorScheme.surfaceVariant.withOpacity(0.3),
+                            color: isDark
+                                ? Colors.grey.shade800
+                                : colorScheme.surfaceVariant.withOpacity(0.3),
                             borderRadius: BorderRadius.circular(8),
                           ),
                           child: Text(
                             'Sin visitas programadas',
                             style: AppTextStyles.bodySmall(context).copyWith(
-                              color: colorScheme.onSurfaceVariant,
+                              color: isDark
+                                  ? Colors.grey.shade400
+                                  : colorScheme.onSurfaceVariant,
                             ),
                           ),
                         ),
 
                       // Divisor
-                      const Divider(height: 24),
+                      Divider(
+                        height: 24,
+                        color: isDark ? Colors.grey.shade700 : Colors.grey.shade200,
+                      ),
                     ],
                   ),
                 );
@@ -146,11 +155,12 @@ class HorarioView extends StatelessWidget {
     BuildContext context,
     ClienteOrdenDelDia cliente,
     ColorScheme colorScheme,
+    bool isDark,
   ) {
     final esVisitado = cliente.visitado;
     final bgColor = esVisitado
-        ? Colors.green.withOpacity(0.15)
-        : Colors.orange.withOpacity(0.15);
+        ? Colors.green.withOpacity(isDark ? 0.25 : 0.15)
+        : Colors.orange.withOpacity(isDark ? 0.25 : 0.15);
     final borderColor = esVisitado ? Colors.green : Colors.orange;
 
     return GestureDetector(

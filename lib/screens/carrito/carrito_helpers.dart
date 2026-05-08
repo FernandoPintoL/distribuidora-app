@@ -68,18 +68,19 @@ void continuarCompra(BuildContext context) async {
   }
 
   // ✅ ACTUALIZADO: Validar cantidad mínima considerando componentes de combos
-  // Combos: Suma la cantidad de todos sus componentes
+  // Combos: Suma la cantidad de todos sus componentes MULTIPLICADA por la cantidad del combo
   // Productos simples: Cuenta su cantidad
   int cantidadItemsValidacion = 0;
   for (final item in carritoProvider.items) {
     if (item.producto.esCombo && item.comboItemsSeleccionados != null && item.comboItemsSeleccionados!.isNotEmpty) {
-      // Combo: Sumar cantidad de todos sus componentes
+      // Combo: Sumar cantidad de todos sus componentes MULTIPLICADA por cantidad del combo
       for (final comboItem in item.comboItemsSeleccionados!) {
         final comboItemCantidad = comboItem['cantidad'] ?? 1;
         final cantidad = comboItemCantidad is int
           ? comboItemCantidad
           : (comboItemCantidad as num).toInt();
-        cantidadItemsValidacion += cantidad;
+        // ✅ CORREGIDO: Multiplicar por la cantidad de combos que el usuario seleccionó
+        cantidadItemsValidacion += cantidad * item.cantidad.toInt();
       }
     } else {
       // Producto simple o combo sin componentes seleccionados: contar su cantidad

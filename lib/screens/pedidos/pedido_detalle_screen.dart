@@ -581,7 +581,7 @@ class _PedidoDetalleScreenState extends State<PedidoDetalleScreen> {
                     ),
                   // ✅ NUEVO: Botón para reportar producto dañado (si es una venta confirmada)
                   if (pedido.venta != null) ...[
-                    const SizedBox(height: 12),
+                    const SizedBox(height: 2),
                     Row(
                       children: [
                         Expanded(
@@ -596,8 +596,8 @@ class _PedidoDetalleScreenState extends State<PedidoDetalleScreen> {
                             ),
                           ),
                         ),
-                        const SizedBox(width: 12),
-                        Expanded(
+                        const SizedBox(width: 2),
+                        /* Expanded(
                           child: ElevatedButton.icon(
                             onPressed: () => _reportarProductoDanado(pedido),
                             icon: const Icon(Icons.report_problem),
@@ -608,7 +608,7 @@ class _PedidoDetalleScreenState extends State<PedidoDetalleScreen> {
                               minimumSize: const Size(double.infinity, 50),
                             ),
                           ),
-                        ),
+                        ), */
                       ],
                     ),
                   ],

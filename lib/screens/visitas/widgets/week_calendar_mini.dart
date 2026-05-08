@@ -19,6 +19,7 @@ class WeekCalendarMini extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -30,7 +31,9 @@ class WeekCalendarMini extends StatelessWidget {
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: isDark
+                ? Colors.black.withOpacity(0.3)
+                : Colors.black.withOpacity(0.05),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -99,6 +102,7 @@ class WeekCalendarMini extends StatelessWidget {
     bool esSeleccionado,
   ) {
     final colorScheme = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final fecha = DateTime.parse(dia.fecha);
     final tieneClientes = dia.totalClientes > 0;
     final todosVisitados = dia.visitados == dia.totalClientes && tieneClientes;
@@ -120,9 +124,9 @@ class WeekCalendarMini extends StatelessWidget {
       borderColor = colorScheme.primary;
       elevation = 2;
     } else {
-      bgColor = Colors.transparent;
+      bgColor = isDark ? Colors.grey.shade800 : Colors.grey.shade50;
       textColor = colorScheme.onSurface;
-      borderColor = colorScheme.outlineVariant;
+      borderColor = isDark ? Colors.grey.shade700 : Colors.grey.shade200;
     }
 
     return GestureDetector(

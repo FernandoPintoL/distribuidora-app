@@ -140,7 +140,7 @@ class PedidosHistorialScreen extends StatefulWidget {
   State<PedidosHistorialScreen> createState() => _PedidosHistorialScreenState();
 }
 
-class _PedidosHistorialScreenState extends State<PedidosHistorialScreen> {
+class _PedidosHistorialScreenState extends State<PedidosHistorialScreen> with WidgetsBindingObserver {
   final ScrollController _scrollController = ScrollController();
   final TextEditingController _searchController = TextEditingController();
   String? _filtroEstadoSeleccionado;
@@ -160,30 +160,50 @@ class _PedidosHistorialScreenState extends State<PedidosHistorialScreen> {
   void initState() {
     super.initState();
     _scrollController.addListener(_onScroll);
+    // ✅ NUEVO: Registrar observer para detectar cambios de ciclo de vida
+    WidgetsBinding.instance.addObserver(this);
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
       // Cargar estados y estadísticas dinámicamente
       final estadosProvider = context.read<EstadosProvider>();
       estadosProvider.loadEstadosYEstadisticas();
 
-      // ✅ ACTUALIZADO: Cargar proformas PENDIENTES con fecha_entrega_solicitada=hoy por defecto
-      final hoy = DateTime.now();
-
-      setState(() {
-        _filtroEstadoSeleccionado = 'PENDIENTE';
-        // ✅ CAMBIO: Usar fecha de entrega solicitada en lugar de fecha de creación
-        _filtroFechaEntregaSolicitadaDesde = hoy;
-        _filtroFechaEntregaSolicitadaHasta = hoy;
-      });
-
-      // Sincronizar el filtro local con el filtro del provider
-      final pedidoProvider = context.read<PedidoProvider>();
-      if (pedidoProvider.filtroEstado != null) {
-        setState(() {
-          _filtroEstadoSeleccionado = pedidoProvider.filtroEstado;
-        });
-      }
-      _cargarPedidos();
+      // ✅ ACTUALIZADO: Cargar pedidos con fecha_entrega_solicitada=hoy SIN filtro de estado
+      // Esto muestra todos los estados para hoy
+      _inicializarFiltrosYCargar();
     });
+  }
+
+  /// ✅ NUEVO: Método para inicializar filtros y cargar datos
+  void _inicializarFiltrosYCargar() {
+    final hoy = DateTime.now();
+
+    setState(() {
+      // NO filtrar por estado - dejar null para mostrar todos
+      _filtroEstadoSeleccionado = null;
+      // ✅ CAMBIO: Usar fecha de entrega solicitada en lugar de fecha de creación
+      _filtroFechaEntregaSolicitadaDesde = hoy;
+      _filtroFechaEntregaSolicitadaHasta = hoy;
+    });
+
+    // Sincronizar el filtro local con el filtro del provider
+    final pedidoProvider = context.read<PedidoProvider>();
+    if (pedidoProvider.filtroEstado != null) {
+      setState(() {
+        _filtroEstadoSeleccionado = pedidoProvider.filtroEstado;
+      });
+    }
+    _cargarPedidos();
+  }
+
+  /// ✅ NUEVO: Detectar cuando la app vuelve a foreground
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      // App volvió a foreground - recargar datos
+      debugPrint('✅ [PEDIDOS] App reanudada, recargando pedidos...');
+      _inicializarFiltrosYCargar();
+    }
   }
 
   @override
@@ -192,6 +212,8 @@ class _PedidosHistorialScreenState extends State<PedidosHistorialScreen> {
     _scrollController.dispose();
     _searchController.dispose();
     _debounceTimer?.cancel();
+    // ✅ NUEVO: Remover observer
+    WidgetsBinding.instance.removeObserver(this);
     super.dispose();
   }
 
