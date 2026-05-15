@@ -169,7 +169,7 @@ class Client {
 class ClientAddress {
   final int? id;
   final int? clienteId;
-  final String direccion;
+  final String? direccion; // ✅ Ahora nullable - usuario puede registrar solo con coordenadas
   final String? observaciones;
   final String? ciudad;
   final String? departamento;
@@ -186,7 +186,7 @@ class ClientAddress {
   ClientAddress({
     this.id,
     this.clienteId,
-    required this.direccion,
+    this.direccion, // ✅ Ahora opcional
     this.observaciones,
     this.ciudad,
     this.departamento,
