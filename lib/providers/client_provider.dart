@@ -58,6 +58,7 @@ class ClientProvider with ChangeNotifier {
     int perPage = 20,
     String? search,
     bool? active,
+    int? localidadId,
     bool append = false,
   }) async {
     // Prevenir llamadas simultáneas
@@ -78,6 +79,7 @@ class ClientProvider with ChangeNotifier {
         perPage: perPage,
         search: search,
         active: active,
+        localidadId: localidadId,
       );
 
       debugPrint('🔄 loadClients ${response.data}');

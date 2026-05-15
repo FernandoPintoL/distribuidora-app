@@ -1308,7 +1308,7 @@ class _ProformaCreacionScreenState extends State<ProformaCreacionScreen> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              _direccionSeleccionada!.direccion,
+                              _direccionSeleccionada!.direccion ?? '',
                               style: context.textTheme.bodyMedium?.copyWith(
                                 fontWeight: FontWeight.w600,
                                 color: colorScheme.onSurface,

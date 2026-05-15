@@ -1568,7 +1568,7 @@ class _PedidoDetalleScreenState extends State<PedidoDetalleScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          direccion.direccion,
+                          direccion.direccion ?? '',
                           style: TextStyle(
                             fontSize: AppTextStyles.bodyLarge(
                               context,

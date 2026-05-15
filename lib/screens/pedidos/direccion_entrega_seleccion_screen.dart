@@ -386,7 +386,7 @@ class _DireccionEntregaSeleccionScreenState
                                               const SizedBox(width: 8),
                                               Expanded(
                                                 child: Text(
-                                                  direccion.direccion,
+                                                  direccion.direccion ?? '',
                                                   style: TextStyle(
                                                     fontWeight: FontWeight.w600,
                                                     fontSize:

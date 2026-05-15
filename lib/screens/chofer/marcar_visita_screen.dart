@@ -168,7 +168,10 @@ class _MarcarVisitaScreenState extends State<MarcarVisitaScreen> {
         backgroundColor: colorScheme.primary,
       ),
       body: visitaProvider.isLoading
-          ? const Center(child: CircularProgressIndicator())
+          ? const CustomLoadingWidget(
+              mensaje: 'Registrando visita...',
+              icono: Icons.assignment_turned_in,
+            )
           : SingleChildScrollView(
               padding: const EdgeInsets.all(16),
               child: Form(

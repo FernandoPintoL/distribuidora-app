@@ -2,3 +2,6 @@
 
 // AppBar
 export 'appbar/index.dart';
+
+// Loading
+export 'custom_loading_widget.dart';

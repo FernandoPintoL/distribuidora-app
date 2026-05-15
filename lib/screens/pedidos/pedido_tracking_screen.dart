@@ -300,7 +300,7 @@ class _PedidoTrackingScreenState extends State<PedidoTrackingScreen> {
           ),
           infoWindow: InfoWindow(
             title: '📍 Tu dirección',
-            snippet: widget.pedido.direccionEntrega!.direccion,
+            snippet: widget.pedido.direccionEntrega!.direccion ?? '',
           ),
         ),
       );

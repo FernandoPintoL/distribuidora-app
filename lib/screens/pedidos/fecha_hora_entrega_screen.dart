@@ -231,7 +231,7 @@ class _FechaHoraEntregaScreenState extends State<FechaHoraEntregaScreen> {
                                   ),
                                   const SizedBox(height: 4),
                                   Text(
-                                    widget.direccion!.direccion,
+                                    widget.direccion!.direccion ?? '',
                                     style: TextStyle(
                                       fontWeight: FontWeight.w600,
                                       color: colorScheme.onSurface,

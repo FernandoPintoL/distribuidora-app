@@ -37,10 +37,29 @@ class _LocationSelectorState extends State<LocationSelector> {
     _latitude = widget.initialLatitude;
     _longitude = widget.initialLongitude;
 
-    if (widget.autoGetLocation && (_latitude == null || _longitude == null)) {
-      _getCurrentLocation();
-    } else if (_latitude != null && _longitude != null) {
+    // ✅ MEJORADO: Tiene prioridad las coordenadas iniciales (cuando edita)
+    if (_latitude != null && _longitude != null) {
+      // Ya tiene ubicación registrada, obtener dirección
       _getAddressFromCoordinates(_latitude!, _longitude!);
+    } else if (widget.autoGetLocation) {
+      // Solo obtener ubicación actual si NO tiene coordenadas iniciales (crear)
+      _getCurrentLocation();
+    }
+  }
+
+  @override
+  void didUpdateWidget(LocationSelector oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // ✅ Actualizar coordenadas si cambian desde el parent widget
+    if (oldWidget.initialLatitude != widget.initialLatitude ||
+        oldWidget.initialLongitude != widget.initialLongitude) {
+      debugPrint('🔄 LocationSelector: actualizando coordenadas iniciales');
+      _latitude = widget.initialLatitude;
+      _longitude = widget.initialLongitude;
+
+      if (_latitude != null && _longitude != null) {
+        _getAddressFromCoordinates(_latitude!, _longitude!);
+      }
     }
   }
 

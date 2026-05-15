@@ -227,7 +227,7 @@ class PedidoCard extends StatelessWidget {
                               ),
                               Expanded(
                                 child: Text(
-                                  pedido.direccionEntrega!.direccion,
+                                  pedido.direccionEntrega!.direccion ?? '',
                                   style: Theme.of(context)
                                       .textTheme
                                       .labelSmall

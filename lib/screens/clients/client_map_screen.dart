@@ -58,8 +58,8 @@ class _ClientMapScreenState extends State<ClientMapScreen> {
           position: LatLng(lat, lng),
           infoWindow: InfoWindow(
             title: direccion.esPrincipal
-                ? '⭐ ${direccion.direccion}'
-                : direccion.direccion,
+                ? '⭐ ${direccion.direccion ?? ''}'
+                : direccion.direccion ?? '',
             snippet:
                 '${direccion.ciudad ?? ''}, ${direccion.departamento ?? ''}'
                     .trim(),
@@ -343,7 +343,7 @@ class _ClientMapScreenState extends State<ClientMapScreen> {
                                                 ),
                                               Expanded(
                                                 child: Text(
-                                                  direccion.direccion,
+                                                  direccion.direccion ?? '',
                                                   style: TextStyle(
                                                     fontSize: AppTextStyles
                                                         .bodySmall(context)

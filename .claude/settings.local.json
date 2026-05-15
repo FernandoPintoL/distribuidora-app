@@ -53,7 +53,14 @@
       "Bash(wc:*)",
       "Bash(keytool:*)",
       "Bash(java:*)",
-      "Bash(\"/c/Program Files/Android/Android Studio/jbr/bin/keytool.exe\":*)"
+      "Bash(\"/c/Program Files/Android/Android Studio/jbr/bin/keytool.exe\":*)",
+      "Bash(Get-ChildItem -Path \"D:\\\\gestor\\\\app\\\\android\" -Recurse -Filter \"build.gradle*\")",
+      "Bash(Select-Object FullName)",
+      "Bash(Get-ChildItem -Path \"android\" -Recurse -Filter \"AndroidManifest.xml\")",
+      "Bash(Select-Object -ExpandProperty FullName)",
+      "Bash(xargs grep -l \"create.*direcciones_cliente\")",
+      "Read(//d/gestor/web/**)",
+      "Bash(php artisan *)"
     ],
     "deny": [],
     "ask": []

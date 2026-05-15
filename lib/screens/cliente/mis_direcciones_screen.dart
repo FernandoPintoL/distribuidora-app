@@ -52,7 +52,7 @@ class _MisDireccionesScreenState extends State<MisDireccionesScreen> {
       builder: (context) => AlertDialog(
         title: const Text('Eliminar Dirección'),
         content: Text(
-          '¿Estás seguro de eliminar esta dirección?\n\n${direccion.direccion}',
+          '¿Estás seguro de eliminar esta dirección?\n\n${direccion.direccion ?? ''}',
         ),
         actions: [
           TextButton(
@@ -231,7 +231,7 @@ class _MisDireccionesScreenState extends State<MisDireccionesScreen> {
                   const SizedBox(width: 12),
                   Expanded(
                     child: Text(
-                      direccion.direccion,
+                      direccion.direccion ?? '',
                       style: TextStyle(
                         fontSize: AppTextStyles.bodyLarge(context).fontSize!,
                         fontWeight: FontWeight.w600,

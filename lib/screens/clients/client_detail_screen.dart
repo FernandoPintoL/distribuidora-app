@@ -847,11 +847,11 @@ class _ClientDetailScreenState extends State<ClientDetailScreen>
           );
 
       if (principalAddress != null) {
-        return principalAddress.direccion;
+        return principalAddress.direccion ?? 'Sin dirección';
       }
 
       // Si no hay dirección principal, usar la primera
-      return _client!.direcciones!.first.direccion;
+      return _client!.direcciones!.first.direccion ?? 'Sin dirección';
     }
 
     // Si no hay direcciones en el cliente, usar las direcciones cargadas
@@ -862,10 +862,10 @@ class _ClientDetailScreenState extends State<ClientDetailScreen>
       );
 
       if (principalAddress != null) {
-        return principalAddress.direccion;
+        return principalAddress.direccion ?? 'Sin dirección';
       }
 
-      return _addresses!.first.direccion;
+      return _addresses!.first.direccion ?? 'Sin dirección';
     }
 
     return 'Dirección no disponible';
@@ -2704,7 +2704,7 @@ class _ClientDetailScreenState extends State<ClientDetailScreen>
                     const SizedBox(width: 12),
                     Expanded(
                       child: Text(
-                        direccion.direccion,
+                        direccion.direccion ?? '',
                         style: TextStyle(
                           fontSize: AppTextStyles.bodyLarge(context).fontSize!,
                           fontWeight: FontWeight.w600,
@@ -2936,7 +2936,7 @@ class _ClientDetailScreenState extends State<ClientDetailScreen>
       builder: (context) => AlertDialog(
         title: const Text('Marcar como Principal'),
         content: Text(
-          '¿Deseas marcar esta dirección como principal?\n\n${direccion.direccion}',
+          '¿Deseas marcar esta dirección como principal?\n\n${direccion.direccion ?? ''}',
         ),
         actions: [
           TextButton(
@@ -3010,7 +3010,7 @@ class _ClientDetailScreenState extends State<ClientDetailScreen>
       builder: (context) => AlertDialog(
         title: const Text('Eliminar Dirección'),
         content: Text(
-          '¿Estás seguro de eliminar esta dirección?\n\n${direccion.direccion}',
+          '¿Estás seguro de eliminar esta dirección?\n\n${direccion.direccion ?? ''}',
         ),
         actions: [
           TextButton(
@@ -3418,6 +3418,19 @@ class _ImageWithFallbackState extends State<_ImageWithFallback> {
     debugPrint(
       '🖼️ Inicializando _ImageWithFallback con ${widget.urls.length} URLs',
     );
+  }
+
+  @override
+  void didUpdateWidget(_ImageWithFallback oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.urls != widget.urls) {
+      debugPrint('🔄 URLs cambiadas, reseteando estado');
+      setState(() {
+        _currentUrlIndex = 0;
+        _hasError = false;
+        _imageLoaded = false;
+      });
+    }
   }
 
   void _tryNextUrl() {

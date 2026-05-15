@@ -149,7 +149,7 @@ class _ClientFormScreenState extends State<ClientFormScreen> {
         // Cargar primera dirección si existe
         if (_addresses.isNotEmpty) {
           final firstAddress = _addresses.first;
-          _addressController.text = firstAddress.direccion;
+          _addressController.text = firstAddress.direccion ?? '';
 
           // ✅ Necesario para que LocationSelector se reconstruya con nuevas coordenadas
           setState(() {

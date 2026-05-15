@@ -4,13 +4,17 @@ import '../../models/orden_del_dia.dart';
 import '../../models/client.dart';
 import '../../providers/providers.dart';
 import '../../config/config.dart';
+import '../../widgets/widgets.dart';
 import '../chofer/marcar_visita_screen.dart';
 import '../carrito/carrito_screen.dart';
+import 'client_location_map_screen.dart';
+import 'mapa_orden_del_dia_screen.dart';
 import 'widgets/semana_view.dart';
 import 'widgets/view_mode_selector.dart';
 import 'widgets/horario_view.dart';
 import 'widgets/localidad_filter.dart';
 import 'widgets/filtros_avanzados.dart';
+import 'widgets/visita_estado_filter.dart';
 
 class OrdenDelDiaScreen extends StatefulWidget {
   const OrdenDelDiaScreen({super.key});
@@ -21,6 +25,8 @@ class OrdenDelDiaScreen extends StatefulWidget {
 
 class _OrdenDelDiaScreenState extends State<OrdenDelDiaScreen> {
   late Future<OrdenDelDia?> _ordenDelDiaFuture;
+  int _reloadCounter = 0; // ✅ NUEVO: Contador para forzar recarga
+  OrdenDelDia? _ordenDelDiaData; // ✅ NUEVO: Almacena los datos cargados para navegación
 
   @override
   void initState() {
@@ -28,11 +34,48 @@ class _OrdenDelDiaScreenState extends State<OrdenDelDiaScreen> {
     _loadOrdenDelDia();
   }
 
-  void _loadOrdenDelDia() {
+  void _loadOrdenDelDia({bool mostrarToast = false}) {
+    if (!mounted) return;
+
     final visitaProvider = context.read<VisitaProvider>();
+
+    debugPrint('📋 _loadOrdenDelDia llamado (mostrarToast: $mostrarToast)');
+
+    // ✅ ACTUALIZADO: Incrementar contador para forzar recarga del FutureBuilder
+    _reloadCounter++;
+
+    // ✅ CRÍTICO: Ejecutar el Future manualmente para asegurar que se solicita al backend
+    // Usar forceRefresh: true para ignorar el cache y hacer una solicitud real
     _ordenDelDiaFuture = visitaProvider.obtenerOrdenDelDia(
       fecha: visitaProvider.fechaSeleccionada,
-    );
+      forceRefresh: true, // ✅ NUEVO: Ignora cache y fuerza solicitud al backend
+    ).then((resultado) {
+      debugPrint('✅ Respuesta recibida del backend: ${resultado?.clientes.length ?? 0} clientes');
+      if (resultado != null && mounted) {
+        setState(() => _ordenDelDiaData = resultado);
+      }
+      return resultado;
+    }).catchError((error) {
+      debugPrint('❌ Error al obtener orden del día: $error');
+      throw error;
+    });
+
+    // ✅ NUEVO: Mostrar mensaje si se solicita
+    if (mostrarToast && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Row(
+            children: [
+              Icon(Icons.refresh, color: Colors.white, size: 20),
+              SizedBox(width: 12),
+              Text('Recargando orden del día...'),
+            ],
+          ),
+          duration: Duration(seconds: 3),
+          backgroundColor: Colors.teal,
+        ),
+      );
+    }
   }
 
   /// Navega a MarcarVisitaScreen para registrar una visita
@@ -58,11 +101,14 @@ class _OrdenDelDiaScreenState extends State<OrdenDelDiaScreen> {
             builder: (context) => MarcarVisitaScreen(cliente: client),
           ),
         )
-        .then((_) {
-          // Recargar orden del día después de volver
-          if (mounted) {
+        .then((resultado) {
+          // ✅ ACTUALIZADO (2026-05-08): Recargar si la visita fue registrada exitosamente
+          if (mounted && resultado == true) {
+            debugPrint(
+              '✅ Visita registrada exitosamente, recargando orden del día...',
+            );
             setState(() {
-              _loadOrdenDelDia();
+              _loadOrdenDelDia(mostrarToast: true);
             });
           }
         });
@@ -87,6 +133,61 @@ class _OrdenDelDiaScreenState extends State<OrdenDelDiaScreen> {
     Navigator.of(context).push(
       MaterialPageRoute(
         builder: (context) => CarritoScreen(clientePreseleccionado: client),
+      ),
+    );
+  }
+
+  /// Navega a la pantalla de mapa para ver la ubicación del cliente
+  void _navigateToClientLocationMap(ClienteOrdenDelDia cliente) {
+    if (!mounted) return;
+
+    if (cliente.direccion.latitud == null ||
+        cliente.direccion.longitud == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Este cliente no tiene coordenadas de ubicación'),
+          duration: Duration(seconds: 2),
+        ),
+      );
+      return;
+    }
+
+    debugPrint(
+      '🗺️ Navegando a mapa para cliente: ${cliente.nombre} '
+      '(${cliente.direccion.latitud}, ${cliente.direccion.longitud})',
+    );
+
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => ClientLocationMapScreen(
+          clienteName: cliente.nombre,
+          latitude: cliente.direccion.latitud!,
+          longitude: cliente.direccion.longitud!,
+          address: cliente.direccion.direccion ?? '',
+        ),
+      ),
+    );
+  }
+
+  /// ✅ NUEVO: Navega a la pantalla de mapa mostrando todos los clientes
+  void _navigateToMapaOrdenDelDia() {
+    if (!mounted) return;
+
+    if (_ordenDelDiaData == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Espera a que cargue el orden del día...'),
+          duration: Duration(seconds: 2),
+        ),
+      );
+      return;
+    }
+
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => MapaOrdenDelDiaScreen(
+          clientes: _ordenDelDiaData!.clientes,
+        ),
       ),
     );
   }
@@ -742,6 +843,59 @@ class _OrdenDelDiaScreenState extends State<OrdenDelDiaScreen> {
 
                 const SizedBox(height: 12),
 
+                // Botones de acción
+                Row(
+                  children: [
+                    // Botón Ver en Mapa
+                    if (cliente.direccion.latitud != null &&
+                        cliente.direccion.longitud != null)
+                      Expanded(
+                        child: Material(
+                          color: Colors.transparent,
+                          child: InkWell(
+                            onTap: () =>
+                                _navigateToClientLocationMap(cliente),
+                            borderRadius: BorderRadius.circular(8),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                vertical: 8,
+                                horizontal: 12,
+                              ),
+                              decoration: BoxDecoration(
+                                color: Colors.blue.withOpacity(0.1),
+                                border: Border.all(
+                                  color: Colors.blue.withOpacity(0.3),
+                                ),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(
+                                    Icons.location_on,
+                                    size: 16,
+                                    color: Colors.blue,
+                                  ),
+                                  const SizedBox(width: 6),
+                                  Text(
+                                    'Ver en Mapa',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w600,
+                                      color: Colors.blue,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+
+                const SizedBox(height: 12),
+
                 // Ventana horaria y hora de visita
                 Container(
                   padding: const EdgeInsets.all(12),
@@ -811,13 +965,36 @@ class _OrdenDelDiaScreenState extends State<OrdenDelDiaScreen> {
         flexibleSpace: Container(
           decoration: BoxDecoration(gradient: AppGradients.teal),
         ),
-        actions: const [ViewModeSelector()],
+        actions: [
+          // ✅ NUEVO: Botón para ver mapa de todos los clientes
+          IconButton(
+            icon: const Icon(Icons.map_outlined, color: Colors.white),
+            tooltip: 'Ver mapa de clientes',
+            onPressed: _navigateToMapaOrdenDelDia,
+          ),
+          // ✅ NUEVO (2026-05-08): Botón de actualizar/refrescar
+          IconButton(
+            icon: const Icon(Icons.refresh, color: Colors.white),
+            tooltip: 'Actualizar datos',
+            onPressed: () {
+              debugPrint('🔄 Botón de actualización presionado');
+              setState(() {
+                _loadOrdenDelDia(mostrarToast: true);
+              });
+            },
+          ),
+          const ViewModeSelector(),
+        ],
       ),
       body: FutureBuilder<OrdenDelDia?>(
+        key: ValueKey(_reloadCounter), // ✅ NUEVO: Fuerza reconstrucción del FutureBuilder
         future: _ordenDelDiaFuture,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
+            return const CustomLoadingWidget(
+              mensaje: 'Cargando orden del día...',
+              icono: Icons.list,
+            );
           }
 
           if (snapshot.hasError) {
@@ -1114,6 +1291,10 @@ class _OrdenDelDiaScreenState extends State<OrdenDelDiaScreen> {
                               ),
                             if (visitaProvider.localidades.isNotEmpty)
                               const SizedBox(height: 12),
+
+                            // ✅ NUEVO: Filtro de Estado de Visita (Visitados/Pendientes)
+                            const VisitaEstadoFilter(),
+                            const SizedBox(height: 12),
 
                             // ✅ Filtros Avanzados (Cliente, Horario)
                             FiltrosAvanzados(

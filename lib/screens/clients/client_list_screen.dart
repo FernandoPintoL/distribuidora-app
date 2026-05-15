@@ -29,10 +29,12 @@ class _ClientListScreenState extends State<ClientListScreen> {
   final _scrollController = ScrollController();
   String _searchQuery = '';
   String _statusFilter = 'all'; // all | active | inactive
+  int? _selectedLocalidadId; // ✅ NUEVO: Filtro por localidad
   late ClientProvider _clientProvider;
   bool _isLoadingClients = false; // Flag para prevenir llamadas simultáneas
   bool _isLoadingMore = false; // Flag para carga de más clientes
   bool _hasInitialized = false; // ✅ Rastrear si ya hemos intentado cargar
+  bool _isLoadingLocalidades = false; // ✅ NUEVO: Flag para carga de localidades
 
   // ✅ CONFIGURACIÓN DE PAGINACIÓN
   static const int PER_PAGE = 20; // Aumentado de 5 a 20 items por página
@@ -47,6 +49,13 @@ class _ClientListScreenState extends State<ClientListScreen> {
 
     // Configurar listener para scroll infinito
     _scrollController.addListener(_onScroll);
+
+    // ✅ Cargar localidades para el filtro
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        _loadLocalidades();
+      }
+    });
 
     // ✅ OPTIMIZADO: No cargar clientes en initState
     // Los clientes se cargarán solo cuando el usuario navegue a esta pestaña
@@ -109,6 +118,7 @@ class _ClientListScreenState extends State<ClientListScreen> {
         perPage: PER_PAGE, // ✅ Usar constante configurable
         search: _searchQuery.isNotEmpty ? _searchQuery : null,
         active: _activeFilterValue(),
+        localidadId: _selectedLocalidadId, // ✅ NUEVO: Filtro por localidad
       );
       debugPrint(
         '✅ Clientes cargados: ${_clientProvider.clients.length} de ${_clientProvider.totalItems}',
@@ -124,6 +134,29 @@ class _ClientListScreenState extends State<ClientListScreen> {
         });
       }
       debugPrint(' Finalizada carga de clientes');
+    }
+  }
+
+  // ✅ NUEVO: Cargar localidades para el filtro
+  Future<void> _loadLocalidades() async {
+    if (!mounted || _isLoadingLocalidades) return;
+
+    setState(() {
+      _isLoadingLocalidades = true;
+    });
+
+    try {
+      debugPrint('🌍 Cargando localidades...');
+      await _clientProvider.loadLocalidades();
+      debugPrint('✅ Localidades cargadas: ${_clientProvider.localidades.length}');
+    } catch (e) {
+      debugPrint('❌ Error al cargar localidades: $e');
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoadingLocalidades = false;
+        });
+      }
     }
   }
 
@@ -190,6 +223,7 @@ class _ClientListScreenState extends State<ClientListScreen> {
         append: true,
         search: _searchQuery.isNotEmpty ? _searchQuery : null,
         active: _activeFilterValue(),
+        localidadId: _selectedLocalidadId, // ✅ NUEVO: Filtro por localidad
       );
       _logPaginationInfo();
       debugPrint(
@@ -229,13 +263,32 @@ class _ClientListScreenState extends State<ClientListScreen> {
       backgroundColor: colorScheme.surface,
       // ✅ AppBar con botones de acción
       appBar: AppBar(
-        title: Text(
-          'Clientes',
-          style: TextStyle(
-            fontWeight: FontWeight.w700,
-            fontSize: AppTextStyles.headlineMedium(context).fontSize!,
-            color: colorScheme.onSurface,
-          ),
+        title: Consumer<ClientProvider>(
+          builder: (context, clientProvider, _) {
+            final totalClientes = clientProvider.totalItems;
+            final clientesCargados = clientProvider.clients.length;
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Clientes',
+                  style: TextStyle(
+                    fontWeight: FontWeight.w700,
+                    fontSize: AppTextStyles.headlineMedium(context).fontSize!,
+                    color: colorScheme.onSurface,
+                  ),
+                ),
+                Text(
+                  'Mostrando $clientesCargados de $totalClientes',
+                  style: TextStyle(
+                    fontWeight: FontWeight.w400,
+                    fontSize: 12,
+                    color: colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ],
+            );
+          },
         ),
         backgroundColor: colorScheme.surface,
         elevation: 0,
@@ -427,6 +480,135 @@ class _ClientListScreenState extends State<ClientListScreen> {
                     ),
                   ),
                 ],
+              ),
+            ),
+            const SizedBox(height: 12),
+
+            // ✅ NUEVO: Filtro por localidad
+            /* Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16.0),
+              child: Consumer<ClientProvider>(
+                builder: (context, clientProvider, _) {
+                  final localidades = clientProvider.localidades;
+                  return DropdownButton<int?>(
+                    value: _selectedLocalidadId,
+                    isExpanded: true,
+                    hint: const Text('Filtrar por localidad...'),
+                    items: [
+                      DropdownMenuItem<int?>(
+                        value: null,
+                        child: const Text('Todas las localidades'),
+                      ),
+                      ...localidades.map((localidad) {
+                        return DropdownMenuItem<int?>(
+                          value: localidad.id,
+                          child: Text(localidad.nombre),
+                        );
+                      }).toList(),
+                    ],
+                    onChanged: (value) {
+                      setState(() => _selectedLocalidadId = value);
+                      _safeLoadClients();
+                    },
+                  );
+                },
+              ),
+            ),
+            const SizedBox(height: 12), */
+
+            // ✅ NUEVO: Mostrar resumen de filtros aplicados
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16.0),
+              child: Consumer<ClientProvider>(
+                builder: (context, clientProvider, _) {
+                  final tieneSearchQuery = _searchQuery.isNotEmpty;
+                  final tieneStatusFilter = _statusFilter != 'all';
+                  final tieneLocalidadFilter = _selectedLocalidadId != null;
+                  final totalFiltros = (tieneSearchQuery ? 1 : 0) +
+                      (tieneStatusFilter ? 1 : 0) +
+                      (tieneLocalidadFilter ? 1 : 0);
+
+                  final localidadNombre = _selectedLocalidadId != null
+                      ? clientProvider.localidades
+                          .firstWhere(
+                            (l) => l.id == _selectedLocalidadId,
+                            orElse: () =>
+                                Localidad(id: -1, nombre: '', codigo: '', activo: true),
+                          )
+                          .nombre
+                      : '';
+
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Icon(Icons.filter_alt,
+                              size: 16, color: colorScheme.onSurfaceVariant),
+                          const SizedBox(width: 8),
+                          Text(
+                            totalFiltros == 0
+                                ? 'Sin filtros activos'
+                                : totalFiltros == 1
+                                    ? '1 filtro activo'
+                                    : '$totalFiltros filtros activos',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: colorScheme.onSurfaceVariant,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                          const Spacer(),
+                          Text(
+                            '${clientProvider.clients.length} resultado${clientProvider.clients.length != 1 ? 's' : ''}',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: colorScheme.primary,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ),
+                      if (totalFiltros > 0) ...[
+                        const SizedBox(height: 8),
+                        Wrap(
+                          spacing: 8,
+                          children: [
+                            if (tieneSearchQuery)
+                              Chip(
+                                label: Text('Búsqueda: "$_searchQuery"',
+                                    style: const TextStyle(fontSize: 11)),
+                                onDeleted: () {
+                                  _searchController.clear();
+                                  setState(() => _searchQuery = '');
+                                  _safeLoadClients();
+                                },
+                              ),
+                            if (tieneStatusFilter)
+                              Chip(
+                                label: Text(
+                                    'Estado: ${_statusFilter == 'active' ? 'Activos' : 'Inactivos'}',
+                                    style: const TextStyle(fontSize: 11)),
+                                onDeleted: () {
+                                  setState(() => _statusFilter = 'all');
+                                  _safeLoadClients();
+                                },
+                              ),
+                            if (tieneLocalidadFilter)
+                              Chip(
+                                label: Text('Localidad: $localidadNombre',
+                                    style: const TextStyle(fontSize: 11)),
+                                onDeleted: () {
+                                  setState(() => _selectedLocalidadId = null);
+                                  _safeLoadClients();
+                                },
+                              ),
+                          ],
+                        ),
+                      ],
+                    ],
+                  );
+                },
               ),
             ),
             const SizedBox(height: 12),

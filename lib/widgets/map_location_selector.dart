@@ -113,14 +113,19 @@ class _MapLocationSelectorState extends State<MapLocationSelector> {
   @override
   void initState() {
     super.initState();
+    debugPrint('🗺️ MapLocationSelector initState - Lat: ${widget.initialLatitude}, Lng: ${widget.initialLongitude}');
+
     _selectedLocation =
         widget.initialLatitude != null && widget.initialLongitude != null
         ? LatLng(widget.initialLatitude!, widget.initialLongitude!)
         : null;
 
     if (_selectedLocation != null) {
+      debugPrint('✅ Ubicación inicial detectada: $_selectedLocation');
       _addMarker(_selectedLocation!);
       _getAddressFromCoordinates(_selectedLocation!);
+    } else {
+      debugPrint('⚠️ Sin ubicación inicial');
     }
 
     // ✅ NUEVO 2026-02-18: Agregar marcadores de ubicaciones adicionales (ventas)
@@ -130,7 +135,8 @@ class _MapLocationSelectorState extends State<MapLocationSelector> {
       }
     }
 
-    // Verificar permisos de ubicación
+    // Verificar permisos de ubicación siempre (para mostrar "Mi ubicación" en el mapa)
+    // Pero no solicitar automáticamente si hay ubicación registrada
     _checkLocationPermission();
   }
 
@@ -191,12 +197,17 @@ class _MapLocationSelectorState extends State<MapLocationSelector> {
               debugPrint('📍 InfoWindow abierto automáticamente para: $_markerIdToShowInfoWindow');
             }
           });
+        } else if (_selectedLocation != null) {
+          // Animar a ubicación seleccionada
+          _mapController.animateCamera(
+            CameraUpdate.newLatLngZoom(_selectedLocation!, 16),
+          );
         } else {
-          // Comportamiento original: animar a ubicación seleccionada o default
+          // Comportamiento default: animar a Puerto Suárez, Bolivia si no hay ubicación
           _mapController.animateCamera(
             CameraUpdate.newLatLngZoom(
-              _selectedLocation ?? const LatLng(-25.2637, -57.5759),
-              15,
+              const LatLng(-17.8039, -60.7647),
+              12,
             ),
           );
         }
@@ -383,9 +394,9 @@ class _MapLocationSelectorState extends State<MapLocationSelector> {
     final initialPosition =
         _selectedLocation ??
         const LatLng(
-          -25.2637,
-          -57.5759,
-        ); // Posición inicial en Asunción, Paraguay
+          -17.8039,
+          -60.7647,
+        ); // Posición inicial en Puerto Suárez, Bolivia
 
     // ✅ NUEVO 2026-03-12: Calcular cantidad de ubicaciones adicionales (ventas)
     final cantidadVentas = widget.additionalLocations?.length ?? 0;

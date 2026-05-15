@@ -19,6 +19,7 @@ class ClientService {
     int perPage = 20,
     String? search,
     bool? active,
+    int? localidadId,
   }) async {
     try {
       final queryParams = <String, dynamic>{'page': page, 'per_page': perPage};
@@ -28,6 +29,9 @@ class ClientService {
       }
       if (active != null) {
         queryParams['activo'] = active;
+      }
+      if (localidadId != null) {
+        queryParams['localidad_id'] = localidadId;
       }
 
       final response = await _apiService.get(
@@ -291,9 +295,12 @@ class ClientService {
         if (direcciones != null && direcciones.isNotEmpty) {
           for (int i = 0; i < direcciones.length; i++) {
             final dir = direcciones[i];
-            formData.fields.add(
-              MapEntry('direcciones[$i][direccion]', dir.direccion),
-            );
+            // ✅ Dirección es opcional - puede ser null si se registra solo con coordenadas
+            if (dir.direccion != null) {
+              formData.fields.add(
+                MapEntry('direcciones[$i][direccion]', dir.direccion!),
+              );
+            }
             if (dir.ciudad != null) {
               formData.fields.add(
                 MapEntry('direcciones[$i][ciudad]', dir.ciudad!),
@@ -632,9 +639,12 @@ class ClientService {
         if (direcciones != null && direcciones.isNotEmpty) {
           for (int i = 0; i < direcciones.length; i++) {
             final dir = direcciones[i];
-            formData.fields.add(
-              MapEntry('direcciones[$i][direccion]', dir.direccion),
-            );
+            // ✅ Dirección es opcional - puede ser null si se registra solo con coordenadas
+            if (dir.direccion != null) {
+              formData.fields.add(
+                MapEntry('direcciones[$i][direccion]', dir.direccion!),
+              );
+            }
             if (dir.ciudad != null) {
               formData.fields.add(
                 MapEntry('direcciones[$i][ciudad]', dir.ciudad!),

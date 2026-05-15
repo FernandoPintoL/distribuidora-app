@@ -30,6 +30,9 @@ class VisitaProvider with ChangeNotifier {
   String? _horarioInicio;
   String? _horarioFin;
 
+  // ✅ NUEVO (2026-05-08): Filtro de Visitados/Pendientes
+  String _filtroVisitas = 'all'; // 'all' | 'visitados' | 'pendientes'
+
   // Getters
   List<VisitaPreventistaCliente> get visitas => _visitas;
   bool get isLoading => _isLoading;
@@ -52,6 +55,9 @@ class VisitaProvider with ChangeNotifier {
   int? get clienteSeleccionado => _clienteSeleccionado;
   String? get horarioInicio => _horarioInicio;
   String? get horarioFin => _horarioFin;
+
+  // ✅ NUEVO getter para Filtro de Visitas
+  String get filtroVisitas => _filtroVisitas;
 
   /// Registrar nueva visita
   Future<bool> registrarVisita({
@@ -194,7 +200,10 @@ class VisitaProvider with ChangeNotifier {
 
   /// ✅ MEJORADO: Obtener orden del día con filtros avanzados
   /// Si hay filtros activos, ignora la caché
-  Future<OrdenDelDia?> obtenerOrdenDelDia({DateTime? fecha}) async {
+  Future<OrdenDelDia?> obtenerOrdenDelDia({
+    DateTime? fecha,
+    bool forceRefresh = false, // ✅ NUEVO (2026-05-08): Forzar recarga sin cache
+  }) async {
     try {
       final fechaStr = fecha?.toIso8601String().split('T')[0];
       final cacheKey = fechaStr ?? 'hoy';
@@ -204,8 +213,9 @@ class VisitaProvider with ChangeNotifier {
           _horarioInicio != null ||
           _horarioFin != null;
 
-      // Solo usar caché si NO hay filtros activos
-      if (!tieneFiltrActivos && _ordenesCache.containsKey(cacheKey)) {
+      // ✅ ACTUALIZADO: Solo usar caché si NO hay filtros activos Y no se fuerza refresh
+      if (!forceRefresh && !tieneFiltrActivos && _ordenesCache.containsKey(cacheKey)) {
+        debugPrint('📦 Usando caché para orden del día');
         return _ordenesCache[cacheKey];
       }
 
@@ -337,12 +347,19 @@ class VisitaProvider with ChangeNotifier {
     notifyListeners();
   }
 
+  /// ✅ NUEVO (2026-05-08): Filtro por estado de visita (visitados/pendientes)
+  void filtrarPorEstadoVisita(String filtro) {
+    _filtroVisitas = filtro; // 'all' | 'visitados' | 'pendientes'
+    notifyListeners();
+  }
+
   /// ✅ NUEVO: Limpiar todos los filtros
   void limpiarFiltros() {
     _clienteSearchText = '';
     _clienteSeleccionado = null;
     _horarioInicio = null;
     _horarioFin = null;
+    _filtroVisitas = 'all';
     notifyListeners();
   }
 
@@ -384,6 +401,18 @@ class VisitaProvider with ChangeNotifier {
         return true;
       }).toList();
     }
+
+    // ✅ NUEVO (2026-05-08): Filtro por estado de visita (visitados/pendientes)
+    if (_filtroVisitas == 'visitados') {
+      clientesFiltrados = clientesFiltrados
+          .where((c) => c.visitado)
+          .toList();
+    } else if (_filtroVisitas == 'pendientes') {
+      clientesFiltrados = clientesFiltrados
+          .where((c) => !c.visitado)
+          .toList();
+    }
+    // 'all' no filtra nada
 
     return clientesFiltrados;
   }

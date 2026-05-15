@@ -2121,7 +2121,7 @@ class _PedidoCard extends StatelessWidget {
                             const SizedBox(width: 8),
                             Expanded(
                               child: Text(
-                                pedido.direccionEntrega!.direccion,
+                                pedido.direccionEntrega!.direccion ?? '',
                                 style: DefaultTextStyle.of(context).style
                                     .copyWith(
                                       color: colorScheme.onSurface.withOpacity(

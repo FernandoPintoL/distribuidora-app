@@ -201,7 +201,7 @@ class _DireccionSelectorModalState extends State<DireccionSelectorModal> {
                                       crossAxisAlignment: CrossAxisAlignment.start,
                                       children: [
                                         Text(
-                                          direccion.direccion,
+                                          direccion.direccion ?? '',
                                           style: context.textTheme.bodyMedium
                                               ?.copyWith(
                                             fontWeight: FontWeight.w600,
