@@ -57,6 +57,7 @@ class _ClientFormScreenState extends State<ClientFormScreen> {
   bool _isLoadingLocalidades = false;
   bool _isSavingClient = false;
   bool _isInitialized = false;
+  String? _updatedPhotoUrl; // ✅ Almacenar la URL actualizada después de guardar
 
   bool get _isEditing => widget.client != null;
 
@@ -149,8 +150,12 @@ class _ClientFormScreenState extends State<ClientFormScreen> {
         if (_addresses.isNotEmpty) {
           final firstAddress = _addresses.first;
           _addressController.text = firstAddress.direccion;
-          _latitude = firstAddress.latitud;
-          _longitude = firstAddress.longitud;
+
+          // ✅ Necesario para que LocationSelector se reconstruya con nuevas coordenadas
+          setState(() {
+            _latitude = firstAddress.latitud;
+            _longitude = firstAddress.longitud;
+          });
 
           final dirObs = firstAddress.observaciones;
           if (dirObs != null && dirObs.isNotEmpty) {
@@ -162,6 +167,10 @@ class _ClientFormScreenState extends State<ClientFormScreen> {
 
         if (mounted) {
           setState(() {
+            // ✅ Actualizar la URL de foto si el cliente fue actualizado
+            if (clientCompleto.fotoPerfil != null) {
+              _updatedPhotoUrl = clientCompleto.fotoPerfil;
+            }
             // Disparar rebuild para mostrar los datos cargados
           });
         }
@@ -366,7 +375,7 @@ class _ClientFormScreenState extends State<ClientFormScreen> {
                         child: Container(
                           margin: const EdgeInsets.only(bottom: 32),
                           child: ProfilePhotoSelector(
-                            currentPhotoUrl: widget.client?.fotoPerfil,
+                            currentPhotoUrl: _updatedPhotoUrl ?? widget.client?.fotoPerfil,
                             onPhotoSelected: (file) async {
                               if (file == null) return;
 
@@ -500,7 +509,8 @@ class _ClientFormScreenState extends State<ClientFormScreen> {
                                 }
                               });
                             },
-                            autoGetLocation: true,
+                            // ✅ Solo obtener ubicación actual si está creando (no editando)
+                            autoGetLocation: !_isEditing,
                           ),
                           const SizedBox(height: 16),
                           // Localidad selector (mejorado)
@@ -1210,6 +1220,26 @@ class _ClientFormScreenState extends State<ClientFormScreen> {
           // Navegar de regreso después de un breve retraso
           Future.delayed(const Duration(milliseconds: 500), () {
             if (mounted) {
+              // ✅ IMPORTANTE: Limpiar cache de imágenes para que se recargue la foto actualizada
+              imageCache.clearLiveImages();
+              imageCache.clear();
+
+              // ✅ Si estamos editando, recargar el cliente para asegurar que los datos estén frescos
+              if (_isEditing) {
+                debugPrint('🔄 Recargando cliente desde API después de actualizar...');
+                _clientProvider.getClient(widget.client!.id).then((updatedClient) {
+                  if (mounted && updatedClient != null) {
+                    setState(() {
+                      // Actualizar la URL de foto con la nueva
+                      if (updatedClient.fotoPerfil != null) {
+                        _updatedPhotoUrl = updatedClient.fotoPerfil;
+                        debugPrint('✅ Foto de perfil actualizada: $_updatedPhotoUrl');
+                      }
+                    });
+                  }
+                });
+              }
+
               Navigator.of(
                 context,
               ).pop(true); // Retornar true para indicar éxito
