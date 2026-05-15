@@ -1100,27 +1100,26 @@ class _ClientFormScreenState extends State<ClientFormScreen> {
               : null,
           // ✅ SEGURIDAD: En modo edición, NUNCA crear usuario (cambiar contraseña requiere admin)
           crearUsuario: false,
-          direcciones: _addressController.text.isNotEmpty
+          // ✅ MEJORADO: Enviar dirección si hay dirección O coordenadas válidas
+          direcciones: (_addressController.text.isNotEmpty || (_latitude != null && _longitude != null))
               ? [
                   ClientAddress(
                     id: null,
-                    direccion: _addressController.text,
+                    direccion: _addressController.text.isNotEmpty ? _addressController.text : '',
                     observaciones:
                         _locationObservationsController.text.isNotEmpty
                         ? _locationObservationsController.text
                         : null,
-                    ciudad: null, // Se puede agregar después si es necesario
-                    departamento:
-                        null, // Se puede agregar después si es necesario
-                    codigoPostal:
-                        null, // Se puede agregar después si es necesario
+                    ciudad: null,
+                    departamento: null,
+                    codigoPostal: null,
                     esPrincipal: true,
                     activa: true,
-                    latitud: _latitude, // ✅ Coordenadas GPS en la dirección
-                    longitud: _longitude, // ✅ Coordenadas GPS en la dirección
+                    latitud: _latitude,
+                    longitud: _longitude,
                   ),
                 ]
-              : [],
+              : null,
         );
         // Obtener mensaje de error si falló
 
