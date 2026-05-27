@@ -72,7 +72,7 @@ class HttpLogger {
     buffer.writeln(
       '═══════════════════════════════════════════════════════════════',
     );
-    debugPrint(buffer.toString());
+    // debugPrint(buffer.toString());
   }
 
   /// Log de respuesta HTTP exitosa
@@ -116,7 +116,7 @@ class HttpLogger {
     buffer.writeln(
       '───────────────────────────────────────────────────────────────',
     );
-    debugPrint(buffer.toString());
+    // debugPrint(buffer.toString());
   }
 
   /// Log de error HTTP

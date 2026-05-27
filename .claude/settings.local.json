@@ -60,7 +60,9 @@
       "Bash(Select-Object -ExpandProperty FullName)",
       "Bash(xargs grep -l \"create.*direcciones_cliente\")",
       "Read(//d/gestor/web/**)",
-      "Bash(php artisan *)"
+      "Bash(php artisan *)",
+      "Bash(npm run *)",
+      "Bash(xargs -I {} basename {})"
     ],
     "deny": [],
     "ask": []

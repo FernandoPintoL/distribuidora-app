@@ -1,4 +1,5 @@
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+	xmlns:tools="http://schemas.android.com/tools">
 	<uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
 	<uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
 	<uses-permission android:name="android.permission.INTERNET" />
@@ -10,6 +11,13 @@
 	<uses-permission android:name="android.permission.USE_BIOMETRIC" />
 	<!-- Permisos para servicio de background (flutter_background_service) -->
 	<uses-permission android:name="android.permission.WAKE_LOCK" />
+	<!-- Remover permisos de fotos/vídeos declarados por image_picker - usar Photo Picker del sistema -->
+	<uses-permission android:name="android.permission.READ_MEDIA_IMAGES"
+		tools:node="remove"/>
+	<uses-permission android:name="android.permission.READ_MEDIA_VIDEO"
+		tools:node="remove"/>
+	<uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"
+		tools:node="remove"/>
 	<application
 		android:label="Distribuidora Paucara"
 		android:name="${applicationName}"

@@ -44,33 +44,16 @@ class _ProfilePhotoSelectorState extends State<ProfilePhotoSelector> {
     return urlEnv + url;
   }
 
-  Future<void> _requestPermissions() async {
+  Future<void> _requestCameraPermission() async {
     try {
-      // Solicitar permiso de cámara
       final cameraStatus = await Permission.camera.request();
-
-      // Solicitar permiso de galería/almacenamiento
-      // En Android 13+, usar READ_MEDIA_IMAGES; en versiones anteriores, READ_EXTERNAL_STORAGE
-      PermissionStatus photosStatus = PermissionStatus.denied;
-      try {
-        photosStatus = await Permission.photos.request();
-      } catch (e) {
-        debugPrint('⚠️ Permission.photos no disponible, intentando con storage: $e');
-        photosStatus = await Permission.storage.request();
-      }
-
       debugPrint('📸 Estado de cámara: $cameraStatus');
-      debugPrint('🖼️ Estado de galería: $photosStatus');
 
-      // Mostrar mensaje solo si ambos permisos fueron denegados
-      if ((cameraStatus.isDenied || cameraStatus.isPermanentlyDenied) &&
-          (photosStatus.isDenied || photosStatus.isPermanentlyDenied)) {
+      if (cameraStatus.isDenied || cameraStatus.isPermanentlyDenied) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: const Text(
-                'Se necesitan permisos de cámara y galería para seleccionar fotos',
-              ),
+              content: const Text('Se necesita permiso de cámara para tomar fotos'),
               action: SnackBarAction(
                 label: 'Configurar',
                 onPressed: openAppSettings,
@@ -81,11 +64,11 @@ class _ProfilePhotoSelectorState extends State<ProfilePhotoSelector> {
         }
       }
     } catch (e) {
-      debugPrint('❌ Error al solicitar permisos: $e');
+      debugPrint('❌ Error al solicitar permiso de cámara: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error al solicitar permisos: $e'),
+            content: Text('Error al solicitar permiso: $e'),
             duration: const Duration(seconds: 4),
           ),
         );
@@ -127,9 +110,12 @@ class _ProfilePhotoSelectorState extends State<ProfilePhotoSelector> {
             ListTile(
               leading: const Icon(Icons.camera_alt),
               title: const Text('Tomar foto'),
-              onTap: () {
+              onTap: () async {
                 Navigator.pop(context);
-                _pickImage(ImageSource.camera);
+                await _requestCameraPermission();
+                if (mounted) {
+                  _pickImage(ImageSource.camera);
+                }
               },
             ),
             ListTile(
@@ -327,11 +313,10 @@ class _ProfilePhotoSelectorState extends State<ProfilePhotoSelector> {
     final isDarkMode = theme.brightness == Brightness.dark;
 
     return GestureDetector(
-      onTap: () async {
-        if (!mounted) return;
-        await _requestPermissions();
-        if (!mounted) return;
-        _showImageSourceDialog();
+      onTap: () {
+        if (mounted) {
+          _showImageSourceDialog();
+        }
       },
       child: Stack(
         children: [
