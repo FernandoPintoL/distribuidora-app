@@ -4,6 +4,7 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:dio/dio.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:share_plus/share_plus.dart';
 import 'dart:io';
 import 'api_service.dart';
 
@@ -531,6 +532,84 @@ class PrintService {
         debugPrint('❌ Error en fallback: $fallbackError');
         return false;
       }
+    }
+  }
+
+  /// ✅ NUEVO: Descargar imagen desde URL con opción de compartir
+  ///
+  /// Parámetros:
+  /// - imageUrl: URL de la imagen a descargar
+  /// - nombreArchivo: Nombre del archivo a guardar
+  /// - showShareDialog: Si es true, muestra diálogo para compartir (default: true)
+  ///
+  /// Retorna:
+  /// - ruta del archivo si se descargó correctamente
+  /// - null si hubo error
+  Future<String?> downloadImage({
+    required String imageUrl,
+    required String nombreArchivo,
+    bool showShareDialog = true,
+  }) async {
+    try {
+      debugPrint('📥 Descargando imagen desde: $imageUrl');
+
+      // Crear Dio sin baseUrl para usar la URL completa
+      final dio = Dio();
+
+      // Cargar token del almacenamiento con formato Bearer
+      final authToken = await _getAuthToken();
+      if (authToken != null) {
+        dio.options.headers['Authorization'] = authToken;
+        debugPrint('✅ Auth token set on new Dio instance');
+      } else {
+        debugPrint('⚠️ WARNING: No auth token found in storage!');
+      }
+      dio.options.headers['Accept'] = 'image/*';
+
+      debugPrint('📋 Headers being sent: ${dio.options.headers}');
+
+      final response = await dio.get(
+        imageUrl,
+        options: Options(
+          responseType: ResponseType.bytes,
+          followRedirects: true,
+          validateStatus: (status) => status! < 500,
+        ),
+      );
+
+      if (response.statusCode != 200) {
+        debugPrint('❌ Error en descarga: ${response.statusCode}');
+        debugPrint('📄 Response: ${response.statusMessage}');
+        return null;
+      }
+
+      // Obtener directorio de descargas
+      final Directory? downloadsDir = await getDownloadsDirectory();
+      if (downloadsDir == null) {
+        debugPrint('❌ No se pudo acceder al directorio de descargas');
+        return null;
+      }
+
+      final filePath = '${downloadsDir.path}/$nombreArchivo';
+      final file = File(filePath);
+      await file.writeAsBytes(response.data);
+
+      debugPrint('✅ Imagen descargada exitosamente');
+      debugPrint('📁 Ubicación: $filePath');
+
+      // Si solicita mostrar diálogo de compartir, hacerlo
+      if (showShareDialog) {
+        try {
+          await Share.shareXFiles([XFile(file.path)]);
+        } catch (e) {
+          debugPrint('⚠️ Error abriendo diálogo de compartir: $e');
+        }
+      }
+
+      return filePath;
+    } catch (e) {
+      debugPrint('❌ Error downloading image: $e');
+      return null;
     }
   }
 }

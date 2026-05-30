@@ -839,7 +839,7 @@ class _DashboardPreventistaState extends State<DashboardPreventista>
                   _descargarStockDisponiblePdf();
                 },
               ),
-              /*ListTile(
+              ListTile(
                 leading: const Icon(Icons.image),
                 title: const Text('Descargar Lista de Precios como Imagen'),
                 subtitle: const Text('PNG - Más fácil de compartir'),
@@ -847,7 +847,7 @@ class _DashboardPreventistaState extends State<DashboardPreventista>
                   Navigator.pop(context);
                   _descargarStockDisponibleImagen();
                 },
-              ),*/
+              ),
               const Divider(height: 1),
               const Padding(
                 padding: EdgeInsets.all(12),
@@ -865,7 +865,7 @@ class _DashboardPreventistaState extends State<DashboardPreventista>
                   _descargarStockDisponiblePdfConStock();
                 },
               ),
-              /*ListTile(
+              ListTile(
                 leading: const Icon(Icons.image),
                 title: const Text('Lista de precios con Stock disponible como Imagen'),
                 subtitle: const Text('PNG con stock disponible'),
@@ -873,7 +873,77 @@ class _DashboardPreventistaState extends State<DashboardPreventista>
                   Navigator.pop(context);
                   _descargarStockDisponibleImagenConStock();
                 },
-              ),*/
+              ),
+              const Divider(height: 1),
+              const Padding(
+                padding: EdgeInsets.all(12),
+                child: Text(
+                  'Alta Calidad con Servicio Python 🐍',
+                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.deepOrange),
+                ),
+              ),
+              ListTile(
+                leading: const Icon(Icons.hd, color: Colors.deepOrange),
+                title: const Text('Imagen HD (Servicio Python)'),
+                subtitle: const Text('Mejor calidad - DPI 150 - JPEG optimizado'),
+                onTap: () {
+                  Navigator.pop(context);
+                  _descargarStockDisponibleImagenPython(conStock: false);
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.hd, color: Colors.deepOrange),
+                title: const Text('Imagen HD con Stock (Python)'),
+                subtitle: const Text('Mejor calidad con columna de stock - JPEG optimizado'),
+                onTap: () {
+                  Navigator.pop(context);
+                  _descargarStockDisponibleImagenPython(conStock: true);
+                },
+              ),
+              const Divider(height: 1),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                child: Text(
+                  'Catálogo con Imágenes 📸',
+                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.blue),
+                ),
+              ),
+              ListTile(
+                leading: const Icon(Icons.image, color: Colors.blue),
+                title: const Text('Catálogo PDF'),
+                subtitle: const Text('Grilla con imágenes - Con stock disponible'),
+                onTap: () {
+                  Navigator.pop(context);
+                  _descargarCatalogoPdf(mostrarStock: false);
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.image, color: Colors.blue),
+                title: const Text('Catálogo PDF (Con Stock)'),
+                subtitle: const Text('Grilla con imágenes - Muestra el stock disponible'),
+                onTap: () {
+                  Navigator.pop(context);
+                  _descargarCatalogoPdf(mostrarStock: true);
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.image_outlined, color: Colors.green),
+                title: const Text('Catálogo Imagen HD (Python)'),
+                subtitle: const Text('Alta calidad - Con stock disponible'),
+                onTap: () {
+                  Navigator.pop(context);
+                  _descargarCatalogoImagenPython(mostrarStock: false);
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.image_outlined, color: Colors.green),
+                title: const Text('Catálogo Imagen HD (Con Stock)'),
+                subtitle: const Text('Alta calidad - Muestra el stock disponible'),
+                onTap: () {
+                  Navigator.pop(context);
+                  _descargarCatalogoImagenPython(mostrarStock: true);
+                },
+              ),
               const Divider(height: 1),
               ListTile(
                 leading: const Icon(Icons.share_outlined),
@@ -973,48 +1043,81 @@ class _DashboardPreventistaState extends State<DashboardPreventista>
   }
 
   /// ✅ NUEVO: Mostrar imagen con opciones
-  void _mostrarImagenConOpciones(List<int> imageBytes) {
+  void _mostrarImagenConOpciones(List<int> imageBytes, {String fileName = 'stock-disponible.jpg'}) {
+    final isPdf = fileName.endsWith('.pdf');
+    final isImage = !isPdf;
+
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       builder: (context) => Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Container(
-            padding: const EdgeInsets.all(16),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(12),
-              child: Image.memory(
-                Uint8List.fromList(imageBytes),
-                fit: BoxFit.contain,
-                height: 400,
+          if (isImage)
+            Container(
+              padding: const EdgeInsets.all(16),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(12),
+                child: Image.memory(
+                  Uint8List.fromList(imageBytes),
+                  fit: BoxFit.contain,
+                  height: 400,
+                ),
+              ),
+            )
+          else
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Container(
+                decoration: BoxDecoration(
+                  color: Colors.grey[200],
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                padding: const EdgeInsets.all(32),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.picture_as_pdf, size: 64, color: Colors.red),
+                    const SizedBox(height: 12),
+                    Text(
+                      fileName,
+                      style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      '${(imageBytes.length / 1024).toStringAsFixed(2)} KB',
+                      style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+                    ),
+                  ],
+                ),
               ),
             ),
-          ),
           Padding(
             padding: const EdgeInsets.all(16),
             child: Row(
               children: [
-                Expanded(
-                  child: ElevatedButton.icon(
-                    onPressed: () {
-                      Navigator.pop(context);
-                      _compartirImagenWhatsApp(imageBytes);
-                    },
-                    icon: const Icon(Icons.share),
-                    label: const Text('WhatsApp'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.green,
-                      foregroundColor: Colors.white,
+                if (isImage)
+                  Expanded(
+                    child: ElevatedButton.icon(
+                      onPressed: () {
+                        Navigator.pop(context);
+                        _compartirImagenWhatsApp(imageBytes);
+                      },
+                      icon: const Icon(Icons.share),
+                      label: const Text('WhatsApp'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.green,
+                        foregroundColor: Colors.white,
+                      ),
                     ),
                   ),
-                ),
-                const SizedBox(width: 8),
+                if (isImage) const SizedBox(width: 8),
                 Expanded(
                   child: ElevatedButton.icon(
                     onPressed: () {
                       Navigator.pop(context);
-                      _compartirImagen(imageBytes);
+                      _compartirImagen(imageBytes, fileName: fileName);
                     },
                     icon: const Icon(Icons.share_outlined),
                     label: const Text('Compartir'),
@@ -1058,10 +1161,10 @@ class _DashboardPreventistaState extends State<DashboardPreventista>
     }
   }
 
-  void _compartirImagen(List<int> imageBytes) async {
+  void _compartirImagen(List<int> imageBytes, {String fileName = 'stock-disponible.jpg'}) async {
     try {
       final tempDir = await getTemporaryDirectory();
-      final file = File('${tempDir.path}/stock-disponible.png');
+      final file = File('${tempDir.path}/$fileName');
       await file.writeAsBytes(imageBytes);
       await Share.shareXFiles([XFile(file.path)]);
     } catch (e) {
@@ -1203,6 +1306,109 @@ class _DashboardPreventistaState extends State<DashboardPreventista>
         );
       }
       debugPrint('❌ Error descargando imagen con stock: $e');
+    }
+  }
+
+  /// ✅ NUEVO: Descargar imagen HD con servicio Python
+  void _descargarStockDisponibleImagenPython({bool conStock = false}) async {
+    if (!mounted) return;
+
+    final titulo = conStock ? 'imagen HD con stock' : 'imagen HD';
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Descargando $titulo con servicio Python 🐍...'),
+        duration: const Duration(seconds: 15),
+      ),
+    );
+
+    try {
+      debugPrint('🐍 Iniciando descarga de imagen Python (conStock: $conStock)');
+      final bytes = await ApiService().descargarStockDisponibleImagenPython(conStock: conStock);
+
+      if (mounted) {
+        debugPrint('✅ Imagen Python recibida: ${(bytes.length / 1024).toStringAsFixed(2)} KB');
+        // Mostrar preview con opciones de compartir/guardar
+        _mostrarImagenConOpciones(bytes);
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error al descargar: ${e.toString()}'),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 5),
+          ),
+        );
+      }
+      debugPrint('❌ Error descargando imagen Python: $e');
+    }
+  }
+
+  /// ✅ NUEVO: Descargar catálogo PDF con grilla de imágenes
+  void _descargarCatalogoPdf({bool mostrarStock = false}) async {
+    if (!mounted) return;
+
+    final titulo = mostrarStock ? 'catálogo con stock' : 'catálogo sin stock';
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Descargando $titulo PDF...'),
+        duration: const Duration(seconds: 15),
+      ),
+    );
+
+    try {
+      debugPrint('📄 Iniciando descarga de catálogo PDF (mostrarStock: $mostrarStock)');
+      final bytes = await ApiService().descargarCatalogoPdf(mostrarStock: mostrarStock);
+
+      if (mounted) {
+        debugPrint('✅ Catálogo PDF recibido: ${(bytes.length / 1024).toStringAsFixed(2)} KB');
+        _mostrarImagenConOpciones(bytes, fileName: 'catalogo-productos.pdf');
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error al descarcar: ${e.toString()}'),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 5),
+          ),
+        );
+      }
+      debugPrint('❌ Error descargando catálogo PDF: $e');
+    }
+  }
+
+  /// ✅ NUEVO: Descargar catálogo imagen HD con servicio Python
+  void _descargarCatalogoImagenPython({bool mostrarStock = false}) async {
+    if (!mounted) return;
+
+    final titulo = mostrarStock ? 'catálogo con stock' : 'catálogo sin stock';
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Descargando $titulo HD con Python 🐍...'),
+        duration: const Duration(seconds: 15),
+      ),
+    );
+
+    try {
+      debugPrint('🐍 Iniciando descarga de catálogo imagen (mostrarStock: $mostrarStock)');
+      final bytes = await ApiService().descargarCatalogoImagenPython(mostrarStock: mostrarStock);
+
+      if (mounted) {
+        debugPrint('✅ Catálogo imagen recibida: ${(bytes.length / 1024).toStringAsFixed(2)} KB');
+        _mostrarImagenConOpciones(bytes, fileName: 'catalogo-productos.webp');
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error al descargar: ${e.toString()}'),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 5),
+          ),
+        );
+      }
+      debugPrint('❌ Error descargando catálogo imagen: $e');
     }
   }
 

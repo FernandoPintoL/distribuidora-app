@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'dart:convert';
+import 'dart:typed_data';
 
 /// Servicio de logging mejorado para peticiones HTTP
 /// Muestra en consola de forma clara y formateada:
@@ -72,7 +73,7 @@ class HttpLogger {
     buffer.writeln(
       '═══════════════════════════════════════════════════════════════',
     );
-    // debugPrint(buffer.toString());
+    debugPrint(buffer.toString());
   }
 
   /// Log de respuesta HTTP exitosa
@@ -96,10 +97,33 @@ class HttpLogger {
       }
     });
 
+    // Detectar si es respuesta binaria
+    final contentType = _getContentType(response.headers);
+    final isBinary = _isBinaryContentType(contentType);
+
     // Body/Data
     if (response.data != null) {
       buffer.writeln('\n📦 Response Data:');
-      if (response.data is Map || response.data is List) {
+      if (isBinary) {
+        // Para respuestas binarias, solo mostrar metadata
+        final size = _getResponseSize(response.data);
+        final sizeKB = (size / 1024).toStringAsFixed(2);
+        final sizeFormatted = size > 1024 ? '$sizeKB KB' : '$size bytes';
+        buffer.writeln('  [Binary Data - $contentType]');
+        buffer.writeln('  📊 Size: $sizeFormatted');
+
+        // Mostrar si está optimizada
+        final optimized = response.headers.value('x-image-optimized');
+        if (optimized != null) {
+          buffer.writeln('  ✨ Optimized: Yes');
+        }
+
+        // Mostrar cache info
+        final cacheControl = response.headers.value('cache-control');
+        if (cacheControl != null) {
+          buffer.writeln('  🔄 Cache: $cacheControl');
+        }
+      } else if (response.data is Map || response.data is List) {
         buffer.writeln(_prettyPrintJson(response.data, indent: 2));
       } else if (response.data is String) {
         try {
@@ -202,5 +226,38 @@ class HttpLogger {
     } catch (_) {
       return json.toString();
     }
+  }
+
+  /// Obtener Content-Type de los headers
+  static String _getContentType(Headers headers) {
+    final contentType = headers.value('content-type') ?? 'unknown';
+    return contentType.split(';').first.trim();
+  }
+
+  /// Detectar si el Content-Type es binario
+  static bool _isBinaryContentType(String contentType) {
+    final binaryTypes = [
+      'image/',
+      'application/pdf',
+      'application/zip',
+      'application/octet-stream',
+      'video/',
+      'audio/',
+      'application/msword',
+      'application/vnd.openxmlformats',
+    ];
+    return binaryTypes.any((type) => contentType.toLowerCase().contains(type));
+  }
+
+  /// Obtener tamaño de la respuesta
+  static int _getResponseSize(dynamic data) {
+    if (data is List<int>) {
+      return data.length;
+    } else if (data is String) {
+      return data.length;
+    } else if (data is Uint8List) {
+      return data.length;
+    }
+    return 0;
   }
 }

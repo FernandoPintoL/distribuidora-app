@@ -958,6 +958,44 @@ class _PedidosHistorialScreenState extends State<PedidosHistorialScreen> with Wi
           }
           break;
 
+        case 'imagen':
+          // 🖼️ NUEVO: Descargar como imagen y mostrar diálogo de compartir
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Descargando imagen de proforma...'),
+                duration: Duration(seconds: 2),
+                backgroundColor: Colors.blue,
+              ),
+            );
+          }
+
+          final nombreArchivo = 'proforma_${numero}_${DateTime.now().millisecondsSinceEpoch}.jpeg';
+          final filePath = await printService.downloadImage(
+            imageUrl: url,
+            nombreArchivo: nombreArchivo,
+            showShareDialog: true, // Mostrar diálogo de compartir
+          );
+
+          if (filePath == null && mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('No se pudo descargar la imagen'),
+                duration: Duration(seconds: 3),
+                backgroundColor: Colors.red,
+              ),
+            );
+          } else if (filePath != null && mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('✅ Imagen lista para compartir'),
+                duration: Duration(seconds: 2),
+                backgroundColor: Colors.green,
+              ),
+            );
+          }
+          break;
+
         case 'stream':
           // Ver en navegador - usar PrintService para preview
           final success = await printService.previewDocument(
@@ -1657,8 +1695,16 @@ class _PedidoCard extends StatelessWidget {
                       final apiService = ApiService();
                       final baseUrl = apiService
                           .getBaseUrl(); // http://localhost:8000/api
-                      final impresionUrl =
-                          '$baseUrl/proformas/${pedido.id}/imprimir?formato=TICKET_80&accion=$value';
+
+                      String impresionUrl;
+                      if (value == 'imagen') {
+                        // 🖼️ NUEVO: Descargar como imagen
+                        impresionUrl = '$baseUrl/proformas/${pedido.id}/descargar-imagen?formato=jpeg&dpi=150&quality=85';
+                      } else {
+                        // PDF original
+                        impresionUrl =
+                            '$baseUrl/proformas/${pedido.id}/imprimir?formato=TICKET_80&accion=$value';
+                      }
 
                       if (onPrint != null) {
                         onPrint!(value, impresionUrl, pedido.numero);
@@ -1677,6 +1723,22 @@ class _PedidoCard extends StatelessWidget {
                             ),
                             const SizedBox(width: 8),
                             const Text('Descargar PDF'),
+                          ],
+                        ),
+                      ),
+                      // 🖼️ NUEVO: Opción para descargar como imagen
+                      PopupMenuItem<String>(
+                        value: 'imagen',
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.image,
+                              size: 18,
+                              color: colorScheme.primary,
+                            ),
+                            const SizedBox(width: 8),
+                            const Text('Descargar como Imagen'),
                           ],
                         ),
                       ),

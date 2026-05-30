@@ -542,6 +542,93 @@ class ApiService {
     }
   }
 
+  /// ✅ NUEVO: Descargar imagen con servicio Python (mejor calidad)
+  /// GET /api/app/stock/imagen-python
+  /// Retorna imagen JPEG de alta calidad desde servicio Python remoto
+  Future<List<int>> descargarStockDisponibleImagenPython({bool conStock = false}) async {
+    try {
+      final url = '$baseUrl/app/stock/imagen-python${conStock ? '?incluir_stock=1' : ''}';
+
+      debugPrint('🐍 Descargando imagen con servicio Python desde: $url');
+
+      final response = await _dio.get(
+        url,
+        options: Options(
+          responseType: ResponseType.bytes,
+          contentType: 'image/jpeg',
+        ),
+      );
+
+      if (response.statusCode == 200) {
+        debugPrint('✅ Imagen Python descargada: ${response.data.length} bytes (${(response.data.length / 1024).toStringAsFixed(2)} KB)');
+        return response.data as List<int>;
+      } else {
+        throw Exception('Error: ${response.statusCode}');
+      }
+    } catch (e) {
+      debugPrint('❌ Error descargando imagen Python: $e');
+      rethrow;
+    }
+  }
+
+  /// ✅ NUEVO: Descargar catálogo PDF con grilla de imágenes
+  /// GET /api/app/stock/catalogo-pdf?mostrar_stock=1
+  /// Parámetros: mostrar_stock (true/false para mostrar/ocultar badge de stock)
+  Future<List<int>> descargarCatalogoPdf({bool mostrarStock = false}) async {
+    try {
+      final url = '$baseUrl/app/stock/catalogo-pdf?mostrar_stock=${mostrarStock ? 1 : 0}';
+
+      debugPrint('📄 Descargando catálogo PDF desde: $url');
+
+      final response = await _dio.get(
+        url,
+        options: Options(
+          responseType: ResponseType.bytes,
+          contentType: 'application/pdf',
+        ),
+      );
+
+      if (response.statusCode == 200) {
+        debugPrint('✅ Catálogo PDF descargado: ${response.data.length} bytes (${(response.data.length / 1024).toStringAsFixed(2)} KB)');
+        return response.data as List<int>;
+      } else {
+        throw Exception('Error: ${response.statusCode}');
+      }
+    } catch (e) {
+      debugPrint('❌ Error descargando catálogo PDF: $e');
+      rethrow;
+    }
+  }
+
+  /// ✅ NUEVO: Descargar catálogo imagen HD con servicio Python
+  /// GET /api/app/stock/catalogo-imagen-python?mostrar_stock=1
+  /// Retorna imagen WebP de alta calidad con grilla de productos con stock
+  Future<List<int>> descargarCatalogoImagenPython({bool mostrarStock = false}) async {
+    try {
+      final url = '$baseUrl/app/stock/catalogo-imagen-python?mostrar_stock=${mostrarStock ? 1 : 0}';
+
+      debugPrint('🐍 Descargando catálogo imagen con Python desde: $url');
+
+      final response = await _dio.get(
+        url,
+        options: Options(
+          responseType: ResponseType.bytes,
+          contentType: 'image/webp',
+        ),
+      );
+
+      if (response.statusCode == 200) {
+        debugPrint('✅ Catálogo imagen descargado: ${response.data.length} bytes (${(response.data.length / 1024).toStringAsFixed(2)} KB)');
+        return response.data as List<int>;
+      } else {
+        throw Exception('Error: ${response.statusCode}');
+      }
+    } catch (e) {
+      debugPrint('❌ Error descargando catálogo imagen: $e');
+      rethrow;
+    }
+  }
+
   /// ✅ NUEVO: Obtener reporte de productos vendidos (JSON)
   /// GET /api/reportes/productos-vendidos
   /// Retorna datos del reporte para mostrar en pantalla
