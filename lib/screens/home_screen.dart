@@ -840,6 +840,15 @@ class _DashboardPreventistaState extends State<DashboardPreventista>
                 },
               ),
               ListTile(
+                leading: const Icon(Icons.hd, color: Colors.deepOrange),
+                title: const Text('Descargar Lista de Precios como Imagen'),
+                subtitle: const Text('Para compartir'),
+                onTap: () {
+                  Navigator.pop(context);
+                  _descargarStockDisponibleImagenPython(conStock: false);
+                },
+              ),
+              /* ListTile(
                 leading: const Icon(Icons.image),
                 title: const Text('Descargar Lista de Precios como Imagen'),
                 subtitle: const Text('PNG - Más fácil de compartir'),
@@ -847,7 +856,7 @@ class _DashboardPreventistaState extends State<DashboardPreventista>
                   Navigator.pop(context);
                   _descargarStockDisponibleImagen();
                 },
-              ),
+              ), */
               const Divider(height: 1),
               const Padding(
                 padding: EdgeInsets.all(12),
@@ -866,6 +875,15 @@ class _DashboardPreventistaState extends State<DashboardPreventista>
                 },
               ),
               ListTile(
+                leading: const Icon(Icons.hd, color: Colors.deepOrange),
+                title: const Text('Lista de precios con Stock disponible como Imagen'),
+                subtitle: const Text('Incluye columna de stock disponible'),
+                onTap: () {
+                  Navigator.pop(context);
+                  _descargarStockDisponibleImagenPython(conStock: true);
+                },
+              ),
+              /* ListTile(
                 leading: const Icon(Icons.image),
                 title: const Text('Lista de precios con Stock disponible como Imagen'),
                 subtitle: const Text('PNG con stock disponible'),
@@ -873,33 +891,16 @@ class _DashboardPreventistaState extends State<DashboardPreventista>
                   Navigator.pop(context);
                   _descargarStockDisponibleImagenConStock();
                 },
-              ),
-              const Divider(height: 1),
+              ), */
+              /*const Divider(height: 1),
               const Padding(
                 padding: EdgeInsets.all(12),
                 child: Text(
                   'Alta Calidad con Servicio Python 🐍',
                   style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.deepOrange),
                 ),
-              ),
-              ListTile(
-                leading: const Icon(Icons.hd, color: Colors.deepOrange),
-                title: const Text('Imagen HD (Servicio Python)'),
-                subtitle: const Text('Mejor calidad - DPI 150 - JPEG optimizado'),
-                onTap: () {
-                  Navigator.pop(context);
-                  _descargarStockDisponibleImagenPython(conStock: false);
-                },
-              ),
-              ListTile(
-                leading: const Icon(Icons.hd, color: Colors.deepOrange),
-                title: const Text('Imagen HD con Stock (Python)'),
-                subtitle: const Text('Mejor calidad con columna de stock - JPEG optimizado'),
-                onTap: () {
-                  Navigator.pop(context);
-                  _descargarStockDisponibleImagenPython(conStock: true);
-                },
-              ),
+              ),              
+              
               const Divider(height: 1),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -963,7 +964,7 @@ class _DashboardPreventistaState extends State<DashboardPreventista>
                   Navigator.pop(context);
                   _compartirStockDisponiblePublico();
                 },
-              ),
+              ),*/
               const SizedBox(height: 8),
             ],
             ),

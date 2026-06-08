@@ -53,7 +53,9 @@ class _CarritoClienteSelectorState extends State<CarritoClienteSelector> {
 
     debugPrint('🔍 ===== INICIANDO _realizarBusquedaLocal =====');
     debugPrint('📝 Texto de búsqueda: "$searchText"');
-    debugPrint('🏢 ClientProvider disponible: ${widget.clientProvider != null}');
+    debugPrint(
+      '🏢 ClientProvider disponible: ${widget.clientProvider != null}',
+    );
 
     try {
       // ✅ Marcar búsqueda como activa
@@ -100,6 +102,10 @@ class _CarritoClienteSelectorState extends State<CarritoClienteSelector> {
   Widget build(BuildContext context) {
     final colorScheme = context.colorScheme;
     final isDark = context.isDark;
+    // AppTextStyles.bodySmall() ya incluye MediaQuery.textScaleFactor internamente
+    final baseFontSize = AppTextStyles.bodySmall(context).fontSize ?? 14;
+    final iconSize = baseFontSize * 1.3;
+    final smallIconSize = baseFontSize;
 
     // Verificar si es preventista
     bool isPreventista = false;
@@ -121,7 +127,10 @@ class _CarritoClienteSelectorState extends State<CarritoClienteSelector> {
     }
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      padding: EdgeInsets.symmetric(
+        horizontal: baseFontSize * 1.1,
+        vertical: baseFontSize * 0.8,
+      ),
       decoration: BoxDecoration(
         color: colorScheme.primary.withOpacity(isDark ? 0.15 : 0.08),
         border: Border(
@@ -136,24 +145,57 @@ class _CarritoClienteSelectorState extends State<CarritoClienteSelector> {
         children: [
           Row(
             children: [
-              Icon(Icons.person_outline, size: 18, color: colorScheme.primary),
-              const SizedBox(width: 8),
+              Icon(Icons.person_outline, color: colorScheme.primary),
+              SizedBox(width: baseFontSize * 0.5),
               Text(
                 'Creando pedido para:',
                 style: TextStyle(
-                  fontSize: AppTextStyles.bodySmall(context).fontSize!,
                   fontWeight: FontWeight.w500,
                   color: colorScheme.primary,
                 ),
               ),
+              const Spacer(),
+              ElevatedButton.icon(
+                icon: Icon(Icons.person_add),
+                label: Text('Crear cliente'),
+                style: ElevatedButton.styleFrom(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: baseFontSize * 0.8,
+                    vertical: baseFontSize * 0.5,
+                  ),
+                  textStyle: TextStyle(fontWeight: FontWeight.w500),
+                  backgroundColor: colorScheme.primary,
+                  foregroundColor: colorScheme.onPrimary,
+                  minimumSize: Size(0, baseFontSize * 2.2),
+                ),
+                onPressed: () async {
+                  final resultado = await Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (context) => const ClientFormScreen(),
+                    ),
+                  );
+                  if (resultado == true && mounted) {
+                    await widget.clientProvider.loadClients(
+                      search: '',
+                      active: true,
+                      perPage: 20,
+                    );
+                    setState(() => _busquedaActiva = false);
+                    debugPrint('✅ Cliente creado.');
+                  }
+                },
+              ),
             ],
           ),
-          const SizedBox(height: 8),
+          SizedBox(height: baseFontSize * 0.5),
           // ✅ NUEVO: Deshabilitar dropdown cuando se está editando una proforma
           if (widget.carritoProvider.editandoProforma)
             // Mostrar cliente de forma read-only cuando se edita
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+              padding: EdgeInsets.symmetric(
+                horizontal: baseFontSize * 0.8,
+                vertical: baseFontSize * 0.8,
+              ),
               decoration: BoxDecoration(
                 border: Border.all(
                   color: colorScheme.primary.withOpacity(0.3),
@@ -164,18 +206,13 @@ class _CarritoClienteSelectorState extends State<CarritoClienteSelector> {
               ),
               child: Row(
                 children: [
-                  Icon(
-                    Icons.lock_outline,
-                    size: 16,
-                    color: colorScheme.primary.withOpacity(0.6),
-                  ),
-                  const SizedBox(width: 8),
+                  Icon(Icons.lock_outline),
+                  SizedBox(width: baseFontSize * 0.5),
                   Expanded(
                     child: Text(
                       widget.carritoProvider.clienteSeleccionado?.nombre ??
                           'Cliente no especificado',
                       style: TextStyle(
-                        fontSize: AppTextStyles.bodyMedium(context).fontSize!,
                         color: colorScheme.onSurface,
                         fontWeight: FontWeight.w500,
                       ),
@@ -183,11 +220,7 @@ class _CarritoClienteSelectorState extends State<CarritoClienteSelector> {
                   ),
                   Tooltip(
                     message: 'No se puede cambiar el cliente en modo edición',
-                    child: Icon(
-                      Icons.info_outline,
-                      size: 16,
-                      color: colorScheme.primary.withOpacity(0.5),
-                    ),
+                    child: Icon(Icons.info_outline),
                   ),
                 ],
               ),
@@ -201,129 +234,108 @@ class _CarritoClienteSelectorState extends State<CarritoClienteSelector> {
                 );
 
                 // ✅ SIMPLIFICADO: TextField en lugar de DropdownSearch
-                return TextField(
-                  controller: _searchClienteController,
-                  focusNode: _searchFocusNode,
-                  textInputAction: TextInputAction.search,
-                  // ✅ NUEVO: Ejecutar búsqueda al presionar Enter del teclado
-                  onSubmitted: (value) {
-                    debugPrint('⌨️ Enter presionado en el teclado');
-                    _realizarBusquedaLocal();
-                  },
-                  decoration: InputDecoration(
-                    hintText: widget.carritoProvider.tieneClienteSeleccionado
-                        ? '${widget.carritoProvider.clienteSeleccionado?.nombre} ✅'
-                        : 'Escribe y presiona Enter o 🔍',
-                    prefixIcon: const Icon(Icons.search),
-                    suffixIcon: Consumer<ClientProvider>(
-                      builder: (context, clientProviderInner, _) {
-                        return Padding(
-                          padding: const EdgeInsets.only(right: 4),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              // ✅ Botón para recargar
-                              IconButton(
-                                icon: clientProviderInner.isLoading
-                                    ? const SizedBox(
-                                        width: 20,
-                                        height: 20,
-                                        child: CircularProgressIndicator(
-                                          strokeWidth: 2,
-                                        ),
-                                      )
-                                    : const Icon(Icons.refresh),
-                                onPressed: clientProviderInner.isLoading
-                                    ? null
-                                    : () async {
-                                        _searchClienteController.clear();
-                                        await widget.clientProvider.loadClients(
-                                          search: '',
-                                          active: true,
-                                          perPage: 20,
-                                        );
-                                        setState(() => _busquedaActiva = false);
-                                        debugPrint(
-                                          '🔄 Recargando primeros 20 clientes',
-                                        );
-                                      },
-                                tooltip: 'Recargar lista',
-                              ),
-                              // ✅ Botón de búsqueda
-                              IconButton(
-                                icon: clientProviderInner.isLoading
-                                    ? const SizedBox(
-                                        width: 20,
-                                        height: 20,
-                                        child: CircularProgressIndicator(
-                                          strokeWidth: 2,
-                                        ),
-                                      )
-                                    : const Icon(Icons.search),
-                                onPressed: clientProviderInner.isLoading
-                                    ? null
-                                    : () {
-                                        debugPrint(
-                                          '🔍 Botón presionado: "${_searchClienteController.text}"',
-                                        );
-                                        _realizarBusquedaLocal();
-                                      },
-                                tooltip: 'Buscar',
-                              ),
-                              // ✅ Botón crear cliente
-                              IconButton(
-                                icon: const Icon(Icons.person_add),
-                                onPressed: () async {
-                                  final resultado =
-                                      await Navigator.of(context).push(
-                                    MaterialPageRoute(
-                                      builder: (context) =>
-                                          const ClientFormScreen(),
+                return Row(
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        controller: _searchClienteController,
+                        focusNode: _searchFocusNode,
+                        textInputAction: TextInputAction.search,
+                        // ✅ NUEVO: Ejecutar búsqueda al presionar Enter del teclado
+                        onSubmitted: (value) {
+                          debugPrint('⌨️ Enter presionado en el teclado');
+                          _realizarBusquedaLocal();
+                        },
+                        decoration: InputDecoration(
+                          hintText:
+                              widget.carritoProvider.tieneClienteSeleccionado
+                              ? '${widget.carritoProvider.clienteSeleccionado?.nombre} ✅'
+                              : 'Escribe y presiona Enter o 🔍',
+                          // prefixIcon: const Icon(Icons.search),
+                          suffixIcon: Consumer<ClientProvider>(
+                            builder: (context, clientProviderInner, _) {
+                              return Padding(
+                                padding: const EdgeInsets.only(right: 4),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    // ✅ Botón de búsqueda
+                                    IconButton(
+                                      icon: clientProviderInner.isLoading
+                                          ? SizedBox(
+                                              width: iconSize,
+                                              height: iconSize,
+                                              child:
+                                                  const CircularProgressIndicator(
+                                                    strokeWidth: 2,
+                                                  ),
+                                            )
+                                          : Icon(Icons.search),
+                                      onPressed: clientProviderInner.isLoading
+                                          ? null
+                                          : () {
+                                              debugPrint(
+                                                '🔍 Botón presionado: "${_searchClienteController.text}"',
+                                              );
+                                              _realizarBusquedaLocal();
+                                            },
+                                      tooltip: 'Buscar',
                                     ),
-                                  );
-                                  if (resultado == true && mounted) {
-                                    await widget.clientProvider.loadClients(
-                                      search: '',
-                                      active: true,
-                                      perPage: 20,
-                                    );
-                                    setState(() => _busquedaActiva = false);
-                                    debugPrint('✅ Cliente creado.');
-                                  }
-                                },
-                                tooltip: 'Nuevo cliente',
-                              ),
-                            ],
+                                  ],
+                                ),
+                              );
+                            },
                           ),
-                        );
-                      },
-                    ),
-                    contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 12,
-                    ),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8),
-                      borderSide: BorderSide(
-                        color: colorScheme.primary.withOpacity(0.5),
+                          contentPadding: EdgeInsets.symmetric(
+                            horizontal: baseFontSize * 0.8,
+                            vertical: baseFontSize * 0.8,
+                          ),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                            borderSide: BorderSide(
+                              color: colorScheme.primary.withOpacity(0.5),
+                            ),
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                            borderSide: BorderSide(
+                              color: colorScheme.primary.withOpacity(0.5),
+                            ),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                            borderSide: BorderSide(
+                              color: colorScheme.primary,
+                              width: 2,
+                            ),
+                          ),
+                          filled: true,
+                          fillColor: colorScheme.surface,
+                        ),
                       ),
                     ),
-                    enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8),
-                      borderSide: BorderSide(
-                        color: colorScheme.primary.withOpacity(0.5),
+                    SizedBox(width: baseFontSize * 0.5),
+                    // ✅ Botón para ver detalle del cliente seleccionado (fuera del input)
+                    if (widget.carritoProvider.tieneClienteSeleccionado)
+                      IconButton(
+                        icon: Icon(Icons.info_outline),
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => ClientDetailScreen(
+                                client:
+                                    widget.carritoProvider.clienteSeleccionado!,
+                              ),
+                            ),
+                          );
+                          debugPrint(
+                            '➡️ Navegando a detalle de ${widget.carritoProvider.clienteSeleccionado!.nombre}',
+                          );
+                        },
+                        tooltip: 'Ver detalle del cliente',
                       ),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8),
-                      borderSide: BorderSide(
-                        color: colorScheme.primary,
-                        width: 2,
-                      ),
-                    ),
-                    filled: true,
-                    fillColor: colorScheme.surface,
-                  ),
+                  ],
                 );
               },
             ),
@@ -343,35 +355,31 @@ class _CarritoClienteSelectorState extends State<CarritoClienteSelector> {
               // Si hay clientes, mostrar la lista para seleccionar
               if (clientProvider.clients.isNotEmpty) {
                 return Padding(
-                  padding: const EdgeInsets.only(top: 12),
+                  padding: EdgeInsets.only(top: baseFontSize * 0.8),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       // ✅ NUEVO: Título de resultados
                       Padding(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 4,
-                          vertical: 8,
+                        padding: EdgeInsets.symmetric(
+                          horizontal: baseFontSize * 0.3,
+                          vertical: baseFontSize * 0.5,
                         ),
                         child: Row(
                           children: [
                             Icon(
                               Icons.person_search,
-                              size: 18,
                               color: colorScheme.primary,
                             ),
-                            const SizedBox(width: 8),
+                            SizedBox(width: baseFontSize * 0.5),
                             Text(
                               'Resultados de búsqueda',
                               style: TextStyle(
-                                fontSize: AppTextStyles.bodySmall(
-                                  context,
-                                ).fontSize!,
                                 fontWeight: FontWeight.w600,
                                 color: colorScheme.primary,
                               ),
                             ),
-                            const SizedBox(width: 8),
+                            SizedBox(width: baseFontSize * 0.5),
                             Container(
                               padding: const EdgeInsets.symmetric(
                                 horizontal: 8,
@@ -384,9 +392,6 @@ class _CarritoClienteSelectorState extends State<CarritoClienteSelector> {
                               child: Text(
                                 '${clientProvider.clients.length}',
                                 style: TextStyle(
-                                  fontSize: AppTextStyles.bodySmall(
-                                    context,
-                                  ).fontSize!,
                                   fontWeight: FontWeight.w600,
                                   color: colorScheme.primary,
                                 ),
@@ -421,8 +426,7 @@ class _CarritoClienteSelectorState extends State<CarritoClienteSelector> {
                               color: Colors.transparent,
                               child: InkWell(
                                 onTap: () {
-                                  widget.carritoProvider
-                                      .setClienteSeleccionado(
+                                  widget.carritoProvider.setClienteSeleccionado(
                                     client,
                                   );
                                   _searchClienteController.clear();
@@ -435,7 +439,7 @@ class _CarritoClienteSelectorState extends State<CarritoClienteSelector> {
                                 child: Padding(
                                   padding: const EdgeInsets.symmetric(
                                     horizontal: 12,
-                                    vertical: 10,
+                                    vertical: 2,
                                   ),
                                   child: Row(
                                     children: [
@@ -448,22 +452,17 @@ class _CarritoClienteSelectorState extends State<CarritoClienteSelector> {
                                               '${client.nombre}$creditBadge',
                                               style: TextStyle(
                                                 fontWeight: FontWeight.w500,
-                                                fontSize: AppTextStyles.bodySmall(
-                                                  context,
-                                                ).fontSize!,
                                                 color: colorScheme.onSurface,
                                               ),
                                             ),
-                                            const SizedBox(height: 4),
+                                            SizedBox(
+                                              height: baseFontSize * 0.25,
+                                            ),
                                             if (client.telefono != null &&
                                                 client.telefono!.isNotEmpty)
                                               Text(
                                                 client.telefono!,
                                                 style: TextStyle(
-                                                  fontSize: AppTextStyles
-                                                      .labelSmall(
-                                                    context,
-                                                  ).fontSize!,
                                                   color: colorScheme
                                                       .onSurfaceVariant,
                                                 ),
@@ -475,7 +474,6 @@ class _CarritoClienteSelectorState extends State<CarritoClienteSelector> {
                                       IconButton(
                                         icon: Icon(
                                           Icons.arrow_forward_ios,
-                                          size: 16,
                                           color: colorScheme.primary,
                                         ),
                                         onPressed: () {
@@ -511,9 +509,9 @@ class _CarritoClienteSelectorState extends State<CarritoClienteSelector> {
                   clientProvider.clients.isEmpty &&
                   _busquedaActiva) {
                 return Padding(
-                  padding: const EdgeInsets.only(top: 8),
+                  padding: EdgeInsets.only(top: baseFontSize * 0.5),
                   child: Container(
-                    padding: const EdgeInsets.all(12),
+                    padding: EdgeInsets.all(baseFontSize * 0.8),
                     decoration: BoxDecoration(
                       color: Colors.amber.shade50,
                       border: Border.all(color: Colors.amber.shade200),
@@ -524,16 +522,12 @@ class _CarritoClienteSelectorState extends State<CarritoClienteSelector> {
                         Icon(
                           Icons.info_outline,
                           color: Colors.amber.shade700,
-                          size: 18,
                         ),
-                        const SizedBox(width: 8),
+                        SizedBox(width: baseFontSize * 0.5),
                         Expanded(
                           child: Text(
                             'No se encontraron clientes que coincidan con "${_searchClienteController.text}"',
                             style: TextStyle(
-                              fontSize: AppTextStyles.bodySmall(
-                                context,
-                              ).fontSize!,
                               color: Colors.amber.shade800,
                               fontWeight: FontWeight.w500,
                             ),
@@ -547,96 +541,6 @@ class _CarritoClienteSelectorState extends State<CarritoClienteSelector> {
               return const SizedBox.shrink();
             },
           ),
-          // Mostrar cliente seleccionado con info de crédito
-          if (widget.carritoProvider.tieneClienteSeleccionado)
-            Padding(
-              padding: const EdgeInsets.only(top: 8),
-              child: Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: Colors.green.withOpacity(isDark ? 0.15 : 0.08),
-                  borderRadius: BorderRadius.circular(6),
-                  border: Border.all(
-                    color: Colors.green.withOpacity(isDark ? 0.4 : 0.2),
-                  ),
-                ),
-                child: Row(
-                  children: [
-                    Icon(
-                      Icons.check_circle,
-                      size: 16,
-                      color: Colors.green.shade500,
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(
-                            '✓ ${widget.carritoProvider.clienteSeleccionado!.nombre}',
-                            style: TextStyle(
-                              fontSize: AppTextStyles.bodySmall(
-                                context,
-                              ).fontSize!,
-                              color: Colors.green.shade500,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                          // ✅ NUEVO: Tarjeta mejorada de información de crédito
-                          if (widget.carritoProvider.clienteSeleccionado!
-                              .puedeAtenerCredito)
-                            Padding(
-                              padding: const EdgeInsets.only(top: 8),
-                              child: CarritoCreditInfoCard(
-                                cliente:
-                                    widget.carritoProvider.clienteSeleccionado!,
-                              ),
-                            )
-                          else
-                            Padding(
-                              padding: const EdgeInsets.only(top: 4),
-                              child: Text(
-                                'Sin crédito disponible - Solo pago al contado',
-                                style: TextStyle(
-                                  fontSize: AppTextStyles.labelSmall(
-                                    context,
-                                  ).fontSize!,
-                                  color: Colors.orange.shade500,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                            ),
-                        ],
-                      ),
-                    ),
-                    // ✅ NUEVO: Botón para ver detalle del cliente seleccionado
-                    IconButton(
-                      icon: Icon(
-                        Icons.info_outline,
-                        size: 18,
-                        color: Colors.green.shade500,
-                      ),
-                      onPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => ClientDetailScreen(
-                              client: widget
-                                  .carritoProvider.clienteSeleccionado!,
-                            ),
-                          ),
-                        );
-                        debugPrint(
-                          '➡️ Navegando a detalle de ${widget.carritoProvider.clienteSeleccionado!.nombre}',
-                        );
-                      },
-                      tooltip: 'Ver detalle del cliente',
-                    ),
-                  ],
-                ),
-              ),
-            ),
         ],
       ),
     );

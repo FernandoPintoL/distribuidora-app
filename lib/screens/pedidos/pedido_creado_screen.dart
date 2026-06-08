@@ -129,8 +129,16 @@ class PedidoCreadoScreen extends StatelessWidget {
                                       final apiService = ApiService();
                                       final baseUrl = apiService
                                           .baseUrl; // http://localhost:8000/api
-                                      final impresionUrl =
-                                          '$baseUrl/proformas/${pedido.id}/imprimir?formato=TICKET_80&accion=$value';
+
+                                      String impresionUrl;
+                                      if (value == 'imagen') {
+                                        // 🖼️ NUEVO: Descargar como imagen
+                                        impresionUrl = '$baseUrl/proformas/${pedido.id}/descargar-imagen?formato=jpeg&dpi=150&quality=85';
+                                      } else {
+                                        // PDF original
+                                        impresionUrl =
+                                            '$baseUrl/proformas/${pedido.id}/imprimir?formato=TICKET_80&accion=$value';
+                                      }
 
                                       _manejarAccionImpresion(
                                         context,
@@ -154,6 +162,21 @@ class PedidoCreadoScreen extends StatelessWidget {
                                             ),
                                             const SizedBox(width: 8),
                                             const Text('Descargar PDF'),
+                                          ],
+                                        ),
+                                      ),
+                                      PopupMenuItem<String>(
+                                        value: 'imagen',
+                                        child: Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            Icon(
+                                              Icons.image,
+                                              size: 18,
+                                              color: colorScheme.primary,
+                                            ),
+                                            const SizedBox(width: 8),
+                                            const Text('Descargar Imagen'),
                                           ],
                                         ),
                                       ),
@@ -456,6 +479,46 @@ class PedidoCreadoScreen extends StatelessWidget {
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(
                 content: Text('Abriendo PDF...'),
+                duration: Duration(seconds: 2),
+                backgroundColor: Colors.green,
+              ),
+            );
+          }
+          break;
+
+        case 'imagen':
+          // 🖼️ NUEVO: Descargar como imagen y mostrar diálogo de compartir
+          if (context.mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Descargando imagen de proforma...'),
+                duration: Duration(seconds: 2),
+                backgroundColor: Colors.blue,
+              ),
+            );
+          }
+
+          final printService = PrintService();
+          final nombreArchivo =
+              'proforma_${numeroPedido}_${DateTime.now().millisecondsSinceEpoch}.jpeg';
+          final filePath = await printService.downloadImage(
+            imageUrl: impresionUrl,
+            nombreArchivo: nombreArchivo,
+            showShareDialog: true, // Mostrar diálogo de compartir
+          );
+
+          if (filePath == null && context.mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('No se pudo descargar la imagen'),
+                duration: Duration(seconds: 3),
+                backgroundColor: Colors.red,
+              ),
+            );
+          } else if (filePath != null && context.mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('✅ Imagen lista para compartir'),
                 duration: Duration(seconds: 2),
                 backgroundColor: Colors.green,
               ),

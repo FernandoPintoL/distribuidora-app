@@ -5,7 +5,6 @@ import '../../providers/providers.dart';
 import '../../models/models.dart';
 import '../../extensions/theme_extension.dart';
 import 'producto_detalle_screen.dart' as producto;
-import 'widgets/product_grid_view_builder.dart';
 import 'widgets/product_list_view_builder.dart';
 import 'widgets/product_floating_action_button.dart';
 
@@ -22,11 +21,9 @@ class _ProductListScreenState extends State<ProductListScreen>
   final _scrollController = ScrollController();
   final _searchFocusNode = FocusNode();
   Timer? _debounceTimer;
-  bool _isGridView = false; // ✅ MEJORADO: Abre en formato lista por defecto
   bool _isSearchFocused = false;
-  bool _isLoadingMore = false; // Flag para prevenir race conditions en scroll
+  bool _isLoadingMore = false;
   late AnimationController _listAnimationController;
-  // ✅ NUEVO: Control para mostrar categorías (true) o marcas (false)
   bool _mostrarCategorias = true;
 
   @override
@@ -35,19 +32,16 @@ class _ProductListScreenState extends State<ProductListScreen>
     _scrollController.addListener(_onScroll);
     _searchFocusNode.addListener(_onSearchFocusChanged);
 
-    // Initialize list animation controller
     _listAnimationController = AnimationController(
       duration: const Duration(milliseconds: 600),
       vsync: this,
     );
 
     Future.delayed(Duration.zero, () {
-      // ✅ NUEVO: Cargar filtros disponibles
       final filtrosProvider = context.read<FiltrosProductoProvider>();
       filtrosProvider.loadFiltros();
 
       _loadProductsIfNeeded();
-      // Trigger animation when products load
       _listAnimationController.forward(from: 0.0);
     });
   }
@@ -75,24 +69,12 @@ class _ProductListScreenState extends State<ProductListScreen>
         _scrollController.position.maxScrollExtent * 0.9) {
       final productProvider = context.read<ProductProvider>();
 
-      debugPrint('📍 SCROLL LISTENER TRIGGERED');
-      debugPrint('   isLoading: ${productProvider.isLoading}');
-      debugPrint('   hasMorePages: ${productProvider.hasMorePages}');
-      debugPrint(
-        '   currentPage: ${productProvider.currentPage}/${productProvider.totalPages}',
-      );
-      debugPrint('   totalProducts: ${productProvider.products.length}');
-      debugPrint('   _isLoadingMore flag: $_isLoadingMore');
-
-      // Prevenir race conditions con flag local
       if (_isLoadingMore) {
-        debugPrint('📍 ⚠️ YA ESTÁ CARGANDO - ignorando scroll');
         return;
       }
 
       if (!productProvider.isLoading && productProvider.hasMorePages) {
         _isLoadingMore = true;
-        debugPrint('📍 ✅ Cargando más productos...');
 
         final filtrosProvider = context.read<FiltrosProductoProvider>();
         productProvider
@@ -104,19 +86,10 @@ class _ProductListScreenState extends State<ProductListScreen>
               brandId: filtrosProvider.marcaIdSeleccionada,
             )
             .then((_) {
-              _isLoadingMore = false;
-              debugPrint('📍 ✅ Carga completada, flag reseteado');
-            })
-            .catchError((e) {
-              _isLoadingMore = false;
-              debugPrint('📍 ❌ Error en carga, flag reseteado');
-            });
-      } else if (!productProvider.hasMorePages) {
-        debugPrint(
-          '📍 ℹ️ No hay más productos. totalPages: ${productProvider.totalPages}, currentPage: ${productProvider.currentPage}',
-        );
-      } else if (productProvider.isLoading) {
-        debugPrint('📍 ℹ️ Provider aún cargando...');
+          _isLoadingMore = false;
+        }).catchError((e) {
+          _isLoadingMore = false;
+        });
       }
     }
   }
@@ -131,7 +104,6 @@ class _ProductListScreenState extends State<ProductListScreen>
   Future<void> _loadProducts() async {
     final productProvider = context.read<ProductProvider>();
     final filtrosProvider = context.read<FiltrosProductoProvider>();
-    // ✅ NUEVO: Pasar filtros activos al loadProducts
     await productProvider.loadProducts(
       search: _searchController.text.isEmpty ? null : _searchController.text,
       categoryId: filtrosProvider.categoriaIdSeleccionada,
@@ -139,25 +111,18 @@ class _ProductListScreenState extends State<ProductListScreen>
     );
   }
 
-  /// Refresh: Limpia el input, limpia lista y recarga productos desde el inicio
   Future<void> _refreshProducts() async {
     final productProvider = context.read<ProductProvider>();
     final filtrosProvider = context.read<FiltrosProductoProvider>();
-    // Limpiar campo de búsqueda
     _searchController.clear();
-    // Limpiar lista y resetear paginador
     productProvider.clearProducts();
-    // ✅ NUEVO: Recargar desde página 1 manteniendo filtros activos
     await productProvider.loadProducts(
       categoryId: filtrosProvider.categoriaIdSeleccionada,
       brandId: filtrosProvider.marcaIdSeleccionada,
     );
   }
 
-  void _onSearchChanged(String value) {
-    // La búsqueda ahora se hace al presionar Enter o al hacer clic en el botón
-    // Esta función ya no se ejecuta automáticamente
-  }
+  void _onSearchChanged(String value) {}
 
   void _performSearch() {
     final productProvider = context.read<ProductProvider>();
@@ -171,7 +136,6 @@ class _ProductListScreenState extends State<ProductListScreen>
     _searchController.clear();
     final productProvider = context.read<ProductProvider>();
     final filtrosProvider = context.read<FiltrosProductoProvider>();
-    // ✅ NUEVO: Limpiar búsqueda pero mantener filtros activos
     productProvider.loadProducts(
       categoryId: filtrosProvider.categoriaIdSeleccionada,
       brandId: filtrosProvider.marcaIdSeleccionada,
@@ -192,7 +156,6 @@ class _ProductListScreenState extends State<ProductListScreen>
     final colorScheme = context.colorScheme;
     final isDark = context.isDark;
 
-    // ✅ NUEVO: Verificar si el usuario es preventista para mostrar AppBar
     bool isPreventista = false;
     try {
       final authProvider = context.read<AuthProvider>();
@@ -202,11 +165,8 @@ class _ProductListScreenState extends State<ProductListScreen>
             role.toLowerCase() == 'preventista' ||
             role.toLowerCase() == 'preventista',
       );
-      debugPrint(
-        '👤 [ProductListScreen] Roles del usuario: $userRoles, isPreventista: $isPreventista',
-      );
     } catch (e) {
-      debugPrint('❌ [ProductListScreen] Error al verificar rol: $e');
+      debugPrint('❌ Error al verificar rol: $e');
     }
 
     return Scaffold(
@@ -225,7 +185,6 @@ class _ProductListScreenState extends State<ProductListScreen>
           : null,
       body: Column(
         children: [
-          // Barra de búsqueda moderna
           Container(
             padding: const EdgeInsets.all(16.0),
             decoration: BoxDecoration(
@@ -293,7 +252,6 @@ class _ProductListScreenState extends State<ProductListScreen>
                   ),
                 ),
                 const SizedBox(width: 12),
-                // Botón de búsqueda - Premium style
                 Container(
                   height: 56,
                   width: 56,
@@ -325,9 +283,6 @@ class _ProductListScreenState extends State<ProductListScreen>
                   ),
                 ),
                 const SizedBox(width: 8),
-
-                const SizedBox(width: 8),
-                // Botón de recarga - Premium style
                 Container(
                   height: 56,
                   width: 56,
@@ -361,47 +316,175 @@ class _ProductListScreenState extends State<ProductListScreen>
               ],
             ),
           ),
-
-          // ✅ NUEVO: Chips de filtros horizontales para Categorías y Marcas
           Consumer<FiltrosProductoProvider>(
             builder: (context, filtrosProvider, _) {
               return Column(
                 children: [
-                  // ✅ NUEVO: Toggle para Categorías | Marcas
                   if ((filtrosProvider.categorias.isNotEmpty ||
                       filtrosProvider.marcas.isNotEmpty)) ...[
                     Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      child: Row(
-                        children: [
-                          Expanded(
-                            child: SegmentedButton<bool>(
-                              segments: const [
-                                ButtonSegment<bool>(
-                                  value: true,
-                                  label: Text('CATEGORÍAS'),
-                                ),
-                                ButtonSegment<bool>(
-                                  value: false,
-                                  label: Text('MARCAS'),
-                                ),
-                              ],
-                              selected: {_mostrarCategorias},
-                              onSelectionChanged: (value) {
-                                setState(() {
-                                  _mostrarCategorias = value.first;
-                                });
-                              },
-                            ),
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                      child: Container(
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [
+                              colorScheme.primaryContainer.withAlpha(120),
+                              colorScheme.primaryContainer.withAlpha(80),
+                            ],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
                           ),
-                        ],
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(
+                            color: colorScheme.primary.withAlpha(100),
+                            width: 1,
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: colorScheme.primary.withAlpha(20),
+                              blurRadius: 8,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: Material(
+                                color: Colors.transparent,
+                                child: InkWell(
+                                  onTap: () {
+                                    setState(() => _mostrarCategorias = true);
+                                  },
+                                  borderRadius: BorderRadius.only(
+                                    topLeft: Radius.circular(16),
+                                    bottomLeft: Radius.circular(16),
+                                  ),
+                                  child: AnimatedContainer(
+                                    duration: const Duration(milliseconds: 200),
+                                    padding: const EdgeInsets.symmetric(
+                                      vertical: 12,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      gradient: _mostrarCategorias
+                                          ? LinearGradient(
+                                              colors: [
+                                                colorScheme.primary,
+                                                colorScheme.primary
+                                                    .withAlpha(200),
+                                              ],
+                                            )
+                                          : null,
+                                      borderRadius: BorderRadius.only(
+                                        topLeft: Radius.circular(16),
+                                        bottomLeft: Radius.circular(16),
+                                      ),
+                                    ),
+                                    child: Row(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.center,
+                                      children: [
+                                        Icon(
+                                          Icons.category,
+                                          size: 18,
+                                          color: _mostrarCategorias
+                                              ? colorScheme.onPrimary
+                                              : colorScheme.onPrimaryContainer,
+                                        ),
+                                        const SizedBox(width: 8),
+                                        Text(
+                                          'CATEGORÍAS',
+                                          style: TextStyle(
+                                            fontSize: 13,
+                                            fontWeight: _mostrarCategorias
+                                                ? FontWeight.w700
+                                                : FontWeight.w600,
+                                            color: _mostrarCategorias
+                                                ? colorScheme.onPrimary
+                                                : colorScheme
+                                                    .onPrimaryContainer,
+                                            letterSpacing: 0.5,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                            Expanded(
+                              child: Material(
+                                color: Colors.transparent,
+                                child: InkWell(
+                                  onTap: () {
+                                    setState(() => _mostrarCategorias = false);
+                                  },
+                                  borderRadius: BorderRadius.only(
+                                    topRight: Radius.circular(16),
+                                    bottomRight: Radius.circular(16),
+                                  ),
+                                  child: AnimatedContainer(
+                                    duration: const Duration(milliseconds: 200),
+                                    padding: const EdgeInsets.symmetric(
+                                      vertical: 12,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      gradient: !_mostrarCategorias
+                                          ? LinearGradient(
+                                              colors: [
+                                                colorScheme.secondary,
+                                                colorScheme.secondary
+                                                    .withAlpha(200),
+                                              ],
+                                            )
+                                          : null,
+                                      borderRadius: BorderRadius.only(
+                                        topRight: Radius.circular(16),
+                                        bottomRight: Radius.circular(16),
+                                      ),
+                                    ),
+                                    child: Row(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.center,
+                                      children: [
+                                        Icon(
+                                          Icons.local_offer,
+                                          size: 18,
+                                          color: !_mostrarCategorias
+                                              ? colorScheme.onSecondary
+                                              : colorScheme
+                                                  .onSecondaryContainer,
+                                        ),
+                                        const SizedBox(width: 8),
+                                        Text(
+                                          'MARCAS',
+                                          style: TextStyle(
+                                            fontSize: 13,
+                                            fontWeight: !_mostrarCategorias
+                                                ? FontWeight.w700
+                                                : FontWeight.w600,
+                                            color: !_mostrarCategorias
+                                                ? colorScheme.onSecondary
+                                                : colorScheme
+                                                    .onSecondaryContainer,
+                                            letterSpacing: 0.5,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                     const SizedBox(height: 12),
-                    // Mostrar solo categorías O marcas según toggle
-                    if (_mostrarCategorias && filtrosProvider.categorias.isNotEmpty)
+                    if (_mostrarCategorias &&
+                        filtrosProvider.categorias.isNotEmpty)
                       SizedBox(
-                        height: 40,
+                        height: 42,
                         child: ListView.builder(
                           scrollDirection: Axis.horizontal,
                           padding: const EdgeInsets.symmetric(horizontal: 12),
@@ -409,61 +492,173 @@ class _ProductListScreenState extends State<ProductListScreen>
                           itemBuilder: (context, index) {
                             if (index == 0) {
                               final isSelected =
-                                  filtrosProvider.categoriaIdSeleccionada == null;
+                                  filtrosProvider.categoriaIdSeleccionada ==
+                                      null;
                               return Padding(
-                                padding: const EdgeInsets.symmetric(horizontal: 4),
-                                child: ChoiceChip(
-                                  label: const Text('Todas'),
-                                  selected: isSelected,
-                                  onSelected: (selected) {
-                                    filtrosProvider.seleccionarCategoria(null);
-                                    _loadProducts();
-                                  },
-                                  backgroundColor:
-                                      colorScheme.surfaceContainerHighest,
-                                  selectedColor: colorScheme.primary,
-                                  labelStyle: TextStyle(
-                                    color: isSelected
-                                        ? colorScheme.onPrimary
-                                        : colorScheme.onSurfaceVariant,
-                                    fontWeight: isSelected
-                                        ? FontWeight.w600
-                                        : FontWeight.w500,
+                                padding:
+                                    const EdgeInsets.symmetric(horizontal: 4),
+                                child: AnimatedContainer(
+                                  duration: const Duration(milliseconds: 200),
+                                  decoration: BoxDecoration(
+                                    gradient: isSelected
+                                        ? LinearGradient(
+                                            colors: [
+                                              colorScheme.primary,
+                                              colorScheme.primary
+                                                  .withAlpha(180),
+                                            ],
+                                          )
+                                        : null,
+                                    color: !isSelected
+                                        ? colorScheme.surfaceContainerHighest
+                                        : null,
+                                    borderRadius:
+                                        BorderRadius.circular(20),
+                                    border: Border.all(
+                                      color: isSelected
+                                          ? colorScheme.primary
+                                          : colorScheme.outline
+                                              .withAlpha(40),
+                                      width: isSelected ? 2 : 1,
+                                    ),
+                                    boxShadow: isSelected
+                                        ? [
+                                            BoxShadow(
+                                              color: colorScheme.primary
+                                                  .withAlpha(30),
+                                              blurRadius: 8,
+                                              offset: const Offset(0, 2),
+                                            )
+                                          ]
+                                        : null,
+                                  ),
+                                  child: Material(
+                                    color: Colors.transparent,
+                                    child: InkWell(
+                                      onTap: () {
+                                        filtrosProvider
+                                            .seleccionarCategoria(null);
+                                        _loadProducts();
+                                      },
+                                      borderRadius:
+                                          BorderRadius.circular(20),
+                                      child: Padding(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 16,
+                                          vertical: 8,
+                                        ),
+                                        child: Center(
+                                          child: Text(
+                                            'Todas',
+                                            style: TextStyle(
+                                              color: isSelected
+                                                  ? colorScheme.onPrimary
+                                                  : colorScheme
+                                                      .onSurfaceVariant,
+                                              fontWeight: isSelected
+                                                  ? FontWeight.w700
+                                                  : FontWeight.w500,
+                                              fontSize: 13,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    ),
                                   ),
                                 ),
                               );
                             }
-                            final category =
-                                filtrosProvider.categorias[index - 1];
+                            final category = filtrosProvider
+                                .categorias[index - 1];
                             final categoryId = category['id'] as int?;
                             final categoryName =
                                 category['nombre'] as String? ?? '';
                             final isSelected =
                                 filtrosProvider.categoriaIdSeleccionada ==
-                                categoryId;
+                                    categoryId;
                             return Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 4),
-                              child: ChoiceChip(
-                                label: Text(categoryName),
-                                selected: isSelected,
-                                onSelected: (selected) {
-                                  if (selected) {
-                                    filtrosProvider.seleccionarCategoria(
-                                      categoryId,
-                                    );
-                                    _loadProducts();
-                                  }
-                                },
-                                backgroundColor:
-                                    colorScheme.surfaceContainerHighest,
-                                selectedColor: colorScheme.primary,
-                                labelStyle: TextStyle(
-                                  color: isSelected
-                                      ? colorScheme.onPrimary
-                                      : colorScheme.onSurfaceVariant,
-                                  fontWeight: isSelected
-                                      ? FontWeight.w600
-                                      : FontWeight.w500,
+                              padding:
+                                  const EdgeInsets.symmetric(horizontal: 4),
+                              child: AnimatedContainer(
+                                duration: const Duration(milliseconds: 200),
+                                decoration: BoxDecoration(
+                                  gradient: isSelected
+                                      ? LinearGradient(
+                                          colors: [
+                                            colorScheme.primary,
+                                            colorScheme.primary
+                                                .withAlpha(180),
+                                          ],
+                                        )
+                                      : null,
+                                  color: !isSelected
+                                      ? colorScheme.surfaceContainerHighest
+                                      : null,
+                                  borderRadius:
+                                      BorderRadius.circular(20),
+                                  border: Border.all(
+                                    color: isSelected
+                                        ? colorScheme.primary
+                                        : colorScheme.outline
+                                            .withAlpha(40),
+                                    width: isSelected ? 2 : 1,
+                                  ),
+                                  boxShadow: isSelected
+                                      ? [
+                                          BoxShadow(
+                                            color: colorScheme.primary
+                                                .withAlpha(30),
+                                            blurRadius: 8,
+                                            offset: const Offset(0, 2),
+                                          )
+                                        ]
+                                      : null,
+                                ),
+                                child: Material(
+                                  color: Colors.transparent,
+                                  child: InkWell(
+                                    onTap: () {
+                                      filtrosProvider
+                                          .seleccionarCategoria(
+                                        categoryId,
+                                      );
+                                      _loadProducts();
+                                    },
+                                    borderRadius:
+                                        BorderRadius.circular(20),
+                                    child: Padding(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 16,
+                                        vertical: 8,
+                                      ),
+                                      child: Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          if (isSelected)
+                                            Icon(
+                                              Icons.check_circle,
+                                              size: 14,
+                                              color: colorScheme.onPrimary,
+                                            ),
+                                          if (isSelected)
+                                            const SizedBox(width: 6),
+                                          Text(
+                                            categoryName,
+                                            style: TextStyle(
+                                              color: isSelected
+                                                  ? colorScheme.onPrimary
+                                                  : colorScheme
+                                                      .onSurfaceVariant,
+                                              fontWeight: isSelected
+                                                  ? FontWeight.w700
+                                                  : FontWeight.w500,
+                                              fontSize: 13,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
                                 ),
                               ),
                             );
@@ -473,7 +668,7 @@ class _ProductListScreenState extends State<ProductListScreen>
                     else if (!_mostrarCategorias &&
                         filtrosProvider.marcas.isNotEmpty)
                       SizedBox(
-                        height: 40,
+                        height: 42,
                         child: ListView.builder(
                           scrollDirection: Axis.horizontal,
                           padding: const EdgeInsets.symmetric(horizontal: 12),
@@ -483,54 +678,169 @@ class _ProductListScreenState extends State<ProductListScreen>
                               final isSelected =
                                   filtrosProvider.marcaIdSeleccionada == null;
                               return Padding(
-                                padding: const EdgeInsets.symmetric(horizontal: 4),
-                                child: ChoiceChip(
-                                  label: const Text('Todas'),
-                                  selected: isSelected,
-                                  onSelected: (selected) {
-                                    filtrosProvider.seleccionarMarca(null);
-                                    _loadProducts();
-                                  },
-                                  backgroundColor:
-                                      colorScheme.surfaceContainerHighest,
-                                  selectedColor: colorScheme.secondary,
-                                  labelStyle: TextStyle(
-                                    color: isSelected
-                                        ? colorScheme.onSecondary
-                                        : colorScheme.onSurfaceVariant,
-                                    fontWeight: isSelected
-                                        ? FontWeight.w600
-                                        : FontWeight.w500,
+                                padding:
+                                    const EdgeInsets.symmetric(horizontal: 4),
+                                child: AnimatedContainer(
+                                  duration: const Duration(milliseconds: 200),
+                                  decoration: BoxDecoration(
+                                    gradient: isSelected
+                                        ? LinearGradient(
+                                            colors: [
+                                              colorScheme.secondary,
+                                              colorScheme.secondary
+                                                  .withAlpha(180),
+                                            ],
+                                          )
+                                        : null,
+                                    color: !isSelected
+                                        ? colorScheme.surfaceContainerHighest
+                                        : null,
+                                    borderRadius:
+                                        BorderRadius.circular(20),
+                                    border: Border.all(
+                                      color: isSelected
+                                          ? colorScheme.secondary
+                                          : colorScheme.outline
+                                              .withAlpha(40),
+                                      width: isSelected ? 2 : 1,
+                                    ),
+                                    boxShadow: isSelected
+                                        ? [
+                                            BoxShadow(
+                                              color: colorScheme.secondary
+                                                  .withAlpha(30),
+                                              blurRadius: 8,
+                                              offset: const Offset(0, 2),
+                                            )
+                                          ]
+                                        : null,
+                                  ),
+                                  child: Material(
+                                    color: Colors.transparent,
+                                    child: InkWell(
+                                      onTap: () {
+                                        filtrosProvider
+                                            .seleccionarMarca(null);
+                                        _loadProducts();
+                                      },
+                                      borderRadius:
+                                          BorderRadius.circular(20),
+                                      child: Padding(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 16,
+                                          vertical: 8,
+                                        ),
+                                        child: Center(
+                                          child: Text(
+                                            'Todas',
+                                            style: TextStyle(
+                                              color: isSelected
+                                                  ? colorScheme.onSecondary
+                                                  : colorScheme
+                                                      .onSurfaceVariant,
+                                              fontWeight: isSelected
+                                                  ? FontWeight.w700
+                                                  : FontWeight.w500,
+                                              fontSize: 13,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    ),
                                   ),
                                 ),
                               );
                             }
-                            final marca = filtrosProvider.marcas[index - 1];
+                            final marca =
+                                filtrosProvider.marcas[index - 1];
                             final marcaId = marca['id'] as int?;
-                            final marcaNombre = marca['nombre'] as String? ?? '';
+                            final marcaNombre =
+                                marca['nombre'] as String? ?? '';
                             final isSelected =
-                                filtrosProvider.marcaIdSeleccionada == marcaId;
+                                filtrosProvider.marcaIdSeleccionada ==
+                                    marcaId;
                             return Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 4),
-                              child: ChoiceChip(
-                                label: Text(marcaNombre),
-                                selected: isSelected,
-                                onSelected: (selected) {
-                                  if (selected) {
-                                    filtrosProvider.seleccionarMarca(marcaId);
-                                    _loadProducts();
-                                  }
-                                },
-                                backgroundColor:
-                                    colorScheme.surfaceContainerHighest,
-                                selectedColor: colorScheme.secondary,
-                                labelStyle: TextStyle(
-                                  color: isSelected
-                                      ? colorScheme.onSecondary
-                                      : colorScheme.onSurfaceVariant,
-                                  fontWeight: isSelected
-                                      ? FontWeight.w600
-                                      : FontWeight.w500,
+                              padding:
+                                  const EdgeInsets.symmetric(horizontal: 4),
+                              child: AnimatedContainer(
+                                duration: const Duration(milliseconds: 200),
+                                decoration: BoxDecoration(
+                                  gradient: isSelected
+                                      ? LinearGradient(
+                                          colors: [
+                                            colorScheme.secondary,
+                                            colorScheme.secondary
+                                                .withAlpha(180),
+                                          ],
+                                        )
+                                      : null,
+                                  color: !isSelected
+                                      ? colorScheme.surfaceContainerHighest
+                                      : null,
+                                  borderRadius:
+                                      BorderRadius.circular(20),
+                                  border: Border.all(
+                                    color: isSelected
+                                        ? colorScheme.secondary
+                                        : colorScheme.outline
+                                            .withAlpha(40),
+                                    width: isSelected ? 2 : 1,
+                                  ),
+                                  boxShadow: isSelected
+                                      ? [
+                                          BoxShadow(
+                                            color: colorScheme.secondary
+                                                .withAlpha(30),
+                                            blurRadius: 8,
+                                            offset: const Offset(0, 2),
+                                          )
+                                        ]
+                                      : null,
+                                ),
+                                child: Material(
+                                  color: Colors.transparent,
+                                  child: InkWell(
+                                    onTap: () {
+                                      filtrosProvider
+                                          .seleccionarMarca(marcaId);
+                                      _loadProducts();
+                                    },
+                                    borderRadius:
+                                        BorderRadius.circular(20),
+                                    child: Padding(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 16,
+                                        vertical: 8,
+                                      ),
+                                      child: Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          if (isSelected)
+                                            Icon(
+                                              Icons.check_circle,
+                                              size: 14,
+                                              color:
+                                                  colorScheme.onSecondary,
+                                            ),
+                                          if (isSelected)
+                                            const SizedBox(width: 6),
+                                          Text(
+                                            marcaNombre,
+                                            style: TextStyle(
+                                              color: isSelected
+                                                  ? colorScheme.onSecondary
+                                                  : colorScheme
+                                                      .onSurfaceVariant,
+                                              fontWeight: isSelected
+                                                  ? FontWeight.w700
+                                                  : FontWeight.w500,
+                                              fontSize: 13,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
                                 ),
                               ),
                             );
@@ -543,15 +853,9 @@ class _ProductListScreenState extends State<ProductListScreen>
               );
             },
           ),
-
-          // Lista de productos
           Expanded(
             child: Consumer<ProductProvider>(
               builder: (context, productProvider, child) {
-                debugPrint(
-                  '🔍 Consumer rebuild - isLoading: ${productProvider.isLoading}, productos: ${productProvider.products.length}',
-                );
-                // Estado de carga - Mostrar simple loading
                 if (productProvider.isLoading) {
                   return Center(
                     child: Column(
@@ -568,7 +872,6 @@ class _ProductListScreenState extends State<ProductListScreen>
                   );
                 }
 
-                // Estado de error
                 if (productProvider.errorMessage != null) {
                   return Center(
                     child: Column(
@@ -597,7 +900,6 @@ class _ProductListScreenState extends State<ProductListScreen>
                   );
                 }
 
-                // Estado vacío
                 if (productProvider.products.isEmpty) {
                   return Center(
                     child: Column(
@@ -618,10 +920,6 @@ class _ProductListScreenState extends State<ProductListScreen>
                   );
                 }
 
-                // Grid o Lista de productos
-                debugPrint(
-                  '✅ Construyendo ${_isGridView ? "GRID" : "LIST"} con ${productProvider.products.length} productos',
-                );
                 try {
                   return ProductListViewBuilder(
                     productProvider: productProvider,
@@ -641,5 +939,4 @@ class _ProductListScreenState extends State<ProductListScreen>
       floatingActionButton: const ProductFloatingActionButton(),
     );
   }
-
 }

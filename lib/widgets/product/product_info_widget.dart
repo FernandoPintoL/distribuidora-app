@@ -112,37 +112,90 @@ class ProductInfoWidget extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
-              if (product.marca != null) ...[
-                const SizedBox(width: 6),
-                Text('•', style: context.textTheme.bodySmall),
-                const SizedBox(width: 6),
-                Flexible(
-                  child: Text(
-                    product.marca!.nombre,
-                    style: context.textTheme.bodySmall?.copyWith(
-                      fontWeight: FontWeight.w600,
-                      color: colorScheme.secondary,
+            ],
+          ),
+          const SizedBox(height: 6),
+
+          // ✅ MEJORADO: Badges modernos para Marca y Categoría
+          Wrap(
+            spacing: 4,
+            runSpacing: 4,
+            children: [
+              // Badge Marca
+              if (product.marca != null)
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 3,
+                  ),
+                  decoration: BoxDecoration(
+                    color: colorScheme.secondary.withAlpha(isDark ? 80 : 120),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: colorScheme.secondary.withAlpha(150),
+                      width: 0.5,
                     ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.local_offer,
+                        size: 10,
+                        color: colorScheme.onSecondary,
+                      ),
+                      const SizedBox(width: 3),
+                      Text(
+                        product.marca!.nombre,
+                        style: context.textTheme.labelSmall?.copyWith(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w600,
+                          color: colorScheme.onSecondary,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
                   ),
                 ),
-              ],
-              if (product.categoria != null) ...[
-                const SizedBox(width: 6),
-                Text('•', style: context.textTheme.bodySmall),
-                const SizedBox(width: 6),
-                Flexible(
-                  child: Text(
-                    product.categoria!.nombre,
-                    style: context.textTheme.bodySmall?.copyWith(
-                      color: colorScheme.secondary,
+
+              // Badge Categoría
+              if (product.categoria != null)
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 3,
+                  ),
+                  decoration: BoxDecoration(
+                    color: colorScheme.tertiary.withAlpha(isDark ? 80 : 120),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: colorScheme.tertiary.withAlpha(150),
+                      width: 0.5,
                     ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.category,
+                        size: 10,
+                        color: colorScheme.onTertiary,
+                      ),
+                      const SizedBox(width: 3),
+                      Text(
+                        product.categoria!.nombre,
+                        style: context.textTheme.labelSmall?.copyWith(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w600,
+                          color: colorScheme.onTertiary,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
                   ),
                 ),
-              ],
             ],
           ),
           const SizedBox(height: 4),

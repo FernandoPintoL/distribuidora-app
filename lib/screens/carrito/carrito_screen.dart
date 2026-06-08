@@ -110,7 +110,7 @@ class _CarritoScreenState extends State<CarritoScreen> {
 
                 // ✅ NUEVO: Mostrar contador de items en el carrito (considerando combos)
                 Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
+                  padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 4.0),
                   child: Builder(
                     builder: (context) {
                       // Calcular cantidad total de items considerando combos
@@ -136,11 +136,10 @@ class _CarritoScreenState extends State<CarritoScreen> {
                         children: [
                           Text(
                             '📦 Total de items: ',
-                            style: Theme.of(context).textTheme.bodySmall,
                           ),
                           Text(
                             '$totalItems',
-                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                               fontWeight: FontWeight.bold,
                               color: esValido ? Colors.green : Colors.orange,
                             ),
@@ -148,9 +147,9 @@ class _CarritoScreenState extends State<CarritoScreen> {
                           if (!esValido) ...[
                             Text(
                               ' (mínimo 5)',
-                              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                                 color: Colors.orange,
-                                fontSize: 11,
+                                fontSize: 13,
                               ),
                             ),
                           ],
@@ -166,7 +165,6 @@ class _CarritoScreenState extends State<CarritoScreen> {
                   physics: const NeverScrollableScrollPhysics(),
                   itemCount: carritoProvider.items.length,
                   padding: const EdgeInsets.only(
-                    top: 8,
                     bottom: 90, // 🔑 NUEVO: Espacio para el CarritoTotalBar
                     left: 0,
                     right: 0,
@@ -273,20 +271,20 @@ class _CarritoScreenState extends State<CarritoScreen> {
           );
         },
       ),
-      // ✅ NUEVO: FloatingActionButton para agregar más productos
+      // ✅ NUEVO: FloatingActionButton para agregar más productos (solo en edición de proforma)
       floatingActionButton: Consumer<CarritoProvider>(
         builder: (context, carritoProvider, _) {
-          // Solo mostrar FAB si el carrito no está vacío
-          if (carritoProvider.isEmpty) return const SizedBox.shrink();
+          // Solo mostrar FAB si se está editando una proforma
+          if (!carritoProvider.editandoProforma) return const SizedBox.shrink();
 
           return FloatingActionButton(
             onPressed: () {
               debugPrint(
-                '➕ Abriendo pantalla de productos para agregar más items',
+                '➕ Abriendo pantalla de productos para agregar más items a la proforma',
               );
               Navigator.pushNamed(context, '/products');
             },
-            tooltip: 'Agregar más productos',
+            tooltip: 'Agregar más productos a la proforma',
             child: const Icon(Icons.add),
           );
         },

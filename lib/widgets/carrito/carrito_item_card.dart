@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../models/models.dart';
 import '../../extensions/carrito_theme_extension.dart';
-import '../../extensions/theme_extension.dart';
-import 'carrito_item_ahorro_section.dart';
 
 class CarritoItemCard extends StatefulWidget {
   final CarritoItem item;
@@ -41,10 +39,12 @@ class _CarritoItemCardState extends State<CarritoItemCard> {
   @override
   void initState() {
     super.initState();
-    _observacionesController =
-        TextEditingController(text: widget.item.observaciones ?? '');
-    _cantidadController =
-        TextEditingController(text: widget.item.cantidad.toString());
+    _observacionesController = TextEditingController(
+      text: widget.item.observaciones ?? '',
+    );
+    _cantidadController = TextEditingController(
+      text: widget.item.cantidad.toString(),
+    );
   }
 
   @override
@@ -102,7 +102,9 @@ class _CarritoItemCardState extends State<CarritoItemCard> {
         _guardandoObservaciones = false;
       });
 
-      debugPrint('✅ Observaciones guardadas para ${widget.item.producto?.nombre}');
+      debugPrint(
+        '✅ Observaciones guardadas para ${widget.item.producto?.nombre}',
+      );
     }
   }
 
@@ -154,10 +156,11 @@ class _CarritoItemCardState extends State<CarritoItemCard> {
                         borderRadius: BorderRadius.circular(4),
                         child: Text(
                           producto.nombre,
-                          style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 15,
-                          ),
+                          style: Theme.of(context).textTheme.titleLarge
+                              ?.copyWith(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 15,
+                              ),
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
                         ),
@@ -167,92 +170,88 @@ class _CarritoItemCardState extends State<CarritoItemCard> {
                       // Código
                       Text(
                         'Código: ${producto.codigo}',
-                        style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                          color: context.carritoSecondaryText,
-                        ),
+                        style: Theme.of(context).textTheme.labelMedium
+                            ?.copyWith(color: context.carritoSecondaryText),
                       ),
+                      const SizedBox(height: 6),
+                      _buildPrecioUnitarioSection(context),
                     ],
                   ),
                 ),
 
                 // Botón eliminar
-                SizedBox(
-                  width: 40,
-                  height: 40,
-                  child: IconButton(
-                    onPressed: widget.onRemove,
-                    icon: Icon(
-                      Icons.delete_outline,
-                      color: context.carritoDeleteIconColor,
-                      size: 18,
-                    ),
-                    style: IconButton.styleFrom(
-                      backgroundColor: context.carritoDeleteIconColor.withAlpha(15),
-                    ),
-                    tooltip: 'Eliminar',
-                  ),
-                ),
-              ],
-            ),
-
-            const SizedBox(height: 12),
-
-            // ✅ MEJORADO: Precio unitario + Stock disponible
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                // Precio unitario
-                Expanded(
-                  child: _buildPrecioUnitarioSection(context),
-                ),
-                const SizedBox(width: 12),
-
-                // Stock disponible
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                  decoration: BoxDecoration(
-                    color: tieneStockSuficiente
-                        ? Colors.green.shade50
-                        : Colors.red.shade50,
-                    border: Border.all(
-                      color: tieneStockSuficiente
-                          ? Colors.green.shade300
-                          : Colors.red.shade300,
-                      width: 1,
-                    ),
-                    borderRadius: BorderRadius.circular(6),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        'Disponible',
-                        style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                          color: context.carritoSecondaryText,
-                          fontSize: 11,
+                Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    SizedBox(
+                      width: 40,
+                      height: 40,
+                      child: IconButton(
+                        onPressed: widget.onRemove,
+                        icon: Icon(
+                          Icons.delete_outline,
+                          color: context.carritoDeleteIconColor,
+                          size: 18,
                         ),
+                        style: IconButton.styleFrom(
+                          backgroundColor: context.carritoDeleteIconColor
+                              .withAlpha(15),
+                        ),
+                        tooltip: 'Eliminar',
                       ),
-                      Text(
-                        '$stockDispInt',
-                        style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                          fontWeight: FontWeight.bold,
+                    ),
+                    const SizedBox(height: 8),
+                    // Stock disponible
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 6,
+                      ),
+                      decoration: BoxDecoration(
+                        color: tieneStockSuficiente
+                            ? Colors.green.shade50
+                            : Colors.red.shade50,
+                        border: Border.all(
                           color: tieneStockSuficiente
-                              ? Colors.green.shade700
-                              : Colors.red.shade700,
-                          fontSize: 14,
+                              ? Colors.green.shade300
+                              : Colors.red.shade300,
+                          width: 1,
                         ),
+                        borderRadius: BorderRadius.circular(6),
                       ),
-                    ],
-                  ),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            'Disp.: ',
+                            style: Theme.of(context).textTheme.labelSmall
+                                ?.copyWith(
+                                  color: context.carritoSecondaryText,
+                                  fontSize: 14,
+                                ),
+                          ),
+                          Text(
+                            '$stockDispInt',
+                            style: Theme.of(context).textTheme.titleSmall
+                                ?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                  color: tieneStockSuficiente
+                                      ? Colors.green.shade700
+                                      : Colors.red.shade700,
+                                  fontSize: 16,
+                                ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
-
-            const SizedBox(height: 12),
+            const SizedBox(height: 8),
             const Divider(height: 1),
-            const SizedBox(height: 12),
+            const SizedBox(height: 8),
 
             // ✅ MEJORADO: Controles en fila simplificada
             Row(
@@ -291,11 +290,12 @@ class _CarritoItemCardState extends State<CarritoItemCard> {
                           decoration: InputDecoration(
                             counterText: '',
                             border: InputBorder.none,
-                            contentPadding: const EdgeInsets.symmetric(vertical: 6),
+                            contentPadding: const EdgeInsets.symmetric(
+                              vertical: 6,
+                            ),
                             hintText: '0',
                             hintStyle: TextStyle(
                               color: context.carritoQuantityText.withAlpha(100),
-                              fontSize: 13,
                             ),
                           ),
                           style: TextStyle(
@@ -305,7 +305,8 @@ class _CarritoItemCardState extends State<CarritoItemCard> {
                                 ? context.carritoQuantityText
                                 : context.carritoErrorIcon,
                           ),
-                          onFieldSubmitted: (_) => _actualizarCantidadDesdeInput(),
+                          onFieldSubmitted: (_) =>
+                              _actualizarCantidadDesdeInput(),
                           onTapOutside: (_) => _actualizarCantidadDesdeInput(),
                         ),
                       ),
@@ -343,7 +344,11 @@ class _CarritoItemCardState extends State<CarritoItemCard> {
                   ),
                   child: Row(
                     children: [
-                      Icon(Icons.error_outline, color: context.carritoErrorIcon, size: 18),
+                      Icon(
+                        Icons.error_outline,
+                        color: context.carritoErrorIcon,
+                        size: 18,
+                      ),
                       const SizedBox(width: 8),
                       Expanded(
                         child: Text(
@@ -373,7 +378,10 @@ class _CarritoItemCardState extends State<CarritoItemCard> {
               Padding(
                 padding: const EdgeInsets.only(top: 8),
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 6,
+                  ),
                   decoration: BoxDecoration(
                     color: context.carritoSavingsBg,
                     border: Border.all(color: context.carritoSavingsBorder),
@@ -405,7 +413,10 @@ class _CarritoItemCardState extends State<CarritoItemCard> {
                         child: TextButton.icon(
                           onPressed: widget.onAgregarParaAhorrar,
                           icon: const Icon(Icons.add, size: 14),
-                          label: const Text('Añadir', style: TextStyle(fontSize: 10)),
+                          label: const Text(
+                            'Añadir',
+                            style: TextStyle(fontSize: 10),
+                          ),
                           style: TextButton.styleFrom(
                             padding: const EdgeInsets.symmetric(horizontal: 8),
                             visualDensity: VisualDensity.compact,
@@ -492,9 +503,7 @@ class _CarritoItemCardState extends State<CarritoItemCard> {
           maxLines: 2,
           decoration: InputDecoration(
             hintText: 'Agregar nota para este producto...',
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(6),
-            ),
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(6)),
             filled: true,
             fillColor: Colors.white,
             contentPadding: const EdgeInsets.symmetric(
@@ -523,9 +532,7 @@ class _CarritoItemCardState extends State<CarritoItemCard> {
                       child: CircularProgressIndicator(strokeWidth: 2),
                     )
                   : const Icon(Icons.check, size: 18),
-              label: Text(
-                _guardandoObservaciones ? 'Guardando...' : 'Guardar',
-              ),
+              label: Text(_guardandoObservaciones ? 'Guardando...' : 'Guardar'),
             ),
           ],
         ),
@@ -623,9 +630,10 @@ class _CarritoItemCardState extends State<CarritoItemCard> {
     final subtotalBajoRango = detalleConRango?.subtotal ?? subtotalActual;
 
     // Detectar si cambio de tipo de precio (no es VENTA por defecto)
-    final cambioDePrecio = detalleConRango != null &&
-                           detalleConRango.tipoPrecioId != 2 &&
-                           subtotalBajoRango != subtotalActual;
+    final cambioDePrecio =
+        detalleConRango != null &&
+        detalleConRango.tipoPrecioId != 2 &&
+        subtotalBajoRango != subtotalActual;
 
     if (!cambioDePrecio) {
       // Sin cambios: mostrar solo el subtotal actual
@@ -674,9 +682,10 @@ class _CarritoItemCardState extends State<CarritoItemCard> {
     final precioBajoRango = detalleConRango?.precioUnitario ?? precioActual;
 
     // Detectar si cambio de tipo de precio (no es VENTA por defecto)
-    final cambioDePrecio = detalleConRango != null &&
-                           detalleConRango.tipoPrecioId != 2 &&
-                           precioBajoRango != precioActual;
+    final cambioDePrecio =
+        detalleConRango != null &&
+        detalleConRango.tipoPrecioId != 2 &&
+        precioBajoRango != precioActual;
 
     if (!cambioDePrecio) {
       // Sin cambios: mostrar solo el precio actual + tipo de precio
@@ -684,7 +693,7 @@ class _CarritoItemCardState extends State<CarritoItemCard> {
         children: [
           Text(
             'Bs ${precioActual.toStringAsFixed(2)} c/u',
-            style: Theme.of(context).textTheme.bodyMedium,
+            style: Theme.of(context).textTheme.bodyLarge,
           ),
           const SizedBox(width: 8),
           // Badge tipo de precio solo si es diferente a VENTA
@@ -768,8 +777,12 @@ class _CarritoItemCardState extends State<CarritoItemCard> {
   /// Obtener etiqueta corta para el badge del tipo de precio
   String _getBadgeLabel(String tipoPrecioNombre) {
     if (tipoPrecioNombre.contains('Venta')) return 'V';
-    if (tipoPrecioNombre.contains('Descuento') || tipoPrecioNombre.contains('Desc')) return 'D';
-    if (tipoPrecioNombre.contains('Especial') || tipoPrecioNombre.contains('Esp')) return 'E';
+    if (tipoPrecioNombre.contains('Descuento') ||
+        tipoPrecioNombre.contains('Desc'))
+      return 'D';
+    if (tipoPrecioNombre.contains('Especial') ||
+        tipoPrecioNombre.contains('Esp'))
+      return 'E';
     return 'P';
   }
 
@@ -813,7 +826,7 @@ class _CarritoItemCardState extends State<CarritoItemCard> {
                   strokeWidth: 2,
                   value: loadingProgress.expectedTotalBytes != null
                       ? loadingProgress.cumulativeBytesLoaded /
-                          loadingProgress.expectedTotalBytes!
+                            loadingProgress.expectedTotalBytes!
                       : null,
                 ),
               ),
@@ -835,10 +848,7 @@ class _CarritoItemCardState extends State<CarritoItemCard> {
       decoration: BoxDecoration(
         color: Colors.grey.shade200,
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(
-          color: Colors.grey.shade300,
-          width: 1,
-        ),
+        border: Border.all(color: Colors.grey.shade300, width: 1),
       ),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -851,10 +861,7 @@ class _CarritoItemCardState extends State<CarritoItemCard> {
           const SizedBox(height: 4),
           Text(
             'Sin imagen',
-            style: TextStyle(
-              fontSize: 9,
-              color: Colors.grey.shade500,
-            ),
+            style: TextStyle(fontSize: 9, color: Colors.grey.shade500),
           ),
         ],
       ),
