@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -38,9 +38,9 @@ class _ClientDetailScreenState extends State<ClientDetailScreen>
     super.initState();
 
     try {
-      debugPrint('📱 Initializing ClientDetailScreen state...');
+      debugPrint('ðŸ“± Initializing ClientDetailScreen state...');
       debugPrint(
-        '📋 Client ID: ${widget.client.id}, Name: ${widget.client.nombre}',
+        'ðŸ“‹ Client ID: ${widget.client.id}, Name: ${widget.client.nombre}',
       );
 
       _tabController = TabController(length: 3, vsync: this);
@@ -50,17 +50,17 @@ class _ClientDetailScreenState extends State<ClientDetailScreen>
       _tabController.addListener(() {
         if (!mounted) return;
 
-        debugPrint('📑 Tab cambiado a índice: ${_tabController.index}');
+        debugPrint('ðŸ“‘ Tab cambiado a Ã­ndice: ${_tabController.index}');
 
-        // Si cambiamos al tab de direcciones (índice 1) y aún no hemos cargado direcciones
+        // Si cambiamos al tab de direcciones (Ã­ndice 1) y aÃºn no hemos cargado direcciones
         if (_tabController.index == 1 && _addresses == null) {
-          debugPrint('🔄 Cargando direcciones por primera vez...');
+          debugPrint('ðŸ”„ Cargando direcciones por primera vez...');
           _loadDirecciones();
         }
 
-        // Si cambiamos al tab de visitas (índice 2) y aún no hemos cargado visitas
+        // Si cambiamos al tab de visitas (Ã­ndice 2) y aÃºn no hemos cargado visitas
         if (_tabController.index == 2 && _visitas == null) {
-          debugPrint('🔄 Cargando visitas por primera vez...');
+          debugPrint('ðŸ”„ Cargando visitas por primera vez...');
           _loadVisitas();
         }
 
@@ -72,23 +72,23 @@ class _ClientDetailScreenState extends State<ClientDetailScreen>
         });
       });
 
-      // Obtener referencia al provider después del build
+      // Obtener referencia al provider despuÃ©s del build
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!mounted) {
-          debugPrint('⚠️ Widget no montado en addPostFrameCallback');
+          debugPrint('âš ï¸ Widget no montado en addPostFrameCallback');
           return;
         }
 
         try {
           _clientProvider = context.read<ClientProvider>();
-          debugPrint('✅ Provider obtenido y listo');
+          debugPrint('âœ… Provider obtenido y listo');
         } catch (e, stackTrace) {
-          debugPrint('❌ Error obteniendo provider: $e');
+          debugPrint('âŒ Error obteniendo provider: $e');
           debugPrint('Stack trace: $stackTrace');
         }
       });
     } catch (e, stackTrace) {
-      debugPrint('❌ Error crítico en initState: $e');
+      debugPrint('âŒ Error crÃ­tico en initState: $e');
       debugPrint('Stack trace: $stackTrace');
       rethrow;
     }
@@ -103,32 +103,32 @@ class _ClientDetailScreenState extends State<ClientDetailScreen>
   /// Carga las direcciones del cliente de forma lazy (solo cuando se necesitan)
   Future<void> _loadDirecciones() async {
     if (!mounted) {
-      debugPrint('⚠️ Widget no montado, cancelando carga de direcciones');
+      debugPrint('âš ï¸ Widget no montado, cancelando carga de direcciones');
       return;
     }
 
     // Si ya estamos cargando, no hacer nada (evitar llamadas concurrentes)
     if (_isLoading) {
-      debugPrint('⚠️ Ya se está cargando direcciones, omitiendo...');
+      debugPrint('âš ï¸ Ya se estÃ¡ cargando direcciones, omitiendo...');
       return;
     }
 
     // Si ya tenemos direcciones cargadas, solo continuar si _addresses es null
-    // (esto permite recargas cuando _addresses se establece a null explícitamente)
+    // (esto permite recargas cuando _addresses se establece a null explÃ­citamente)
     if (_addresses != null) {
-      debugPrint('✅ Direcciones ya cargadas, omitiendo...');
+      debugPrint('âœ… Direcciones ya cargadas, omitiendo...');
       return;
     }
 
     setState(() => _isLoading = true);
 
     try {
-      debugPrint('🔄 Cargando direcciones del cliente ID: ${_client!.id}');
+      debugPrint('ðŸ”„ Cargando direcciones del cliente ID: ${_client!.id}');
 
       _addresses = await _clientProvider.getClientAddresses(_client!.id);
-      debugPrint('📍 Direcciones cargadas: ${_addresses?.length ?? 0}');
+      debugPrint('ðŸ“ Direcciones cargadas: ${_addresses?.length ?? 0}');
     } catch (addressError) {
-      debugPrint('❌ Error cargando direcciones: $addressError');
+      debugPrint('âŒ Error cargando direcciones: $addressError');
       _addresses = [];
 
       if (mounted) {
@@ -145,7 +145,7 @@ class _ClientDetailScreenState extends State<ClientDetailScreen>
     } finally {
       if (mounted) {
         setState(() => _isLoading = false);
-        debugPrint('✅ Carga de direcciones finalizada');
+        debugPrint('âœ… Carga de direcciones finalizada');
       }
     }
   }
@@ -153,39 +153,39 @@ class _ClientDetailScreenState extends State<ClientDetailScreen>
   /// Carga las visitas del cliente de forma lazy (solo cuando se necesitan)
   Future<void> _loadVisitas() async {
     if (!mounted) {
-      debugPrint('⚠️ Widget no montado, cancelando carga de visitas');
+      debugPrint('âš ï¸ Widget no montado, cancelando carga de visitas');
       return;
     }
 
     // Si ya estamos cargando, no hacer nada (evitar llamadas concurrentes)
     if (_isLoadingVisitas) {
-      debugPrint('⚠️ Ya se está cargando visitas, omitiendo...');
+      debugPrint('âš ï¸ Ya se estÃ¡ cargando visitas, omitiendo...');
       return;
     }
 
     // Si ya tenemos visitas cargadas, solo continuar si _visitas es null
     if (_visitas != null) {
-      debugPrint('✅ Visitas ya cargadas, omitiendo...');
+      debugPrint('âœ… Visitas ya cargadas, omitiendo...');
       return;
     }
 
     setState(() => _isLoadingVisitas = true);
 
     try {
-      debugPrint('🔄 Cargando visitas del cliente ID: ${_client!.id}');
+      debugPrint('ðŸ”„ Cargando visitas del cliente ID: ${_client!.id}');
 
       final visitaProvider = context.read<VisitaProvider>();
 
       // Log antes de la llamada
       debugPrint(
-        '📤 Llamando a cargarVisitas(refresh: true, clienteId: ${_client!.id})',
+        'ðŸ“¤ Llamando a cargarVisitas(refresh: true, clienteId: ${_client!.id})',
       );
 
       await visitaProvider.cargarVisitas(refresh: true, clienteId: _client!.id);
 
       // Verificar si hay error en el provider
       if (visitaProvider.errorMessage != null) {
-        debugPrint('⚠️ Error del provider: ${visitaProvider.errorMessage}');
+        debugPrint('âš ï¸ Error del provider: ${visitaProvider.errorMessage}');
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
@@ -199,8 +199,8 @@ class _ClientDetailScreenState extends State<ClientDetailScreen>
 
       _visitas = visitaProvider.visitas;
 
-      // Log detallado después de la llamada
-      debugPrint('✅ Respuesta del provider:');
+      // Log detallado despuÃ©s de la llamada
+      debugPrint('âœ… Respuesta del provider:');
       debugPrint('   - Visitas cargadas: ${_visitas?.length ?? 0}');
       debugPrint('   - isLoading: ${visitaProvider.isLoading}');
       debugPrint('   - errorMessage: ${visitaProvider.errorMessage}');
@@ -210,11 +210,11 @@ class _ClientDetailScreenState extends State<ClientDetailScreen>
         );
       } else if (_visitas != null) {
         debugPrint(
-          '   - La lista de visitas está vacía (posiblemente no hay visitas para este cliente)',
+          '   - La lista de visitas estÃ¡ vacÃ­a (posiblemente no hay visitas para este cliente)',
         );
       }
     } catch (visitaError) {
-      debugPrint('❌ Error cargando visitas: $visitaError');
+      debugPrint('âŒ Error cargando visitas: $visitaError');
       _visitas = [];
 
       if (mounted) {
@@ -229,32 +229,32 @@ class _ClientDetailScreenState extends State<ClientDetailScreen>
     } finally {
       if (mounted) {
         setState(() => _isLoadingVisitas = false);
-        debugPrint('✅ Carga de visitas finalizada');
+        debugPrint('âœ… Carga de visitas finalizada');
       }
     }
   }
 
-  /// Recarga todos los datos del cliente (usado después de editar)
+  /// Recarga todos los datos del cliente (usado despuÃ©s de editar)
   Future<void> _reloadClientData() async {
     if (!mounted) {
-      debugPrint('⚠️ Widget no montado, cancelando recarga');
+      debugPrint('âš ï¸ Widget no montado, cancelando recarga');
       return;
     }
 
-    // Solo restablecer _addresses a null, NO establecer _isLoading aquí
+    // Solo restablecer _addresses a null, NO establecer _isLoading aquÃ­
     // porque _loadDirecciones() lo maneja internamente
     setState(() {
       _addresses = null; // Forzar recarga
     });
 
-    debugPrint('🔄 Recargando datos del cliente...');
+    debugPrint('ðŸ”„ Recargando datos del cliente...');
     await _loadDirecciones();
   }
 
   Future<void> _navigateToEditClient() async {
     if (_client == null) return;
 
-    // Navegar a la pantalla de edición y esperar el resultado
+    // Navegar a la pantalla de ediciÃ³n y esperar el resultado
     final result = await Navigator.push(
       context,
       MaterialPageRoute(
@@ -262,7 +262,7 @@ class _ClientDetailScreenState extends State<ClientDetailScreen>
       ),
     );
 
-    // Si se editó exitosamente el cliente, recargar los datos
+    // Si se editÃ³ exitosamente el cliente, recargar los datos
     if (result == true) {
       _reloadClientData();
     }
@@ -287,7 +287,6 @@ class _ClientDetailScreenState extends State<ClientDetailScreen>
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
         ),
-        customGradient: AppGradients.green,
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
@@ -327,7 +326,7 @@ class _ClientDetailScreenState extends State<ClientDetailScreen>
                         ),
                       ),
                       const SizedBox(width: 12),
-                      // Mostrar botón Ver en Mapa solo en tab de Direcciones
+                      // Mostrar botÃ³n Ver en Mapa solo en tab de Direcciones
                       if (_tabController.index == 1) ...[
                         Tooltip(
                           message: 'Ver ubicaciones en mapa',
@@ -407,7 +406,7 @@ class _ClientDetailScreenState extends State<ClientDetailScreen>
                     ),
                     tabs: const [
                       Tab(
-                        text: 'Información',
+                        text: 'InformaciÃ³n',
                         icon: Icon(Icons.info_outline, size: 20),
                       ),
                       Tab(
@@ -463,7 +462,7 @@ class _ClientDetailScreenState extends State<ClientDetailScreen>
         elevation: 0,
         icon: Icon(Icons.add_location, size: 24, color: colorScheme.onPrimary),
         label: Text(
-          'Agregar Dirección',
+          'Agregar DirecciÃ³n',
           style: TextStyle(
             fontWeight: FontWeight.w600,
             fontSize: AppTextStyles.bodyLarge(context).fontSize!,
@@ -563,15 +562,15 @@ class _ClientDetailScreenState extends State<ClientDetailScreen>
               ),
             ),
           ),
-          _buildInfoCard('Información Básica', [
+          _buildInfoCard('InformaciÃ³n BÃ¡sica', [
             _buildInfoRow('Nombre', _client!.nombre),
             if (_client!.razonSocial != null)
-              _buildInfoRow('Razón Social', _client!.razonSocial!),
+              _buildInfoRow('RazÃ³n Social', _client!.razonSocial!),
             if (_client!.nit != null) _buildInfoRow('NIT', _client!.nit!),
             if (_client!.email != null) _buildInfoRow('Email', _client!.email!),
             if (_client!.telefono != null)
               _buildContactRow(
-                'Teléfono',
+                'TelÃ©fono',
                 _client!.telefono!,
                 onCall: () => _makePhoneCall(_client!.telefono!),
                 onWhatsApp: () => _sendWhatsAppMessage(_client!.telefono!),
@@ -580,21 +579,21 @@ class _ClientDetailScreenState extends State<ClientDetailScreen>
               _buildInfoRow('Localidad', _getLocalidadName()),
             if (_client!.codigoCliente != null &&
                 _client!.codigoCliente!.isNotEmpty)
-              _buildInfoRow('Código Cliente', _client!.codigoCliente!),
-            _buildInfoRow('Activo', _client!.activo ? 'Sí' : 'No'),
+              _buildInfoRow('CÃ³digo Cliente', _client!.codigoCliente!),
+            _buildInfoRow('Activo', _client!.activo ? 'SÃ­' : 'No'),
           ]),
           const SizedBox(height: 16),
           // if (_hasValidCoordinates()) _buildMapCard(),
           const SizedBox(height: 16),
           if (_client!.categorias != null && _client!.categorias!.isNotEmpty)
-            _buildInfoCard('Categorías', [
+            _buildInfoCard('CategorÃ­as', [
               Wrap(
                 spacing: 8,
                 runSpacing: 8,
                 children: _client!.categorias!
                     .map(
                       (c) => Chip(
-                        label: Text(c.nombre ?? c.clave ?? 'Categoría'),
+                        label: Text(c.nombre ?? c.clave ?? 'CategorÃ­a'),
                         backgroundColor: Theme.of(
                           context,
                         ).colorScheme.primaryContainer,
@@ -610,7 +609,7 @@ class _ClientDetailScreenState extends State<ClientDetailScreen>
             ]),
           if (_client!.ventanasEntrega != null &&
               _client!.ventanasEntrega!.isNotEmpty)
-            _buildInfoCard('Días de visitas', [
+            _buildInfoCard('DÃ­as de visitas', [
               Column(
                 children: _client!.ventanasEntrega!
                     .map((v) => _buildDeliveryWindowRow(v))
@@ -649,7 +648,7 @@ class _ClientDetailScreenState extends State<ClientDetailScreen>
 
     // Si no hay coordenadas en el cliente, buscar en direcciones
     if (_addresses != null && _addresses!.isNotEmpty) {
-      // Buscar dirección principal con coordenadas
+      // Buscar direcciÃ³n principal con coordenadas
       final principalAddress = _addresses!.cast<ClientAddress?>().firstWhere(
         (address) =>
             address?.esPrincipal == true &&
@@ -662,7 +661,7 @@ class _ClientDetailScreenState extends State<ClientDetailScreen>
         return LatLng(principalAddress.latitud!, principalAddress.longitud!);
       }
 
-      // Si no hay dirección principal, usar la primera con coordenadas
+      // Si no hay direcciÃ³n principal, usar la primera con coordenadas
       final addressWithCoords = _addresses!.cast<ClientAddress?>().firstWhere(
         (address) => address?.latitud != null && address?.longitud != null,
         orElse: () => null,
@@ -687,7 +686,7 @@ class _ClientDetailScreenState extends State<ClientDetailScreen>
           Padding(
             padding: const EdgeInsets.all(16.0),
             child: Text(
-              'Ubicación',
+              'UbicaciÃ³n',
               style: TextStyle(
                 fontSize: AppTextStyles.headlineSmall(context).fontSize!,
                 fontWeight: FontWeight.bold,
@@ -733,7 +732,7 @@ class _ClientDetailScreenState extends State<ClientDetailScreen>
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Información del cliente
+                // InformaciÃ³n del cliente
                 Row(
                   children: [
                     Expanded(
@@ -751,7 +750,7 @@ class _ClientDetailScreenState extends State<ClientDetailScreen>
                           ),
                           if (_client!.codigoCliente != null)
                             Text(
-                              'Código: ${_client!.codigoCliente}',
+                              'CÃ³digo: ${_client!.codigoCliente}',
                               style: TextStyle(
                                 fontSize: AppTextStyles.bodySmall(
                                   context,
@@ -798,7 +797,7 @@ class _ClientDetailScreenState extends State<ClientDetailScreen>
                           }
                         },
                         icon: const Icon(Icons.directions),
-                        label: const Text('Cómo llegar'),
+                        label: const Text('CÃ³mo llegar'),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.blue,
                           foregroundColor: Colors.white,
@@ -837,7 +836,7 @@ class _ClientDetailScreenState extends State<ClientDetailScreen>
   }
 
   String _getClientAddressString() {
-    // Primero intentar usar dirección del cliente principal
+    // Primero intentar usar direcciÃ³n del cliente principal
     if (_client!.direcciones != null && _client!.direcciones!.isNotEmpty) {
       final principalAddress = _client!.direcciones!
           .cast<ClientAddress?>()
@@ -847,11 +846,11 @@ class _ClientDetailScreenState extends State<ClientDetailScreen>
           );
 
       if (principalAddress != null) {
-        return principalAddress.direccion ?? 'Sin dirección';
+        return principalAddress.direccion ?? 'Sin direcciÃ³n';
       }
 
-      // Si no hay dirección principal, usar la primera
-      return _client!.direcciones!.first.direccion ?? 'Sin dirección';
+      // Si no hay direcciÃ³n principal, usar la primera
+      return _client!.direcciones!.first.direccion ?? 'Sin direcciÃ³n';
     }
 
     // Si no hay direcciones en el cliente, usar las direcciones cargadas
@@ -862,13 +861,13 @@ class _ClientDetailScreenState extends State<ClientDetailScreen>
       );
 
       if (principalAddress != null) {
-        return principalAddress.direccion ?? 'Sin dirección';
+        return principalAddress.direccion ?? 'Sin direcciÃ³n';
       }
 
-      return _addresses!.first.direccion ?? 'Sin dirección';
+      return _addresses!.first.direccion ?? 'Sin direcciÃ³n';
     }
 
-    return 'Dirección no disponible';
+    return 'DirecciÃ³n no disponible';
   }
 
   String _getLocalidadName() {
@@ -954,14 +953,14 @@ class _ClientDetailScreenState extends State<ClientDetailScreen>
       'Domingo',
       'Lunes',
       'Martes',
-      'Miércoles',
+      'MiÃ©rcoles',
       'Jueves',
       'Viernes',
-      'Sábado',
+      'SÃ¡bado',
     ];
     final day = (v.diaSemana >= 0 && v.diaSemana <= 6)
         ? days[v.diaSemana]
-        : 'Día ${v.diaSemana}';
+        : 'DÃ­a ${v.diaSemana}';
     return ListTile(
       dense: true,
       contentPadding: const EdgeInsets.symmetric(horizontal: 8),
@@ -1047,7 +1046,7 @@ class _ClientDetailScreenState extends State<ClientDetailScreen>
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Eliminar Cliente'),
-        content: const Text('¿Está seguro de que desea eliminar este cliente?'),
+        content: const Text('Â¿EstÃ¡ seguro de que desea eliminar este cliente?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
@@ -1087,7 +1086,7 @@ class _ClientDetailScreenState extends State<ClientDetailScreen>
   }
 
   Future<void> _makePhoneCall(String phoneNumber) async {
-    // ✅ Usar el nuevo servicio robusto con reintentos
+    // âœ… Usar el nuevo servicio robusto con reintentos
     final success = await UrlLauncherService.makePhoneCall(phoneNumber);
 
     if (!success) {
@@ -1095,7 +1094,7 @@ class _ClientDetailScreenState extends State<ClientDetailScreen>
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text(
-            '❌ No se pudo realizar la llamada. Intenta de nuevo o verifica el número.',
+            'âŒ No se pudo realizar la llamada. Intenta de nuevo o verifica el nÃºmero.',
           ),
           duration: Duration(seconds: 3),
         ),
@@ -1104,7 +1103,7 @@ class _ClientDetailScreenState extends State<ClientDetailScreen>
   }
 
   Future<void> _sendWhatsAppMessage(String phoneNumber) async {
-    // ✅ Usar el nuevo servicio robusto con reintentos
+    // âœ… Usar el nuevo servicio robusto con reintentos
     final success = await UrlLauncherService.openWhatsApp(phoneNumber);
 
     if (!success) {
@@ -1123,17 +1122,17 @@ class _ClientDetailScreenState extends State<ClientDetailScreen>
       }
       return _buildProfileImage(_client!.fotoPerfil!);
     } catch (e, stackTrace) {
-      debugPrint('❌ Error crítico al construir imagen de perfil: $e');
+      debugPrint('âŒ Error crÃ­tico al construir imagen de perfil: $e');
       debugPrint('Stack trace: $stackTrace');
-      // En caso de cualquier error, mostrar el ícono por defecto
+      // En caso de cualquier error, mostrar el Ã­cono por defecto
       return const Icon(Icons.person, size: 58, color: Colors.green);
     }
   }
 
   Widget _buildProfileImage(String imagePath) {
-    // Validar que el imagePath no esté vacío
+    // Validar que el imagePath no estÃ© vacÃ­o
     if (imagePath.isEmpty) {
-      debugPrint('⚠️ ImagePath está vacío, mostrando fallback');
+      debugPrint('âš ï¸ ImagePath estÃ¡ vacÃ­o, mostrando fallback');
       return _buildFallbackAvatar();
     }
 
@@ -1141,15 +1140,15 @@ class _ClientDetailScreenState extends State<ClientDetailScreen>
     final urls = ImageUtils.buildMultipleImageUrls(imagePath);
 
     if (urls.isEmpty) {
-      debugPrint('⚠️ No se pudieron generar URLs para la imagen: $imagePath');
+      debugPrint('âš ï¸ No se pudieron generar URLs para la imagen: $imagePath');
       return _buildFallbackAvatar();
     }
 
-    debugPrint('🔍 Intentando cargar imagen de perfil desde URLs: $urls');
+    debugPrint('ðŸ” Intentando cargar imagen de perfil desde URLs: $urls');
 
     return GestureDetector(
       onTap: () {
-        // Solo mostrar imagen en pantalla completa si hay una URL válida
+        // Solo mostrar imagen en pantalla completa si hay una URL vÃ¡lida
         if (urls.isNotEmpty) {
           _showFullScreenImage(urls.first);
         }
@@ -1230,7 +1229,7 @@ class _ClientDetailScreenState extends State<ClientDetailScreen>
                   },
                 ),
               ),
-              // Botón de cerrar
+              // BotÃ³n de cerrar
               Positioned(
                 top: 40,
                 right: 20,
@@ -1260,7 +1259,7 @@ class _ClientDetailScreenState extends State<ClientDetailScreen>
   Widget _buildDireccionesTab() {
     final colorScheme = Theme.of(context).colorScheme;
 
-    // Si aún no hemos intentado cargar las direcciones
+    // Si aÃºn no hemos intentado cargar las direcciones
     if (_addresses == null) {
       return Center(
         child: Column(
@@ -1298,7 +1297,7 @@ class _ClientDetailScreenState extends State<ClientDetailScreen>
   }
 
   Widget _buildVisitasTab() {
-    // Si aún no hemos intentado cargar las visitas
+    // Si aÃºn no hemos intentado cargar las visitas
     if (_visitas == null) {
       return Center(
         child: Column(
@@ -1331,7 +1330,7 @@ class _ClientDetailScreenState extends State<ClientDetailScreen>
       child: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          // Sección de plan de visitas de ESTA SEMANA (SIEMPRE mostrar si hay ventanas)
+          // SecciÃ³n de plan de visitas de ESTA SEMANA (SIEMPRE mostrar si hay ventanas)
           if (tieneVentanasEntrega) _buildPlanSemanal(),
 
           // Si no hay ventanas pero hay visitas, mostrar solo historial
@@ -1368,7 +1367,7 @@ class _ClientDetailScreenState extends State<ClientDetailScreen>
                     const SizedBox(width: 12),
                     Expanded(
                       child: Text(
-                        'No hay días de visita programados para este cliente',
+                        'No hay dÃ­as de visita programados para este cliente',
                         style: TextStyle(
                           fontSize: AppTextStyles.bodyMedium(context).fontSize!,
                           color: Theme.of(context).colorScheme.onSurface,
@@ -1392,7 +1391,7 @@ class _ClientDetailScreenState extends State<ClientDetailScreen>
             const SizedBox(height: 16),
           ],
 
-          // Título del historial (solo si hay visitas)
+          // TÃ­tulo del historial (solo si hay visitas)
           if (_visitas!.isNotEmpty) ...[
             Padding(
               padding: const EdgeInsets.only(bottom: 16),
@@ -1532,7 +1531,7 @@ class _ClientDetailScreenState extends State<ClientDetailScreen>
           ),
           const SizedBox(height: 10),
 
-          // Estadísticas
+          // EstadÃ­sticas
           Row(
             children: [
               Expanded(
@@ -1540,7 +1539,7 @@ class _ClientDetailScreenState extends State<ClientDetailScreen>
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      '$visitasCumplidas de $visitasProgramadas días',
+                      '$visitasCumplidas de $visitasProgramadas dÃ­as',
                       style: TextStyle(
                         fontSize: AppTextStyles.bodySmall(context).fontSize!,
                         fontWeight: FontWeight.w600,
@@ -1560,7 +1559,7 @@ class _ClientDetailScreenState extends State<ClientDetailScreen>
             ],
           ),
 
-          // Alerta si hay días pendientes
+          // Alerta si hay dÃ­as pendientes
           if (diasPendientes.isNotEmpty) ...[
             const SizedBox(height: 12),
             Container(
@@ -1581,7 +1580,7 @@ class _ClientDetailScreenState extends State<ClientDetailScreen>
                       ),
                       const SizedBox(width: 8),
                       Text(
-                        'Días pendientes:',
+                        'DÃ­as pendientes:',
                         style: TextStyle(
                           fontSize: AppTextStyles.bodySmall(context).fontSize!,
                           fontWeight: FontWeight.w600,
@@ -1595,7 +1594,7 @@ class _ClientDetailScreenState extends State<ClientDetailScreen>
                     return Padding(
                       padding: const EdgeInsets.only(bottom: 4),
                       child: Text(
-                        '• $dia',
+                        'â€¢ $dia',
                         style: TextStyle(
                           fontSize: AppTextStyles.labelSmall(context).fontSize!,
                           color: Colors.orange.shade700,
@@ -1683,22 +1682,22 @@ class _ClientDetailScreenState extends State<ClientDetailScreen>
       'Domingo',
       'Lunes',
       'Martes',
-      'Miércoles',
+      'MiÃ©rcoles',
       'Jueves',
       'Viernes',
-      'Sábado',
+      'SÃ¡bado',
     ];
 
-    // Obtener información de la semana actual
+    // Obtener informaciÃ³n de la semana actual
     final ahora = DateTime.now();
     final inicioSemana = ahora.subtract(Duration(days: ahora.weekday % 7));
     final finSemana = inicioSemana.add(const Duration(days: 6));
 
     debugPrint(
-      '📅 Semana actual: ${inicioSemana.toLocal().toIso8601String()} a ${finSemana.toLocal().toIso8601String()}',
+      'ðŸ“… Semana actual: ${inicioSemana.toLocal().toIso8601String()} a ${finSemana.toLocal().toIso8601String()}',
     );
 
-    // Obtener días visitados EN ESTA SEMANA
+    // Obtener dÃ­as visitados EN ESTA SEMANA
     final ventanasActivas = _client!.ventanasEntrega!
         .where((v) => v.activo)
         .toList();
@@ -1707,13 +1706,13 @@ class _ClientDetailScreenState extends State<ClientDetailScreen>
     final Map<int, VisitaPreventistaCliente?> visitasPorDia = {};
 
     for (final ventana in ventanasActivas) {
-      // Buscar visita exitosa para este día EN ESTA SEMANA
+      // Buscar visita exitosa para este dÃ­a EN ESTA SEMANA
       final visita = _visitas!.where((visita) {
         final visitDate = visita.fechaHoraVisita;
         final visitDayIndex = visitDate.weekday % 7;
 
         // Verificar que sea:
-        // 1. El día correcto (lunes, martes, etc.)
+        // 1. El dÃ­a correcto (lunes, martes, etc.)
         // 2. Esta semana (entre inicioSemana y finSemana)
         // 3. Estado exitoso
         final esEseDia = visitDayIndex == ventana.diaSemana;
@@ -1727,9 +1726,9 @@ class _ClientDetailScreenState extends State<ClientDetailScreen>
       }).firstOrNull;
 
       if (visita != null) {
-        debugPrint('   ✓ Visitado el día ${ventana.diaSemana} esta semana');
+        debugPrint('   âœ“ Visitado el dÃ­a ${ventana.diaSemana} esta semana');
       } else {
-        debugPrint('   ✗ Pendiente el día ${ventana.diaSemana} esta semana');
+        debugPrint('   âœ— Pendiente el dÃ­a ${ventana.diaSemana} esta semana');
       }
 
       visitasPorDia[ventana.diaSemana] = visita;
@@ -1750,13 +1749,13 @@ class _ClientDetailScreenState extends State<ClientDetailScreen>
         ? Colors.red
         : Colors.orange;
 
-    // Ordenar ventanas por día de semana
+    // Ordenar ventanas por dÃ­a de semana
     final ventanasOrdenadas = [...ventanasActivas]
       ..sort((a, b) => a.diaSemana.compareTo(b.diaSemana));
 
     return Column(
       children: [
-        // Encabezado con título
+        // Encabezado con tÃ­tulo
         Container(
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
@@ -1792,7 +1791,7 @@ class _ClientDetailScreenState extends State<ClientDetailScreen>
                       ),
                     ),
                     Text(
-                      'Cumplimiento: $visitasCumplidas de $visitasProgramadas días',
+                      'Cumplimiento: $visitasCumplidas de $visitasProgramadas dÃ­as',
                       style: TextStyle(
                         fontSize: AppTextStyles.bodySmall(context).fontSize!,
                         color: colorScheme.onSurface.withOpacity(0.6),
@@ -1840,7 +1839,7 @@ class _ClientDetailScreenState extends State<ClientDetailScreen>
         ),
         const SizedBox(height: 20),
 
-        // Botón para marcar nueva visita
+        // BotÃ³n para marcar nueva visita
         SizedBox(
           width: double.infinity,
           child: ElevatedButton.icon(
@@ -1867,7 +1866,7 @@ class _ClientDetailScreenState extends State<ClientDetailScreen>
         ),
         const SizedBox(height: 20),
 
-        // Lista de días de esta semana
+        // Lista de dÃ­as de esta semana
         ...ventanasOrdenadas.map((ventana) {
           final visita = visitasPorDia[ventana.diaSemana];
           final visitado = visita != null;
@@ -2061,13 +2060,13 @@ class _ClientDetailScreenState extends State<ClientDetailScreen>
       'Domingo',
       'Lunes',
       'Martes',
-      'Miércoles',
+      'MiÃ©rcoles',
       'Jueves',
       'Viernes',
-      'Sábado',
+      'SÃ¡bado',
     ];
 
-    // Obtener días visitados en esta semana
+    // Obtener dÃ­as visitados en esta semana
     final ventanasActivas = _client!.ventanasEntrega!
         .where((v) => v.activo)
         .toList();
@@ -2076,15 +2075,15 @@ class _ClientDetailScreenState extends State<ClientDetailScreen>
     final Map<int, VisitaPreventistaCliente?> visitasPorDia = {};
 
     debugPrint(
-      '🔍 Buscando visitas para ${ventanasActivas.length} días programados',
+      'ðŸ” Buscando visitas para ${ventanasActivas.length} dÃ­as programados',
     );
-    debugPrint('📊 Total de visitas cargadas: ${_visitas!.length}');
+    debugPrint('ðŸ“Š Total de visitas cargadas: ${_visitas!.length}');
 
     for (final ventana in ventanasActivas) {
-      // Buscar visita exitosa para este día
-      // Nota: En BD, dia_semana es 0=domingo a 6=sábado
+      // Buscar visita exitosa para este dÃ­a
+      // Nota: En BD, dia_semana es 0=domingo a 6=sÃ¡bado
       // En Dart, DateTime.weekday es 1=lunes a 7=domingo
-      // Entonces weekday % 7 convierte a: 0=domingo, 1=lunes, ..., 6=sábado ✓
+      // Entonces weekday % 7 convierte a: 0=domingo, 1=lunes, ..., 6=sÃ¡bado âœ“
       final visita = _visitas!.where((visita) {
         final visitDate = visita.fechaHoraVisita;
         final visitDayIndex = visitDate.weekday % 7;
@@ -2094,18 +2093,18 @@ class _ClientDetailScreenState extends State<ClientDetailScreen>
 
       if (visita != null) {
         debugPrint(
-          '   ✓ Encontrada visita para día ${ventana.diaSemana}: ${visita.fechaHoraVisita.toLocal()}',
+          '   âœ“ Encontrada visita para dÃ­a ${ventana.diaSemana}: ${visita.fechaHoraVisita.toLocal()}',
         );
       } else {
         debugPrint(
-          '   ✗ Sin visita exitosa para día programado ${ventana.diaSemana}',
+          '   âœ— Sin visita exitosa para dÃ­a programado ${ventana.diaSemana}',
         );
       }
 
       visitasPorDia[ventana.diaSemana] = visita;
     }
 
-    // Calcular estadísticas
+    // Calcular estadÃ­sticas
     int visitasCumplidas = visitasPorDia.values.where((v) => v != null).length;
     int visitasProgramadas = ventanasActivas.length;
     final porcentajeCumplimiento = visitasProgramadas > 0
@@ -2134,7 +2133,7 @@ class _ClientDetailScreenState extends State<ClientDetailScreen>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Título
+          // TÃ­tulo
           Row(
             children: [
               Container(
@@ -2151,7 +2150,7 @@ class _ClientDetailScreenState extends State<ClientDetailScreen>
               ),
               const SizedBox(width: 12),
               Text(
-                'Días Programados para Visita',
+                'DÃ­as Programados para Visita',
                 style: TextStyle(
                   fontSize: AppTextStyles.bodyLarge(context).fontSize!,
                   fontWeight: FontWeight.bold,
@@ -2239,7 +2238,7 @@ class _ClientDetailScreenState extends State<ClientDetailScreen>
     Map<int, VisitaPreventistaCliente?> visitasPorDia,
     List<String> days,
   ) {
-    // Calcular estadísticas
+    // Calcular estadÃ­sticas
     int visitasCumplidas = visitasPorDia.values.where((v) => v != null).length;
     int visitasProgramadas = ventanasActivas.length;
     final porcentajeCumplimiento = visitasProgramadas > 0
@@ -2254,13 +2253,13 @@ class _ClientDetailScreenState extends State<ClientDetailScreen>
         ? Colors.red
         : Colors.orange;
 
-    // Ordenar ventanas por día de semana
+    // Ordenar ventanas por dÃ­a de semana
     final ventanasOrdenadas = [...ventanasActivas]
       ..sort((a, b) => a.diaSemana.compareTo(b.diaSemana));
 
     return Column(
       children: [
-        // Título
+        // TÃ­tulo
         Row(
           children: [
             Container(
@@ -2289,7 +2288,7 @@ class _ClientDetailScreenState extends State<ClientDetailScreen>
                     ),
                   ),
                   Text(
-                    'Cumplimiento: $visitasCumplidas de $visitasProgramadas días ($porcentajeCumplimiento%)',
+                    'Cumplimiento: $visitasCumplidas de $visitasProgramadas dÃ­as ($porcentajeCumplimiento%)',
                     style: TextStyle(
                       fontSize: AppTextStyles.bodySmall(context).fontSize!,
                       color: Colors.grey.shade600,
@@ -2331,7 +2330,7 @@ class _ClientDetailScreenState extends State<ClientDetailScreen>
         ),
         const SizedBox(height: 20),
 
-        // Lista de días - ENFOQUE PRINCIPAL
+        // Lista de dÃ­as - ENFOQUE PRINCIPAL
         ...ventanasOrdenadas.map((ventana) {
           final visita = visitasPorDia[ventana.diaSemana];
           final visitado = visita != null;
@@ -2519,7 +2518,7 @@ class _ClientDetailScreenState extends State<ClientDetailScreen>
             ),
             const SizedBox(height: 8),
             Text(
-              'Agrega la primera dirección para este cliente',
+              'Agrega la primera direcciÃ³n para este cliente',
               style: TextStyle(
                 fontSize: AppTextStyles.bodyMedium(context).fontSize!,
                 color: colorScheme.onSurface.withOpacity(0.6),
@@ -2530,7 +2529,7 @@ class _ClientDetailScreenState extends State<ClientDetailScreen>
             ElevatedButton.icon(
               onPressed: _agregarDireccion,
               icon: const Icon(Icons.add_location),
-              label: const Text('Agregar Primera Dirección'),
+              label: const Text('Agregar Primera DirecciÃ³n'),
               style: ElevatedButton.styleFrom(
                 padding: const EdgeInsets.symmetric(
                   horizontal: 32,
@@ -2582,7 +2581,7 @@ class _ClientDetailScreenState extends State<ClientDetailScreen>
                   child: Column(
                     children: [
                       Text(
-                        'Este cliente tiene $diasProgramados día(s) de visita programado(s), pero aún no hay registros de visitas.',
+                        'Este cliente tiene $diasProgramados dÃ­a(s) de visita programado(s), pero aÃºn no hay registros de visitas.',
                         style: TextStyle(
                           fontSize: AppTextStyles.bodyMedium(context).fontSize!,
                           color: Colors.grey.shade600,
@@ -2607,7 +2606,7 @@ class _ClientDetailScreenState extends State<ClientDetailScreen>
                             const SizedBox(width: 12),
                             Expanded(
                               child: Text(
-                                'El preventista aún no ha registrado visitas para este cliente en los días programados.',
+                                'El preventista aÃºn no ha registrado visitas para este cliente en los dÃ­as programados.',
                                 style: TextStyle(
                                   fontSize: AppTextStyles.bodySmall(
                                     context,
@@ -2626,7 +2625,7 @@ class _ClientDetailScreenState extends State<ClientDetailScreen>
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16),
                   child: Text(
-                    'No hay visitas registradas y no hay días de visita programados para este cliente.',
+                    'No hay visitas registradas y no hay dÃ­as de visita programados para este cliente.',
                     style: TextStyle(
                       fontSize: AppTextStyles.bodyMedium(context).fontSize!,
                       color: Colors.grey.shade600,
@@ -2673,7 +2672,7 @@ class _ClientDetailScreenState extends State<ClientDetailScreen>
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Header con título y badge principal
+                // Header con tÃ­tulo y badge principal
                 Row(
                   children: [
                     Container(
@@ -2757,7 +2756,7 @@ class _ClientDetailScreenState extends State<ClientDetailScreen>
                 ),
                 const SizedBox(height: 16),
 
-                // Detalles de ubicación
+                // Detalles de ubicaciÃ³n
                 if (direccion.ciudad != null || direccion.departamento != null)
                   Padding(
                     padding: const EdgeInsets.only(bottom: 8),
@@ -2924,7 +2923,7 @@ class _ClientDetailScreenState extends State<ClientDetailScreen>
     if (_client == null || direccion.id == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('No se puede marcar como principal esta dirección'),
+          content: Text('No se puede marcar como principal esta direcciÃ³n'),
           backgroundColor: Colors.orange,
         ),
       );
@@ -2936,7 +2935,7 @@ class _ClientDetailScreenState extends State<ClientDetailScreen>
       builder: (context) => AlertDialog(
         title: const Text('Marcar como Principal'),
         content: Text(
-          '¿Deseas marcar esta dirección como principal?\n\n${direccion.direccion ?? ''}',
+          'Â¿Deseas marcar esta direcciÃ³n como principal?\n\n${direccion.direccion ?? ''}',
         ),
         actions: [
           TextButton(
@@ -2961,7 +2960,7 @@ class _ClientDetailScreenState extends State<ClientDetailScreen>
         if (success) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text('Dirección marcada como principal'),
+              content: Text('DirecciÃ³n marcada como principal'),
               backgroundColor: Colors.green,
             ),
           );
@@ -2985,7 +2984,7 @@ class _ClientDetailScreenState extends State<ClientDetailScreen>
     if (_client == null || direccion.id == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('No se puede eliminar esta dirección'),
+          content: Text('No se puede eliminar esta direcciÃ³n'),
           backgroundColor: Colors.orange,
         ),
       );
@@ -2996,7 +2995,7 @@ class _ClientDetailScreenState extends State<ClientDetailScreen>
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text(
-            'No se puede eliminar la dirección principal. Marca otra como principal primero.',
+            'No se puede eliminar la direcciÃ³n principal. Marca otra como principal primero.',
           ),
           backgroundColor: Colors.orange,
           duration: Duration(seconds: 4),
@@ -3008,9 +3007,9 @@ class _ClientDetailScreenState extends State<ClientDetailScreen>
     final confirmar = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Eliminar Dirección'),
+        title: const Text('Eliminar DirecciÃ³n'),
         content: Text(
-          '¿Estás seguro de eliminar esta dirección?\n\n${direccion.direccion ?? ''}',
+          'Â¿EstÃ¡s seguro de eliminar esta direcciÃ³n?\n\n${direccion.direccion ?? ''}',
         ),
         actions: [
           TextButton(
@@ -3036,7 +3035,7 @@ class _ClientDetailScreenState extends State<ClientDetailScreen>
         if (success) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text('Dirección eliminada correctamente'),
+              content: Text('DirecciÃ³n eliminada correctamente'),
               backgroundColor: Colors.green,
             ),
           );
@@ -3045,7 +3044,7 @@ class _ClientDetailScreenState extends State<ClientDetailScreen>
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(
-                _clientProvider.errorMessage ?? 'Error al eliminar dirección',
+                _clientProvider.errorMessage ?? 'Error al eliminar direcciÃ³n',
               ),
               backgroundColor: Colors.red,
             ),
@@ -3222,18 +3221,18 @@ class _ClientDetailScreenState extends State<ClientDetailScreen>
                 spacing: 8,
                 runSpacing: 8,
                 children: [
-                  // Botón ver ubicación
+                  // BotÃ³n ver ubicaciÃ³n
                   TextButton.icon(
                     onPressed: () =>
                         _abrirEnMaps(visita.latitud, visita.longitud),
                     icon: const Icon(Icons.map, size: 18),
-                    label: const Text('Ver ubicación'),
+                    label: const Text('Ver ubicaciÃ³n'),
                     style: TextButton.styleFrom(
                       foregroundColor: colorScheme.primary,
                     ),
                   ),
 
-                  // Botón ver foto (si existe)
+                  // BotÃ³n ver foto (si existe)
                   if (visita.fotoLocal != null)
                     TextButton.icon(
                       onPressed: () => _mostrarFotoVisita(visita.fotoLocal!),
@@ -3356,7 +3355,7 @@ class _ClientDetailScreenState extends State<ClientDetailScreen>
                   },
                 ),
               ),
-              // Botón de cerrar
+              // BotÃ³n de cerrar
               Positioned(
                 top: 40,
                 right: 20,
@@ -3384,8 +3383,8 @@ class _ClientDetailScreenState extends State<ClientDetailScreen>
   }
 }
 
-/// Widget auxiliar que intenta cargar una imagen desde múltiples URLs
-/// Si falla, muestra inmediatamente un ícono de perfil
+/// Widget auxiliar que intenta cargar una imagen desde mÃºltiples URLs
+/// Si falla, muestra inmediatamente un Ã­cono de perfil
 class _ImageWithFallback extends StatefulWidget {
   final List<String> urls;
   final double width;
@@ -3416,7 +3415,7 @@ class _ImageWithFallbackState extends State<_ImageWithFallback> {
   void initState() {
     super.initState();
     debugPrint(
-      '🖼️ Inicializando _ImageWithFallback con ${widget.urls.length} URLs',
+      'ðŸ–¼ï¸ Inicializando _ImageWithFallback con ${widget.urls.length} URLs',
     );
   }
 
@@ -3424,7 +3423,7 @@ class _ImageWithFallbackState extends State<_ImageWithFallback> {
   void didUpdateWidget(_ImageWithFallback oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.urls != widget.urls) {
-      debugPrint('🔄 URLs cambiadas, reseteando estado');
+      debugPrint('ðŸ”„ URLs cambiadas, reseteando estado');
       setState(() {
         _currentUrlIndex = 0;
         _hasError = false;
@@ -3440,13 +3439,13 @@ class _ImageWithFallbackState extends State<_ImageWithFallback> {
       setState(() {
         _currentUrlIndex++;
         debugPrint(
-          '🔄 Intentando URL ${_currentUrlIndex + 1}/${widget.urls.length}: ${widget.urls[_currentUrlIndex]}',
+          'ðŸ”„ Intentando URL ${_currentUrlIndex + 1}/${widget.urls.length}: ${widget.urls[_currentUrlIndex]}',
         );
       });
     } else {
       setState(() {
         _hasError = true;
-        debugPrint('❌ Todas las URLs fallaron, mostrando fallback');
+        debugPrint('âŒ Todas las URLs fallaron, mostrando fallback');
       });
     }
   }
@@ -3480,7 +3479,7 @@ class _ImageWithFallbackState extends State<_ImageWithFallback> {
                   if (mounted) {
                     setState(() => _imageLoaded = true);
                     debugPrint(
-                      '✅ Imagen cargada exitosamente desde: ${widget.urls[_currentUrlIndex]}',
+                      'âœ… Imagen cargada exitosamente desde: ${widget.urls[_currentUrlIndex]}',
                     );
                   }
                 });
@@ -3492,9 +3491,9 @@ class _ImageWithFallbackState extends State<_ImageWithFallback> {
           },
           errorBuilder: (context, error, stackTrace) {
             debugPrint(
-              '❌ Error cargando imagen desde: ${widget.urls[_currentUrlIndex]}',
+              'âŒ Error cargando imagen desde: ${widget.urls[_currentUrlIndex]}',
             );
-            debugPrint('❌ Error: $error');
+            debugPrint('âŒ Error: $error');
 
             // Intentar siguiente URL en el siguiente frame
             WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -3509,3 +3508,4 @@ class _ImageWithFallbackState extends State<_ImageWithFallback> {
     );
   }
 }
+

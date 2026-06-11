@@ -309,6 +309,7 @@ class ProformaService {
         'tipo_entrega': tipoEntrega,
         'fecha_programada': fechaProgramada.toIso8601String(),
         'politica_pago': politicaPago,
+        'requiere_envio': tipoEntrega == 'DELIVERY', // ✅ Nuevo: indica si requiere envío
       };
 
       // Agregar dirección SOLO si es DELIVERY
@@ -334,6 +335,7 @@ class ProformaService {
       debugPrint('📋 Creando PROFORMA con ${items.length} productos');
       debugPrint('   Cliente: $clienteId');
       debugPrint('   Tipo entrega: $tipoEntrega');
+      debugPrint('   Requiere envío: ${tipoEntrega == 'DELIVERY'}');
       debugPrint('   Política pago: $politicaPago');
       if (tipoEntrega == 'DELIVERY' && direccionId != null) {
         debugPrint('   Dirección: $direccionId');
@@ -574,6 +576,7 @@ class ProformaService {
         'tipo_entrega': tipoEntrega,
         'fecha_programada': fechaProgramada.toIso8601String(),
         'politica_pago': politicaPago,
+        'requiere_envio': tipoEntrega == 'DELIVERY', // ✅ Nuevo: indica si requiere envío
       };
 
       // Agregar dirección SOLO si es DELIVERY

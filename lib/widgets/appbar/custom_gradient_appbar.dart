@@ -1,28 +1,17 @@
 import 'package:flutter/material.dart';
-import '../../config/config.dart';
 
-/// AppBar moderno con gradientes automáticos basados en roles o personalizables
+/// AppBar simple que respeta los temas claro/oscuro del dispositivo
 ///
 /// Características:
-/// - Gradientes automáticos por rol (admin, preventista, cliente, chofer)
-/// - Gradientes personalizados
+/// - Usa colores del tema (no gradientes)
+/// - Respeta preferencias light/dark del dispositivo
 /// - Support para acciones (actions)
 /// - Totalmente reutilizable
 ///
-/// Ejemplo básico con rol:
+/// Ejemplo:
 /// ```dart
 /// CustomGradientAppBar(
 ///   title: 'Mi Pantalla',
-///   userRole: 'cliente',
-/// )
-/// ```
-///
-/// Ejemplo con gradiente personalizado:
-/// ```dart
-/// CustomGradientAppBar(
-///   title: 'Editar',
-///   customGradient: AppGradients.orange,
-///   actions: [RefreshAction(...)],
 /// )
 /// ```
 class CustomGradientAppBar extends StatelessWidget implements PreferredSizeWidget {
@@ -32,13 +21,6 @@ class CustomGradientAppBar extends StatelessWidget implements PreferredSizeWidge
   /// Widget personalizado para el título (alternativa a title)
   final Widget? titleWidget;
 
-  /// Rol del usuario para obtener gradiente automático
-  /// Soporta: 'admin', 'preventista', 'cliente', 'chofer'
-  final String? userRole;
-
-  /// Gradiente personalizado (sobrescribe el gradiente por rol)
-  final Gradient? customGradient;
-
   /// Lista de acciones (botones) en el AppBar
   final List<Widget>? actions;
 
@@ -47,12 +29,6 @@ class CustomGradientAppBar extends StatelessWidget implements PreferredSizeWidge
 
   /// Elevación del AppBar (sombra)
   final double elevation;
-
-  /// Color del texto del título
-  final Color titleColor;
-
-  /// Color de los iconos
-  final Color iconColor;
 
   /// Si el título está centrado
   final bool centerTitle;
@@ -64,13 +40,9 @@ class CustomGradientAppBar extends StatelessWidget implements PreferredSizeWidge
     super.key,
     this.title,
     this.titleWidget,
-    this.userRole,
-    this.customGradient,
     this.actions,
     this.leading,
     this.elevation = 0,
-    this.titleColor = Colors.white,
-    this.iconColor = Colors.white,
     this.centerTitle = false,
     this.bottom,
   })  : assert(
@@ -80,37 +52,18 @@ class CustomGradientAppBar extends StatelessWidget implements PreferredSizeWidge
 
   @override
   Widget build(BuildContext context) {
-    final gradient = _getGradient();
-
     return AppBar(
       title: titleWidget ??
           Text(
             title!,
-            style: TextStyle(
-              fontWeight: FontWeight.bold,
-              color: titleColor,
-            ),
+            style: const TextStyle(fontWeight: FontWeight.bold),
           ),
       elevation: elevation,
       centerTitle: centerTitle,
       leading: leading,
       actions: actions,
-      iconTheme: IconThemeData(color: iconColor),
-      flexibleSpace: Container(
-        decoration: BoxDecoration(gradient: gradient),
-      ),
       bottom: bottom,
     );
-  }
-
-  /// Obtiene el gradiente a usar
-  /// Prioridad: customGradient > userRole > default (azul)
-  Gradient _getGradient() {
-    if (customGradient != null) return customGradient!;
-    if (userRole != null && userRole!.isNotEmpty) {
-      return AppGradients.getRoleGradient(userRole!);
-    }
-    return AppGradients.blue;
   }
 
   @override

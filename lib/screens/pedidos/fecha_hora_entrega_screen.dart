@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import '../../models/models.dart';
 import '../../widgets/widgets.dart';
 import '../../widgets/custom_time_picker_dialog.dart';
@@ -21,7 +21,7 @@ class _FechaHoraEntregaScreenState extends State<FechaHoraEntregaScreen> {
   final TextEditingController _observacionesController =
       TextEditingController();
 
-  // Detectar si es PICKUP (dirección es null) o DELIVERY (dirección no es null)
+  // Detectar si es PICKUP (direcciÃ³n es null) o DELIVERY (direcciÃ³n no es null)
   bool get esPickup => widget.direccion == null;
 
   @override
@@ -46,7 +46,7 @@ class _FechaHoraEntregaScreenState extends State<FechaHoraEntregaScreen> {
       now.year,
       now.month,
       now.day,
-    ); // Hoy es el mínimo
+    ); // Hoy es el mÃ­nimo
     final DateTime lastDate = now.add(const Duration(days: 30));
 
     final DateTime? picked = await showDatePicker(
@@ -135,10 +135,10 @@ class _FechaHoraEntregaScreenState extends State<FechaHoraEntregaScreen> {
     final dias = [
       'Lunes',
       'Martes',
-      'Miércoles',
+      'MiÃ©rcoles',
       'Jueves',
       'Viernes',
-      'Sábado',
+      'SÃ¡bado',
       'Domingo',
     ];
 
@@ -164,12 +164,11 @@ class _FechaHoraEntregaScreenState extends State<FechaHoraEntregaScreen> {
     return Scaffold(
       appBar: CustomGradientAppBar(
         title: esPickup ? 'Fecha y Hora de Retiro' : 'Fecha y Hora de Entrega',
-        customGradient: AppGradients.blue,
       ),
       body: SingleChildScrollView(
         child: Column(
           children: [
-            // Header con información
+            // Header con informaciÃ³n
             Container(
               width: double.infinity,
               padding: const EdgeInsets.all(16),
@@ -179,8 +178,8 @@ class _FechaHoraEntregaScreenState extends State<FechaHoraEntregaScreen> {
                 children: [
                   Text(
                     esPickup
-                        ? '¿Cuándo deseas retirar tu pedido?'
-                        : '¿Cuándo deseas recibir tu pedido?',
+                        ? 'Â¿CuÃ¡ndo deseas retirar tu pedido?'
+                        : 'Â¿CuÃ¡ndo deseas recibir tu pedido?',
                     style: TextStyle(
                       fontSize: AppTextStyles.bodyLarge(context).fontSize!,
                       fontWeight: FontWeight.w500,
@@ -206,7 +205,7 @@ class _FechaHoraEntregaScreenState extends State<FechaHoraEntregaScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Mostrar dirección SOLO si es DELIVERY
+                  // Mostrar direcciÃ³n SOLO si es DELIVERY
                   if (!esPickup)
                     Card(
                       color: colorScheme.surface,
@@ -221,7 +220,7 @@ class _FechaHoraEntregaScreenState extends State<FechaHoraEntregaScreen> {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
-                                    'Dirección de entrega',
+                                    'DirecciÃ³n de entrega',
                                     style: TextStyle(
                                       fontSize: AppTextStyles.bodySmall(
                                         context,
@@ -245,7 +244,7 @@ class _FechaHoraEntregaScreenState extends State<FechaHoraEntregaScreen> {
                       ),
                     ),
 
-                  // Mostrar info de almacén SI es PICKUP
+                  // Mostrar info de almacÃ©n SI es PICKUP
                   if (esPickup)
                     Card(
                       color: isDark
@@ -285,7 +284,7 @@ class _FechaHoraEntregaScreenState extends State<FechaHoraEntregaScreen> {
                                   ),
                                   const SizedBox(height: 4),
                                   Text(
-                                    'Almacén Principal',
+                                    'AlmacÃ©n Principal',
                                     style: TextStyle(
                                       fontWeight: FontWeight.w600,
                                       color: Color(0xFFFFC107),
@@ -301,7 +300,7 @@ class _FechaHoraEntregaScreenState extends State<FechaHoraEntregaScreen> {
 
                   const SizedBox(height: 24),
 
-                  // Selección de fecha
+                  // SelecciÃ³n de fecha
                   Text(
                     'Fecha programada',
                     style: TextStyle(
@@ -545,7 +544,7 @@ class _FechaHoraEntregaScreenState extends State<FechaHoraEntregaScreen> {
 
                   const SizedBox(height: 24),
 
-                  // Información adicional
+                  // InformaciÃ³n adicional
                   Container(
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
@@ -569,7 +568,7 @@ class _FechaHoraEntregaScreenState extends State<FechaHoraEntregaScreen> {
                         const SizedBox(width: 12),
                         Expanded(
                           child: Text(
-                            'Fecha y horario son referenciales. El tiempo exacto se coordinará una vez aprobada tu proforma.',
+                            'Fecha y horario son referenciales. El tiempo exacto se coordinarÃ¡ una vez aprobada tu proforma.',
                             style: TextStyle(
                               fontSize: AppTextStyles.bodySmall(
                                 context,
@@ -626,3 +625,4 @@ class _FechaHoraEntregaScreenState extends State<FechaHoraEntregaScreen> {
     );
   }
 }
+

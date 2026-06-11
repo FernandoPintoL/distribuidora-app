@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../models/ruta.dart';
 import '../../providers/ruta_provider.dart';
@@ -30,7 +30,7 @@ class _MisRutasScreenState extends State<MisRutasScreen> {
     );
   }
 
-  /// Mostrar notificación cuando se asigna una ruta nueva
+  /// Mostrar notificaciÃ³n cuando se asigna una ruta nueva
   void _mostrarNotificacionRutaNueva() {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -40,7 +40,7 @@ class _MisRutasScreenState extends State<MisRutasScreen> {
             SizedBox(width: 12),
             Expanded(
               child: Text(
-                '📍 Nueva ruta asignada',
+                'ðŸ“ Nueva ruta asignada',
                 style: TextStyle(color: Colors.white),
               ),
             ),
@@ -62,7 +62,7 @@ class _MisRutasScreenState extends State<MisRutasScreen> {
             SizedBox(width: 12),
             Expanded(
               child: Text(
-                '📝 Ruta modificada',
+                'ðŸ“ Ruta modificada',
                 style: TextStyle(color: Colors.white),
               ),
             ),
@@ -84,7 +84,7 @@ class _MisRutasScreenState extends State<MisRutasScreen> {
             SizedBox(width: 12),
             Expanded(
               child: Text(
-                '📦 Parada actualizada',
+                'ðŸ“¦ Parada actualizada',
                 style: TextStyle(color: Colors.white),
               ),
             ),
@@ -102,7 +102,6 @@ class _MisRutasScreenState extends State<MisRutasScreen> {
     return Scaffold(
       appBar: CustomGradientAppBar(
         title: 'Mis Rutas',
-        customGradient: AppGradients.green,
         actions: [
           Padding(
             padding: const EdgeInsets.all(8.0),
@@ -137,7 +136,7 @@ class _MisRutasScreenState extends State<MisRutasScreen> {
                             ),
                             const SizedBox(width: 8),
                             Text(
-                              connected ? 'En línea' : 'Sin conexión',
+                              connected ? 'En lÃ­nea' : 'Sin conexiÃ³n',
                               style: TextStyle(
                                 color: Colors.white,
                                 fontSize: AppTextStyles.bodySmall(
@@ -216,7 +215,7 @@ class _MisRutasScreenState extends State<MisRutasScreen> {
                         ),
                         const SizedBox(height: 8),
                         Text(
-                          'Las nuevas rutas aparecerán aquí',
+                          'Las nuevas rutas aparecerÃ¡n aquÃ­',
                           style: TextStyle(
                             color: Colors.grey[500],
                             fontSize: 12,
@@ -288,7 +287,7 @@ class _MisRutasScreenState extends State<MisRutasScreen> {
                     ),
                   ),
                   Text(
-                    '${ruta.cantidadParadas} paradas • ${ruta.distanciaKm?.toStringAsFixed(1) ?? 'N/A'} km',
+                    '${ruta.cantidadParadas} paradas â€¢ ${ruta.distanciaKm?.toStringAsFixed(1) ?? 'N/A'} km',
                     style: TextStyle(color: Colors.grey[600], fontSize: 12),
                   ),
                 ],
@@ -318,15 +317,15 @@ class _MisRutasScreenState extends State<MisRutasScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Información de Vehículo
+                // InformaciÃ³n de VehÃ­culo
                 _buildInfoRow(
                   icon: Icons.directions_car,
-                  label: 'Vehículo',
+                  label: 'VehÃ­culo',
                   value: ruta.vehiculoPlaca,
                 ),
                 const Divider(),
 
-                // Información de horarios
+                // InformaciÃ³n de horarios
                 if (ruta.horaSalida != null)
                   _buildInfoRow(
                     icon: Icons.access_time,
@@ -348,7 +347,7 @@ class _MisRutasScreenState extends State<MisRutasScreen> {
 
                 const SizedBox(height: 12),
 
-                // Botones de acción
+                // Botones de acciÃ³n
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                   children: [
@@ -468,3 +467,4 @@ class _MisRutasScreenState extends State<MisRutasScreen> {
     // TODO: Llamar a API para marcar ruta como "en_progreso"
   }
 }
+

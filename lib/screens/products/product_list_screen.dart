@@ -16,7 +16,7 @@ class ProductListScreen extends StatefulWidget {
 }
 
 class _ProductListScreenState extends State<ProductListScreen>
-    with TickerProviderStateMixin {
+    with TickerProviderStateMixin, WidgetsBindingObserver {
   final _searchController = TextEditingController();
   final _scrollController = ScrollController();
   final _searchFocusNode = FocusNode();
@@ -29,6 +29,7 @@ class _ProductListScreenState extends State<ProductListScreen>
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _scrollController.addListener(_onScroll);
     _searchFocusNode.addListener(_onSearchFocusChanged);
 
@@ -41,9 +42,26 @@ class _ProductListScreenState extends State<ProductListScreen>
       final filtrosProvider = context.read<FiltrosProductoProvider>();
       filtrosProvider.loadFiltros();
 
-      _loadProductsIfNeeded();
+      _reloadProducts();
       _listAnimationController.forward(from: 0.0);
     });
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _reloadProducts();
+    }
+  }
+
+  void _reloadProducts() {
+    final productProvider = context.read<ProductProvider>();
+    final filtrosProvider = context.read<FiltrosProductoProvider>();
+    productProvider.clearProducts();
+    productProvider.loadProducts(
+      categoryId: filtrosProvider.categoriaIdSeleccionada,
+      brandId: filtrosProvider.marcaIdSeleccionada,
+    );
   }
 
   void _onSearchFocusChanged() {
@@ -61,6 +79,7 @@ class _ProductListScreenState extends State<ProductListScreen>
     _searchFocusNode.dispose();
     _listAnimationController.dispose();
     _debounceTimer?.cancel();
+    WidgetsBinding.instance.removeObserver(this);
     super.dispose();
   }
 

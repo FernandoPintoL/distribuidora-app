@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:provider/provider.dart';
 import '../../models/models.dart';
@@ -11,11 +11,11 @@ import '../../widgets/dialogs/renovacion_reservas_dialog.dart';
 import '../../widgets/dialogs/print_format_dialog.dart';
 import '../../widgets/dialogs/payment_registration_dialog.dart';
 import '../../config/config.dart';
-import '../../services/estados_helpers.dart'; // ✅ AGREGADO para estados dinámicos
+import '../../services/estados_helpers.dart'; // âœ… AGREGADO para estados dinÃ¡micos
 import '../../services/print_service.dart';
-import '../../extensions/theme_extension.dart'; // ✅ AGREGADO para dark mode
-import '../reportes/nuevo_reporte_screen.dart'; // ✅ NUEVO: Para reportar productos dañados
-import '../ventas/venta_detalle_screen.dart'; // ✅ NUEVO: Para ver detalles de venta
+import '../../extensions/theme_extension.dart'; // âœ… AGREGADO para dark mode
+import '../reportes/nuevo_reporte_screen.dart'; // âœ… NUEVO: Para reportar productos daÃ±ados
+import '../ventas/venta_detalle_screen.dart'; // âœ… NUEVO: Para ver detalles de venta
 
 class PedidoDetalleScreen extends StatefulWidget {
   final int pedidoId;
@@ -27,14 +27,14 @@ class PedidoDetalleScreen extends StatefulWidget {
 }
 
 class _PedidoDetalleScreenState extends State<PedidoDetalleScreen> {
-  // Estado para el flujo de conversión
+  // Estado para el flujo de conversiÃ³n
   bool _showRenovacionDialog = false;
 
   @override
   void initState() {
     super.initState();
     print("Iniciando detalle de pedido ID: ${widget.pedidoId}");
-    // Usar SchedulerBinding para posponer la carga después de que termine la construcción
+    // Usar SchedulerBinding para posponer la carga despuÃ©s de que termine la construcciÃ³n
     SchedulerBinding.instance.addPostFrameCallback((_) {
       _cargarPedido();
     });
@@ -49,7 +49,7 @@ class _PedidoDetalleScreenState extends State<PedidoDetalleScreen> {
     await _cargarPedido();
   }
 
-  /// Reportar producto dañado
+  /// Reportar producto daÃ±ado
   Future<void> _reportarProductoDanado(Pedido pedido) async {
     if (pedido.venta == null) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -71,7 +71,7 @@ class _PedidoDetalleScreenState extends State<PedidoDetalleScreen> {
       ),
     );
 
-    // Mostrar mensaje de éxito si el reporte fue creado
+    // Mostrar mensaje de Ã©xito si el reporte fue creado
     if (resultado != null && mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -90,7 +90,7 @@ class _PedidoDetalleScreenState extends State<PedidoDetalleScreen> {
       builder: (context) => AlertDialog(
         title: const Text('Extender Reserva'),
         content: const Text(
-          '¿Deseas extender el tiempo de reserva de stock para este pedido?',
+          'Â¿Deseas extender el tiempo de reserva de stock para este pedido?',
         ),
         actions: [
           TextButton(
@@ -131,7 +131,7 @@ class _PedidoDetalleScreenState extends State<PedidoDetalleScreen> {
     if (pedido == null) return;
 
     try {
-      // Intentar confirmación
+      // Intentar confirmaciÃ³n
       final success = await pedidoProvider.confirmarProforma(
         proformaId: pedido.id,
       );
@@ -139,22 +139,22 @@ class _PedidoDetalleScreenState extends State<PedidoDetalleScreen> {
       if (!mounted) return;
 
       if (success) {
-        // ✅ Éxito - Recargar y mostrar mensaje
+        // âœ… Ã‰xito - Recargar y mostrar mensaje
         await _cargarPedido();
 
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('✅ Proforma convertida a venta exitosamente'),
+            content: Text('âœ… Proforma convertida a venta exitosamente'),
             backgroundColor: Colors.green,
           ),
         );
       } else if (pedidoProvider.errorCode == 'RESERVAS_EXPIRADAS') {
-        // ⚠️ Reservas expiradas - Mostrar diálogo de renovación
+        // âš ï¸ Reservas expiradas - Mostrar diÃ¡logo de renovaciÃ³n
         setState(() {
           _showRenovacionDialog = true;
         });
       } else {
-        // ❌ Otro error
+        // âŒ Otro error
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
@@ -189,27 +189,27 @@ class _PedidoDetalleScreenState extends State<PedidoDetalleScreen> {
       if (!mounted) return;
 
       if (success) {
-        // ✅ Reservas renovadas - Cerrar diálogo y reintentar conversión
+        // âœ… Reservas renovadas - Cerrar diÃ¡logo y reintentar conversiÃ³n
         setState(() {
           _showRenovacionDialog = false;
         });
 
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('✅ Reservas renovadas. Reintentando conversión...'),
+            content: Text('âœ… Reservas renovadas. Reintentando conversiÃ³n...'),
             backgroundColor: Colors.blue,
           ),
         );
 
-        // Esperar un poco y reintentar conversión automáticamente
+        // Esperar un poco y reintentar conversiÃ³n automÃ¡ticamente
         await Future.delayed(const Duration(milliseconds: 1500));
 
         if (!mounted) return;
 
-        // Reintentar conversión
+        // Reintentar conversiÃ³n
         await _convertirAVenta();
       } else {
-        // ❌ Error al renovar
+        // âŒ Error al renovar
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
@@ -234,10 +234,10 @@ class _PedidoDetalleScreenState extends State<PedidoDetalleScreen> {
   /// Imprimir ticket de venta
   Future<void> _printTicket(int ventaId) async {
     try {
-      // 1. Mostrar diálogo de selección de formato
+      // 1. Mostrar diÃ¡logo de selecciÃ³n de formato
       final selectedFormat = await showPrintFormatDialog(context);
       if (selectedFormat == null) {
-        // Usuario canceló
+        // Usuario cancelÃ³
         return;
       }
 
@@ -274,7 +274,7 @@ class _PedidoDetalleScreenState extends State<PedidoDetalleScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text(
-              'No se pudo abrir el navegador. Verifica tu conexión.',
+              'No se pudo abrir el navegador. Verifica tu conexiÃ³n.',
             ),
             backgroundColor: Colors.red,
           ),
@@ -292,10 +292,10 @@ class _PedidoDetalleScreenState extends State<PedidoDetalleScreen> {
     }
   }
 
-  /// Registrar pago rápido
+  /// Registrar pago rÃ¡pido
   Future<void> _registerPayment(Venta venta) async {
     try {
-      // Mostrar diálogo de registración de pago
+      // Mostrar diÃ¡logo de registraciÃ³n de pago
       final result = await showDialog<bool>(
         context: context,
         builder: (context) => PaymentRegistrationDialog(
@@ -323,10 +323,10 @@ class _PedidoDetalleScreenState extends State<PedidoDetalleScreen> {
   /// Callback cuando el pago se registra exitosamente
   void _onPaymentSuccess() {
     // Recargar datos cuando se registra un pago
-    // El diálogo ya muestra el mensaje de éxito
+    // El diÃ¡logo ya muestra el mensaje de Ã©xito
   }
 
-  /// ✅ NUEVO: Navegar a ProductListScreen para editar carrito y actualizar proforma
+  /// âœ… NUEVO: Navegar a ProductListScreen para editar carrito y actualizar proforma
   Future<void> _editarProductos() async {
     final pedidoProvider = context.read<PedidoProvider>();
     final carritoProvider = context.read<CarritoProvider>();
@@ -343,7 +343,7 @@ class _PedidoDetalleScreenState extends State<PedidoDetalleScreen> {
     }
 
     try {
-      // 1. Cargar la proforma en el carrito (esto limpia y carga los items automáticamente)
+      // 1. Cargar la proforma en el carrito (esto limpia y carga los items automÃ¡ticamente)
       final cargadoExitosamente = await carritoProvider.cargarProformaEnCarrito(
         pedido,
       );
@@ -364,7 +364,7 @@ class _PedidoDetalleScreenState extends State<PedidoDetalleScreen> {
       }
 
       debugPrint(
-        '📥 Carrito cargado con ${pedido.items.length} items de la proforma',
+        'ðŸ“¥ Carrito cargado con ${pedido.items.length} items de la proforma',
       );
 
       // 2. Navegar a ProductListScreen y esperar resultado
@@ -372,18 +372,18 @@ class _PedidoDetalleScreenState extends State<PedidoDetalleScreen> {
 
       final result = await Navigator.pushNamed(
         context,
-        '/products', // ✅ CORREGIDO: usar /products (inglés) según rutas registradas
+        '/products', // âœ… CORREGIDO: usar /products (inglÃ©s) segÃºn rutas registradas
       );
 
-      // 3. Si el usuario regresa (cambió algo), actualizar la proforma
+      // 3. Si el usuario regresa (cambiÃ³ algo), actualizar la proforma
       if (mounted && result != null && result is bool && result) {
         debugPrint(
-          '📝 Actualizando proforma con items del carrito modificado...',
+          'ðŸ“ Actualizando proforma con items del carrito modificado...',
         );
         await _actualizarProformaConCarrito();
       }
     } catch (e) {
-      debugPrint('❌ Error al editar productos: $e');
+      debugPrint('âŒ Error al editar productos: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -395,7 +395,7 @@ class _PedidoDetalleScreenState extends State<PedidoDetalleScreen> {
     }
   }
 
-  /// ✅ NUEVO: Actualizar la proforma con los items del carrito modificado
+  /// âœ… NUEVO: Actualizar la proforma con los items del carrito modificado
   Future<void> _actualizarProformaConCarrito() async {
     final pedidoProvider = context.read<PedidoProvider>();
     final carritoProvider = context.read<CarritoProvider>();
@@ -407,7 +407,7 @@ class _PedidoDetalleScreenState extends State<PedidoDetalleScreen> {
       // Mostrar indicador de carga
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('⏳ Actualizando proforma...'),
+          content: Text('â³ Actualizando proforma...'),
           backgroundColor: Colors.blue,
           duration: Duration(seconds: 2),
         ),
@@ -438,7 +438,7 @@ class _PedidoDetalleScreenState extends State<PedidoDetalleScreen> {
 
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('✅ Proforma actualizada exitosamente'),
+            content: Text('âœ… Proforma actualizada exitosamente'),
             backgroundColor: Colors.green,
           ),
         );
@@ -453,7 +453,7 @@ class _PedidoDetalleScreenState extends State<PedidoDetalleScreen> {
         );
       }
     } catch (e) {
-      debugPrint('❌ Error al actualizar proforma: $e');
+      debugPrint('âŒ Error al actualizar proforma: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -465,18 +465,18 @@ class _PedidoDetalleScreenState extends State<PedidoDetalleScreen> {
     }
   }
 
-  /// Mostrar menú de más opciones
+  /// Mostrar menÃº de mÃ¡s opciones
   Future<void> _showMoreOptions(Venta venta) async {
-    // TODO: Implementar después de crear diálogos adicionales
+    // TODO: Implementar despuÃ©s de crear diÃ¡logos adicionales
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
-        content: Text('Más opciones próximamente disponibles'),
+        content: Text('MÃ¡s opciones prÃ³ximamente disponibles'),
         backgroundColor: Colors.blue,
       ),
     );
   }
 
-  /// ✅ NUEVO: Navegar a detalles de venta
+  /// âœ… NUEVO: Navegar a detalles de venta
   Future<void> _irADetallesVenta(int ventaId) async {
     if (!mounted) return;
 
@@ -501,10 +501,10 @@ class _PedidoDetalleScreenState extends State<PedidoDetalleScreen> {
   }
 
   String _getLocalidadNombre(Client cliente) {
-    // ✅ El backend carga la relación localidad como objeto Localidad
+    // âœ… El backend carga la relaciÃ³n localidad como objeto Localidad
     if (cliente.localidad != null) {
       if (cliente.localidad is Map) {
-        // Si viene como Map (aunque no debería)
+        // Si viene como Map (aunque no deberÃ­a)
         return (cliente.localidad as Map)['nombre'] ?? 'No disponible';
       }
       // Si viene como objeto Localidad
@@ -525,13 +525,12 @@ class _PedidoDetalleScreenState extends State<PedidoDetalleScreen> {
     return Scaffold(
       appBar: CustomGradientAppBar(
         title: 'Detalle del Pedido',
-        customGradient: AppGradients.blue,
         actions: [RefreshAction(isLoading: false, onRefresh: _onRefresh)],
       ),
       bottomNavigationBar: Consumer<PedidoProvider>(
         builder: (context, pedidoProvider, _) {
           final pedido = pedidoProvider.pedidoActual;
-          // ✅ ACTUALIZADO: Permitir editar solo si está en PENDIENTE
+          // âœ… ACTUALIZADO: Permitir editar solo si estÃ¡ en PENDIENTE
           final puedeEditarProductos = pedido?.estadoCodigo == 'PENDIENTE';
 
           if (pedido == null) {
@@ -554,7 +553,7 @@ class _PedidoDetalleScreenState extends State<PedidoDetalleScreen> {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  // ✅ NUEVO: Botón para editar productos (solo en PENDIENTE)
+                  // âœ… NUEVO: BotÃ³n para editar productos (solo en PENDIENTE)
                   if (puedeEditarProductos) ...[
                     ElevatedButton.icon(
                       onPressed: _editarProductos,
@@ -579,7 +578,7 @@ class _PedidoDetalleScreenState extends State<PedidoDetalleScreen> {
                         minimumSize: const Size(double.infinity, 50),
                       ),
                     ),
-                  // ✅ NUEVO: Botón para reportar producto dañado (si es una venta confirmada)
+                  // âœ… NUEVO: BotÃ³n para reportar producto daÃ±ado (si es una venta confirmada)
                   if (pedido.venta != null) ...[
                     const SizedBox(height: 2),
                     Row(
@@ -618,7 +617,7 @@ class _PedidoDetalleScreenState extends State<PedidoDetalleScreen> {
           );
         },
       ),
-      // Diálogo de renovación de reservas
+      // DiÃ¡logo de renovaciÃ³n de reservas
       body: Stack(
         children: [
           Consumer<PedidoProvider>(
@@ -648,19 +647,19 @@ class _PedidoDetalleScreenState extends State<PedidoDetalleScreen> {
                       // Header con estado
                       _buildHeader(pedido),
 
-                      // ✅ NUEVO: Información del cliente
+                      // âœ… NUEVO: InformaciÃ³n del cliente
                       if (pedido.cliente != null)
                         _buildSeccionCliente(pedido.cliente!),
 
-                      // ✅ NUEVO: Estados de venta convertida (si está convertida)
+                      // âœ… NUEVO: Estados de venta convertida (si estÃ¡ convertida)
                       if (pedido.venta != null)
                         _buildSeccionEstadosVentaConvertida(pedido),
 
-                      // ✅ NUEVO: Información de venta (si es una venta convertida)
+                      // âœ… NUEVO: InformaciÃ³n de venta (si es una venta convertida)
                       Consumer<PedidoProvider>(
                         builder: (context, provider, _) {
                           debugPrint(
-                            '🔍 PedidoDetalle Debug: estadoCategoria=${pedido.estadoCategoria}, '
+                            'ðŸ” PedidoDetalle Debug: estadoCategoria=${pedido.estadoCategoria}, '
                             'ventaActual=${provider.ventaActual != null}, '
                             'isLoadingVenta=${provider.isLoadingVenta}',
                           );
@@ -676,7 +675,7 @@ class _PedidoDetalleScreenState extends State<PedidoDetalleScreen> {
                           if (venta != null &&
                               pedido.estadoCategoria == 'venta') {
                             debugPrint(
-                              '✅ Mostrando VentaInfoCard: ${venta.numero}',
+                              'âœ… Mostrando VentaInfoCard: ${venta.numero}',
                             );
                             return VentaInfoCard(
                               venta: venta,
@@ -688,7 +687,7 @@ class _PedidoDetalleScreenState extends State<PedidoDetalleScreen> {
 
                           if (pedido.estadoCategoria != 'venta') {
                             debugPrint(
-                              '⚠️ No es una venta, es: ${pedido.estadoCategoria}',
+                              'âš ï¸ No es una venta, es: ${pedido.estadoCategoria}',
                             );
                           }
 
@@ -696,8 +695,8 @@ class _PedidoDetalleScreenState extends State<PedidoDetalleScreen> {
                         },
                       ),
 
-                      // Botón de tracking (si está en ruta)
-                      // ✅ ACTUALIZADO: Usar códigos de estado String en lugar de enum
+                      // BotÃ³n de tracking (si estÃ¡ en ruta)
+                      // âœ… ACTUALIZADO: Usar cÃ³digos de estado String en lugar de enum
                       if (pedido.estadoCodigo == 'EN_RUTA' ||
                           pedido.estadoCodigo == 'LLEGO')
                         _buildSeccionTracking(pedido),
@@ -708,10 +707,10 @@ class _PedidoDetalleScreenState extends State<PedidoDetalleScreen> {
 
                       const SizedBox(height: 16),
 
-                      // Información general
+                      // InformaciÃ³n general
                       _buildSeccionInfo(pedido),
 
-                      // Dirección de entrega
+                      // DirecciÃ³n de entrega
                       if (pedido.direccionEntrega != null)
                         _buildSeccionDireccion(pedido),
 
@@ -741,7 +740,7 @@ class _PedidoDetalleScreenState extends State<PedidoDetalleScreen> {
               );
             },
           ),
-          // Diálogo de renovación superpuesto
+          // DiÃ¡logo de renovaciÃ³n superpuesto
           if (_showRenovacionDialog)
             Consumer<PedidoProvider>(
               builder: (context, pedidoProvider, _) {
@@ -769,7 +768,7 @@ class _PedidoDetalleScreenState extends State<PedidoDetalleScreen> {
   }
 
   Widget _buildHeader(Pedido pedido) {
-    // ✅ ACTUALIZADO: Usar datos dinámicos en lugar de enum EstadoInfo
+    // âœ… ACTUALIZADO: Usar datos dinÃ¡micos en lugar de enum EstadoInfo
     final colorHex = EstadosHelper.getEstadoColor(
       pedido.estadoCategoria,
       pedido.estadoCodigo,
@@ -803,7 +802,7 @@ class _PedidoDetalleScreenState extends State<PedidoDetalleScreen> {
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                // ✅ El icono puede ser un emoji (string) o nombre de icono
+                // âœ… El icono puede ser un emoji (string) o nombre de icono
                 Text(
                   EstadosHelper.getEstadoIcon(
                     pedido.estadoCategoria,
@@ -875,7 +874,7 @@ class _PedidoDetalleScreenState extends State<PedidoDetalleScreen> {
             final historial = entry.value;
             final isFirst = index == 0;
             final isLast = index == pedido.historialEstados.length - 1;
-            // ✅ ACTUALIZADO: Usar EstadosHelper en lugar de EstadoInfo enum
+            // âœ… ACTUALIZADO: Usar EstadosHelper en lugar de EstadoInfo enum
             final colorHex = EstadosHelper.getEstadoColor(
               pedido.estadoCategoria,
               historial.estadoNuevo,
@@ -1018,7 +1017,7 @@ class _PedidoDetalleScreenState extends State<PedidoDetalleScreen> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'Información del Cliente',
+                            'InformaciÃ³n del Cliente',
                             style: TextStyle(
                               fontSize: AppTextStyles.bodyMedium(
                                 context,
@@ -1047,13 +1046,13 @@ class _PedidoDetalleScreenState extends State<PedidoDetalleScreen> {
                 const SizedBox(height: 16),
                 const Divider(height: 1),
                 const SizedBox(height: 16),
-                // Fila 1: Teléfono y Ciudad
+                // Fila 1: TelÃ©fono y Ciudad
                 Row(
                   children: [
                     Expanded(
                       child: _buildClientInfoItem(
                         icon: Icons.phone,
-                        label: 'Teléfono',
+                        label: 'TelÃ©fono',
                         value: cliente.telefono ?? 'No disponible',
                       ),
                     ),
@@ -1067,7 +1066,7 @@ class _PedidoDetalleScreenState extends State<PedidoDetalleScreen> {
                     ),
                   ],
                 ),
-                // Fila 2: Estado y Crédito
+                // Fila 2: Estado y CrÃ©dito
                 if (cliente.puedeAtenerCredito || !cliente.activo) ...[
                   const SizedBox(height: 12),
                   Row(
@@ -1089,7 +1088,7 @@ class _PedidoDetalleScreenState extends State<PedidoDetalleScreen> {
                         Expanded(
                           child: _buildClientInfoItem(
                             icon: Icons.credit_card,
-                            label: 'Crédito Disponible',
+                            label: 'CrÃ©dito Disponible',
                             value:
                                 '\$${(cliente.limiteCredito! - cliente.creditoUtilizado!).toStringAsFixed(2)}',
                             valueColor: Colors.blue,
@@ -1146,7 +1145,7 @@ class _PedidoDetalleScreenState extends State<PedidoDetalleScreen> {
     );
   }
 
-  // ✅ NUEVO 2026-02-27: Widget para mostrar estados de venta convertida
+  // âœ… NUEVO 2026-02-27: Widget para mostrar estados de venta convertida
   Widget _buildSeccionEstadosVentaConvertida(Pedido pedido) {
     final colorScheme = Theme.of(context).colorScheme;
     final venta = pedido.venta;
@@ -1176,7 +1175,7 @@ class _PedidoDetalleScreenState extends State<PedidoDetalleScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Título
+                // TÃ­tulo
                 Row(
                   children: [
                     Container(
@@ -1246,18 +1245,18 @@ class _PedidoDetalleScreenState extends State<PedidoDetalleScreen> {
                   const SizedBox(height: 12),
                 ],
 
-                // Estado de logística
+                // Estado de logÃ­stica
                 if (venta.estadoLogistica != null) ...[
                   _buildEstadoRow(
                     icon: Icons.local_shipping,
-                    label: 'Estado Logística',
+                    label: 'Estado LogÃ­stica',
                     estadoData: venta.estadoLogistica!,
                     colorScheme: colorScheme,
                   ),
                   const SizedBox(height: 12),
                 ],
 
-                // ✅ NUEVO 2026-02-27: Motivo de anulación si está anulada
+                // âœ… NUEVO 2026-02-27: Motivo de anulaciÃ³n si estÃ¡ anulada
                 if (venta.estadoDocumento?.codigo == 'ANULADA' &&
                     venta.observaciones != null &&
                     venta.observaciones!.isNotEmpty) ...[
@@ -1280,7 +1279,7 @@ class _PedidoDetalleScreenState extends State<PedidoDetalleScreen> {
                             ),
                             const SizedBox(width: 8),
                             Text(
-                              'Motivo de Anulación',
+                              'Motivo de AnulaciÃ³n',
                               style: TextStyle(
                                 fontSize: AppTextStyles.bodySmall(
                                   context,
@@ -1419,7 +1418,7 @@ class _PedidoDetalleScreenState extends State<PedidoDetalleScreen> {
     );
   }
 
-  // ✅ NUEVO: Helper para renderizar un estado con estilo
+  // âœ… NUEVO: Helper para renderizar un estado con estilo
   Widget _buildEstadoRow({
     required IconData icon,
     required String label,
@@ -1435,7 +1434,7 @@ class _PedidoDetalleScreenState extends State<PedidoDetalleScreen> {
         );
       }
     } catch (e) {
-      debugPrint('⚠️ Error parsing color: ${estadoData.color}');
+      debugPrint('âš ï¸ Error parsing color: ${estadoData.color}');
     }
 
     return Row(
@@ -1502,7 +1501,7 @@ class _PedidoDetalleScreenState extends State<PedidoDetalleScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Información General',
+                'InformaciÃ³n General',
                 style: TextStyle(
                   fontSize: AppTextStyles.headlineSmall(context).fontSize!,
                   fontWeight: FontWeight.bold,
@@ -1511,7 +1510,7 @@ class _PedidoDetalleScreenState extends State<PedidoDetalleScreen> {
               const Divider(height: 24),
               _buildInfoRow(
                 Icons.calendar_today,
-                'Fecha de creación',
+                'Fecha de creaciÃ³n',
                 _formatearFecha(pedido.fechaCreacion),
               ),
               const SizedBox(height: 12),
@@ -1524,7 +1523,7 @@ class _PedidoDetalleScreenState extends State<PedidoDetalleScreen> {
                 const SizedBox(height: 12),
                 _buildInfoRow(
                   Icons.check_circle,
-                  'Fecha de aprobación',
+                  'Fecha de aprobaciÃ³n',
                   _formatearFecha(pedido.fechaAprobacion!),
                 ),
               ],
@@ -1547,7 +1546,7 @@ class _PedidoDetalleScreenState extends State<PedidoDetalleScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Dirección de Entrega',
+                'DirecciÃ³n de Entrega',
                 style: TextStyle(
                   fontSize: AppTextStyles.headlineSmall(context).fontSize!,
                   fontWeight: FontWeight.bold,
@@ -1794,7 +1793,7 @@ class _PedidoDetalleScreenState extends State<PedidoDetalleScreen> {
                 final isActiva = reserva.estado == EstadoReserva.ACTIVA;
                 final estaVencida = reserva.estaVencida;
 
-                // Determinar colores según estado
+                // Determinar colores segÃºn estado
                 Color bgColor;
                 Color borderColor;
                 Color statusColor;
@@ -2112,7 +2111,7 @@ class _PedidoDetalleScreenState extends State<PedidoDetalleScreen> {
     );
   }
 
-  /// ✅ HELPER: Convertir hex string (#RRGGBB) a Color
+  /// âœ… HELPER: Convertir hex string (#RRGGBB) a Color
   Color _hexToColor(String hexString) {
     final buffer = StringBuffer();
     if (hexString.length == 6 || hexString.length == 7) {
@@ -2126,3 +2125,4 @@ class _PedidoDetalleScreenState extends State<PedidoDetalleScreen> {
     return Color(int.parse(buffer.toString(), radix: 16));
   }
 }
+

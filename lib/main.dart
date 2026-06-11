@@ -22,7 +22,7 @@ import 'services/background_notification_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  debugPrint('🌍 App starting...');
+  // debugPrint('🌍 App starting...');
 
   // Initialize SharedPreferences BEFORE any service that uses it
   try {
@@ -47,13 +47,13 @@ void main() async {
         dotenv.env[key] = value;
       }
     }
-    debugPrint('✅ .env cargado desde assets');
+    // debugPrint('✅ .env cargado desde assets');
   } catch (e) {
     debugPrint('⚠️ Error cargando .env desde assets: $e');
     // Intenta fallback al método antiguo (solo funciona en debug)
     try {
       await dotenv.load(fileName: ".env");
-      debugPrint('✅ .env cargado desde archivo (fallback)');
+      // debugPrint('✅ .env cargado desde archivo (fallback)');
     } catch (e2) {
       debugPrint('❌ CRÍTICO: No se pudo cargar .env: $e2');
     }
@@ -62,7 +62,7 @@ void main() async {
   // ✅ NUEVO: Inicializar URLs centralizadas
   try {
     AppUrls.initialize();
-    debugPrint('✅ AppUrls inicializadas');
+    // debugPrint('✅ AppUrls inicializadas');
   } catch (e) {
     debugPrint('⚠️ Error inicializando AppUrls: $e');
   }
@@ -72,23 +72,27 @@ void main() async {
   try {
     themeProvider = ThemeProvider();
     await themeProvider.init();
-    debugPrint('✅ ThemeProvider inicializado');
+    // debugPrint('✅ ThemeProvider inicializado');
   } catch (e) {
-    debugPrint('⚠️ Error inicializando ThemeProvider, usando valores por defecto: $e');
+    debugPrint(
+      '⚠️ Error inicializando ThemeProvider, usando valores por defecto: $e',
+    );
     themeProvider = ThemeProvider(); // Usar valores por defecto
   }
 
   // ✅ CRÍTICO: Solicitar permiso de notificaciones ANTES de inicializar
   try {
     final notificationStatus = await Permission.notification.request();
-    debugPrint('📲 Estado de permiso de notificaciones: $notificationStatus');
+    // debugPrint('📲 Estado de permiso de notificaciones: $notificationStatus');
 
     if (notificationStatus.isDenied) {
       debugPrint('⚠️ Permiso de notificaciones denegado por usuario');
     } else if (notificationStatus.isGranted) {
-      debugPrint('✅ Permiso de notificaciones OTORGADO');
+      // debugPrint('✅ Permiso de notificaciones OTORGADO');
     } else if (notificationStatus.isPermanentlyDenied) {
-      debugPrint('🚫 Permiso de notificaciones permanentemente denegado (openAppSettings requerido)');
+      debugPrint(
+        '🚫 Permiso de notificaciones permanentemente denegado (openAppSettings requerido)',
+      );
     }
   } catch (e) {
     debugPrint('⚠️ Error solicitando permiso de notificaciones: $e');
@@ -109,7 +113,7 @@ void main() async {
   // Inicializar background notification service
   try {
     await BackgroundNotificationService.initialize();
-    debugPrint('✅ BackgroundNotificationService inicializado');
+    // debugPrint('✅ BackgroundNotificationService inicializado');
   } catch (e) {
     debugPrint('⚠️ Error inicializando BackgroundNotificationService: $e');
   }
@@ -119,12 +123,12 @@ void main() async {
     riverpod.ProviderScope(
       child: MultiProvider(
         providers: [
-          ChangeNotifierProvider<ThemeProvider>.value(value: themeProvider ?? ThemeProvider()),
+          ChangeNotifierProvider<ThemeProvider>.value(
+            value: themeProvider ?? ThemeProvider(),
+          ),
           ChangeNotifierProvider(create: (_) => AuthProvider()),
           ChangeNotifierProvider(create: (_) => ProductProvider()),
-          ChangeNotifierProvider(
-            create: (_) => FiltrosProductoProvider(),
-          ), // ✅ NUEVO: Filtros de categoría y marca
+          ChangeNotifierProvider(create: (_) => FiltrosProductoProvider()),
           ChangeNotifierProvider(create: (_) => ClientProvider()),
           ChangeNotifierProvider(create: (_) => CarritoProvider()),
           ChangeNotifierProvider(create: (_) => PedidoProvider()),
@@ -142,12 +146,9 @@ void main() async {
           ChangeNotifierProvider(
             create: (_) => ReporteProductoDanadoProvider(),
           ),
-          ChangeNotifierProvider(
-            create: (_) => BannerPublicitarioProvider(),
-          ),
-          ChangeNotifierProvider(
-            create: (_) => ReporteVentasProvider(), // ✅ NUEVO: Reporte de productos vendidos
-          ),
+          ChangeNotifierProvider(create: (_) => BannerPublicitarioProvider()),
+          ChangeNotifierProvider(create: (_) => ReporteVentasProvider()),
+          ChangeNotifierProvider(create: (_) => PrestamosProvider()),
         ],
         child: const MyApp(),
       ),
@@ -199,7 +200,8 @@ class MyApp extends StatelessWidget {
             '/mis-ventas': (context) => const MisVentasScreen(),
             '/mis-direcciones': (context) => const MisDireccionesScreen(),
             '/notifications': (context) => const NotificationsScreen(),
-            '/resumen-pedido': (context) => const ResumenPedidoScreen(), // ✅ Clientes y Preventistas
+            '/resumen-pedido': (context) =>
+                const ResumenPedidoScreen(), // ✅ Clientes y Preventistas
             '/reportes-productos-danados': (context) =>
                 const ReportesProductosDanadosScreen(), // ✅ NUEVO: Pantalla de reportes dañados
             '/reporte-productos-vendidos': (context) =>
@@ -344,7 +346,9 @@ class MyApp extends StatelessWidget {
                 return MaterialPageRoute(
                   builder: (context) => Scaffold(
                     body: Center(
-                      child: Text('Abrir desde resumen de entregas o tarjeta de ventas asignadas'),
+                      child: Text(
+                        'Abrir desde resumen de entregas o tarjeta de ventas asignadas',
+                      ),
                     ),
                   ),
                 );
@@ -453,14 +457,14 @@ class _AuthWrapperState extends State<AuthWrapper> with WidgetsBindingObserver {
 
     try {
       // Try to load user if token exists
-      debugPrint('🔍 Checking auth status...');
+      // debugPrint('🔍 Checking auth status...');
 
       // Use timeout instead of Future.any - this ensures loadUser actually completes
       try {
         await authProvider.loadUser().timeout(
           const Duration(seconds: 10),
           onTimeout: () {
-            debugPrint('⏱️ Auth load timed out after 10 seconds');
+            // debugPrint('⏱️ Auth load timed out after 10 seconds');
             return false;
           },
         );
@@ -468,7 +472,7 @@ class _AuthWrapperState extends State<AuthWrapper> with WidgetsBindingObserver {
         debugPrint('❌ Error during auth load: $e');
       }
 
-      debugPrint('✅ Auth check completed');
+      // debugPrint('✅ Auth check completed');
 
       // Recuperación de carrito desactivada
       // if (mounted && authProvider.isLoggedIn && authProvider.user != null) {
@@ -477,28 +481,6 @@ class _AuthWrapperState extends State<AuthWrapper> with WidgetsBindingObserver {
     } catch (e) {
       // If there's an error loading user, ensure loading state is cleared
       debugPrint('❌ Error loading user: $e');
-    }
-  }
-
-  Future<void> _inicializarYRecuperarCarrito(int usuarioId) async {
-    if (!mounted) return;
-
-    try {
-      final carritoProvider = context.read<CarritoProvider>();
-
-      // Inicializar usuario en el provider
-      carritoProvider.inicializarUsuario(usuarioId);
-      debugPrint('✅ CarritoProvider initialized with user ID: $usuarioId');
-
-      // Intentar recuperar carrito guardado
-      final carritoRecuperado = await carritoProvider.recuperarCarrito();
-
-      if (carritoRecuperado && mounted) {
-        // Mostrar diálogo de recuperación
-        _mostrarDialogoRecuperacionCarrito();
-      }
-    } catch (e) {
-      debugPrint('❌ Error recovering cart: $e');
     }
   }
 
@@ -549,15 +531,15 @@ class _AuthWrapperState extends State<AuthWrapper> with WidgetsBindingObserver {
   Widget build(BuildContext context) {
     return Consumer<AuthProvider>(
       builder: (context, authProvider, child) {
-        debugPrint(
-          '🔄 AuthWrapper build - isLoading: ${authProvider.isLoading}, isLoggedIn: ${authProvider.isLoggedIn}',
-        );
+        // debugPrint(
+        //   '🔄 AuthWrapper build - isLoading: ${authProvider.isLoading}, isLoggedIn: ${authProvider.isLoggedIn}',
+        // );
 
         // Build the appropriate screen
         late Widget screen;
 
         if (authProvider.isLoading) {
-          debugPrint('⏳ Loading...');
+          // debugPrint('⏳ Loading...');
           // ✅ MEJORADO: Usar el loading profesional mejorado en lugar del CircularProgressIndicator
           final theme = Theme.of(context);
           final isDark = theme.brightness == Brightness.dark;
@@ -726,14 +708,14 @@ class _AuthWrapperState extends State<AuthWrapper> with WidgetsBindingObserver {
           final user = authProvider.user;
           final homeScreen = RoleBasedRouter.getHomeScreen(user);
 
-          debugPrint(
+          /* debugPrint(
             '🏠 Navegando a ${homeScreen.runtimeType} (rol: ${RoleBasedRouter.getRoleDescription(user)})',
-          );
+          ); */
 
           // Wrap with RealtimeNotificationsListener for WebSocket notifications
           screen = RealtimeNotificationsListener(child: homeScreen);
         } else {
-          debugPrint('🔐 Navegando a LoginScreen');
+          /* debugPrint('🔐 Navegando a LoginScreen'); */
           screen = const LoginScreen();
         }
 

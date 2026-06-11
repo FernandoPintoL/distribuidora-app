@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../models/models.dart';
 import '../../providers/providers.dart';
@@ -37,7 +37,7 @@ class _MisDireccionesScreenState extends State<MisDireccionesScreen> {
   }
 
   Future<void> _marcarComoPrincipal(ClientAddress direccion) async {
-    // TODO: Implementar lógica para marcar como principal en el backend
+    // TODO: Implementar lÃ³gica para marcar como principal en el backend
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
         content: Text('Funcionalidad en desarrollo'),
@@ -50,9 +50,9 @@ class _MisDireccionesScreenState extends State<MisDireccionesScreen> {
     final confirmar = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Eliminar Dirección'),
+        title: const Text('Eliminar DirecciÃ³n'),
         content: Text(
-          '¿Estás seguro de eliminar esta dirección?\n\n${direccion.direccion ?? ''}',
+          'Â¿EstÃ¡s seguro de eliminar esta direcciÃ³n?\n\n${direccion.direccion ?? ''}',
         ),
         actions: [
           TextButton(
@@ -69,7 +69,7 @@ class _MisDireccionesScreenState extends State<MisDireccionesScreen> {
     );
 
     if (confirmar == true) {
-      // TODO: Implementar eliminación en el backend
+      // TODO: Implementar eliminaciÃ³n en el backend
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Funcionalidad en desarrollo'),
@@ -102,7 +102,6 @@ class _MisDireccionesScreenState extends State<MisDireccionesScreen> {
     return Scaffold(
       appBar: CustomGradientAppBar(
         title: 'Mis Direcciones',
-        customGradient: AppGradients.blue,
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
@@ -112,7 +111,7 @@ class _MisDireccionesScreenState extends State<MisDireccionesScreen> {
       floatingActionButton: FloatingActionButton.extended(
         onPressed: _agregarDireccion,
         icon: const Icon(Icons.add_location),
-        label: const Text('Agregar Dirección'),
+        label: const Text('Agregar DirecciÃ³n'),
       ),
     );
   }
@@ -181,7 +180,7 @@ class _MisDireccionesScreenState extends State<MisDireccionesScreen> {
             ),
             const SizedBox(height: 8),
             Text(
-              'Agrega tu primera dirección de entrega',
+              'Agrega tu primera direcciÃ³n de entrega',
               style: TextStyle(
                 fontSize: AppTextStyles.bodyMedium(context).fontSize!,
                 color: Colors.grey.shade600,
@@ -192,7 +191,7 @@ class _MisDireccionesScreenState extends State<MisDireccionesScreen> {
             ElevatedButton.icon(
               onPressed: _agregarDireccion,
               icon: const Icon(Icons.add_location),
-              label: const Text('Agregar Primera Dirección'),
+              label: const Text('Agregar Primera DirecciÃ³n'),
               style: ElevatedButton.styleFrom(
                 padding: const EdgeInsets.symmetric(
                   horizontal: 32,
@@ -218,7 +217,7 @@ class _MisDireccionesScreenState extends State<MisDireccionesScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Header con título y badge principal
+              // Header con tÃ­tulo y badge principal
               Row(
                 children: [
                   Icon(
@@ -266,7 +265,7 @@ class _MisDireccionesScreenState extends State<MisDireccionesScreen> {
               ),
               const SizedBox(height: 12),
 
-              // Detalles de ubicación GPS
+              // Detalles de ubicaciÃ³n GPS
               if (direccion.latitud != null && direccion.longitud != null)
                 Padding(
                   padding: const EdgeInsets.only(bottom: 8),
@@ -279,7 +278,7 @@ class _MisDireccionesScreenState extends State<MisDireccionesScreen> {
                       ),
                       const SizedBox(width: 8),
                       Text(
-                        'Ubicación GPS registrada',
+                        'UbicaciÃ³n GPS registrada',
                         style: TextStyle(
                           fontSize: AppTextStyles.bodyMedium(context).fontSize!,
                           color: Colors.grey.shade700,
@@ -354,3 +353,4 @@ class _MisDireccionesScreenState extends State<MisDireccionesScreen> {
     );
   }
 }
+

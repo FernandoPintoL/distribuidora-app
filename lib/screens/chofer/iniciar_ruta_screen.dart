@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:provider/provider.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
@@ -46,7 +46,7 @@ class _IniciarRutaScreenState extends State<IniciarRutaScreen> {
         final resultado = await Geolocator.requestPermission();
         if (resultado == LocationPermission.denied) {
           setState(() {
-            _errorPosicion = 'Permiso de ubicación denegado';
+            _errorPosicion = 'Permiso de ubicaciÃ³n denegado';
             _obtenienoPosicion = false;
           });
           return;
@@ -55,7 +55,7 @@ class _IniciarRutaScreenState extends State<IniciarRutaScreen> {
 
       if (permission == LocationPermission.deniedForever) {
         setState(() {
-          _errorPosicion = 'Permiso de ubicación permanentemente denegado';
+          _errorPosicion = 'Permiso de ubicaciÃ³n permanentemente denegado';
           _obtenienoPosicion = false;
         });
         return;
@@ -77,7 +77,7 @@ class _IniciarRutaScreenState extends State<IniciarRutaScreen> {
       }
     } catch (e) {
       setState(() {
-        _errorPosicion = 'Error al obtener ubicación: ${e.toString()}';
+        _errorPosicion = 'Error al obtener ubicaciÃ³n: ${e.toString()}';
         _obtenienoPosicion = false;
       });
     }
@@ -87,14 +87,14 @@ class _IniciarRutaScreenState extends State<IniciarRutaScreen> {
     final provider = context.read<EntregaProvider>();
 
     if (provider.entregaActual == null) {
-      debugPrint('❌ No hay entrega cargada');
+      debugPrint('âŒ No hay entrega cargada');
       return;
     }
 
     final entrega = provider.entregaActual!;
     final marcadores = <Marker>{};
 
-    // Marcador de la ubicación actual (chofer)
+    // Marcador de la ubicaciÃ³n actual (chofer)
     if (_posicionActual != null) {
       marcadores.add(
         Marker(
@@ -104,8 +104,8 @@ class _IniciarRutaScreenState extends State<IniciarRutaScreen> {
             _posicionActual!.longitude,
           ),
           infoWindow: const InfoWindow(
-            title: '📍 Tu Ubicación',
-            snippet: 'Ubicación actual del chofer',
+            title: 'ðŸ“ Tu UbicaciÃ³n',
+            snippet: 'UbicaciÃ³n actual del chofer',
           ),
           icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueBlue),
         ),
@@ -167,7 +167,7 @@ class _IniciarRutaScreenState extends State<IniciarRutaScreen> {
   Future<void> _iniciarRuta() async {
     if (_posicionActual == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Primero debe obtener la ubicación')),
+        const SnackBar(content: Text('Primero debe obtener la ubicaciÃ³n')),
       );
       return;
     }
@@ -183,7 +183,7 @@ class _IniciarRutaScreenState extends State<IniciarRutaScreen> {
     if (exito && mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('✅ Ruta iniciada exitosamente'),
+          content: Text('âœ… Ruta iniciada exitosamente'),
           backgroundColor: Colors.green,
         ),
       );
@@ -215,7 +215,6 @@ class _IniciarRutaScreenState extends State<IniciarRutaScreen> {
     return Scaffold(
       appBar: CustomGradientAppBar(
         title: 'Iniciar Ruta',
-        customGradient: AppGradients.green,
       ),
       body: Stack(
         children: [
@@ -263,15 +262,15 @@ class _IniciarRutaScreenState extends State<IniciarRutaScreen> {
                   const SizedBox(height: 16),
                   Text(
                     _obtenienoPosicion
-                        ? 'Obteniendo ubicación...'
-                        : _errorPosicion ?? 'No hay ubicación disponible',
+                        ? 'Obteniendo ubicaciÃ³n...'
+                        : _errorPosicion ?? 'No hay ubicaciÃ³n disponible',
                     textAlign: TextAlign.center,
                   ),
                 ],
               ),
             ),
 
-          // Botón para cambiar mapType (arriba a la derecha)
+          // BotÃ³n para cambiar mapType (arriba a la derecha)
           if (_mostrarMapa)
             Positioned(
               top: 16,
@@ -286,7 +285,7 @@ class _IniciarRutaScreenState extends State<IniciarRutaScreen> {
                   });
                 },
                 tooltip: _mapType == MapType.normal
-                    ? 'Cambiar a Satélite'
+                    ? 'Cambiar a SatÃ©lite'
                     : 'Cambiar a Normal',
                 child: Icon(
                   _mapType == MapType.normal ? Icons.satellite_alt : Icons.map,
@@ -294,7 +293,7 @@ class _IniciarRutaScreenState extends State<IniciarRutaScreen> {
               ),
             ),
 
-          // Panel de información de venta seleccionada (arriba)
+          // Panel de informaciÃ³n de venta seleccionada (arriba)
           if (_ventaSeleccionadaId != null && ventaSeleccionada != null)
             Positioned(
               top: 16,
@@ -372,7 +371,7 @@ class _IniciarRutaScreenState extends State<IniciarRutaScreen> {
                       if (ventaSeleccionada.latitud != null &&
                           ventaSeleccionada.longitud != null)
                         Text(
-                          '📍 ${ventaSeleccionada.latitud!.toStringAsFixed(4)}, ${ventaSeleccionada.longitud!.toStringAsFixed(4)}',
+                          'ðŸ“ ${ventaSeleccionada.latitud!.toStringAsFixed(4)}, ${ventaSeleccionada.longitud!.toStringAsFixed(4)}',
                           style: TextStyle(
                             color: Colors.grey[600],
                             fontSize: AppTextStyles.bodySmall(
@@ -471,3 +470,4 @@ class _InfoFila extends StatelessWidget {
     );
   }
 }
+

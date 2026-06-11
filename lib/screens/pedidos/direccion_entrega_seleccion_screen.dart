@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../models/models.dart';
 import '../../providers/providers.dart';
@@ -6,7 +6,7 @@ import '../../widgets/widgets.dart';
 import '../../config/config.dart';
 
 class DireccionEntregaSeleccionScreen extends StatefulWidget {
-  // ✅ Aceptar clienteId opcional para cuando accesa un preventista
+  // âœ… Aceptar clienteId opcional para cuando accesa un preventista
   final int? clienteId;
 
   const DireccionEntregaSeleccionScreen({super.key, this.clienteId});
@@ -36,19 +36,19 @@ class _DireccionEntregaSeleccionScreenState
     final carritoProvider = context.read<CarritoProvider>();
 
     debugPrint(
-      '🚚 Cargando direcciones cliente en carrito ${carritoProvider.getClienteSeleccionadoId()} | ${authProvider.user?.id}',
+      'ðŸšš Cargando direcciones cliente en carrito ${carritoProvider.getClienteSeleccionadoId()} | ${authProvider.user?.id}',
     );
 
-    // print("🔄 Cargando direcciones de entrega... ${clientProvider)}");
-    debugPrint('🔄 Auth User Roles: ${authProvider.user?.roles}');
-    debugPrint('🔄 Auth User ID: ${authProvider.user?.id}');
+    // print("ðŸ”„ Cargando direcciones de entrega... ${clientProvider)}");
+    debugPrint('ðŸ”„ Auth User Roles: ${authProvider.user?.roles}');
+    debugPrint('ðŸ”„ Auth User ID: ${authProvider.user?.id}');
 
     if (authProvider.user?.id != null) {
       Client? cliente;
 
-      debugPrint('🔄 Usuario autenticado ID: ${authProvider.user?.id}');
+      debugPrint('ðŸ”„ Usuario autenticado ID: ${authProvider.user?.id}');
 
-      // ✅ Verificar si es preventista o cliente
+      // âœ… Verificar si es preventista o cliente
       final roles = authProvider.user?.roles ?? [];
       final esPreventista = roles.any(
         (role) => role.toLowerCase().contains('preventista'),
@@ -56,31 +56,31 @@ class _DireccionEntregaSeleccionScreenState
       _esPreventista = esPreventista;
 
       if (esPreventista && carritoProvider.getClienteSeleccionadoId() != null) {
-        // ✅ PREVENTISTA: Obtener direcciones del cliente específico
+        // âœ… PREVENTISTA: Obtener direcciones del cliente especÃ­fico
         debugPrint(
-          '👤 [PREVENTISTA] Cargando direcciones del cliente #${carritoProvider.getClienteSeleccionadoId()}',
+          'ðŸ‘¤ [PREVENTISTA] Cargando direcciones del cliente #${carritoProvider.getClienteSeleccionadoId()}',
         );
-        debugPrint('🔄 Auth User Roles: ${authProvider.user?.roles}');
+        debugPrint('ðŸ”„ Auth User Roles: ${authProvider.user?.roles}');
         cliente = await clientProvider.getClient(
           carritoProvider.getClienteSeleccionadoId()!,
         );
       } else if (!esPreventista) {
-        // ✅ CLIENTE: Obtener su propio perfil
-        debugPrint('👥 [CLIENTE] Cargando mi perfil con mis direcciones');
+        // âœ… CLIENTE: Obtener su propio perfil
+        debugPrint('ðŸ‘¥ [CLIENTE] Cargando mi perfil con mis direcciones');
         cliente = await clientProvider.getClientPerfil();
         carritoProvider.setClienteSeleccionado(cliente);
-        debugPrint('✅ Cliente cargado: ${cliente?.nombre}');
-        debugPrint('🔄 Cliente ID: ${cliente?.id}');
+        debugPrint('âœ… Cliente cargado: ${cliente?.nombre}');
+        debugPrint('ðŸ”„ Cliente ID: ${cliente?.id}');
         debugPrint('puede tener credito ?: ${cliente?.puedeAtenerCredito}');
         debugPrint(
-          '🔄 Cliente direcciones: ${cliente?.direcciones?.length ?? 0}',
+          'ðŸ”„ Cliente direcciones: ${cliente?.direcciones?.length ?? 0}',
         );
         debugPrint(
-          '🔄 id direccion : ${cliente?.direcciones?.isNotEmpty == true ? cliente?.direcciones?.first.id : 'N/A'}',
+          'ðŸ”„ id direccion : ${cliente?.direcciones?.isNotEmpty == true ? cliente?.direcciones?.first.id : 'N/A'}',
         );
       } else {
-        // ❌ Preventista pero sin clienteId
-        _errorMessage = 'No se proporcionó el cliente a consultar';
+        // âŒ Preventista pero sin clienteId
+        _errorMessage = 'No se proporcionÃ³ el cliente a consultar';
       }
 
       setState(() {
@@ -100,14 +100,14 @@ class _DireccionEntregaSeleccionScreenState
     if (_direccionSeleccionada == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Por favor selecciona una dirección de entrega'),
+          content: Text('Por favor selecciona una direcciÃ³n de entrega'),
           backgroundColor: Colors.red,
         ),
       );
       return;
     }
 
-    // Navegar a la pantalla de selección de fecha/hora
+    // Navegar a la pantalla de selecciÃ³n de fecha/hora
     Navigator.pushNamed(
       context,
       '/fecha-hora-entrega',
@@ -119,10 +119,9 @@ class _DireccionEntregaSeleccionScreenState
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: CustomGradientAppBar(
-        title: 'Dirección de Entregas',
-        customGradient: AppGradients.blue,
+        title: 'DirecciÃ³n de Entregas',
         actions: [
-          // ✅ Solo mostrar botón de gestión si es cliente (no preventista)
+          // âœ… Solo mostrar botÃ³n de gestiÃ³n si es cliente (no preventista)
           if (!_esPreventista)
             IconButton(
               icon: const Icon(Icons.settings),
@@ -141,7 +140,7 @@ class _DireccionEntregaSeleccionScreenState
           : _cliente == null
           ? Center(
               child: Text(
-                _errorMessage ?? 'No se pudo cargar la información del cliente',
+                _errorMessage ?? 'No se pudo cargar la informaciÃ³n del cliente',
               ),
             )
           : Builder(
@@ -173,8 +172,8 @@ class _DireccionEntregaSeleccionScreenState
                         const SizedBox(height: 8),
                         Text(
                           _esPreventista
-                              ? 'El cliente debe agregar una dirección para continuar'
-                              : 'Agrega una dirección para continuar',
+                              ? 'El cliente debe agregar una direcciÃ³n para continuar'
+                              : 'Agrega una direcciÃ³n para continuar',
                           style: TextStyle(
                             fontSize: AppTextStyles.bodyMedium(
                               context,
@@ -184,7 +183,7 @@ class _DireccionEntregaSeleccionScreenState
                                 : Colors.grey[600],
                           ),
                         ),
-                        // ✅ Solo mostrar botón si es CLIENTE (no preventista)
+                        // âœ… Solo mostrar botÃ³n si es CLIENTE (no preventista)
                         if (!_esPreventista) ...[
                           const SizedBox(height: 24),
                           ElevatedButton.icon(
@@ -197,7 +196,7 @@ class _DireccionEntregaSeleccionScreenState
                               });
                             },
                             icon: const Icon(Icons.add_location),
-                            label: const Text('Agregar Dirección'),
+                            label: const Text('Agregar DirecciÃ³n'),
                             style: ElevatedButton.styleFrom(
                               padding: const EdgeInsets.symmetric(
                                 horizontal: 32,
@@ -213,7 +212,7 @@ class _DireccionEntregaSeleccionScreenState
 
                 return Column(
                   children: [
-                    // Header con información (dinámico según rol)
+                    // Header con informaciÃ³n (dinÃ¡mico segÃºn rol)
                     Container(
                       width: double.infinity,
                       padding: const EdgeInsets.all(16),
@@ -227,8 +226,8 @@ class _DireccionEntregaSeleccionScreenState
                         children: [
                           Text(
                             _esPreventista
-                                ? 'Selecciona dirección de entrega para ${cliente.nombre ?? 'el cliente'}'
-                                : 'Selecciona dónde deseas recibir tu pedido',
+                                ? 'Selecciona direcciÃ³n de entrega para ${cliente.nombre ?? 'el cliente'}'
+                                : 'Selecciona dÃ³nde deseas recibir tu pedido',
                             style: TextStyle(
                               fontSize: AppTextStyles.bodyLarge(
                                 context,
@@ -239,7 +238,7 @@ class _DireccionEntregaSeleccionScreenState
                           const SizedBox(height: 4),
                           Text(
                             _esPreventista
-                                ? 'Elige una dirección del cliente para entregar el pedido'
+                                ? 'Elige una direcciÃ³n del cliente para entregar el pedido'
                                 : 'Elige una de tus direcciones guardadas',
                             style: TextStyle(
                               fontSize: AppTextStyles.bodyMedium(
@@ -252,7 +251,7 @@ class _DireccionEntregaSeleccionScreenState
                                   : Colors.grey[600],
                             ),
                           ),
-                          // ✅ Mostrar badge si es preventista
+                          // âœ… Mostrar badge si es preventista
                           if (_esPreventista) ...[
                             const SizedBox(height: 12),
                             Builder(
@@ -339,7 +338,7 @@ class _DireccionEntregaSeleccionScreenState
                                 padding: const EdgeInsets.all(16),
                                 child: Row(
                                   children: [
-                                    // Icono de selección
+                                    // Icono de selecciÃ³n
                                     Container(
                                       width: 24,
                                       height: 24,
@@ -366,7 +365,7 @@ class _DireccionEntregaSeleccionScreenState
 
                                     const SizedBox(width: 16),
 
-                                    // Información de la dirección
+                                    // InformaciÃ³n de la direcciÃ³n
                                     Expanded(
                                       child: Column(
                                         crossAxisAlignment:
@@ -444,7 +443,7 @@ class _DireccionEntregaSeleccionScreenState
                                             ],
                                           ),
 
-                                          // Mostrar coordenadas GPS si están disponibles
+                                          // Mostrar coordenadas GPS si estÃ¡n disponibles
                                           if (direccion.latitud != null &&
                                               direccion.longitud != null) ...[
                                             const SizedBox(height: 4),
@@ -463,7 +462,7 @@ class _DireccionEntregaSeleccionScreenState
                                                 ),
                                                 const SizedBox(width: 4),
                                                 Text(
-                                                  'Ubicación GPS registrada',
+                                                  'UbicaciÃ³n GPS registrada',
                                                   style: TextStyle(
                                                     color:
                                                         Theme.of(
@@ -540,7 +539,7 @@ class _DireccionEntregaSeleccionScreenState
                       ),
                     ),
 
-                    // Botón continuar
+                    // BotÃ³n continuar
                     Container(
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
@@ -592,3 +591,4 @@ class _DireccionEntregaSeleccionScreenState
     );
   }
 }
+

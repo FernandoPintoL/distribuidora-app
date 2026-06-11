@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../config/config.dart';
 import '../../extensions/theme_extension.dart';
@@ -18,7 +18,7 @@ class _TipoEntregaSeleccionScreenState
   String? _tipoSeleccionado;
 
   void _continuarConDelivery() {
-    // Navegar a la pantalla de selección de dirección (para DELIVERY)
+    // Navegar a la pantalla de selecciÃ³n de direcciÃ³n (para DELIVERY)
     Navigator.pushNamed(
       context,
       '/direccion-entrega-seleccion',
@@ -26,11 +26,11 @@ class _TipoEntregaSeleccionScreenState
   }
 
   void _continuarConPickup() {
-    // Navegar a la pantalla de fecha/hora (para PICKUP, sin dirección)
+    // Navegar a la pantalla de fecha/hora (para PICKUP, sin direcciÃ³n)
     Navigator.pushNamed(
       context,
       '/fecha-hora-entrega',
-      arguments: null, // No pasar dirección para pickup
+      arguments: null, // No pasar direcciÃ³n para pickup
     );
   }
 
@@ -42,7 +42,6 @@ class _TipoEntregaSeleccionScreenState
     return Scaffold(
       appBar: CustomGradientAppBar(
         title: 'Tipo de Entrega',
-        customGradient: AppGradients.blue,
       ),
       body: SingleChildScrollView(
         child: Padding(
@@ -52,7 +51,7 @@ class _TipoEntregaSeleccionScreenState
             children: [
               const SizedBox(height: 20),
 
-              // ✅ NUEVO: Mostrar información del cliente cargado
+              // âœ… NUEVO: Mostrar informaciÃ³n del cliente cargado
               _buildClienteInfoSection(context),
               const SizedBox(height: 24),
 
@@ -67,7 +66,7 @@ class _TipoEntregaSeleccionScreenState
                     ),
                     const SizedBox(height: 12),
                     Text(
-                      '¿Cómo deseas recibir tu pedido?',
+                      'Â¿CÃ³mo deseas recibir tu pedido?',
                       style: context.textTheme.headlineSmall?.copyWith(
                         fontWeight: FontWeight.bold,
                         color: colorScheme.onSurface,
@@ -76,7 +75,7 @@ class _TipoEntregaSeleccionScreenState
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      'Elige la opción que mejor se ajuste a tus necesidades',
+                      'Elige la opciÃ³n que mejor se ajuste a tus necesidades',
                       style: context.textTheme.bodyMedium?.copyWith(
                         color: colorScheme.onSurfaceVariant,
                       ),
@@ -87,11 +86,11 @@ class _TipoEntregaSeleccionScreenState
               ),
               const SizedBox(height: 40),
 
-              // Opción DELIVERY
+              // OpciÃ³n DELIVERY
               _buildTipoEntregaCard(
                 context: context,
                 titulo: 'Entrega a Domicilio',
-                descripcion: 'Te lo llevamos a tu dirección',
+                descripcion: 'Te lo llevamos a tu direcciÃ³n',
                 icono: Icons.delivery_dining_outlined,
                 color: const Color(0xFF4CAF50),
                 onTap: _continuarConDelivery,
@@ -100,11 +99,11 @@ class _TipoEntregaSeleccionScreenState
 
               const SizedBox(height: 20),
 
-              // Opción PICKUP
+              // OpciÃ³n PICKUP
               _buildTipoEntregaCard(
                 context: context,
-                titulo: 'Retiro en Almacén',
-                descripcion: 'Retira tu pedido en nuestro almacén principal',
+                titulo: 'Retiro en AlmacÃ©n',
+                descripcion: 'Retira tu pedido en nuestro almacÃ©n principal',
                 icono: Icons.storefront_outlined,
                 color: const Color(0xFFFFC107),
                 onTap: _continuarConPickup,
@@ -113,7 +112,7 @@ class _TipoEntregaSeleccionScreenState
 
               const SizedBox(height: 40),
 
-              // Información adicional
+              // InformaciÃ³n adicional
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
@@ -135,7 +134,7 @@ class _TipoEntregaSeleccionScreenState
                         ),
                         const SizedBox(width: 12),
                         Text(
-                          'Información importante',
+                          'InformaciÃ³n importante',
                           style: context.textTheme.bodyLarge?.copyWith(
                             fontWeight: FontWeight.bold,
                             color: colorScheme.onSurface,
@@ -152,7 +151,7 @@ class _TipoEntregaSeleccionScreenState
                         ),
                         children: [
                           TextSpan(
-                            text: '📦 Entrega a Domicilio: ',
+                            text: 'ðŸ“¦ Entrega a Domicilio: ',
                             style: context.textTheme.bodySmall?.copyWith(
                               fontWeight: FontWeight.bold,
                               color: colorScheme.onSurface,
@@ -160,10 +159,10 @@ class _TipoEntregaSeleccionScreenState
                           ),
                           const TextSpan(
                             text:
-                                'Selecciona una dirección y agenda la fecha y hora que mejor te convenga.\n\n',
+                                'Selecciona una direcciÃ³n y agenda la fecha y hora que mejor te convenga.\n\n',
                           ),
                           TextSpan(
-                            text: '🏪 Retiro en Almacén: ',
+                            text: 'ðŸª Retiro en AlmacÃ©n: ',
                             style: context.textTheme.bodySmall?.copyWith(
                               fontWeight: FontWeight.bold,
                               color: colorScheme.onSurface,
@@ -171,7 +170,7 @@ class _TipoEntregaSeleccionScreenState
                           ),
                           const TextSpan(
                             text:
-                                'Agenda la fecha y hora preferida. Te notificaremos cuando el pedido esté listo.',
+                                'Agenda la fecha y hora preferida. Te notificaremos cuando el pedido estÃ© listo.',
                           ),
                         ],
                       ),
@@ -186,7 +185,7 @@ class _TipoEntregaSeleccionScreenState
     );
   }
 
-  /// ✅ NUEVO: Construye una sección visual mostrando la información del cliente
+  /// âœ… NUEVO: Construye una secciÃ³n visual mostrando la informaciÃ³n del cliente
   Widget _buildClienteInfoSection(BuildContext context) {
     final colorScheme = context.colorScheme;
     final isDark = context.isDark;
@@ -211,7 +210,7 @@ class _TipoEntregaSeleccionScreenState
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Encabezado con ícono
+              // Encabezado con Ã­cono
               Row(
                 children: [
                   Icon(
@@ -222,7 +221,7 @@ class _TipoEntregaSeleccionScreenState
                   const SizedBox(width: 12),
                   Expanded(
                     child: Text(
-                      'Información del Cliente',
+                      'InformaciÃ³n del Cliente',
                       style: context.textTheme.bodyLarge?.copyWith(
                         fontWeight: FontWeight.bold,
                         color: colorScheme.onSurface,
@@ -262,13 +261,13 @@ class _TipoEntregaSeleccionScreenState
               ),
               const SizedBox(height: 12),
 
-              // Teléfono (si existe)
+              // TelÃ©fono (si existe)
               if (cliente.telefono != null)
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Teléfono',
+                      'TelÃ©fono',
                       style: context.textTheme.bodySmall?.copyWith(
                         color: colorScheme.onSurfaceVariant,
                         fontWeight: FontWeight.w500,
@@ -284,7 +283,7 @@ class _TipoEntregaSeleccionScreenState
                   ],
                 ),
 
-              // Información de crédito (si existe)
+              // InformaciÃ³n de crÃ©dito (si existe)
               if (cliente.puedeAtenerCredito == true) ...[
                 const SizedBox(height: 12),
                 Container(
@@ -302,7 +301,7 @@ class _TipoEntregaSeleccionScreenState
                       ),
                       const SizedBox(width: 8),
                       Text(
-                        'Cliente con crédito disponible',
+                        'Cliente con crÃ©dito disponible',
                         style: context.textTheme.bodySmall?.copyWith(
                           color: const Color(0xFF4CAF50),
                           fontWeight: FontWeight.w600,
@@ -400,7 +399,7 @@ class _TipoEntregaSeleccionScreenState
               ),
             ),
             const SizedBox(width: 12),
-            // Indicador de selección
+            // Indicador de selecciÃ³n
             Container(
               width: 28,
               height: 28,
@@ -428,3 +427,4 @@ class _TipoEntregaSeleccionScreenState
     );
   }
 }
+

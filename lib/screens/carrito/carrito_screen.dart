@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/providers.dart';
 import '../../models/client.dart';
@@ -23,16 +23,16 @@ class _CarritoScreenState extends State<CarritoScreen> {
   void initState() {
     super.initState();
 
-    // 🔑 FASE 3: Calcular precios CON RANGOS cuando se abre la pantalla
+    // ðŸ”‘ FASE 3: Calcular precios CON RANGOS cuando se abre la pantalla
     // Usamos calcularCarritoConRangosAhora() porque es la PRIMERA vez
     // (no usamos debounce para la carga inicial)
     Future.delayed(Duration.zero, () {
       final clientProvider = context.read<ClientProvider>();
 
-      // ✅ Si hay cliente pre-seleccionado, cargar sus datos automáticamente
+      // âœ… Si hay cliente pre-seleccionado, cargar sus datos automÃ¡ticamente
       if (widget.clientePreseleccionado != null) {
         debugPrint(
-          '📦 Cliente pre-seleccionado: ${widget.clientePreseleccionado!.nombre}',
+          'ðŸ“¦ Cliente pre-seleccionado: ${widget.clientePreseleccionado!.nombre}',
         );
         // Cargar los datos del cliente pre-seleccionado
         clientProvider.loadClients(
@@ -41,8 +41,8 @@ class _CarritoScreenState extends State<CarritoScreen> {
           perPage: 1,
         );
       }
-      // ✅ SIMPLIFICADO: Ya no cargar 20 clientes iniciales
-      // Se cargan solo cuando el usuario presiona búsqueda
+      // âœ… SIMPLIFICADO: Ya no cargar 20 clientes iniciales
+      // Se cargan solo cuando el usuario presiona bÃºsqueda
 
       final carritoProvider = context.read<CarritoProvider>();
       if (carritoProvider.isNotEmpty) {
@@ -55,8 +55,7 @@ class _CarritoScreenState extends State<CarritoScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: CustomGradientAppBar(
-        title: 'Mi Carritos',
-        customGradient: AppGradients.blue,
+        title: 'Mi Carrito',
         actions: [
           Consumer<CarritoProvider>(
             builder: (context, carritoProvider, _) {
@@ -88,18 +87,23 @@ class _CarritoScreenState extends State<CarritoScreen> {
               (role) => role.toLowerCase() == 'preventista',
             );
           } catch (e) {
-            debugPrint('❌ Error al verificar rol en CarritoScreen: $e');
+            debugPrint('âŒ Error al verificar rol en CarritoScreen: $e');
           }
 
           return SingleChildScrollView(
             child: Column(
               children: [
-                // ✅ NUEVO: Banner cuando se está editando una proforma
+                // âœ… NUEVO: Banner cuando se estÃ¡ editando una proforma
                 if (carritoProvider.editandoProforma)
-                  CarritoEditandoProformaBanner(carritoProvider: carritoProvider,),
+                  CarritoEditandoProformaBanner(
+                    carritoProvider: carritoProvider,
+                  ),
 
-                // ✅ NUEVO: Selector de cliente (solo para preventista)
-                CarritoClienteSelector(carritoProvider: carritoProvider, clientProvider: clientProvider,),
+                // âœ… NUEVO: Selector de cliente (solo para preventista)
+                CarritoClienteSelector(
+                  carritoProvider: carritoProvider,
+                  clientProvider: clientProvider,
+                ),
 
                 // Mostrar mensaje de error si existe
                 if (carritoProvider.errorMessage != null)
@@ -108,21 +112,28 @@ class _CarritoScreenState extends State<CarritoScreen> {
                     onClose: () => carritoProvider.limpiarError(),
                   ),
 
-                // ✅ NUEVO: Mostrar contador de items en el carrito (considerando combos)
+                // âœ… NUEVO: Mostrar contador de items en el carrito (considerando combos)
                 Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 4.0),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16.0,
+                    vertical: 4.0,
+                  ),
                   child: Builder(
                     builder: (context) {
                       // Calcular cantidad total de items considerando combos
                       int totalItems = 0;
                       for (final item in carritoProvider.items) {
-                        if (item.producto.esCombo && item.comboItemsSeleccionados != null && item.comboItemsSeleccionados!.isNotEmpty) {
+                        if (item.producto.esCombo &&
+                            item.comboItemsSeleccionados != null &&
+                            item.comboItemsSeleccionados!.isNotEmpty) {
                           // Combo: Sumar cantidad de todos sus componentes * cantidad del combo
-                          for (final comboItem in item.comboItemsSeleccionados!) {
-                            final comboItemCantidad = comboItem['cantidad'] ?? 1;
+                          for (final comboItem
+                              in item.comboItemsSeleccionados!) {
+                            final comboItemCantidad =
+                                comboItem['cantidad'] ?? 1;
                             final cantidad = comboItemCantidad is int
-                              ? comboItemCantidad
-                              : (comboItemCantidad as num).toInt();
+                                ? comboItemCantidad
+                                : (comboItemCantidad as num).toInt();
                             totalItems += cantidad * item.cantidad.toInt();
                           }
                         } else {
@@ -134,23 +145,25 @@ class _CarritoScreenState extends State<CarritoScreen> {
                       final esValido = totalItems >= 5;
                       return Row(
                         children: [
-                          Text(
-                            '📦 Total de items: ',
-                          ),
+                          Text('ðŸ“¦ Total de items: '),
                           Text(
                             '$totalItems',
-                            style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                              fontWeight: FontWeight.bold,
-                              color: esValido ? Colors.green : Colors.orange,
-                            ),
+                            style: Theme.of(context).textTheme.bodyLarge
+                                ?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                  color: esValido
+                                      ? Colors.green
+                                      : Colors.orange,
+                                ),
                           ),
                           if (!esValido) ...[
                             Text(
-                              ' (mínimo 5)',
-                              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                                color: Colors.orange,
-                                fontSize: 13,
-                              ),
+                              ' (mÃ­nimo 5)',
+                              style: Theme.of(context).textTheme.bodyLarge
+                                  ?.copyWith(
+                                    color: Colors.orange,
+                                    fontSize: 13,
+                                  ),
                             ),
                           ],
                         ],
@@ -165,7 +178,7 @@ class _CarritoScreenState extends State<CarritoScreen> {
                   physics: const NeverScrollableScrollPhysics(),
                   itemCount: carritoProvider.items.length,
                   padding: const EdgeInsets.only(
-                    bottom: 90, // 🔑 NUEVO: Espacio para el CarritoTotalBar
+                    bottom: 90, // ðŸ”‘ NUEVO: Espacio para el CarritoTotalBar
                     left: 0,
                     right: 0,
                   ),
@@ -189,14 +202,14 @@ class _CarritoScreenState extends State<CarritoScreen> {
                               carritoProvider,
                               duracion: 3,
                             );
-                            // Recalcular con rangos después de cambiar cantidad
+                            // Recalcular con rangos despuÃ©s de cambiar cantidad
                             carritoProvider.calcularCarritoConRangos();
                           },
                           onDecrement: () {
                             carritoProvider.decrementarCantidad(
                               item.producto.id,
                             );
-                            // Recalcular con rangos después de cambiar cantidad
+                            // Recalcular con rangos despuÃ©s de cambiar cantidad
                             carritoProvider.calcularCarritoConRangos();
                           },
                           onRemove: () {
@@ -209,7 +222,7 @@ class _CarritoScreenState extends State<CarritoScreen> {
                                 duration: const Duration(seconds: 2),
                               ),
                             );
-                            // Recalcular con rangos después de eliminar
+                            // Recalcular con rangos despuÃ©s de eliminar
                             carritoProvider.calcularCarritoConRangos();
                           },
                           onUpdateCantidad: (nuevaCantidad) {
@@ -222,7 +235,7 @@ class _CarritoScreenState extends State<CarritoScreen> {
                               carritoProvider,
                               duracion: 3,
                             );
-                            // Recalcular con rangos después de cambiar cantidad
+                            // Recalcular con rangos despuÃ©s de cambiar cantidad
                             carritoProvider.calcularCarritoConRangos();
                           },
                           onAgregarParaAhorrar: () {
@@ -233,7 +246,7 @@ class _CarritoScreenState extends State<CarritoScreen> {
                               );
                             }
                           },
-                          // ✅ NUEVO: Callback para navegar a producto_detalle_screen
+                          // âœ… NUEVO: Callback para navegar a producto_detalle_screen
                           onProductoTap: () {
                             Navigator.push(
                               context,
@@ -246,7 +259,7 @@ class _CarritoScreenState extends State<CarritoScreen> {
                             );
                           },
                         ),
-                        // ✅ NUEVO: Mostrar detalles del combo si tiene items seleccionados
+                        // âœ… NUEVO: Mostrar detalles del combo si tiene items seleccionados
                         if (item.producto.esCombo &&
                             item.comboItemsSeleccionados != null &&
                             item.comboItemsSeleccionados!.isNotEmpty)
@@ -271,20 +284,20 @@ class _CarritoScreenState extends State<CarritoScreen> {
           );
         },
       ),
-      // ✅ NUEVO: FloatingActionButton para agregar más productos (solo en edición de proforma)
+      // âœ… NUEVO: FloatingActionButton para agregar mÃ¡s productos (solo en ediciÃ³n de proforma)
       floatingActionButton: Consumer<CarritoProvider>(
         builder: (context, carritoProvider, _) {
-          // Solo mostrar FAB si se está editando una proforma
+          // Solo mostrar FAB si se estÃ¡ editando una proforma
           if (!carritoProvider.editandoProforma) return const SizedBox.shrink();
 
           return FloatingActionButton(
             onPressed: () {
               debugPrint(
-                '➕ Abriendo pantalla de productos para agregar más items a la proforma',
+                'âž• Abriendo pantalla de productos para agregar mÃ¡s items a la proforma',
               );
               Navigator.pushNamed(context, '/products');
             },
-            tooltip: 'Agregar más productos a la proforma',
+            tooltip: 'Agregar mÃ¡s productos a la proforma',
             child: const Icon(Icons.add),
           );
         },
@@ -292,3 +305,4 @@ class _CarritoScreenState extends State<CarritoScreen> {
     );
   }
 }
+

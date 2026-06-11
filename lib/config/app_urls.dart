@@ -12,11 +12,16 @@ class AppUrls {
   /// Inicializar URLs desde .env (llamar en main.dart)
   static void initialize() {
     _baseUrl = dotenv.env['BASE_URL'] ?? 'http://192.168.100.22:8000/api';
-    _baseUrlImg = dotenv.env['BASE_URL_IMG'] ?? 'http://192.168.100.22:8000/storage/';
-    _publicPricesUrl = dotenv.env['PUBLIC_PRICES_URL'] ?? 'http://192.168.100.22:8000/public/precios';
-    _publicStockUrl = dotenv.env['PUBLIC_STOCK_URL'] ?? 'http://192.168.100.22:8000/public/precios-stock';
+    _baseUrlImg =
+        dotenv.env['BASE_URL_IMG'] ?? 'http://192.168.100.22:8000/storage/';
+    _publicPricesUrl =
+        dotenv.env['PUBLIC_PRICES_URL'] ??
+        'http://192.168.100.22:8000/public/precios';
+    _publicStockUrl =
+        dotenv.env['PUBLIC_STOCK_URL'] ??
+        'http://192.168.100.22:8000/public/precios-stock';
 
-    debugPrintUrls();
+    // debugPrintUrls();
   }
 
   /// URL base para la API

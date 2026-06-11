@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:geolocator/geolocator.dart';
 import '../../providers/entrega_provider.dart';
@@ -8,7 +8,7 @@ import '../../widgets/widgets.dart';
 import '../../config/config.dart';
 
 /// Pantalla de tracking en tiempo real para choferes
-/// Muestra ubicación en vivo, marcadores de entregas y estadísticas de ruta
+/// Muestra ubicaciÃ³n en vivo, marcadores de entregas y estadÃ­sticas de ruta
 class TrackingScreen extends StatefulWidget {
   const TrackingScreen({Key? key}) : super(key: key);
 
@@ -61,9 +61,8 @@ class _TrackingScreenState extends State<TrackingScreen> {
     return Scaffold(
       appBar: CustomGradientAppBar(
         title: 'Tracking en Vivo',
-        customGradient: AppGradients.green,
         actions: [
-          // Botón para refrescar ubicación
+          // BotÃ³n para refrescar ubicaciÃ³n
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 8),
             child: Center(
@@ -120,7 +119,7 @@ class _TrackingScreenState extends State<TrackingScreen> {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    '¡Has completado todas tus entregas del día!',
+                    'Â¡Has completado todas tus entregas del dÃ­a!',
                     style: TextStyle(
                       color: Colors.grey[600],
                       fontSize: AppTextStyles.bodyMedium(context).fontSize!,
@@ -150,7 +149,7 @@ class _TrackingScreenState extends State<TrackingScreen> {
                 ),
                 const SizedBox(height: 8),
 
-                // Panel de información de ruta
+                // Panel de informaciÃ³n de ruta
                 RouteInfoPanel(
                   entregas: entregaProvider.entregas,
                   currentLatitude: _currentPosition?.latitude,
@@ -159,7 +158,7 @@ class _TrackingScreenState extends State<TrackingScreen> {
 
                 const SizedBox(height: 16),
 
-                // Información adicional
+                // InformaciÃ³n adicional
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16),
                   child: Column(
@@ -173,14 +172,14 @@ class _TrackingScreenState extends State<TrackingScreen> {
                       const SizedBox(height: 12),
                       _MapLegendItem(
                         color: Colors.blue,
-                        label: 'Tu ubicación actual',
+                        label: 'Tu ubicaciÃ³n actual',
                       ),
                       const SizedBox(height: 8),
                       _MapLegendItem(color: Colors.blue, label: 'Asignada'),
                       const SizedBox(height: 8),
                       _MapLegendItem(color: Colors.yellow, label: 'En Camino'),
                       const SizedBox(height: 8),
-                      _MapLegendItem(color: Colors.orange, label: 'Llegó'),
+                      _MapLegendItem(color: Colors.orange, label: 'LlegÃ³'),
                       const SizedBox(height: 8),
                       _MapLegendItem(color: Colors.red, label: 'Novedad'),
                     ],
@@ -197,7 +196,7 @@ class _TrackingScreenState extends State<TrackingScreen> {
   }
 }
 
-/// Widget para mostrar ítems de leyenda del mapa
+/// Widget para mostrar Ã­tems de leyenda del mapa
 class _MapLegendItem extends StatelessWidget {
   final Color color;
   final String label;
@@ -230,3 +229,4 @@ class _MapLegendItem extends StatelessWidget {
     );
   }
 }
+

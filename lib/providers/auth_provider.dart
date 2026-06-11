@@ -68,23 +68,23 @@ class AuthProvider with ChangeNotifier {
 
       if (response.success && response.data != null) {
         _user = response.data!.user;
-        debugPrint('✅ User assigned in login: $_user');
-        debugPrint('isLoggedIn: $isLoggedIn');
+        // debugPrint('✅ User assigned in login: $_user');
+        // debugPrint('isLoggedIn: $isLoggedIn');
         _errorMessage = null;
 
         // ✅ NUEVO: Guardar cache TTL desde la respuesta
         _cacheTTL = response.data!.cacheTtl;
         _permissionsUpdatedAt = DateTime.now();
-        debugPrint(
+        /* debugPrint(
           '✅ Cache TTL guardado: ${_cacheTTL} segundos (${minutosRestantesCache} minutos)',
-        );
+        ); */
 
         // ✅ NUEVO: Guardar estadísticas del preventista si existen
         if (response.data!.preventistaStats != null) {
           _preventistaStats = response.data!.preventistaStats;
           // Guardar en SharedPreferences para persistencia
           await _savePreventistaStats(_preventistaStats!);
-          debugPrint('📊 Estadísticas del preventista guardadas');
+          /* debugPrint('📊 Estadísticas del preventista guardadas');
           debugPrint('   Total clientes: ${_preventistaStats!.totalClientes}');
           debugPrint(
             '   Clientes activos: ${_preventistaStats!.clientesActivos}',
@@ -92,7 +92,7 @@ class AuthProvider with ChangeNotifier {
           debugPrint(
             '   Clientes inactivos: ${_preventistaStats!.clientesInactivos}',
           );
-          debugPrint('✅ Stats guardados en SharedPreferences');
+          debugPrint('✅ Stats guardados en SharedPreferences'); */
         }
 
         // ✅ NUEVO: Si es cliente logueado, cargar su información en el carrito
@@ -100,9 +100,9 @@ class AuthProvider with ChangeNotifier {
             _user != null &&
             _user!.roles != null &&
             _user!.roles!.contains('cliente')) {
-          debugPrint(
+          /* debugPrint(
             '👤 Cliente logueado detectado, cargando datos en carritoProvider...',
-          );
+          ); */
           if (_user!.clienteId != null) {
             try {
               final apiService = ApiService();
@@ -114,9 +114,9 @@ class AuthProvider with ChangeNotifier {
                   clientResponse.data as Map<String, dynamic>,
                 );
                 carritoProvider.setClienteSeleccionado(cliente);
-                debugPrint(
+                /* debugPrint(
                   '👤 Cliente logueado cargado en carrito: ${cliente.nombre} (ID: ${cliente.id})',
-                );
+                );*/
               } else {
                 debugPrint(
                   '⚠️ Error al cargar cliente: ${clientResponse.statusCode}',
@@ -135,7 +135,7 @@ class AuthProvider with ChangeNotifier {
         if (_user != null &&
             _user!.roles != null &&
             _user!.roles!.contains('chofer')) {
-          debugPrint('👷 Chofer detectado, iniciando servicio de background');
+          /* debugPrint('👷 Chofer detectado, iniciando servicio de background');*/
           await BackgroundNotificationService.startForChofer();
         }
 
@@ -184,9 +184,9 @@ class AuthProvider with ChangeNotifier {
         // ✅ NUEVO: Guardar cache TTL desde la respuesta
         _cacheTTL = response.data!.cacheTtl;
         _permissionsUpdatedAt = DateTime.now();
-        debugPrint(
+        /* debugPrint(
           '✅ Cache TTL guardado en registro: ${_cacheTTL} segundos (${minutosRestantesCache} minutos)',
-        );
+        ); */
 
         // Conectar al WebSocket después de registro exitoso
         _connectWebSocket(response.data!.token);
@@ -222,7 +222,7 @@ class AuthProvider with ChangeNotifier {
     notifyListeners();
 
     try {
-      debugPrint('📡 Loading user from API...');
+      // debugPrint('📡 Loading user from API...');
       final response = await _authService.getUser();
 
       if (response.success && response.data != null) {
@@ -237,10 +237,10 @@ class AuthProvider with ChangeNotifier {
             _preventistaStats = PreventistStats.fromJson(
               userWithStats['preventista_stats'],
             );
-            debugPrint('📊 PreventistaStats obtenidos desde API /user');
+            /* debugPrint('📊 PreventistaStats obtenidos desde API /user');
             debugPrint(
               '   Total clientes: ${_preventistaStats!.totalClientes}',
-            );
+            ); */
           } catch (e) {
             debugPrint('❌ Error parseando preventistaStats: $e');
           }
@@ -258,16 +258,16 @@ class AuthProvider with ChangeNotifier {
         if (_user != null &&
             _user!.roles != null &&
             _user!.roles!.contains('chofer')) {
-          debugPrint(
+          /* debugPrint(
             '👷 Chofer detectado al cargar usuario, iniciando servicio de background',
-          );
+          ); */
           await BackgroundNotificationService.startForChofer();
         }
 
         // ✅ NUEVO: Refrescar permisos si es necesario
         await refreshPermissionsIfNeeded();
 
-        debugPrint('✅ User loaded successfully: ${_user?.name}');
+        /* debugPrint('✅ User loaded successfully: ${_user?.name}'); */
         _isLoading = false;
         notifyListeners();
         return true;
@@ -351,14 +351,14 @@ class AuthProvider with ChangeNotifier {
   Future<void> refreshPermissionsIfNeeded() async {
     // Si el caché aún es válido, no hacer nada
     if (_isPermissionsCacheValid) {
-      debugPrint(
+      /* debugPrint(
         '✅ Permisos en caché aún válidos (${minutosRestantesCache} minutos restantes)',
-      );
+      ); */
       return;
     }
 
     try {
-      debugPrint('🔄 Refrescando permisos desde servidor...');
+      /* debugPrint('🔄 Refrescando permisos desde servidor...');*/
       final response = await _authService.refreshPermissions();
 
       if (response.success) {
@@ -369,7 +369,7 @@ class AuthProvider with ChangeNotifier {
           _cacheTTL = response.cacheTtl;
           _permissionsUpdatedAt = DateTime.now();
 
-          debugPrint('✅ Permisos refrescados correctamente');
+          /* debugPrint('✅ Permisos refrescados correctamente');*/
           debugPrint('   - Permisos: ${response.permissions.length}');
           debugPrint('   - Roles: ${response.roles.length}');
           debugPrint('   - TTL: ${_cacheTTL} segundos');
@@ -390,18 +390,18 @@ class AuthProvider with ChangeNotifier {
   /// Utiliza validación de token Sanctum contra BD de Laravel
   void _connectWebSocket(String token) {
     if (_user == null) {
-      debugPrint('⚠️ No se puede conectar al WebSocket sin usuario');
+      // debugPrint('⚠️ No se puede conectar al WebSocket sin usuario');
       return;
     }
 
     // Determinar userType basado en roles del usuario
     final userType = _mapRoleToUserType(_user!.roles);
 
-    debugPrint('🔌 Conectando WebSocket:');
+    /* debugPrint('🔌 Conectando WebSocket:');
     debugPrint('   - userId: ${_user!.id}');
     debugPrint('   - userName: ${_user!.name}');
     debugPrint('   - userType: $userType');
-    debugPrint('   - token: ${token.substring(0, 10)}...');
+    debugPrint('   - token: ${token.substring(0, 10)}...');*/
 
     // Conectar en segundo plano, no bloquear la UI
     // El servidor validará el token Sanctum contra la BD de PostgreSQL
@@ -412,8 +412,8 @@ class AuthProvider with ChangeNotifier {
           userType: userType,
         )
         .then((_) {
-          debugPrint('✅ WebSocket conectado para usuario ${_user!.name}');
-          debugPrint('   Autenticación validada contra BD de Laravel');
+          /* debugPrint('✅ WebSocket conectado para usuario ${_user!.name}');
+          debugPrint('   Autenticación validada contra BD de Laravel'); */
         })
         .catchError((error) {
           debugPrint('❌ Error conectando WebSocket: $error');
@@ -499,19 +499,19 @@ class AuthProvider with ChangeNotifier {
     final isSupported = await _biometricService.isDeviceSupported();
     _biometricAvailable = canCheck && isSupported;
 
-    debugPrint('🔐 Verificación de biometría:');
+    /* debugPrint('🔐 Verificación de biometría:');
     debugPrint('   - canCheckBiometrics: $canCheck');
     debugPrint('   - isDeviceSupported: $isSupported');
-    debugPrint('   - _biometricAvailable: $_biometricAvailable');
+    debugPrint('   - _biometricAvailable: $_biometricAvailable'); */
 
     if (_biometricAvailable) {
       _hasFaceRecognition = await _biometricService.hasFaceRecognition();
       _hasFingerprintRecognition = await _biometricService
           .hasFingerprintRecognition();
 
-      debugPrint('✅ Biometría disponible:');
+      /* debugPrint('✅ Biometría disponible:');
       debugPrint('   - Face ID/Facial: $_hasFaceRecognition');
-      debugPrint('   - Huella Digital: $_hasFingerprintRecognition');
+      debugPrint('   - Huella Digital: $_hasFingerprintRecognition'); */
     } else {
       debugPrint('⚠️ Biometría NO disponible');
       _hasFaceRecognition = false;
@@ -586,7 +586,7 @@ class AuthProvider with ChangeNotifier {
       final prefs = await SharedPreferences.getInstance();
       final statsJson = jsonEncode(stats.toJson());
       await prefs.setString('preventista_stats', statsJson);
-      debugPrint('💾 PreventistaStats guardados en SharedPreferences');
+      // debugPrint('💾 PreventistaStats guardados en SharedPreferences');
     } catch (e) {
       debugPrint('❌ Error al guardar preventistaStats: $e');
     }
@@ -601,7 +601,7 @@ class AuthProvider with ChangeNotifier {
       if (statsJson != null) {
         final statsMap = jsonDecode(statsJson);
         _preventistaStats = PreventistStats.fromJson(statsMap);
-        debugPrint('📂 PreventistaStats cargados desde SharedPreferences');
+        // debugPrint('📂 PreventistaStats cargados desde SharedPreferences');
       } else {
         debugPrint('ℹ️ No hay preventistaStats guardados en SharedPreferences');
         _preventistaStats = null;
@@ -617,7 +617,7 @@ class AuthProvider with ChangeNotifier {
     try {
       final prefs = await SharedPreferences.getInstance();
       await prefs.remove('preventista_stats');
-      debugPrint('🗑️ PreventistaStats removidos de SharedPreferences');
+      // debugPrint('🗑️ PreventistaStats removidos de SharedPreferences');
     } catch (e) {
       debugPrint('❌ Error al limpiar preventistaStats: $e');
     }

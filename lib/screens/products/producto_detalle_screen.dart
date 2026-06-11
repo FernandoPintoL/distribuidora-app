@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../models/models.dart';
 import '../../models/detalle_carrito_con_rango.dart';
@@ -9,7 +9,7 @@ import '../../config/config.dart';
 import '../../extensions/theme_extension.dart';
 
 /// Pantalla de detalle de producto
-/// Muestra información completa del producto y permite agregar al carrito
+/// Muestra informaciÃ³n completa del producto y permite agregar al carrito
 class ProductoDetalleScreen extends StatefulWidget {
   final Product producto;
 
@@ -29,7 +29,7 @@ class _ProductoDetalleScreenState extends State<ProductoDetalleScreen> {
   int _cantidad = 1;
   bool _agregandoAlCarrito = false;
 
-  // ✅ NUEVO: Estado para items opcionales de combos (múltiples selecciones)
+  // âœ… NUEVO: Estado para items opcionales de combos (mÃºltiples selecciones)
   final List<ComboItem> _itemsOpcionalesSeleccionados = [];
   final Map<int, int> _cantidadesOpcionales = {};
 
@@ -39,10 +39,10 @@ class _ProductoDetalleScreenState extends State<ProductoDetalleScreen> {
     _cantidadFocusNode = FocusNode();
     _observacionesController = TextEditingController();
 
-    // ✅ Inicializar controller con valor por defecto
+    // âœ… Inicializar controller con valor por defecto
     _cantidadController = TextEditingController(text: '1');
 
-    // ✅ NUEVO: Actualizar con la cantidad actual en el carrito + cargar combo items
+    // âœ… NUEVO: Actualizar con la cantidad actual en el carrito + cargar combo items
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
         final carritoProvider = context.read<CarritoProvider>();
@@ -51,11 +51,11 @@ class _ProductoDetalleScreenState extends State<ProductoDetalleScreen> {
           _cantidad = cantidadEnCarrito;
           _cantidadController.text = _cantidad.toString();
 
-          // ✅ NUEVO: Cargar items opcionales seleccionados desde el carrito
+          // âœ… NUEVO: Cargar items opcionales seleccionados desde el carrito
           _cargarItemsOpcionalesDelCarrito(carritoProvider);
         }
 
-        // ✅ NUEVO: Agregar listener para detectar pérdida de foco
+        // âœ… NUEVO: Agregar listener para detectar pÃ©rdida de foco
         _cantidadFocusNode.addListener(() {
           if (!_cantidadFocusNode.hasFocus && mounted) {
             _onFocusLostCantidad();
@@ -73,7 +73,7 @@ class _ProductoDetalleScreenState extends State<ProductoDetalleScreen> {
     super.dispose();
   }
 
-  // ✅ NUEVO: Cargar items opcionales seleccionados desde el carrito
+  // âœ… NUEVO: Cargar items opcionales seleccionados desde el carrito
   void _cargarItemsOpcionalesDelCarrito(CarritoProvider carritoProvider) {
     try {
       final item = carritoProvider.carrito.items.firstWhere(
@@ -100,20 +100,20 @@ class _ProductoDetalleScreenState extends State<ProductoDetalleScreen> {
             _itemsOpcionalesSeleccionados.add(comboItem);
             _cantidadesOpcionales[comboItemId] = cantidad;
           } catch (e) {
-            debugPrint('⚠️ No se encontró combo item con id $comboItemId');
+            debugPrint('âš ï¸ No se encontrÃ³ combo item con id $comboItemId');
           }
         }
 
         setState(() {});
-        debugPrint('✅ Items opcionales cargados: ${_itemsOpcionalesSeleccionados.length}');
+        debugPrint('âœ… Items opcionales cargados: ${_itemsOpcionalesSeleccionados.length}');
       }
     } catch (e) {
       // No hay item en el carrito para este producto
-      debugPrint('ℹ️ No hay item en carrito para este producto');
+      debugPrint('â„¹ï¸ No hay item en carrito para este producto');
     }
   }
 
-  // ✅ NUEVO: Construir combo items (obligatorios + opcionales seleccionados)
+  // âœ… NUEVO: Construir combo items (obligatorios + opcionales seleccionados)
   List<Map<String, dynamic>>? _construirComboItems() {
     if (!widget.producto.esCombo) return null;
 
@@ -142,17 +142,17 @@ class _ProductoDetalleScreenState extends State<ProductoDetalleScreen> {
     final stock = (widget.producto.stockPrincipal?.cantidadDisponible ?? 0 as num).toInt();
 
     if (cantidadActual < stock) {
-      // ✅ ACTUALIZADO: Agregar combo con items obligatorios pre-incluidos
+      // âœ… ACTUALIZADO: Agregar combo con items obligatorios pre-incluidos
       carritoProvider.agregarProducto(
         widget.producto,
         cantidad: 1,
         comboItemsSeleccionados: _construirComboItems(),
       );
 
-      // ✅ NUEVO: Recalcular con rangos después de cambiar cantidad
+      // âœ… NUEVO: Recalcular con rangos despuÃ©s de cambiar cantidad
       carritoProvider.calcularCarritoConRangos();
 
-      // ✅ NUEVO: Sincronizar el input
+      // âœ… NUEVO: Sincronizar el input
       setState(() {
         _cantidad = cantidadActual + 1;
         _cantidadController.text = _cantidad.toString();
@@ -168,10 +168,10 @@ class _ProductoDetalleScreenState extends State<ProductoDetalleScreen> {
       // Decrementar 1 unidad del carrito
       carritoProvider.decrementarCantidad(widget.producto.id);
 
-      // ✅ NUEVO: Recalcular con rangos después de cambiar cantidad
+      // âœ… NUEVO: Recalcular con rangos despuÃ©s de cambiar cantidad
       carritoProvider.calcularCarritoConRangos();
 
-      // ✅ NUEVO: Sincronizar el input
+      // âœ… NUEVO: Sincronizar el input
       setState(() {
         _cantidad = cantidadActual - 1;
         _cantidadController.text = _cantidad.toString();
@@ -184,41 +184,41 @@ class _ProductoDetalleScreenState extends State<ProductoDetalleScreen> {
     final stock =
         (widget.producto.stockPrincipal?.cantidadDisponible ?? 0 as num).toInt();
 
-    // ✅ NUEVO: Si está vacío mientras escribe, ignorar (no eliminar)
+    // âœ… NUEVO: Si estÃ¡ vacÃ­o mientras escribe, ignorar (no eliminar)
     if (valor.isEmpty) {
       return;
     }
 
     final cantidadIngresada = int.tryParse(valor) ?? 0;
 
-    // ✅ NUEVO: Si es 0 o negativo, ignorar (no eliminar automáticamente)
+    // âœ… NUEVO: Si es 0 o negativo, ignorar (no eliminar automÃ¡ticamente)
     if (cantidadIngresada <= 0) {
       return;
     }
 
     if (cantidadIngresada > stock) {
-      // Si excede stock, ajustar al máximo disponible
+      // Si excede stock, ajustar al mÃ¡ximo disponible
       _mostrarError('La cantidad no puede exceder el stock disponible ($stock)');
       _cantidadController.text = stock.toString();
       carritoProvider.actualizarCantidad(widget.producto.id, stock);
-      // ✅ NUEVO: Recalcular con rangos después de cambiar cantidad
+      // âœ… NUEVO: Recalcular con rangos despuÃ©s de cambiar cantidad
       carritoProvider.calcularCarritoConRangos();
       setState(() => _cantidad = stock);
       return;
     }
 
-    // ✅ Actualizar cantidad directamente en el carrito
+    // âœ… Actualizar cantidad directamente en el carrito
     carritoProvider.actualizarCantidad(widget.producto.id, cantidadIngresada);
-    // ✅ NUEVO: Recalcular con rangos después de cambiar cantidad
+    // âœ… NUEVO: Recalcular con rangos despuÃ©s de cambiar cantidad
     carritoProvider.calcularCarritoConRangos();
     setState(() => _cantidad = cantidadIngresada);
   }
 
-  // ✅ ACTUALIZADO: El QuantityInputWidget maneja la validación internamente
-  // Este método ya no es necesario, pero lo mantenemos para compatibilidad
+  // âœ… ACTUALIZADO: El QuantityInputWidget maneja la validaciÃ³n internamente
+  // Este mÃ©todo ya no es necesario, pero lo mantenemos para compatibilidad
   void _onFocusLostCantidad() {
-    // La validación ahora se hace dentro de QuantityInputWidget
-    // Este método solo se llama si el campo se queda vacío
+    // La validaciÃ³n ahora se hace dentro de QuantityInputWidget
+    // Este mÃ©todo solo se llama si el campo se queda vacÃ­o
     if (_cantidad <= 0) {
       final carritoProvider = context.read<CarritoProvider>();
       carritoProvider.eliminarProducto(widget.producto.id);
@@ -235,7 +235,7 @@ class _ProductoDetalleScreenState extends State<ProductoDetalleScreen> {
       return;
     }
 
-    // ✅ ACTUALIZADO: Los combos se pueden agregar solo con items obligatorios
+    // âœ… ACTUALIZADO: Los combos se pueden agregar solo con items obligatorios
     // Los items opcionales son... opcionales. No es obligatorio seleccionar ninguno.
 
     setState(() => _agregandoAlCarrito = true);
@@ -244,15 +244,15 @@ class _ProductoDetalleScreenState extends State<ProductoDetalleScreen> {
       // Simular delay de procesamiento
       await Future.delayed(const Duration(milliseconds: 500));
 
-      // ✅ ACTUALIZADO: Usar método auxiliar para construir combo items
+      // âœ… ACTUALIZADO: Usar mÃ©todo auxiliar para construir combo items
       final comboItemsSeleccionados = _construirComboItems();
 
       if (widget.producto.esCombo) {
-        debugPrint('🔍 [_agregarAlCarrito] Items opcionales seleccionados: ${_itemsOpcionalesSeleccionados.length}');
-        debugPrint('📦 [ProductoDetalle] Combo items construidos: $comboItemsSeleccionados');
+        debugPrint('ðŸ” [_agregarAlCarrito] Items opcionales seleccionados: ${_itemsOpcionalesSeleccionados.length}');
+        debugPrint('ðŸ“¦ [ProductoDetalle] Combo items construidos: $comboItemsSeleccionados');
       }
 
-      // ✅ Agregar al carrito con comboItemsSeleccionados
+      // âœ… Agregar al carrito con comboItemsSeleccionados
       carritoProvider.agregarProducto(
         widget.producto,
         cantidad: _cantidad,
@@ -270,7 +270,7 @@ class _ProductoDetalleScreenState extends State<ProductoDetalleScreen> {
         return;
       }
 
-      // Éxito
+      // Ã‰xito
       _mostrarExito('${widget.producto.nombre} agregado al carrito');
 
       // Limpiar formulario
@@ -290,13 +290,13 @@ class _ProductoDetalleScreenState extends State<ProductoDetalleScreen> {
     }
   }
 
-  /// ✅ ACTUALIZADO: Actualizar items opcionales del combo en el carrito automáticamente
+  /// âœ… ACTUALIZADO: Actualizar items opcionales del combo en el carrito automÃ¡ticamente
   void _actualizarComboEnCarrito() {
     if (!widget.producto.esCombo) return;
 
     final carritoProvider = context.read<CarritoProvider>();
 
-    // ✅ ACTUALIZADO: Usar método auxiliar para construir combo items
+    // âœ… ACTUALIZADO: Usar mÃ©todo auxiliar para construir combo items
     final comboItemsSeleccionados = _construirComboItems();
 
     // Guardar en CarritoProvider
@@ -305,7 +305,7 @@ class _ProductoDetalleScreenState extends State<ProductoDetalleScreen> {
       comboItemsSeleccionados,
     );
 
-    debugPrint('💾 [ProductoDetalle] Combo items guardados en carrito automáticamente: ${comboItemsSeleccionados?.length ?? 0} items');
+    debugPrint('ðŸ’¾ [ProductoDetalle] Combo items guardados en carrito automÃ¡ticamente: ${comboItemsSeleccionados?.length ?? 0} items');
   }
 
   void _mostrarError(String mensaje) {
@@ -341,7 +341,6 @@ class _ProductoDetalleScreenState extends State<ProductoDetalleScreen> {
         return Scaffold(
           appBar: CustomGradientAppBar(
             title: widget.producto.nombre,
-            customGradient: AppGradients.blue,
           ),
           body: Padding(
             padding: const EdgeInsets.all(8.0),
@@ -352,7 +351,7 @@ class _ProductoDetalleScreenState extends State<ProductoDetalleScreen> {
                   // Imagen del producto
                   _buildImageGallery(),
 
-                  // Información básica
+                  // InformaciÃ³n bÃ¡sica
                   Padding(
                     padding: const EdgeInsets.all(16),
                     child: Column(
@@ -362,11 +361,11 @@ class _ProductoDetalleScreenState extends State<ProductoDetalleScreen> {
                         _buildNombreYPrecio(),
                         const SizedBox(height: 16),
 
-                        // Información de stock
+                        // InformaciÃ³n de stock
                         _buildStockInfo(tieneStock, stockDispInt),
                         const SizedBox(height: 16),
 
-                        // Descripción
+                        // DescripciÃ³n
                         if (widget.producto.descripcion != null &&
                             widget.producto.descripcion!.isNotEmpty)
                           _buildDescripcion(),
@@ -382,18 +381,18 @@ class _ProductoDetalleScreenState extends State<ProductoDetalleScreen> {
                           const SizedBox(height: 16),
                           _buildProductosCombo(),
 
-                          // ✅ NUEVO: Componentes requeridos basado en cantidad seleccionada
+                          // âœ… NUEVO: Componentes requeridos basado en cantidad seleccionada
                           _buildComponentesRequeridos(),
                         ],
 
                         // Volume discounts si existen
                         const SizedBox(height: 16),
-                        // Aquí va el widget VolumeDiscountDisplay cuando se integre con descuentos
+                        // AquÃ­ va el widget VolumeDiscountDisplay cuando se integre con descuentos
                       ],
                     ),
                   ),
 
-                  // Sección de agregar al carrito
+                  // SecciÃ³n de agregar al carrito
                   _buildSeccionAgregarAlCarrito(
                     tieneStock: tieneStock,
                     cantidadMinima: cantidadMinima,
@@ -459,12 +458,12 @@ class _ProductoDetalleScreenState extends State<ProductoDetalleScreen> {
       builder: (context, carritoProvider, _) {
         final colorScheme = context.colorScheme;
 
-        // ✅ NUEVO: Obtener detalles con rango de precios
+        // âœ… NUEVO: Obtener detalles con rango de precios
         final detalleConRango = carritoProvider.obtenerDetalleConRango(
           widget.producto.id,
         );
 
-        // ✅ NUEVO: Calcular descuentos y precios
+        // âœ… NUEVO: Calcular descuentos y precios
         final tipoPrecionNombre = detalleConRango?.tipoPrecioNombre.toUpperCase() ?? '';
         final bool esDescuento = detalleConRango != null &&
             _cantidad > 0 &&
@@ -493,13 +492,13 @@ class _ProductoDetalleScreenState extends State<ProductoDetalleScreen> {
             const SizedBox(height: 8),
             if (widget.producto.codigo.isNotEmpty)
               Text(
-                'Código: ${widget.producto.codigo}',
+                'CÃ³digo: ${widget.producto.codigo}',
                 style: Theme.of(context).textTheme.labelMedium?.copyWith(
                       color: colorScheme.onSurfaceVariant,
                     ),
               ),
             const SizedBox(height: 12),
-            // ✅ NUEVO: Mostrar precio original tachado si hay descuento
+            // âœ… NUEVO: Mostrar precio original tachado si hay descuento
             if (tieneDescuento)
               Padding(
                 padding: const EdgeInsets.only(bottom: 4.0),
@@ -511,7 +510,7 @@ class _ProductoDetalleScreenState extends State<ProductoDetalleScreen> {
                   ),
                 ),
               ),
-            // ✅ NUEVO: Mostrar precio actual con color según tipo
+            // âœ… NUEVO: Mostrar precio actual con color segÃºn tipo
             Row(
               children: [
                 Text(
@@ -521,7 +520,7 @@ class _ProductoDetalleScreenState extends State<ProductoDetalleScreen> {
                         color: colorDescuento,
                       ),
                 ),
-                // ✅ NUEVO: Mostrar tipo de precio si aplica rango
+                // âœ… NUEVO: Mostrar tipo de precio si aplica rango
                 if (detalleConRango != null && _cantidad > 0)
                   Padding(
                     padding: const EdgeInsets.only(left: 12.0),
@@ -547,7 +546,7 @@ class _ProductoDetalleScreenState extends State<ProductoDetalleScreen> {
                   ),
               ],
             ),
-            // ✅ NUEVO: Mostrar subtotal si hay cantidad
+            // âœ… NUEVO: Mostrar subtotal si hay cantidad
             if (_cantidad > 0 && detalleConRango != null)
               Padding(
                 padding: const EdgeInsets.only(top: 8.0),
@@ -630,7 +629,7 @@ class _ProductoDetalleScreenState extends State<ProductoDetalleScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Descripción',
+          'DescripciÃ³n',
           style: Theme.of(context).textTheme.titleMedium?.copyWith(
                 fontWeight: FontWeight.bold,
               ),
@@ -652,7 +651,7 @@ class _ProductoDetalleScreenState extends State<ProductoDetalleScreen> {
     }
 
     if (widget.producto.categoria != null) {
-      detalles.add(MapEntry('Categoría', widget.producto.categoria!.nombre));
+      detalles.add(MapEntry('CategorÃ­a', widget.producto.categoria!.nombre));
     }
 
     if (widget.producto.unidadMedida != null) {
@@ -670,7 +669,7 @@ class _ProductoDetalleScreenState extends State<ProductoDetalleScreen> {
     if (widget.producto.codigosBarra != null &&
         widget.producto.codigosBarra!.isNotEmpty) {
       detalles.add(
-        MapEntry('Código de Barra', widget.producto.codigosBarra!.join(', ')),
+        MapEntry('CÃ³digo de Barra', widget.producto.codigosBarra!.join(', ')),
       );
     }
 
@@ -736,7 +735,7 @@ class _ProductoDetalleScreenState extends State<ProductoDetalleScreen> {
         const brownColor = Color(0xFF795548);
         final brownColorLight = brownColor.withAlpha(isDark ? 100 : 40);
 
-        // ✅ ACTUALIZADO: Los combos se pueden agregar solo con items obligatorios
+        // âœ… ACTUALIZADO: Los combos se pueden agregar solo con items obligatorios
         // Items opcionales son realmente opcionales
         final necesitaSeleccionOpcional = false;
 
@@ -758,8 +757,8 @@ class _ProductoDetalleScreenState extends State<ProductoDetalleScreen> {
                 ),
                 child: Text(
                   cantidadEnCarrito > 0
-                      ? '🛒 Cantidad en carrito: $cantidadEnCarrito ${widget.producto.unidadMedida?.nombre ?? 'unidades'}'
-                      : '📦 Este producto no está en el carrito',
+                      ? 'ðŸ›’ Cantidad en carrito: $cantidadEnCarrito ${widget.producto.unidadMedida?.nombre ?? 'unidades'}'
+                      : 'ðŸ“¦ Este producto no estÃ¡ en el carrito',
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                     color: Colors.blue.shade800,
                     fontWeight: FontWeight.w600,
@@ -772,7 +771,7 @@ class _ProductoDetalleScreenState extends State<ProductoDetalleScreen> {
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // ✅ NUEVO: Mostrar advertencia si falta seleccionar opcional
+                    // âœ… NUEVO: Mostrar advertencia si falta seleccionar opcional
                     if (necesitaSeleccionOpcional)
                       Container(
                         width: double.infinity,
@@ -784,7 +783,7 @@ class _ProductoDetalleScreenState extends State<ProductoDetalleScreen> {
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Text(
-                          '⚠️ Debes seleccionar al menos un item del grupo opcional arriba',
+                          'âš ï¸ Debes seleccionar al menos un item del grupo opcional arriba',
                           style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                             color: Colors.orange.shade800,
                             fontWeight: FontWeight.w600,
@@ -799,11 +798,11 @@ class _ProductoDetalleScreenState extends State<ProductoDetalleScreen> {
                     ),
                     const SizedBox(height: 12),
                     if (cantidadEnCarrito == 0)
-                      // Mostrar botón + si no está en carrito
+                      // Mostrar botÃ³n + si no estÃ¡ en carrito
                       SizedBox(
                         width: double.infinity,
                         child: ElevatedButton.icon(
-                          // ✅ NUEVO: Deshabilitar si falta seleccionar opcional
+                          // âœ… NUEVO: Deshabilitar si falta seleccionar opcional
                           onPressed: necesitaSeleccionOpcional ? null : _incrementarCantidad,
                           icon: const Icon(Icons.add_shopping_cart),
                           label: const Text('Agregar al Carrito'),
@@ -815,7 +814,7 @@ class _ProductoDetalleScreenState extends State<ProductoDetalleScreen> {
                         ),
                       )
                     else
-                      // ✅ NUEVO: Usar el QuantityInputWidget moderno
+                      // âœ… NUEVO: Usar el QuantityInputWidget moderno
                       QuantityInputWidget(
                         quantity: _cantidad,
                         maxQuantity: (widget.producto.stockPrincipal?.cantidadDisponible ?? 0 as num).toInt(),
@@ -838,7 +837,7 @@ class _ProductoDetalleScreenState extends State<ProductoDetalleScreen> {
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Text(
-                    '❌ Producto sin stock disponible',
+                    'âŒ Producto sin stock disponible',
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                       color: Colors.red.shade800,
                       fontWeight: FontWeight.w600,
@@ -859,10 +858,10 @@ class _ProductoDetalleScreenState extends State<ProductoDetalleScreen> {
     final isDark = context.isDark;
     final comboItems = widget.producto.comboItems ?? [];
 
-    debugPrint('🔍 [_buildProductosCombo] comboItems.length: ${comboItems.length}');
+    debugPrint('ðŸ” [_buildProductosCombo] comboItems.length: ${comboItems.length}');
 
     if (comboItems.isEmpty) {
-      debugPrint('⚠️ [_buildProductosCombo] comboItems está vacío');
+      debugPrint('âš ï¸ [_buildProductosCombo] comboItems estÃ¡ vacÃ­o');
       return const SizedBox.shrink();
     }
 
@@ -870,13 +869,13 @@ class _ProductoDetalleScreenState extends State<ProductoDetalleScreen> {
     final itemsObligatorios = comboItems.where((item) => item.esObligatorio).toList();
     final itemsOpcionales = comboItems.where((item) => !item.esObligatorio).toList();
 
-    debugPrint('📦 [_buildProductosCombo] Items obligatorios: ${itemsObligatorios.length}');
-    debugPrint('📦 [_buildProductosCombo] Items opcionales: ${itemsOpcionales.length}');
+    debugPrint('ðŸ“¦ [_buildProductosCombo] Items obligatorios: ${itemsObligatorios.length}');
+    debugPrint('ðŸ“¦ [_buildProductosCombo] Items opcionales: ${itemsOpcionales.length}');
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Título de la sección
+        // TÃ­tulo de la secciÃ³n
         Row(
           children: [
             Icon(
@@ -964,7 +963,7 @@ class _ProductoDetalleScreenState extends State<ProductoDetalleScreen> {
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
-                        'Grupo Opcional - Elige uno o más (${_itemsOpcionalesSeleccionados.length} seleccionados)',
+                        'Grupo Opcional - Elige uno o mÃ¡s (${_itemsOpcionalesSeleccionados.length} seleccionados)',
                         style: TextStyle(
                           fontWeight: FontWeight.bold,
                           color: Colors.orange.shade800,
@@ -983,16 +982,16 @@ class _ProductoDetalleScreenState extends State<ProductoDetalleScreen> {
 
                   return Padding(
                     padding: EdgeInsets.only(bottom: isLast ? 0 : 12),
-                    // ✅ NUEVO: Hacer el item interactivo con InkWell
+                    // âœ… NUEVO: Hacer el item interactivo con InkWell
                     child: InkWell(
                       onTap: () {
                         setState(() {
                           if (estaSeleccionado) {
-                            // Remover si ya está seleccionado
+                            // Remover si ya estÃ¡ seleccionado
                             _itemsOpcionalesSeleccionados.removeWhere((i) => i.id == item.id);
                             _cantidadesOpcionales.remove(item.id);
                           } else {
-                            // Agregar si no está seleccionado
+                            // Agregar si no estÃ¡ seleccionado
                             _itemsOpcionalesSeleccionados.add(item);
                             _cantidadesOpcionales.putIfAbsent(
                               item.id,
@@ -1001,7 +1000,7 @@ class _ProductoDetalleScreenState extends State<ProductoDetalleScreen> {
                           }
                         });
 
-                        // ✅ NUEVO: Guardar automáticamente en CarritoProvider
+                        // âœ… NUEVO: Guardar automÃ¡ticamente en CarritoProvider
                         _actualizarComboEnCarrito();
                       },
                       borderRadius: BorderRadius.circular(8),
@@ -1029,7 +1028,7 @@ class _ProductoDetalleScreenState extends State<ProductoDetalleScreen> {
           ),
         ],
 
-        // Información de capacidad
+        // InformaciÃ³n de capacidad
         const SizedBox(height: 12),
         Container(
           padding: const EdgeInsets.all(12),
@@ -1071,7 +1070,7 @@ class _ProductoDetalleScreenState extends State<ProductoDetalleScreen> {
     );
   }
 
-  // ✅ NUEVO: Mostrar componentes requeridos del combo basado en cantidad seleccionada
+  // âœ… NUEVO: Mostrar componentes requeridos del combo basado en cantidad seleccionada
   Widget _buildComponentesRequeridos() {
     if (!widget.producto.esCombo || _cantidad <= 0) {
       return const SizedBox.shrink();
@@ -1092,7 +1091,7 @@ class _ProductoDetalleScreenState extends State<ProductoDetalleScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const SizedBox(height: 16),
-        // Título
+        // TÃ­tulo
         Row(
           children: [
             Icon(
@@ -1288,7 +1287,7 @@ class _ProductoDetalleScreenState extends State<ProductoDetalleScreen> {
             ? colorScheme.surface.withOpacity(0.5)
             : Colors.white,
         border: Border.all(
-          // ✅ NUEVO: Borde azul si está seleccionado
+          // âœ… NUEVO: Borde azul si estÃ¡ seleccionado
           color: estaSeleccionado
               ? Colors.blue.shade400
               : colorScheme.outline.withOpacity(0.2),
@@ -1299,11 +1298,11 @@ class _ProductoDetalleScreenState extends State<ProductoDetalleScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // ✅ NUEVO: Nombre del producto con checkbox si es seleccionable
+          // âœ… NUEVO: Nombre del producto con checkbox si es seleccionable
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // ✅ NUEVO: Checkbox para items opcionales (múltiple selección)
+              // âœ… NUEVO: Checkbox para items opcionales (mÃºltiple selecciÃ³n)
               if (esSeleccionable)
                 Padding(
                   padding: const EdgeInsets.only(right: 8, top: 2),
@@ -1341,7 +1340,7 @@ class _ProductoDetalleScreenState extends State<ProductoDetalleScreen> {
                     borderRadius: BorderRadius.circular(4),
                   ),
                   child: Text(
-                    '⚠️ Límite',
+                    'âš ï¸ LÃ­mite',
                     style: Theme.of(context).textTheme.labelSmall?.copyWith(
                           color: Colors.red.shade700,
                           fontSize: AppTextStyles.labelSmall(context).fontSize!,
@@ -1465,7 +1464,7 @@ class _ProductoDetalleScreenState extends State<ProductoDetalleScreen> {
             ),
           ),
 
-          // Información de combos posibles
+          // InformaciÃ³n de combos posibles
           const SizedBox(height: 8),
           Text(
             'Se pueden hacer ${item.combosPosibles ?? 0} combos con este producto',
@@ -1475,7 +1474,7 @@ class _ProductoDetalleScreenState extends State<ProductoDetalleScreen> {
                 ),
           ),
 
-          // ✅ NUEVO: Controles de cantidad para items opcionales seleccionados
+          // âœ… NUEVO: Controles de cantidad para items opcionales seleccionados
           if (esSeleccionable && estaSeleccionado && cantidadModificable != null && onCantidadChanged != null) ...[
             const SizedBox(height: 12),
             Container(
@@ -1546,3 +1545,4 @@ class _ProductoDetalleScreenState extends State<ProductoDetalleScreen> {
     );
   }
 }
+

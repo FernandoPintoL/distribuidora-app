@@ -13,3 +13,4 @@ export 'notification_service.dart';
 export 'visita_service.dart';
 export 'reporte_producto_danado_service.dart';
 export 'banner_publicitario_service.dart';
+export 'datetime_util_service.dart';

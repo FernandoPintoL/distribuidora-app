@@ -39,18 +39,8 @@ class _HomeScreenState extends BaseHomeScreenState<HomeScreen> {
   @override
   PreferredSizeWidget get appBar => CustomGradientAppBar(
     title: 'Distribuidora Paucara',
-    userRole: _getDynamicRole(),
     actions: [LogoutAction(onLogout: () => _showLogoutDialog(context))],
   );
-
-  String _getDynamicRole() {
-    try {
-      final authProvider = context.read<AuthProvider>();
-      return authProvider.user?.roles?.first ?? 'admin';
-    } catch (e) {
-      return 'admin';
-    }
-  }
 
   @override
   void didChangeDependencies() {

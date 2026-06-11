@@ -69,11 +69,11 @@ abstract class BaseHomeScreenState<T extends BaseHomeScreen> extends State<T> {
       currentIndex: _currentIndex,
       onTap: onNavigationItemTapped,
       type: BottomNavigationBarType.fixed,
-      selectedItemColor: Colors.teal,
+      selectedItemColor: colorScheme.primary,
       unselectedItemColor: isDarkMode
           ? Colors.grey.shade600
           : Colors.grey.shade500,
-      backgroundColor: isDarkMode ? colorScheme.surface : colorScheme.surface,
+      backgroundColor: colorScheme.surface,
       items: navigationItems.map((item) => item.toBottomNavItem()).toList(),
     );
   }

@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import '../../models/models.dart';
 import '../../widgets/direccion_form_widget.dart';
 import '../../widgets/widgets.dart';
@@ -23,7 +23,7 @@ class _DireccionFormScreenState extends State<DireccionFormScreen> {
   bool _esPrincipal = false;
   bool _isSaving = false;
 
-  // Campos de ubicación GPS
+  // Campos de ubicaciÃ³n GPS
   double? _latitude;
   double? _longitude;
   int? _selectedLocalidadId;
@@ -84,14 +84,14 @@ class _DireccionFormScreenState extends State<DireccionFormScreen> {
         SnackBar(
           content: Text(
             widget.direccion == null
-                ? 'Dirección agregada correctamente'
-                : 'Dirección actualizada correctamente',
+                ? 'DirecciÃ³n agregada correctamente'
+                : 'DirecciÃ³n actualizada correctamente',
           ),
           backgroundColor: Colors.green,
         ),
       );
 
-      // Devolver la dirección creada/actualizada
+      // Devolver la direcciÃ³n creada/actualizada
       Navigator.pop(context, nuevaDireccion);
     }
   }
@@ -102,8 +102,7 @@ class _DireccionFormScreenState extends State<DireccionFormScreen> {
 
     return Scaffold(
       appBar: CustomGradientAppBar(
-        title: isEditing ? 'Editar Dirección' : 'Nueva Dirección',
-        customGradient: AppGradients.orange,
+        title: isEditing ? 'Editar DirecciÃ³n' : 'Nueva DirecciÃ³n',
       ),
       body: Form(
         key: _formKey,
@@ -124,7 +123,7 @@ class _DireccionFormScreenState extends State<DireccionFormScreen> {
                   const SizedBox(width: 12),
                   Expanded(
                     child: Text(
-                      'Esta dirección se usará para entregas de tus pedidos',
+                      'Esta direcciÃ³n se usarÃ¡ para entregas de tus pedidos',
                       style: TextStyle(
                         fontSize: AppTextStyles.bodySmall(context).fontSize!,
                         color: Colors.blue.shade900,
@@ -136,7 +135,7 @@ class _DireccionFormScreenState extends State<DireccionFormScreen> {
             ),
             const SizedBox(height: 24),
 
-            // Componente reutilizable de ubicación
+            // Componente reutilizable de ubicaciÃ³n
             DireccionFormWidget(
               direccionController: _direccionController,
               observacionesController: _observacionesController,
@@ -165,11 +164,11 @@ class _DireccionFormScreenState extends State<DireccionFormScreen> {
               ),
               child: SwitchListTile(
                 title: const Text(
-                  'Marcar como dirección principal',
+                  'Marcar como direcciÃ³n principal',
                   style: TextStyle(fontWeight: FontWeight.w500),
                 ),
                 subtitle: const Text(
-                  'Esta será tu dirección predeterminada para entregas',
+                  'Esta serÃ¡ tu direcciÃ³n predeterminada para entregas',
                   style: TextStyle(fontSize: 12),
                 ),
                 value: _esPrincipal,
@@ -186,7 +185,7 @@ class _DireccionFormScreenState extends State<DireccionFormScreen> {
             ),
             const SizedBox(height: 32),
 
-            // Botón de guardar
+            // BotÃ³n de guardar
             SizedBox(
               height: 50,
               child: ElevatedButton.icon(
@@ -205,8 +204,8 @@ class _DireccionFormScreenState extends State<DireccionFormScreen> {
                   _isSaving
                       ? 'Guardando...'
                       : isEditing
-                          ? 'Actualizar Dirección'
-                          : 'Guardar Dirección',
+                          ? 'Actualizar DirecciÃ³n'
+                          : 'Guardar DirecciÃ³n',
                 ),
                 style: ElevatedButton.styleFrom(
                   shape: RoundedRectangleBorder(
@@ -217,7 +216,7 @@ class _DireccionFormScreenState extends State<DireccionFormScreen> {
             ),
             const SizedBox(height: 16),
 
-            // Botón de cancelar
+            // BotÃ³n de cancelar
             if (!_isSaving)
               SizedBox(
                 height: 50,
@@ -237,3 +236,4 @@ class _DireccionFormScreenState extends State<DireccionFormScreen> {
     );
   }
 }
+

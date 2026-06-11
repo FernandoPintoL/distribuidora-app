@@ -20,3 +20,4 @@ export 'gasto_provider.dart';
 export 'productos_agrupados_provider.dart';
 export 'theme_provider.dart';
 export 'banner_publicitario_provider.dart';
+export 'prestamos_provider.dart';  // ✅ NUEVO: Gestión de préstamos para choferes

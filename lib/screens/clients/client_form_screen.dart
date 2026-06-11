@@ -300,7 +300,6 @@ class _ClientFormScreenState extends State<ClientFormScreen> {
       child: Scaffold(
         appBar: CustomGradientAppBar(
           title: _isEditing ? 'Editar Cliente' : 'Nuevo Cliente',
-          customGradient: _isEditing ? AppGradients.orange : AppGradients.green,
           actions: [
             Container(
               margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
@@ -1470,3 +1469,4 @@ class _ClientFormScreenState extends State<ClientFormScreen> {
     super.dispose();
   }
 }
+

@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/carrito_provider.dart';
 import '../../models/carrito.dart';
@@ -47,7 +47,7 @@ class _CarritoAbandonadoListScreenState
       if (success) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('✅ Carrito recuperado exitosamente'),
+            content: Text('âœ… Carrito recuperado exitosamente'),
             backgroundColor: Colors.green,
             duration: Duration(seconds: 2),
           ),
@@ -58,7 +58,7 @@ class _CarritoAbandonadoListScreenState
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('❌ Error al recuperar carrito'),
+            content: Text('âŒ Error al recuperar carrito'),
             backgroundColor: Colors.red,
             duration: Duration(seconds: 2),
           ),
@@ -73,7 +73,7 @@ class _CarritoAbandonadoListScreenState
       builder: (context) => AlertDialog(
         title: const Text('Eliminar carrito'),
         content: const Text(
-          '¿Estás seguro de que deseas eliminar este carrito del historial?',
+          'Â¿EstÃ¡s seguro de que deseas eliminar este carrito del historial?',
         ),
         actions: [
           TextButton(
@@ -96,7 +96,7 @@ class _CarritoAbandonadoListScreenState
 
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(
-                        content: Text('✅ Carrito eliminado'),
+                        content: Text('âœ… Carrito eliminado'),
                         backgroundColor: Colors.green,
                         duration: Duration(seconds: 2),
                       ),
@@ -104,7 +104,7 @@ class _CarritoAbandonadoListScreenState
                   } else {
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(
-                        content: Text('❌ Error al eliminar'),
+                        content: Text('âŒ Error al eliminar'),
                         backgroundColor: Colors.red,
                         duration: Duration(seconds: 2),
                       ),
@@ -128,7 +128,6 @@ class _CarritoAbandonadoListScreenState
     return Scaffold(
       appBar: CustomGradientAppBar(
         title: 'Mis Carritos Guardados',
-        customGradient: AppGradients.blue,
       ),
       body: RefreshIndicator(
         onRefresh: _refrescar,
@@ -169,7 +168,7 @@ class _CarritoAbandonadoListScreenState
     );
   }
 
-  /// Widget para estado vacío
+  /// Widget para estado vacÃ­o
   Widget _buildEmptyState() {
     return Center(
       child: Column(
@@ -189,7 +188,7 @@ class _CarritoAbandonadoListScreenState
           ),
           const SizedBox(height: 8),
           Text(
-            'Los carritos que guardes aparecerán aquí',
+            'Los carritos que guardes aparecerÃ¡n aquÃ­',
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                   color: Colors.grey.shade500,
             ),
@@ -277,7 +276,7 @@ class _CarritoAbandonadoListScreenState
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      'Hace $diasAbandonado día${diasAbandonado != 1 ? 's' : ''}',
+                      'Hace $diasAbandonado dÃ­a${diasAbandonado != 1 ? 's' : ''}',
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
                             color: Colors.grey.shade600,
                           ),
@@ -306,7 +305,7 @@ class _CarritoAbandonadoListScreenState
             ),
             const SizedBox(height: 12),
 
-            // Información de items
+            // InformaciÃ³n de items
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -324,7 +323,7 @@ class _CarritoAbandonadoListScreenState
               ],
             ),
 
-            // Resumen de items (máximo 3)
+            // Resumen de items (mÃ¡ximo 3)
             if (carrito.items.isNotEmpty) ...[
               const SizedBox(height: 8),
               ..._buildItemsResumen(context, carrito),
@@ -332,7 +331,7 @@ class _CarritoAbandonadoListScreenState
 
             const SizedBox(height: 12),
 
-            // Botones de acción
+            // Botones de acciÃ³n
             Row(
               children: [
                 Expanded(
@@ -362,7 +361,7 @@ class _CarritoAbandonadoListScreenState
     );
   }
 
-  /// Construye resumen de items (máximo 3)
+  /// Construye resumen de items (mÃ¡ximo 3)
   List<Widget> _buildItemsResumen(BuildContext context, Carrito carrito) {
     final itemsAMostrar = carrito.items.take(3).toList();
     final hayMas = carrito.items.length > 3;
@@ -424,7 +423,7 @@ class _CarritoAbandonadoListScreenState
                   vertical: 4,
                 ),
                 child: Text(
-                  '+ ${carrito.items.length - 3} items más',
+                  '+ ${carrito.items.length - 3} items mÃ¡s',
                   style: Theme.of(context).textTheme.labelSmall?.copyWith(
                         color: Colors.grey.shade500,
                         fontStyle: FontStyle.italic,
@@ -455,3 +454,4 @@ class _CarritoAbandonadoListScreenState
     }
   }
 }
+

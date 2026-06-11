@@ -35,6 +35,7 @@ class PedidoService {
         'productos': items,
         'tipo_entrega': tipoEntrega, // NUEVO: Indicar si es DELIVERY o PICKUP
         'fecha_programada': fechaProgramada.toIso8601String(),
+        'requiere_envio': tipoEntrega == 'DELIVERY', // ✅ Nuevo: indica si requiere envío
       };
 
       // Agregar dirección SOLO si es DELIVERY
@@ -64,6 +65,7 @@ class PedidoService {
       debugPrint('📋 Creando proforma con ${items.length} productos');
       debugPrint('   Cliente ID: $clienteId');
       debugPrint('   Tipo de entrega: $tipoEntrega');
+      debugPrint('   Requiere envío: ${tipoEntrega == 'DELIVERY'}');
       if (fechaProgramada != null) {
         debugPrint('   Fecha programada: ${fechaProgramada.toIso8601String()}');
       }
@@ -143,6 +145,7 @@ class PedidoService {
         'productos': items,
         'tipo_entrega': tipoEntrega,
         'fecha_programada': fechaProgramada.toIso8601String(),
+        'requiere_envio': tipoEntrega == 'DELIVERY', // ✅ Nuevo: indica si requiere envío
       };
 
       // Agregar dirección SOLO si es DELIVERY
@@ -170,6 +173,7 @@ class PedidoService {
       debugPrint('📝 Actualizando proforma #$proformaId con ${items.length} productos');
       debugPrint('   Cliente ID: $clienteId');
       debugPrint('   Tipo de entrega: $tipoEntrega');
+      debugPrint('   Requiere envío: ${tipoEntrega == 'DELIVERY'}');
       debugPrint('   Fecha programada: ${fechaProgramada.toIso8601String()}');
       if (direccionId != null && tipoEntrega == 'DELIVERY') {
         debugPrint('   Dirección ID: $direccionId');

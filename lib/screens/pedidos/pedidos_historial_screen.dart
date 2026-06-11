@@ -1,4 +1,4 @@
-import 'dart:async';
+﻿import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:share_plus/share_plus.dart';
@@ -18,7 +18,7 @@ import 'helpers/dialogs_pedidos.dart';
 import 'helpers/formatters.dart';
 import 'helpers/filtro_logic.dart';
 
-/// ✅ HELPER: Convertir hex string (#RRGGBB) a Color
+/// âœ… HELPER: Convertir hex string (#RRGGBB) a Color
 Color _hexToColor(String hexString) {
   final buffer = StringBuffer();
   if (hexString.length == 6 || hexString.length == 7) {
@@ -32,7 +32,7 @@ Color _hexToColor(String hexString) {
   return Color(int.parse(buffer.toString(), radix: 16));
 }
 
-/// ✅ HELPER: Estilos de texto responsivos adaptables a zoom y tamaño de dispositivo
+/// âœ… HELPER: Estilos de texto responsivos adaptables a zoom y tamaÃ±o de dispositivo
 class ResponsiveTextStyles {
   static double getScaleFactor(BuildContext context) {
     final textScaleFactor = MediaQuery.textScaleFactorOf(context);
@@ -41,7 +41,7 @@ class ResponsiveTextStyles {
     // Ajustar basado en ancho de pantalla
     double sizeMultiplier = 1.0;
     if (screenWidth < 360) {
-      sizeMultiplier = 0.9; // Pantallas muy pequeñas
+      sizeMultiplier = 0.9; // Pantallas muy pequeÃ±as
     } else if (screenWidth > 600) {
       sizeMultiplier = 1.1; // Tablets
     }
@@ -49,7 +49,7 @@ class ResponsiveTextStyles {
     return textScaleFactor * sizeMultiplier;
   }
 
-  // ✅ Títulos grandes (pantalla principal)
+  // âœ… TÃ­tulos grandes (pantalla principal)
   static TextStyle titleLarge(BuildContext context) {
     final scale = getScaleFactor(context);
     return TextStyle(
@@ -59,7 +59,7 @@ class ResponsiveTextStyles {
     );
   }
 
-  // ✅ Títulos medianos
+  // âœ… TÃ­tulos medianos
   static TextStyle titleMedium(BuildContext context) {
     final scale = getScaleFactor(context);
     return TextStyle(
@@ -69,7 +69,7 @@ class ResponsiveTextStyles {
     );
   }
 
-  // ✅ Cuerpo principal - Texto normal
+  // âœ… Cuerpo principal - Texto normal
   static TextStyle bodyLarge(BuildContext context) {
     final scale = getScaleFactor(context);
     return TextStyle(
@@ -79,7 +79,7 @@ class ResponsiveTextStyles {
     );
   }
 
-  // ✅ Cuerpo normal
+  // âœ… Cuerpo normal
   static TextStyle bodyMedium(BuildContext context) {
     final scale = getScaleFactor(context);
     return TextStyle(
@@ -89,7 +89,7 @@ class ResponsiveTextStyles {
     );
   }
 
-  // ✅ Cuerpo pequeño - Etiquetas, secundario
+  // âœ… Cuerpo pequeÃ±o - Etiquetas, secundario
   static TextStyle bodySmall(BuildContext context) {
     final scale = getScaleFactor(context);
     return TextStyle(
@@ -99,7 +99,7 @@ class ResponsiveTextStyles {
     );
   }
 
-  // ✅ Etiquetas en chips
+  // âœ… Etiquetas en chips
   static TextStyle labelSmall(BuildContext context) {
     final scale = getScaleFactor(context);
     return TextStyle(
@@ -109,7 +109,7 @@ class ResponsiveTextStyles {
     );
   }
 
-  // ✅ Valores numéricos (montos)
+  // âœ… Valores numÃ©ricos (montos)
   static TextStyle valueLarge(BuildContext context) {
     final scale = getScaleFactor(context);
     return TextStyle(
@@ -120,7 +120,7 @@ class ResponsiveTextStyles {
     );
   }
 
-  // ✅ Valores pequeños
+  // âœ… Valores pequeÃ±os
   static TextStyle valueSmall(BuildContext context) {
     final scale = getScaleFactor(context);
     return TextStyle(
@@ -131,8 +131,8 @@ class ResponsiveTextStyles {
   }
 }
 
-/// ✅ REFACTORIZADO: Antes era solo "Proformas", ahora es "Mis Pedidos" unificado
-/// Muestra todo el ciclo: Proforma → Venta → Logística
+/// âœ… REFACTORIZADO: Antes era solo "Proformas", ahora es "Mis Pedidos" unificado
+/// Muestra todo el ciclo: Proforma â†’ Venta â†’ LogÃ­stica
 class PedidosHistorialScreen extends StatefulWidget {
   const PedidosHistorialScreen({super.key});
 
@@ -150,7 +150,7 @@ class _PedidosHistorialScreenState extends State<PedidosHistorialScreen> with Wi
   DateTime? _filtroFechaDesde;
   DateTime? _filtroFechaHasta;
 
-  // ✅ NUEVO: Filtros específicos para fechas de vencimiento y entrega
+  // âœ… NUEVO: Filtros especÃ­ficos para fechas de vencimiento y entrega
   DateTime? _filtroFechaVencimientoDesde;
   DateTime? _filtroFechaVencimientoHasta;
   DateTime? _filtroFechaEntregaSolicitadaDesde;
@@ -160,28 +160,28 @@ class _PedidosHistorialScreenState extends State<PedidosHistorialScreen> with Wi
   void initState() {
     super.initState();
     _scrollController.addListener(_onScroll);
-    // ✅ NUEVO: Registrar observer para detectar cambios de ciclo de vida
+    // âœ… NUEVO: Registrar observer para detectar cambios de ciclo de vida
     WidgetsBinding.instance.addObserver(this);
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      // Cargar estados y estadísticas dinámicamente
+      // Cargar estados y estadÃ­sticas dinÃ¡micamente
       final estadosProvider = context.read<EstadosProvider>();
       estadosProvider.loadEstadosYEstadisticas();
 
-      // ✅ ACTUALIZADO: Cargar pedidos con fecha_entrega_solicitada=hoy SIN filtro de estado
+      // âœ… ACTUALIZADO: Cargar pedidos con fecha_entrega_solicitada=hoy SIN filtro de estado
       // Esto muestra todos los estados para hoy
       _inicializarFiltrosYCargar();
     });
   }
 
-  /// ✅ NUEVO: Método para inicializar filtros y cargar datos
+  /// âœ… NUEVO: MÃ©todo para inicializar filtros y cargar datos
   void _inicializarFiltrosYCargar() {
     final hoy = DateTime.now();
 
     setState(() {
       // NO filtrar por estado - dejar null para mostrar todos
       _filtroEstadoSeleccionado = null;
-      // ✅ CAMBIO: Usar fecha de entrega solicitada en lugar de fecha de creación
+      // âœ… CAMBIO: Usar fecha de entrega solicitada en lugar de fecha de creaciÃ³n
       _filtroFechaEntregaSolicitadaDesde = hoy;
       _filtroFechaEntregaSolicitadaHasta = hoy;
     });
@@ -196,12 +196,12 @@ class _PedidosHistorialScreenState extends State<PedidosHistorialScreen> with Wi
     _cargarPedidos();
   }
 
-  /// ✅ NUEVO: Detectar cuando la app vuelve a foreground
+  /// âœ… NUEVO: Detectar cuando la app vuelve a foreground
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
-      // App volvió a foreground - recargar datos
-      debugPrint('✅ [PEDIDOS] App reanudada, recargando pedidos...');
+      // App volviÃ³ a foreground - recargar datos
+      debugPrint('âœ… [PEDIDOS] App reanudada, recargando pedidos...');
       _inicializarFiltrosYCargar();
     }
   }
@@ -212,7 +212,7 @@ class _PedidosHistorialScreenState extends State<PedidosHistorialScreen> with Wi
     _scrollController.dispose();
     _searchController.dispose();
     _debounceTimer?.cancel();
-    // ✅ NUEVO: Remover observer
+    // âœ… NUEVO: Remover observer
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
   }
@@ -245,14 +245,14 @@ class _PedidosHistorialScreenState extends State<PedidosHistorialScreen> with Wi
     final pedidoProvider = context.read<PedidoProvider>();
     await pedidoProvider.loadPedidos(
       estado: _filtroEstadoSeleccionado,
-      // ✅ CAMBIADO: De 'busqueda' a 'cliente' para buscar por nombre, teléfono o NIT
+      // âœ… CAMBIADO: De 'busqueda' a 'cliente' para buscar por nombre, telÃ©fono o NIT
       search: _searchController.text.isEmpty ? null : _searchController.text,
       refresh: true,
     );
   }
 
-  /// ✅ NUEVO: Descargar PDF de proformas con filtros
-  /// Envía los filtros actuales al backend para obtener TODOS los resultados
+  /// âœ… NUEVO: Descargar PDF de proformas con filtros
+  /// EnvÃ­a los filtros actuales al backend para obtener TODOS los resultados
   Future<void> _descargarPdfProformas() async {
     try {
       final apiService = ApiService();
@@ -304,16 +304,16 @@ class _PedidosHistorialScreenState extends State<PedidosHistorialScreen> with Wi
   }
 
   void _aplicarFiltroEstado(String? estado) {
-    // ✅ ACTUALIZADO: Ahora acepta código String en lugar de enum EstadoPedido
+    // âœ… ACTUALIZADO: Ahora acepta cÃ³digo String en lugar de enum EstadoPedido
     setState(() {
       _filtroEstadoSeleccionado = estado;
     });
-    // ✅ NUEVO: Limpiar datos anteriores y recargar con nuevo estado
+    // âœ… NUEVO: Limpiar datos anteriores y recargar con nuevo estado
     context.read<PedidoProvider>().aplicarFiltroEstado(estado);
     _cargarPedidos();
   }
 
-  /// ✅ NUEVO: Mostrar modal de filtros avanzados (fechas)
+  /// âœ… NUEVO: Mostrar modal de filtros avanzados (fechas)
   void _mostrarModalFiltrosAvanzados() {
     mostrarFiltrosAvanzadosModal(
       context,
@@ -344,7 +344,7 @@ class _PedidosHistorialScreenState extends State<PedidosHistorialScreen> with Wi
         });
       },
       onAplicar: () {
-        // ✅ NUEVO: Cargar pedidos mostrando indicador de carga
+        // âœ… NUEVO: Cargar pedidos mostrando indicador de carga
         _cargarPedidos();
       },
       buildDateFilterGroup: FilterContainers.buildDateFilterGroupWithReset,
@@ -374,12 +374,11 @@ class _PedidosHistorialScreenState extends State<PedidosHistorialScreen> with Wi
 
     return Scaffold(
       resizeToAvoidBottomInset:
-          false, // ✅ NUEVO: Prevenir overflow cuando el teclado se abre
+          false, // âœ… NUEVO: Prevenir overflow cuando el teclado se abre
       appBar: CustomGradientAppBar(
-        title: 'Mi Historial de Pedidos',
-        customGradient: AppGradients.getRoleGradient('cliente'),
+        title: 'Mi Historial de Pedidos'('cliente'),
         actions: [
-          // ✅ NUEVO: Botón de impresión/descarga de PDF
+          // âœ… NUEVO: BotÃ³n de impresiÃ³n/descarga de PDF
           /*Consumer<PedidoProvider>(
             builder: (context, pedidoProvider, _) {
               return IconButton(
@@ -391,19 +390,19 @@ class _PedidosHistorialScreenState extends State<PedidosHistorialScreen> with Wi
               );
             },
           ),*/
-          // ✅ NUEVO: Botón para filtros avanzados (fechas)
+          // âœ… NUEVO: BotÃ³n para filtros avanzados (fechas)
           IconButton(
             icon: const Icon(Icons.tune),
             onPressed: _mostrarModalFiltrosAvanzados,
             tooltip: 'Filtros avanzados (fechas)',
           ),
-          // ✅ NUEVO: Botón de recarga
+          // âœ… NUEVO: BotÃ³n de recarga
           IconButton(
             icon: const Icon(Icons.refresh),
             onPressed: _cargarPedidos,
             tooltip: 'Recargar pedidos',
           ),
-          // Icono de búsqueda que expande el campo
+          // Icono de bÃºsqueda que expande el campo
           IconButton(
             icon: Icon(_isSearchExpanded ? Icons.close : Icons.search),
             onPressed: () {
@@ -415,19 +414,19 @@ class _PedidosHistorialScreenState extends State<PedidosHistorialScreen> with Wi
                 }
               });
             },
-            tooltip: _isSearchExpanded ? 'Cerrar búsqueda' : 'Buscar',
+            tooltip: _isSearchExpanded ? 'Cerrar bÃºsqueda' : 'Buscar',
           ),
         ],
       ),
       body: Column(
         children: [
-          // ✅ NUEVO: Envolver filtros en SingleChildScrollView para que sean scrollables cuando el teclado se abre
+          // âœ… NUEVO: Envolver filtros en SingleChildScrollView para que sean scrollables cuando el teclado se abre
           SingleChildScrollView(
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
                 // ============================================================
-                // 1️⃣ BÚSQUEDA - Independiente
+                // 1ï¸âƒ£ BÃšSQUEDA - Independiente
                 // ============================================================
                 AnimatedContainer(
                   duration: const Duration(milliseconds: 300),
@@ -455,7 +454,7 @@ class _PedidosHistorialScreenState extends State<PedidosHistorialScreen> with Wi
                                 child: TextField(
                                   controller: _searchController,
                                   autofocus: true,
-                                  // ✅ CAMBIO: De onChanged a onSubmitted (Enter key o botón)
+                                  // âœ… CAMBIO: De onChanged a onSubmitted (Enter key o botÃ³n)
                                   onSubmitted: (query) {
                                     final pedidoProvider = context
                                         .read<PedidoProvider>();
@@ -465,7 +464,7 @@ class _PedidosHistorialScreenState extends State<PedidosHistorialScreen> with Wi
                                   },
                                   decoration: InputDecoration(
                                     hintText:
-                                        'Buscar ID, número, nombre o código cliente...',
+                                        'Buscar ID, nÃºmero, nombre o cÃ³digo cliente...',
                                     prefixIcon: Icon(
                                       Icons.search,
                                       color: colorScheme.primary,
@@ -497,7 +496,7 @@ class _PedidosHistorialScreenState extends State<PedidosHistorialScreen> with Wi
                                 ),
                               ),
                               const SizedBox(width: 8),
-                              // ✅ NUEVO: Botón para ejecutar búsqueda
+                              // âœ… NUEVO: BotÃ³n para ejecutar bÃºsqueda
                               ElevatedButton.icon(
                                 onPressed: () {
                                   final pedidoProvider = context
@@ -527,7 +526,7 @@ class _PedidosHistorialScreenState extends State<PedidosHistorialScreen> with Wi
                 ),
 
                 // ============================================================
-                // 2️⃣ FILTROS DINÁMICOS - Independiente del listado
+                // 2ï¸âƒ£ FILTROS DINÃMICOS - Independiente del listado
                 // ============================================================
                 FilterContainers.buildDynamicFilterContainer(
                   context,
@@ -538,7 +537,7 @@ class _PedidosHistorialScreenState extends State<PedidosHistorialScreen> with Wi
                 ),
 
                 // ============================================================
-                // 3️⃣ BANNER DE FILTRO ACTIVO - Independiente
+                // 3ï¸âƒ£ BANNER DE FILTRO ACTIVO - Independiente
                 // ============================================================
                 if (_filtroEstadoSeleccionado != null ||
                     (_searchController.text.isNotEmpty))
@@ -587,19 +586,19 @@ class _PedidosHistorialScreenState extends State<PedidosHistorialScreen> with Wi
                       ],
                     ),
                   ),
-                  // ✅ NUEVO: Chips de filtros activos
+                  // âœ… NUEVO: Chips de filtros activos
                   _buildFiltrosChips(),
               ],
             ),
           ),
 
           // ============================================================
-          // 4️⃣ LISTADO DE PEDIDOS - Dentro del Consumer
+          // 4ï¸âƒ£ LISTADO DE PEDIDOS - Dentro del Consumer
           // ============================================================
           Expanded(
             child: Consumer<PedidoProvider>(
               builder: (context, pedidoProvider, _) {
-                // ✅ NUEVO: Estado de carga (muestra incluso si hay datos anteriores)
+                // âœ… NUEVO: Estado de carga (muestra incluso si hay datos anteriores)
                 if (pedidoProvider.isLoading) {
                   // Detectar si hay filtros activos
                   final tieneFilTros =
@@ -689,8 +688,8 @@ class _PedidosHistorialScreenState extends State<PedidosHistorialScreen> with Wi
                                   const SizedBox(height: 24),
                                   Text(
                                     tieneFilTros
-                                        ? '🔍 Cargando con filtros...'
-                                        : '📋 Cargando estado...',
+                                        ? 'ðŸ” Cargando con filtros...'
+                                        : 'ðŸ“‹ Cargando estado...',
                                     style: DefaultTextStyle.of(context).style
                                         .copyWith(
                                           color: colorScheme.primary,
@@ -715,8 +714,8 @@ class _PedidosHistorialScreenState extends State<PedidosHistorialScreen> with Wi
 
                   // Si no hay datos, mostrar pantalla completa de carga
                   final mensajeCarga = tieneFilTros
-                      ? '🔍 Buscando pedidos con filtros...'
-                      : '📋 Cargando pedidos...';
+                      ? 'ðŸ” Buscando pedidos con filtros...'
+                      : 'ðŸ“‹ Cargando pedidos...';
 
                   return Center(
                     child: Padding(
@@ -760,7 +759,7 @@ class _PedidosHistorialScreenState extends State<PedidosHistorialScreen> with Wi
                   return _buildErrorState(pedidoProvider.errorMessage!);
                 }
 
-                // Estado vacío
+                // Estado vacÃ­o
                 if (pedidoProvider.pedidos.isEmpty) {
                   return _buildEmptyState();
                 }
@@ -773,7 +772,7 @@ class _PedidosHistorialScreenState extends State<PedidosHistorialScreen> with Wi
                     controller: _scrollController,
                     padding: const EdgeInsets.symmetric(vertical: 8),
                     children: [
-                      // ✅ NUEVO: Resumen de resultados
+                      // âœ… NUEVO: Resumen de resultados
                       Container(
                         margin: const EdgeInsets.symmetric(
                           horizontal: 16,
@@ -799,10 +798,10 @@ class _PedidosHistorialScreenState extends State<PedidosHistorialScreen> with Wi
                                     ),
                               ),
                             ),
-                            // Mostrar indicador si hay más páginas
+                            // Mostrar indicador si hay mÃ¡s pÃ¡ginas
                             if (pedidoProvider.hasMorePages)
                               Chip(
-                                label: const Text('Hay más'),
+                                label: const Text('Hay mÃ¡s'),
                                 backgroundColor: colorScheme.primaryContainer,
                                 labelStyle: AppTextStyles.labelSmall(context)
                                     .copyWith(
@@ -839,7 +838,7 @@ class _PedidosHistorialScreenState extends State<PedidosHistorialScreen> with Wi
                                       ),
                                       const SizedBox(height: 8),
                                       Text(
-                                        'Cargando más pedidos...',
+                                        'Cargando mÃ¡s pedidos...',
                                         style: ResponsiveTextStyles.bodyMedium(
                                           context,
                                         ).copyWith(
@@ -867,7 +866,7 @@ class _PedidosHistorialScreenState extends State<PedidosHistorialScreen> with Wi
                                       ),
                                       const SizedBox(height: 8),
                                       Text(
-                                        'No hay más proformas',
+                                        'No hay mÃ¡s proformas',
                                         style: ResponsiveTextStyles.bodySmall(
                                           context,
                                         ).copyWith(
@@ -907,7 +906,7 @@ class _PedidosHistorialScreenState extends State<PedidosHistorialScreen> with Wi
     );
   }
 
-  /// Manejar acciones de impresión de proforma con PrintService
+  /// Manejar acciones de impresiÃ³n de proforma con PrintService
   Future<void> _handlePrintProforma(
     String action,
     String url,
@@ -932,7 +931,7 @@ class _PedidosHistorialScreenState extends State<PedidosHistorialScreen> with Wi
 
       switch (action) {
         case 'download':
-          // Descargar PDF - usa PrintService para manejo completo con autenticación
+          // Descargar PDF - usa PrintService para manejo completo con autenticaciÃ³n
           final success = await printService.downloadDocument(
             documentoId: proformaId,
             documentType: PrintDocumentType.proforma,
@@ -959,7 +958,7 @@ class _PedidosHistorialScreenState extends State<PedidosHistorialScreen> with Wi
           break;
 
         case 'imagen':
-          // 🖼️ NUEVO: Descargar como imagen y mostrar diálogo de compartir
+          // ðŸ–¼ï¸ NUEVO: Descargar como imagen y mostrar diÃ¡logo de compartir
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(
@@ -974,7 +973,7 @@ class _PedidosHistorialScreenState extends State<PedidosHistorialScreen> with Wi
           final filePath = await printService.downloadImage(
             imageUrl: url,
             nombreArchivo: nombreArchivo,
-            showShareDialog: true, // Mostrar diálogo de compartir
+            showShareDialog: true, // Mostrar diÃ¡logo de compartir
           );
 
           if (filePath == null && mounted) {
@@ -988,7 +987,7 @@ class _PedidosHistorialScreenState extends State<PedidosHistorialScreen> with Wi
           } else if (filePath != null && mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(
-                content: Text('✅ Imagen lista para compartir'),
+                content: Text('âœ… Imagen lista para compartir'),
                 duration: Duration(seconds: 2),
                 backgroundColor: Colors.green,
               ),
@@ -1018,13 +1017,13 @@ class _PedidosHistorialScreenState extends State<PedidosHistorialScreen> with Wi
         case 'compartir':
           // Compartir link
           await Share.share(
-            'Impresión de proforma $numero: $url',
+            'ImpresiÃ³n de proforma $numero: $url',
             subject: 'Proforma $numero',
           );
           break;
       }
     } catch (e) {
-      debugPrint('Error en operación de impresión: $e');
+      debugPrint('Error en operaciÃ³n de impresiÃ³n: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -1040,7 +1039,7 @@ class _PedidosHistorialScreenState extends State<PedidosHistorialScreen> with Wi
     final List<String> filtros = [];
 
     if (_searchController.text.isNotEmpty) {
-      filtros.add('🔍 "${_searchController.text}"');
+      filtros.add('ðŸ” "${_searchController.text}"');
     }
 
     if (_filtroEstadoSeleccionado != null) {
@@ -1053,14 +1052,14 @@ class _PedidosHistorialScreenState extends State<PedidosHistorialScreen> with Wi
       ].contains(_filtroEstadoSeleccionado?.toUpperCase());
 
       final categoria = esProforma ? 'proforma' : 'venta_logistica';
-      final icono = esProforma ? '📋' : '🚚';
+      final icono = esProforma ? 'ðŸ“‹' : 'ðŸšš';
 
       filtros.add(
         '$icono ${EstadosHelper.getEstadoLabel(categoria, _filtroEstadoSeleccionado!)}',
       );
     }
 
-    // ✅ MEJORADO: Incluir todos los filtros de fecha
+    // âœ… MEJORADO: Incluir todos los filtros de fecha
     if (_filtroFechaDesde != null || _filtroFechaHasta != null) {
       final desdeText = _filtroFechaDesde != null
           ? DateFormat('dd/MM').format(_filtroFechaDesde!)
@@ -1070,11 +1069,11 @@ class _PedidosHistorialScreenState extends State<PedidosHistorialScreen> with Wi
           : '';
 
       if (_filtroFechaDesde != null && _filtroFechaHasta != null) {
-        filtros.add('📅 Creación: $desdeText - $hastaText');
+        filtros.add('ðŸ“… CreaciÃ³n: $desdeText - $hastaText');
       } else if (_filtroFechaDesde != null) {
-        filtros.add('📅 Desde: $desdeText');
+        filtros.add('ðŸ“… Desde: $desdeText');
       } else if (_filtroFechaHasta != null) {
-        filtros.add('📅 Hasta: $hastaText');
+        filtros.add('ðŸ“… Hasta: $hastaText');
       }
     }
 
@@ -1089,7 +1088,7 @@ class _PedidosHistorialScreenState extends State<PedidosHistorialScreen> with Wi
 
       if (_filtroFechaVencimientoDesde != null &&
           _filtroFechaVencimientoHasta != null) {
-        filtros.add('⏰ Vencimiento: $desdeText - $hastaText');
+        filtros.add('â° Vencimiento: $desdeText - $hastaText');
       }
     }
 
@@ -1105,17 +1104,17 @@ class _PedidosHistorialScreenState extends State<PedidosHistorialScreen> with Wi
       if (_filtroFechaEntregaSolicitadaDesde != null &&
           _filtroFechaEntregaSolicitadaHasta != null) {
         if (desdeText == hastaText) {
-          filtros.add('🚚 Entrega: $desdeText');
+          filtros.add('ðŸšš Entrega: $desdeText');
         } else {
-          filtros.add('🚚 Entrega: $desdeText - $hastaText');
+          filtros.add('ðŸšš Entrega: $desdeText - $hastaText');
         }
       }
     }
 
-    return filtros.isEmpty ? 'Sin filtros aplicados' : filtros.join(' • ');
+    return filtros.isEmpty ? 'Sin filtros aplicados' : filtros.join(' â€¢ ');
   }
 
-  /// ✅ NUEVO: Widget de chips removibles para filtros
+  /// âœ… NUEVO: Widget de chips removibles para filtros
   Widget _buildFiltrosChips() {
     final colorScheme = context.colorScheme;
     final chips = <Widget>[];
@@ -1124,7 +1123,7 @@ class _PedidosHistorialScreenState extends State<PedidosHistorialScreen> with Wi
       chips.add(
         Chip(
           label: Text(
-            '📋 Estado: $_filtroEstadoSeleccionado',
+            'ðŸ“‹ Estado: $_filtroEstadoSeleccionado',
             style: ResponsiveTextStyles.bodySmall(context),
           ),
           backgroundColor: colorScheme.primaryContainer,
@@ -1137,7 +1136,7 @@ class _PedidosHistorialScreenState extends State<PedidosHistorialScreen> with Wi
       );
     }
 
-    // ✅ FILTRO: Fecha de Creación
+    // âœ… FILTRO: Fecha de CreaciÃ³n
     if (_filtroFechaDesde != null || _filtroFechaHasta != null) {
       final desdeText = _filtroFechaDesde != null
           ? DateFormat('dd/MM').format(_filtroFechaDesde!)
@@ -1148,9 +1147,9 @@ class _PedidosHistorialScreenState extends State<PedidosHistorialScreen> with Wi
 
       final texto = _filtroFechaDesde != null && _filtroFechaHasta != null
           ? desdeText == hastaText
-              ? '📅 Creación: $desdeText'
-              : '📅 Creación: $desdeText - $hastaText'
-          : '📅 Creación';
+              ? 'ðŸ“… CreaciÃ³n: $desdeText'
+              : 'ðŸ“… CreaciÃ³n: $desdeText - $hastaText'
+          : 'ðŸ“… CreaciÃ³n';
 
       chips.add(
         Chip(
@@ -1171,7 +1170,7 @@ class _PedidosHistorialScreenState extends State<PedidosHistorialScreen> with Wi
       );
     }
 
-    // ✅ FILTRO: Fecha de Entrega Solicitada
+    // âœ… FILTRO: Fecha de Entrega Solicitada
     if (_filtroFechaEntregaSolicitadaDesde != null ||
         _filtroFechaEntregaSolicitadaHasta != null) {
       final desdeText = _filtroFechaEntregaSolicitadaDesde != null
@@ -1184,9 +1183,9 @@ class _PedidosHistorialScreenState extends State<PedidosHistorialScreen> with Wi
       final texto = _filtroFechaEntregaSolicitadaDesde != null &&
               _filtroFechaEntregaSolicitadaHasta != null
           ? desdeText == hastaText
-              ? '🚚 Entrega Solicitada: $desdeText'
-              : '🚚 Entrega Solicitada: $desdeText - $hastaText'
-          : '🚚 Entrega Solicitada';
+              ? 'ðŸšš Entrega Solicitada: $desdeText'
+              : 'ðŸšš Entrega Solicitada: $desdeText - $hastaText'
+          : 'ðŸšš Entrega Solicitada';
 
       chips.add(
         Chip(
@@ -1207,7 +1206,7 @@ class _PedidosHistorialScreenState extends State<PedidosHistorialScreen> with Wi
       );
     }
 
-    // ✅ FILTRO: Fecha de Vencimiento
+    // âœ… FILTRO: Fecha de Vencimiento
     if (_filtroFechaVencimientoDesde != null ||
         _filtroFechaVencimientoHasta != null) {
       final desdeText = _filtroFechaVencimientoDesde != null
@@ -1220,9 +1219,9 @@ class _PedidosHistorialScreenState extends State<PedidosHistorialScreen> with Wi
       final texto = _filtroFechaVencimientoDesde != null &&
               _filtroFechaVencimientoHasta != null
           ? desdeText == hastaText
-              ? '⏰ Vencimiento: $desdeText'
-              : '⏰ Vencimiento: $desdeText - $hastaText'
-          : '⏰ Vencimiento';
+              ? 'â° Vencimiento: $desdeText'
+              : 'â° Vencimiento: $desdeText - $hastaText'
+          : 'â° Vencimiento';
 
       chips.add(
         Chip(
@@ -1243,12 +1242,12 @@ class _PedidosHistorialScreenState extends State<PedidosHistorialScreen> with Wi
       );
     }
 
-    // ✅ FILTRO: Búsqueda
+    // âœ… FILTRO: BÃºsqueda
     if (_searchController.text.isNotEmpty) {
       chips.add(
         Chip(
           label: Text(
-            '🔍 "${_searchController.text}"',
+            'ðŸ” "${_searchController.text}"',
             style: ResponsiveTextStyles.bodySmall(context),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
@@ -1290,10 +1289,10 @@ class _PedidosHistorialScreenState extends State<PedidosHistorialScreen> with Wi
         _filtroFechaEntregaSolicitadaDesde != null ||
         _filtroFechaEntregaSolicitadaHasta != null;
 
-    // Construir descripción de filtros activos
+    // Construir descripciÃ³n de filtros activos
     final filtrosActivos = <String>[];
     if (_searchController.text.isNotEmpty) {
-      filtrosActivos.add('búsqueda: "${_searchController.text}"');
+      filtrosActivos.add('bÃºsqueda: "${_searchController.text}"');
     }
     if (_filtroEstadoSeleccionado != null) {
       filtrosActivos.add('estado: $_filtroEstadoSeleccionado');
@@ -1321,8 +1320,8 @@ class _PedidosHistorialScreenState extends State<PedidosHistorialScreen> with Wi
               const SizedBox(height: 16),
               Text(
                 tieneFilTros
-                    ? '😔 No se encontraron pedidos'
-                    : '📭 No tienes pedidos aún',
+                    ? 'ðŸ˜” No se encontraron pedidos'
+                    : 'ðŸ“­ No tienes pedidos aÃºn',
                 style: ResponsiveTextStyles.titleLarge(context).copyWith(
                   color: colorScheme.onSurface,
                 ),
@@ -1335,14 +1334,14 @@ class _PedidosHistorialScreenState extends State<PedidosHistorialScreen> with Wi
                   children: [
                     Text(
                       tieneFilTros
-                          ? 'Intenta ajustar tus filtros de búsqueda'
-                          : 'Crea tu primer pedido desde el catálogo',
+                          ? 'Intenta ajustar tus filtros de bÃºsqueda'
+                          : 'Crea tu primer pedido desde el catÃ¡logo',
                       style: ResponsiveTextStyles.bodyMedium(context).copyWith(
                         color: colorScheme.onSurface.withOpacity(0.7),
                       ),
                       textAlign: TextAlign.center,
                     ),
-                    // ✅ MEJORADO: Mostrar filtros activos con mejor tipografía
+                    // âœ… MEJORADO: Mostrar filtros activos con mejor tipografÃ­a
                     if (tieneFilTros && filtrosActivos.isNotEmpty) ...[
                       const SizedBox(height: 12),
                       Container(
@@ -1362,7 +1361,7 @@ class _PedidosHistorialScreenState extends State<PedidosHistorialScreen> with Wi
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              '🔍 Filtros activos:',
+                              'ðŸ” Filtros activos:',
                               style: ResponsiveTextStyles.bodyLarge(context)
                                   .copyWith(
                                 color: colorScheme.error,
@@ -1376,7 +1375,7 @@ class _PedidosHistorialScreenState extends State<PedidosHistorialScreen> with Wi
                                 child: Row(
                                   children: [
                                     Text(
-                                      '•',
+                                      'â€¢',
                                       style: ResponsiveTextStyles.bodyMedium(
                                         context,
                                       ).copyWith(
@@ -1488,7 +1487,7 @@ class _PedidosHistorialScreenState extends State<PedidosHistorialScreen> with Wi
   }
 }
 
-/// ✅ NUEVO: Helper para mostrar diálogo de anulación de proforma
+/// âœ… NUEVO: Helper para mostrar diÃ¡logo de anulaciÃ³n de proforma
 void _mostrarDialogoAnularProforma(BuildContext context, Pedido proforma) {
   final TextEditingController motivoController = TextEditingController();
 
@@ -1500,14 +1499,14 @@ void _mostrarDialogoAnularProforma(BuildContext context, Pedido proforma) {
         mainAxisSize: MainAxisSize.min,
         children: [
           Text(
-            '¿Estás seguro que deseas anular la proforma #${proforma.numero}?',
+            'Â¿EstÃ¡s seguro que deseas anular la proforma #${proforma.numero}?',
             style: Theme.of(dialogContext).textTheme.bodyMedium,
           ),
           const SizedBox(height: 16),
           TextField(
             controller: motivoController,
             decoration: InputDecoration(
-              hintText: 'Motivo de anulación (requerido)',
+              hintText: 'Motivo de anulaciÃ³n (requerido)',
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(8),
               ),
@@ -1530,7 +1529,7 @@ void _mostrarDialogoAnularProforma(BuildContext context, Pedido proforma) {
             if (motivo.isEmpty) {
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(
-                  content: Text('El motivo de anulación es requerido'),
+                  content: Text('El motivo de anulaciÃ³n es requerido'),
                 ),
               );
               return;
@@ -1538,15 +1537,15 @@ void _mostrarDialogoAnularProforma(BuildContext context, Pedido proforma) {
 
             Navigator.pop(dialogContext);
 
-            // ✅ NUEVO: Anular proforma
+            // âœ… NUEVO: Anular proforma
             final pedidoProvider = context.read<PedidoProvider>();
             final result = await pedidoProvider.anularProforma(
               proforma.id,
               motivo,
             );
 
-            // ✅ No mostrar snackbar en caso de éxito
-            // La notificación nativa será mostrada por el listener de WebSocket
+            // âœ… No mostrar snackbar en caso de Ã©xito
+            // La notificaciÃ³n nativa serÃ¡ mostrada por el listener de WebSocket
             if (!result) {
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
@@ -1570,8 +1569,8 @@ void _mostrarDialogoAnularProforma(BuildContext context, Pedido proforma) {
   );
 }
 
-/// ✅ REFACTORIZADA: Nueva card con Timeline unificado
-/// Muestra: Proforma → Venta → Logística en paralelo
+/// âœ… REFACTORIZADA: Nueva card con Timeline unificado
+/// Muestra: Proforma â†’ Venta â†’ LogÃ­stica en paralelo
 class _PedidoCard extends StatelessWidget {
   final Pedido pedido;
   final VoidCallback onTap;
@@ -1604,9 +1603,9 @@ class _PedidoCard extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // ═══════════════════════════════════════════════════════════════
-              // 1️⃣ HEADER: Número, Cliente, Fecha
-              // ═══════════════════════════════════════════════════════════════
+              // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+              // 1ï¸âƒ£ HEADER: NÃºmero, Cliente, Fecha
+              // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -1615,7 +1614,7 @@ class _PedidoCard extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // ✅ ID de la proforma (pequeño, arriba)
+                        // âœ… ID de la proforma (pequeÃ±o, arriba)
                         Text(
                           'Folio: ${pedido.id}',
                           style: DefaultTextStyle.of(context).style.copyWith(
@@ -1624,7 +1623,7 @@ class _PedidoCard extends StatelessWidget {
                           ),
                         ),
                         const SizedBox(height: 2),
-                        // ✅ CLIENTE - Resaltado en negrita (principal)
+                        // âœ… CLIENTE - Resaltado en negrita (principal)
                         Text(
                           pedido.cliente?.nombre ?? 'Cliente desconocido',
                           style: DefaultTextStyle.of(context).style.copyWith(
@@ -1635,7 +1634,7 @@ class _PedidoCard extends StatelessWidget {
                           overflow: TextOverflow.ellipsis,
                         ),
                         const SizedBox(height: 4),
-                        // Número de pedido (secundario)
+                        // NÃºmero de pedido (secundario)
                         Row(
                           children: [
                             Icon(
@@ -1688,17 +1687,17 @@ class _PedidoCard extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(width: 8),
-                  // ✅ Botón de descargar/compartir impresión
+                  // âœ… BotÃ³n de descargar/compartir impresiÃ³n
                   PopupMenuButton<String>(
                     onSelected: (value) {
-                      // ✅ CORREGIDO: Usar ApiService para obtener baseUrl dinámicamente
+                      // âœ… CORREGIDO: Usar ApiService para obtener baseUrl dinÃ¡micamente
                       final apiService = ApiService();
                       final baseUrl = apiService
                           .getBaseUrl(); // http://localhost:8000/api
 
                       String impresionUrl;
                       if (value == 'imagen') {
-                        // 🖼️ NUEVO: Descargar como imagen
+                        // ðŸ–¼ï¸ NUEVO: Descargar como imagen
                         impresionUrl = '$baseUrl/proformas/${pedido.id}/descargar-imagen?formato=jpeg&dpi=150&quality=85';
                       } else {
                         // PDF original
@@ -1726,7 +1725,7 @@ class _PedidoCard extends StatelessWidget {
                           ],
                         ),
                       ),
-                      // 🖼️ NUEVO: Opción para descargar como imagen
+                      // ðŸ–¼ï¸ NUEVO: OpciÃ³n para descargar como imagen
                       PopupMenuItem<String>(
                         value: 'imagen',
                         child: Row(
@@ -1787,9 +1786,9 @@ class _PedidoCard extends StatelessWidget {
               Divider(height: 1, color: colorScheme.outline.withOpacity(0.2)),
               const SizedBox(height: 16),
 
-              // ═══════════════════════════════════════════════════════════════
-              // 2️⃣ ESTADO ACTUAL (Simple)
-              // ═══════════════════════════════════════════════════════════════
+              // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+              // 2ï¸âƒ£ ESTADO ACTUAL (Simple)
+              // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
               Wrap(
                 spacing: 8,
                 runSpacing: 8,
@@ -1819,7 +1818,7 @@ class _PedidoCard extends StatelessWidget {
                       borderRadius: BorderRadius.circular(16),
                     ),
                     child: Text(
-                      pedido.esVenta ? '✅ Convertida' : pedido.estadoCodigo,
+                      pedido.esVenta ? 'âœ… Convertida' : pedido.estadoCodigo,
                       style: DefaultTextStyle.of(context).style.copyWith(
                         color: _hexToColor(
                           EstadosHelper.getEstadoColor(
@@ -1832,7 +1831,7 @@ class _PedidoCard extends StatelessWidget {
                     ),
                   ),
 
-                  // Número de venta si está convertida
+                  // NÃºmero de venta si estÃ¡ convertida
                   if (pedido.esVenta && pedido.ventaNumero != null)
                     Container(
                       padding: const EdgeInsets.symmetric(
@@ -1848,7 +1847,7 @@ class _PedidoCard extends StatelessWidget {
                         borderRadius: BorderRadius.circular(16),
                       ),
                       child: Text(
-                        '🛍️ ${pedido.ventaNumero}',
+                        'ðŸ›ï¸ ${pedido.ventaNumero}',
                         style: DefaultTextStyle.of(context).style.copyWith(
                           color: colorScheme.primary,
                           fontWeight: FontWeight.w600,
@@ -1856,7 +1855,7 @@ class _PedidoCard extends StatelessWidget {
                       ),
                     ),
 
-                  // Estado logístico si existe
+                  // Estado logÃ­stico si existe
                   if (pedido.tieneEstadoLogistico)
                     Container(
                       padding: const EdgeInsets.symmetric(
@@ -1882,7 +1881,7 @@ class _PedidoCard extends StatelessWidget {
                         borderRadius: BorderRadius.circular(16),
                       ),
                       child: Text(
-                        '🚚 ${pedido.estadoNombre}',
+                        'ðŸšš ${pedido.estadoNombre}',
                         style: DefaultTextStyle.of(context).style.copyWith(
                           color: _hexToColor(
                             EstadosHelper.getEstadoColor(
@@ -1897,13 +1896,13 @@ class _PedidoCard extends StatelessWidget {
                 ],
               ),
 
-              // ✅ NUEVO 2026-02-27: Estados de la venta convertida
+              // âœ… NUEVO 2026-02-27: Estados de la venta convertida
               if (pedido.venta != null) ...[
                 const SizedBox(height: 16),
                 Divider(height: 1, color: colorScheme.outline.withOpacity(0.2)),
                 const SizedBox(height: 16),
                 Text(
-                  '📋 Estados de Venta Convertida',
+                  'ðŸ“‹ Estados de Venta Convertida',
                   style: DefaultTextStyle.of(context).style.copyWith(
                     color: colorScheme.primary,
                     fontWeight: FontWeight.w600,
@@ -1932,7 +1931,7 @@ class _PedidoCard extends StatelessWidget {
                     ),
                     child: Row(
                       children: [
-                        Text('📄', style: DefaultTextStyle.of(context).style),
+                        Text('ðŸ“„', style: DefaultTextStyle.of(context).style),
                         const SizedBox(width: 8),
                         Expanded(
                           child: Column(
@@ -1963,7 +1962,7 @@ class _PedidoCard extends StatelessWidget {
                       ],
                     ),
                   ),
-                // Estado Logístico
+                // Estado LogÃ­stico
                 if (pedido.venta!.estadoLogistica != null)
                   Container(
                     padding: const EdgeInsets.symmetric(
@@ -1985,14 +1984,14 @@ class _PedidoCard extends StatelessWidget {
                     ),
                     child: Row(
                       children: [
-                        Text('🚚', style: DefaultTextStyle.of(context).style),
+                        Text('ðŸšš', style: DefaultTextStyle.of(context).style),
                         const SizedBox(width: 8),
                         Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                'Logística',
+                                'LogÃ­stica',
                                 style: DefaultTextStyle.of(context).style
                                     .copyWith(
                                       color: colorScheme.onSurface.withOpacity(
@@ -2016,7 +2015,7 @@ class _PedidoCard extends StatelessWidget {
                       ],
                     ),
                   ),
-                // ✅ NUEVO 2026-02-27: Motivo de anulación si está anulada
+                // âœ… NUEVO 2026-02-27: Motivo de anulaciÃ³n si estÃ¡ anulada
                 if (pedido.venta!.estadoDocumento?.codigo == 'ANULADA' &&
                     pedido.venta!.observaciones != null &&
                     pedido.venta!.observaciones!.isNotEmpty)
@@ -2040,7 +2039,7 @@ class _PedidoCard extends StatelessWidget {
                             ),
                             const SizedBox(width: 8),
                             Text(
-                              'Motivo de Anulación',
+                              'Motivo de AnulaciÃ³n',
                               style: DefaultTextStyle.of(context).style
                                   .copyWith(
                                     color: Colors.red,
@@ -2093,7 +2092,7 @@ class _PedidoCard extends StatelessWidget {
                       child: Row(
                         children: [
                           Text(
-                            isConfirmado ? '✅' : '⏳',
+                            isConfirmado ? 'âœ…' : 'â³',
                             style: DefaultTextStyle.of(context).style,
                           ),
                           const SizedBox(width: 8),
@@ -2102,7 +2101,7 @@ class _PedidoCard extends StatelessWidget {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  '${confirmacion.chofer ?? 'Chofer'} → ${confirmacion.cliente ?? 'Cliente'}',
+                                  '${confirmacion.chofer ?? 'Chofer'} â†’ ${confirmacion.cliente ?? 'Cliente'}',
                                   style: DefaultTextStyle.of(
                                     context,
                                   ).style.copyWith(fontWeight: FontWeight.w500),
@@ -2130,9 +2129,9 @@ class _PedidoCard extends StatelessWidget {
                 ],
               ],
 
-              // ═══════════════════════════════════════════════════════════════
-              // 3️⃣ INFORMACIÓN ADICIONAL
-              // ═══════════════════════════════════════════════════════════════
+              // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+              // 3ï¸âƒ£ INFORMACIÃ“N ADICIONAL
+              // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
               if (pedido.cantidadItems > 0 ||
                   pedido.direccionEntrega != null ||
                   pedido.tieneReservasProximasAVencer ||
@@ -2169,7 +2168,7 @@ class _PedidoCard extends StatelessWidget {
                         ],
                       ),
 
-                      // Dirección de entrega
+                      // DirecciÃ³n de entrega
                       if (pedido.direccionEntrega != null) ...[
                         const SizedBox(height: 8),
                         Row(
@@ -2198,7 +2197,7 @@ class _PedidoCard extends StatelessWidget {
                         ),
                       ],
 
-                      // ✅ NUEVO: Fecha de vencimiento
+                      // âœ… NUEVO: Fecha de vencimiento
                       if (pedido.fechaVencimiento != null) ...[
                         const SizedBox(height: 8),
                         Row(
@@ -2210,7 +2209,7 @@ class _PedidoCard extends StatelessWidget {
                             ),
                             const SizedBox(width: 8),
                             Text(
-                              '📅 Vencimiento: ${_formatearFecha(pedido.fechaVencimiento!)}',
+                              'ðŸ“… Vencimiento: ${_formatearFecha(pedido.fechaVencimiento!)}',
                               style: DefaultTextStyle.of(context).style
                                   .copyWith(
                                     color: colorScheme.onSurface.withOpacity(
@@ -2222,7 +2221,7 @@ class _PedidoCard extends StatelessWidget {
                         ),
                       ],
 
-                      // ✅ NUEVO: Fecha de entrega solicitada
+                      // âœ… NUEVO: Fecha de entrega solicitada
                       if (pedido.fechaEntregaSolicitada != null) ...[
                         const SizedBox(height: 8),
                         Row(
@@ -2234,7 +2233,7 @@ class _PedidoCard extends StatelessWidget {
                             ),
                             const SizedBox(width: 8),
                             Text(
-                              '🚚 Entrega Solicitada: ${_formatearFecha(pedido.fechaEntregaSolicitada!)}',
+                              'ðŸšš Entrega Solicitada: ${_formatearFecha(pedido.fechaEntregaSolicitada!)}',
                               style: DefaultTextStyle.of(context).style
                                   .copyWith(
                                     color: colorScheme.onSurface.withOpacity(
@@ -2246,7 +2245,7 @@ class _PedidoCard extends StatelessWidget {
                         ),
                       ],
 
-                      // Alerta de reserva próxima a vencer
+                      // Alerta de reserva prÃ³xima a vencer
                       if (pedido.tieneReservasProximasAVencer) ...[
                         const SizedBox(height: 8),
                         Container(
@@ -2268,7 +2267,7 @@ class _PedidoCard extends StatelessWidget {
                               const SizedBox(width: 6),
                               Expanded(
                                 child: Text(
-                                  '⏰ Reserva expira ${pedido.reservaMasProximaAVencer?.tiempoRestanteFormateado ?? 'pronto'}',
+                                  'â° Reserva expira ${pedido.reservaMasProximaAVencer?.tiempoRestanteFormateado ?? 'pronto'}',
                                   style: DefaultTextStyle.of(context).style
                                       .copyWith(
                                         color: const Color(0xFFC2410C),
@@ -2287,7 +2286,7 @@ class _PedidoCard extends StatelessWidget {
                 ),
               ],
 
-              // ✅ NUEVO: Botones de acción (Editar y Anular)
+              // âœ… NUEVO: Botones de acciÃ³n (Editar y Anular)
               if ((pedido.estadoCodigo == 'PENDIENTE' ||
                       pedido.estadoCodigo == 'APROBADA') &&
                   pedido.estadoCategoria == 'proforma') ...[
@@ -2296,12 +2295,12 @@ class _PedidoCard extends StatelessWidget {
                 const SizedBox(height: 12),
                 Row(
                   children: [
-                    // Botón Editar (solo para PENDIENTE)
+                    // BotÃ³n Editar (solo para PENDIENTE)
                     if (pedido.estadoCodigo == 'PENDIENTE')
                       Expanded(
                         child: ElevatedButton.icon(
                           onPressed: () async {
-                            // ✅ NUEVO: Mostrar loading mientras se cargan stocks
+                            // âœ… NUEVO: Mostrar loading mientras se cargan stocks
                             showDialog(
                               context: context,
                               barrierDismissible: false,
@@ -2322,12 +2321,12 @@ class _PedidoCard extends StatelessWidget {
                             final success = await carritoProvider
                                 .cargarProformaEnCarrito(pedido);
 
-                            // Cerrar diálogo de loading
+                            // Cerrar diÃ¡logo de loading
                             if (context.mounted) {
                               Navigator.pop(context);
 
                               if (success) {
-                                // ✅ ACTUALIZADO: Navegar a /products con carrito cargado para editar
+                                // âœ… ACTUALIZADO: Navegar a /products con carrito cargado para editar
                                 Navigator.pushNamedAndRemoveUntil(
                                   context,
                                   '/products',
@@ -2357,7 +2356,7 @@ class _PedidoCard extends StatelessWidget {
                     // Espaciador
                     if (pedido.estadoCodigo == 'PENDIENTE')
                       const SizedBox(width: 12),
-                    // Botón Anular
+                    // BotÃ³n Anular
                     Expanded(
                       child: ElevatedButton.icon(
                         onPressed: () {
@@ -2382,3 +2381,4 @@ class _PedidoCard extends StatelessWidget {
     );
   }
 }
+

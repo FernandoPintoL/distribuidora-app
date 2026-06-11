@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:timeago/timeago.dart' as timeago;
 import '../providers/providers.dart';
@@ -19,7 +19,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   @override
   void initState() {
     super.initState();
-    // Configurar idioma español para timeago
+    // Configurar idioma espaÃ±ol para timeago
     timeago.setLocaleMessages('es', timeago.EsMessages());
   }
 
@@ -40,22 +40,21 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     return Scaffold(
       appBar: CustomGradientAppBar(
         title: 'Notificaciones',
-        customGradient: AppGradients.blue,
         actions: [
-          // Marcar todas como leídas
+          // Marcar todas como leÃ­das
           Consumer<NotificationProvider>(
             builder: (context, provider, child) {
               if (provider.unreadCount > 0) {
                 return IconButton(
                   icon: const Icon(Icons.done_all),
-                  tooltip: 'Marcar todas como leídas',
+                  tooltip: 'Marcar todas como leÃ­das',
                   onPressed: () => _markAllAsRead(context),
                 );
               }
               return const SizedBox.shrink();
             },
           ),
-          // Menú de opciones
+          // MenÃº de opciones
           Consumer<NotificationProvider>(
             builder: (context, provider, child) {
               final isDarkMode = Theme.of(context).brightness == Brightness.dark;
@@ -129,7 +128,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
             );
           }
 
-          // Mostrar lista vacía
+          // Mostrar lista vacÃ­a
           if (provider.notifications.isEmpty) {
             final isDarkMode = Theme.of(context).brightness == Brightness.dark;
             return Center(
@@ -202,9 +201,9 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         return await showDialog<bool>(
           context: context,
           builder: (context) => AlertDialog(
-            title: const Text('Eliminar notificación'),
+            title: const Text('Eliminar notificaciÃ³n'),
             content: const Text(
-              '¿Estás seguro de que deseas eliminar esta notificación?',
+              'Â¿EstÃ¡s seguro de que deseas eliminar esta notificaciÃ³n?',
             ),
             actions: [
               TextButton(
@@ -226,7 +225,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         provider.deleteNotification(notification.id);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: const Text('Notificación eliminada'),
+            content: const Text('NotificaciÃ³n eliminada'),
             backgroundColor: isDarkMode ? Colors.grey[800] : null,
             duration: const Duration(seconds: 2),
           ),
@@ -314,8 +313,8 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                     const SizedBox(width: 8),
                     Text(
                       notification.read
-                          ? 'Marcar como no leída'
-                          : 'Marcar como leída',
+                          ? 'Marcar como no leÃ­da'
+                          : 'Marcar como leÃ­da',
                     ),
                   ],
                 ),
@@ -342,12 +341,12 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
             ],
           ),
           onTap: () {
-            // Marcar como leída si no lo está
+            // Marcar como leÃ­da si no lo estÃ¡
             if (!notification.read) {
               provider.markAsRead(notification.id);
             }
 
-            // TODO: Navegar a la pantalla correspondiente según el tipo
+            // TODO: Navegar a la pantalla correspondiente segÃºn el tipo
             _handleNotificationTap(context, notification);
           },
         ),
@@ -356,12 +355,12 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   }
 
   void _handleNotificationTap(BuildContext context, AppNotification notification) {
-    // Aquí puedes navegar a la pantalla correspondiente
-    // según el tipo de notificación y los datos
-    debugPrint('Notificación tap: ${notification.type}');
+    // AquÃ­ puedes navegar a la pantalla correspondiente
+    // segÃºn el tipo de notificaciÃ³n y los datos
+    debugPrint('NotificaciÃ³n tap: ${notification.type}');
     debugPrint('Datos: ${notification.data}');
 
-    // Ejemplo de navegación según el tipo:
+    // Ejemplo de navegaciÃ³n segÃºn el tipo:
     // if (notification.type == 'proforma.aprobada' && notification.proformaId != null) {
     //   Navigator.push(
     //     context,
@@ -383,7 +382,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         SnackBar(
           content: Text(
             success
-                ? 'Todas las notificaciones marcadas como leídas'
+                ? 'Todas las notificaciones marcadas como leÃ­das'
                 : 'Error al marcar notificaciones',
           ),
           backgroundColor: success
@@ -404,9 +403,9 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Eliminar notificación'),
+        title: const Text('Eliminar notificaciÃ³n'),
         content: const Text(
-          '¿Estás seguro de que deseas eliminar esta notificación?',
+          'Â¿EstÃ¡s seguro de que deseas eliminar esta notificaciÃ³n?',
         ),
         actions: [
           TextButton(
@@ -430,7 +429,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         messenger.showSnackBar(
           SnackBar(
             content: Text(
-              success ? 'Notificación eliminada' : 'Error al eliminar',
+              success ? 'NotificaciÃ³n eliminada' : 'Error al eliminar',
             ),
             backgroundColor: success
                 ? (isDarkMode ? Colors.green.shade800 : Colors.green)
@@ -451,7 +450,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       builder: (context) => AlertDialog(
         title: const Text('Eliminar todas las notificaciones'),
         content: const Text(
-          '¿Estás seguro de que deseas eliminar TODAS las notificaciones? Esta acción no se puede deshacer.',
+          'Â¿EstÃ¡s seguro de que deseas eliminar TODAS las notificaciones? Esta acciÃ³n no se puede deshacer.',
         ),
         actions: [
           TextButton(
@@ -488,3 +487,4 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     }
   }
 }
+

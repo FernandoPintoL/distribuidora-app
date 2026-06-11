@@ -1,6 +1,6 @@
-import 'package:flutter/material.dart';
-import 'dart:convert'; // ✅ NUEVO 2026-03-05: Para base64Decode
-import 'dart:typed_data'; // ✅ NUEVO 2026-03-05: Para Uint8List
+﻿import 'package:flutter/material.dart';
+import 'dart:convert'; // âœ… NUEVO 2026-03-05: Para base64Decode
+import 'dart:typed_data'; // âœ… NUEVO 2026-03-05: Para Uint8List
 import '../../models/entrega.dart';
 import '../../models/venta.dart';
 import '../../providers/entrega_provider.dart';
@@ -8,7 +8,7 @@ import '../../services/entrega_service.dart';
 import '../../widgets/widgets.dart';
 import '../../config/config.dart';
 import '../chofer/entrega_detalle/confirmar_entrega_venta_screen.dart';
-// ✅ NUEVO 2026-03-05: Widgets extraídos para reducir duplicidad
+// âœ… NUEVO 2026-03-05: Widgets extraÃ­dos para reducir duplicidad
 import 'resumen_pagos_widgets/dark_mode_container.dart';
 import 'resumen_pagos_widgets/money_row.dart';
 import 'resumen_pagos_widgets/status_badge.dart';
@@ -37,7 +37,7 @@ class _ResumenPagosEntregaScreenState extends State<ResumenPagosEntregaScreen> {
   final EntregaService _entregaService = EntregaService();
   late Future<Map<String, dynamic>?> _resumenFuture;
 
-  // ✅ NUEVO 2026-02-15: Tipos de pago cargados del backend
+  // âœ… NUEVO 2026-02-15: Tipos de pago cargados del backend
   List<Map<String, dynamic>> tiposPago = [];
   bool tiposPagoCargados = false;
 
@@ -47,7 +47,7 @@ class _ResumenPagosEntregaScreenState extends State<ResumenPagosEntregaScreen> {
     _cargarDatos();
   }
 
-  // ✅ NUEVO: Cargar tipos de pago desde el backend
+  // âœ… NUEVO: Cargar tipos de pago desde el backend
   Future<void> _cargarDatos() async {
     _cargarResumen();
 
@@ -75,7 +75,7 @@ class _ResumenPagosEntregaScreenState extends State<ResumenPagosEntregaScreen> {
     return null;
   }
 
-  /// ✅ NUEVO 2026-03-05: Convertir a int de forma segura (maneja String e int)
+  /// âœ… NUEVO 2026-03-05: Convertir a int de forma segura (maneja String e int)
   int? _convertirAInt(dynamic value) {
     if (value == null) return null;
     if (value is int) return value;
@@ -88,7 +88,7 @@ class _ResumenPagosEntregaScreenState extends State<ResumenPagosEntregaScreen> {
     return null;
   }
 
-  /// ✅ NUEVO 2026-03-05: Decodificar base64 a bytes para mostrar imagen
+  /// âœ… NUEVO 2026-03-05: Decodificar base64 a bytes para mostrar imagen
   Uint8List _decodificarBase64(String base64String) {
     // Remover prefijo de data URI si existe
     String cleanBase64 = base64String.replaceAll(
@@ -103,7 +103,7 @@ class _ResumenPagosEntregaScreenState extends State<ResumenPagosEntregaScreen> {
       try {
         return base64Decode(base64String);
       } catch (__) {
-        // Retornar bytes vacíos si falla todo
+        // Retornar bytes vacÃ­os si falla todo
         return Uint8List(0);
       }
     }
@@ -116,9 +116,8 @@ class _ResumenPagosEntregaScreenState extends State<ResumenPagosEntregaScreen> {
     return Scaffold(
       appBar: CustomGradientAppBar(
         title: 'Resumen de Pagos - Entrega #${widget.entrega.id}',
-        customGradient: AppGradients.green,
         actions: [
-          // ✅ Botón para recargar la pantalla
+          // âœ… BotÃ³n para recargar la pantalla
           IconButton(
             icon: const Icon(Icons.refresh),
             tooltip: 'Recargar',
@@ -194,7 +193,7 @@ class _ResumenPagosEntregaScreenState extends State<ResumenPagosEntregaScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // ✅ TARJETA RESUMEN PRINCIPAL
+          // âœ… TARJETA RESUMEN PRINCIPAL
           Container(
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
@@ -312,7 +311,7 @@ class _ResumenPagosEntregaScreenState extends State<ResumenPagosEntregaScreen> {
                     Text(
                       diferenciaNegativa
                           ? 'Falta: Bs. ${diferencia.abs().toStringAsFixed(2)}'
-                          : 'Completo ✅',
+                          : 'Completo âœ…',
                       style: TextStyle(
                         fontSize: AppTextStyles.bodySmall(context).fontSize!,
                         color: Colors.white.withValues(alpha: 0.9),
@@ -322,7 +321,7 @@ class _ResumenPagosEntregaScreenState extends State<ResumenPagosEntregaScreen> {
                   ],
                 ),
                 const SizedBox(height: 16),
-                // ✅ NUEVO 2026-03-05: Resumen de totales por tipo de pago
+                // âœ… NUEVO 2026-03-05: Resumen de totales por tipo de pago
                 Divider(color: Colors.white.withValues(alpha: 0.3), height: 1),
                 const SizedBox(height: 12),
                 Wrap(
@@ -393,7 +392,7 @@ class _ResumenPagosEntregaScreenState extends State<ResumenPagosEntregaScreen> {
 
           const SizedBox(height: 24),
 
-          // ✅ SECCIÓN 1: VENTAS DE LA ENTREGA (PRINCIPAL — PRIMERO)
+          // âœ… SECCIÃ“N 1: VENTAS DE LA ENTREGA (PRINCIPAL â€” PRIMERO)
           Text(
             'Ventas de la Entrega',
             style: Theme.of(
@@ -402,7 +401,7 @@ class _ResumenPagosEntregaScreenState extends State<ResumenPagosEntregaScreen> {
           ),
           const SizedBox(height: 12),
 
-          // ✅ MEJORADO 2026-02-16: Agrupar por venta (no por tipo de pago)
+          // âœ… MEJORADO 2026-02-16: Agrupar por venta (no por tipo de pago)
           if (pagos.isNotEmpty)
             ..._construirVentasConPagos(pagos, isDarkMode)
           else
@@ -424,7 +423,7 @@ class _ResumenPagosEntregaScreenState extends State<ResumenPagosEntregaScreen> {
 
           const SizedBox(height: 24),
 
-          // ✅ SECCIÓN 2: VENTAS SIN PAGO REGISTRADO (SI EXISTEN)
+          // âœ… SECCIÃ“N 2: VENTAS SIN PAGO REGISTRADO (SI EXISTEN)
           if (sinRegistrar.isNotEmpty) ...[
             Text(
               'Ventas Sin Pago Registrado',
@@ -516,7 +515,7 @@ class _ResumenPagosEntregaScreenState extends State<ResumenPagosEntregaScreen> {
                             ],
                           ),
                         ),
-                        // ✅ Botón de edición para confirmar entrega
+                        // âœ… BotÃ³n de ediciÃ³n para confirmar entrega
                         SizedBox(
                           height: 36,
                           child: ElevatedButton.icon(
@@ -547,9 +546,9 @@ class _ResumenPagosEntregaScreenState extends State<ResumenPagosEntregaScreen> {
     );
   }
 
-  // ✅ NUEVO 2026-02-16: Construir tarjetas de ventas agrupadas por venta_id
+  // âœ… NUEVO 2026-02-16: Construir tarjetas de ventas agrupadas por venta_id
   List<Widget> _construirVentasConPagos(List<dynamic> pagos, bool isDarkMode) {
-    // Agrupar todas las ventas únicas con sus pagos
+    // Agrupar todas las ventas Ãºnicas con sus pagos
     final Map<int, Map<String, dynamic>> ventasMap = {};
 
     for (final pagoGroup in pagos) {
@@ -561,7 +560,7 @@ class _ResumenPagosEntregaScreenState extends State<ResumenPagosEntregaScreen> {
         final tipoNovedad = venta['tipo_novedad'] as String?;
         final ventaTotal = (venta['venta_total'] as num? ?? 0).toDouble();
 
-        // ✅ NUEVO 2026-02-17: Extraer campos de confirmación de entrega
+        // âœ… NUEVO 2026-02-17: Extraer campos de confirmaciÃ³n de entrega
         final fotos = (venta['fotos'] as List<dynamic>?)?.cast<String>() ?? [];
         final observacionesLogistica =
             venta['observaciones_logistica'] as String? ?? '';
@@ -571,16 +570,16 @@ class _ResumenPagosEntregaScreenState extends State<ResumenPagosEntregaScreen> {
                 ?.cast<Map<String, dynamic>>() ??
             [];
 
-        // ✅ NUEVO 2026-03-05: Extraer cliente específico de la venta (no el global)
+        // âœ… NUEVO 2026-03-05: Extraer cliente especÃ­fico de la venta (no el global)
         final clienteVenta = venta['cliente'] as Map<String, dynamic>? ?? {};
 
         if (ventaId > 0) {
-          // ✅ NUEVA 2026-03-05: Extraer productos devueltos e info de devolución (SIEMPRE, para preservar en múltiples pagos)
+          // âœ… NUEVA 2026-03-05: Extraer productos devueltos e info de devoluciÃ³n (SIEMPRE, para preservar en mÃºltiples pagos)
           final productosDevueltos =
               (venta['productos_devueltos'] as List?) ?? [];
           final montoDevuelto = venta['monto_devuelto'] as num? ?? 0;
           final montoAceptado = venta['monto_aceptado'] as num? ?? ventaTotal;
-          // ✅ NUEVO 2026-03-05: Extraer campos de novedad
+          // âœ… NUEVO 2026-03-05: Extraer campos de novedad
           final tiendaAbierta = venta['tienda_abierta'] as bool?;
           final clientePresente = venta['cliente_presente'] as bool?;
           final motivoRechazo = venta['motivo_rechazo'] as String?;
@@ -592,31 +591,31 @@ class _ResumenPagosEntregaScreenState extends State<ResumenPagosEntregaScreen> {
               'tipo_entrega': tipoEntrega,
               'tipo_novedad': tipoNovedad,
               'pagos': <Map<String, dynamic>>[],
-              'total': ventaTotal, // ✅ NUEVO: Usa venta_total del backend
-              // ✅ NUEVO 2026-02-17: Campos de confirmación de entrega
+              'total': ventaTotal, // âœ… NUEVO: Usa venta_total del backend
+              // âœ… NUEVO 2026-02-17: Campos de confirmaciÃ³n de entrega
               'fotos': fotos,
               'observaciones_logistica': observacionesLogistica,
               'firma_digital_url': firmaDigitalUrl,
               'detalles': detalles,
-              // ✅ NUEVO 2026-03-05: Guardar cliente específico de la venta
+              // âœ… NUEVO 2026-03-05: Guardar cliente especÃ­fico de la venta
               'cliente': clienteVenta,
-              // ✅ NUEVA 2026-03-05: Guardar productos devueltos e info de devolución
+              // âœ… NUEVA 2026-03-05: Guardar productos devueltos e info de devoluciÃ³n
               'productos_devueltos': productosDevueltos,
               'monto_devuelto': montoDevuelto,
               'monto_aceptado': montoAceptado,
-              // ✅ NUEVO 2026-03-05: Guardar campos de novedad
+              // âœ… NUEVO 2026-03-05: Guardar campos de novedad
               'tienda_abierta': tiendaAbierta,
               'cliente_presente': clientePresente,
               'motivo_rechazo': motivoRechazo,
             };
           } else {
-            // ✅ FIX 2026-03-05: Si la venta ya existe (múltiples pagos), asegurar que productos_devueltos se preserve
+            // âœ… FIX 2026-03-05: Si la venta ya existe (mÃºltiples pagos), asegurar que productos_devueltos se preserve
             if (productosDevueltos.isNotEmpty) {
               ventasMap[ventaId]!['productos_devueltos'] = productosDevueltos;
               ventasMap[ventaId]!['monto_devuelto'] = montoDevuelto;
               ventasMap[ventaId]!['monto_aceptado'] = montoAceptado;
             }
-            // ✅ NUEVO 2026-03-05: Actualizar campos de novedad en venta existente
+            // âœ… NUEVO 2026-03-05: Actualizar campos de novedad en venta existente
             if (tiendaAbierta != null) {
               ventasMap[ventaId]!['tienda_abierta'] = tiendaAbierta;
             }
@@ -654,16 +653,16 @@ class _ResumenPagosEntregaScreenState extends State<ResumenPagosEntregaScreen> {
       final total = ventaData['total'] as double;
       final clienteVentaData =
           ventaData['cliente'] as Map<String, dynamic>? ?? <String, dynamic>{};
-      // ✅ NUEVO 2026-02-17: Campos de confirmación de entrega
+      // âœ… NUEVO 2026-02-17: Campos de confirmaciÃ³n de entrega
       final fotos = (ventaData['fotos'] as List?) ?? [];
       final observacionesLogistica =
           ventaData['observaciones_logistica'] as String? ?? '';
       final detalles = (ventaData['detalles'] as List?) ?? [];
-      // ✅ NUEVA 2026-03-05: Campos de novedad
+      // âœ… NUEVA 2026-03-05: Campos de novedad
       final tiendaAbierta = ventaData['tienda_abierta'] as bool?;
       final clientePresente = ventaData['cliente_presente'] as bool?;
       final motivoRechazo = ventaData['motivo_rechazo'] as String?;
-      // ✅ NUEVA 2026-03-05: Productos devueltos en devolución parcial
+      // âœ… NUEVA 2026-03-05: Productos devueltos en devoluciÃ³n parcial
       final productosDevueltosRaw = ventaData['productos_devueltos'];
       final productosDevueltos = (productosDevueltosRaw is List)
           ? (productosDevueltosRaw as List).cast<Map<String, dynamic>>()
@@ -674,7 +673,7 @@ class _ResumenPagosEntregaScreenState extends State<ResumenPagosEntregaScreen> {
           (ventaData['monto_aceptado'] as num?)?.toDouble() ?? 0.0;
 
       debugPrint(
-        '📦 [VENTA $ventaId] tipo_novedad=$tipoNovedad, productosDevueltos=${productosDevueltos.length}, montoDevuelto=$montoDevuelto, ventaData.keys=${ventaData.keys.toList()}',
+        'ðŸ“¦ [VENTA $ventaId] tipo_novedad=$tipoNovedad, productosDevueltos=${productosDevueltos.length}, montoDevuelto=$montoDevuelto, ventaData.keys=${ventaData.keys.toList()}',
       );
 
       return Padding(
@@ -697,7 +696,7 @@ class _ResumenPagosEntregaScreenState extends State<ResumenPagosEntregaScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // ✅ Encabezado con ID y estado de entrega
+                  // âœ… Encabezado con ID y estado de entrega
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
@@ -732,7 +731,7 @@ class _ResumenPagosEntregaScreenState extends State<ResumenPagosEntregaScreen> {
                               ),
                             ),
                             const SizedBox(height: 8),
-                            // 👤 Información del cliente
+                            // ðŸ‘¤ InformaciÃ³n del cliente
                             Text(
                               clienteVentaData['nombre_completo'] as String? ??
                                   clienteVentaData['nombre'] as String? ??
@@ -763,7 +762,7 @@ class _ResumenPagosEntregaScreenState extends State<ResumenPagosEntregaScreen> {
                                           '')
                                       .isNotEmpty)
                                     clienteVentaData['telefono'],
-                                ].join(' • '),
+                                ].join(' â€¢ '),
                                 style: TextStyle(
                                   fontSize: AppTextStyles.labelSmall(
                                     context,
@@ -776,7 +775,7 @@ class _ResumenPagosEntregaScreenState extends State<ResumenPagosEntregaScreen> {
                               ),
                             ],
                             const SizedBox(height: 8),
-                            // ✅ NUEVO 2026-03-05: Badges de tipo entrega y tipo novedad
+                            // âœ… NUEVO 2026-03-05: Badges de tipo entrega y tipo novedad
                             Wrap(
                               spacing: 8,
                               runSpacing: 4,
@@ -797,7 +796,7 @@ class _ResumenPagosEntregaScreenState extends State<ResumenPagosEntregaScreen> {
                           ],
                         ),
                       ),
-                      // Botón cambiar tipo de entrega - Navega a pantalla completa
+                      // BotÃ³n cambiar tipo de entrega - Navega a pantalla completa
                       IconButton(
                         icon: const Icon(
                           Icons.local_shipping_outlined,
@@ -834,7 +833,7 @@ class _ResumenPagosEntregaScreenState extends State<ResumenPagosEntregaScreen> {
                                 isEditing: true,
                                 tipoEntregaExistente: tipoEntrega,
                                 tipoNovedadExistente: tipoNovedad,
-                                // ✅ NUEVO 2026-03-05: Pasar cliente específico de la venta y tipo de pago
+                                // âœ… NUEVO 2026-03-05: Pasar cliente especÃ­fico de la venta y tipo de pago
                                 cliente: clienteVentaData,
                                 tipoPago: pagos.isNotEmpty
                                     ? {
@@ -849,7 +848,7 @@ class _ResumenPagosEntregaScreenState extends State<ResumenPagosEntregaScreen> {
                                                 as String?,
                                       }
                                     : null,
-                                // ✅ NUEVO 2026-03-05: Pasar información previa de fotos, observaciones y pagos
+                                // âœ… NUEVO 2026-03-05: Pasar informaciÃ³n previa de fotos, observaciones y pagos
                                 fotosExistentes: fotos.cast<String>(),
                                 observacionesExistentes: observacionesLogistica,
                                 pagosExistentes: pagos
@@ -861,20 +860,20 @@ class _ResumenPagosEntregaScreenState extends State<ResumenPagosEntregaScreen> {
                                       },
                                     )
                                     .toList(),
-                                // ✅ NUEVA 2026-03-05: Pasar campos de novedad
+                                // âœ… NUEVA 2026-03-05: Pasar campos de novedad
                                 tiendaAbiertaExistente: tiendaAbierta,
                                 clientePresenteExistente: clientePresente,
                                 motivoRechazoExistente: motivoRechazo,
-                                // ✅ NUEVO 2026-03-05: Pasar productos devueltos existentes para DEVOLUCION_PARCIAL
+                                // âœ… NUEVO 2026-03-05: Pasar productos devueltos existentes para DEVOLUCION_PARCIAL
                                 productosDevueltosExistentes: productosDevueltos
                                     .cast<Map<String, dynamic>>(),
                               ),
                             ),
                           ).then((result) {
-                            // ✅ Si hubo cambios (result == true), recargar y retornar a pantalla anterior
+                            // âœ… Si hubo cambios (result == true), recargar y retornar a pantalla anterior
                             if (result == true) {
                               debugPrint(
-                                '📝 [RESUMEN_PAGOS] Cambios detectados, recargando resumen...',
+                                'ðŸ“ [RESUMEN_PAGOS] Cambios detectados, recargando resumen...',
                               );
                               setState(() {
                                 _cargarResumen();
@@ -885,7 +884,7 @@ class _ResumenPagosEntregaScreenState extends State<ResumenPagosEntregaScreen> {
                                 () {
                                   if (mounted) {
                                     debugPrint(
-                                      '✅ [RESUMEN_PAGOS] Resumen recargado, retornando true...',
+                                      'âœ… [RESUMEN_PAGOS] Resumen recargado, retornando true...',
                                     );
                                     Navigator.pop(context, true);
                                   }
@@ -894,7 +893,7 @@ class _ResumenPagosEntregaScreenState extends State<ResumenPagosEntregaScreen> {
                             } else {
                               // Si no hubo cambios, solo recargar el resumen
                               debugPrint(
-                                '📝 [RESUMEN_PAGOS] Sin cambios detectados, recargando resumen...',
+                                'ðŸ“ [RESUMEN_PAGOS] Sin cambios detectados, recargando resumen...',
                               );
                               setState(() {
                                 _cargarResumen();
@@ -902,7 +901,7 @@ class _ResumenPagosEntregaScreenState extends State<ResumenPagosEntregaScreen> {
                             }
                           });
                         },
-                        tooltip: '📦 Cambiar Tipo Entrega',
+                        tooltip: 'ðŸ“¦ Cambiar Tipo Entrega',
                         color: Colors.orange[600],
                       ),
                     ],
@@ -915,8 +914,8 @@ class _ResumenPagosEntregaScreenState extends State<ResumenPagosEntregaScreen> {
                   ),
                   // const SizedBox(height: 12),
 
-                  // 💰 Total de la venta
-                  // ✅ NUEVO 2026-03-05: Mostrar total ajustado para DEVOLUCION_PARCIAL
+                  // ðŸ’° Total de la venta
+                  // âœ… NUEVO 2026-03-05: Mostrar total ajustado para DEVOLUCION_PARCIAL
                   /*Container(
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
@@ -962,7 +961,7 @@ class _ResumenPagosEntregaScreenState extends State<ResumenPagosEntregaScreen> {
                                     Padding(
                                       padding: const EdgeInsets.only(top: 4),
                                       child: Text(
-                                        '↩️ -Bs. ${montoDevuelto.toStringAsFixed(2)}',
+                                        'â†©ï¸ -Bs. ${montoDevuelto.toStringAsFixed(2)}',
                                         style: TextStyle(
                                           fontSize: 12,
                                           color: Colors.red[700],
@@ -978,9 +977,9 @@ class _ResumenPagosEntregaScreenState extends State<ResumenPagosEntregaScreen> {
                     ),
                   ),*/
                   const SizedBox(height: 4),
-                  // ✅ Mostrar productos solo si hay devoluciones
+                  // âœ… Mostrar productos solo si hay devoluciones
                   if (tipoNovedad == 'DEVOLUCION_PARCIAL') ...[
-                    // ✅ NUEVO 2026-03-05: Mostrar productos devueltos en devolución parcial
+                    // âœ… NUEVO 2026-03-05: Mostrar productos devueltos en devoluciÃ³n parcial
                     if (productosDevueltos.isNotEmpty) ...[
                       Container(
                         padding: const EdgeInsets.all(12),
@@ -1049,13 +1048,13 @@ class _ResumenPagosEntregaScreenState extends State<ResumenPagosEntregaScreen> {
                     ],
                   ],
 
-                  // ✅ Desglose de pagos (para Entrega Completa y Devolución Parcial)
+                  // âœ… Desglose de pagos (para Entrega Completa y DevoluciÃ³n Parcial)
                   if (pagos.isNotEmpty &&
                       (tipoEntrega == 'COMPLETA' ||
                           tipoNovedad == 'DEVOLUCION_PARCIAL')) ...[
                     SectionHeader.pagos(isDarkMode: isDarkMode),
                     // const SizedBox(height: 8),
-                    // ✅ NUEVO 2026-03-05: Chips de pagos (tipo + monto)
+                    // âœ… NUEVO 2026-03-05: Chips de pagos (tipo + monto)
                     Wrap(
                       spacing: 8,
                       runSpacing: 8,
@@ -1076,7 +1075,7 @@ class _ResumenPagosEntregaScreenState extends State<ResumenPagosEntregaScreen> {
                                 : Colors.grey[700],
                           ),
                           label: Text(
-                            '$tipoPago • Bs. ${monto.toStringAsFixed(2)}',
+                            '$tipoPago â€¢ Bs. ${monto.toStringAsFixed(2)}',
                             style: TextStyle(
                               fontSize: 13,
                               fontWeight: FontWeight.w600,
@@ -1093,7 +1092,7 @@ class _ResumenPagosEntregaScreenState extends State<ResumenPagosEntregaScreen> {
                       }).toList(),
                     ),
                     const SizedBox(height: 12),
-                    // ✅ NUEVO 2026-03-05: Mostrar Total Esperado y Total Recibido
+                    // âœ… NUEVO 2026-03-05: Mostrar Total Esperado y Total Recibido
                     Container(
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
@@ -1110,7 +1109,7 @@ class _ResumenPagosEntregaScreenState extends State<ResumenPagosEntregaScreen> {
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
                               Text(
-                                '💰 Total Esperado:',
+                                'ðŸ’° Total Esperado:',
                                 style: TextStyle(
                                   fontSize: 12,
                                   fontWeight: FontWeight.w600,
@@ -1142,7 +1141,7 @@ class _ResumenPagosEntregaScreenState extends State<ResumenPagosEntregaScreen> {
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
                               Text(
-                                '✅ Total Recibido:',
+                                'âœ… Total Recibido:',
                                 style: TextStyle(
                                   fontSize: 12,
                                   fontWeight: FontWeight.w600,
@@ -1216,11 +1215,11 @@ class _ResumenPagosEntregaScreenState extends State<ResumenPagosEntregaScreen> {
                     const SizedBox(height: 12),
                   ],
 
-                  // ✅ NUEVO 2026-03-05: Mostrar fotos si las hay (CLIENTE_CERRADO, etc.)
+                  // âœ… NUEVO 2026-03-05: Mostrar fotos si las hay (CLIENTE_CERRADO, etc.)
                   if (fotos.isNotEmpty) ...[
                     SectionHeader(
-                      title: 'Fotos de Confirmación (${fotos.length})',
-                      emoji: '📸',
+                      title: 'Fotos de ConfirmaciÃ³n (${fotos.length})',
+                      emoji: 'ðŸ“¸',
                       isDarkMode: isDarkMode,
                       padding: const EdgeInsets.only(bottom: 8),
                     ),
@@ -1295,12 +1294,12 @@ class _ResumenPagosEntregaScreenState extends State<ResumenPagosEntregaScreen> {
     }
   }
 
-  // ✅ NUEVO 2026-03-05: Traducir tipos de novedad a nombres legibles
+  // âœ… NUEVO 2026-03-05: Traducir tipos de novedad a nombres legibles
   String _obtenerNombreTipoNovedad(String? tipo) {
     if (tipo == null) return '';
     switch (tipo.toUpperCase()) {
       case 'DEVOLUCION_PARCIAL':
-        return 'Devolución Parcial';
+        return 'DevoluciÃ³n Parcial';
       case 'CLIENTE_CERRADO':
         return 'Cliente Cerrado';
       case 'NO_CONTACTADO':
@@ -1312,7 +1311,7 @@ class _ResumenPagosEntregaScreenState extends State<ResumenPagosEntregaScreen> {
     }
   }
 
-  // ✅ NUEVO 2026-03-05: Mostrar foto en grande con diálogo fullscreen
+  // âœ… NUEVO 2026-03-05: Mostrar foto en grande con diÃ¡logo fullscreen
   void _mostrarFotoGrande(BuildContext context, String fotoUrl, bool esBase64) {
     showDialog(
       context: context,
@@ -1354,7 +1353,7 @@ class _ResumenPagosEntregaScreenState extends State<ResumenPagosEntregaScreen> {
                       ),
                     ),
             ),
-            // Botón cerrar
+            // BotÃ³n cerrar
             Positioned(
               top: 10,
               right: 10,
@@ -1376,7 +1375,7 @@ class _ResumenPagosEntregaScreenState extends State<ResumenPagosEntregaScreen> {
     );
   }
 
-  /// ✅ NUEVO: Navegar a pantalla de confirmación de entrega para editar una venta sin registrar
+  /// âœ… NUEVO: Navegar a pantalla de confirmaciÃ³n de entrega para editar una venta sin registrar
   void _navegarAConfirmarEntrega(BuildContext context, int ventaId) {
     final venta = widget.entrega.ventas.firstWhere(
       (v) => v.id == ventaId,
@@ -1402,11 +1401,11 @@ class _ResumenPagosEntregaScreenState extends State<ResumenPagosEntregaScreen> {
           entrega: widget.entrega,
           venta: venta,
           provider: widget.provider,
-          isEditing: true, // Modo edición para volver a subir
+          isEditing: true, // Modo ediciÃ³n para volver a subir
         ),
       ),
     ).then((result) {
-      // Si se guardó correctamente, recargar el resumen
+      // Si se guardÃ³ correctamente, recargar el resumen
       if (result == true) {
         setState(() {
           _cargarResumen();
@@ -1415,3 +1414,4 @@ class _ResumenPagosEntregaScreenState extends State<ResumenPagosEntregaScreen> {
     });
   }
 }
+

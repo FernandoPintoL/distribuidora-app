@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../../config/app_colors.dart';
 import '../../config/app_gradients.dart';
@@ -7,7 +7,7 @@ import '../../models/credito.dart';
 import '../../extensions/theme_extension.dart';
 import '../../widgets/widgets.dart';
 
-/// Pantalla para visualizar créditos del cliente
+/// Pantalla para visualizar crÃ©ditos del cliente
 /// Muestra: Resumen, Cuentas Pendientes, Historial de Pagos
 class CreditosScreen extends StatefulWidget {
   const CreditosScreen({super.key});
@@ -20,7 +20,7 @@ class _CreditosScreenState extends State<CreditosScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
 
-  // Datos de ejemplo (en producción, vendrían del provider)
+  // Datos de ejemplo (en producciÃ³n, vendrÃ­an del provider)
   final Credito _credito = Credito(
     id: 1,
     clienteId: 1,
@@ -87,12 +87,11 @@ class _CreditosScreenState extends State<CreditosScreen>
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: CustomGradientAppBar(
-        title: 'Mis Créditos',
-        customGradient: AppGradients.blue,
+        title: 'Mis CrÃ©ditos',
       ),
       body: Column(
         children: [
-          // ✅ Card de resumen de crédito
+          // âœ… Card de resumen de crÃ©dito
           _buildCreditoResumenCard(),
 
           // TabBar
@@ -131,7 +130,7 @@ class _CreditosScreenState extends State<CreditosScreen>
     );
   }
 
-  /// Card de resumen de crédito
+  /// Card de resumen de crÃ©dito
   Widget _buildCreditoResumenCard() {
     final porcentajeUtilizado = _credito.porcentajeUtilizado;
     final estado = _credito.estado;
@@ -157,7 +156,7 @@ class _CreditosScreenState extends State<CreditosScreen>
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                'Crédito Total',
+                'CrÃ©dito Total',
                 style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                   fontWeight: FontWeight.bold,
                 ),
@@ -184,7 +183,7 @@ class _CreditosScreenState extends State<CreditosScreen>
           ),
           const SizedBox(height: 16),
 
-          // Grid de información
+          // Grid de informaciÃ³n
           GridView.count(
             crossAxisCount: 2,
             childAspectRatio: 1.5,
@@ -194,7 +193,7 @@ class _CreditosScreenState extends State<CreditosScreen>
             mainAxisSpacing: 12,
             children: [
               _buildCreditsummaryItem(
-                'Límite Aprobado',
+                'LÃ­mite Aprobado',
                 'Bs. ${_credito.limiteCreditoAprobado.toStringAsFixed(2)}',
                 Icons.account_balance,
               ),
@@ -209,7 +208,7 @@ class _CreditosScreenState extends State<CreditosScreen>
                 Icons.check_circle,
               ),
               _buildCreditsummaryItem(
-                'Utilización',
+                'UtilizaciÃ³n',
                 '${porcentajeUtilizado.toStringAsFixed(0)}%',
                 Icons.percent,
               ),
@@ -225,7 +224,7 @@ class _CreditosScreenState extends State<CreditosScreen>
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   const Text(
-                    'Porcentaje de Utilización',
+                    'Porcentaje de UtilizaciÃ³n',
                     style: TextStyle(fontWeight: FontWeight.w500, fontSize: 12),
                   ),
                   Text(
@@ -298,7 +297,7 @@ class _CreditosScreenState extends State<CreditosScreen>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Información importante
+          // InformaciÃ³n importante
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
@@ -312,7 +311,7 @@ class _CreditosScreenState extends State<CreditosScreen>
                 const SizedBox(width: 12),
                 Expanded(
                   child: Text(
-                    'Este es tu crédito disponible. Úsalo con responsabilidad.',
+                    'Este es tu crÃ©dito disponible. Ãšsalo con responsabilidad.',
                     style: TextStyle(color: Colors.blue[700], fontSize: 12),
                   ),
                 ),
@@ -321,9 +320,9 @@ class _CreditosScreenState extends State<CreditosScreen>
           ),
           const SizedBox(height: 20),
 
-          // Estadísticas
+          // EstadÃ­sticas
           Text(
-            'Estadísticas',
+            'EstadÃ­sticas',
             style: Theme.of(
               context,
             ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
@@ -364,12 +363,12 @@ class _CreditosScreenState extends State<CreditosScreen>
             child: Column(
               children: [
                 _buildDateInfo(
-                  'Crédito Aprobado',
+                  'CrÃ©dito Aprobado',
                   DateFormat('dd/MM/yyyy').format(_credito.fechaAprobacion),
                 ),
                 const Divider(),
                 _buildDateInfo(
-                  'Última Actualización',
+                  'Ãšltima ActualizaciÃ³n',
                   DateFormat(
                     'dd/MM/yyyy HH:mm',
                   ).format(_credito.fechaUltimaActualizacion ?? DateTime.now()),
@@ -392,12 +391,12 @@ class _CreditosScreenState extends State<CreditosScreen>
             Icon(Icons.check_circle, size: 64, color: Colors.green[300]),
             const SizedBox(height: 16),
             Text(
-              '¡No tienes cuentas pendientes!',
+              'Â¡No tienes cuentas pendientes!',
               style: Theme.of(context).textTheme.headlineSmall,
             ),
             const SizedBox(height: 8),
             Text(
-              'Todas tus deudas están al día',
+              'Todas tus deudas estÃ¡n al dÃ­a',
               style: Theme.of(
                 context,
               ).textTheme.bodyMedium?.copyWith(color: Colors.grey),
@@ -608,7 +607,7 @@ class _CreditosScreenState extends State<CreditosScreen>
                       borderRadius: BorderRadius.circular(3),
                     ),
                     child: Text(
-                      'Vencido hace ${cuenta.diasVencido} días',
+                      'Vencido hace ${cuenta.diasVencido} dÃ­as',
                       style: TextStyle(
                         fontSize: AppTextStyles.labelSmall(context).fontSize!,
                         color: Colors.red[700],
@@ -654,7 +653,7 @@ class _CreditosScreenState extends State<CreditosScreen>
                     ),
                   ),
                   Text(
-                    '${pago.tipoPago.toUpperCase()} • ${pago.numeroRecibo ?? 'Sin recibo'}',
+                    '${pago.tipoPago.toUpperCase()} â€¢ ${pago.numeroRecibo ?? 'Sin recibo'}',
                     style: TextStyle(
                       fontSize: AppTextStyles.labelSmall(context).fontSize!,
                       color: Colors.grey[600],
@@ -684,7 +683,7 @@ class _CreditosScreenState extends State<CreditosScreen>
     );
   }
 
-  /// Item de estadística
+  /// Item de estadÃ­stica
   Widget _buildStatItem(
     String label,
     String value,
@@ -730,7 +729,7 @@ class _CreditosScreenState extends State<CreditosScreen>
     );
   }
 
-  /// Información de fecha
+  /// InformaciÃ³n de fecha
   Widget _buildDateInfo(String label, String value) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8),
@@ -756,3 +755,4 @@ class _CreditosScreenState extends State<CreditosScreen>
     );
   }
 }
+

@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import '../../models/models.dart';
@@ -38,14 +38,14 @@ class _PedidoTrackingScreenState extends State<PedidoTrackingScreen> {
 
   Future<void> _inicializarTracking() async {
     // Verificar que el pedido tenga tracking activo
-    // ✅ ACTUALIZADO: Usar códigos de estado String en lugar de enum
+    // âœ… ACTUALIZADO: Usar cÃ³digos de estado String en lugar de enum
     if (widget.pedido.estadoCodigo != 'EN_RUTA' &&
         widget.pedido.estadoCodigo != 'LLEGO') {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text(
-              'El tracking solo está disponible cuando el pedido está en ruta',
+              'El tracking solo estÃ¡ disponible cuando el pedido estÃ¡ en ruta',
             ),
             backgroundColor: Colors.orange,
           ),
@@ -55,14 +55,14 @@ class _PedidoTrackingScreenState extends State<PedidoTrackingScreen> {
     }
 
     // Obtener el ID de la entrega del pedido
-    // NOTA: Necesitaríamos agregar entregaId al modelo Pedido
+    // NOTA: NecesitarÃ­amos agregar entregaId al modelo Pedido
     // Por ahora asumimos que usamos el pedido.id como entregaId
     final entregaId = widget.pedido.id;
 
     final trackingProvider = context.read<TrackingProvider>();
     await trackingProvider.suscribirseATracking(entregaId);
 
-    // Calcular distancia inicial si hay ubicación
+    // Calcular distancia inicial si hay ubicaciÃ³n
     _calcularDistancia();
 
     // Actualizar distancia cada 30 segundos
@@ -141,12 +141,11 @@ class _PedidoTrackingScreenState extends State<PedidoTrackingScreen> {
     return Scaffold(
       appBar: CustomGradientAppBar(
         title: 'Tracking en Tiempo Real',
-        customGradient: AppGradients.blue,
         actions: [
           IconButton(
             icon: const Icon(Icons.my_location),
             onPressed: _centrarMapa,
-            tooltip: 'Centrar en camión',
+            tooltip: 'Centrar en camiÃ³n',
           ),
           IconButton(
             icon: const Icon(Icons.zoom_out_map),
@@ -172,7 +171,7 @@ class _PedidoTrackingScreenState extends State<PedidoTrackingScreen> {
           final ubicacion = trackingProvider.ubicacionActual;
           final distancia = trackingProvider.distanciaEstimada;
 
-          // Sin ubicación disponible
+          // Sin ubicaciÃ³n disponible
           if (ubicacion == null) {
             return _buildNoLocationState();
           }
@@ -201,7 +200,7 @@ class _PedidoTrackingScreenState extends State<PedidoTrackingScreen> {
                   },
                 ),
 
-                // Panel de información superior (con SLA si está disponible)
+                // Panel de informaciÃ³n superior (con SLA si estÃ¡ disponible)
                 Positioned(
                   top: 0,
                   left: 0,
@@ -211,7 +210,7 @@ class _PedidoTrackingScreenState extends State<PedidoTrackingScreen> {
                   ),
                 ),
 
-                // Panel de información del chofer y camión
+                // Panel de informaciÃ³n del chofer y camiÃ³n
                 if (widget.pedido.chofer != null ||
                     widget.pedido.camion != null)
                   Positioned(
@@ -272,14 +271,14 @@ class _PedidoTrackingScreenState extends State<PedidoTrackingScreen> {
   Set<Marker> _buildMarkers(UbicacionTracking ubicacion) {
     final markers = <Marker>{};
 
-    // Marker del camión
+    // Marker del camiÃ³n
     markers.add(
       Marker(
         markerId: const MarkerId('camion'),
         position: LatLng(ubicacion.latitud, ubicacion.longitud),
         icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueBlue),
         infoWindow: InfoWindow(
-          title: '🚚 Camión en camino',
+          title: 'ðŸšš CamiÃ³n en camino',
           snippet: ubicacion.velocidadFormateada,
         ),
         rotation: ubicacion.rumbo ?? 0,
@@ -299,7 +298,7 @@ class _PedidoTrackingScreenState extends State<PedidoTrackingScreen> {
             BitmapDescriptor.hueGreen,
           ),
           infoWindow: InfoWindow(
-            title: '📍 Tu dirección',
+            title: 'ðŸ“ Tu direcciÃ³n',
             snippet: widget.pedido.direccionEntrega!.direccion ?? '',
           ),
         ),
@@ -315,9 +314,9 @@ class _PedidoTrackingScreenState extends State<PedidoTrackingScreen> {
   ) {
     return Column(
       children: [
-        // SLA Status Card - FASE 6 (si está disponible)
+        // SLA Status Card - FASE 6 (si estÃ¡ disponible)
         // Nota: Este es un placeholder para cuando tengamos acceso a datos de entrega con SLA
-        // En una implementación completa, el Pedido tendría acceso a la Entrega relacionada
+        // En una implementaciÃ³n completa, el Pedido tendrÃ­a acceso a la Entrega relacionada
         _buildSlaInfoCard(),
 
         Container(
@@ -451,7 +450,7 @@ class _PedidoTrackingScreenState extends State<PedidoTrackingScreen> {
                   ),
                 ),
 
-                // Alerta si está cerca
+                // Alerta si estÃ¡ cerca
                 if (distancia.estaMuyCerca)
                   Container(
                     width: double.infinity,
@@ -469,7 +468,7 @@ class _PedidoTrackingScreenState extends State<PedidoTrackingScreen> {
                         const SizedBox(width: 12),
                         Expanded(
                           child: Text(
-                            '¡El camión está muy cerca!',
+                            'Â¡El camiÃ³n estÃ¡ muy cerca!',
                             style: TextStyle(
                               color: Colors.green.shade900,
                               fontWeight: FontWeight.w600,
@@ -496,7 +495,7 @@ class _PedidoTrackingScreenState extends State<PedidoTrackingScreen> {
                         const SizedBox(width: 12),
                         Expanded(
                           child: Text(
-                            'El camión se está acercando',
+                            'El camiÃ³n se estÃ¡ acercando',
                             style: TextStyle(
                               color: Colors.orange.shade900,
                               fontWeight: FontWeight.w600,
@@ -507,7 +506,7 @@ class _PedidoTrackingScreenState extends State<PedidoTrackingScreen> {
                     ),
                   ),
               ] else ...[
-                // Sin información de distancia
+                // Sin informaciÃ³n de distancia
                 const Padding(
                   padding: EdgeInsets.all(16),
                   child: Text(
@@ -523,8 +522,8 @@ class _PedidoTrackingScreenState extends State<PedidoTrackingScreen> {
     );
   }
 
-  /// Widget para mostrar información de SLA al cliente
-  /// Mostrará el estado de entrega, ventana de entrega, y si está en tiempo
+  /// Widget para mostrar informaciÃ³n de SLA al cliente
+  /// MostrarÃ¡ el estado de entrega, ventana de entrega, y si estÃ¡ en tiempo
   Widget _buildSlaInfoCard() {
     return Container(
       margin: const EdgeInsets.all(16),
@@ -542,7 +541,7 @@ class _PedidoTrackingScreenState extends State<PedidoTrackingScreen> {
               const SizedBox(width: 12),
               Expanded(
                 child: Text(
-                  'Tu entrega está en camino',
+                  'Tu entrega estÃ¡ en camino',
                   style: TextStyle(
                     fontWeight: FontWeight.bold,
                     color: Colors.blue[900],
@@ -591,7 +590,7 @@ class _PedidoTrackingScreenState extends State<PedidoTrackingScreen> {
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
-                        'Recuerda estar atento a tu teléfono',
+                        'Recuerda estar atento a tu telÃ©fono',
                         style: TextStyle(
                           fontSize: AppTextStyles.bodySmall(context).fontSize!,
                           color: Colors.grey[700],
@@ -627,7 +626,7 @@ class _PedidoTrackingScreenState extends State<PedidoTrackingScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Información de Entrega',
+            'InformaciÃ³n de Entrega',
             style: TextStyle(
               fontSize: AppTextStyles.bodyLarge(context).fontSize!,
               fontWeight: FontWeight.bold,
@@ -680,7 +679,7 @@ class _PedidoTrackingScreenState extends State<PedidoTrackingScreen> {
                   icon: const Icon(Icons.phone),
                   color: Colors.green,
                   onPressed: () {
-                    // TODO: Implementar llamada telefónica
+                    // TODO: Implementar llamada telefÃ³nica
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
                         content: Text(
@@ -695,7 +694,7 @@ class _PedidoTrackingScreenState extends State<PedidoTrackingScreen> {
             const SizedBox(height: 12),
           ],
 
-          // Camión
+          // CamiÃ³n
           if (widget.pedido.camion != null) ...[
             Row(
               children: [
@@ -712,7 +711,7 @@ class _PedidoTrackingScreenState extends State<PedidoTrackingScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Vehículo',
+                        'VehÃ­culo',
                         style: TextStyle(
                           fontSize: AppTextStyles.bodySmall(context).fontSize!,
                           color: Colors.grey,
@@ -751,7 +750,7 @@ class _PedidoTrackingScreenState extends State<PedidoTrackingScreen> {
           Icon(Icons.location_off, size: 80, color: Colors.grey.shade400),
           const SizedBox(height: 24),
           Text(
-            'Ubicación no disponible',
+            'UbicaciÃ³n no disponible',
             style: TextStyle(
               fontSize: AppTextStyles.headlineMedium(context).fontSize!,
               fontWeight: FontWeight.bold,
@@ -761,7 +760,7 @@ class _PedidoTrackingScreenState extends State<PedidoTrackingScreen> {
           const Padding(
             padding: EdgeInsets.symmetric(horizontal: 32),
             child: Text(
-              'El tracking estará disponible cuando el chofer inicie la ruta',
+              'El tracking estarÃ¡ disponible cuando el chofer inicie la ruta',
               textAlign: TextAlign.center,
               style: TextStyle(color: Colors.grey),
             ),
@@ -805,3 +804,4 @@ class _PedidoTrackingScreenState extends State<PedidoTrackingScreen> {
     );
   }
 }
+

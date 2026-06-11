@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../config/app_text_styles.dart';
 import '../../providers/providers.dart';
+import '../../providers/prestamos_provider.dart';
 import 'entregas_asignadas_screen.dart';
+import 'prestamos_asignados_screen.dart';
 import '../perfil/perfil_screen.dart';
 import '../notifications_screen.dart';
 
@@ -10,6 +12,7 @@ import '../notifications_screen.dart';
 ///
 /// Muestra:
 /// - Listado de entregas asignadas
+/// - Listado de préstamos asignados (clientes, eventos, proveedores)
 /// - Acceso rápido a perfil
 class HomeChoferScreen extends StatefulWidget {
   const HomeChoferScreen({super.key});
@@ -18,12 +21,72 @@ class HomeChoferScreen extends StatefulWidget {
   State<HomeChoferScreen> createState() => _HomeChoferScreenState();
 }
 
-class _HomeChoferScreenState extends State<HomeChoferScreen> {
+class _HomeChoferScreenState extends State<HomeChoferScreen>
+    with SingleTickerProviderStateMixin {
+  late TabController _tabController;
+
+  @override
+  void initState() {
+    super.initState();
+    _tabController = TabController(length: 2, vsync: this);
+
+    // Cargar préstamos cuando se abre la pantalla
+    _cargarPrestamos();
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
+  }
+
+  void _cargarPrestamos() {
+    final user = context.read<AuthProvider>().user;
+    if (user != null) {
+      context.read<PrestamosProvider>().cargarPrestamosDelChofer(user.id);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;  // ✅ Detectar modo oscuro
+
     return Scaffold(
       appBar: _buildAppBar(),
-      body: const EntregasAsignadasScreen(),
+      body: Column(
+        children: [
+          // TabBar
+          Container(
+            color: isDark ? Colors.grey.shade800 : Colors.white,  // ✅ Modo oscuro
+            child: TabBar(
+              controller: _tabController,
+              labelColor: Theme.of(context).colorScheme.primary,  // ✅ Color dinámico
+              unselectedLabelColor: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
+              indicatorColor: Theme.of(context).colorScheme.primary,
+              tabs: const [
+                Tab(
+                  text: '🚚 Entregas',
+                  icon: Icon(Icons.local_shipping),
+                ),
+                Tab(
+                  text: '📦 Préstamos',
+                  icon: Icon(Icons.inventory),
+                ),
+              ],
+            ),
+          ),
+          // Contenido de tabs
+          Expanded(
+            child: TabBarView(
+              controller: _tabController,
+              children: [
+                const EntregasAsignadasScreen(),
+                const PrestamosAsignadosScreen(),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 

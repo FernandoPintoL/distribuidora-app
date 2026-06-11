@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../models/models.dart';
 import '../../providers/providers.dart';
@@ -46,8 +46,8 @@ class _DireccionFormScreenForClientState
     _longitude = widget.direccion?.longitud;
     _selectedLocalidadId = widget.direccion?.localidadId;
 
-    debugPrint('📍 Inicializando DireccionFormScreenForClient');
-    debugPrint('   - Dirección: ${widget.direccion?.direccion}');
+    debugPrint('ðŸ“ Inicializando DireccionFormScreenForClient');
+    debugPrint('   - DirecciÃ³n: ${widget.direccion?.direccion}');
     debugPrint('   - Localidad ID: $_selectedLocalidadId');
     debugPrint('   - Es Principal: $_esPrincipal');
   }
@@ -70,8 +70,8 @@ class _DireccionFormScreenForClientState
 
     bool success;
     if (widget.direccion == null) {
-      // Crear nueva dirección
-      debugPrint('📍 Creando nueva dirección con localidad_id: $_selectedLocalidadId');
+      // Crear nueva direcciÃ³n
+      debugPrint('ðŸ“ Creando nueva direcciÃ³n con localidad_id: $_selectedLocalidadId');
       success = await clientProvider.createClientAddress(
         widget.clientId,
         direccion: _direccionController.text.trim(),
@@ -88,8 +88,8 @@ class _DireccionFormScreenForClientState
         localidadId: _selectedLocalidadId,
       );
     } else {
-      // Actualizar dirección existente
-      debugPrint('📍 Actualizando dirección con localidad_id: $_selectedLocalidadId');
+      // Actualizar direcciÃ³n existente
+      debugPrint('ðŸ“ Actualizando direcciÃ³n con localidad_id: $_selectedLocalidadId');
       success = await clientProvider.updateClientAddress(
         widget.clientId,
         widget.direccion!.id!,
@@ -116,8 +116,8 @@ class _DireccionFormScreenForClientState
           SnackBar(
             content: Text(
               widget.direccion == null
-                  ? 'Dirección agregada correctamente'
-                  : 'Dirección actualizada correctamente',
+                  ? 'DirecciÃ³n agregada correctamente'
+                  : 'DirecciÃ³n actualizada correctamente',
             ),
             backgroundColor: Colors.green,
           ),
@@ -128,7 +128,7 @@ class _DireccionFormScreenForClientState
           SnackBar(
             content: Text(
               clientProvider.errorMessage ??
-                  'Error al guardar la dirección',
+                  'Error al guardar la direcciÃ³n',
             ),
             backgroundColor: Colors.red,
           ),
@@ -143,8 +143,7 @@ class _DireccionFormScreenForClientState
 
     return Scaffold(
       appBar: CustomGradientAppBar(
-        title: isEditing ? 'Editar Dirección' : 'Nueva Dirección',
-        customGradient: AppGradients.orange,
+        title: isEditing ? 'Editar DirecciÃ³n' : 'Nueva DirecciÃ³n',
       ),
       body: Form(
         key: _formKey,
@@ -165,7 +164,7 @@ class _DireccionFormScreenForClientState
                   const SizedBox(width: 12),
                   Expanded(
                     child: Text(
-                      'Esta dirección se usará para entregas de pedidos del cliente',
+                      'Esta direcciÃ³n se usarÃ¡ para entregas de pedidos del cliente',
                       style: TextStyle(
                         fontSize: AppTextStyles.bodySmall(context).fontSize!,
                         color: Colors.blue.shade900,
@@ -177,7 +176,7 @@ class _DireccionFormScreenForClientState
             ),
             const SizedBox(height: 24),
 
-            // Componente reutilizable de ubicación
+            // Componente reutilizable de ubicaciÃ³n
             DireccionFormWidget(
               direccionController: _direccionController,
               observacionesController: _observacionesController,
@@ -206,11 +205,11 @@ class _DireccionFormScreenForClientState
               ),
               child: SwitchListTile(
                 title: const Text(
-                  'Marcar como dirección principal',
+                  'Marcar como direcciÃ³n principal',
                   style: TextStyle(fontWeight: FontWeight.w500),
                 ),
                 subtitle: const Text(
-                  'Esta será la dirección predeterminada para entregas',
+                  'Esta serÃ¡ la direcciÃ³n predeterminada para entregas',
                   style: TextStyle(fontSize: 12),
                 ),
                 value: _esPrincipal,
@@ -227,7 +226,7 @@ class _DireccionFormScreenForClientState
             ),
             const SizedBox(height: 32),
 
-            // Botón de guardar
+            // BotÃ³n de guardar
             SizedBox(
               height: 50,
               child: ElevatedButton.icon(
@@ -247,8 +246,8 @@ class _DireccionFormScreenForClientState
                   _isSaving
                       ? 'Guardando...'
                       : isEditing
-                          ? 'Actualizar Dirección'
-                          : 'Guardar Dirección',
+                          ? 'Actualizar DirecciÃ³n'
+                          : 'Guardar DirecciÃ³n',
                 ),
                 style: ElevatedButton.styleFrom(
                   shape: RoundedRectangleBorder(
@@ -259,7 +258,7 @@ class _DireccionFormScreenForClientState
             ),
             const SizedBox(height: 16),
 
-            // Botón de cancelar
+            // BotÃ³n de cancelar
             if (!_isSaving)
               SizedBox(
                 height: 50,
@@ -279,3 +278,4 @@ class _DireccionFormScreenForClientState
     );
   }
 }
+

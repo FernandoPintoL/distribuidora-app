@@ -44,7 +44,6 @@ class _HomeClienteScreenState extends BaseHomeScreenState<HomeClienteScreen> {
   @override
   PreferredSizeWidget get appBar => CustomGradientAppBar(
     title: 'Distribuidora Paucara',
-    userRole: 'cliente',
     actions: [CartBadgeAction(), NotificationBadgeAction()],
   );
 

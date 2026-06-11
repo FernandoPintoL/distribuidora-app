@@ -15,195 +15,46 @@ class HttpLogger {
   static const String _responsePrefix = '✅ RESPONSE';
   static const String _errorPrefix = '❌ ERROR';
 
-  /// Log de petición HTTP
+  /// Log de petición HTTP (SIMPLIFICADO)
   static void logRequest(RequestOptions options) {
     if (!kDebugMode) return;
 
-    final buffer = StringBuffer();
-    buffer.writeln('');
-    buffer.writeln(
-      '═══════════════════════════════════════════════════════════════',
-    );
-    buffer.writeln('$_requestPrefix: ${options.method.toUpperCase()}');
-    buffer.writeln('URL: ${options.uri}');
+    debugPrint('📤 ${options.method.toUpperCase()} → ${options.uri}');
 
-    // Headers (sin sensibles)
-    buffer.writeln('\n📋 Headers:');
-    options.headers.forEach((key, value) {
-      final displayValue = _maskSensitiveHeader(key, value);
-      buffer.writeln('  $key: $displayValue');
-    });
-
-    // Query parameters
-    if (options.queryParameters.isNotEmpty) {
-      buffer.writeln('\n📌 Query Parameters:');
-      options.queryParameters.forEach((key, value) {
-        buffer.writeln('  $key: $value');
-      });
-    }
-
-    // Body/Data
+    // Mostrar body si existe
     if (options.data != null) {
-      buffer.writeln('\n📦 Body/Data:');
-      if (options.data is FormData) {
-        buffer.writeln('  [FormData]');
-        for (var field in options.data.fields) {
-          buffer.writeln('    ${field.key}: ${field.value}');
-        }
-        if (options.data.files.isNotEmpty) {
-          buffer.writeln('  [Files]');
-          for (var file in options.data.files) {
-            buffer.writeln('    ${file.key}: ${file.value.filename}');
-          }
-        }
-      } else if (options.data is String) {
-        try {
-          final decoded = jsonDecode(options.data);
-          buffer.writeln(_prettyPrintJson(decoded, indent: 2));
-        } catch (_) {
-          buffer.writeln('  ${options.data}');
-        }
-      } else if (options.data is Map) {
-        buffer.writeln(_prettyPrintJson(options.data, indent: 2));
-      } else {
-        buffer.writeln('  ${options.data.toString()}');
-      }
-    }
+      String bodyDisplay = '';
 
-    buffer.writeln(
-      '═══════════════════════════════════════════════════════════════',
-    );
-    // debugPrint(buffer.toString());
+      if (options.data is String) {
+        bodyDisplay = options.data;
+      } else if (options.data is Map || options.data is List) {
+        bodyDisplay = _prettyPrintJson(options.data);
+      } else {
+        bodyDisplay = options.data.toString();
+      }
+
+      debugPrint('   📦 Body: $bodyDisplay');
+    }
   }
 
-  /// Log de respuesta HTTP exitosa
+  /// Log de respuesta HTTP exitosa (SIMPLIFICADO)
   static void logResponse(Response response) {
     if (!kDebugMode) return;
 
-    final buffer = StringBuffer();
-    buffer.writeln('');
-    buffer.writeln(
-      '───────────────────────────────────────────────────────────────',
-    );
-    buffer.writeln('$_responsePrefix: ${response.statusCode}');
-    buffer.writeln('URL: ${response.requestOptions.uri}');
-    buffer.writeln('Tiempo: ${response.realUri}');
+    // Solo mostrar status y URL
+    final uri = response.requestOptions.uri.toString();
+    final method = response.requestOptions.method.toUpperCase();
 
-    // Headers de respuesta
-    buffer.writeln('\n📋 Response Headers:');
-    response.headers.forEach((key, values) {
-      if (values.isNotEmpty) {
-        buffer.writeln('  $key: ${values.first}');
-      }
-    });
-
-    // Detectar si es respuesta binaria
-    final contentType = _getContentType(response.headers);
-    final isBinary = _isBinaryContentType(contentType);
-
-    // Body/Data
-    if (response.data != null) {
-      buffer.writeln('\n📦 Response Data:');
-      if (isBinary) {
-        // Para respuestas binarias, solo mostrar metadata
-        final size = _getResponseSize(response.data);
-        final sizeKB = (size / 1024).toStringAsFixed(2);
-        final sizeFormatted = size > 1024 ? '$sizeKB KB' : '$size bytes';
-        buffer.writeln('  [Binary Data - $contentType]');
-        buffer.writeln('  📊 Size: $sizeFormatted');
-
-        // Mostrar si está optimizada
-        final optimized = response.headers.value('x-image-optimized');
-        if (optimized != null) {
-          buffer.writeln('  ✨ Optimized: Yes');
-        }
-
-        // Mostrar cache info
-        final cacheControl = response.headers.value('cache-control');
-        if (cacheControl != null) {
-          buffer.writeln('  🔄 Cache: $cacheControl');
-        }
-      } else if (response.data is Map || response.data is List) {
-        buffer.writeln(_prettyPrintJson(response.data, indent: 2));
-      } else if (response.data is String) {
-        try {
-          final decoded = jsonDecode(response.data);
-          buffer.writeln(_prettyPrintJson(decoded, indent: 2));
-        } catch (_) {
-          buffer.writeln('  ${response.data}');
-        }
-      } else {
-        buffer.writeln('  ${response.data.toString()}');
-      }
-    }
-
-    buffer.writeln(
-      '───────────────────────────────────────────────────────────────',
-    );
-    // debugPrint(buffer.toString());
+    debugPrint('✅ $method ${response.statusCode} → $uri');
   }
 
-  /// Log de error HTTP
+  /// Log de error HTTP (SIMPLIFICADO)
   static void logError(DioException error) {
     if (!kDebugMode) return;
 
-    final buffer = StringBuffer();
-    buffer.writeln('');
-    buffer.writeln(
-      '╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳',
-    );
-    buffer.writeln('$_errorPrefix: ${error.type}');
-    buffer.writeln('Status Code: ${error.response?.statusCode}');
-    buffer.writeln('URL: ${error.requestOptions.uri}');
-    buffer.writeln('Message: ${error.message}');
-
-    // Detalles del error
-    if (error.response != null) {
-      buffer.writeln('\n📋 Request Headers:');
-      error.requestOptions.headers.forEach((key, value) {
-        final displayValue = _maskSensitiveHeader(key, value);
-        buffer.writeln('  $key: $displayValue');
-      });
-
-      if (error.requestOptions.data != null) {
-        buffer.writeln('\n📦 Request Data:');
-        if (error.requestOptions.data is Map) {
-          buffer.writeln(
-            _prettyPrintJson(error.requestOptions.data, indent: 2),
-          );
-        } else {
-          buffer.writeln('  ${error.requestOptions.data}');
-        }
-      }
-
-      buffer.writeln('\n📋 Response Headers:');
-      error.response!.headers.forEach((key, values) {
-        if (values.isNotEmpty) {
-          buffer.writeln('  $key: ${values.first}');
-        }
-      });
-
-      if (error.response?.data != null) {
-        buffer.writeln('\n📦 Response Data:');
-        if (error.response?.data is Map || error.response?.data is List) {
-          buffer.writeln(_prettyPrintJson(error.response?.data, indent: 2));
-        } else if (error.response?.data is String) {
-          try {
-            final decoded = jsonDecode(error.response?.data);
-            buffer.writeln(_prettyPrintJson(decoded, indent: 2));
-          } catch (_) {
-            buffer.writeln('  ${error.response?.data}');
-          }
-        } else {
-          buffer.writeln('  ${error.response?.data.toString()}');
-        }
-      }
-    }
-
-    buffer.writeln(
-      '╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳',
-    );
-    // debugPrint(buffer.toString());
+    // Solo mostrar error, status y URL
+    final status = error.response?.statusCode ?? 'unknown';
+    debugPrint('❌ Error $status: ${error.message} → ${error.requestOptions.uri}');
   }
 
   /// Enmascarar headers sensibles

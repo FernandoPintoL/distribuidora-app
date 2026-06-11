@@ -53,7 +53,7 @@ class LocalNotificationService {
     await _requestPermissions();
 
     _isInitialized = true;
-    debugPrint('✅ LocalNotificationService inicializado');
+    // debugPrint('✅ LocalNotificationService inicializado');
   }
 
   /// Crear canales de notificación para Android

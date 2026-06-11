@@ -38,9 +38,9 @@ class ProductProvider with ChangeNotifier {
     // ❌ REMOVIDO: int almacenId - Se obtiene del servidor
     // ❌ REMOVIDO: bool withStock - Siempre se filtra
   }) async {
-    debugPrint(
+    /*debugPrint(
       '📥 loadProducts() - INICIO: append=$append, page=$page, search=$search',
-    );
+    );*/
 
     if (!append) {
       _isLoading = true;
@@ -50,11 +50,11 @@ class ProductProvider with ChangeNotifier {
       _hasMorePages = true;
       _totalItems = 0;
       _totalPages = 1;
-      debugPrint('🔄 ProductProvider.loadProducts() - iniciando carga');
-      debugPrint('   Estado ANTES: 0 productos, reseteo completo');
+      // debugPrint('🔄 ProductProvider.loadProducts() - iniciando carga');
+      // debugPrint('   Estado ANTES: 0 productos, reseteo completo');
       // Notificar del estado de carga
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        debugPrint('🔔 Notificando estado de carga...');
+        // debugPrint('🔔 Notificando estado de carga...');
         notifyListeners();
       });
     }
@@ -73,7 +73,7 @@ class ProductProvider with ChangeNotifier {
       );
 
       // me ayudas a mostrar los datos que llegan en response.data
-      debugPrint('📥 loadProducts() - RESPONSE DATA: ${response.data}');
+      // debugPrint('📥 loadProducts() - RESPONSE DATA: ${response.data}');
 
       if (response.success && response.data != null) {
         if (append) {
@@ -91,7 +91,7 @@ class ProductProvider with ChangeNotifier {
         _errorMessage = null;
 
         // Debug: Verificar que los productos se cargaron
-        debugPrint('📥 loadProducts() - RESULTADOS:');
+        /*debugPrint('📥 loadProducts() - RESULTADOS:');
         debugPrint(
           '   ✅ Productos cargados: ${response.data!.data.length} items en esta página',
         );
@@ -101,7 +101,7 @@ class ProductProvider with ChangeNotifier {
         debugPrint(
           '   📊 hasMorePages=$_hasMorePages (lastPage=${response.data!.lastPage})',
         );
-        debugPrint('   📊 Total en lista: ${_products.length} productos');
+        debugPrint('   📊 Total en lista: ${_products.length} productos');*/
         if (_products.isNotEmpty) {
           debugPrint('   📦 Primer producto: ${_products.first.nombre}');
         }
@@ -115,15 +115,15 @@ class ProductProvider with ChangeNotifier {
       return false;
     } finally {
       _isLoading = false;
-      debugPrint('📥 loadProducts() - FINALIZADO');
+      /*debugPrint('📥 loadProducts() - FINALIZADO');
       debugPrint('   Total en lista: ${_products.length} productos');
       debugPrint('   hasMorePages: $_hasMorePages');
-      debugPrint('   Error: $_errorMessage');
+      debugPrint('   Error: $_errorMessage');*/
       // Notificar cambios después de que se carguen los datos o si hay error
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        debugPrint(
+        /*debugPrint(
           '🔔 Notificando resultado final (${_products.length} productos)...',
-        );
+        );*/
         notifyListeners();
       });
     }
@@ -139,23 +139,23 @@ class ProductProvider with ChangeNotifier {
     // ❌ REMOVIDO: int almacenId - Se obtiene del servidor
     // ❌ REMOVIDO: bool withStock - Siempre se filtra
   }) async {
-    debugPrint('📄 loadMoreProducts() CALLED');
+    /*debugPrint('📄 loadMoreProducts() CALLED');
     debugPrint('   Estado: hasMorePages=$_hasMorePages, isLoading=$_isLoading');
     debugPrint(
       '   Paginación: currentPage=$_currentPage, totalPages=$_totalPages',
     );
-    debugPrint('   Total en lista: ${_products.length} productos');
+    debugPrint('   Total en lista: ${_products.length} productos');*/
 
     if (!_hasMorePages || _isLoading) {
-      debugPrint(
+      /*debugPrint(
         '📄 loadMoreProducts() RECHAZADO - hasMorePages=$_hasMorePages, isLoading=$_isLoading',
-      );
+      );*/
       return false;
     }
 
-    debugPrint(
+    /*debugPrint(
       '📄 loadMoreProducts() PROCEDIENDO - Cargando página ${_currentPage + 1}...',
-    );
+    );*/
     return loadProducts(
       page: _currentPage + 1,
       search: search,
