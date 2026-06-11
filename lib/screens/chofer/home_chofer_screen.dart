@@ -29,9 +29,14 @@ class _HomeChoferScreenState extends State<HomeChoferScreen>
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
+    _tabController.addListener(_onTabChanged);
 
     // Cargar préstamos cuando se abre la pantalla
     _cargarPrestamos();
+  }
+
+  void _onTabChanged() {
+    setState(() {});
   }
 
   @override
@@ -49,60 +54,49 @@ class _HomeChoferScreenState extends State<HomeChoferScreen>
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;  // ✅ Detectar modo oscuro
-
     return Scaffold(
       appBar: _buildAppBar(),
-      body: Column(
-        children: [
-          // TabBar
-          Container(
-            color: isDark ? Colors.grey.shade800 : Colors.white,  // ✅ Modo oscuro
-            child: TabBar(
-              controller: _tabController,
-              labelColor: Theme.of(context).colorScheme.primary,  // ✅ Color dinámico
-              unselectedLabelColor: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
-              indicatorColor: Theme.of(context).colorScheme.primary,
-              tabs: const [
-                Tab(
-                  text: '🚚 Entregas',
-                  icon: Icon(Icons.local_shipping),
-                ),
-                Tab(
-                  text: '📦 Préstamos',
-                  icon: Icon(Icons.inventory),
-                ),
-              ],
-            ),
-          ),
-          // Contenido de tabs
-          Expanded(
-            child: TabBarView(
-              controller: _tabController,
-              children: [
-                const EntregasAsignadasScreen(),
-                const PrestamosAsignadosScreen(),
-              ],
-            ),
-          ),
+      body: TabBarView(
+        controller: _tabController,
+        children: const [
+          EntregasAsignadasScreen(),
+          PrestamosAsignadosScreen(),
         ],
       ),
+      bottomNavigationBar: _buildBottomNavBar(),
+    );
+  }
+
+  Widget _buildBottomNavBar() {
+    final colorScheme = Theme.of(context).colorScheme;
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+
+    return BottomNavigationBar(
+      currentIndex: _tabController.index,
+      onTap: (index) => _tabController.animateTo(index),
+      type: BottomNavigationBarType.fixed,
+      selectedItemColor: colorScheme.primary,
+      unselectedItemColor: isDarkMode
+          ? Colors.grey.shade600
+          : Colors.grey.shade500,
+      backgroundColor: colorScheme.surface,
+      items: const [
+        BottomNavigationBarItem(
+          icon: Icon(Icons.local_shipping),
+          label: 'Entregas',
+        ),
+        BottomNavigationBarItem(
+          icon: Icon(Icons.inventory),
+          label: 'Préstamos',
+        ),
+      ],
     );
   }
 
   PreferredSizeWidget _buildAppBar() {
     return AppBar(
-      title: const Text('Mis Entregas Asignadassss'),
+      title: const Text('Bienvenido Chofer!'),
       elevation: 0,
-      flexibleSpace: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: [Colors.blue.shade600, Colors.blue.shade400],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
-        ),
-      ),
       actions: [
         // Notificaciones
         Consumer<NotificationProvider>(
