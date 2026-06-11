@@ -31,8 +31,10 @@ class _HomeChoferScreenState extends State<HomeChoferScreen>
     _tabController = TabController(length: 2, vsync: this);
     _tabController.addListener(_onTabChanged);
 
-    // Cargar préstamos cuando se abre la pantalla
-    _cargarPrestamos();
+    // Cargar préstamos DESPUÉS de que termine la construcción
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _cargarPrestamos();
+    });
   }
 
   void _onTabChanged() {
