@@ -102,26 +102,17 @@ class LocalidadesCard extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    'Localidades de Entrega',
-                    style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
+                  Text('Localidades de Entrega'),
                   const SizedBox(height: 4),
                   Text(
                     '📍 $cantidadLocalidades localidad${cantidadLocalidades > 1 ? 'es' : ''} ${esConsolidada ? '(Entrega consolidada)' : ''}',
-                    style: TextStyle(
-                      fontSize: AppTextStyles.bodySmall(context).fontSize!,
-                      color: isDarkMode ? Colors.grey[400] : Colors.grey[600],
-                    ),
                   ),
                 ],
               ),
             ),
             // ✅ NUEVO 2026-02-17: Botón para ver ubicaciones en mapa
             IconButton(
-              icon: const Icon(Icons.map, size: 20),
+              icon: const Icon(Icons.map, size: 24),
               tooltip: 'Ver en mapa',
               onPressed: () => _abrirMapaConUbicaciones(context),
               padding: EdgeInsets.zero,
@@ -164,12 +155,7 @@ class LocalidadesCard extends StatelessWidget {
                 const Divider(),
                 // Mostrar resumen de localidades con cantidad de ventas
                 if (localidadesResumen.isNotEmpty) ...[
-                  Text(
-                    'Resumen por localidad:',
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
+                  Text('Resumen por localidad:'),
                   const SizedBox(height: 8),
                   for (var resumen in localidadesResumen)
                     Padding(
@@ -183,20 +169,10 @@ class LocalidadesCard extends StatelessWidget {
                                 Text(
                                   resumen['localidad_nombre'] as String? ??
                                       'Sin nombre',
-                                  style: Theme.of(context).textTheme.bodyMedium
-                                      ?.copyWith(fontWeight: FontWeight.w600),
                                 ),
                                 const SizedBox(height: 2),
                                 Text(
                                   '${resumen['cantidad_ventas']} venta${(resumen['cantidad_ventas'] as int?) != 1 ? 's' : ''}',
-                                  style: TextStyle(
-                                    fontSize: AppTextStyles.bodySmall(
-                                      context,
-                                    ).fontSize!,
-                                    color: isDarkMode
-                                        ? Colors.grey[400]
-                                        : Colors.grey[600],
-                                  ),
                                 ),
                               ],
                             ),
@@ -209,14 +185,6 @@ class LocalidadesCard extends StatelessWidget {
                                 (resumen['clientes'] as List)
                                     .cast<String>()
                                     .join(', '),
-                                style: TextStyle(
-                                  fontSize: AppTextStyles.labelSmall(
-                                    context,
-                                  ).fontSize!,
-                                  color: isDarkMode
-                                      ? Colors.grey[500]
-                                      : Colors.grey[500],
-                                ),
                                 maxLines: 2,
                                 overflow: TextOverflow.ellipsis,
                                 textAlign: TextAlign.right,

@@ -10,8 +10,7 @@ class InformacionGeneralCard extends StatefulWidget {
     : super(key: key);
 
   @override
-  State<InformacionGeneralCard> createState() =>
-      _InformacionGeneralCardState();
+  State<InformacionGeneralCard> createState() => _InformacionGeneralCardState();
 }
 
 class _InformacionGeneralCardState extends State<InformacionGeneralCard> {
@@ -42,12 +41,7 @@ class _InformacionGeneralCardState extends State<InformacionGeneralCard> {
                       color: colorScheme.primary,
                     ),
                     const SizedBox(width: 8),
-                    Text(
-                      'Detalles de Entrega',
-                      style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
+                    Text('Detalles de Entrega'),
                   ],
                 ),
                 if (widget.entrega.observaciones != null &&
@@ -121,7 +115,8 @@ class _InformacionGeneralCardState extends State<InformacionGeneralCard> {
                       CompactInfoChip(
                         icon: Icons.balance,
                         label: 'Capacidad',
-                        value: '${widget.entrega.vehiculo!.capacidadKg.toString()} kg',
+                        value:
+                            '${widget.entrega.vehiculo!.capacidadKg.toString()} kg',
                         isDarkMode: isDarkMode,
                         colorScheme: colorScheme,
                       ),
@@ -150,13 +145,7 @@ class _InformacionGeneralCardState extends State<InformacionGeneralCard> {
                 height: 1,
               ),
               const SizedBox(height: 12),
-              Text(
-                'Cronograma',
-                style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                  fontWeight: FontWeight.w600,
-                  color: colorScheme.primary,
-                ),
-              ),
+              Text('Cronograma'),
               const SizedBox(height: 10),
               Wrap(
                 spacing: 8,
@@ -221,9 +210,7 @@ class _InformacionGeneralCardState extends State<InformacionGeneralCard> {
                           Expanded(
                             child: Text(
                               'Observaciones',
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .labelLarge
+                              style: Theme.of(context).textTheme.labelLarge
                                   ?.copyWith(
                                     fontWeight: FontWeight.w600,
                                     color: colorScheme.primary,
@@ -235,9 +222,7 @@ class _InformacionGeneralCardState extends State<InformacionGeneralCard> {
                       ),
                     ),
                     Icon(
-                      _expandirDetalles
-                          ? Icons.expand_less
-                          : Icons.expand_more,
+                      _expandirDetalles ? Icons.expand_less : Icons.expand_more,
                       size: 18,
                       color: colorScheme.primary,
                     ),
@@ -252,8 +237,7 @@ class _InformacionGeneralCardState extends State<InformacionGeneralCard> {
                   decoration: BoxDecoration(
                     color: isDarkMode
                         ? colorScheme.surfaceContainerHigh
-                        : colorScheme.primaryContainer
-                            .withValues(alpha: 0.1),
+                        : colorScheme.primaryContainer.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(8),
                     border: Border.all(
                       color: isDarkMode
@@ -263,14 +247,9 @@ class _InformacionGeneralCardState extends State<InformacionGeneralCard> {
                   ),
                   child: Text(
                     widget.entrega.observaciones!,
-                    style: Theme.of(context)
-                        .textTheme
-                        .bodySmall
-                        ?.copyWith(
-                          color: isDarkMode
-                              ? Colors.grey[300]
-                              : Colors.grey[700],
-                        ),
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: isDarkMode ? Colors.grey[300] : Colors.grey[700],
+                    ),
                   ),
                 ),
               ],

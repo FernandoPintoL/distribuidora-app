@@ -2,12 +2,10 @@ import 'package:flutter/widgets.dart';
 import 'dart:async';
 import '../models/entrega.dart';
 import '../models/estadisticas_chofer.dart';
-import '../models/ubicacion_tracking.dart';
 import '../models/api_response.dart';
 import '../services/entrega_service.dart';
 import '../services/local_notification_service.dart';
 import '../services/websocket_service.dart';
-import '../providers/entrega_tracking_mixin.dart';
 
 /// EntregaProvider - Fase 5/6: Sincronización de Entregas y SLA
 ///
@@ -24,7 +22,7 @@ import '../providers/entrega_tracking_mixin.dart';
 /// - WebSocket eventos actualizan automáticamente el estado
 /// - _actualizarEntregaActual() sincroniza el modelo con nuevos datos SLA
 /// - UI escucha cambios y reflejan SLA visuales (widgets)
-class EntregaProvider with ChangeNotifier, EntregaTrackingMixin {
+class EntregaProvider with ChangeNotifier {
   final EntregaService _entregaService = EntregaService();
   final LocalNotificationService _notificationService =
       LocalNotificationService();
@@ -32,12 +30,10 @@ class EntregaProvider with ChangeNotifier, EntregaTrackingMixin {
 
   List<Entrega> _entregas = [];
   Entrega? _entregaActual;
-  EstadisticasChofer? _estadisticas; // ✅ NUEVO: Estadísticas del chofer
-  List<UbicacionTracking> _ubicaciones = [];
-  UbicacionTracking? _ubicacionActual;
+  EstadisticasChofer? _estadisticas;
   List<EntregaEstadoHistorial> _historialEstados = [];
   int _previousEntregasCount = 0;
-  bool _isFirstLoad = true; // ✅ NUEVO: Evitar notificaciones en primera carga
+  bool _isFirstLoad = true;
 
   bool _isLoading = false;
   String? _errorMessage;
@@ -53,7 +49,9 @@ class EntregaProvider with ChangeNotifier, EntregaTrackingMixin {
       '👂 [NOTIFY_LISTENERS] LLAMADO - isLoading=$_isLoading, entregas.length=${_entregas.length}, entregaActual=${_entregaActual?.id}',
     );
     if (_entregas.isNotEmpty) {
-      debugPrint('👂 [NOTIFY_LISTENERS] Primera entrega: ${_entregas.first.numeroEntrega}');
+      debugPrint(
+        '👂 [NOTIFY_LISTENERS] Primera entrega: ${_entregas.first.numeroEntrega}',
+      );
     }
     super.notifyListeners();
     debugPrint('👂 [NOTIFY_LISTENERS] COMPLETADO');
@@ -68,23 +66,25 @@ class EntregaProvider with ChangeNotifier, EntregaTrackingMixin {
   // Getters
   List<Entrega> get entregas => _entregas;
   Entrega? get entregaActual => _entregaActual;
-  EstadisticasChofer? get estadisticas => _estadisticas; // ✅ NUEVO: Getter para estadísticas
-  List<UbicacionTracking> get ubicaciones => _ubicaciones;
-  UbicacionTracking? get ubicacionActual => _ubicacionActual;
+  EstadisticasChofer? get estadisticas => _estadisticas;
   List<EntregaEstadoHistorial> get historialEstados => _historialEstados;
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
-  String? get search => _search;  // ✅ NUEVO: Getter para búsqueda
-  int? get localidadId => _localidadId;  // ✅ NUEVO: Getter para localidad
+  String? get search => _search;
+  int? get localidadId => _localidadId;
 
   // ✅ ACTUALIZADO: Obtener entregas asignadas - Rango de fechas de CREACIÓN (created_at)
   Future<bool> obtenerEntregasAsignadas({
-    int page = 1,
     String? estado,
-    String? createdDesde,  // ✅ ACTUALIZADO: Rango de fechas de creación (created_at)
-    String? createdHasta,  // ✅ ACTUALIZADO: Rango de fechas de creación (created_at)
-    String? search,  // ✅ NUEVO: búsqueda case-insensitive
-    int? localidadId,  // ✅ NUEVO: filtro por localidad
+    String?
+    createdDesde, // ✅ ACTUALIZADO: Rango de fechas de creación (created_at)
+    String?
+    createdHasta, // ✅ ACTUALIZADO: Rango de fechas de creación (created_at)
+    String? search, // ✅ NUEVO: búsqueda case-insensitive
+    int? localidadId, // ✅ NUEVO: filtro por localidad
+    String? entregaId, // ✅ NUEVO: búsqueda por ID de entrega
+    String?
+    searchVenta, // ✅ NUEVO: búsqueda por venta (ID o nombre del cliente)
   }) async {
     // ✅ NUEVO: Guardar búsqueda y localidad en estado
     _search = search;
@@ -92,28 +92,41 @@ class EntregaProvider with ChangeNotifier, EntregaTrackingMixin {
 
     _isLoading = true;
     _errorMessage = null;
-    debugPrint('🔍 [ENTREGA_PROVIDER] Iniciando carga - notificando isLoading=true');
-    debugPrint('🔍 [ENTREGA_PROVIDER] Parámetros: search=$search, localidad_id=$localidadId, createdDesde=$createdDesde, createdHasta=$createdHasta');
+    debugPrint(
+      '🔍 [ENTREGA_PROVIDER] Iniciando carga - notificando isLoading=true',
+    );
+    debugPrint(
+      '🔍 [ENTREGA_PROVIDER] Parámetros: search=$search, localidad_id=$localidadId, createdDesde=$createdDesde, createdHasta=$createdHasta',
+    );
     notifyListeners();
 
     try {
       final response = await _entregaService.obtenerEntregasAsignadas(
-        page: page,
         estado: estado,
-        createdDesde: createdDesde,  // ✅ ACTUALIZADO: Pasar parámetros de created_at
-        createdHasta: createdHasta,  // ✅ ACTUALIZADO: Pasar parámetros de created_at
-        search: search,  // ✅ NUEVO
-        localidadId: localidadId,  // ✅ NUEVO
+        createdDesde:
+            createdDesde, // ✅ ACTUALIZADO: Pasar parámetros de created_at
+        createdHasta:
+            createdHasta, // ✅ ACTUALIZADO: Pasar parámetros de created_at
+        search: search, // ✅ NUEVO
+        localidadId: localidadId, // ✅ NUEVO
+        entregaId: entregaId, // ✅ NUEVO: Búsqueda por ID de entrega
+        searchVenta: searchVenta, // ✅ NUEVO: Búsqueda por venta
       );
 
       if (response.success && response.data != null) {
         final newEntregas = response.data!;
 
         debugPrint('🔍 [ENTREGA_PROVIDER] Respuesta exitosa recibida');
-        debugPrint('🔍 [ENTREGA_PROVIDER] newEntregas.length = ${newEntregas.length}');
-        debugPrint('🔍 [ENTREGA_PROVIDER] newEntregas.isEmpty = ${newEntregas.isEmpty}');
+        debugPrint(
+          '🔍 [ENTREGA_PROVIDER] newEntregas.length = ${newEntregas.length}',
+        );
+        debugPrint(
+          '🔍 [ENTREGA_PROVIDER] newEntregas.isEmpty = ${newEntregas.isEmpty}',
+        );
         if (newEntregas.isNotEmpty) {
-          debugPrint('🔍 [ENTREGA_PROVIDER] Primera entrega ID: ${newEntregas.first.id}, numero: ${newEntregas.first.numeroEntrega}');
+          debugPrint(
+            '🔍 [ENTREGA_PROVIDER] Primera entrega ID: ${newEntregas.first.id}, numero: ${newEntregas.first.numeroEntrega}',
+          );
         }
 
         // ✅ OPTIMIZADO: Detectar nuevas entregas y mostrar notificaciones
@@ -132,13 +145,17 @@ class EntregaProvider with ChangeNotifier, EntregaTrackingMixin {
         }
 
         _entregas = newEntregas;
-        debugPrint('🔍 [ENTREGA_PROVIDER] _entregas asignado! Count: ${_entregas.length}');
+        debugPrint(
+          '🔍 [ENTREGA_PROVIDER] _entregas asignado! Count: ${_entregas.length}',
+        );
 
         _previousEntregasCount = newEntregas.length;
         _isFirstLoad = false; // ✅ Marcar que ya se cargó la primera vez
         _errorMessage = null;
 
-        debugPrint('🔍 [ENTREGA_PROVIDER] Llamando notifyListeners() DIRECTAMENTE con ${_entregas.length} entregas');
+        debugPrint(
+          '🔍 [ENTREGA_PROVIDER] Llamando notifyListeners() DIRECTAMENTE con ${_entregas.length} entregas',
+        );
         notifyListeners();
         return true;
       } else {
@@ -154,7 +171,9 @@ class EntregaProvider with ChangeNotifier, EntregaTrackingMixin {
       return false;
     } finally {
       _isLoading = false;
-      debugPrint('🔍 [ENTREGA_PROVIDER] finally: _isLoading = false, notificando');
+      debugPrint(
+        '🔍 [ENTREGA_PROVIDER] finally: _isLoading = false, notificando',
+      );
       notifyListeners();
     }
   }
@@ -231,29 +250,12 @@ class EntregaProvider with ChangeNotifier, EntregaTrackingMixin {
     _errorMessage = null;
     notifyListeners();
     try {
-      debugPrint('📤 [OBTENER_ENTREGA] Haciendo request al backend...');
       final response = await _entregaService.obtenerEntrega(entregaId);
 
-      debugPrint(
-        '✅ [OBTENER_ENTREGA] Respuesta recibida: success=${response.success} , data=${response.data}',
-      );
-
       if (response.success && response.data != null) {
-        debugPrint(
-          '✅ [OBTENER_ENTREGA] Datos válidos, llenando _entregaActual',
-        );
         _entregaActual = response.data;
         _errorMessage = null;
-
-        // El historial de estados ya viene en la respuesta de entrega
-        _historialEstados = _entregaActual?.historialEstados ?? [];
-
-        // Cargar solo ubicaciones (el historial ya está en la entrega)
-        debugPrint('📍 [OBTENER_ENTREGA] Cargando ubicaciones...');
-        await obtenerUbicaciones(entregaId);
-        debugPrint('✅ [OBTENER_ENTREGA] Ubicaciones cargadas');
         notifyListeners();
-        debugPrint('✅ [OBTENER_ENTREGA] ¡COMPLETO! Retornando true');
         return true;
       } else {
         debugPrint(
@@ -533,84 +535,6 @@ class EntregaProvider with ChangeNotifier, EntregaTrackingMixin {
     }
   }
 
-  // Registrar ubicación
-  Future<bool> registrarUbicacion(
-    int entregaId, {
-    required double latitud,
-    required double longitud,
-    double? velocidad,
-    double? rumbo,
-    double? altitud,
-    double? precision,
-    String? evento,
-  }) async {
-    try {
-      final response = await _entregaService.registrarUbicacion(
-        entregaId,
-        latitud: latitud,
-        longitud: longitud,
-        velocidad: velocidad,
-        rumbo: rumbo,
-        altitud: altitud,
-        precision: precision,
-        evento: evento,
-      );
-
-      if (response.success && response.data != null) {
-        _ubicacionActual = response.data;
-        notifyListeners();
-        return true;
-      } else {
-        return false;
-      }
-    } catch (e) {
-      return false;
-    }
-  }
-
-  // Obtener ubicaciones
-  Future<bool> obtenerUbicaciones(int entregaId) async {
-    try {
-      debugPrint('📍 [OBTENER_UBICACIONES] Iniciando carga...');
-      final response = await _entregaService.obtenerUbicaciones(entregaId);
-
-      debugPrint(
-        '✅ [OBTENER_UBICACIONES] Respuesta: success=${response.success}, count=${response.data?.length ?? 0}',
-      );
-      if (response.success && response.data != null) {
-        _ubicaciones = response.data!;
-        debugPrint(
-          '✅ [OBTENER_UBICACIONES] Ubicaciones almacenadas, notifyListeners()',
-        );
-        notifyListeners(); // ✅ INMEDIATO
-        debugPrint('✅ [OBTENER_UBICACIONES] ¡COMPLETO!');
-        return true;
-      } else {
-        debugPrint('❌ [OBTENER_UBICACIONES] Sin datos');
-        return false;
-      }
-    } catch (e) {
-      debugPrint('❌ [OBTENER_UBICACIONES] EXCEPCIÓN: $e');
-      return false;
-    }
-  }
-
-  // Obtener última ubicación
-  Future<bool> obtenerUltimaUbicacion(int entregaId) async {
-    try {
-      final response = await _entregaService.obtenerUltimaUbicacion(entregaId);
-
-      if (response.success && response.data != null) {
-        _ubicacionActual = response.data;
-        notifyListeners();
-        return true;
-      } else {
-        return false;
-      }
-    } catch (e) {
-      return false;
-    }
-  }
 
   // Calcular ETA
   Future<bool> calcularETA(
@@ -712,11 +636,14 @@ class EntregaProvider with ChangeNotifier, EntregaTrackingMixin {
         debugPrint('   Chofer: ${data['chofer']?['nombre'] ?? 'N/A'}');
         debugPrint('   Vehículo: ${data['vehiculo']?['placa'] ?? 'N/A'}');
         debugPrint('   Peso Total: ${data['peso_kg']} kg');
-        debugPrint('   Cantidad de Ventas: ${data['cantidad_ventas'] ?? 'N/A'}');
+        debugPrint(
+          '   Cantidad de Ventas: ${data['cantidad_ventas'] ?? 'N/A'}',
+        );
 
         // Mostrar notificación local al chofer
         final numeroEntrega = data['numero_entrega'] as String? ?? 'N/A';
-        final nombreChofer = data['chofer']?['nombre'] as String? ?? 'Entrega asignada';
+        final nombreChofer =
+            data['chofer']?['nombre'] as String? ?? 'Entrega asignada';
         final placaVehiculo = data['vehiculo']?['placa'] as String? ?? 'N/A';
         _notificationService.showEnvioProgramadoNotification(
           envioId: numeroEntrega.hashCode,
@@ -866,7 +793,9 @@ class EntregaProvider with ChangeNotifier, EntregaTrackingMixin {
       case 'preparacion_carga':
         // ✅ NUEVO: Cuando venta entra en PREPARACION_CARGA
         debugPrint('📦 VENTA EN PREPARACION DE CARGA');
-        debugPrint('   Cantidad de Ventas: ${data['cantidad_ventas'] ?? 'N/A'}');
+        debugPrint(
+          '   Cantidad de Ventas: ${data['cantidad_ventas'] ?? 'N/A'}',
+        );
         debugPrint('   Ventas: ${data['ventas_numeros']?.join(", ") ?? 'N/A'}');
         debugPrint('   Entrega: #${data['numero_entrega'] ?? 'N/A'}');
         debugPrint('   Mensaje: ${data['mensaje'] ?? 'N/A'}');
@@ -876,7 +805,8 @@ class EntregaProvider with ChangeNotifier, EntregaTrackingMixin {
         final numeroEntrega = data['numero_entrega'] as String? ?? 'N/A';
         _notificationService.showEnvioProgramadoNotification(
           envioId: numeroEntrega.hashCode,
-          cliente: 'Tu venta${cantidadVentas > 1 ? 's' : ''} (${cantidadVentas}) está en preparación',
+          cliente:
+              'Tu venta${cantidadVentas > 1 ? 's' : ''} (${cantidadVentas}) está en preparación',
           fecha: numeroEntrega,
         );
 
@@ -887,11 +817,17 @@ class EntregaProvider with ChangeNotifier, EntregaTrackingMixin {
       case 'listo_para_entrega':
         // ✅ NUEVO: Cuando venta cambia a PENDIENTE_ENVIO (listo para entrega)
         debugPrint('✅ VENTA LISTA PARA ENTREGA');
-        debugPrint('   Cantidad de Ventas: ${data['cantidad_ventas'] ?? 'N/A'}');
+        debugPrint(
+          '   Cantidad de Ventas: ${data['cantidad_ventas'] ?? 'N/A'}',
+        );
         debugPrint('   Ventas: ${data['ventas_numeros']?.join(", ") ?? 'N/A'}');
         debugPrint('   Entrega: #${data['numero_entrega'] ?? 'N/A'}');
-        debugPrint('   Estado Anterior: ${data['estado_logistico_anterior'] ?? 'N/A'}');
-        debugPrint('   Estado Nuevo: ${data['estado_logistico_nuevo'] ?? 'N/A'}');
+        debugPrint(
+          '   Estado Anterior: ${data['estado_logistico_anterior'] ?? 'N/A'}',
+        );
+        debugPrint(
+          '   Estado Nuevo: ${data['estado_logistico_nuevo'] ?? 'N/A'}',
+        );
         debugPrint('   Mensaje: ${data['mensaje'] ?? 'N/A'}');
 
         // Mostrar notificación local al usuario
@@ -899,7 +835,8 @@ class EntregaProvider with ChangeNotifier, EntregaTrackingMixin {
         final numeroEntregaListo = data['numero_entrega'] as String? ?? 'N/A';
         _notificationService.showEnvioProgramadoNotification(
           envioId: numeroEntregaListo.hashCode + 1,
-          cliente: 'Tu venta${cantidadVentasListo > 1 ? 's' : ''} (${cantidadVentasListo}) está lista para envío',
+          cliente:
+              'Tu venta${cantidadVentasListo > 1 ? 's' : ''} (${cantidadVentasListo}) está lista para envío',
           fecha: numeroEntregaListo,
         );
 
@@ -1102,17 +1039,22 @@ class EntregaProvider with ChangeNotifier, EntregaTrackingMixin {
     required Function(String) onError,
     List<String>? fotosBase64,
     String? observaciones,
-    String? observacionesLogistica,  // ✅ NUEVO: Observaciones logísticas (estado entrega, incidentes)
-    double? montoRecibido,  // ✅ NUEVO: Monto que pagó el cliente (backward compatible)
-    int? tipoPagoId,  // ✅ NUEVO: ID del tipo de pago (backward compatible)
+    String?
+    observacionesLogistica, // ✅ NUEVO: Observaciones logísticas (estado entrega, incidentes)
+    double?
+    montoRecibido, // ✅ NUEVO: Monto que pagó el cliente (backward compatible)
+    int? tipoPagoId, // ✅ NUEVO: ID del tipo de pago (backward compatible)
     // ✅ NUEVA 2026-02-12: Múltiples pagos
-    List<Map<String, dynamic>>? pagos,  // Array de {tipo_pago_id, monto, referencia}
-    bool? esCredito,  // ✅ CAMBIO: Si es promesa de pago (no dinero real)
-    String? tipoConfirmacion,  // COMPLETA o CON_NOVEDAD
+    List<Map<String, dynamic>>?
+    pagos, // Array de {tipo_pago_id, monto, referencia}
+    bool? esCredito, // ✅ CAMBIO: Si es promesa de pago (no dinero real)
+    String? tipoConfirmacion, // COMPLETA o CON_NOVEDAD
     // ✅ NUEVA 2026-02-15: Productos rechazados en devolución parcial
-    List<Map<String, dynamic>>? productosRechazados,  // Array de {detalle_venta_id, nombre_producto, cantidad, precio_unitario, subtotal}
+    List<Map<String, dynamic>>?
+    productosRechazados, // Array de {detalle_venta_id, nombre_producto, cantidad, precio_unitario, subtotal}
     // ✅ NUEVA 2026-03-05: Campos de novedad
-    String? tipoNovedad,  // CLIENTE_CERRADO, DEVOLUCION_PARCIAL, RECHAZADO, NO_CONTACTADO
+    String?
+    tipoNovedad, // CLIENTE_CERRADO, DEVOLUCION_PARCIAL, RECHAZADO, NO_CONTACTADO
     bool? tiendaAbierta,
     bool? clientePresente,
     String? motivoRechazo,
@@ -1134,15 +1076,19 @@ class EntregaProvider with ChangeNotifier, EntregaTrackingMixin {
         ventaId,
         fotosBase64: fotosBase64,
         observaciones: observaciones,
-        observacionesLogistica: observacionesLogistica,  // ✅ NUEVO: Pasar observaciones logísticas
-        montoRecibido: montoRecibido,  // ✅ NUEVO: Pasar monto (backward compatible)
-        tipoPagoId: tipoPagoId,  // ✅ NUEVO: Pasar tipo de pago (backward compatible)
+        observacionesLogistica:
+            observacionesLogistica, // ✅ NUEVO: Pasar observaciones logísticas
+        montoRecibido:
+            montoRecibido, // ✅ NUEVO: Pasar monto (backward compatible)
+        tipoPagoId:
+            tipoPagoId, // ✅ NUEVO: Pasar tipo de pago (backward compatible)
         // ✅ NUEVA 2026-02-12: Múltiples pagos
-        pagos: pagos,  // Array de pagos múltiples
-        esCredito: esCredito,  // ✅ CAMBIO: Si es promesa de pago
-        tipoConfirmacion: tipoConfirmacion,  // COMPLETA o CON_NOVEDAD
+        pagos: pagos, // Array de pagos múltiples
+        esCredito: esCredito, // ✅ CAMBIO: Si es promesa de pago
+        tipoConfirmacion: tipoConfirmacion, // COMPLETA o CON_NOVEDAD
         // ✅ NUEVA 2026-02-15: Productos rechazados en devolución parcial
-        productosRechazados: productosRechazados,  // Array de productos rechazados
+        productosRechazados:
+            productosRechazados, // Array de productos rechazados
         // ✅ NUEVA 2026-03-05: Campos de novedad
         tipoNovedad: tipoNovedad,
         tiendaAbierta: tiendaAbierta,
@@ -1465,64 +1411,6 @@ class EntregaProvider with ChangeNotifier, EntregaTrackingMixin {
     }
   }
 
-  /// Reintentar tracking GPS sin cambiar el estado
-  /// Se usa cuando el GPS falló pero el estado ya está EN_TRANSITO
-  Future<bool> reintentarTracking({
-    required Function(String) onSuccess,
-    required Function(String) onError,
-  }) async {
-    try {
-      if (_entregaActual == null) {
-        _errorMessage = 'Entrega no cargada';
-        onError('Entrega no cargada');
-        return false;
-      }
-
-      final estadoActual =
-          _entregaActual!.estadoEntregaCodigo ?? _entregaActual!.estado;
-      debugPrint('🔄 [REINTENTAR_TRACKING] Estado actual: $estadoActual');
-
-      // Verificar que esté en estado EN_TRANSITO o similar
-      if (estadoActual != 'EN_TRANSITO' &&
-          estadoActual != 'EN_CAMINO' &&
-          estadoActual != 'LLEGO') {
-        _errorMessage =
-            'Solo se puede reintentar tracking en estado EN_TRANSITO. Estado actual: $estadoActual';
-        onError(_errorMessage!);
-        return false;
-      }
-
-      debugPrint('✅ [REINTENTAR_TRACKING] Validación OK, reiniciando GPS...');
-
-      // Detener tracking anterior si existe
-      if (isTracking) {
-        await detenerTracking();
-      }
-
-      debugPrint('🚀 [REINTENTAR_TRACKING] Iniciando GPS tracking...');
-
-      // Iniciar tracking nuevamente
-      await iniciarTracking(
-        entregaId: _entregaActual!.id,
-        onSuccess: (mensaje) {
-          debugPrint('✅ [REINTENTAR_TRACKING] GPS reactivado: $mensaje');
-          onSuccess(mensaje);
-        },
-        onError: (error) {
-          debugPrint('❌ [REINTENTAR_TRACKING] Error: $error');
-          onError(error);
-        },
-      );
-
-      return true;
-    } catch (e) {
-      _errorMessage = 'Error inesperado: ${e.toString()}';
-      debugPrint('❌ [REINTENTAR_TRACKING] Excepción: $e');
-      onError(_errorMessage!);
-      return false;
-    }
-  }
-
   /// Marcar carga como entregada (cambiar estado a ENTREGADO)
   /// Se usa cuando el estado está EN_TRANSITO y el chofer ha entregado la carga
   Future<bool> marcarCargaEntregada(int entregaId) async {
@@ -1557,7 +1445,9 @@ class EntregaProvider with ChangeNotifier, EntregaTrackingMixin {
         return false;
       }
 
-      debugPrint('✅ [MARCAR_ENTREGADA] Validación OK, marcando como entregada...');
+      debugPrint(
+        '✅ [MARCAR_ENTREGADA] Validación OK, marcando como entregada...',
+      );
 
       // Cambiar estado a ENTREGADO
       final respuestaEstado = await _entregaService.actualizarEstado(
@@ -1579,11 +1469,6 @@ class EntregaProvider with ChangeNotifier, EntregaTrackingMixin {
       _actualizarEnListaEntregas(_entregaActual!);
 
       debugPrint('✅ [MARCAR_ENTREGADA] Carga marcada como entregada');
-
-      // Detener tracking si está activo
-      if (isTracking) {
-        await detenerTracking();
-      }
 
       // Mostrar notificación de cambio de estado
       await _notificationService.showDeliveryStateChangeNotification(
@@ -1611,8 +1496,6 @@ class EntregaProvider with ChangeNotifier, EntregaTrackingMixin {
   void limpiar() {
     _entregas = [];
     _entregaActual = null;
-    _ubicaciones = [];
-    _ubicacionActual = null;
     _historialEstados = [];
     _isLoading = false;
     _errorMessage = null;
@@ -1675,11 +1558,13 @@ class EntregaProvider with ChangeNotifier, EntregaTrackingMixin {
 
     // Retornar lista ordenada por nombre
     final localidades = localidadesMap.values.toList();
-    localidades.sort((a, b) =>
-        (a['nombre'] as String).compareTo(b['nombre'] as String));
+    localidades.sort(
+      (a, b) => (a['nombre'] as String).compareTo(b['nombre'] as String),
+    );
 
     debugPrint(
-        '🏘️ [ENTREGA_PROVIDER] Localidades únicas encontradas: ${localidades.length}');
+      '🏘️ [ENTREGA_PROVIDER] Localidades únicas encontradas: ${localidades.length}',
+    );
     return localidades;
   }
 
@@ -1719,7 +1604,103 @@ class EntregaProvider with ChangeNotifier, EntregaTrackingMixin {
   }
 
   // ✅ NUEVO 2026-03-05: Método para obtener resumen de pagos de una entrega
-  Future<ApiResponse<Map<String, dynamic>>> obtenerResumenPagos(int entregaId) async {
+  Future<ApiResponse<Map<String, dynamic>>> obtenerResumenPagos(
+    int entregaId,
+  ) async {
     return await _entregaService.obtenerResumenPagos(entregaId);
+  }
+
+  // ✅ NUEVO 2026-03-12: Obtener ventas resumidas con información de pagos
+  /// Método para cargar datos del tab Ventas de forma independiente (lazy loading)
+  /// Incluye: información básica, mini-resumen de pagos, historial de confirmaciones
+  Future<ApiResponse<Map<String, dynamic>>> obtenerVentasResumidas(
+    int entregaId,
+  ) async {
+    try {
+      _isLoading = true;
+      _errorMessage = null;
+      notifyListeners();
+
+      final response = await _entregaService.obtenerVentasResumidas(entregaId);
+
+      _isLoading = false;
+      _errorMessage = response.success ? null : response.message;
+      notifyListeners();
+
+      return response;
+    } catch (e) {
+      _errorMessage = 'Error inesperado: ${e.toString()}';
+      _isLoading = false;
+      notifyListeners();
+      return ApiResponse(
+        success: false,
+        message: _errorMessage ?? 'Error desconocido',
+      );
+    }
+  }
+
+  // ✅ NUEVO 2026-03-12: Actualizar confirmación existente
+  /// Permite editar datos de una confirmación ya registrada
+  Future<ApiResponse<Map<String, dynamic>>> actualizarConfirmacion({
+    required int entregaId,
+    required int ventaId,
+    required int confirmacionId,
+    String? estado,
+    double? efectivo,
+    double? qr,
+    double? pendiente,
+    String? motivoRechazo,
+    String? observacionesPago,
+    bool? clientePresente,
+    bool? tiendaAbierta,
+    bool? tuvoProblema,
+    String? tipoNovedad,
+    double? montoAceptado,
+    double? montoDevuelto,
+    List<Map<String, dynamic>>? productosDevueltos,
+  }) async {
+    try {
+      _isLoading = true;
+      _errorMessage = null;
+      notifyListeners();
+
+      final response = await _entregaService.actualizarConfirmacion(
+        entregaId: entregaId,
+        ventaId: ventaId,
+        confirmacionId: confirmacionId,
+        estado: estado,
+        efectivo: efectivo,
+        qr: qr,
+        pendiente: pendiente,
+        motivoRechazo: motivoRechazo,
+        observacionesPago: observacionesPago,
+        clientePresente: clientePresente,
+        tiendaAbierta: tiendaAbierta,
+        tuvoProblema: tuvoProblema,
+        tipoNovedad: tipoNovedad,
+        montoAceptado: montoAceptado,
+        montoDevuelto: montoDevuelto,
+        productosDevueltos: productosDevueltos,
+      );
+
+      if (response.success) {
+        // Recargar la entrega para reflejar cambios
+        await obtenerEntrega(entregaId);
+      }
+
+      _isLoading = false;
+      _errorMessage = response.success ? null : response.message;
+      notifyListeners();
+
+      return response;
+    } catch (e) {
+      _errorMessage = 'Error inesperado: ${e.toString()}';
+      _isLoading = false;
+      notifyListeners();
+      return ApiResponse(
+        success: false,
+        message: _errorMessage ?? 'Error desconocido',
+      );
+    }
   }
 }

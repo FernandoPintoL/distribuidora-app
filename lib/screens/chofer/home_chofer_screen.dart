@@ -31,8 +31,9 @@ class _HomeChoferScreenState extends State<HomeChoferScreen>
     _tabController = TabController(length: 2, vsync: this);
     _tabController.addListener(_onTabChanged);
 
-    // Cargar préstamos DESPUÉS de que termine la construcción
+    // Cargar estados logísticos y préstamos DESPUÉS de que termine la construcción
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      _cargarEstadosLogisticos();
       _cargarPrestamos();
     });
   }
@@ -45,6 +46,20 @@ class _HomeChoferScreenState extends State<HomeChoferScreen>
   void dispose() {
     _tabController.dispose();
     super.dispose();
+  }
+
+  /// ✅ NUEVO: Cargar estados logísticos (entrega, venta_logistica, proforma)
+  /// Estos se cachean en el provider para uso en toda la app
+  void _cargarEstadosLogisticos() {
+    context.read<EstadoLogisticoProvider>().obtenerTodosLosEstados().then(
+      (ok) {
+        if (ok) {
+          debugPrint('✅ [HOME_CHOFER] Todos los estados logísticos cacheados');
+        } else {
+          debugPrint('⚠️ [HOME_CHOFER] Error cacheando estados logísticos');
+        }
+      },
+    );
   }
 
   void _cargarPrestamos() {
@@ -60,10 +75,7 @@ class _HomeChoferScreenState extends State<HomeChoferScreen>
       appBar: _buildAppBar(),
       body: TabBarView(
         controller: _tabController,
-        children: const [
-          EntregasAsignadasScreen(),
-          PrestamosAsignadosScreen(),
-        ],
+        children: const [EntregasAsignadasScreen(), PrestamosAsignadosScreen()],
       ),
       bottomNavigationBar: _buildBottomNavBar(),
     );
@@ -77,10 +89,10 @@ class _HomeChoferScreenState extends State<HomeChoferScreen>
       currentIndex: _tabController.index,
       onTap: (index) => _tabController.animateTo(index),
       type: BottomNavigationBarType.fixed,
-      selectedItemColor: colorScheme.primary,
+      /*selectedItemColor: colorScheme.primary,
       unselectedItemColor: isDarkMode
           ? Colors.grey.shade600
-          : Colors.grey.shade500,
+          : Colors.grey.shade500,*/
       backgroundColor: colorScheme.surface,
       items: const [
         BottomNavigationBarItem(

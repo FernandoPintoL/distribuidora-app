@@ -2,26 +2,27 @@ import 'package:flutter/material.dart';
 import 'app_colors.dart';
 
 /// Definición de temas claros y oscuros para la aplicación
-/// ACTUALIZADO: Grafito Premium + Rojo Paucara (estilo Rappi/PedidosYa)
+/// ACTUALIZADO: Azul Marino + Dorado (Premium, elegante)
 ///
 /// Colores:
-/// - Grafito (#212121): AppBar, navegación, seriedad
-/// - Rojo Paucara (#C8102E): Logo, FAB, botón CTA principal SOLO
-/// - Gris fondo (#F5F5F5): Fondos limpios
-/// - Ámbar (#FFCA28): Badges pendiente
+/// - Azul Marino (#1E3A5F): AppBar, navegación, primario
+/// - Dorado (#D4A017): Acentos, botones, destacados
+/// - Gris claro (#FAFAFA): Fondos limpios
+/// - Rojo (#E53935): Errores y semántica
 class AppThemes {
-  // Colores principales - Grafito Premium
-  static const Color _primaryColor = Color(0xFF212121);          // Grafito #212121
-  static const Color _primaryDark = Color(0xFF000000);           // Grafito oscuro
+  // Colores principales - Azul Marino
+  static const Color _primaryColor = Color(0xFF1E3A5F);          // Azul marino #1E3A5F
+  static const Color _primaryLight = Color(0xFF2A5A8F);          // Azul marino claro
+  static const Color _primaryDark = Color(0xFF132B47);           // Azul marino oscuro
 
-  // Color de acento - Rojo Paucara (SOLO momentos clave)
-  static const Color _accentRed = Color(0xFFC8102E);             // Rojo Paucara #C8102E
+  // Color secundario - Dorado
+  static const Color _secondaryColor = Color(0xFFD4A017);        // Dorado #D4A017
+  static const Color _secondaryLight = Color(0xFFE8B84B);        // Dorado claro
+  static const Color _secondaryDark = Color(0xFFB8860B);         // Dorado oscuro
 
-  // Fondos y secundarios
-  static const Color _backgroundLight = Color(0xFFF5F5F5);       // Gris fondo
-  static const Color _secondaryColor = Color(0xFFFFCA28);        // Ámbar #FFCA28
-  static const Color _secondaryLight = Color(0xFFFDD835);        // Ámbar claro
-  static const Color _secondaryDark = Color(0xFFFBC02D);         // Ámbar oscuro
+  // Fondos y otros
+  static const Color _backgroundLight = Color(0xFFFAFAFA);       // Gris fondo #FAFAFA
+  static const Color _errorColor = Color(0xFFE53935);            // Rojo #E53935
 
   // Tema Claro
   static ThemeData get lightTheme {
@@ -40,13 +41,13 @@ class AppThemes {
         centerTitle: false,
       ),
 
-      // Color scheme - Grafito + Ámbar
+      // Color scheme - Azul Marino + Dorado
       colorScheme: ColorScheme.light(
-        primary: _primaryColor,              // Grafito #212121
-        secondary: _secondaryColor,          // Ámbar #FFCA28
-        tertiary: _secondaryLight,           // Ámbar claro
-        surface: _backgroundLight,           // Gris fondo #F5F5F5
-        error: AppColors.error,              // Rojo semántico (error)
+        primary: _primaryColor,              // Azul marino #1E3A5F
+        secondary: _secondaryColor,          // Dorado #D4A017
+        tertiary: _secondaryLight,           // Dorado claro
+        surface: _backgroundLight,           // Gris fondo #FAFAFA
+        error: _errorColor,                  // Rojo #E53935
         onPrimary: Colors.white,
         onSecondary: Colors.black87,
         onSurface: Colors.black87,
@@ -222,15 +223,15 @@ class AppThemes {
         centerTitle: false,
       ),
 
-      // Color scheme - Grafito oscuro + Ámbar (dark mode)
+      // Color scheme - Azul marino oscuro + Dorado (dark mode)
       colorScheme: const ColorScheme.dark(
-        primary: _primaryDark,               // Grafito oscuro
-        secondary: _secondaryColor,          // Ámbar #FFCA28
-        tertiary: _secondaryDark,            // Ámbar oscuro
+        primary: _primaryDark,               // Azul marino oscuro
+        secondary: _secondaryColor,          // Dorado #D4A017
+        tertiary: _secondaryDark,            // Dorado oscuro
         surface: Color(0xFF1E1E1E),
-        error: AppColors.error,              // Rojo semántico (error)
+        error: _errorColor,                  // Rojo #E53935
         onPrimary: Colors.white,
-        onSecondary: Colors.black87,
+        onSecondary: Colors.white,
         onSurface: Colors.white,
         onError: Colors.white,
       ),

@@ -1,35 +1,35 @@
 import 'package:flutter/material.dart';
 
 /// Clase que centraliza todos los colores de la aplicación
-/// Esquema: Grafito Premium + Rojo Paucara (estilo Rappi/PedidosYa)
+/// Esquema: Azul Marino + Dorado (Premium, elegante)
 ///
 /// Filosofía de color:
-/// - Grafito: Neutral, profesional, transmite seriedad
-/// - Rojo Paucara: Solo en marca, AppBar y CTA principal
-/// - Gris claro: Fondos limpios
-/// - Estados: Verde/Naranja/Rojo solo para semántica, nunca color primario
+/// - Azul Marino (#1E3A5F): Primario, confianza, profesionalismo
+/// - Dorado (#D4A017): Secundario, lujo, premium
+/// - Gris claro (#FAFAFA): Fondos limpios
+/// - Rojo (#E53935): Solo para errores/semántica
 class AppColors {
   AppColors._(); // Constructor privado
 
-  // ==================== COLORES PRINCIPALES (GRAFITO + ROJO PAUCARA) ====================
+  // ==================== COLORES PRINCIPALES (AZUL MARINO + DORADO) ====================
 
-  /// Grafito principal (AppBar, navegación inferior)
-  static const Color primaryLight = Color(0xFF424242); // Grafito claro
-  static const Color primary = Color(0xFF212121); // Grafito #212121
-  static const Color primaryDark = Color(0xFF000000); // Grafito oscuro
+  /// Azul Marino principal (AppBar, navegación, primario)
+  static const Color primaryLight = Color(0xFF2A5A8F); // Azul marino claro
+  static const Color primary = Color(0xFF1E3A5F); // Azul marino #1E3A5F
+  static const Color primaryDark = Color(0xFF132B47); // Azul marino oscuro
 
-  /// Rojo Paucara (logo, FAB, botón CTA principal - SOLO momentos clave)
-  static const Color accentRed = Color(0xFFC8102E); // Rojo Paucara
-  static const Color accentRedLight = Color(0xFFE53935); // Rojo claro
-  static const Color accentRedDark = Color(0xFF880E1F); // Rojo oscuro
+  /// Dorado como color secundario (acentos, destacados)
+  static const Color secondaryLight = Color(0xFFE8B84B); // Dorado claro
+  static const Color secondary = Color(0xFFD4A017); // Dorado #D4A017
+  static const Color secondaryDark = Color(0xFFB8860B); // Dorado oscuro
 
   /// Gris para fondos (neutro, limpio)
-  static const Color backgroundLight = Color(0xFFF5F5F5); // Gris fondo
+  static const Color backgroundLight = Color(0xFFFAFAFA); // Gris fondo #FAFAFA
 
-  /// Secundario: Ámbar para badges pendiente
-  static const Color secondaryLight = Color(0xFFFDD835); // Ámbar claro
-  static const Color secondary = Color(0xFFFFCA28); // Ámbar #FFCA28
-  static const Color secondaryDark = Color(0xFFFBC02D); // Ámbar oscuro
+  /// Error: Rojo semántico
+  static const Color errorLight = Color(0xFFF44336); // Rojo claro
+  static const Color errorColor = Color(0xFFE53935); // Rojo #E53935
+  static const Color errorDark = Color(0xFFC62828); // Rojo oscuro
 
   // ==================== COLORES POR ROL (ACTUALIZADOS) ====================
 
@@ -73,7 +73,7 @@ class AppColors {
 
   /// Color para estado de error (rojo)
   static const Color error = Color(0xFFEF4444); // Red 500
-  static const Color errorDark = Color(0xFFDC2626); // Red 600
+  // static const Color errorDark = Color(0xFFDC2626); // Red 600
 
   /// Color para advertencias (amarillo/amber)
   static const Color warning = Color(0xFFF59E0B); // Amber 500

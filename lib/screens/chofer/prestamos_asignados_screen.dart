@@ -36,7 +36,9 @@ class _PrestamosAsignadosScreenState extends State<PrestamosAsignadosScreen>
       final prestamosProvider = context.read<PrestamosProvider>();
 
       if (authProvider.user != null) {
-        debugPrint('📦 Cargando préstamos para chofer: ${authProvider.user!.id}');
+        debugPrint(
+          '📦 Cargando préstamos para chofer: ${authProvider.user!.id}',
+        );
         prestamosProvider.cargarPrestamosDelChofer(authProvider.user!.id);
       } else {
         debugPrint('❌ Usuario no autenticado');
@@ -60,25 +62,21 @@ class _PrestamosAsignadosScreenState extends State<PrestamosAsignadosScreen>
       children: [
         // Tabs
         Container(
-          color: isDark ? Colors.grey.shade800 : Colors.grey.shade100,  // ✅ Modo oscuro
+          // color: isDark
+          //     ? Colors.grey.shade800
+          //     : Colors.grey.shade100, // ✅ Modo oscuro
           child: TabBar(
             controller: _tabController,
-            labelColor: Theme.of(context).colorScheme.primary,  // ✅ Color dinámico
-            unselectedLabelColor: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
-            indicatorColor: Theme.of(context).colorScheme.primary,
+            labelColor: Theme.of(context).colorScheme.secondary,
+            // ✅ Color dinámico
+            unselectedLabelColor: isDark
+                ? Colors.grey.shade400
+                : Colors.grey.shade600,
+            indicatorColor: Theme.of(context).colorScheme.secondary,
             tabs: const [
-              Tab(
-                text: '👥 Clientes',
-                icon: Icon(Icons.person),
-              ),
-              Tab(
-                text: '🎉 Eventos',
-                icon: Icon(Icons.event),
-              ),
-              Tab(
-                text: '🏭 Proveedores',
-                icon: Icon(Icons.business),
-              ),
+              Tab(text: 'Clientes', icon: Icon(Icons.person)),
+              Tab(text: 'Eventos', icon: Icon(Icons.event)),
+              Tab(text: 'Proveedores', icon: Icon(Icons.business)),
             ],
           ),
         ),
@@ -118,12 +116,12 @@ class _PrestamosAsignadosScreenState extends State<PrestamosAsignadosScreen>
             break;
         }
 
-        debugPrint('🔍 [PRESTAMOS_$tipo] loading=$loading, count=${prestamos.length}');
+        debugPrint(
+          '🔍 [PRESTAMOS_$tipo] loading=$loading, count=${prestamos.length}',
+        );
 
         if (loading) {
-          return const Center(
-            child: CircularProgressIndicator(),
-          );
+          return const Center(child: CircularProgressIndicator());
         }
 
         if (prestamos.isEmpty) {
@@ -191,26 +189,20 @@ class _PrestamosAsignadosScreenState extends State<PrestamosAsignadosScreen>
       margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
       elevation: 2,
       child: ListTile(
-        leading: Icon(_getIconForType(tipo)),  // ✅ CORREGIDO: Envolver en Icon()
+        leading: Icon(_getIconForType(tipo)), // ✅ CORREGIDO: Envolver en Icon()
         title: Text(
           nombre,
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
           style: AppTextStyles.labelLarge(context),
         ),
-        subtitle: Text(
-          subtitulo,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-        ),
+        subtitle: Text(subtitulo, maxLines: 1, overflow: TextOverflow.ellipsis),
         trailing: const Icon(Icons.arrow_forward_ios, size: 16),
         onTap: () {
           Navigator.of(context).push(
             MaterialPageRoute(
-              builder: (context) => PrestamoDetalleScreen(
-                prestamo: prestamo,
-                tipo: tipo,
-              ),
+              builder: (context) =>
+                  PrestamoDetalleScreen(prestamo: prestamo, tipo: tipo),
             ),
           );
         },
@@ -227,7 +219,7 @@ class _PrestamosAsignadosScreenState extends State<PrestamosAsignadosScreen>
       case 'proveedor':
         return Icons.business;
       default:
-        return Icons.inventory;  // ✅ CORREGIDO: Icons.package no existe
+        return Icons.inventory; // ✅ CORREGIDO: Icons.package no existe
     }
   }
 

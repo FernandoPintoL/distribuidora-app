@@ -50,18 +50,11 @@ class EstadoVentaBadge extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Text(
-            icono,
-            style: const TextStyle(fontSize: 10),
-          ), // TODO: usar AppTextStyles.labelSmall),
+          Text(icono), // TODO: usar AppTextStyles.labelSmall),
           SizedBox(width: 4),
           Text(
             nombre,
-            style: TextStyle(
-              fontSize: AppTextStyles.labelSmall(context).fontSize!,
-              fontWeight: FontWeight.w600,
-              color: color,
-            ),
+            style: TextStyle(fontWeight: FontWeight.w600, color: color),
           ),
         ],
       ),

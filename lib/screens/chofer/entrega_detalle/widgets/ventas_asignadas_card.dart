@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:collection/collection.dart';
 import '../../../../config/app_text_styles.dart';
+import '../../../../config/app_urls.dart';
 import '../../../../models/entrega.dart';
 import '../../../../models/venta.dart';
+import '../../../../models/estado_logistico.dart';
 import '../../../../providers/entrega_provider.dart';
 import '../../../../services/print_service.dart';
 import '../../../../widgets/chofer/productos_agrupados_widget.dart';
@@ -66,7 +68,7 @@ class _VentasAsignadasCardState extends State<VentasAsignadasCard> {
     return Card(
       elevation: 2,
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -83,22 +85,13 @@ class _VentasAsignadasCardState extends State<VentasAsignadasCard> {
                     children: [
                       Text(
                         'Ventas Asignadas',
-                        style: Theme.of(context).textTheme.titleMedium
-                            ?.copyWith(fontWeight: FontWeight.bold),
+                        style: TextStyle(fontWeight: FontWeight.bold),
                       ),
                       if (esModoCarga) ...[
                         const SizedBox(height: 4),
                         Text(
                           '$ventasConfirmadas/$totalVentas cargadas ($porcentaje%)',
-                          style: TextStyle(
-                            fontSize: AppTextStyles.bodySmall(
-                              context,
-                            ).fontSize!,
-                            color: isDarkMode
-                                ? Colors.grey[400]
-                                : Colors.grey[600],
-                            fontWeight: FontWeight.w500,
-                          ),
+                          style: TextStyle(fontWeight: FontWeight.w500),
                         ),
                       ],
                     ],
@@ -123,7 +116,6 @@ class _VentasAsignadasCardState extends State<VentasAsignadasCard> {
                           ? '✅ Completo'
                           : '⏳ En progreso',
                       style: TextStyle(
-                        fontSize: AppTextStyles.labelSmall(context).fontSize!,
                         fontWeight: FontWeight.bold,
                         color: ventasConfirmadas == totalVentas
                             ? (isDarkMode
@@ -165,7 +157,7 @@ class _VentasAsignadasCardState extends State<VentasAsignadasCard> {
                 final confirmada = _ventasConfirmadas[venta.id] ?? false;
                 final cargando = _cargandoVenta[venta.id] ?? false;
 
-                final isEnRuta = venta.estadoLogisticoCodigo == 'EN_RUTA';
+                final isEnRuta = venta.estadoLogisticoCodigo == 'EN_TRANSITO';
                 final borderColor = isEnRuta
                     ? (isDarkMode ? Colors.green[600]! : Colors.green[200]!)
                     : (isDarkMode ? Colors.grey[600]! : Colors.grey[300]!);
@@ -173,132 +165,303 @@ class _VentasAsignadasCardState extends State<VentasAsignadasCard> {
 
                 return InkWell(
                   onTap: () {
-                    // Navegar a la pantalla de detalle de venta
                     Navigator.of(
                       context,
                     ).pushNamed('/venta-detalle', arguments: venta.id);
                   },
                   child: Card(
-                    // margin: const EdgeInsets.symmetric(vertical: 10),
-                    elevation: isEnRuta ? 3 : 1,
+                    elevation: isEnRuta ? 2 : 1,
+                    margin: const EdgeInsets.symmetric(vertical: 8),
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
+                      borderRadius: BorderRadius.circular(12),
                       side: BorderSide(color: borderColor, width: borderWidth),
                     ),
                     child: Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 8,
-                      ),
+                      padding: const EdgeInsets.all(16),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
+                          // ✅ NUEVO: Encabezado - Avatar + VEN# + Cliente + Monto
                           Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              if (esModoCarga)
-                                if (cargando)
-                                  const SizedBox(
-                                    width: 24,
-                                    height: 24,
-                                    child: CircularProgressIndicator(
-                                      strokeWidth: 2,
-                                      valueColor: AlwaysStoppedAnimation<Color>(
-                                        Colors.blue,
+                              // ✅ NUEVO: Avatar del cliente
+                              CircleAvatar(
+                                radius: 24,
+                                backgroundColor: isDarkMode
+                                    ? Colors.grey[700]
+                                    : Colors.grey[200],
+                                backgroundImage: venta.clienteFotoPerfil != null
+                                    ? NetworkImage(
+                                        AppUrls.buildImageUrl(
+                                          venta.clienteFotoPerfil!,
+                                        ),
+                                      )
+                                    : null,
+                                child: venta.clienteFotoPerfil == null
+                                    ? Icon(
+                                        Icons.person,
+                                        color: isDarkMode
+                                            ? Colors.grey[400]
+                                            : Colors.grey[600],
+                                      )
+                                    : null,
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'Folio #${venta.id}',
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.w600,
+                                        letterSpacing: 0.5,
                                       ),
                                     ),
-                                  )
-                                else
-                                  Icon(
-                                    Icons.check_circle,
-                                    color: Colors.green[400],
-                                    size: 20,
-                                  ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      venta.clienteNombre ?? 'Sin nombre',
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      venta.clienteRazonSocial ?? '',
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ],
+                                ),
+                              ),
                               const SizedBox(width: 12),
-                              // ✅ NUEVO 2026-03-05: Mostrar estado_entrega dinámicamente
-                              if (entregaActual.estadoEntregaCodigo != null)
-                                _buildEstadoEntregaBadge(entregaActual),
+                              // ✅ Monto destacado a la derecha
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.end,
+                                children: [
+                                  Text(
+                                    'Bs ${venta.total.toStringAsFixed(2)}',
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.green[400],
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    '${venta.detalles.length} productos',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: isDarkMode
+                                          ? Colors.grey[500]
+                                          : Colors.grey[600],
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ],
                           ),
                           const SizedBox(height: 12),
-                          // ✅ DASHBOARD DESIGN: Encabezado (VEN# | Cliente | Monto)
-                          _buildVentaEncabezado(venta),
-                          const SizedBox(height: 8),
-                          Divider(
-                            height: 1,
-                            color: isDarkMode
-                                ? Colors.grey[700]
-                                : Colors.grey[300],
-                          ),
-                          const SizedBox(height: 8),
-                          // ✅ DASHBOARD DESIGN: Información (Localidad | Teléfono | Estado)
-                          _buildVentaInformacion(venta),
-                          const SizedBox(height: 4),
-                          // ✅ DASHBOARD DESIGN: Detalles (Fotos | Pagos | Devueltas)
-                          _buildVentaDetalles(venta),
-                          const SizedBox(height: 8),
-                          Divider(
-                            height: 1,
-                            color: isDarkMode
-                                ? Colors.grey[700]
-                                : Colors.grey[300],
-                          ),
-                          const SizedBox(height: 12),
+                          // ✅ NUEVO: Información (Localidad | Estado)
                           Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              /* Expanded(
-                                child: _buildUbicacionBadge(entregaActual),
+                              if (venta.clienteLocalidad != null)
+                                Expanded(
+                                  child: Row(
+                                    children: [
+                                      Icon(
+                                        Icons.location_on,
+                                        size: 16,
+                                        color: isDarkMode
+                                            ? Colors.blue[400]
+                                            : Colors.blue,
+                                      ),
+                                      const SizedBox(width: 4),
+                                      Expanded(
+                                        child: Text(
+                                          venta.clienteLocalidad!,
+                                          style: TextStyle(
+                                            fontSize: 13,
+                                            color: isDarkMode
+                                                ? Colors.grey[400]
+                                                : Colors.grey[600],
+                                          ),
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              const SizedBox(width: 8),
+                              // ✅ Badge de estado vibrantee
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 10,
+                                  vertical: 4,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: _getEstadoColor(
+                                    venta.estadoLogisticoObj,
+                                  ).withValues(alpha: 0.2),
+                                  borderRadius: BorderRadius.circular(20),
+                                  border: Border.all(
+                                    color: _getEstadoColor(
+                                      venta.estadoLogisticoObj,
+                                    ),
+                                    width: 1,
+                                  ),
+                                ),
+                                child: Text(
+                                  _getEstadoLabel(venta.estadoLogisticoObj),
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w600,
+                                    color: _getEstadoColor(
+                                      venta.estadoLogisticoObj,
+                                    ),
+                                  ),
+                                ),
                               ),
-                              const SizedBox(width: 8), */
-                              if (venta.clienteTelefono != null &&
-                                  venta.clienteTelefono!.isNotEmpty) ...[
-                                SizedBox(
-                                  width: 32,
-                                  height: 32,
-                                  child: IconButton(
-                                    padding: EdgeInsets.zero,
-                                    constraints: const BoxConstraints(),
-                                    icon: const Icon(Icons.phone),
-                                    iconSize: 16,
-                                    color: Colors.green,
-                                    tooltip: 'Llamar',
-                                    onPressed: () => widget.onLlamarCliente(
-                                      venta.clienteTelefono,
+                            ],
+                          ),
+                          // ✅ NUEVO: Observaciones de la dirección
+                          if (venta.direccionObservaciones != null &&
+                              venta.direccionObservaciones!.isNotEmpty) ...[
+                            const SizedBox(height: 8),
+                            Container(
+                              padding: const EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                color: isDarkMode
+                                    ? Colors.orange[900]?.withValues(alpha: 0.2)
+                                    : Colors.orange[50],
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(
+                                  color: isDarkMode
+                                      ? Colors.orange[700]!
+                                      : Colors.orange[200]!,
+                                ),
+                              ),
+                              child: Row(
+                                children: [
+                                  Icon(
+                                    Icons.pin_drop_outlined,
+                                    size: 16,
+                                    color: Colors.orange[400],
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: Text(
+                                      venta.direccionObservaciones!,
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        color: isDarkMode
+                                            ? Colors.orange[300]
+                                            : Colors.orange[800],
+                                      ),
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                          const SizedBox(height: 12),
+                          // ✅ NUEVO: Mini Resumen de Pago
+                          _buildMiniResumenPago(venta, isDarkMode),
+                          const SizedBox(height: 12),
+                          // ✅ NUEVO: Botones de acción - Horizontal
+                          if (venta.clienteTelefono != null &&
+                              venta.clienteTelefono!.isNotEmpty)
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: SizedBox(
+                                    height: 36,
+                                    child: OutlinedButton.icon(
+                                      onPressed: () => widget.onLlamarCliente(
+                                        venta.clienteTelefono,
+                                      ),
+                                      icon: const Icon(Icons.call, size: 18),
+                                      label: const Text('Llamar'),
+                                      style: OutlinedButton.styleFrom(
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(
+                                            8,
+                                          ),
+                                        ),
+                                      ),
                                     ),
                                   ),
                                 ),
-                                const SizedBox(width: 4),
-                                SizedBox(
-                                  width: 32,
-                                  height: 32,
-                                  child: IconButton(
-                                    padding: EdgeInsets.zero,
-                                    constraints: const BoxConstraints(),
-                                    icon: const Icon(Icons.chat),
-                                    iconSize: 16,
-                                    color: Colors.green[600],
-                                    tooltip: 'WhatsApp',
-                                    onPressed: () => widget.onEnviarWhatsApp(
-                                      venta.clienteTelefono,
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: SizedBox(
+                                    height: 36,
+                                    child: OutlinedButton.icon(
+                                      onPressed: () => widget.onEnviarWhatsApp(
+                                        venta.clienteTelefono,
+                                      ),
+                                      icon: const Icon(Icons.chat, size: 18),
+                                      label: const Text('WhatsApp'),
+                                      style: OutlinedButton.styleFrom(
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(
+                                            8,
+                                          ),
+                                        ),
+                                      ),
                                     ),
                                   ),
                                 ),
-                                const SizedBox(width: 4),
+                                const SizedBox(width: 8),
                                 SizedBox(
-                                  width: 32,
-                                  height: 32,
+                                  height: 36,
+                                  width: 36,
                                   child: IconButton(
-                                    padding: EdgeInsets.zero,
-                                    constraints: const BoxConstraints(),
-                                    icon: const Icon(Icons.download),
-                                    iconSize: 16,
-                                    color: Colors.blue,
-                                    tooltip: 'Descargar PDF',
                                     onPressed: () =>
                                         _descargarPDFVenta(venta.id),
+                                    icon: const Icon(Icons.download, size: 18),
+                                    style: IconButton.styleFrom(
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                      side: BorderSide(
+                                        color: isDarkMode
+                                            ? Colors.grey[600]!
+                                            : Colors.grey[300]!,
+                                      ),
+                                    ),
+                                    tooltip: 'Descargar PDF',
                                   ),
                                 ),
                               ],
-                            ],
+                            ),
+                          // ✅ NUEVO: Botón de Registrar Pago/Incidencia
+                          const SizedBox(height: 12),
+                          SizedBox(
+                            width: double.infinity,
+                            child: ElevatedButton.icon(
+                              onPressed: () {
+                                debugPrint('💳 [VENTAS_CARD] Abriendo registro de pago para venta #${venta.id}');
+                                _navegarARegistroPago(context, venta, entregaActual);
+                              },
+                              icon: const Icon(Icons.payment),
+                              label: const Text('Registrar Pago/Incidencia'),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.purple[600],
+                                foregroundColor: Colors.white,
+                                padding: const EdgeInsets.symmetric(vertical: 12),
+                              ),
+                            ),
                           ),
                           // ✅ Botón de confirmación solo en EN_TRANSITO
                           if (venta.estadoLogisticoCodigo == 'EN_TRANSITO') ...[
@@ -389,59 +552,19 @@ class _VentasAsignadasCardState extends State<VentasAsignadasCard> {
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          'Total a Entregar',
-                          style: TextStyle(
-                            fontSize: AppTextStyles.bodySmall(
-                              context,
-                            ).fontSize!,
-                            color: isDarkMode
-                                ? Colors.grey[400]
-                                : Colors.grey[600],
-                          ),
-                        ),
+                        Text('Total a Entregar'),
                         const SizedBox(height: 4),
                         Text(
                           'BS ${entregaActual.ventas.fold<double>(0, (sum, v) => sum + v.total).toStringAsFixed(2)}',
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: AppTextStyles.bodyLarge(
-                              context,
-                            ).fontSize!,
-                            color: isDarkMode
-                                ? Colors.grey[100]
-                                : Colors.grey[900],
-                          ),
                         ),
                       ],
                     ),
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.end,
                       children: [
-                        Text(
-                          'Cantidad de Ventas',
-                          style: TextStyle(
-                            fontSize: AppTextStyles.bodySmall(
-                              context,
-                            ).fontSize!,
-                            color: isDarkMode
-                                ? Colors.grey[400]
-                                : Colors.grey[600],
-                          ),
-                        ),
+                        Text('Cantidad de Ventas'),
                         const SizedBox(height: 4),
-                        Text(
-                          '${entregaActual.ventas.length}',
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: AppTextStyles.bodyLarge(
-                              context,
-                            ).fontSize!,
-                            color: isDarkMode
-                                ? Colors.grey[100]
-                                : Colors.grey[900],
-                          ),
-                        ),
+                        Text('${entregaActual.ventas.length}'),
                       ],
                     ),
                   ],
@@ -452,473 +575,6 @@ class _VentasAsignadasCardState extends State<VentasAsignadasCard> {
         ),
       ),
     );
-  }
-
-  Widget _buildEstadoPagoBadge(String estadoPago) {
-    const estadoColores = {
-      'PENDIENTE': {
-        'color': Color(0xFFef4444),
-        'label': 'Pendiente',
-        'icon': '⏳',
-      },
-      'PAGADO': {'color': Color(0xFF22c55e), 'label': 'Pagado', 'icon': '✓'},
-      'PARCIAL': {'color': Color(0xFFf97316), 'label': 'Parcial', 'icon': '⚠'},
-      'CANCELADO': {
-        'color': Color(0xFF6b7280),
-        'label': 'Cancelado',
-        'icon': '✗',
-      },
-    };
-
-    final config =
-        estadoColores[estadoPago] ??
-        {'color': Colors.grey, 'label': estadoPago, 'icon': '?'};
-
-    return Builder(
-      builder: (context) {
-        final isDarkMode = Theme.of(context).brightness == Brightness.dark;
-        final bgColor = isDarkMode
-            ? (config['color'] as Color).withOpacity(0.25)
-            : (config['color'] as Color).withOpacity(0.15);
-
-        return Container(
-          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-          decoration: BoxDecoration(
-            color: bgColor,
-            borderRadius: BorderRadius.circular(3),
-            border: Border.all(color: config['color'] as Color, width: 0.5),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                config['icon'] as String,
-                style: const TextStyle(fontSize: 9),
-              ),
-              const SizedBox(width: 2),
-              Flexible(
-                child: Text(
-                  config['label'] as String,
-                  style: TextStyle(
-                    fontSize: 9,
-                    fontWeight: FontWeight.w600,
-                    color: config['color'] as Color,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-            ],
-          ),
-        );
-      },
-    );
-  }
-
-  // ✅ NUEVO: Widget para mostrar el tipo de pago de la venta
-  Widget _buildTipoPagoBadge(String? tipoPago) {
-    if (tipoPago == null || tipoPago.isEmpty) {
-      return const SizedBox.shrink();
-    }
-
-    // Mapeo de tipos de pago con colores e iconos
-    const tipoPagoColores = {
-      'Efectivo': {
-        'color': Color(0xFF10b981), // Verde
-        'label': 'Efectivo',
-        'icon': '💵',
-      },
-      'Transferencia': {
-        'color': Color(0xFF3b82f6), // Azul
-        'label': 'Transferencia',
-        'icon': '💳',
-      },
-      'Transferencia / QR': {
-        'color': Color(0xFF3b82f6), // Azul
-        'label': 'Transfer.',
-        'icon': '📱',
-      },
-      'Cheque': {
-        'color': Color(0xFF8b5cf6), // Púrpura
-        'label': 'Cheque',
-        'icon': '📄',
-      },
-      'Crédito': {
-        'color': Color(0xFFf59e0b), // Ámbar
-        'label': 'Crédito',
-        'icon': '📋',
-      },
-    };
-
-    final config =
-        tipoPagoColores[tipoPago] ??
-        {
-          'color': Colors.blueGrey,
-          'label': tipoPago.length > 10 ? tipoPago.substring(0, 10) : tipoPago,
-          'icon': '💰',
-        };
-
-    return Builder(
-      builder: (context) {
-        final isDarkMode = Theme.of(context).brightness == Brightness.dark;
-        final bgColor = isDarkMode
-            ? (config['color'] as Color).withOpacity(0.25)
-            : (config['color'] as Color).withOpacity(0.15);
-
-        return Container(
-          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-          decoration: BoxDecoration(
-            color: bgColor,
-            borderRadius: BorderRadius.circular(3),
-            border: Border.all(color: config['color'] as Color, width: 0.5),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                config['icon'] as String,
-                style: const TextStyle(fontSize: 9),
-              ),
-              const SizedBox(width: 2),
-              Flexible(
-                child: Text(
-                  config['label'] as String,
-                  style: TextStyle(
-                    fontSize: 9,
-                    fontWeight: FontWeight.w600,
-                    color: config['color'] as Color,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-            ],
-          ),
-        );
-      },
-    );
-  }
-
-  Widget _buildEstadoLogisticoBadge(Venta venta) {
-    Color color = Colors.grey;
-    if (venta.estadoLogisticoColor != null) {
-      try {
-        final hexColor = venta.estadoLogisticoColor!.replaceFirst('#', '');
-        color = Color(int.parse('FF$hexColor', radix: 16));
-      } catch (e) {
-        color = Colors.grey;
-      }
-    }
-
-    return Builder(
-      builder: (context) {
-        final isDarkMode = Theme.of(context).brightness == Brightness.dark;
-        final bgColor = isDarkMode
-            ? color.withOpacity(0.25)
-            : color.withOpacity(0.15);
-
-        return Container(
-          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-          decoration: BoxDecoration(
-            color: bgColor,
-            borderRadius: BorderRadius.circular(3),
-            border: Border.all(color: color, width: 0.5),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                venta.estadoLogisticoIcon ?? '📦',
-                style: const TextStyle(fontSize: 9),
-              ),
-              const SizedBox(width: 2),
-              Flexible(
-                child: Text(
-                  venta.estadoLogistico,
-                  style: TextStyle(
-                    fontSize: 9,
-                    fontWeight: FontWeight.w600,
-                    color: color,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-            ],
-          ),
-        );
-      },
-    );
-  }
-
-  Widget _buildUbicacionBadge(Entrega entrega) {
-    final tieneUbicacion =
-        (entrega.latitudeDestino != null && entrega.longitudeDestino != null) ||
-        (entrega.direccion != null && entrega.direccion!.isNotEmpty);
-
-    return Builder(
-      builder: (context) {
-        final isDarkMode = Theme.of(context).brightness == Brightness.dark;
-
-        final bgColor = tieneUbicacion
-            ? (isDarkMode ? Colors.green[900] : Colors.green[100])
-            : (isDarkMode ? Colors.red[900] : Colors.red[100]);
-
-        final borderColor = tieneUbicacion
-            ? (isDarkMode ? Colors.green[700] : Colors.green[600])
-            : (isDarkMode ? Colors.red[700] : Colors.red[600]);
-
-        final textColor = tieneUbicacion
-            ? (isDarkMode ? Colors.green[300] : Colors.green[700])
-            : (isDarkMode ? Colors.red[300] : Colors.red[700]);
-
-        return Container(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-          decoration: BoxDecoration(
-            color: bgColor,
-            borderRadius: BorderRadius.circular(4),
-            border: Border.all(color: borderColor!, width: 0.5),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                tieneUbicacion ? '📍' : '❌',
-                style: const TextStyle(
-                  fontSize: 10,
-                ), // TODO: usar AppTextStyles.labelSmall,
-              ),
-              const SizedBox(width: 4),
-              Flexible(
-                child: Text(
-                  tieneUbicacion ? 'Ubicación' : 'Sin ubicación',
-                  overflow: TextOverflow.ellipsis,
-                  maxLines: 1,
-                  style: TextStyle(
-                    fontSize: AppTextStyles.labelSmall(context).fontSize!,
-                    fontWeight: FontWeight.w600,
-                    color: textColor,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        );
-      },
-    );
-  }
-
-  Widget _buildTipoEntregaBadge(String? tipoEntrega, String? tipoNovedad) {
-    if (tipoEntrega == null) {
-      return const SizedBox.shrink();
-    }
-
-    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
-    final esCompleta = tipoEntrega == 'COMPLETA';
-
-    // Si es CON_NOVEDAD, usar tipoNovedad en la etiqueta
-    final etiqueta = esCompleta
-        ? '✅ Completa'
-        : '⚠️ ${tipoNovedad ?? 'Novedad'}';
-    final color = esCompleta
-        ? (isDarkMode ? Colors.green[400] : Colors.green[600])
-        : (isDarkMode ? Colors.orange[400] : Colors.orange[600]);
-    final bgColor = esCompleta
-        ? (isDarkMode ? Colors.green[900] : Colors.green[50])
-        : (isDarkMode ? Colors.orange[900] : Colors.orange[50]);
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-      decoration: BoxDecoration(
-        color: bgColor,
-        borderRadius: BorderRadius.circular(3),
-        border: Border.all(color: color ?? Colors.grey, width: 0.5),
-      ),
-      child: Text(
-        etiqueta,
-        style: TextStyle(
-          fontSize: 9,
-          fontWeight: FontWeight.w600,
-          color: color,
-        ),
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
-      ),
-    );
-  }
-
-  // ✅ NUEVO 2026-03-05: Badge para mostrar info de confirmaciones
-  Widget _buildConfirmacionesBadges(List<Map<String, dynamic>> confirmaciones) {
-    if (confirmaciones.isEmpty) {
-      return const SizedBox.shrink();
-    }
-
-    final confirmacion = confirmaciones.first; // Usar la primera confirmación
-    final tieneFotos = (confirmacion['fotos'] as List?)?.isNotEmpty ?? false;
-    final tieneDesglose =
-        (confirmacion['desglose_pagos'] as List?)?.isNotEmpty ?? false;
-    final tieneProductosDevueltos =
-        (confirmacion['productos_devueltos'] as List?)?.isNotEmpty ?? false;
-
-    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
-
-    return Wrap(
-      spacing: 4,
-      runSpacing: 2,
-      children: [
-        if (tieneFotos)
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
-            decoration: BoxDecoration(
-              color: isDarkMode ? Colors.blue[900] : Colors.blue[50],
-              borderRadius: BorderRadius.circular(2),
-              border: Border.all(
-                color:
-                    (isDarkMode ? Colors.blue[400] : Colors.blue[600]) ??
-                    Colors.blue,
-                width: 0.5,
-              ),
-            ),
-            child: Text(
-              '📷 ${(confirmacion['fotos'] as List?)?.length ?? 0}',
-              style: TextStyle(
-                fontSize: 8,
-                fontWeight: FontWeight.w600,
-                color: isDarkMode ? Colors.blue[300] : Colors.blue[700],
-              ),
-            ),
-          ),
-        if (tieneDesglose)
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
-            decoration: BoxDecoration(
-              color: isDarkMode ? Colors.purple[900] : Colors.purple[50],
-              borderRadius: BorderRadius.circular(2),
-              border: Border.all(
-                color:
-                    (isDarkMode ? Colors.purple[400] : Colors.purple[600]) ??
-                    Colors.purple,
-                width: 0.5,
-              ),
-            ),
-            child: Text(
-              '💳 ${(confirmacion['desglose_pagos'] as List?)?.length ?? 0}',
-              style: TextStyle(
-                fontSize: 8,
-                fontWeight: FontWeight.w600,
-                color: isDarkMode ? Colors.purple[300] : Colors.purple[700],
-              ),
-            ),
-          ),
-        if (tieneProductosDevueltos)
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
-            decoration: BoxDecoration(
-              color: isDarkMode ? Colors.red[900] : Colors.red[50],
-              borderRadius: BorderRadius.circular(2),
-              border: Border.all(
-                color:
-                    (isDarkMode ? Colors.red[400] : Colors.red[600]) ??
-                    Colors.red,
-                width: 0.5,
-              ),
-            ),
-            child: Text(
-              '↩️ ${(confirmacion['productos_devueltos'] as List?)?.length ?? 0}',
-              style: TextStyle(
-                fontSize: 8,
-                fontWeight: FontWeight.w600,
-                color: isDarkMode ? Colors.red[300] : Colors.red[700],
-              ),
-            ),
-          ),
-      ],
-    );
-  }
-
-  Future<void> _procesarConfirmacionVenta(
-    BuildContext context,
-    bool nuevoEstado,
-    Venta venta,
-  ) async {
-    if (!mounted) return;
-
-    setState(() {
-      _cargandoVenta[venta.id] = true;
-    });
-
-    try {
-      bool exito = false;
-
-      if (nuevoEstado) {
-        exito = await widget.provider.confirmarVentaCargada(
-          widget.entrega.id,
-          venta.id,
-        );
-      } else {
-        exito = await widget.provider.desmarcarVentaCargada(
-          widget.entrega.id,
-          venta.id,
-        );
-      }
-
-      if (!mounted) return;
-
-      if (exito) {
-        await widget.provider.obtenerEntrega(widget.entrega.id);
-
-        if (!mounted) return;
-
-        if (widget.provider.entregaActual != null) {
-          setState(() {
-            for (var v in widget.provider.entregaActual!.ventas) {
-              _ventasConfirmadas[v.id] =
-                  (v.estadoLogisticoCodigo == 'PENDIENTE_ENVIO');
-            }
-          });
-        }
-
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              nuevoEstado
-                  ? 'Venta #${venta.numero} cargada ✓'
-                  : 'Venta #${venta.numero} desmarcada ✓',
-            ),
-            backgroundColor: Colors.green,
-            duration: const Duration(seconds: 2),
-          ),
-        );
-      } else {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                'Error: ${widget.provider.errorMessage ?? 'Error desconocido'}',
-              ),
-              backgroundColor: Colors.red,
-              duration: const Duration(seconds: 3),
-            ),
-          );
-        }
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error inesperado: ${e.toString()}'),
-            backgroundColor: Colors.red,
-            duration: const Duration(seconds: 3),
-          ),
-        );
-      }
-    } finally {
-      if (mounted) {
-        setState(() {
-          _cargandoVenta[venta.id] = false;
-        });
-      }
-    }
   }
 
   void _mostrarDialogoConfirmarCarga(BuildContext context) {
@@ -1030,6 +686,41 @@ class _VentasAsignadasCardState extends State<VentasAsignadasCard> {
     }
   }
 
+  // ✅ NUEVO: Obtener color desde el objeto EstadoLogistico centralizado
+  Color _getEstadoColor(EstadoLogistico? estado) {
+    if (estado != null && estado.color.isNotEmpty) {
+      try {
+        // Intentar parsear el color hex del backend
+        return Color(int.parse('FF${estado.color.replaceFirst('#', '')}', radix: 16));
+      } catch (e) {
+        debugPrint('⚠️ Error parseando color: ${estado.color}');
+      }
+    }
+    // Fallback si no viene color o hay error
+    return _getEstadoColorFallback(estado?.codigo);
+  }
+
+  // ✅ FALLBACK: Colores por defecto si el backend no proporciona color
+  Color _getEstadoColorFallback(String? codigo) {
+    switch (codigo) {
+      case 'PENDIENTE_ENVIO':
+        return Colors.orange;
+      case 'EN_RUTA':
+        return Colors.blue;
+      case 'EN_TRANSITO':
+        return Colors.purple;
+      case 'ENTREGADO':
+        return Colors.green;
+      default:
+        return Colors.grey;
+    }
+  }
+
+  // ✅ NUEVO: Obtener etiqueta desde el objeto EstadoLogistico centralizado
+  String _getEstadoLabel(EstadoLogistico? estado) {
+    return estado?.nombre ?? 'Desconocido';
+  }
+
   // ✅ NUEVO 2026-03-05: Construir encabezado mejorado (número | cliente | monto)
   Widget _buildVentaEncabezado(Venta venta) {
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
@@ -1052,12 +743,8 @@ class _VentasAsignadasCardState extends State<VentasAsignadasCard> {
               ),
               const SizedBox(height: 2),
               Text(
-                'Venta Folio #${venta.id}',
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w700,
-                  color: isDarkMode ? Colors.grey[100] : Colors.grey[900],
-                ),
+                'Folio #${venta.id}',
+                style: TextStyle(fontWeight: FontWeight.w700),
               ),
             ],
           ),
@@ -1090,7 +777,7 @@ class _VentasAsignadasCardState extends State<VentasAsignadasCard> {
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Text('📍', style: TextStyle(fontSize: 12)),
+                Text('📍'),
                 const SizedBox(width: 2),
                 Flexible(
                   child: Column(
@@ -1099,12 +786,6 @@ class _VentasAsignadasCardState extends State<VentasAsignadasCard> {
                     children: [
                       Text(
                         venta.clienteLocalidadObj?.nombre ?? 'Ubicación',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: isDarkMode
-                              ? Colors.grey[400]
-                              : Colors.grey[700],
-                        ),
                         overflow: TextOverflow.ellipsis,
                       ),
                     ],
@@ -1118,42 +799,20 @@ class _VentasAsignadasCardState extends State<VentasAsignadasCard> {
             venta.clienteRazonSocial!.isNotEmpty)
           Text(
             venta.clienteRazonSocial!.toUpperCase(),
-            style: TextStyle(
-              fontSize: 12,
-              color: isDarkMode ? Colors.amber[300] : Colors.amber[700],
-              fontWeight: FontWeight.w600,
-            ),
+            style: TextStyle(fontWeight: FontWeight.w600),
             overflow: TextOverflow.ellipsis,
           ),
-        /*if (venta.clienteTelefono != null && venta.clienteTelefono!.isNotEmpty)
-          Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text('📱', style: TextStyle(fontSize: 12)),
-              const SizedBox(width: 2),
-              Text(
-                venta.clienteTelefono!,
-                style: TextStyle(
-                  fontSize: 10,
-                  color: isDarkMode ? Colors.grey[400] : Colors.grey[700],
-                ),
-              ),
-            ],
-          ),*/
         // ✅ NUEVO 2026-03-05: Mostrar tipo de entrega (solo COMPLETA o CON_NOVEDAD)
-        if (venta.tipoEntrega == 'COMPLETA' || venta.tipoEntrega == 'CON_NOVEDAD')
+        if (venta.tipoEntrega == 'COMPLETA' ||
+            venta.tipoEntrega == 'CON_NOVEDAD')
           Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text(
-                venta.tipoEntrega == 'COMPLETA' ? '✅' : '⚠️',
-                style: TextStyle(fontSize: 12),
-              ),
+              Text(venta.tipoEntrega == 'COMPLETA' ? '✅' : '⚠️'),
               const SizedBox(width: 2),
               Text(
                 venta.tipoEntrega == 'COMPLETA' ? 'Completa' : 'Con Novedad',
                 style: TextStyle(
-                  fontSize: 12,
                   color: venta.tipoEntrega == 'COMPLETA'
                       ? Colors.green[700]
                       : Colors.orange[700],
@@ -1167,12 +826,11 @@ class _VentasAsignadasCardState extends State<VentasAsignadasCard> {
           Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text('📋', style: TextStyle(fontSize: 12)),
+              Text('📋'),
               const SizedBox(width: 2),
               Text(
                 _obtenerNombreTipoNovedad(venta.tipoNovedad),
                 style: TextStyle(
-                  fontSize: 12,
                   color: Colors.red[700],
                   fontWeight: FontWeight.w600,
                 ),
@@ -1202,14 +860,11 @@ class _VentasAsignadasCardState extends State<VentasAsignadasCard> {
           Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text(
-                'Fotos:',
-                style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
-              ),
+              Text('Fotos:', style: TextStyle(fontWeight: FontWeight.w600)),
               const SizedBox(width: 2),
               Text(
                 '📷 ${(confirmacion['fotos'] as List?)?.length ?? 0}',
-                style: TextStyle(fontSize: 12, color: Colors.blue[600]),
+                style: TextStyle(color: Colors.blue[600]),
               ),
             ],
           ),
@@ -1217,14 +872,11 @@ class _VentasAsignadasCardState extends State<VentasAsignadasCard> {
           Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text(
-                'Pagos:',
-                style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
-              ),
+              Text('Pagos:', style: TextStyle(fontWeight: FontWeight.w600)),
               const SizedBox(width: 2),
               Text(
                 '💳 ${(confirmacion['desglose_pagos'] as List?)?.length ?? 0}',
-                style: TextStyle(fontSize: 12, color: Colors.purple[600]),
+                style: TextStyle(color: Colors.purple[600]),
               ),
             ],
           ),
@@ -1232,14 +884,11 @@ class _VentasAsignadasCardState extends State<VentasAsignadasCard> {
           Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text(
-                'Devueltas:',
-                style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
-              ),
+              Text('Devueltas:', style: TextStyle(fontWeight: FontWeight.w600)),
               const SizedBox(width: 2),
               Text(
                 '↩️ ${(confirmacion['productos_devueltos'] as List?)?.length ?? 0}',
-                style: TextStyle(fontSize: 12, color: Colors.red[600]),
+                style: TextStyle(color: Colors.red[600]),
               ),
             ],
           ),
@@ -1291,38 +940,192 @@ class _VentasAsignadasCardState extends State<VentasAsignadasCard> {
       decoration: BoxDecoration(
         color: badgeColor.withOpacity(0.15),
         borderRadius: BorderRadius.circular(4),
-        border: Border.all(
-          color: badgeColor,
-          width: 1,
-        ),
+        border: Border.all(color: badgeColor, width: 1),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           // Mostrar icono emoji si existe
           if (icono != null && icono.isNotEmpty)
-            Text(
-              icono,
-              style: const TextStyle(fontSize: 12),
-            )
+            Text(icono, style: const TextStyle(fontSize: 12))
           else
-            Icon(
-              Icons.local_shipping,
-              size: 12,
-              color: badgeColor,
-            ),
+            Icon(Icons.local_shipping, size: 12, color: badgeColor),
           const SizedBox(width: 4),
           Text(
             nombre,
-            style: TextStyle(
-              fontSize: AppTextStyles.labelSmall(context).fontSize!,
-              fontWeight: FontWeight.bold,
-              color: badgeColor,
-            ),
+            style: TextStyle(fontWeight: FontWeight.bold, color: badgeColor),
           ),
         ],
       ),
     );
+  }
+
+  // ✅ NUEVO 2026-03-12: Mini resumen de pago para cada venta
+  Widget _buildMiniResumenPago(Venta venta, bool isDarkMode) {
+    // Obtener datos de confirmación más reciente
+    final confirmacionReciente = (venta.confirmaciones as List?)?.isNotEmpty ?? false
+        ? (venta.confirmaciones.first as Map<String, dynamic>?)
+        : null;
+
+    final efectivo = (confirmacionReciente?['efectivo'] as num?)?.toDouble() ?? 0.0;
+    final qr = (confirmacionReciente?['qr'] as num?)?.toDouble() ?? 0.0;
+    final pendiente = (confirmacionReciente?['pendiente'] as num?)?.toDouble() ?? 0.0;
+    final estado = confirmacionReciente?['estado'] as String? ?? 'PENDIENTE';
+
+    // Determinar color según estado
+    Color estadoColor;
+    String estadoLabel;
+    switch (estado) {
+      case 'PAGADO':
+        estadoColor = Colors.green;
+        estadoLabel = '✅ Pagado';
+        break;
+      case 'RECHAZADO':
+        estadoColor = Colors.red;
+        estadoLabel = '❌ Rechazado';
+        break;
+      case 'PARCIAL':
+        estadoColor = Colors.orange;
+        estadoLabel = '⚠️ Parcial';
+        break;
+      default:
+        estadoColor = Colors.grey;
+        estadoLabel = '⏳ Pendiente';
+    }
+
+    return Container(
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: estadoColor.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color: estadoColor.withValues(alpha: 0.3),
+          width: 1,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Estado badge
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            decoration: BoxDecoration(
+              color: estadoColor.withValues(alpha: 0.2),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Text(
+              estadoLabel,
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.bold,
+                color: estadoColor,
+              ),
+            ),
+          ),
+          const SizedBox(height: 8),
+          // Desglose de pagos en fila
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              // Efectivo
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      '💵 Efectivo',
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: isDarkMode ? Colors.grey[400] : Colors.grey[600],
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      '\$${efectivo.toStringAsFixed(0)}',
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.green[400],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              // QR
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      '📱 QR',
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: isDarkMode ? Colors.grey[400] : Colors.grey[600],
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      '\$${qr.toStringAsFixed(0)}',
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.blue[400],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              // Pendiente
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      '⏳ Pendiente',
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: isDarkMode ? Colors.grey[400] : Colors.grey[600],
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      '\$${pendiente.toStringAsFixed(0)}',
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.bold,
+                        color: pendiente > 0 ? Colors.orange[400] : Colors.grey[400],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// ✅ NUEVO 2026-03-12: Navegar a pantalla de registro de pago/incidencia
+  /// Sigue el patrón de resumen_pagos_entrega_screen.dart
+  void _navegarARegistroPago(BuildContext context, Venta venta, Entrega entrega) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => ConfirmarEntregaVentaScreen(
+          entrega: entrega,
+          venta: venta,
+          provider: widget.provider,
+          isEditing: true, // Modo edición para volver a registrar
+        ),
+      ),
+    ).then((result) {
+      // Si se guardó correctamente, recargar la lista de ventas
+      if (result == true) {
+        debugPrint('✅ [VENTAS_CARD] Pago registrado, recargando ventas...');
+        widget.provider.obtenerEntrega(entrega.id);
+      }
+    });
   }
 
   // ✅ NUEVO 2026-03-05: Construir mensaje de ubicación completo con dirección y observaciones

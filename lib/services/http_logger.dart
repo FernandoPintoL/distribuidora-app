@@ -33,7 +33,7 @@ class HttpLogger {
         bodyDisplay = options.data.toString();
       }
 
-      debugPrint('   📦 Body: $bodyDisplay');
+      // debugPrint('   📦 Body: $bodyDisplay');
     }
   }
 
@@ -46,6 +46,16 @@ class HttpLogger {
     final method = response.requestOptions.method.toUpperCase();
 
     debugPrint('✅ $method ${response.statusCode} → $uri');
+    // quiero ver el body
+    if (response.data != null) {
+      String bodyDisplay = '';
+      if (response.data is String) {
+        bodyDisplay = response.data;
+      } else if (response.data is Map || response.data is List) {
+        bodyDisplay = _prettyPrintJson(response.data);
+      }
+      debugPrint('   📦 Body: $bodyDisplay');
+    }
   }
 
   /// Log de error HTTP (SIMPLIFICADO)
@@ -54,7 +64,9 @@ class HttpLogger {
 
     // Solo mostrar error, status y URL
     final status = error.response?.statusCode ?? 'unknown';
-    debugPrint('❌ Error $status: ${error.message} → ${error.requestOptions.uri}');
+    debugPrint(
+      '❌ Error $status: ${error.message} → ${error.requestOptions.uri}',
+    );
   }
 
   /// Enmascarar headers sensibles

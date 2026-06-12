@@ -11,12 +11,8 @@ import '../../services/estados_helpers.dart';
 import '../../services/api_service.dart';
 import '../../services/print_service.dart';
 import 'package:intl/intl.dart';
-import 'widgets/pedido_card.dart';
 import 'widgets/filtros_avanzados_modal.dart';
 import 'widgets/filtros_container.dart';
-import 'helpers/dialogs_pedidos.dart';
-import 'helpers/formatters.dart';
-import 'helpers/filtro_logic.dart';
 
 /// âœ… HELPER: Convertir hex string (#RRGGBB) a Color
 Color _hexToColor(String hexString) {
@@ -140,7 +136,8 @@ class PedidosHistorialScreen extends StatefulWidget {
   State<PedidosHistorialScreen> createState() => _PedidosHistorialScreenState();
 }
 
-class _PedidosHistorialScreenState extends State<PedidosHistorialScreen> with WidgetsBindingObserver {
+class _PedidosHistorialScreenState extends State<PedidosHistorialScreen>
+    with WidgetsBindingObserver {
   final ScrollController _scrollController = ScrollController();
   final TextEditingController _searchController = TextEditingController();
   String? _filtroEstadoSeleccionado;
@@ -376,7 +373,7 @@ class _PedidosHistorialScreenState extends State<PedidosHistorialScreen> with Wi
       resizeToAvoidBottomInset:
           false, // âœ… NUEVO: Prevenir overflow cuando el teclado se abre
       appBar: CustomGradientAppBar(
-        title: 'Mi Historial de Pedidos'('cliente'),
+        title: 'Mi Historial de Pedidos Cliente',
         actions: [
           // âœ… NUEVO: BotÃ³n de impresiÃ³n/descarga de PDF
           /*Consumer<PedidoProvider>(
@@ -566,9 +563,9 @@ class _PedidosHistorialScreenState extends State<PedidosHistorialScreen> with Wi
                         Expanded(
                           child: Text(
                             _getFiltroActivoText(),
-                            style: ResponsiveTextStyles.titleLarge(context).copyWith(
-                              color: colorScheme.onSurface,
-                            ),
+                            style: ResponsiveTextStyles.titleLarge(
+                              context,
+                            ).copyWith(color: colorScheme.onSurface),
                           ),
                         ),
                         TextButton.icon(
@@ -586,8 +583,8 @@ class _PedidosHistorialScreenState extends State<PedidosHistorialScreen> with Wi
                       ],
                     ),
                   ),
-                  // âœ… NUEVO: Chips de filtros activos
-                  _buildFiltrosChips(),
+                // âœ… NUEVO: Chips de filtros activos
+                _buildFiltrosChips(),
               ],
             ),
           ),
@@ -735,17 +732,17 @@ class _PedidosHistorialScreenState extends State<PedidosHistorialScreen> with Wi
                           const SizedBox(height: 24),
                           Text(
                             mensajeCarga,
-                            style: ResponsiveTextStyles.bodyLarge(context).copyWith(
-                              color: colorScheme.primary,
-                            ),
+                            style: ResponsiveTextStyles.bodyLarge(
+                              context,
+                            ).copyWith(color: colorScheme.primary),
                             textAlign: TextAlign.center,
                           ),
                           const SizedBox(height: 8),
                           Text(
                             'Por favor espera...',
-                            style: ResponsiveTextStyles.bodyMedium(context).copyWith(
-                              color: colorScheme.outline,
-                            ),
+                            style: ResponsiveTextStyles.bodyMedium(
+                              context,
+                            ).copyWith(color: colorScheme.outline),
                           ),
                         ],
                       ),
@@ -792,10 +789,9 @@ class _PedidosHistorialScreenState extends State<PedidosHistorialScreen> with Wi
                             Expanded(
                               child: Text(
                                 '${pedidoProvider.pedidos.length} de ${pedidoProvider.totalItems} resultado${pedidoProvider.totalItems != 1 ? 's' : ''}',
-                                style: ResponsiveTextStyles.bodyLarge(context)
-                                    .copyWith(
-                                      color: colorScheme.primary,
-                                    ),
+                                style: ResponsiveTextStyles.bodyLarge(
+                                  context,
+                                ).copyWith(color: colorScheme.primary),
                               ),
                             ),
                             // Mostrar indicador si hay mÃ¡s pÃ¡ginas
@@ -841,9 +837,7 @@ class _PedidosHistorialScreenState extends State<PedidosHistorialScreen> with Wi
                                         'Cargando mÃ¡s pedidos...',
                                         style: ResponsiveTextStyles.bodyMedium(
                                           context,
-                                        ).copyWith(
-                                          color: colorScheme.primary,
-                                        ),
+                                        ).copyWith(color: colorScheme.primary),
                                       ),
                                     ],
                                   ),
@@ -867,12 +861,13 @@ class _PedidosHistorialScreenState extends State<PedidosHistorialScreen> with Wi
                                       const SizedBox(height: 8),
                                       Text(
                                         'No hay mÃ¡s proformas',
-                                        style: ResponsiveTextStyles.bodySmall(
-                                          context,
-                                        ).copyWith(
-                                          color: colorScheme.outline
-                                              .withOpacity(0.6),
-                                        ),
+                                        style:
+                                            ResponsiveTextStyles.bodySmall(
+                                              context,
+                                            ).copyWith(
+                                              color: colorScheme.outline
+                                                  .withOpacity(0.6),
+                                            ),
                                       ),
                                     ],
                                   ),
@@ -969,7 +964,8 @@ class _PedidosHistorialScreenState extends State<PedidosHistorialScreen> with Wi
             );
           }
 
-          final nombreArchivo = 'proforma_${numero}_${DateTime.now().millisecondsSinceEpoch}.jpeg';
+          final nombreArchivo =
+              'proforma_${numero}_${DateTime.now().millisecondsSinceEpoch}.jpeg';
           final filePath = await printService.downloadImage(
             imageUrl: url,
             nombreArchivo: nombreArchivo,
@@ -1147,16 +1143,13 @@ class _PedidosHistorialScreenState extends State<PedidosHistorialScreen> with Wi
 
       final texto = _filtroFechaDesde != null && _filtroFechaHasta != null
           ? desdeText == hastaText
-              ? 'ðŸ“… CreaciÃ³n: $desdeText'
-              : 'ðŸ“… CreaciÃ³n: $desdeText - $hastaText'
+                ? 'ðŸ“… CreaciÃ³n: $desdeText'
+                : 'ðŸ“… CreaciÃ³n: $desdeText - $hastaText'
           : 'ðŸ“… CreaciÃ³n';
 
       chips.add(
         Chip(
-          label: Text(
-            texto,
-            style: ResponsiveTextStyles.bodySmall(context),
-          ),
+          label: Text(texto, style: ResponsiveTextStyles.bodySmall(context)),
           backgroundColor: Colors.green.withOpacity(0.2),
           labelStyle: TextStyle(color: Colors.green[700]),
           onDeleted: () {
@@ -1180,19 +1173,17 @@ class _PedidosHistorialScreenState extends State<PedidosHistorialScreen> with Wi
           ? DateFormat('dd/MM').format(_filtroFechaEntregaSolicitadaHasta!)
           : '';
 
-      final texto = _filtroFechaEntregaSolicitadaDesde != null &&
+      final texto =
+          _filtroFechaEntregaSolicitadaDesde != null &&
               _filtroFechaEntregaSolicitadaHasta != null
           ? desdeText == hastaText
-              ? 'ðŸšš Entrega Solicitada: $desdeText'
-              : 'ðŸšš Entrega Solicitada: $desdeText - $hastaText'
+                ? 'ðŸšš Entrega Solicitada: $desdeText'
+                : 'ðŸšš Entrega Solicitada: $desdeText - $hastaText'
           : 'ðŸšš Entrega Solicitada';
 
       chips.add(
         Chip(
-          label: Text(
-            texto,
-            style: ResponsiveTextStyles.bodySmall(context),
-          ),
+          label: Text(texto, style: ResponsiveTextStyles.bodySmall(context)),
           backgroundColor: Colors.orange.withOpacity(0.2),
           labelStyle: TextStyle(color: Colors.orange[700]),
           onDeleted: () {
@@ -1216,19 +1207,17 @@ class _PedidosHistorialScreenState extends State<PedidosHistorialScreen> with Wi
           ? DateFormat('dd/MM').format(_filtroFechaVencimientoHasta!)
           : '';
 
-      final texto = _filtroFechaVencimientoDesde != null &&
+      final texto =
+          _filtroFechaVencimientoDesde != null &&
               _filtroFechaVencimientoHasta != null
           ? desdeText == hastaText
-              ? 'â° Vencimiento: $desdeText'
-              : 'â° Vencimiento: $desdeText - $hastaText'
+                ? 'â° Vencimiento: $desdeText'
+                : 'â° Vencimiento: $desdeText - $hastaText'
           : 'â° Vencimiento';
 
       chips.add(
         Chip(
-          label: Text(
-            texto,
-            style: ResponsiveTextStyles.bodySmall(context),
-          ),
+          label: Text(texto, style: ResponsiveTextStyles.bodySmall(context)),
           backgroundColor: Colors.red.withOpacity(0.2),
           labelStyle: TextStyle(color: Colors.red[700]),
           onDeleted: () {
@@ -1266,11 +1255,7 @@ class _PedidosHistorialScreenState extends State<PedidosHistorialScreen> with Wi
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      child: Wrap(
-        spacing: 8,
-        runSpacing: 8,
-        children: chips,
-      ),
+      child: Wrap(spacing: 8, runSpacing: 8, children: chips),
     );
   }
 
@@ -1322,9 +1307,9 @@ class _PedidosHistorialScreenState extends State<PedidosHistorialScreen> with Wi
                 tieneFilTros
                     ? 'ðŸ˜” No se encontraron pedidos'
                     : 'ðŸ“­ No tienes pedidos aÃºn',
-                style: ResponsiveTextStyles.titleLarge(context).copyWith(
-                  color: colorScheme.onSurface,
-                ),
+                style: ResponsiveTextStyles.titleLarge(
+                  context,
+                ).copyWith(color: colorScheme.onSurface),
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 8),
@@ -1336,9 +1321,9 @@ class _PedidosHistorialScreenState extends State<PedidosHistorialScreen> with Wi
                       tieneFilTros
                           ? 'Intenta ajustar tus filtros de bÃºsqueda'
                           : 'Crea tu primer pedido desde el catÃ¡logo',
-                      style: ResponsiveTextStyles.bodyMedium(context).copyWith(
-                        color: colorScheme.onSurface.withOpacity(0.7),
-                      ),
+                      style: ResponsiveTextStyles.bodyMedium(
+                        context,
+                      ).copyWith(color: colorScheme.onSurface.withOpacity(0.7)),
                       textAlign: TextAlign.center,
                     ),
                     // âœ… MEJORADO: Mostrar filtros activos con mejor tipografÃ­a
@@ -1364,9 +1349,9 @@ class _PedidosHistorialScreenState extends State<PedidosHistorialScreen> with Wi
                               'ðŸ” Filtros activos:',
                               style: ResponsiveTextStyles.bodyLarge(context)
                                   .copyWith(
-                                color: colorScheme.error,
-                                fontWeight: FontWeight.w600,
-                              ),
+                                    color: colorScheme.error,
+                                    fontWeight: FontWeight.w600,
+                                  ),
                             ),
                             const SizedBox(height: 8),
                             ...filtrosActivos.map(
@@ -1376,12 +1361,13 @@ class _PedidosHistorialScreenState extends State<PedidosHistorialScreen> with Wi
                                   children: [
                                     Text(
                                       'â€¢',
-                                      style: ResponsiveTextStyles.bodyMedium(
-                                        context,
-                                      ).copyWith(
-                                        color: colorScheme.error,
-                                        fontWeight: FontWeight.bold,
-                                      ),
+                                      style:
+                                          ResponsiveTextStyles.bodyMedium(
+                                            context,
+                                          ).copyWith(
+                                            color: colorScheme.error,
+                                            fontWeight: FontWeight.bold,
+                                          ),
                                     ),
                                     const SizedBox(width: 8),
                                     Expanded(
@@ -1389,10 +1375,10 @@ class _PedidosHistorialScreenState extends State<PedidosHistorialScreen> with Wi
                                         filtro,
                                         style:
                                             ResponsiveTextStyles.bodyMedium(
-                                          context,
-                                        ).copyWith(
-                                          color: colorScheme.onSurface,
-                                        ),
+                                              context,
+                                            ).copyWith(
+                                              color: colorScheme.onSurface,
+                                            ),
                                       ),
                                     ),
                                   ],
@@ -1449,9 +1435,9 @@ class _PedidosHistorialScreenState extends State<PedidosHistorialScreen> with Wi
               const SizedBox(height: 16), // Reducido de 24
               Text(
                 'Error al cargar pedidos',
-                style: ResponsiveTextStyles.titleMedium(context).copyWith(
-                  color: colorScheme.onSurface,
-                ),
+                style: ResponsiveTextStyles.titleMedium(
+                  context,
+                ).copyWith(color: colorScheme.onSurface),
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 12),
@@ -1460,9 +1446,9 @@ class _PedidosHistorialScreenState extends State<PedidosHistorialScreen> with Wi
                 child: Text(
                   error,
                   textAlign: TextAlign.center,
-                  style: ResponsiveTextStyles.bodyMedium(context).copyWith(
-                    color: colorScheme.onSurface,
-                  ),
+                  style: ResponsiveTextStyles.bodyMedium(
+                    context,
+                  ).copyWith(color: colorScheme.onSurface),
                 ),
               ),
               const SizedBox(height: 24), // Reducido de 32
@@ -1670,18 +1656,20 @@ class _PedidoCard extends StatelessWidget {
                       children: [
                         Text(
                           'Bs. ${pedido.total.toStringAsFixed(2)}',
-                          style: ResponsiveTextStyles.valueLarge(context).copyWith(
-                            color: isDark
-                                ? const Color(0xFF4ADE80)
-                                : const Color(0xFF16A34A),
-                          ),
+                          style: ResponsiveTextStyles.valueLarge(context)
+                              .copyWith(
+                                color: isDark
+                                    ? const Color(0xFF4ADE80)
+                                    : const Color(0xFF16A34A),
+                              ),
                         ),
                         const SizedBox(height: 4),
                         Text(
                           _formatearFecha(pedido.fechaCreacion),
-                          style: ResponsiveTextStyles.bodySmall(context).copyWith(
-                            color: colorScheme.onSurface.withOpacity(0.6),
-                          ),
+                          style: ResponsiveTextStyles.bodySmall(context)
+                              .copyWith(
+                                color: colorScheme.onSurface.withOpacity(0.6),
+                              ),
                         ),
                       ],
                     ),
@@ -1698,7 +1686,8 @@ class _PedidoCard extends StatelessWidget {
                       String impresionUrl;
                       if (value == 'imagen') {
                         // ðŸ–¼ï¸ NUEVO: Descargar como imagen
-                        impresionUrl = '$baseUrl/proformas/${pedido.id}/descargar-imagen?formato=jpeg&dpi=150&quality=85';
+                        impresionUrl =
+                            '$baseUrl/proformas/${pedido.id}/descargar-imagen?formato=jpeg&dpi=150&quality=85';
                       } else {
                         // PDF original
                         impresionUrl =
@@ -2381,4 +2370,3 @@ class _PedidoCard extends StatelessWidget {
     );
   }
 }
-

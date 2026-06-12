@@ -24,12 +24,7 @@ class EstadoCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              'Estado Actual',
-              style: Theme.of(
-                context,
-              ).textTheme.titleSmall?.copyWith(color: Colors.white70),
-            ),
+            Text('Estado Actual'),
             const SizedBox(height: 8),
             Row(
               children: [
@@ -43,7 +38,6 @@ class EstadoCard extends StatelessWidget {
                     entrega.estadoLabel,
                     style: TextStyle(
                       color: Colors.white,
-                      fontSize: AppTextStyles.displaySmall(context).fontSize!,
                       fontWeight: FontWeight.bold,
                     ),
                   ),

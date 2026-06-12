@@ -164,9 +164,8 @@ class SlaStatusWidget extends StatelessWidget {
             _calculateSlaStatus() == 'ON_TIME'
                 ? Icons.check_circle
                 : _calculateSlaStatus() == 'CRITICAL'
-                    ? Icons.warning
-                    : Icons.error,
-            color: _getSlaColor(),
+                ? Icons.warning
+                : Icons.error,
             size: 20,
           ),
           SizedBox(width: 8),
@@ -179,16 +178,12 @@ class SlaStatusWidget extends StatelessWidget {
                   style: TextStyle(
                     fontWeight: FontWeight.bold,
                     color: _getSlaColor(),
-                    fontSize: 12,
                   ),
                 ),
                 if (fechaEntregaComprometida != null)
                   Text(
                     _getTimeRemaining(),
-                    style: TextStyle(
-                      color: _getSlaColor(),
-                      fontSize: 10,
-                    ),
+                    style: TextStyle(color: _getSlaColor()),
                   ),
               ],
             ),
@@ -224,8 +219,8 @@ class SlaStatusWidget extends StatelessWidget {
                     _calculateSlaStatus() == 'ON_TIME'
                         ? Icons.check_circle
                         : _calculateSlaStatus() == 'CRITICAL'
-                            ? Icons.warning
-                            : Icons.error,
+                        ? Icons.warning
+                        : Icons.error,
                     color: _getSlaColor(),
                     size: 24,
                   ),
@@ -235,18 +230,11 @@ class SlaStatusWidget extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        'Estado SLA',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.grey[600],
-                        ),
-                      ),
+                      Text('Estado SLA'),
                       Text(
                         _getSlaLabel(),
                         style: TextStyle(
                           fontWeight: FontWeight.bold,
-                          fontSize: 16,
                           color: _getSlaColor(),
                         ),
                       ),
@@ -304,22 +292,9 @@ class SlaStatusWidget extends StatelessWidget {
       children: [
         Icon(icon, color: Colors.grey[600], size: 20),
         SizedBox(width: 12),
-        Text(
-          label,
-          style: TextStyle(
-            color: Colors.grey[600],
-            fontSize: 12,
-          ),
-        ),
+        Text(label),
         Spacer(),
-        Text(
-          value,
-          style: TextStyle(
-            fontWeight: FontWeight.w600,
-            color: valueColor ?? Colors.grey[800],
-            fontSize: 13,
-          ),
-        ),
+        Text(value, style: TextStyle(fontWeight: FontWeight.w600)),
       ],
     );
   }

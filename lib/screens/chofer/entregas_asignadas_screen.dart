@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../config/app_text_styles.dart';
 import '../../providers/entrega_provider.dart';
+import '../../providers/estado_logistico_provider.dart';
+import '../../providers/localidad_provider.dart';
 import 'entregas_asignadas/widgets/entrega_card.dart';
 
 class EntregasAsignadasScreen extends StatefulWidget {
@@ -26,20 +28,32 @@ class _EntregasAsignadasScreenState extends State<EntregasAsignadasScreen> {
   bool _isRefreshing = false; // ✅ NUEVO: Estado para recarga manual
   final TextEditingController _searchController =
       TextEditingController(); // ✅ NUEVO: controller para el campo
+  String? _entregaIdBusqueda; // ✅ NUEVO: búsqueda por ID de entrega
+  String? _ventaBusqueda; // ✅ NUEVO: búsqueda por venta (ID o nombre)
+  final TextEditingController _entregaIdController =
+      TextEditingController(); // ✅ NUEVO: controller para entrega ID
+  final TextEditingController _ventaBusquedaController =
+      TextEditingController(); // ✅ NUEVO: controller para venta
 
   // ✅ CRÍTICO: Future estable que NO se recrea en cada rebuild
-  late Future<bool> _futureEntregas;
+  Future<bool>? _futureEntregas;
 
   Future<void> _onCambiarFiltro(String? nuevoEstado) async {
     setState(() => _filtroEstado = nuevoEstado);
-    _cargarEntregas(); // ✅ NUEVO: Recargar entregas después de cambiar filtro
   }
 
   @override
   void initState() {
     super.initState();
-    // ✅ CRÍTICO: Crear el Future UNA SOLA VEZ en initState
-    _cargarEntregas();
+    // ✅ Cargar estados logísticos y localidades DESPUÉS del frame
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        context.read<EstadoLogisticoProvider>().obtenerEstados('entrega');
+        context.read<LocalidadProvider>().obtenerLocalidades();
+        // ✅ CRÍTICO: Crear el Future UNA SOLA VEZ en initState TAMBIÉN DESPUÉS del frame
+        _cargarEntregas();
+      }
+    });
   }
 
   // ✅ NUEVO: Método para (re)cargar entregas sin recrear el Future
@@ -54,6 +68,8 @@ class _EntregasAsignadasScreenState extends State<EntregasAsignadasScreen> {
           : null,
       search: _searchQuery,
       localidadId: _localidadFiltro,
+      entregaId: _entregaIdBusqueda,
+      searchVenta: _ventaBusqueda,
     );
   }
 
@@ -122,6 +138,8 @@ class _EntregasAsignadasScreenState extends State<EntregasAsignadasScreen> {
   @override
   void dispose() {
     _searchController.dispose();
+    _entregaIdController.dispose();
+    _ventaBusquedaController.dispose();
     super.dispose();
   }
 
@@ -136,7 +154,6 @@ class _EntregasAsignadasScreenState extends State<EntregasAsignadasScreen> {
 
     if (fecha != null) {
       setState(() => _fechaDesde = fecha);
-      _cargarEntregas(); // ✅ NUEVO: Recargar entregas después de cambiar fecha
     }
   }
 
@@ -151,16 +168,14 @@ class _EntregasAsignadasScreenState extends State<EntregasAsignadasScreen> {
 
     if (fecha != null) {
       setState(() => _fechaHasta = fecha);
-      _cargarEntregas(); // ✅ NUEVO: Recargar entregas después de cambiar fecha
     }
   }
 
   void _limpiarFechas() {
     setState(() {
-      _fechaDesde = DateTime.now();
-      _fechaHasta = DateTime.now();
+      _fechaDesde = null;
+      _fechaHasta = null;
     });
-    _cargarEntregas(); // ✅ NUEVO: Recargar entregas después de limpiar fechas
   }
 
   @override
@@ -168,43 +183,10 @@ class _EntregasAsignadasScreenState extends State<EntregasAsignadasScreen> {
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
-      backgroundColor: isDarkMode ? Colors.grey[900] : Colors.grey[50],
-      appBar: AppBar(
-        title: const Text('Entregas Asignadas'),
-        backgroundColor: isDarkMode
-            ? Colors.grey[800]
-            : const Color.fromARGB(255, 84, 79, 79),
-        elevation: 1,
-        actions: [
-          // ✅ NUEVO: Botón para actualizar/recargar la pantalla
-          Padding(
-            padding: const EdgeInsets.only(right: 12),
-            child: Consumer<EntregaProvider>(
-              builder: (context, provider, _) {
-                return IconButton(
-                  icon: AnimatedRotation(
-                    turns: _isRefreshing ? 1.0 : 0.0,
-                    duration: const Duration(milliseconds: 500),
-                    child: const Icon(Icons.refresh),
-                  ),
-                  tooltip: _isRefreshing
-                      ? 'Recargando...'
-                      : 'Actualizar entregas',
-                  onPressed: _isRefreshing ? null : _refrescarEntregas,
-                );
-              },
-            ),
-          ),
-        ],
-      ),
       body: FutureBuilder<bool>(
         // ✅ CRÍTICO: Usar _futureEntregas que NO se recrea en cada rebuild
-        future: _futureEntregas,
+        future: _futureEntregas ?? Future.value(true),
         builder: (context, snapshot) {
-          debugPrint(
-            '🏗️ [FUTUREBUILDER] connectionState=${snapshot.connectionState}, hasData=${snapshot.hasData}',
-          );
-
           // Mientras carga
           if (snapshot.connectionState == ConnectionState.waiting) {
             return Stack(
@@ -219,7 +201,7 @@ class _EntregasAsignadasScreenState extends State<EntregasAsignadasScreen> {
                       child: Container(
                         padding: const EdgeInsets.all(32),
                         decoration: BoxDecoration(
-                          color: isDarkMode ? Colors.grey[850] : Colors.white,
+                          color: Theme.of(context).cardColor,
                           borderRadius: BorderRadius.circular(16),
                           boxShadow: [
                             BoxShadow(
@@ -294,11 +276,10 @@ class _EntregasAsignadasScreenState extends State<EntregasAsignadasScreen> {
                   await _futureEntregas;
                   debugPrint('✅ Entregas actualizadas');
                 },
-                child: Column(
+                child: ListView(
                   children: [
-                    // ✅ NUEVO: Panel colapsable de filtros
+                    // ✅ NUEVO: Panel colapsable de filtros (scrolleable)
                     Container(
-                      color: isDarkMode ? Colors.grey[800] : Colors.grey[100],
                       child: Column(
                         children: [
                           // Header con icono para expandir/contraer
@@ -311,7 +292,7 @@ class _EntregasAsignadasScreenState extends State<EntregasAsignadasScreen> {
                             child: Padding(
                               padding: const EdgeInsets.symmetric(
                                 horizontal: 12,
-                                vertical: 12,
+                                vertical: 4,
                               ),
                               child: Row(
                                 mainAxisAlignment:
@@ -319,17 +300,11 @@ class _EntregasAsignadasScreenState extends State<EntregasAsignadasScreen> {
                                 children: [
                                   Row(
                                     children: [
-                                      Icon(
-                                        Icons.filter_alt,
-                                        color: Theme.of(context).primaryColor,
-                                      ),
+                                      Icon(Icons.filter_alt),
                                       const SizedBox(width: 8),
                                       Text(
                                         'Filtros',
                                         style: TextStyle(
-                                          fontSize: AppTextStyles.bodyLarge(
-                                            context,
-                                          ).fontSize!,
                                           fontWeight: FontWeight.w600,
                                         ),
                                       ),
@@ -337,8 +312,10 @@ class _EntregasAsignadasScreenState extends State<EntregasAsignadasScreen> {
                                       if (_searchQuery != null ||
                                           _localidadFiltro != null ||
                                           _filtroEstado != null ||
-                                          (_fechaDesde != DateTime.now() ||
-                                              _fechaHasta != DateTime.now()))
+                                          (_fechaDesde != null ||
+                                              _fechaHasta != null) ||
+                                          _entregaIdBusqueda != null ||
+                                          _ventaBusqueda != null)
                                         Padding(
                                           padding: const EdgeInsets.only(
                                             left: 8,
@@ -354,13 +331,9 @@ class _EntregasAsignadasScreenState extends State<EntregasAsignadasScreen> {
                                                   BorderRadius.circular(12),
                                             ),
                                             child: Text(
-                                              '${(_searchQuery != null ? 1 : 0) + (_localidadFiltro != null ? 1 : 0) + (_filtroEstado != null ? 1 : 0) + (_fechaDesde != DateTime.now() || _fechaHasta != DateTime.now() ? 1 : 0)}',
+                                              '${(_searchQuery != null ? 1 : 0) + (_localidadFiltro != null ? 1 : 0) + (_filtroEstado != null ? 1 : 0) + (_fechaDesde != null || _fechaHasta != null ? 1 : 0) + (_entregaIdBusqueda != null ? 1 : 0) + (_ventaBusqueda != null ? 1 : 0)}',
                                               style: TextStyle(
                                                 color: Colors.white,
-                                                fontSize:
-                                                    AppTextStyles.bodySmall(
-                                                      context,
-                                                    ).fontSize!,
                                                 fontWeight: FontWeight.bold,
                                               ),
                                             ),
@@ -368,11 +341,34 @@ class _EntregasAsignadasScreenState extends State<EntregasAsignadasScreen> {
                                         ),
                                     ],
                                   ),
-                                  Icon(
-                                    _mostrarFiltros
-                                        ? Icons.expand_less
-                                        : Icons.expand_more,
-                                    color: Theme.of(context).primaryColor,
+                                  // ✅ Botón Actualizar + Ícono expand/collapse
+                                  Row(
+                                    children: [
+                                      Consumer<EntregaProvider>(
+                                        builder: (context, provider, _) {
+                                          return IconButton(
+                                            icon: AnimatedRotation(
+                                              turns: _isRefreshing ? 1.0 : 0.0,
+                                              duration: const Duration(
+                                                milliseconds: 500,
+                                              ),
+                                              child: const Icon(Icons.refresh),
+                                            ),
+                                            tooltip: _isRefreshing
+                                                ? 'Recargando...'
+                                                : 'Actualizar entregas',
+                                            onPressed: _isRefreshing
+                                                ? null
+                                                : _refrescarEntregas,
+                                          );
+                                        },
+                                      ),
+                                      Icon(
+                                        _mostrarFiltros
+                                            ? Icons.expand_less
+                                            : Icons.expand_more,
+                                      ),
+                                    ],
                                   ),
                                 ],
                               ),
@@ -386,7 +382,7 @@ class _EntregasAsignadasScreenState extends State<EntregasAsignadasScreen> {
                                 spacing: 12,
                                 children: [
                                   // ✅ NUEVO: Campo de búsqueda + botón (Row)
-                                  Row(
+                                  /*Row(
                                     spacing: 8,
                                     children: [
                                       // TextField
@@ -397,9 +393,6 @@ class _EntregasAsignadasScreenState extends State<EntregasAsignadasScreen> {
                                             setState(
                                               () => _searchInput = value,
                                             );
-                                          },
-                                          onSubmitted: (_) {
-                                            _ejecutarBusqueda();
                                           },
                                           decoration: InputDecoration(
                                             hintText:
@@ -449,6 +442,91 @@ class _EntregasAsignadasScreenState extends State<EntregasAsignadasScreen> {
                                         ),
                                       ),
                                     ],
+                                  ),*/
+                                  // ✅ NUEVO: Input para búsqueda por ID de entrega
+                                  TextField(
+                                    controller: _entregaIdController,
+                                    onChanged: (value) {
+                                      setState(
+                                        () => _entregaIdBusqueda = value.isEmpty
+                                            ? null
+                                            : value,
+                                      );
+                                    },
+                                    decoration: InputDecoration(
+                                      hintText: '🎫 Buscar por ID de Entrega',
+                                      prefixIcon: const Icon(Icons.receipt),
+                                      suffixIcon:
+                                          _entregaIdController.text.isNotEmpty
+                                          ? GestureDetector(
+                                              onTap: () {
+                                                _entregaIdController.clear();
+                                                setState(
+                                                  () =>
+                                                      _entregaIdBusqueda = null,
+                                                );
+                                              },
+                                              child: Icon(
+                                                Icons.close,
+                                                size: 20,
+                                                color: Colors.red[400],
+                                              ),
+                                            )
+                                          : null,
+                                      border: OutlineInputBorder(
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                      contentPadding:
+                                          const EdgeInsets.symmetric(
+                                            horizontal: 12,
+                                            vertical: 12,
+                                          ),
+                                    ),
+                                  ),
+                                  // ✅ NUEVO: Input para búsqueda de venta (ID o nombre cliente)
+                                  TextField(
+                                    controller: _ventaBusquedaController,
+                                    onChanged: (value) {
+                                      setState(
+                                        () => _ventaBusqueda = value.isEmpty
+                                            ? null
+                                            : value,
+                                      );
+                                    },
+                                    decoration: InputDecoration(
+                                      hintText:
+                                          '🛍️ Buscar Venta (ID o Nombre Cliente)',
+                                      prefixIcon: const Icon(
+                                        Icons.shopping_cart,
+                                      ),
+                                      suffixIcon:
+                                          _ventaBusquedaController
+                                              .text
+                                              .isNotEmpty
+                                          ? GestureDetector(
+                                              onTap: () {
+                                                _ventaBusquedaController
+                                                    .clear();
+                                                setState(
+                                                  () => _ventaBusqueda = null,
+                                                );
+                                              },
+                                              child: Icon(
+                                                Icons.close,
+                                                size: 20,
+                                                color: Colors.red[400],
+                                              ),
+                                            )
+                                          : null,
+                                      border: OutlineInputBorder(
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                      contentPadding:
+                                          const EdgeInsets.symmetric(
+                                            horizontal: 12,
+                                            vertical: 12,
+                                          ),
+                                    ),
                                   ),
                                   // ✅ NUEVO: Selectores de rango de fechas (Desde y Hasta)
                                   Row(
@@ -461,7 +539,7 @@ class _EntregasAsignadasScreenState extends State<EntregasAsignadasScreen> {
                                           child: Container(
                                             padding: const EdgeInsets.symmetric(
                                               horizontal: 12,
-                                              vertical: 12,
+                                              vertical: 4,
                                             ),
                                             decoration: BoxDecoration(
                                               border: Border.all(
@@ -476,26 +554,13 @@ class _EntregasAsignadasScreenState extends State<EntregasAsignadasScreen> {
                                               crossAxisAlignment:
                                                   CrossAxisAlignment.start,
                                               children: [
-                                                Text(
-                                                  'Desde',
-                                                  style: TextStyle(
-                                                    fontSize:
-                                                        AppTextStyles.bodySmall(
-                                                          context,
-                                                        ).fontSize!,
-                                                    color: isDarkMode
-                                                        ? Colors.grey[400]
-                                                        : Colors.grey[600],
-                                                  ),
-                                                ),
+                                                Text('Desde'),
                                                 const SizedBox(height: 4),
                                                 Text(
-                                                  '📅 ${_fechaDesde!.day}/${_fechaDesde!.month}/${_fechaDesde!.year}',
+                                                  _fechaDesde != null
+                                                      ? '📅 ${_fechaDesde!.day}/${_fechaDesde!.month}/${_fechaDesde!.year}'
+                                                      : 'Todas las fechas',
                                                   style: TextStyle(
-                                                    fontSize:
-                                                        AppTextStyles.bodyMedium(
-                                                          context,
-                                                        ).fontSize!,
                                                     fontWeight: FontWeight.w600,
                                                   ),
                                                 ),
@@ -511,7 +576,7 @@ class _EntregasAsignadasScreenState extends State<EntregasAsignadasScreen> {
                                           child: Container(
                                             padding: const EdgeInsets.symmetric(
                                               horizontal: 12,
-                                              vertical: 12,
+                                              vertical: 4,
                                             ),
                                             decoration: BoxDecoration(
                                               border: Border.all(
@@ -526,26 +591,13 @@ class _EntregasAsignadasScreenState extends State<EntregasAsignadasScreen> {
                                               crossAxisAlignment:
                                                   CrossAxisAlignment.start,
                                               children: [
-                                                Text(
-                                                  'Hasta',
-                                                  style: TextStyle(
-                                                    fontSize:
-                                                        AppTextStyles.bodySmall(
-                                                          context,
-                                                        ).fontSize!,
-                                                    color: isDarkMode
-                                                        ? Colors.grey[400]
-                                                        : Colors.grey[600],
-                                                  ),
-                                                ),
+                                                Text('Hasta'),
                                                 const SizedBox(height: 4),
                                                 Text(
-                                                  '📅 ${_fechaHasta!.day}/${_fechaHasta!.month}/${_fechaHasta!.year}',
+                                                  _fechaHasta != null
+                                                      ? '📅 ${_fechaHasta!.day}/${_fechaHasta!.month}/${_fechaHasta!.year}'
+                                                      : 'Todas las fechas',
                                                   style: TextStyle(
-                                                    fontSize:
-                                                        AppTextStyles.bodyMedium(
-                                                          context,
-                                                        ).fontSize!,
                                                     fontWeight: FontWeight.w600,
                                                   ),
                                                 ),
@@ -566,11 +618,8 @@ class _EntregasAsignadasScreenState extends State<EntregasAsignadasScreen> {
                                     ],
                                   ),
                                   // ✅ NUEVO: Dropdown de localidad (dinámico)
-                                  Consumer<EntregaProvider>(
-                                    builder: (context, provider, _) {
-                                      final localidades = provider
-                                          .obtenerLocalidadesUnicas();
-
+                                  Consumer<LocalidadProvider>(
+                                    builder: (context, localidadProvider, _) {
                                       return DropdownButton<int?>(
                                         value: _localidadFiltro,
                                         isExpanded: true,
@@ -581,7 +630,6 @@ class _EntregasAsignadasScreenState extends State<EntregasAsignadasScreen> {
                                           setState(
                                             () => _localidadFiltro = value,
                                           );
-                                          _cargarEntregas();
                                         },
                                         items: [
                                           const DropdownMenuItem(
@@ -590,73 +638,100 @@ class _EntregasAsignadasScreenState extends State<EntregasAsignadasScreen> {
                                               '🏘️ Todas las localidades',
                                             ),
                                           ),
-                                          ...localidades.map((loc) {
+                                          ...localidadProvider.localidades.map((loc) {
                                             return DropdownMenuItem(
-                                              value: loc['id'] as int,
+                                              value: loc.id,
                                               child: Text(
-                                                '📍 ${loc['nombre']} (${loc['codigo'] ?? 'N/A'})',
+                                                '📍 ${loc.nombre} (${loc.codigo})',
                                               ),
                                             );
-                                          }).toList(),
+                                          }),
                                         ],
                                       );
                                     },
                                   ),
-                                  // Dropdown de estado
-                                  DropdownButton<String?>(
-                                    value: _filtroEstado,
-                                    isExpanded: true,
-                                    hint: const Text('Todos los estados'),
-                                    onChanged: _onCambiarFiltro,
-                                    items: [
-                                      const DropdownMenuItem(
-                                        value: null,
-                                        child: Text('Todos los estados'),
+                                  // Dropdown de estado (dinámico)
+                                  Consumer<EstadoLogisticoProvider>(
+                                    builder: (context, estadoProvider, _) {
+                                      // ✅ NUEVO: Obtener estados de ENTREGAS del caché centralizado
+                                      final estados = estadoProvider.obtenerEstadosPorCategoria('entrega');
+                                      return DropdownButton<String?>(
+                                        value: _filtroEstado,
+                                        isExpanded: true,
+                                        hint: const Text('Todos los estados'),
+                                        onChanged: _onCambiarFiltro,
+                                        items: [
+                                          const DropdownMenuItem(
+                                            value: null,
+                                            child: Text('Todos los estados'),
+                                          ),
+                                          ...estados.map((estado) {
+                                            return DropdownMenuItem(
+                                              value: estado.codigo,
+                                              child: Text('${estado.icono} ${estado.nombre}'),
+                                            );
+                                          }),
+                                        ],
+                                      );
+                                    },
+                                  ),
+                                  // ✅ Botón Limpiar Todos
+                                  // ✅ Botones de búsqueda y limpiar
+                                  Row(
+                                    spacing: 8,
+                                    children: [
+                                      // Botón Buscar
+                                      Expanded(
+                                        child: ElevatedButton.icon(
+                                          onPressed: _ejecutarBusqueda,
+                                          icon: const Icon(Icons.search),
+                                          label: const Text('Buscar'),
+                                          style: ElevatedButton.styleFrom(
+                                            backgroundColor: Theme.of(
+                                              context,
+                                            ).primaryColor,
+                                            foregroundColor: Colors.white,
+                                          ),
+                                        ),
                                       ),
-                                      const DropdownMenuItem(
-                                        value: 'PREPARACION_CARGA',
-                                        child: Text('📦 Preparación de Carga'),
-                                      ),
-                                      const DropdownMenuItem(
-                                        value: 'LISTO_PARA_ENTREGA',
-                                        child: Text('✅ Listo para Entrega'),
-                                      ),
-                                      const DropdownMenuItem(
-                                        value: 'EN_TRANSITO',
-                                        child: Text('🚗 En Tránsito'),
-                                      ),
-                                      const DropdownMenuItem(
-                                        value: 'ENTREGADO',
-                                        child: Text('✓ Entregado'),
-                                      ),
+                                      // Botón Limpiar Todos
+                                      if (_searchQuery != null ||
+                                          _localidadFiltro != null ||
+                                          _filtroEstado != null ||
+                                          (_fechaDesde != null ||
+                                              _fechaHasta != null) ||
+                                          _entregaIdBusqueda != null ||
+                                          _ventaBusqueda != null)
+                                        Expanded(
+                                          child: ElevatedButton.icon(
+                                            onPressed: () {
+                                              setState(() {
+                                                _searchQuery = null;
+                                                _searchInput = '';
+                                                _searchController.clear();
+                                                _localidadFiltro = null;
+                                                _filtroEstado = null;
+                                                _fechaDesde = null;
+                                                _fechaHasta = null;
+                                                _entregaIdBusqueda = null;
+                                                _ventaBusqueda = null;
+                                                _entregaIdController.clear();
+                                                _ventaBusquedaController
+                                                    .clear();
+                                              });
+                                              _cargarEntregas();
+                                            },
+                                            icon: const Icon(Icons.clear_all),
+                                            label: const Text('Limpiar Todos'),
+                                            style: ElevatedButton.styleFrom(
+                                              backgroundColor:
+                                                  Colors.orange[600],
+                                              foregroundColor: Colors.white,
+                                            ),
+                                          ),
+                                        ),
                                     ],
                                   ),
-                                  // ✅ NUEVO: Botón para limpiar todos
-                                  if (_searchQuery != null ||
-                                      _localidadFiltro != null ||
-                                      _filtroEstado != null ||
-                                      (_fechaDesde != DateTime.now() ||
-                                          _fechaHasta != DateTime.now()))
-                                    ElevatedButton.icon(
-                                      onPressed: () {
-                                        setState(() {
-                                          _searchQuery = null;
-                                          _searchInput = '';
-                                          _searchController.clear();
-                                          _localidadFiltro = null;
-                                          _filtroEstado = null;
-                                          _fechaDesde = DateTime.now();
-                                          _fechaHasta = DateTime.now();
-                                        });
-                                        _cargarEntregas(); // ✅ NUEVO: Recargar entregas después de limpiar
-                                      },
-                                      icon: const Icon(Icons.clear_all),
-                                      label: const Text('Limpiar Todos'),
-                                      style: ElevatedButton.styleFrom(
-                                        backgroundColor: Colors.orange[600],
-                                        foregroundColor: Colors.white,
-                                      ),
-                                    ),
                                 ],
                               ),
                             ),
@@ -665,8 +740,10 @@ class _EntregasAsignadasScreenState extends State<EntregasAsignadasScreen> {
                     ),
                     // ✅ NUEVO 2026-03-12: Panel de estadísticas (cantidad de entregas y ventas)
                     Container(
-                      color: isDarkMode ? Colors.grey[750] : Colors.grey[50],
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 6,
+                      ),
                       child: Row(
                         children: [
                           // Tarjeta de entregas
@@ -677,9 +754,13 @@ class _EntregasAsignadasScreenState extends State<EntregasAsignadasScreen> {
                                 vertical: 12,
                               ),
                               decoration: BoxDecoration(
-                                color: isDarkMode ? Colors.blue[900] : Colors.blue[50],
+                                color: isDarkMode
+                                    ? Colors.blue[900]
+                                    : Colors.blue[50],
                                 border: Border.all(
-                                  color: isDarkMode ? Colors.blue[700]! : Colors.blue[200]!,
+                                  color: isDarkMode
+                                      ? Colors.blue[700]!
+                                      : Colors.blue[200]!,
                                   width: 1,
                                 ),
                                 borderRadius: BorderRadius.circular(8),
@@ -690,7 +771,6 @@ class _EntregasAsignadasScreenState extends State<EntregasAsignadasScreen> {
                                   Text(
                                     'Entregas',
                                     style: TextStyle(
-                                      fontSize: 12,
                                       fontWeight: FontWeight.w500,
                                       color: isDarkMode
                                           ? Colors.blue[300]
@@ -701,7 +781,6 @@ class _EntregasAsignadasScreenState extends State<EntregasAsignadasScreen> {
                                   Text(
                                     '${entregas.length}',
                                     style: TextStyle(
-                                      fontSize: 24,
                                       fontWeight: FontWeight.bold,
                                       color: isDarkMode
                                           ? Colors.blue[100]
@@ -721,9 +800,13 @@ class _EntregasAsignadasScreenState extends State<EntregasAsignadasScreen> {
                                 vertical: 12,
                               ),
                               decoration: BoxDecoration(
-                                color: isDarkMode ? Colors.green[900] : Colors.green[50],
+                                color: isDarkMode
+                                    ? Colors.green[900]
+                                    : Colors.green[50],
                                 border: Border.all(
-                                  color: isDarkMode ? Colors.green[700]! : Colors.green[200]!,
+                                  color: isDarkMode
+                                      ? Colors.green[700]!
+                                      : Colors.green[200]!,
                                   width: 1,
                                 ),
                                 borderRadius: BorderRadius.circular(8),
@@ -734,7 +817,6 @@ class _EntregasAsignadasScreenState extends State<EntregasAsignadasScreen> {
                                   Text(
                                     'Ventas Totales',
                                     style: TextStyle(
-                                      fontSize: 12,
                                       fontWeight: FontWeight.w500,
                                       color: isDarkMode
                                           ? Colors.green[300]
@@ -745,7 +827,6 @@ class _EntregasAsignadasScreenState extends State<EntregasAsignadasScreen> {
                                   Text(
                                     '${entregas.fold<int>(0, (sum, e) => sum + ((e.ventas?.length ?? 0) as int))}',
                                     style: TextStyle(
-                                      fontSize: 24,
                                       fontWeight: FontWeight.bold,
                                       color: isDarkMode
                                           ? Colors.green[100]
@@ -759,71 +840,53 @@ class _EntregasAsignadasScreenState extends State<EntregasAsignadasScreen> {
                         ],
                       ),
                     ),
-                    // Listado
-                    Expanded(
-                      child: entregas.isEmpty
-                          ? SingleChildScrollView(
-                              physics: const AlwaysScrollableScrollPhysics(),
-                              child: Center(
-                                child: Padding(
-                                  padding: const EdgeInsets.all(32),
-                                  child: Column(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                      Icon(
-                                        Icons.local_shipping,
-                                        size: 64,
-                                        color: isDarkMode
-                                            ? Colors.grey[600]
-                                            : Colors.grey[400],
-                                      ),
-                                      const SizedBox(height: 16),
-                                      Text(
-                                        'No hay entregas',
-                                        style: TextStyle(
-                                          fontSize: AppTextStyles.headlineSmall(
-                                            context,
-                                          ).fontSize!,
-                                          fontWeight: FontWeight.w600,
-                                          color: isDarkMode
-                                              ? Colors.white
-                                              : Colors.black87,
-                                        ),
-                                      ),
-                                      const SizedBox(height: 8),
-                                      Text(
-                                        _filtroEstado != null
-                                            ? 'No hay entregas en estado "$_filtroEstado"'
-                                            : 'Las entregas aparecerán aquí cuando se asignen',
-                                        style: TextStyle(
-                                          color: isDarkMode
-                                              ? Colors.grey[400]
-                                              : Colors.grey[600],
-                                        ),
-                                        textAlign: TextAlign.center,
-                                      ),
-                                    ],
-                                  ),
+                    if (entregas.isEmpty)
+                      Center(
+                        child: Padding(
+                          padding: const EdgeInsets.all(32),
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(Icons.local_shipping, size: 64),
+                              const SizedBox(height: 16),
+                              Text(
+                                'No hay entregas',
+                                style: TextStyle(
+                                  fontSize: AppTextStyles.headlineSmall(
+                                    context,
+                                  ).fontSize!,
+                                  fontWeight: FontWeight.w600,
+                                  color: isDarkMode
+                                      ? Colors.white
+                                      : Colors.black87,
                                 ),
                               ),
-                            )
-                          : ListView.builder(
-                              padding: const EdgeInsets.all(12),
-                              itemCount: entregas.length,
-                              physics: const AlwaysScrollableScrollPhysics(),
-                              itemBuilder: (context, index) {
-                                final entrega = entregas[index];
-                                // ✅ CRÍTICO: Key único permite que Flutter reconstruya cuando los datos cambian
-                                return EntregaCard(
-                                  key: ValueKey(
-                                    'entrega_${entrega.id}_${entrega.estado}',
-                                  ),
-                                  entrega: entrega,
-                                  isDarkMode: isDarkMode,
-                                );
-                              },
-                            ),
-                    ),
+                              const SizedBox(height: 8),
+                              Text(
+                                _filtroEstado != null
+                                    ? 'No hay entregas en estado "$_filtroEstado"'
+                                    : 'Las entregas aparecerán aquí cuando se asignen',
+                                style: TextStyle(
+                                  color: isDarkMode
+                                      ? Colors.grey[400]
+                                      : Colors.grey[600],
+                                ),
+                                textAlign: TextAlign.center,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    if (entregas.isNotEmpty)
+                      ...entregas.map((entrega) {
+                        return EntregaCard(
+                          key: ValueKey(
+                            'entrega_${entrega.id}_${entrega.estado}',
+                          ),
+                          entrega: entrega,
+                          isDarkMode: isDarkMode,
+                        );
+                      }),
                   ],
                 ),
               );

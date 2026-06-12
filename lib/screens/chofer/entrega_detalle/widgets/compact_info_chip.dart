@@ -37,24 +37,15 @@ class CompactInfoChip extends StatelessWidget {
           Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(icon, size: 14, color: colorScheme.primary),
+              Icon(icon),
               const SizedBox(width: 4),
-              Text(
-                label,
-                style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                  color: colorScheme.primary,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
+              Text(label, style: TextStyle(fontWeight: FontWeight.w500)),
             ],
           ),
           const SizedBox(height: 4),
           Text(
             value,
-            style: Theme.of(context).textTheme.labelMedium?.copyWith(
-              fontWeight: FontWeight.w600,
-              color: isDarkMode ? Colors.grey[100] : Colors.grey[900],
-            ),
+            style: TextStyle(fontWeight: FontWeight.w600),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
           ),

@@ -51,25 +51,15 @@ class CompactDateChip extends StatelessWidget {
           Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(icon, size: 14, color: accentColor),
+              Icon(icon, color: accentColor),
               const SizedBox(width: 4),
-              Text(
-                label,
-                style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                  color: accentColor,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
+              Text(label),
             ],
           ),
           const SizedBox(height: 4),
           Text(
             DateFormatters.formatCompactDate(date),
-            style: Theme.of(context).textTheme.labelSmall?.copyWith(
-              fontWeight: FontWeight.w600,
-              color: isDarkMode ? Colors.grey[100] : Colors.grey[900],
-              fontSize: AppTextStyles.labelSmall(context).fontSize!,
-            ),
+            style: TextStyle(fontWeight: FontWeight.w600),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
           ),

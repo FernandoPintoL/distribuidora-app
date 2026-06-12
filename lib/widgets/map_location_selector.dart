@@ -62,7 +62,8 @@ class MapLocation {
   final String? razonSocial;
   final String? telefono;
   final int? ventaId;
-  final String? markerColor; // ✅ NUEVO 2026-03-12: Color hex para el pin en el mapa (ej: "#FF6B6B")
+  final String?
+  markerColor; // ✅ NUEVO 2026-03-12: Color hex para el pin en el mapa (ej: "#FF6B6B")
 
   MapLocation({
     required this.latitude,
@@ -81,8 +82,10 @@ class MapLocationSelector extends StatefulWidget {
   final double? initialLatitude;
   final double? initialLongitude;
   final Function(double, double, String?) onLocationSelected;
-  final List<MapLocation>? additionalLocations; // ✅ NUEVO 2026-02-18: Ubicaciones adicionales (ventas)
-  final Function(int ventaId)? onVentaSelected; // ✅ NUEVO: Callback cuando se toca una venta en el mapa
+  final List<MapLocation>?
+  additionalLocations; // ✅ NUEVO 2026-02-18: Ubicaciones adicionales (ventas)
+  final Function(int ventaId)?
+  onVentaSelected; // ✅ NUEVO: Callback cuando se toca una venta en el mapa
 
   const MapLocationSelector({
     super.key,
@@ -113,7 +116,9 @@ class _MapLocationSelectorState extends State<MapLocationSelector> {
   @override
   void initState() {
     super.initState();
-    debugPrint('🗺️ MapLocationSelector initState - Lat: ${widget.initialLatitude}, Lng: ${widget.initialLongitude}');
+    debugPrint(
+      '🗺️ MapLocationSelector initState - Lat: ${widget.initialLatitude}, Lng: ${widget.initialLongitude}',
+    );
 
     _selectedLocation =
         widget.initialLatitude != null && widget.initialLongitude != null
@@ -129,7 +134,8 @@ class _MapLocationSelectorState extends State<MapLocationSelector> {
     }
 
     // ✅ NUEVO 2026-02-18: Agregar marcadores de ubicaciones adicionales (ventas)
-    if (widget.additionalLocations != null && widget.additionalLocations!.isNotEmpty) {
+    if (widget.additionalLocations != null &&
+        widget.additionalLocations!.isNotEmpty) {
       for (final location in widget.additionalLocations!) {
         _addAdditionalMarker(location);
       }
@@ -172,7 +178,8 @@ class _MapLocationSelectorState extends State<MapLocationSelector> {
     Future.delayed(const Duration(milliseconds: 500), () {
       if (mounted) {
         // ✅ MEJORADO 2026-02-17: Si hay ubicaciones adicionales, animar a los bounds de todos
-        if (widget.additionalLocations != null && widget.additionalLocations!.isNotEmpty) {
+        if (widget.additionalLocations != null &&
+            widget.additionalLocations!.isNotEmpty) {
           // Crear lista de todas las posiciones (adicionales + seleccionada si existe)
           final positions = <LatLng>[
             for (final loc in widget.additionalLocations!)
@@ -193,8 +200,12 @@ class _MapLocationSelectorState extends State<MapLocationSelector> {
           // ✅ NUEVO 2026-02-17: Mostrar infoWindow automáticamente para todos los markers
           Future.delayed(const Duration(milliseconds: 1000), () {
             if (mounted && _markerIdToShowInfoWindow != null) {
-              _mapController.showMarkerInfoWindow(MarkerId(_markerIdToShowInfoWindow!));
-              debugPrint('📍 InfoWindow abierto automáticamente para: $_markerIdToShowInfoWindow');
+              _mapController.showMarkerInfoWindow(
+                MarkerId(_markerIdToShowInfoWindow!),
+              );
+              debugPrint(
+                '📍 InfoWindow abierto automáticamente para: $_markerIdToShowInfoWindow',
+              );
             }
           });
         } else if (_selectedLocation != null) {
@@ -205,10 +216,7 @@ class _MapLocationSelectorState extends State<MapLocationSelector> {
         } else {
           // Comportamiento default: animar a Puerto Suárez, Bolivia si no hay ubicación
           _mapController.animateCamera(
-            CameraUpdate.newLatLngZoom(
-              const LatLng(-17.8039, -60.7647),
-              12,
-            ),
+            CameraUpdate.newLatLngZoom(const LatLng(-17.8039, -60.7647), 12),
           );
         }
       }
@@ -284,7 +292,9 @@ class _MapLocationSelectorState extends State<MapLocationSelector> {
     }
 
     // ✅ Usar separador '|' sin saltos de línea para mejor compatibilidad
-    final snippet = snippetParts.isEmpty ? 'Sin información' : snippetParts.join(' | ');
+    final snippet = snippetParts.isEmpty
+        ? 'Sin información'
+        : snippetParts.join(' | ');
 
     // ✅ NUEVO 2026-03-12: Convertir color hex a hue para el pin
     final markerHue = _hexToHue(location.markerColor);
@@ -374,7 +384,9 @@ class _MapLocationSelectorState extends State<MapLocationSelector> {
 
   void _toggleMapType() {
     setState(() {
-      _mapType = _mapType == MapType.normal ? MapType.satellite : MapType.normal;
+      _mapType = _mapType == MapType.normal
+          ? MapType.satellite
+          : MapType.normal;
     });
   }
 
@@ -410,10 +422,7 @@ class _MapLocationSelectorState extends State<MapLocationSelector> {
             // ✅ NUEVO: Badge con cantidad de ventas
             if (cantidadVentas > 0)
               Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 8,
-                  vertical: 4,
-                ),
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
                   color: Colors.orange[600],
                   borderRadius: BorderRadius.circular(12),
@@ -421,7 +430,6 @@ class _MapLocationSelectorState extends State<MapLocationSelector> {
                 child: Text(
                   '$cantidadVentas ${cantidadVentas == 1 ? 'venta' : 'ventas'}',
                   style: const TextStyle(
-                    fontSize: 12,
                     fontWeight: FontWeight.bold,
                     color: Colors.white,
                   ),
@@ -436,7 +444,9 @@ class _MapLocationSelectorState extends State<MapLocationSelector> {
               _mapType == MapType.normal ? Icons.satellite : Icons.map,
               color: Theme.of(context).colorScheme.onPrimary,
             ),
-            tooltip: _mapType == MapType.normal ? 'Vista satelital' : 'Vista normal',
+            tooltip: _mapType == MapType.normal
+                ? 'Vista satelital'
+                : 'Vista normal',
           ),
           if (_selectedLocation != null)
             TextButton(

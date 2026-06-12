@@ -149,6 +149,8 @@ void main() async {
           ChangeNotifierProvider(create: (_) => BannerPublicitarioProvider()),
           ChangeNotifierProvider(create: (_) => ReporteVentasProvider()),
           ChangeNotifierProvider(create: (_) => PrestamosProvider()),
+          ChangeNotifierProvider(create: (_) => EstadoLogisticoProvider()),
+          ChangeNotifierProvider(create: (_) => LocalidadProvider()),
         ],
         child: const MyApp(),
       ),

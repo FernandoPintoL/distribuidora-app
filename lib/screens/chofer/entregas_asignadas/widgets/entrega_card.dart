@@ -32,7 +32,7 @@ class _EntregaCardState extends State<EntregaCard> {
     final cardColor = isDarkMode ? Colors.grey[850] : Colors.white;
 
     return Card(
-      margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+      margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
       elevation: 4,
       color: cardColor,
       shadowColor: isDarkMode
@@ -73,9 +73,6 @@ class _EntregaCardState extends State<EntregaCard> {
                               overflow: TextOverflow.ellipsis,
                               style: TextStyle(
                                 color: Colors.white,
-                                fontSize: AppTextStyles.bodyLarge(
-                                  context,
-                                ).fontSize!,
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
@@ -85,10 +82,7 @@ class _EntregaCardState extends State<EntregaCard> {
                       Text(
                         'Entrega: ${entrega.numeroEntrega ?? '#${entrega.id}'}',
                         overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          color: Colors.white70,
-                          fontSize: AppTextStyles.bodySmall(context).fontSize!,
-                        ),
+                        style: TextStyle(color: Colors.white70),
                       ),
                     ],
                   ),
@@ -106,7 +100,6 @@ class _EntregaCardState extends State<EntregaCard> {
                     entrega.estadoLabel,
                     style: TextStyle(
                       color: Colors.white,
-                      fontSize: AppTextStyles.bodySmall(context).fontSize!,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
@@ -118,14 +111,6 @@ class _EntregaCardState extends State<EntregaCard> {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
               decoration: BoxDecoration(
-                color: isDarkMode
-                    ? const Color.fromARGB(
-                        255,
-                        143,
-                        134,
-                        129,
-                      )?.withAlpha((0.2 * 255).toInt())
-                    : Colors.orange[50],
                 border: Border(
                   bottom: BorderSide(
                     color: isDarkMode ? Colors.grey[700]! : Colors.grey[200]!,
@@ -152,21 +137,9 @@ class _EntregaCardState extends State<EntregaCard> {
                               children: [
                                 Text(
                                   '📦 Productos a Entregar',
-                                  style: TextStyle(
-                                    fontSize: AppTextStyles.bodySmall(
-                                      context,
-                                    ).fontSize!,
-                                    fontWeight: FontWeight.w600,
-                                  ),
+                                  style: TextStyle(fontWeight: FontWeight.w600),
                                 ),
-                                Text(
-                                  'Ver resumen consolidado',
-                                  style: TextStyle(
-                                    fontSize: AppTextStyles.labelSmall(
-                                      context,
-                                    ).fontSize!,
-                                  ),
-                                ),
+                                Text('Ver resumen consolidado'),
                               ],
                             ),
                           ],
@@ -175,7 +148,6 @@ class _EntregaCardState extends State<EntregaCard> {
                           _productosExpandidos
                               ? Icons.expand_less
                               : Icons.expand_more,
-                          color: Colors.orange,
                         ),
                       ],
                     ),
@@ -201,14 +173,6 @@ class _EntregaCardState extends State<EntregaCard> {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
               decoration: BoxDecoration(
-                color: isDarkMode
-                    ? const Color.fromARGB(
-                        255,
-                        91,
-                        94,
-                        98,
-                      )?.withAlpha((0.3 * 255).toInt())
-                    : Colors.blue[50],
                 border: Border(
                   bottom: BorderSide(
                     color: isDarkMode ? Colors.grey[700]! : Colors.grey[200]!,
@@ -235,21 +199,11 @@ class _EntregaCardState extends State<EntregaCard> {
                               children: [
                                 Text(
                                   '📦 ${entrega.ventas.length} venta${entrega.ventas.length > 1 ? 's' : ''} asignada${entrega.ventas.length > 1 ? 's' : ''}',
-                                  style: TextStyle(
-                                    fontSize: AppTextStyles.bodySmall(
-                                      context,
-                                    ).fontSize!,
-                                    fontWeight: FontWeight.w600,
-                                  ),
+                                  style: TextStyle(fontWeight: FontWeight.w600),
                                 ),
                                 if (entrega.ventas.isNotEmpty)
                                   Text(
                                     'Total: BS ${entrega.ventas.fold<double>(0, (sum, v) => sum + v.subtotal).toStringAsFixed(2)}',
-                                    style: TextStyle(
-                                      fontSize: AppTextStyles.bodySmall(
-                                        context,
-                                      ).fontSize!,
-                                    ),
                                   ),
                               ],
                             ),
@@ -259,7 +213,6 @@ class _EntregaCardState extends State<EntregaCard> {
                           _ventasExpandidas
                               ? Icons.expand_less
                               : Icons.expand_more,
-                          color: Colors.blue,
                         ),
                       ],
                     ),
@@ -282,11 +235,6 @@ class _EntregaCardState extends State<EntregaCard> {
                           padding: const EdgeInsets.only(bottom: 12),
                           child: Container(
                             decoration: BoxDecoration(
-                              color: isDarkMode
-                                  ? Colors.grey[900]?.withAlpha(
-                                      (0.3 * 255).toInt(),
-                                    )
-                                  : Colors.white,
                               borderRadius: BorderRadius.circular(8),
                               border: Border.all(
                                 color: isDarkMode
@@ -306,7 +254,6 @@ class _EntregaCardState extends State<EntregaCard> {
                                       width: 4,
                                       height: 36,
                                       decoration: BoxDecoration(
-                                        color: Colors.blue,
                                         borderRadius: BorderRadius.circular(2),
                                       ),
                                     ),
@@ -335,29 +282,11 @@ class _EntregaCardState extends State<EntregaCard> {
                                                       overflow:
                                                           TextOverflow.ellipsis,
                                                       style: TextStyle(
-                                                        fontSize:
-                                                            AppTextStyles.bodyMedium(
-                                                              context,
-                                                            ).fontSize!,
                                                         fontWeight:
                                                             FontWeight.w600,
-                                                        color: isDarkMode
-                                                            ? Colors.white
-                                                            : Colors.black87,
                                                       ),
                                                     ),
-                                                    Text(
-                                                      venta.numero,
-                                                      style: TextStyle(
-                                                        fontSize:
-                                                            AppTextStyles.bodySmall(
-                                                              context,
-                                                            ).fontSize!,
-                                                        color: isDarkMode
-                                                            ? Colors.white
-                                                            : Colors.black87,
-                                                      ),
-                                                    ),
+                                                    Text(venta.numero),
                                                   ],
                                                 ),
                                               ),
@@ -393,29 +322,11 @@ class _EntregaCardState extends State<EntregaCard> {
                                         crossAxisAlignment:
                                             CrossAxisAlignment.start,
                                         children: [
-                                          Text(
-                                            'Total',
-                                            style: TextStyle(
-                                              fontSize:
-                                                  AppTextStyles.labelSmall(
-                                                    context,
-                                                  ).fontSize!,
-                                              color: isDarkMode
-                                                  ? Colors.grey[500]
-                                                  : Colors.grey[600],
-                                            ),
-                                          ),
+                                          Text('Total'),
                                           Text(
                                             'Bs. ${venta.subtotal?.toStringAsFixed(2) ?? '0.00'}',
                                             style: TextStyle(
-                                              fontSize:
-                                                  AppTextStyles.labelSmall(
-                                                    context,
-                                                  ).fontSize!,
                                               fontWeight: FontWeight.w600,
-                                              color: isDarkMode
-                                                  ? Colors.grey[300]
-                                                  : Colors.black87,
                                             ),
                                           ),
                                         ],
@@ -520,25 +431,11 @@ class _EntregaCardState extends State<EntregaCard> {
                   Expanded(
                     child: Row(
                       children: [
-                        Icon(
-                          Icons.calendar_today,
-                          size: 14,
-                          color: isDarkMode
-                              ? Colors.grey[400]
-                              : Colors.grey[600],
-                        ),
+                        Icon(Icons.calendar_today, size: 16),
                         const SizedBox(width: 6),
                         Expanded(
                           child: Text(
                             entrega.formatFecha(entrega.fechaAsignacion),
-                            style: TextStyle(
-                              fontSize: AppTextStyles.labelSmall(
-                                context,
-                              ).fontSize!,
-                              color: isDarkMode
-                                  ? Colors.grey[300]
-                                  : Colors.grey[700],
-                            ),
                             overflow: TextOverflow.ellipsis,
                           ),
                         ),
@@ -572,7 +469,7 @@ class _EntregaCardState extends State<EntregaCard> {
                       ),
                     ),
                     // ✅ Descargar Ticket de Entrega
-                    Tooltip(
+                    /*Tooltip(
                       message: 'Descargar Ticket',
                       child: IconButton(
                         icon: const Icon(Icons.print),
@@ -585,7 +482,7 @@ class _EntregaCardState extends State<EntregaCard> {
                         ),
                         onPressed: () => _descargarTicket(context),
                       ),
-                    ),
+                    ),*/
                     // Cómo llegar
                     Tooltip(
                       message: 'Ver en mapa',

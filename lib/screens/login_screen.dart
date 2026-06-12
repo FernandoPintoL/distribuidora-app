@@ -94,21 +94,21 @@ class _LoginScreenState extends State<LoginScreen>
         child: Container(
           width: size.width,
           height: size.height,
-          decoration: BoxDecoration(
+          /*decoration: BoxDecoration(
             gradient: LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
               colors: isDarkMode
                   ? [
-                      const Color(0xFF121212), // Dark background
-                      const Color(0xFF1E1E1E),
+                      const Color(0xFF1E3A5F), // Azul marino
+                      const Color(0xFF132B47), // Azul marino oscuro
                     ]
                   : [
-                      Theme.of(context).primaryColor,        // Grafito #212121
-                      const Color(0xFFC8102E).withValues(alpha: 0.85), // Rojo Paucara
+                      Theme.of(context).primaryColor, // Azul marino #1E3A5F
+                      const Color(0xFFD4A017).withValues(alpha: 0.85), // Dorado
                     ],
             ),
-          ),
+          ),*/
           child: SafeArea(
             child: Center(
               child: SingleChildScrollView(
@@ -213,13 +213,13 @@ class _LoginScreenState extends State<LoginScreen>
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
               colors: [
-                Color(0xFF212121),    // Grafito
-                Color(0xFFC8102E),    // Rojo Paucara
+                Color(0xFF1E3A5F), // Azul Marino
+                Color(0xFFD4A017), // Dorado
               ],
             ),
             boxShadow: [
               BoxShadow(
-                color: const Color(0xFFC8102E).withValues(alpha: 0.3),
+                color: const Color(0xFFD4A017).withValues(alpha: 0.3),
                 blurRadius: 15,
                 offset: const Offset(0, 5),
               ),
@@ -237,7 +237,7 @@ class _LoginScreenState extends State<LoginScreen>
           'Distribuidora Paucara',
           style: Theme.of(context).textTheme.headlineMedium?.copyWith(
             fontWeight: FontWeight.bold,
-            color: const Color(0xFFC8102E),  // Rojo Paucara para el título
+            color: const Color(0xFFD4A017), // Dorado para el título
           ),
           textAlign: TextAlign.center,
         ),
@@ -387,7 +387,9 @@ class _LoginScreenState extends State<LoginScreen>
         Expanded(
           child: Text(
             'Recordar mis credenciales',
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontSize: 14),
+            style: Theme.of(
+              context,
+            ).textTheme.bodyMedium?.copyWith(fontSize: 14),
             overflow: TextOverflow.ellipsis,
           ),
         ),
@@ -396,63 +398,6 @@ class _LoginScreenState extends State<LoginScreen>
           Icon(Icons.fingerprint, color: colorScheme.primary, size: 20),
       ],
     );
-  }
-
-  Widget _buildBiometricAvailabilityIndicator(AuthProvider authProvider) {
-    if (!authProvider.biometricAvailable) {
-      return const SizedBox.shrink();
-    }
-
-    final colorScheme = Theme.of(context).colorScheme;
-    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
-    final hasFace = authProvider.hasFaceRecognition;
-    final hasFingerprint = authProvider.hasFingerprintRecognition;
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      decoration: BoxDecoration(
-        color: isDarkMode
-            ? colorScheme.primaryContainer.withValues(alpha: 0.3)
-            : colorScheme.primaryContainer.withValues(alpha: 0.5),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(
-          color: isDarkMode
-              ? colorScheme.primary.withValues(alpha: 0.5)
-              : colorScheme.primary.withValues(alpha: 0.3),
-        ),
-      ),
-      child: Row(
-        children: [
-          Icon(
-            Icons.check_circle_outline,
-            color: colorScheme.primary,
-            size: 18,
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              'Biometría disponible: ${_getBiometricTypesText(hasFace, hasFingerprint)}',
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                fontSize: AppTextStyles.bodySmall(context).fontSize!,
-                color: colorScheme.onPrimaryContainer,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  String _getBiometricTypesText(bool hasFace, bool hasFingerprint) {
-    if (hasFace && hasFingerprint) {
-      return 'Face ID + Huella';
-    } else if (hasFace) {
-      return 'Face ID';
-    } else if (hasFingerprint) {
-      return 'Huella Digital';
-    }
-    return 'Desconocida';
   }
 
   Widget _buildErrorMessage(String message) {
@@ -497,13 +442,13 @@ class _LoginScreenState extends State<LoginScreen>
       child: ElevatedButton(
         onPressed: authProvider.isLoading ? null : _login,
         style: ElevatedButton.styleFrom(
-          backgroundColor: const Color(0xFFC8102E),  // Rojo Paucara
+          backgroundColor: const Color(0xFFD4A017), // Dorado
           foregroundColor: Colors.white,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
           ),
           elevation: 2,
-          shadowColor: const Color(0xFFC8102E).withValues(alpha: 0.4),
+          shadowColor: const Color(0xFFD4A017).withValues(alpha: 0.4),
         ),
         child: authProvider.isLoading
             ? const SizedBox(
@@ -638,41 +583,6 @@ class _LoginScreenState extends State<LoginScreen>
           ],
         ),
       ),
-    );
-  }
-
-  Widget _buildHelpText() {
-    final colorScheme = Theme.of(context).colorScheme;
-
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        Text(
-          '¿Olvidaste tu contraseña?',
-          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-            color: colorScheme.onSurfaceVariant,
-            fontSize: AppTextStyles.bodyMedium(context).fontSize!,
-          ),
-        ),
-        TextButton(
-          onPressed: () {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: const Text('Funcionalidad en desarrollo'),
-                backgroundColor: colorScheme.tertiary,
-              ),
-            );
-          },
-          child: Text(
-            'Recuperar',
-            style: TextStyle(
-              color: colorScheme.primary,
-              fontSize: AppTextStyles.bodyMedium(context).fontSize!,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ),
-      ],
     );
   }
 

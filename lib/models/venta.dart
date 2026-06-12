@@ -1,5 +1,7 @@
+import 'package:flutter/foundation.dart';
 import 'credito_cliente.dart'; // Para importar TipoPago
 import 'localidad.dart'; // ✅ Importar Localidad existente
+import 'estado_logistico.dart'; // ✅ Importar EstadoLogistico centralizado
 
 class Venta {
   final int id;
@@ -8,6 +10,7 @@ class Venta {
   final String? clienteNombre;
   final String? clienteTelefono; // Nuevo: Teléfono del cliente
   final String? clienteRazonSocial; // ✅ NUEVO: Razón social del cliente
+  final String? clienteFotoPerfil; // ✅ NUEVO: Foto de perfil del cliente
   final String? clienteLocalidad; // ✅ DEPRECADO: Usar clienteLocalidadObj en su lugar
   final Localidad? clienteLocalidadObj; // ✅ NUEVO: Localidad completa del cliente
   final double total;
@@ -22,6 +25,7 @@ class Venta {
   final String estadoLogistico; // Nombre del estado logístico
   final String? estadoLogisticoColor; // Color del estado (hex)
   final String? estadoLogisticoIcon; // Icono del estado
+  final EstadoLogistico? estadoLogisticoObj; // ✅ NUEVO: Objeto EstadoLogistico completo (centralizado)
   final String estadoPago;
   final DateTime fecha;
   final List<VentaDetalle> detalles;
@@ -52,6 +56,7 @@ class Venta {
     this.clienteNombre,
     this.clienteTelefono,
     this.clienteRazonSocial,  // ✅ NUEVO: Razón social del cliente
+    this.clienteFotoPerfil,  // ✅ NUEVO: Foto de perfil del cliente
     this.clienteLocalidad,
     this.clienteLocalidadObj,  // ✅ NUEVO
     required this.total,
@@ -65,6 +70,7 @@ class Venta {
     required this.estadoLogistico,
     this.estadoLogisticoColor,
     this.estadoLogisticoIcon,
+    this.estadoLogisticoObj, // ✅ NUEVO: Objeto EstadoLogistico
     required this.estadoPago,
     required this.fecha,
     this.detalles = const [],
@@ -84,10 +90,11 @@ class Venta {
   });
 
   factory Venta.fromJson(Map<String, dynamic> json) {
-    // Extraer nombre, teléfono, razón social y localidad del cliente si es un objeto
+    // Extraer nombre, teléfono, razón social, foto y localidad del cliente si es un objeto
     String? clienteNom;
     String? clienteTel;
     String? clienteRazonSoc;  // ✅ NUEVO: Razón social del cliente
+    String? clienteFoto;  // ✅ NUEVO: Foto de perfil del cliente
     String? clienteLocalidadNom;
     Localidad? clienteLocalidadObj;  // ✅ NUEVO: Objeto Localidad completo
     if (json['cliente'] is Map<String, dynamic>) {
@@ -95,6 +102,7 @@ class Venta {
       clienteNom = clienteObj['nombre'] as String?;
       clienteTel = clienteObj['telefono'] as String?;
       clienteRazonSoc = clienteObj['razon_social'] as String?;  // ✅ NUEVO: Extraer razón social
+      clienteFoto = clienteObj['foto_perfil'] as String?;  // ✅ NUEVO: Extraer foto de perfil
       // ✅ NUEVO: Extraer localidad del cliente
       if (clienteObj['localidad'] is Map<String, dynamic>) {
         final localidadObj = clienteObj['localidad'] as Map<String, dynamic>;
@@ -119,6 +127,7 @@ class Venta {
     String estadoLogisticoNombre = 'EN_TRANSITO'; // default
     String? estadoLogisticoColor;
     String? estadoLogisticoIcon;
+    EstadoLogistico? estadoLogisticoObjValue; // ✅ NUEVO: Objeto EstadoLogistico
 
     // Intentar cargar desde la relación estadoLogistica (tabla estados_logistica)
     // El backend retorna en snake_case: estado_logistica
@@ -138,6 +147,12 @@ class Venta {
       estadoLogisticoNombre = estadoObj['nombre'] as String? ?? 'EN_TRANSITO';
       estadoLogisticoColor = estadoObj['color'] as String?;
       estadoLogisticoIcon = estadoObj['icono'] as String?;
+      // ✅ NUEVO: Parsear objeto EstadoLogistico completo
+      try {
+        estadoLogisticoObjValue = EstadoLogistico.fromJson(estadoObj);
+      } catch (e) {
+        debugPrint('⚠️ Error parseando EstadoLogistico: $e');
+      }
     } else {
       // Fallback: parsear como string o id
       estadoLogisticoNombre =
@@ -194,6 +209,7 @@ class Venta {
       clienteNombre: clienteNom,
       clienteTelefono: clienteTel,
       clienteRazonSocial: clienteRazonSoc,  // ✅ NUEVO: Razón social del cliente
+      clienteFotoPerfil: clienteFoto,  // ✅ NUEVO: Foto de perfil del cliente
       clienteLocalidad: clienteLocalidadNom,
       clienteLocalidadObj: clienteLocalidadObj,  // ✅ NUEVO: Objeto Localidad completo
       total: _parseDouble(json['total']),
@@ -207,6 +223,7 @@ class Venta {
       estadoLogistico: estadoLogisticoNombre,
       estadoLogisticoColor: estadoLogisticoColor,
       estadoLogisticoIcon: estadoLogisticoIcon,
+      estadoLogisticoObj: estadoLogisticoObjValue, // ✅ NUEVO: Objeto EstadoLogistico centralizado
       estadoPago: json['estado_pago'] as String? ?? 'PENDIENTE',
       fecha: json['fecha'] != null
           ? DateTime.parse(json['fecha'] as String)

@@ -52,21 +52,32 @@ class EntregaService {
 
   // ✅ ACTUALIZADO: Obtener entregas + envios asignados al chofer - Filtra por created_at (fecha de creación)
   Future<ApiResponse<List<Entrega>>> obtenerEntregasAsignadas({
-    int page = 1,
     String? estado,
-    String? createdDesde,  // ✅ ACTUALIZADO: Rango de fechas de creación (created_at)
-    String? createdHasta,  // ✅ ACTUALIZADO: Rango de fechas de creación (created_at)
-    String? search,  // ✅ NUEVO: búsqueda case-insensitive
-    int? localidadId,  // ✅ NUEVO: filtro por localidad
+    String?
+    createdDesde, // ✅ ACTUALIZADO: Rango de fechas de creación (created_at)
+    String?
+    createdHasta, // ✅ ACTUALIZADO: Rango de fechas de creación (created_at)
+    String? search, // ✅ NUEVO: búsqueda case-insensitive
+    int? localidadId, // ✅ NUEVO: filtro por localidad
+    String? entregaId, // ✅ NUEVO: búsqueda por ID de entrega
+    String?
+    searchVenta, // ✅ NUEVO: búsqueda por venta (ID o nombre del cliente)
   }) async {
     try {
       final params = {
-        'page': page,
         if (estado != null) 'estado': estado,
-        if (createdDesde != null) 'created_desde': createdDesde,  // ✅ ACTUALIZADO: Parámetro de created_at
-        if (createdHasta != null) 'created_hasta': createdHasta,  // ✅ ACTUALIZADO: Parámetro de created_at
-        if (search != null && search.isNotEmpty) 'search': search,  // ✅ NUEVO
-        if (localidadId != null) 'localidad_id': localidadId,  // ✅ NUEVO
+        if (createdDesde != null)
+          'created_desde':
+              createdDesde, // ✅ ACTUALIZADO: Parámetro de created_at
+        if (createdHasta != null)
+          'created_hasta':
+              createdHasta, // ✅ ACTUALIZADO: Parámetro de created_at
+        if (search != null && search.isNotEmpty) 'search': search, // ✅ NUEVO
+        if (localidadId != null) 'localidad_id': localidadId, // ✅ NUEVO
+        if (entregaId != null && entregaId.isNotEmpty)
+          'entrega_id': entregaId, // ✅ NUEVO
+        if (searchVenta != null && searchVenta.isNotEmpty)
+          'search_venta': searchVenta, // ✅ NUEVO
       };
 
       // Nuevo endpoint que devuelve entregas + envios
@@ -110,15 +121,7 @@ class EntregaService {
     try {
       final response = await _apiService.get('/chofer/entregas/$entregaId');
 
-      debugPrint(
-        '📍 [ENTREGA_SERVICE] Respuesta obtenerEntrega: ${response.data}',
-      );
-
       final responseData = response.data as Map<String, dynamic>;
-
-      debugPrint(
-        '📍 [ENTREGA_SERVICE] Claves en responseData: ${responseData.keys.toList()}',
-      );
 
       try {
         // ✅ NUEVO: Obtener datos de entrega
@@ -127,24 +130,14 @@ class EntregaService {
         // ✅ NUEVO: Agregar productos si vienen en la respuesta
         if (responseData['productos'] is List) {
           entregaData['productos'] = responseData['productos'];
-          debugPrint(
-            '🛍️ [ENTREGA_SERVICE] Productos agregados: ${(responseData['productos'] as List).length} items',
-          );
         }
 
         // ✅ NUEVO: Agregar localidades si vienen en la respuesta
         if (responseData['localidades'] is Map<String, dynamic>) {
           entregaData['localidades'] = responseData['localidades'];
-          debugPrint(
-            '📍 [ENTREGA_SERVICE] Localidades agregadas: ${(responseData['localidades'] as Map)['cantidad_localidades']} localidades',
-          );
         }
 
         final entrega = Entrega.fromJson(entregaData);
-
-        debugPrint(
-          '🛍️ [ENTREGA_SERVICE] Entrega parseada con ${entrega.productosGenerico.length} productos',
-        );
 
         return ApiResponse(
           success: true,
@@ -846,17 +839,22 @@ class EntregaService {
     int ventaId, {
     List<String>? fotosBase64,
     String? observaciones,
-    String? observacionesLogistica,  // ✅ NUEVO: Observaciones logísticas (estado entrega, incidentes)
-    double? montoRecibido,  // ✅ NUEVO: Monto que pagó el cliente (backward compatible)
-    int? tipoPagoId,  // ✅ NUEVO: ID del tipo de pago (backward compatible)
+    String?
+    observacionesLogistica, // ✅ NUEVO: Observaciones logísticas (estado entrega, incidentes)
+    double?
+    montoRecibido, // ✅ NUEVO: Monto que pagó el cliente (backward compatible)
+    int? tipoPagoId, // ✅ NUEVO: ID del tipo de pago (backward compatible)
     // ✅ NUEVA 2026-02-12: Múltiples pagos
-    List<Map<String, dynamic>>? pagos,  // Array de {tipo_pago_id, monto, referencia}
-    bool? esCredito,  // ✅ CAMBIO: Si es promesa de pago (no dinero real)
-    String? tipoConfirmacion,  // COMPLETA o CON_NOVEDAD
+    List<Map<String, dynamic>>?
+    pagos, // Array de {tipo_pago_id, monto, referencia}
+    bool? esCredito, // ✅ CAMBIO: Si es promesa de pago (no dinero real)
+    String? tipoConfirmacion, // COMPLETA o CON_NOVEDAD
     // ✅ NUEVA 2026-02-15: Productos rechazados en devolución parcial
-    List<Map<String, dynamic>>? productosRechazados,  // Array de {detalle_venta_id, nombre_producto, cantidad, precio_unitario, subtotal}
+    List<Map<String, dynamic>>?
+    productosRechazados, // Array de {detalle_venta_id, nombre_producto, cantidad, precio_unitario, subtotal}
     // ✅ NUEVA 2026-03-05: Campos de novedad
-    String? tipoNovedad,  // CLIENTE_CERRADO, DEVOLUCION_PARCIAL, RECHAZADO, NO_CONTACTADO
+    String?
+    tipoNovedad, // CLIENTE_CERRADO, DEVOLUCION_PARCIAL, RECHAZADO, NO_CONTACTADO
     bool? tiendaAbierta,
     bool? clientePresente,
     String? motivoRechazo,
@@ -867,15 +865,25 @@ class EntregaService {
         if (observaciones != null && observaciones.isNotEmpty)
           'observaciones': observaciones,
         if (observacionesLogistica != null && observacionesLogistica.isNotEmpty)
-          'observaciones_logistica': observacionesLogistica,  // ✅ NUEVO: Pasar al backend
-        if (montoRecibido != null) 'monto_recibido': montoRecibido,  // ✅ NUEVO: Pasar monto (backward compatible)
-        if (tipoPagoId != null) 'tipo_pago_id': tipoPagoId,  // ✅ NUEVO: Pasar tipo de pago (backward compatible)
+          'observaciones_logistica':
+              observacionesLogistica, // ✅ NUEVO: Pasar al backend
+        if (montoRecibido != null)
+          'monto_recibido':
+              montoRecibido, // ✅ NUEVO: Pasar monto (backward compatible)
+        if (tipoPagoId != null)
+          'tipo_pago_id':
+              tipoPagoId, // ✅ NUEVO: Pasar tipo de pago (backward compatible)
         // ✅ NUEVA 2026-02-12: Múltiples pagos
-        if (pagos != null && pagos.isNotEmpty) 'pagos': pagos,  // Array de pagos múltiples
-        if (esCredito != null && esCredito) 'es_credito': esCredito,  // ✅ CAMBIO: Promesa de pago
-        if (tipoConfirmacion != null) 'tipo_confirmacion': tipoConfirmacion,  // COMPLETA o CON_NOVEDAD
+        if (pagos != null && pagos.isNotEmpty)
+          'pagos': pagos, // Array de pagos múltiples
+        if (esCredito != null && esCredito)
+          'es_credito': esCredito, // ✅ CAMBIO: Promesa de pago
+        if (tipoConfirmacion != null)
+          'tipo_confirmacion': tipoConfirmacion, // COMPLETA o CON_NOVEDAD
         // ✅ NUEVA 2026-02-15: Productos rechazados en devolución parcial
-        if (productosRechazados != null && productosRechazados.isNotEmpty) 'productos_rechazados': productosRechazados,  // Array de productos rechazados
+        if (productosRechazados != null && productosRechazados.isNotEmpty)
+          'productos_rechazados':
+              productosRechazados, // Array de productos rechazados
         // ✅ NUEVA 2026-03-05: Campos de novedad
         if (tipoNovedad != null) 'tipo_novedad': tipoNovedad,
         if (tiendaAbierta != null) 'tienda_abierta': tiendaAbierta,
@@ -893,14 +901,13 @@ class EntregaService {
         return ApiResponse(
           success: true,
           data: responseData['data'] as Map<String, dynamic>?,
-          message: responseData['message'] ??
-              'Venta entregada correctamente',
+          message: responseData['message'] ?? 'Venta entregada correctamente',
         );
       } else {
         return ApiResponse(
           success: false,
-          message: response.data['message'] ??
-              'Error al confirmar entrega de venta',
+          message:
+              response.data['message'] ?? 'Error al confirmar entrega de venta',
         );
       }
     } on DioException catch (e) {
@@ -958,7 +965,8 @@ class EntregaService {
         return ApiResponse(
           success: true,
           data: entrega,
-          message: response.data['message'] ?? 'Entrega finalizada correctamente',
+          message:
+              response.data['message'] ?? 'Entrega finalizada correctamente',
         );
       } else {
         return ApiResponse(
@@ -982,9 +990,13 @@ class EntregaService {
   /// Obtener resumen de pagos registrados en una entrega
   ///
   /// GET /api/chofer/entregas/{id}/resumen-pagos
-  Future<ApiResponse<Map<String, dynamic>>> obtenerResumenPagos(int entregaId) async {
+  Future<ApiResponse<Map<String, dynamic>>> obtenerResumenPagos(
+    int entregaId,
+  ) async {
     try {
-      final response = await _apiService.get('/chofer/entregas/$entregaId/resumen-pagos');
+      final response = await _apiService.get(
+        '/chofer/entregas/$entregaId/resumen-pagos',
+      );
 
       final data = response.data as Map<String, dynamic>;
 
@@ -1073,9 +1085,13 @@ class EntregaService {
   /// RESULTADO: 4x ProductoA, 3x ProductoB
   ///
   /// GET /api/entregas/{id}/productos-agrupados
-  Future<ApiResponse<ProductosAgrupados>> obtenerProductosAgrupados(int entregaId) async {
+  Future<ApiResponse<ProductosAgrupados>> obtenerProductosAgrupados(
+    int entregaId,
+  ) async {
     try {
-      debugPrint('📦 [ENTREGA_SERVICE] Obteniendo productos agrupados para entrega #$entregaId');
+      debugPrint(
+        '📦 [ENTREGA_SERVICE] Obteniendo productos agrupados para entrega #$entregaId',
+      );
 
       final response = await _apiService.get(
         '/entregas/$entregaId/productos-agrupados',
@@ -1130,9 +1146,7 @@ class EntregaService {
 
       final response = await _apiService.patch(
         '/entregas/$entregaId/ventas/$ventaId/corregir-pago',
-        data: {
-          'desglose_pagos': desglosePagos,
-        },
+        data: {'desglose_pagos': desglosePagos},
       );
 
       final responseData = response.data as Map<String, dynamic>;
@@ -1143,15 +1157,15 @@ class EntregaService {
         return ApiResponse(
           success: true,
           data: responseData['data'] as Map<String, dynamic>? ?? {},
-          message: responseData['message'] as String? ?? 'Pagos corregidos exitosamente',
+          message:
+              responseData['message'] as String? ??
+              'Pagos corregidos exitosamente',
         );
       } else {
-        final errorMessage = responseData['message'] as String? ?? 'Error al corregir pagos';
+        final errorMessage =
+            responseData['message'] as String? ?? 'Error al corregir pagos';
         debugPrint('❌ [ENTREGA_SERVICE] Error: $errorMessage');
-        return ApiResponse(
-          success: false,
-          message: errorMessage,
-        );
+        return ApiResponse(success: false, message: errorMessage);
       }
     } on DioException catch (e) {
       debugPrint('❌ Error en corregirPagoVenta: ${e.message}');
@@ -1173,16 +1187,15 @@ class EntregaService {
     required int entregaId,
     required int ventaId,
     required String tipoEntrega, // COMPLETA o CON_NOVEDAD
-    String? tipoNovedad, // DEVOLUCION_PARCIAL, RECHAZADA, etc (requerido si tipoEntrega es CON_NOVEDAD)
+    String?
+    tipoNovedad, // DEVOLUCION_PARCIAL, RECHAZADA, etc (requerido si tipoEntrega es CON_NOVEDAD)
   }) async {
     try {
       debugPrint(
         '📦 [ENTREGA_SERVICE] Cambiando tipo de entrega - Entrega #$entregaId, Venta #$ventaId a $tipoEntrega',
       );
 
-      final data = {
-        'tipo_entrega': tipoEntrega,
-      };
+      final data = {'tipo_entrega': tipoEntrega};
 
       if (tipoEntrega == 'CON_NOVEDAD' && tipoNovedad != null) {
         data['tipo_novedad'] = tipoNovedad;
@@ -1201,15 +1214,16 @@ class EntregaService {
         return ApiResponse(
           success: true,
           data: responseData['data'] as Map<String, dynamic>? ?? {},
-          message: responseData['message'] as String? ?? 'Tipo de entrega actualizado',
+          message:
+              responseData['message'] as String? ??
+              'Tipo de entrega actualizado',
         );
       } else {
-        final errorMessage = responseData['message'] as String? ?? 'Error al cambiar tipo de entrega';
+        final errorMessage =
+            responseData['message'] as String? ??
+            'Error al cambiar tipo de entrega';
         debugPrint('❌ [ENTREGA_SERVICE] Error: $errorMessage');
-        return ApiResponse(
-          success: false,
-          message: errorMessage,
-        );
+        return ApiResponse(success: false, message: errorMessage);
       }
     } on DioException catch (e) {
       debugPrint('❌ Error en cambiarTipoEntrega: ${e.message}');
@@ -1219,6 +1233,141 @@ class EntregaService {
       );
     } catch (e) {
       debugPrint('❌ Error inesperado en cambiarTipoEntrega: $e');
+      return ApiResponse(
+        success: false,
+        message: 'Error inesperado: ${e.toString()}',
+      );
+    }
+  }
+
+  // ✅ NUEVO 2026-03-12: Obtener ventas resumidas con información de pagos
+  /// Endpoint optimizado para el tab de Ventas en detalles de entrega
+  /// Trae: Información básica de ventas + mini-resumen de pagos + historial de confirmaciones
+  ///
+  /// GET /api/entregas/{id}/ventas-resumidas
+  Future<ApiResponse<Map<String, dynamic>>> obtenerVentasResumidas(
+    int entregaId,
+  ) async {
+    try {
+      debugPrint(
+        '📋 [ENTREGA_SERVICE] Obteniendo ventas resumidas para entrega #$entregaId',
+      );
+
+      final response = await _apiService.get(
+        '/entregas/$entregaId/ventas-resumidas',
+      );
+
+      final data = response.data as Map<String, dynamic>;
+
+      if (!data['success'] as bool) {
+        return ApiResponse(
+          success: false,
+          message: data['message'] as String? ?? 'Error al obtener ventas',
+        );
+      }
+
+      final ventasData = data['data'] as Map<String, dynamic>;
+
+      debugPrint(
+        '✅ [ENTREGA_SERVICE] Ventas resumidas obtenidas: ${(ventasData['ventas'] as List?)?.length ?? 0} ventas',
+      );
+
+      return ApiResponse(
+        success: true,
+        data: ventasData,
+        message: 'Ventas resumidas obtenidas exitosamente',
+      );
+    } on DioException catch (e) {
+      debugPrint('❌ Error obteniendo ventas resumidas: ${e.message}');
+      return ApiResponse(
+        success: false,
+        message: 'Error al obtener ventas: ${e.message}',
+      );
+    } catch (e) {
+      debugPrint('❌ Error inesperado: $e');
+      return ApiResponse(
+        success: false,
+        message: 'Error inesperado: ${e.toString()}',
+      );
+    }
+  }
+
+  // ✅ NUEVO 2026-03-12: Actualizar confirmación de entrega/pago existente
+  /// Permite editar una confirmación ya registrada (cambiar estado, pagos, observaciones, etc)
+  ///
+  /// PUT /api/chofer/entregas/{id}/ventas/{venta_id}/confirmaciones/{confirmacion_id}
+  Future<ApiResponse<Map<String, dynamic>>> actualizarConfirmacion({
+    required int entregaId,
+    required int ventaId,
+    required int confirmacionId,
+    String? estado, // PAGADO, RECHAZADO, PARCIAL, PENDIENTE
+    double? efectivo,
+    double? qr,
+    double? pendiente,
+    String? motivoRechazo,
+    String? observacionesPago,
+    bool? clientePresente,
+    bool? tiendaAbierta,
+    bool? tuvoProblema,
+    String? tipoNovedad, // CLIENTE_CERRADO, DEVOLUCION_PARCIAL, etc
+    double? montoAceptado,
+    double? montoDevuelto,
+    List<Map<String, dynamic>>? productosDevueltos,
+  }) async {
+    try {
+      debugPrint(
+        '📝 [ENTREGA_SERVICE] Actualizando confirmación #$confirmacionId - Entrega #$entregaId, Venta #$ventaId',
+      );
+
+      final data = <String, dynamic>{
+        if (estado != null) 'estado': estado,
+        if (efectivo != null) 'efectivo': efectivo,
+        if (qr != null) 'qr': qr,
+        if (pendiente != null) 'pendiente': pendiente,
+        if (motivoRechazo != null) 'motivo_rechazo': motivoRechazo,
+        if (observacionesPago != null) 'observaciones_pago': observacionesPago,
+        if (clientePresente != null) 'cliente_presente': clientePresente,
+        if (tiendaAbierta != null) 'tienda_abierta': tiendaAbierta,
+        if (tuvoProblema != null) 'tuvo_problema': tuvoProblema,
+        if (tipoNovedad != null) 'tipo_novedad': tipoNovedad,
+        if (montoAceptado != null) 'monto_aceptado': montoAceptado,
+        if (montoDevuelto != null) 'monto_devuelto': montoDevuelto,
+        if (productosDevueltos != null && productosDevueltos.isNotEmpty)
+          'productos_devueltos': productosDevueltos,
+      };
+
+      final response = await _apiService.put(
+        '/chofer/entregas/$entregaId/ventas/$ventaId/confirmaciones/$confirmacionId',
+        data: data,
+      );
+
+      final responseData = response.data as Map<String, dynamic>;
+      final isSuccess = responseData['success'] as bool? ?? false;
+
+      if (isSuccess) {
+        debugPrint('✅ [ENTREGA_SERVICE] Confirmación actualizada exitosamente');
+        return ApiResponse(
+          success: true,
+          data: responseData['data'] as Map<String, dynamic>? ?? {},
+          message:
+              responseData['message'] as String? ??
+              'Confirmación actualizada exitosamente',
+        );
+      } else {
+        final errorMessage =
+            responseData['message'] as String? ??
+            'Error al actualizar confirmación';
+        debugPrint('❌ [ENTREGA_SERVICE] Error: $errorMessage');
+        return ApiResponse(success: false, message: errorMessage);
+      }
+    } on DioException catch (e) {
+      debugPrint('❌ Error en actualizarConfirmacion: ${e.message}');
+      return ApiResponse(
+        success: false,
+        message: 'Error al actualizar confirmación: ${e.message}',
+      );
+    } catch (e) {
+      debugPrint('❌ Error inesperado en actualizarConfirmacion: $e');
       return ApiResponse(
         success: false,
         message: 'Error inesperado: ${e.toString()}',

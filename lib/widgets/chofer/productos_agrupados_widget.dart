@@ -146,12 +146,7 @@ class _ProductosAgrupadsWidgetState extends State<ProductosAgrupadsWidget> {
                       size: 24,
                     ),
                     const SizedBox(width: 12),
-                    Text(
-                      'Lista Generica #${widget.entregaId}',
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
+                    Text('Lista Generica #${widget.entregaId}'),
                   ],
                 ),
               ),
@@ -172,16 +167,9 @@ class _ProductosAgrupadsWidgetState extends State<ProductosAgrupadsWidget> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(
-                              'Tipos',
-                              style: Theme.of(context).textTheme.bodySmall,
-                            ),
+                            Text('Tipos'),
                             const SizedBox(height: 4),
-                            Text(
-                              provider.totalProductos.toString(),
-                              style: Theme.of(context).textTheme.headlineSmall
-                                  ?.copyWith(color: Colors.blue),
-                            ),
+                            Text(provider.totalProductos.toString()),
                           ],
                         ),
                       ),
@@ -198,16 +186,9 @@ class _ProductosAgrupadsWidgetState extends State<ProductosAgrupadsWidget> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(
-                              'Cantidad',
-                              style: Theme.of(context).textTheme.bodySmall,
-                            ),
+                            Text('Cantidad'),
                             const SizedBox(height: 4),
-                            Text(
-                              '${provider.cantidadTotal.toInt()}',
-                              style: Theme.of(context).textTheme.headlineSmall
-                                  ?.copyWith(color: Colors.green),
-                            ),
+                            Text('${provider.cantidadTotal.toInt()}'),
                           ],
                         ),
                       ),
@@ -224,19 +205,9 @@ class _ProductosAgrupadsWidgetState extends State<ProductosAgrupadsWidget> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(
-                              'Total',
-                              style: Theme.of(context).textTheme.bodySmall,
-                            ),
+                            Text('Total'),
                             const SizedBox(height: 4),
-                            Text(
-                              'Bs. ${totalGeneral.toStringAsFixed(2)}',
-                              style: Theme.of(context).textTheme.bodySmall
-                                  ?.copyWith(
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.orange,
-                                  ),
-                            ),
+                            Text('Bs. ${totalGeneral.toStringAsFixed(2)}'),
                           ],
                         ),
                       ),
@@ -265,42 +236,12 @@ class _ProductosAgrupadsWidgetState extends State<ProductosAgrupadsWidget> {
                       isDarkMode ? Colors.grey[800] : Colors.grey[100],
                     ),
                     columns: [
-                      DataColumn(
-                        label: Text(
-                          'Producto',
-                          style: Theme.of(context).textTheme.labelSmall
-                              ?.copyWith(fontWeight: FontWeight.bold),
-                        ),
-                      ),
-                      DataColumn(
-                        label: Text(
-                          'Cantidad',
-                          style: Theme.of(context).textTheme.labelSmall
-                              ?.copyWith(fontWeight: FontWeight.bold),
-                        ),
-                      ),
-                      DataColumn(
-                        label: Text(
-                          'Precio',
-                          style: Theme.of(context).textTheme.labelSmall
-                              ?.copyWith(fontWeight: FontWeight.bold),
-                        ),
-                      ),
-                      DataColumn(
-                        label: Text(
-                          'Subtotal',
-                          style: Theme.of(context).textTheme.labelSmall
-                              ?.copyWith(fontWeight: FontWeight.bold),
-                        ),
-                      ),
+                      DataColumn(label: Text('Producto')),
+                      DataColumn(label: Text('Cantidad')),
+                      DataColumn(label: Text('Precio')),
+                      DataColumn(label: Text('Subtotal')),
                       if (widget.mostrarDetalleVentas)
-                        DataColumn(
-                          label: Text(
-                            '',
-                            style: Theme.of(context).textTheme.labelSmall
-                                ?.copyWith(fontWeight: FontWeight.bold),
-                          ),
-                        ),
+                        DataColumn(label: Text('')),
                     ],
                     rows: [
                       ...productos.map((producto) {
@@ -320,17 +261,10 @@ class _ProductosAgrupadsWidgetState extends State<ProductosAgrupadsWidget> {
                                       producto.nombreProducto,
                                       maxLines: 2,
                                       overflow: TextOverflow.ellipsis,
-                                      style: const TextStyle(
-                                        fontWeight: FontWeight.w500,
-                                      ),
                                     ),
                                     if (producto.codigoProducto.isNotEmpty)
                                       Text(
                                         'Código: ${producto.codigoProducto}',
-                                        style: TextStyle(
-                                          fontSize: 11,
-                                          color: Colors.grey[600],
-                                        ),
                                       ),
                                   ],
                                 ),
@@ -339,9 +273,6 @@ class _ProductosAgrupadsWidgetState extends State<ProductosAgrupadsWidget> {
                             DataCell(
                               Text(
                                 '${producto.cantidadTotal.toStringAsFixed(2)} ${producto.unidadMedida}',
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.w500,
-                                ),
                               ),
                             ),
                             DataCell(
@@ -349,15 +280,7 @@ class _ProductosAgrupadsWidgetState extends State<ProductosAgrupadsWidget> {
                                 'Bs. ${producto.precioUnitario.toStringAsFixed(2)}',
                               ),
                             ),
-                            DataCell(
-                              Text(
-                                'Bs. ${producto.subtotal}',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.orange[700],
-                                ),
-                              ),
-                            ),
+                            DataCell(Text('Bs. ${producto.subtotal}')),
                             if (widget.mostrarDetalleVentas)
                               DataCell(
                                 producto.ventas.isNotEmpty
@@ -390,30 +313,15 @@ class _ProductosAgrupadsWidgetState extends State<ProductosAgrupadsWidget> {
                               : Colors.grey[100],
                         ),
                         cells: [
-                          DataCell(
-                            Text(
-                              'TOTAL',
-                              style: Theme.of(context).textTheme.labelSmall
-                                  ?.copyWith(fontWeight: FontWeight.bold),
-                            ),
-                          ),
+                          DataCell(Text('TOTAL')),
                           DataCell(
                             Text(
                               '${provider.cantidadTotal.toStringAsFixed(2)}',
-                              style: Theme.of(context).textTheme.labelSmall
-                                  ?.copyWith(fontWeight: FontWeight.bold),
                             ),
                           ),
                           DataCell(const SizedBox.shrink()),
                           DataCell(
-                            Text(
-                              'Bs. ${totalGeneral.toStringAsFixed(2)}',
-                              style: Theme.of(context).textTheme.labelSmall
-                                  ?.copyWith(
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.orange[700],
-                                  ),
-                            ),
+                            Text('Bs. ${totalGeneral.toStringAsFixed(2)}'),
                           ),
                           if (widget.mostrarDetalleVentas)
                             DataCell(const SizedBox.shrink()),
@@ -448,12 +356,7 @@ class _ProductosAgrupadsWidgetState extends State<ProductosAgrupadsWidget> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'Ventas (${producto.ventas.length}):',
-            style: Theme.of(
-              context,
-            ).textTheme.labelMedium?.copyWith(fontWeight: FontWeight.bold),
-          ),
+          Text('Ventas (${producto.ventas.length}):'),
           const SizedBox(height: 12),
           ...producto.ventas.map((venta) {
             return Padding(
@@ -473,27 +376,16 @@ class _ProductosAgrupadsWidgetState extends State<ProductosAgrupadsWidget> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(
-                            venta.numeroVenta,
-                            style: Theme.of(context).textTheme.bodySmall
-                                ?.copyWith(fontWeight: FontWeight.bold),
-                          ),
+                          Text("Folio: " + venta.ventaId.toString()),
                           Text(
                             venta.nombreCliente,
-                            style: Theme.of(context).textTheme.bodySmall,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                           ),
                         ],
                       ),
                     ),
-                    Text(
-                      '${venta.cantidad.toStringAsFixed(2)} un.',
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: Colors.blue,
-                      ),
-                    ),
+                    Text('${venta.cantidad.toStringAsFixed(2)} un.'),
                   ],
                 ),
               ),
