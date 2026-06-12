@@ -1,27 +1,35 @@
 import 'package:flutter/material.dart';
 
 /// Clase que centraliza todos los colores de la aplicación
-/// Esquema unificado: Verde-Teal para coherencia visual
+/// Esquema: Grafito Premium + Rojo Paucara (estilo Rappi/PedidosYa)
 ///
 /// Filosofía de color:
-/// - Verde: Representa crecimiento, frescura, dinero (perfecto para e-commerce)
-/// - Teal: Complemento natural del verde, profesional y moderno
+/// - Grafito: Neutral, profesional, transmite seriedad
+/// - Rojo Paucara: Solo en marca, AppBar y CTA principal
+/// - Gris claro: Fondos limpios
+/// - Estados: Verde/Naranja/Rojo solo para semántica, nunca color primario
 class AppColors {
   AppColors._(); // Constructor privado
 
-  // ==================== COLORES PRINCIPALES (VERDE-TEAL) ====================
+  // ==================== COLORES PRINCIPALES (GRAFITO + ROJO PAUCARA) ====================
 
-  /// Verde principal (usado en botones, precios, acciones)
-  static const Color primaryLight = Color(0xFF4ade80); // Green 400
-  static const Color primary = Color(0xFF22c55e); // Green 500
-  static const Color primaryDark = Color(0xFF16a34a); // Green 600
-  static const Color primaryDarker = Color(0xFF15803d); // Green 700
+  /// Grafito principal (AppBar, navegación inferior)
+  static const Color primaryLight = Color(0xFF424242); // Grafito claro
+  static const Color primary = Color(0xFF212121); // Grafito #212121
+  static const Color primaryDark = Color(0xFF000000); // Grafito oscuro
 
-  /// Teal como color secundario/acento (navegación, estados)
-  static const Color secondaryLight = Color(0xFF2dd4bf); // Teal 400
-  static const Color secondary = Color(0xFF14b8a6); // Teal 500
-  static const Color secondaryDark = Color(0xFF0d9488); // Teal 600
-  static const Color secondaryDarker = Color(0xFF0f766e); // Teal 700
+  /// Rojo Paucara (logo, FAB, botón CTA principal - SOLO momentos clave)
+  static const Color accentRed = Color(0xFFC8102E); // Rojo Paucara
+  static const Color accentRedLight = Color(0xFFE53935); // Rojo claro
+  static const Color accentRedDark = Color(0xFF880E1F); // Rojo oscuro
+
+  /// Gris para fondos (neutro, limpio)
+  static const Color backgroundLight = Color(0xFFF5F5F5); // Gris fondo
+
+  /// Secundario: Ámbar para badges pendiente
+  static const Color secondaryLight = Color(0xFFFDD835); // Ámbar claro
+  static const Color secondary = Color(0xFFFFCA28); // Ámbar #FFCA28
+  static const Color secondaryDark = Color(0xFFFBC02D); // Ámbar oscuro
 
   // ==================== COLORES POR ROL (ACTUALIZADOS) ====================
 

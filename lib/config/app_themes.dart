@@ -2,14 +2,26 @@ import 'package:flutter/material.dart';
 import 'app_colors.dart';
 
 /// Definición de temas claros y oscuros para la aplicación
-/// ACTUALIZADO: Esquema unificado Gris Neutro
+/// ACTUALIZADO: Grafito Premium + Rojo Paucara (estilo Rappi/PedidosYa)
+///
+/// Colores:
+/// - Grafito (#212121): AppBar, navegación, seriedad
+/// - Rojo Paucara (#C8102E): Logo, FAB, botón CTA principal SOLO
+/// - Gris fondo (#F5F5F5): Fondos limpios
+/// - Ámbar (#FFCA28): Badges pendiente
 class AppThemes {
-  // Colores principales - Gris Neutro
-  static const Color _primaryColor = Color(0xFF6B7280);          // Gris 500
-  static const Color _primaryDark = Color(0xFF4B5563);           // Gris 700
-  static const Color _secondaryColor = Color(0xFF9CA3AF);        // Gris 400
-  static const Color _secondaryLight = Color(0xFFD1D5DB);        // Gris 300
-  static const Color _secondaryDark = Color(0xFF374151);         // Gris 800
+  // Colores principales - Grafito Premium
+  static const Color _primaryColor = Color(0xFF212121);          // Grafito #212121
+  static const Color _primaryDark = Color(0xFF000000);           // Grafito oscuro
+
+  // Color de acento - Rojo Paucara (SOLO momentos clave)
+  static const Color _accentRed = Color(0xFFC8102E);             // Rojo Paucara #C8102E
+
+  // Fondos y secundarios
+  static const Color _backgroundLight = Color(0xFFF5F5F5);       // Gris fondo
+  static const Color _secondaryColor = Color(0xFFFFCA28);        // Ámbar #FFCA28
+  static const Color _secondaryLight = Color(0xFFFDD835);        // Ámbar claro
+  static const Color _secondaryDark = Color(0xFFFBC02D);         // Ámbar oscuro
 
   // Tema Claro
   static ThemeData get lightTheme {
@@ -17,7 +29,7 @@ class AppThemes {
       useMaterial3: true,
       brightness: Brightness.light,
       primaryColor: _primaryColor,
-      scaffoldBackgroundColor: Colors.grey[50],
+      scaffoldBackgroundColor: _backgroundLight,
       cardColor: Colors.white,
 
       // AppBar
@@ -28,18 +40,16 @@ class AppThemes {
         centerTitle: false,
       ),
 
-      // Color scheme - ACTUALIZADO con Verde-Teal
+      // Color scheme - Grafito + Ámbar
       colorScheme: ColorScheme.light(
-        primary: _primaryColor,              // Verde
-        secondary: _secondaryColor,          // Teal
-        tertiary: _secondaryLight,           // Teal claro
-        surface: Colors.white,
-        background: Colors.grey[50]!,
-        error: AppColors.error,              // Rojo moderno
+        primary: _primaryColor,              // Grafito #212121
+        secondary: _secondaryColor,          // Ámbar #FFCA28
+        tertiary: _secondaryLight,           // Ámbar claro
+        surface: _backgroundLight,           // Gris fondo #F5F5F5
+        error: AppColors.error,              // Rojo semántico (error)
         onPrimary: Colors.white,
-        onSecondary: Colors.white,
+        onSecondary: Colors.black87,
         onSurface: Colors.black87,
-        onBackground: Colors.black87,
         onError: Colors.white,
       ),
 
@@ -167,7 +177,10 @@ class AppThemes {
           borderRadius: BorderRadius.circular(8),
           borderSide: const BorderSide(color: AppColors.error),
         ),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 12,
+        ),
       ),
 
       // Progress indicator
@@ -209,18 +222,16 @@ class AppThemes {
         centerTitle: false,
       ),
 
-      // Color scheme - ACTUALIZADO con Verde-Teal para modo oscuro
+      // Color scheme - Grafito oscuro + Ámbar (dark mode)
       colorScheme: const ColorScheme.dark(
-        primary: _primaryDark,               // Verde oscuro
-        secondary: _secondaryColor,          // Teal
-        tertiary: _secondaryDark,            // Teal oscuro
+        primary: _primaryDark,               // Grafito oscuro
+        secondary: _secondaryColor,          // Ámbar #FFCA28
+        tertiary: _secondaryDark,            // Ámbar oscuro
         surface: Color(0xFF1E1E1E),
-        background: Color(0xFF121212),
-        error: AppColors.error,              // Rojo moderno
+        error: AppColors.error,              // Rojo semántico (error)
         onPrimary: Colors.white,
-        onSecondary: Colors.white,
+        onSecondary: Colors.black87,
         onSurface: Colors.white,
-        onBackground: Colors.white,
         onError: Colors.white,
       ),
 
@@ -348,7 +359,10 @@ class AppThemes {
           borderRadius: BorderRadius.all(Radius.circular(8)),
           borderSide: BorderSide(color: AppColors.error),
         ),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 12,
+        ),
       ),
 
       // Progress indicator
