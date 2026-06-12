@@ -87,6 +87,7 @@ class _LoginScreenState extends State<LoginScreen>
   @override
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
       body: LoadingOverlay(
@@ -97,11 +98,15 @@ class _LoginScreenState extends State<LoginScreen>
             gradient: LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
-              colors: [
-                Theme.of(context).primaryColor,
-                Theme.of(context).primaryColor.withValues(alpha: 0.7),
-                // Theme.of(context).colorScheme.secondary,
-              ],
+              colors: isDarkMode
+                  ? [
+                      const Color(0xFF121212), // Dark background
+                      const Color(0xFF1E1E1E),
+                    ]
+                  : [
+                      Theme.of(context).primaryColor,        // Grafito #212121
+                      const Color(0xFFC8102E).withValues(alpha: 0.85), // Rojo Paucara
+                    ],
             ),
           ),
           child: SafeArea(
@@ -198,23 +203,23 @@ class _LoginScreenState extends State<LoginScreen>
   Widget _buildHeader() {
     return Column(
       children: [
-        // Logo circular con gradiente
+        // Logo con gradiente Grafito + Rojo Paucara
         Container(
           width: 80,
           height: 80,
           decoration: BoxDecoration(
             shape: BoxShape.rectangle,
-            gradient: LinearGradient(
+            gradient: const LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
               colors: [
-                Theme.of(context).primaryColor,
-                Theme.of(context).colorScheme.secondary,
+                Color(0xFF212121),    // Grafito
+                Color(0xFFC8102E),    // Rojo Paucara
               ],
             ),
             boxShadow: [
               BoxShadow(
-                color: Theme.of(context).primaryColor.withValues(alpha: 0.4),
+                color: const Color(0xFFC8102E).withValues(alpha: 0.3),
                 blurRadius: 15,
                 offset: const Offset(0, 5),
               ),
@@ -232,7 +237,7 @@ class _LoginScreenState extends State<LoginScreen>
           'Distribuidora Paucara',
           style: Theme.of(context).textTheme.headlineMedium?.copyWith(
             fontWeight: FontWeight.bold,
-            color: Theme.of(context).colorScheme.primary,
+            color: const Color(0xFFC8102E),  // Rojo Paucara para el título
           ),
           textAlign: TextAlign.center,
         ),
@@ -486,29 +491,36 @@ class _LoginScreenState extends State<LoginScreen>
   }
 
   Widget _buildLoginButton(AuthProvider authProvider) {
-    final colorScheme = Theme.of(context).colorScheme;
-
     return SizedBox(
       width: double.infinity,
       height: 56,
       child: ElevatedButton(
         onPressed: authProvider.isLoading ? null : _login,
         style: ElevatedButton.styleFrom(
-          backgroundColor: colorScheme.primary,
-          foregroundColor: colorScheme.onPrimary,
+          backgroundColor: const Color(0xFFC8102E),  // Rojo Paucara
+          foregroundColor: Colors.white,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
           ),
-          elevation: 0,
-          shadowColor: colorScheme.primary.withValues(alpha: 0.4),
+          elevation: 2,
+          shadowColor: const Color(0xFFC8102E).withValues(alpha: 0.4),
         ),
-        child: Text(
-          'Iniciar Sesión',
-          style: TextStyle(
-            fontSize: AppTextStyles.bodyLarge(context).fontSize!,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
+        child: authProvider.isLoading
+            ? const SizedBox(
+                width: 24,
+                height: 24,
+                child: CircularProgressIndicator(
+                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                  strokeWidth: 2,
+                ),
+              )
+            : Text(
+                'Iniciar Sesión',
+                style: TextStyle(
+                  fontSize: AppTextStyles.bodyLarge(context).fontSize!,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
       ),
     );
   }
