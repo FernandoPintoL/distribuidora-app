@@ -10,23 +10,26 @@ import '../services/estados_helpers.dart';
 // ✅ NUEVO 2026-02-27: Clase para estado del documento
 class EstadoDocumento {
   final int id;
-  final String codigo;
+  final String? codigo;
   final String nombre;
-  final String color;
+  final String? color;
+  final String? descripcion;
 
   EstadoDocumento({
     required this.id,
-    required this.codigo,
+    this.codigo,
     required this.nombre,
-    required this.color,
+    this.color,
+    this.descripcion,
   });
 
   factory EstadoDocumento.fromJson(Map<String, dynamic> json) {
     return EstadoDocumento(
       id: json['id'] as int,
-      codigo: json['codigo'] as String,
-      nombre: json['nombre'] as String,
-      color: json['color'] as String? ?? '#808080',
+      codigo: json['codigo'] as String?,
+      nombre: json['nombre'] as String? ?? 'Desconocido',
+      color: json['color'] as String?,
+      descripcion: json['descripcion'] as String?,
     );
   }
 }

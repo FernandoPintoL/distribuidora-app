@@ -1428,9 +1428,9 @@ class _PedidoDetalleScreenState extends State<PedidoDetalleScreen> {
     // Intentar parsear color hex del backend
     Color estadoColor = Colors.grey;
     try {
-      if (estadoData.color.startsWith('#')) {
+      if (estadoData.color != null && estadoData.color!.startsWith('#')) {
         estadoColor = Color(
-          int.parse(estadoData.color.replaceFirst('#', '0xff')),
+          int.parse(estadoData.color!.replaceFirst('#', '0xff')),
         );
       }
     } catch (e) {

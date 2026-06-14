@@ -1,16 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:intl/intl.dart';
-import 'dart:io';
-import 'package:path_provider/path_provider.dart';
-import 'package:http/http.dart' as http;
-import '../../config/app_text_styles.dart';
-import '../../models/models.dart';
+import '../../config/app_urls.dart'; // ✅ NUEVO: Para BASE_URL_IMG
 import '../../providers/providers.dart';
 import '../../services/print_service.dart';
-import '../../services/venta_service.dart';
 import '../../utils/phone_utils.dart';
 import '../../widgets/map_location_selector.dart';
+import '../../models/entrega.dart';
+import '../../models/venta.dart';
+import '../../models/entrega_venta_confirmacion.dart';
+import '../chofer/entrega_detalle/confirmar_entrega_venta_screen.dart';
+import 'venta_detalle/contact_button_widget.dart';
+import 'venta_detalle/cliente_avatar_widget.dart';
+import 'venta_detalle/producto_avatar_widget.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class VentaDetalleScreen extends StatefulWidget {
@@ -23,56 +24,19 @@ class VentaDetalleScreen extends StatefulWidget {
 }
 
 class _VentaDetalleScreenState extends State<VentaDetalleScreen> {
-  late VentaService _ventaService;
-  Map<String, dynamic>? _entregaData;
-  bool _isLoadingEntrega = false;
-  int _indiceImagenActual = 0;
-  bool _isDownloadingImagen = false;
-
   @override
   void initState() {
     super.initState();
-    _ventaService = VentaService();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final ventasProvider = context.read<VentasProvider>();
       ventasProvider.loadVentaDetalle(widget.ventaId);
-      _loadEntregaDetails();
     });
-  }
-
-  /// Carga los detalles de la entrega asociada a la venta
-  Future<void> _loadEntregaDetails() async {
-    if (!mounted) return;
-
-    setState(() {
-      _isLoadingEntrega = true;
-    });
-
-    try {
-      final response = await _ventaService.getEntregaPorVenta(widget.ventaId);
-
-      if (mounted) {
-        setState(() {
-          if (response.success && response.data != null) {
-            _entregaData = response.data;
-          }
-          _isLoadingEntrega = false;
-        });
-      }
-    } catch (e) {
-      if (mounted) {
-        setState(() {
-          _isLoadingEntrega = false;
-        });
-      }
-      debugPrint('Error loading entrega details: $e');
-    }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Detalle de Venta'), elevation: 0),
+      appBar: AppBar(title: Text('Venta #${widget.ventaId}'), elevation: 0),
       body: Consumer<VentasProvider>(
         builder: (context, ventasProvider, _) {
           // Loading state
@@ -122,367 +86,40 @@ class _VentaDetalleScreenState extends State<VentaDetalleScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 // Header card mejorado
-                Card(
-                  child: Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // Número y Total
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    'Folio #${venta.id} | ${venta.numero}',
-                                    style: Theme.of(
-                                      context,
-                                    ).textTheme.titleLarge,
+                Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      // Estados (Documento y Logístico) - Mejorados con colores
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          // Estado Documento
+                          Expanded(
+                            child: Container(
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                color: _getEstadoDocumentoColor(
+                                  venta.estadoDocumentoObj?.nombre,
+                                ).withValues(alpha: 0.1),
+                                border: Border.all(
+                                  color: _getEstadoDocumentoColor(
+                                    venta.estadoDocumentoObj?.nombre,
                                   ),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    venta.fecha.toString().split(' ')[0],
-                                    style: Theme.of(context).textTheme.bodySmall
-                                        ?.copyWith(color: Colors.grey),
-                                  ),
-                                ],
+                                  width: 1.5,
+                                ),
+                                borderRadius: BorderRadius.circular(8),
                               ),
-                            ),
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.end,
-                              children: [
-                                Text(
-                                  'Bs. ${venta.total.toStringAsFixed(2)}',
-                                  style: TextStyle(
-                                    fontSize: AppTextStyles.headlineSmall(
-                                      context,
-                                    ).fontSize!,
-                                    fontWeight: FontWeight.bold,
-                                    color:
-                                        Theme.of(context).brightness ==
-                                            Brightness.dark
-                                        ? Colors.greenAccent
-                                        : Colors.green,
-                                  ),
-                                ),
-                                const SizedBox(height: 4),
-                                Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 8,
-                                    vertical: 4,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color:
-                                        Theme.of(context).brightness ==
-                                            Brightness.dark
-                                        ? Colors.grey[700]
-                                        : Colors.grey[200],
-                                    borderRadius: BorderRadius.circular(4),
-                                  ),
-                                  child: Text(
-                                    venta.estadoPago,
-                                    style: Theme.of(
-                                      context,
-                                    ).textTheme.labelSmall,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 16),
-                        const Divider(),
-                        const SizedBox(height: 12),
-                        // Cliente - Card mejorada con Avatar, Ubicación y Botones
-                        Card(
-                          elevation: 0,
-                          color: Theme.of(context).brightness == Brightness.dark
-                              ? Colors.grey[800]?.withValues(alpha: 0.5)
-                              : Colors.blue[50]?.withValues(alpha: 0.5),
-                          child: Padding(
-                            padding: const EdgeInsets.all(12),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                // Avatar y Nombre del Cliente
-                                Row(
-                                  children: [
-                                    // Avatar con iniciales
-                                    CircleAvatar(
-                                      radius: 32,
-                                      backgroundColor: Theme.of(
-                                        context,
-                                      ).primaryColor,
-                                      child: Text(
-                                        (venta.clienteNombre ?? 'C')
-                                            .substring(0, 1)
-                                            .toUpperCase(),
-                                        style: TextStyle(
-                                          fontSize: AppTextStyles.displaySmall(
-                                            context,
-                                          ).fontSize!,
-                                          fontWeight: FontWeight.bold,
-                                          color: Colors.white,
-                                        ),
-                                      ),
-                                    ),
-                                    const SizedBox(width: 12),
-                                    // Información del Cliente
-                                    Expanded(
-                                      child: Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        children: [
-                                          Text(
-                                            venta.clienteNombre ??
-                                                'Cliente desconocido',
-                                            style: TextStyle(
-                                              fontWeight: FontWeight.bold,
-                                              fontSize:
-                                                  AppTextStyles.bodyMedium(
-                                                    context,
-                                                  ).fontSize!,
-                                            ),
-                                            maxLines: 2,
-                                            overflow: TextOverflow.ellipsis,
-                                          ),
-                                          const SizedBox(height: 2),
-                                          Text(
-                                            'NIT: ${venta.cliente ?? 'N/A'}',
-                                            style: Theme.of(
-                                              context,
-                                            ).textTheme.bodySmall,
-                                          ),
-                                          if (venta.clienteLocalidad != null &&
-                                              venta
-                                                  .clienteLocalidad!
-                                                  .isNotEmpty) ...[
-                                            const SizedBox(height: 2),
-                                            Text(
-                                              '📍 ${venta.clienteLocalidad}',
-                                              style: Theme.of(context)
-                                                  .textTheme
-                                                  .bodySmall
-                                                  ?.copyWith(
-                                                    color:
-                                                        Theme.of(
-                                                              context,
-                                                            ).brightness ==
-                                                            Brightness.dark
-                                                        ? Colors.greenAccent
-                                                        : Colors.green,
-                                                    fontWeight: FontWeight.w500,
-                                                  ),
-                                              maxLines: 1,
-                                              overflow: TextOverflow.ellipsis,
-                                            ),
-                                          ],
-                                        ],
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                                // Ubicación de Entrega (si disponible)
-                                if (venta.direccion != null &&
-                                    venta.direccion!.isNotEmpty) ...[
-                                  const SizedBox(height: 12),
-                                  const Divider(height: 1),
-                                  const SizedBox(height: 12),
-                                  Row(
-                                    children: [
-                                      const Icon(
-                                        Icons.location_on,
-                                        size: 16,
-                                        color: Colors.red,
-                                      ),
-                                      const SizedBox(width: 8),
-                                      Expanded(
-                                        child: Column(
-                                          crossAxisAlignment:
-                                              CrossAxisAlignment.start,
-                                          children: [
-                                            Text(
-                                              'Dirección de Entrega',
-                                              style: TextStyle(
-                                                fontSize:
-                                                    AppTextStyles.labelSmall(
-                                                      context,
-                                                    ).fontSize!,
-                                                fontWeight: FontWeight.w600,
-                                                color: Colors.grey,
-                                              ),
-                                            ),
-                                            const SizedBox(height: 2),
-                                            Text(
-                                              venta.direccion!,
-                                              style: TextStyle(
-                                                fontSize:
-                                                    AppTextStyles.bodySmall(
-                                                      context,
-                                                    ).fontSize!,
-                                                fontWeight: FontWeight.w500,
-                                              ),
-                                              maxLines: 2,
-                                              overflow: TextOverflow.ellipsis,
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                  // Coordenadas GPS si disponibles
-                                  if (venta.latitud != null &&
-                                      venta.longitud != null) ...[
-                                    const SizedBox(height: 8),
-                                    Row(
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.spaceBetween,
-                                      children: [
-                                        Expanded(
-                                          child: Text(
-                                            '🧭 ${venta.latitud!.toStringAsFixed(4)}, ${venta.longitud!.toStringAsFixed(4)}',
-                                            style: TextStyle(
-                                              fontSize:
-                                                  AppTextStyles.labelSmall(
-                                                    context,
-                                                  ).fontSize!,
-                                              color:
-                                                  Theme.of(
-                                                        context,
-                                                      ).brightness ==
-                                                      Brightness.dark
-                                                  ? Colors.grey[400]
-                                                  : Colors.grey[600],
-                                            ),
-                                          ),
-                                        ),
-                                        const SizedBox(width: 12),
-                                        // ✅ NUEVO: Botón "Ver en Mapa"
-                                        ElevatedButton.icon(
-                                          onPressed: () => _abrirMapa(
-                                            venta.latitud!,
-                                            venta.longitud!,
-                                          ),
-                                          icon: const Icon(Icons.map, size: 16),
-                                          label: const Text('Mapa'),
-                                          style: ElevatedButton.styleFrom(
-                                            padding: const EdgeInsets.symmetric(
-                                              horizontal: 12,
-                                              vertical: 8,
-                                            ),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ],
-                                ],
-                                // Botones de Contacto
-                                if (venta.clienteTelefono != null &&
-                                    venta.clienteTelefono!.isNotEmpty) ...[
-                                  const SizedBox(height: 12),
-                                  const Divider(height: 1),
-                                  const SizedBox(height: 12),
-                                  Row(
-                                    mainAxisAlignment:
-                                        MainAxisAlignment.spaceEvenly,
-                                    children: [
-                                      // Botón Llamar
-                                      _buildContactButton(
-                                        context,
-                                        icon: Icons.phone,
-                                        label: 'Llamar',
-                                        color: Colors.green,
-                                        onPressed: () =>
-                                            PhoneUtils.llamarCliente(
-                                              context,
-                                              venta.clienteTelefono,
-                                            ),
-                                      ),
-                                      // Botón WhatsApp
-                                      _buildContactButton(
-                                        context,
-                                        icon: Icons.chat,
-                                        label: 'WhatsApp',
-                                        color: Colors.green[600]!,
-                                        onPressed: () =>
-                                            PhoneUtils.enviarWhatsApp(
-                                              context,
-                                              venta.clienteTelefono,
-                                            ),
-                                      ),
-                                      // Botón Descargar PDF
-                                      _buildContactButton(
-                                        context,
-                                        icon: Icons.download,
-                                        label: 'Nota',
-                                        color: Colors.blue,
-                                        onPressed: () =>
-                                            _descargarPDFVenta(venta.id),
-                                      ),
-                                    ],
-                                  ),
-                                ] else ...[
-                                  const SizedBox(height: 12),
-                                  const Divider(height: 1),
-                                  const SizedBox(height: 12),
-                                  Center(
-                                    child: _buildContactButton(
-                                      context,
-                                      icon: Icons.download,
-                                      label: 'Descargar Nota',
-                                      color: Colors.blue,
-                                      onPressed: () =>
-                                          _descargarPDFVenta(venta.id),
-                                    ),
-                                  ),
-                                ],
-                              ],
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 12),
-                        // Estados
-                        Row(
-                          children: [
-                            Expanded(
                               child: Row(
                                 children: [
-                                  const Icon(
+                                  Icon(
                                     Icons.check_circle_outline,
-                                    size: 18,
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        const Text(
-                                          'Estado Documento',
-                                          style: TextStyle(fontSize: 12),
-                                        ),
-                                        Text(
-                                          venta.estadoLogistico,
-                                          style: const TextStyle(
-                                            fontWeight: FontWeight.bold,
-                                          ),
-                                        ),
-                                      ],
+                                    size: 20,
+                                    color: _getEstadoDocumentoColor(
+                                      venta.estadoDocumentoObj?.nombre,
                                     ),
                                   ),
-                                ],
-                              ),
-                            ),
-                            Expanded(
-                              child: Row(
-                                children: [
-                                  const Icon(
-                                    Icons.local_shipping_outlined,
-                                    size: 18,
-                                  ),
                                   const SizedBox(width: 8),
                                   Expanded(
                                     child: Column(
@@ -490,14 +127,20 @@ class _VentaDetalleScreenState extends State<VentaDetalleScreen> {
                                           CrossAxisAlignment.start,
                                       children: [
                                         const Text(
-                                          'Estado Logístico',
-                                          style: TextStyle(fontSize: 12),
+                                          'Documento',
+                                          style: TextStyle(
+                                            fontSize: 11,
+                                            color: Colors.grey,
+                                          ),
                                         ),
                                         Text(
-                                          venta.estadoLogisticoCodigo ??
-                                              'SIN_ENTREGA',
-                                          style: const TextStyle(
+                                          venta.estadoDocumentoObj?.nombre ??
+                                              'Desconocido',
+                                          style: TextStyle(
                                             fontWeight: FontWeight.bold,
+                                            color: _getEstadoDocumentoColor(
+                                              venta.estadoDocumentoObj?.nombre,
+                                            ),
                                           ),
                                           overflow: TextOverflow.ellipsis,
                                         ),
@@ -507,46 +150,240 @@ class _VentaDetalleScreenState extends State<VentaDetalleScreen> {
                                 ],
                               ),
                             ),
-                          ],
-                        ),
-                        const SizedBox(height: 12),
-                        // Chips de información
-                        Wrap(
-                          spacing: 8,
-                          runSpacing: 8,
+                          ),
+                          const SizedBox(width: 12),
+                          // Estado Logístico
+                          Expanded(
+                            child: Container(
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                color: _getEstadoLogisticoColor(
+                                  venta.estadoLogisticoObj?.codigo,
+                                ).withValues(alpha: 0.1),
+                                border: Border.all(
+                                  color: _getEstadoLogisticoColor(
+                                    venta.estadoLogisticoObj?.codigo,
+                                  ),
+                                  width: 1.5,
+                                ),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Row(
+                                children: [
+                                  Icon(
+                                    Icons.local_shipping_outlined,
+                                    size: 20,
+                                    color: _getEstadoLogisticoColor(
+                                      venta.estadoLogisticoObj?.codigo,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        const Text(
+                                          'Logística',
+                                          style: TextStyle(
+                                            fontSize: 11,
+                                            color: Colors.grey,
+                                          ),
+                                        ),
+                                        Text(
+                                          venta.estadoLogisticoObj?.nombre ??
+                                              venta.estadoLogistico,
+                                          style: TextStyle(
+                                            fontWeight: FontWeight.bold,
+                                            color: _getEstadoLogisticoColor(
+                                              venta.estadoLogisticoObj?.codigo,
+                                            ),
+                                          ),
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      // Cliente - Card mejorada con Avatar, Ubicación y Botones
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 4),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            if (venta.canalOrigen != null)
-                              Chip(
-                                label: Text(venta.canalOrigen!),
-                                avatar: const Icon(Icons.storefront, size: 16),
+                            // Avatar y Nombre del Cliente
+                            Row(
+                              children: [
+                                // Avatar con foto o iniciales
+                                ClienteAvatarWidget(
+                                  clienteNombre: venta.cliente?.nombre,
+                                  clienteFotoPerfil: venta
+                                      .cliente
+                                      ?.fotoPerfil, // ✅ REMOVIDO ! innecesario
+                                ),
+                                const SizedBox(width: 12),
+                                // Información del Cliente
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        venta.cliente?.nombre ??
+                                            'Cliente desconocido',
+                                        style: TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                        maxLines: 2,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                      const SizedBox(height: 2),
+                                      Text(venta.cliente?.razonSocial ?? 'N/A'),
+                                      if (venta.cliente?.localidad != null) ...[
+                                        const SizedBox(height: 2),
+                                        Text(
+                                          '📍 ${venta.cliente?.localidad?.nombre ?? 'Localidad desconocida'}',
+                                          style: TextStyle(
+                                            fontWeight: FontWeight.w500,
+                                          ),
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ],
+                                      //
+                                    ],
+                                  ),
+                                ),
+                                if (venta.tipoPago != null)
+                                  Chip(
+                                    label: Text(venta.tipoPago!.nombre),
+                                    avatar: const Icon(
+                                      Icons.payment,
+                                      size: 16,
+                                      color: Colors.lightGreen,
+                                    ),
+                                  ),
+                              ],
+                            ),
+                            const SizedBox(height: 12),
+                            // Ubicación de Entrega (si disponible)
+                            if (venta.direccionCliente != null) ...[
+                              const Divider(height: 1),
+                              const SizedBox(height: 12),
+                              Row(
+                                children: [
+                                  const Icon(
+                                    Icons.location_on,
+                                    size: 16,
+                                    color: Colors.red,
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          'Dirección de Entrega',
+                                          style: TextStyle(
+                                            fontWeight: FontWeight.w600,
+                                            color: Colors.grey,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 2),
+                                        Text(
+                                          venta
+                                                  .direccionCliente!
+                                                  .observaciones ??
+                                              'Sin dirección específica',
+                                          style: TextStyle(
+                                            fontWeight: FontWeight.w500,
+                                          ),
+                                          maxLines: 2,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
                               ),
-                            if (venta.tipoPago != null)
-                              Chip(
-                                label: Text(venta.tipoPago!.nombre),
-                                avatar: const Icon(Icons.payment, size: 16),
+                              const SizedBox(height: 12),
+                            ],
+                            // Botones de Contacto
+                            if (venta.cliente?.telefono != null) ...[
+                              const Divider(height: 1),
+                              const SizedBox(height: 12),
+                              Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceEvenly,
+                                children: [
+                                  // Botón Llamar
+                                  ContactButton(
+                                    icon: Icons.phone,
+                                    label: 'Llamar',
+                                    color: Colors.green,
+                                    onPressed: () => PhoneUtils.llamarCliente(
+                                      context,
+                                      venta.cliente?.telefono,
+                                    ),
+                                  ),
+                                  // Botón WhatsApp
+                                  ContactButton(
+                                    icon: Icons.chat,
+                                    label: 'WhatsApp',
+                                    color: Colors.green[600]!,
+                                    onPressed: () => PhoneUtils.enviarWhatsApp(
+                                      context,
+                                      venta.cliente?.telefono,
+                                    ),
+                                  ),
+                                  // Botón Descargar PDF
+                                  ContactButton(
+                                    icon: Icons.download,
+                                    label: 'Nota',
+                                    color: Colors.blue,
+                                    onPressed: () =>
+                                        _descargarPDFVenta(venta.id),
+                                  ),
+                                  // ✅ Botón Mapa (solo si hay dirección con coordenadas)
+                                  if (venta.direccionCliente?.latitud != null &&
+                                      venta.direccionCliente?.longitud != null)
+                                    ContactButton(
+                                      icon: Icons.map,
+                                      label: 'Mapa',
+                                      color: Colors.lightGreen,
+                                      onPressed: () => _abrirMapa(
+                                        venta,
+                                      ), // ✅ Pasar venta completa
+                                    ),
+                                ],
                               ),
-                            if (venta.politicaPago != null)
-                              Chip(
-                                label: Text(venta.politicaPago!),
-                                avatar: const Icon(Icons.schedule, size: 16),
+                            ] else ...[
+                              const SizedBox(height: 12),
+                              const Divider(height: 1),
+                              Center(
+                                child: ContactButton(
+                                  icon: Icons.download,
+                                  label: 'Descargar Nota',
+                                  color: Colors.blue,
+                                  onPressed: () => _descargarPDFVenta(venta.id),
+                                ),
                               ),
+                            ],
                           ],
                         ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
                 ),
-                const SizedBox(height: 24),
-                // ✅ NUEVA SECCIÓN: Detalles de Entrega (si existe)
-                if (_entregaData != null) ...[
-                  _buildEntregaDetailsCard(context),
-                  const SizedBox(height: 24),
-                ],
                 // Sección de productos
-                Text(
-                  'Productos',
-                  style: Theme.of(context).textTheme.titleMedium,
-                ),
+                Text('Productos'),
                 const SizedBox(height: 12),
                 if (venta.detalles.isEmpty)
                   Card(
@@ -555,156 +392,99 @@ class _VentaDetalleScreenState extends State<VentaDetalleScreen> {
                       child: Center(
                         child: Text(
                           'Sin productos',
-                          style: Theme.of(
-                            context,
-                          ).textTheme.bodyMedium?.copyWith(color: Colors.grey),
+                          style: TextStyle(color: Colors.grey),
                         ),
                       ),
                     ),
                   )
                 else
                   ...venta.detalles.map((detalle) {
-                    // ✅ NUEVO: Obtener URL de imagen del producto
                     final imageUrl = detalle.producto?.imagenPrincipal?.url;
                     final tieneImagen = imageUrl != null && imageUrl.isNotEmpty;
 
                     return Card(
                       margin: const EdgeInsets.only(bottom: 12),
                       child: Padding(
-                        padding: const EdgeInsets.all(12),
-                        child: Column(
+                        padding: const EdgeInsets.all(8),
+                        child: Row(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            // ✅ NUEVO: Mostrar imagen del producto si existe
-                            if (tieneImagen) ...[
-                              ClipRRect(
-                                borderRadius: BorderRadius.circular(8),
-                                child: Container(
-                                  width: double.infinity,
-                                  height: 200,
-                                  color: Colors.grey[300],
-                                  child: Image.network(
-                                    imageUrl!,
-                                    fit: BoxFit.cover,
-                                    errorBuilder: (context, error, stackTrace) {
-                                      return Container(
-                                        color: Colors.grey[200],
-                                        child: Center(
-                                          child: Column(
-                                            mainAxisAlignment:
-                                                MainAxisAlignment.center,
-                                            children: [
-                                              Icon(
-                                                Icons
-                                                    .image_not_supported_outlined,
-                                                size: 48,
-                                                color: Colors.grey[400],
-                                              ),
-                                              const SizedBox(height: 8),
-                                              Text(
-                                                'Imagen no disponible',
-                                                style: TextStyle(
-                                                  color: Colors.grey[600],
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                        ),
-                                      );
-                                    },
-                                    loadingBuilder: (context, child, loadingProgress) {
-                                      if (loadingProgress == null) return child;
-                                      return Container(
-                                        color: Colors.grey[200],
-                                        child: Center(
-                                          child: CircularProgressIndicator(
-                                            value:
-                                                loadingProgress
-                                                        .expectedTotalBytes !=
-                                                    null
-                                                ? loadingProgress
-                                                          .cumulativeBytesLoaded /
-                                                      loadingProgress
-                                                          .expectedTotalBytes!
-                                                : null,
-                                          ),
-                                        ),
-                                      );
-                                    },
-                                  ),
+                            // Avatar a la izquierda
+                            if (tieneImagen)
+                              Padding(
+                                padding: const EdgeInsets.only(right: 12),
+                                child: ProductoAvatarWidget(
+                                  imageUrl: imageUrl,
+                                  nombreProducto: detalle.producto?.nombre,
+                                  radius: 28,
                                 ),
                               ),
-                              const SizedBox(height: 12),
-                            ],
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Expanded(
-                                  child: Text(
-                                    detalle.producto?.nombre ??
-                                        'Producto desconocido',
-                                    style: const TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                ),
-                                Text(
-                                  'x${detalle.cantidad.toStringAsFixed(2)}',
-                                  style: Theme.of(context).textTheme.bodySmall,
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 8),
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Text(
-                                  'P.U: Bs. ${detalle.precioUnitario.toStringAsFixed(2)}',
-                                  style: Theme.of(context).textTheme.bodySmall,
-                                ),
-                                Text(
-                                  'Subtotal: Bs. ${detalle.subtotal.toStringAsFixed(2)}',
-                                  style: Theme.of(context).textTheme.bodySmall
-                                      ?.copyWith(
-                                        fontWeight: FontWeight.bold,
-                                        color:
-                                            Theme.of(context).brightness ==
-                                                Brightness.dark
-                                            ? Colors.greenAccent
-                                            : Colors.green,
+                            // Información a la derecha
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Expanded(
+                                        child: Text(
+                                          detalle.producto?.nombre ??
+                                              'Producto desconocido',
+                                          style: const TextStyle(
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
                                       ),
-                                ),
-                              ],
+                                      Text(
+                                        'x${detalle.cantidad.toStringAsFixed(2)}',
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 8),
+                                  Row(
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Text(
+                                        'Bs. ${detalle.precioUnitario.toStringAsFixed(2)}',
+                                        style: TextStyle(
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                      ),
+                                      Text(
+                                        'Sub.: Bs. ${detalle.subtotal.toStringAsFixed(2)}',
+                                        style: TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                          color:
+                                              Theme.of(context).brightness ==
+                                                  Brightness.dark
+                                              ? Colors.greenAccent
+                                              : Colors.green,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              ),
                             ),
                           ],
                         ),
                       ),
                     );
-                  }).toList(),
-                const SizedBox(height: 24),
+                  }),
                 // Resumen de pago
                 Card(
-                  color: Theme.of(context).brightness == Brightness.dark
-                      ? Colors.grey[800]
-                      : Colors.grey[100],
                   child: Padding(
-                    padding: const EdgeInsets.all(16),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 4,
+                    ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        /* Text(
-                          'Resumen de Pago',
-                          style: Theme.of(context).textTheme.titleMedium,
-                        ),
-                        const SizedBox(height: 12),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            const Text('Subtotal:'),
-                            Text('Bs. ${venta.subtotal.toStringAsFixed(2)}'),
-                          ],
-                        ), */
                         if (venta.impuesto > 0) ...[
                           const SizedBox(height: 8),
                           Row(
@@ -731,20 +511,12 @@ class _VentaDetalleScreenState extends State<VentaDetalleScreen> {
                           children: [
                             Text(
                               'Total:',
-                              style: TextStyle(
-                                fontWeight: FontWeight.bold,
-                                fontSize: AppTextStyles.bodyLarge(
-                                  context,
-                                ).fontSize!,
-                              ),
+                              style: TextStyle(fontWeight: FontWeight.bold),
                             ),
                             Text(
                               'Bs. ${venta.total.toStringAsFixed(2)}',
                               style: TextStyle(
                                 fontWeight: FontWeight.bold,
-                                fontSize: AppTextStyles.bodyLarge(
-                                  context,
-                                ).fontSize!,
                                 color: Colors.green,
                               ),
                             ),
@@ -754,6 +526,243 @@ class _VentaDetalleScreenState extends State<VentaDetalleScreen> {
                     ),
                   ),
                 ),
+                const SizedBox(height: 24),
+                // Sección de entregas
+                if (venta.confirmaciones.isNotEmpty)
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // ✅ NUEVO 2026-06-13: Header con título y botón "Registrar otra"
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Text(
+                            'Entregas',
+                            style: TextStyle(fontWeight: FontWeight.bold),
+                          ),
+                          ElevatedButton.icon(
+                            onPressed: () => _navegarARegistrarOtraConfirmacion(
+                              context,
+                              venta,
+                            ),
+                            icon: const Icon(Icons.note_add, size: 16),
+                            label: const Text('Registrar otra'),
+                            style: ElevatedButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 8,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      ...venta.confirmaciones.map((confirmacion) {
+                        final tipoEntregaColor = _getTipoEntregaColor(
+                          confirmacion.tipoEntrega,
+                        );
+
+                        final tipoConfirmacion = _getTipoEntregaColor(
+                          confirmacion.tipoConfirmacion,
+                        );
+
+                        return Card(
+                          margin: const EdgeInsets.only(bottom: 12),
+                          color: tipoEntregaColor.withValues(alpha: 0.1),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                            side: BorderSide(color: tipoEntregaColor, width: 2),
+                          ),
+                          child: Padding(
+                            padding: const EdgeInsets.all(16),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                // Header con tipo de entrega y estado
+                                Row(
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Text(
+                                      confirmacion.tipoEntregaFormato,
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        color: tipoEntregaColor,
+                                      ),
+                                    ),
+                                    Text(
+                                      confirmacion.tipoConfirmacion,
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        color: tipoConfirmacion,
+                                      ),
+                                    ),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 8,
+                                        vertical: 4,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: _getEstadoPagoColor(
+                                          confirmacion.estadoPago,
+                                        ),
+                                        borderRadius: BorderRadius.circular(4),
+                                      ),
+                                      child: Text(
+                                        confirmacion.estadoPagoFormato,
+                                        style: const TextStyle(
+                                          color: Colors.white,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+
+                                // Información de pago (no mostrar si es RECHAZADO o CLIENTE_CERRADO)
+                                if (confirmacion.tipoConfirmacion !=
+                                        'RECHAZADO' &&
+                                    confirmacion.tipoConfirmacion !=
+                                        'CLIENTE_CERRADO') ...[
+                                  const Divider(height: 16),
+                                  _buildPaymentInfoRow(
+                                    'Monto Recibido',
+                                    'Bs. ${confirmacion.montoRecibido.toStringAsFixed(2)}',
+                                  ),
+                                  const SizedBox(height: 8),
+                                  _buildPaymentInfoRow(
+                                    'Monto Aceptado',
+                                    'Bs. ${confirmacion.montoAceptado.toStringAsFixed(2)}',
+                                  ),
+                                  if (confirmacion.montoPendiente > 0) ...[
+                                    const SizedBox(height: 8),
+                                    _buildPaymentInfoRow(
+                                      'Monto Pendiente',
+                                      'Bs. ${confirmacion.montoPendiente.toStringAsFixed(2)}',
+                                      color: Colors.orange,
+                                    ),
+                                  ],
+                                ],
+                                // Desglose de pagos si existe
+                                if (confirmacion.desglosePageos.isNotEmpty) ...[
+                                  const Divider(height: 16),
+                                  const Text(
+                                    'Desglose de Pagos:',
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  ...confirmacion.desglosePageos.map((pago) {
+                                    return Padding(
+                                      padding: const EdgeInsets.only(bottom: 4),
+                                      child: Row(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.spaceBetween,
+                                        children: [
+                                          Text(pago.tipoPagoNombre),
+                                          Text(
+                                            'Bs. ${pago.monto.toStringAsFixed(2)}',
+                                          ),
+                                        ],
+                                      ),
+                                    );
+                                  }),
+                                ],
+                                // Fecha y observaciones
+                                const Divider(height: 16),
+                                Text(
+                                  'Confirmado: ${confirmacion.fechaConfirmacionFormato}',
+                                  style: const TextStyle(color: Colors.grey),
+                                ),
+                                if (confirmacion.observacionesLogistica !=
+                                        null &&
+                                    confirmacion
+                                        .observacionesLogistica!
+                                        .isNotEmpty) ...[
+                                  const SizedBox(height: 8),
+                                  Text(
+                                    'Observaciones: ${confirmacion.observacionesLogistica}',
+                                  ),
+                                ],
+                                const SizedBox(height: 12),
+                                // ✅ NUEVO: Galería de fotos
+                                if (confirmacion.fotos != null &&
+                                    confirmacion.fotos!.isNotEmpty) ...[
+                                  const Text(
+                                    'Fotos de Entrega:',
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  SizedBox(
+                                    height: 100,
+                                    child: ListView.builder(
+                                      scrollDirection: Axis.horizontal,
+                                      itemCount: confirmacion.fotos!.length,
+                                      itemBuilder: (context, index) {
+                                        return Padding(
+                                          padding: const EdgeInsets.only(
+                                            right: 8,
+                                          ),
+                                          child: ClipRRect(
+                                            borderRadius: BorderRadius.circular(
+                                              8,
+                                            ),
+                                            child: Image.network(
+                                              confirmacion.fotos![index],
+                                              fit: BoxFit.cover,
+                                              errorBuilder:
+                                                  (context, error, stackTrace) {
+                                                    return Container(
+                                                      color: Colors.grey[300],
+                                                      child: const Icon(
+                                                        Icons
+                                                            .image_not_supported,
+                                                      ),
+                                                    );
+                                                  },
+                                            ),
+                                          ),
+                                        );
+                                      },
+                                    ),
+                                  ),
+                                  const SizedBox(height: 12),
+                                ],
+                                // ✅ NUEVO 2026-06-13: Botón Editar esta confirmación
+                                SizedBox(
+                                  width: double.infinity,
+                                  child: ElevatedButton.icon(
+                                    onPressed: () =>
+                                        _navegarAEditarConfirmacion(
+                                          context,
+                                          venta,
+                                          confirmacion,
+                                        ),
+                                    icon: const Icon(Icons.edit, size: 18),
+                                    label: const Text(
+                                      'Editar esta confirmación',
+                                    ),
+                                    style: ElevatedButton.styleFrom(
+                                      padding: const EdgeInsets.symmetric(
+                                        vertical: 12,
+                                      ),
+                                      backgroundColor: Colors.blue,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        );
+                      }),
+                      const SizedBox(height: 24),
+                    ],
+                  ),
+
+                const SizedBox(height: 24),
               ],
             ),
           );
@@ -762,65 +771,43 @@ class _VentaDetalleScreenState extends State<VentaDetalleScreen> {
     );
   }
 
-  /// Widget para los botones de contacto
-  Widget _buildContactButton(
-    BuildContext context, {
-    required IconData icon,
-    required String label,
-    required Color color,
-    required VoidCallback onPressed,
-  }) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Material(
-          color: Colors.transparent,
-          child: InkWell(
-            onTap: onPressed,
-            borderRadius: BorderRadius.circular(50),
-            child: Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: color.withValues(alpha: 0.15),
-              ),
-              child: Icon(icon, color: color, size: 20),
-            ),
-          ),
-        ),
-        const SizedBox(height: 6),
-        Text(
-          label,
-          style: TextStyle(
-            fontSize: AppTextStyles.labelSmall(context).fontSize!,
-            fontWeight: FontWeight.w600,
-            color: color,
-          ),
-        ),
-      ],
-    );
-  }
-
   /// Abrir ubicación de entrega en mapa interactivo o Google Maps
-  Future<void> _abrirMapa(double latitud, double longitud) async {
+  // ✅ ACTUALIZADO: Recibe venta completa para mostrar info del cliente y color del estado
+  Future<void> _abrirMapa(Venta venta) async {
     // Primero intentar abrir el mapa interactivo
     try {
       if (mounted) {
+        // ✅ NUEVO: Construir URL completa de foto usando BASE_URL_IMG
+        final fotoPerfil = venta.cliente?.fotoPerfil != null
+            ? '${AppUrls.baseUrlImg}${venta.cliente!.fotoPerfil}'
+            : null;
+
+        // ✅ NUEVO: Crear MapLocation con información completa del cliente
+        final ubicacionVenta = MapLocation(
+          latitude: venta.direccionCliente!.latitud!,
+          longitude: venta.direccionCliente!.longitud!,
+          title: venta.cliente?.nombre ?? 'Sin nombre',
+          subtitle: venta.id.toString(),
+          isSelected: false,
+          razonSocial: venta.cliente?.razonSocial,
+          telefono: venta.cliente?.telefono,
+          ventaId: venta.id,
+          markerColor:
+              venta.estadoLogisticoColor, // ✅ Color del estado logístico
+          fotoPerfil: fotoPerfil, // ✅ Foto con URL completa
+        );
+
         showDialog(
           context: context,
           barrierDismissible: true,
           builder: (BuildContext context) {
             return Scaffold(
-              appBar: AppBar(
-                title: const Text('Ubicación de Entrega'),
-                leading: IconButton(
-                  icon: const Icon(Icons.close),
-                  onPressed: () => Navigator.pop(context),
-                ),
-              ),
               body: MapLocationSelector(
-                initialLatitude: latitud,
-                initialLongitude: longitud,
+                initialLatitude: venta.direccionCliente!.latitud!,
+                initialLongitude: venta.direccionCliente!.longitud!,
+                additionalLocations: [
+                  ubicacionVenta,
+                ], // ✅ Pasar ubicación con info del cliente
                 onLocationSelected: (lat, lng, address) {
                   // En modo lectura, solo cerramos el diálogo
                   Navigator.pop(context);
@@ -839,7 +826,10 @@ class _VentaDetalleScreenState extends State<VentaDetalleScreen> {
     } catch (e) {
       // Si hay error con el mapa interactivo, fallback a Google Maps externo
       debugPrint('⚠️ Error abriendo mapa interactivo: $e');
-      _abrirGoogleMaps(latitud, longitud);
+      _abrirGoogleMaps(
+        venta.direccionCliente!.latitud!,
+        venta.direccionCliente!.longitud!,
+      );
     }
   }
 
@@ -915,994 +905,170 @@ class _VentaDetalleScreenState extends State<VentaDetalleScreen> {
     }
   }
 
-  /// ✅ NUEVA FUNCIÓN: Construir Card de detalles de entrega
-  Widget _buildEntregaDetailsCard(BuildContext context) {
-    if (_isLoadingEntrega) {
-      return Card(
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Center(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const SizedBox(
-                  width: 24,
-                  height: 24,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                ),
-                const SizedBox(height: 12),
-                Text(
-                  'Cargando información de entrega...',
-                  style: Theme.of(context).textTheme.bodySmall,
-                ),
-              ],
-            ),
-          ),
-        ),
-      );
-    }
-
-    if (_entregaData == null) {
-      return const SizedBox.shrink();
-    }
-
-    // Extraer datos de la entrega
-    final entregaId = _entregaData?['id'];
-    final numeroEntrega = _entregaData?['numero_entrega'] ?? 'N/A';
-    final estadoEntrega =
-        _entregaData?['tipo_novedad']?['nombre'] ?? 'Desconocido';
-    final estadoColor = _getEstadoEntregaColor(
-      _entregaData?['tipo_novedad']?['codigo'] ?? '',
-    );
-
-    // Datos del chofer
-    final choferNombre = _entregaData?['chofer']?['nombre'] ?? 'Sin asignar';
-    final choferTelefono =
-        _entregaData?['chofer']?['usuario']?['telefono'] ?? '';
-
-    // Datos del vehículo
-    final vehiculoPlaca = _entregaData?['vehiculo']?['placa'] ?? 'N/A';
-    final vehiculoMarca = _entregaData?['vehiculo']?['marca'] ?? '';
-    final vehiculoModelo = _entregaData?['vehiculo']?['modelo'] ?? '';
-
-    // Fechas
-    final fechaAsignacion = _entregaData?['created_at'];
-    final fechaInicio = _entregaData?['fecha_inicio'];
-    final fechaEntrega = _entregaData?['fecha_entrega'];
-
-    // ✅ NUEVA: Extraer confirmacionesVentas (última confirmación)
-    final confirmacionesVentas = _entregaData?['confirmacionesVentas'] as List?;
-    final ultimaConfirmacion =
-        confirmacionesVentas != null && confirmacionesVentas.isNotEmpty
-        ? confirmacionesVentas.last as Map
-        : null;
-    final tipoEntrega = ultimaConfirmacion?['tipo_entrega'];
-    final tipoNovedad = ultimaConfirmacion?['tipo_novedad'];
-    final observacionesLogistica =
-        ultimaConfirmacion?['observaciones_logistica'];
-    final firmaDigitalUrl = ultimaConfirmacion?['firma_digital_url'];
-    final productosDevueltos =
-        ultimaConfirmacion?['productos_devueltos'] as List? ??
-        []; // ✅ NUEVO 2026-02-17: Productos devueltos
-    final montoDevuelto =
-        ultimaConfirmacion?['monto_devuelto']; // ✅ NUEVO 2026-02-17: Monto devuelto
-    final montoAceptado =
-        ultimaConfirmacion?['monto_aceptado']; // ✅ NUEVO 2026-02-17: Monto aceptado
-
-    return Column(
-      children: [
-        // Título de la sección
-        Row(
-          children: [
-            Icon(Icons.local_shipping_outlined, color: estadoColor, size: 24),
-            const SizedBox(width: 12),
-            Text(
-              'Detalles de Entrega',
-              style: Theme.of(context).textTheme.titleMedium,
-            ),
-          ],
-        ),
-        const SizedBox(height: 12),
-        // Card principal de entrega
-        Card(
-          elevation: 0,
-          color: Theme.of(context).brightness == Brightness.dark
-              ? Colors.grey[800]?.withValues(alpha: 0.5)
-              : Colors.blue[50]?.withValues(alpha: 0.5),
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Número y Estado
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Entrega #$numeroEntrega',
-                          style: Theme.of(context).textTheme.titleSmall
-                              ?.copyWith(fontWeight: FontWeight.bold),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          'ID: $entregaId',
-                          style: Theme.of(
-                            context,
-                          ).textTheme.bodySmall?.copyWith(color: Colors.grey),
-                        ),
-                      ],
-                    ),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 6,
-                      ),
-                      decoration: BoxDecoration(
-                        color: estadoColor.withValues(alpha: 0.2),
-                        border: Border.all(color: estadoColor),
-                        borderRadius: BorderRadius.circular(6),
-                      ),
-                      child: Text(
-                        estadoEntrega,
-                        style: TextStyle(
-                          fontSize: AppTextStyles.bodySmall(context).fontSize!,
-                          fontWeight: FontWeight.bold,
-                          color: estadoColor,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                const Divider(),
-                const SizedBox(height: 16),
-                // Sección Chofer
-                _buildEntregaInfoRow(
-                  context,
-                  icon: Icons.person_outline,
-                  label: 'Chofer',
-                  value: choferNombre,
-                  secondaryValue: choferTelefono.isNotEmpty
-                      ? choferTelefono
-                      : null,
-                  onSecondaryTap: choferTelefono.isNotEmpty
-                      ? () => PhoneUtils.llamarCliente(context, choferTelefono)
-                      : null,
-                ),
-                const SizedBox(height: 12),
-                // Sección Vehículo
-                _buildEntregaInfoRow(
-                  context,
-                  icon: Icons.directions_car_outlined,
-                  label: 'Vehículo',
-                  value: vehiculoPlaca,
-                  secondaryValue: vehiculoMarca.isNotEmpty
-                      ? '$vehiculoMarca ${vehiculoModelo.isNotEmpty ? vehiculoModelo : ''}'
-                      : null,
-                ),
-                const SizedBox(height: 12),
-                // Sección Fechas
-                if (fechaAsignacion != null)
-                  _buildEntregaInfoRow(
-                    context,
-                    icon: Icons.calendar_today_outlined,
-                    label: 'Asignación',
-                    value: _formatearFecha(fechaAsignacion),
-                  ),
-                if (fechaInicio != null) ...[
-                  const SizedBox(height: 12),
-                  _buildEntregaInfoRow(
-                    context,
-                    icon: Icons.play_circle_outline,
-                    label: 'Inicio',
-                    value: _formatearFecha(fechaInicio),
-                  ),
-                ],
-                if (fechaEntrega != null) ...[
-                  const SizedBox(height: 12),
-                  _buildEntregaInfoRow(
-                    context,
-                    icon: Icons.check_circle_outline,
-                    label: 'Entregado',
-                    value: _formatearFecha(fechaEntrega),
-                  ),
-                ],
-                // ✅ NUEVA SECCIÓN: Información de Confirmación
-                if (ultimaConfirmacion != null) ...[
-                  const SizedBox(height: 16),
-                  const Divider(),
-                  const SizedBox(height: 16),
-                  Text(
-                    '📋 Confirmación de Entrega',
-                    style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                      color: Colors.grey,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  // Tipo de Entrega
-                  if (tipoEntrega != null) ...[
-                    _buildEntregaInfoRow(
-                      context,
-                      icon: tipoEntrega.toString().toUpperCase() == 'COMPLETA'
-                          ? Icons.check_circle
-                          : Icons.warning_outlined,
-                      label: 'Tipo de Entrega',
-                      value: tipoEntrega.toString().toUpperCase(),
-                    ),
-                    const SizedBox(height: 12),
-                  ],
-                  // Tipo de Novedad (si aplica)
-                  if (tipoNovedad != null &&
-                      tipoNovedad.toString().isNotEmpty) ...[
-                    _buildEntregaInfoRow(
-                      context,
-                      icon: Icons.info_outlined,
-                      label: 'Novedad',
-                      value: _formatearTipoNovedad(tipoNovedad.toString()),
-                    ),
-                    const SizedBox(height: 12),
-                  ],
-                  // ✅ NUEVO 2026-02-17: Productos Devueltos en DEVOLUCION_PARCIAL
-                  if (tipoNovedad?.toString().toUpperCase() ==
-                          'DEVOLUCION_PARCIAL' &&
-                      productosDevueltos.isNotEmpty) ...[
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          '📦 Productos Devueltos',
-                          style: Theme.of(context).textTheme.bodySmall
-                              ?.copyWith(
-                                fontSize: AppTextStyles.labelSmall(
-                                  context,
-                                ).fontSize!,
-                                color: Colors.grey,
-                                fontWeight: FontWeight.w600,
-                              ),
-                        ),
-                        const SizedBox(height: 8),
-                        Container(
-                          width: double.infinity,
-                          decoration: BoxDecoration(
-                            color:
-                                Theme.of(context).brightness == Brightness.dark
-                                ? Colors.orange[900]?.withValues(alpha: 0.2)
-                                : Colors.orange[50],
-                            borderRadius: BorderRadius.circular(8),
-                            border: Border.all(
-                              color: Colors.orange[200] ?? Colors.orange,
-                            ),
-                          ),
-                          child: Column(
-                            children: [
-                              ...productosDevueltos.asMap().entries.map((
-                                entry,
-                              ) {
-                                final producto = entry.value as Map?;
-                                final index = entry.key;
-                                final nombre =
-                                    producto?['producto_nombre'] ??
-                                    'Producto desconocido';
-                                final cantidad = producto?['cantidad'] ?? 0;
-                                final precioUnitario =
-                                    producto?['precio_unitario'] ?? 0;
-                                final subtotal = producto?['subtotal'] ?? 0;
-
-                                return Column(
-                                  children: [
-                                    Padding(
-                                      padding: const EdgeInsets.all(12),
-                                      child: Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        children: [
-                                          Text(
-                                            nombre,
-                                            style: Theme.of(context)
-                                                .textTheme
-                                                .bodyMedium
-                                                ?.copyWith(
-                                                  fontWeight: FontWeight.w600,
-                                                ),
-                                          ),
-                                          const SizedBox(height: 6),
-                                          Row(
-                                            mainAxisAlignment:
-                                                MainAxisAlignment.spaceBetween,
-                                            children: [
-                                              Text(
-                                                'Cantidad: $cantidad',
-                                                style: Theme.of(
-                                                  context,
-                                                ).textTheme.bodySmall,
-                                              ),
-                                              Text(
-                                                'Unitario: \$${precioUnitario.toStringAsFixed(2)}',
-                                                style: Theme.of(
-                                                  context,
-                                                ).textTheme.bodySmall,
-                                              ),
-                                            ],
-                                          ),
-                                          const SizedBox(height: 6),
-                                          Row(
-                                            mainAxisAlignment:
-                                                MainAxisAlignment.spaceBetween,
-                                            children: [
-                                              const SizedBox.shrink(),
-                                              Text(
-                                                'Subtotal: \$${subtotal.toStringAsFixed(2)}',
-                                                style: Theme.of(context)
-                                                    .textTheme
-                                                    .bodySmall
-                                                    ?.copyWith(
-                                                      fontWeight:
-                                                          FontWeight.w600,
-                                                      color: Colors.orange,
-                                                    ),
-                                              ),
-                                            ],
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                    if (index < productosDevueltos.length - 1)
-                                      Divider(
-                                        height: 1,
-                                        color: Colors.grey[300],
-                                      ),
-                                  ],
-                                );
-                              }).toList(),
-                            ],
-                          ),
-                        ),
-                        // Totales de devolución
-                        if (montoDevuelto != null || montoAceptado != null) ...[
-                          const SizedBox(height: 12),
-                          Container(
-                            width: double.infinity,
-                            padding: const EdgeInsets.all(12),
-                            decoration: BoxDecoration(
-                              color:
-                                  Theme.of(context).brightness ==
-                                      Brightness.dark
-                                  ? Colors.grey[700]?.withValues(alpha: 0.3)
-                                  : Colors.grey[100],
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                if (montoDevuelto != null)
-                                  Row(
-                                    mainAxisAlignment:
-                                        MainAxisAlignment.spaceBetween,
-                                    children: [
-                                      Text(
-                                        'Total Devuelto:',
-                                        style: Theme.of(
-                                          context,
-                                        ).textTheme.bodySmall,
-                                      ),
-                                      Text(
-                                        '\$${(montoDevuelto is num ? montoDevuelto : 0).toStringAsFixed(2)}',
-                                        style: Theme.of(context)
-                                            .textTheme
-                                            .bodySmall
-                                            ?.copyWith(
-                                              fontWeight: FontWeight.w600,
-                                              color: Colors.red,
-                                            ),
-                                      ),
-                                    ],
-                                  ),
-                                if (montoAceptado != null) ...[
-                                  const SizedBox(height: 6),
-                                  Row(
-                                    mainAxisAlignment:
-                                        MainAxisAlignment.spaceBetween,
-                                    children: [
-                                      Text(
-                                        'Monto Aceptado:',
-                                        style: Theme.of(
-                                          context,
-                                        ).textTheme.bodySmall,
-                                      ),
-                                      Text(
-                                        '\$${(montoAceptado is num ? montoAceptado : 0).toStringAsFixed(2)}',
-                                        style: Theme.of(context)
-                                            .textTheme
-                                            .bodySmall
-                                            ?.copyWith(
-                                              fontWeight: FontWeight.w600,
-                                              color: Colors.green,
-                                            ),
-                                      ),
-                                    ],
-                                  ),
-                                ],
-                              ],
-                            ),
-                          ),
-                        ],
-                        const SizedBox(height: 12),
-                      ],
-                    ),
-                  ],
-                  // Observaciones
-                  if (observacionesLogistica != null &&
-                      observacionesLogistica.toString().isNotEmpty) ...[
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          '📝 Observaciones',
-                          style: Theme.of(context).textTheme.bodySmall
-                              ?.copyWith(
-                                fontSize: AppTextStyles.labelSmall(
-                                  context,
-                                ).fontSize!,
-                                color: Colors.grey,
-                                fontWeight: FontWeight.w600,
-                              ),
-                        ),
-                        const SizedBox(height: 8),
-                        Container(
-                          width: double.infinity,
-                          padding: const EdgeInsets.all(12),
-                          decoration: BoxDecoration(
-                            color:
-                                Theme.of(context).brightness == Brightness.dark
-                                ? Colors.grey[700]?.withValues(alpha: 0.3)
-                                : Colors.amber[50],
-                            borderRadius: BorderRadius.circular(8),
-                            border: Border.all(
-                              color: Colors.grey[300] ?? Colors.grey,
-                            ),
-                          ),
-                          child: Text(
-                            observacionesLogistica.toString(),
-                            style: Theme.of(context).textTheme.bodySmall,
-                          ),
-                        ),
-                        const SizedBox(height: 12),
-                      ],
-                    ),
-                  ],
-                  // Firma Digital (si existe)
-                  if (firmaDigitalUrl != null &&
-                      firmaDigitalUrl.toString().isNotEmpty) ...[
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          '✍️ Firma Digital',
-                          style: Theme.of(context).textTheme.bodySmall
-                              ?.copyWith(
-                                fontSize: AppTextStyles.labelSmall(
-                                  context,
-                                ).fontSize!,
-                                color: Colors.grey,
-                                fontWeight: FontWeight.w600,
-                              ),
-                        ),
-                        const SizedBox(height: 8),
-                        GestureDetector(
-                          onTap: () => _mostrarVisorImagenes(context, [
-                            firmaDigitalUrl.toString(),
-                          ], 0),
-                          child: Container(
-                            decoration: BoxDecoration(
-                              border: Border.all(color: Colors.grey[300]!),
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: ClipRRect(
-                              borderRadius: BorderRadius.circular(8),
-                              child: Image.network(
-                                firmaDigitalUrl.toString(),
-                                height: 80,
-                                fit: BoxFit.cover,
-                                errorBuilder: (context, error, stackTrace) {
-                                  return Container(
-                                    height: 80,
-                                    color: Colors.grey[200],
-                                    child: const Center(
-                                      child: Icon(
-                                        Icons.broken_image,
-                                        color: Colors.grey,
-                                      ),
-                                    ),
-                                  );
-                                },
-                                loadingBuilder:
-                                    (context, child, loadingProgress) {
-                                      if (loadingProgress == null) return child;
-                                      return Container(
-                                        height: 80,
-                                        color: Colors.grey[200],
-                                        child: const Center(
-                                          child: CircularProgressIndicator(),
-                                        ),
-                                      );
-                                    },
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ],
-              ],
-            ),
-          ),
-        ),
-        // 🎨 Galería de Imágenes de Entrega
-        _buildGaleriaImagenes(context),
-      ],
-    );
-  }
-
-  /// ✅ NUEVA FUNCIÓN: Formatear tipo de novedad para mostrar
-  String _formatearTipoNovedad(String tipoNovedad) {
-    const novedadMap = {
-      'CLIENTE_CERRADO': '🏪 Tienda Cerrada',
-      'DEVOLUCION_PARCIAL': '📦 Devolución Parcial',
-      'RECHAZADO': '🚫 Rechazado',
-      'DIRECCION_INCORRECTA': '📍 Dirección Incorrecta',
-      'CLIENTE_NO_IDENTIFICADO': '🆔 Cliente No Identificado',
-      'OTRO': '❓ Otro Motivo',
-    };
-
-    return novedadMap[tipoNovedad.toUpperCase()] ?? tipoNovedad;
-  }
-
-  /// Widget auxiliar para mostrar información de entrega
-  Widget _buildEntregaInfoRow(
-    BuildContext context, {
-    required IconData icon,
-    required String label,
-    required String value,
-    String? secondaryValue,
-    VoidCallback? onSecondaryTap,
-  }) {
-    return Row(
-      children: [
-        Icon(icon, size: 18, color: Colors.grey),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                label,
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  fontSize: AppTextStyles.labelSmall(context).fontSize!,
-                  color: Colors.grey,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              const SizedBox(height: 2),
-              Text(
-                value,
-                style: Theme.of(
-                  context,
-                ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w500),
-                overflow: TextOverflow.ellipsis,
-              ),
-              if (secondaryValue != null) ...[
-                const SizedBox(height: 2),
-                GestureDetector(
-                  onTap: onSecondaryTap,
-                  child: Text(
-                    secondaryValue,
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      fontSize: AppTextStyles.labelSmall(context).fontSize!,
-                      color: onSecondaryTap != null ? Colors.blue : Colors.grey,
-                      decoration: onSecondaryTap != null
-                          ? TextDecoration.underline
-                          : null,
-                    ),
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-              ],
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-
-  /// Obtener color según estado de entrega
-  Color _getEstadoEntregaColor(String codigo) {
-    switch (codigo.toUpperCase()) {
-      case 'ENTREGADA':
+  Color _getEstadoPagoColor(String estado) {
+    switch (estado.toUpperCase()) {
+      case 'PAGADO':
         return Colors.green;
-      case 'EN_TRÁNSITO':
-      case 'EN_TRANSITO':
+      case 'PARCIAL':
         return Colors.orange;
       case 'PENDIENTE':
-      case 'PENDIENTE_ENVIO':
         return Colors.grey;
-      case 'CON_NOVEDAD':
-        return Colors.red;
       default:
         return Colors.blue;
     }
   }
 
-  /// Formatear fecha en formato legible
-  String _formatearFecha(String? fecha) {
-    if (fecha == null || fecha.isEmpty) return 'N/A';
-
-    try {
-      final dateTime = DateTime.parse(fecha);
-      final formatter = DateFormat('dd MMM yyyy HH:mm', 'es_ES');
-      return formatter.format(dateTime);
-    } catch (e) {
-      return fecha.split('T')[0]; // Fallback a solo la fecha
+  Color _getTipoEntregaColor(String? tipoEntrega) {
+    switch (tipoEntrega?.toUpperCase()) {
+      case 'COMPLETA':
+        return Colors.green;
+      case 'CLIENTE_CERRADO':
+        return Colors.deepOrangeAccent;
+      case 'RECHAZADO':
+        return Colors.red;
+      case 'CON_NOVEDAD':
+        return Colors.orange;
+      default:
+        return Colors.blue;
     }
   }
 
-  /// Construir galería de imágenes de la entrega
-  Widget _buildGaleriaImagenes(BuildContext context) {
-    // Extraer fotos de las confirmaciones
-    List<String> imagenes = [];
-
-    if (_entregaData != null) {
-      // Obtener fotos de confirmaciones
-      if (_entregaData?['confirmacionesVentas'] != null) {
-        for (var confirmacion
-            in _entregaData?['confirmacionesVentas'] as List) {
-          final conf = confirmacion as Map;
-
-          // Fotos de la entrega
-          if (conf['fotos'] != null) {
-            final fotos = conf['fotos'];
-            if (fotos is List) {
-              imagenes.addAll(fotos.cast<String>());
-            } else if (fotos is String) {
-              imagenes.add(fotos);
-            }
-          }
-
-          // Firma digital
-          if (conf['firma_digital_url'] != null &&
-              conf['firma_digital_url'].toString().isNotEmpty) {
-            imagenes.add(conf['firma_digital_url'].toString());
-          }
-        }
-      }
+  Color _getEstadoDocumentoColor(String? estado) {
+    switch (estado?.toUpperCase()) {
+      case 'APROBADO':
+        return Colors.green;
+      case 'RECHAZADO':
+        return Colors.red;
+      case 'PENDIENTE':
+        return Colors.orange;
+      case 'ANULADO':
+        return Colors.grey;
+      default:
+        return Colors.blue;
     }
+  }
 
-    // Si no hay imágenes, mostrar mensaje
-    if (imagenes.isEmpty) {
-      return Container(
-        padding: const EdgeInsets.all(16),
-        child: const Text(
-          'No hay imágenes de esta entrega',
-          style: TextStyle(color: Colors.grey),
+  Color _getEstadoLogisticoColor(String? codigo) {
+    switch (codigo?.toUpperCase()) {
+      case 'PENDIENTE_ENVIO':
+        return Colors.brown;
+      case 'PROBLEMAS':
+        return Colors.deepOrangeAccent.shade200;
+      case 'EN_TRANSITO':
+        return Colors.purple;
+      case 'ENTREGADA':
+        return Colors.green;
+      case 'RECHAZADO':
+        return Colors.red;
+      case 'EN_TRANSITO':
+        return Colors.blueAccent;
+      default:
+        return Colors.blue;
+    }
+  }
+
+  Widget _buildPaymentInfoRow(String label, String value, {Color? color}) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(label),
+        Text(
+          value,
+          style: TextStyle(fontWeight: FontWeight.bold, color: color),
         ),
-      );
-    }
-
-    // Galería de miniaturas
-    return Container(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            '📸 Imágenes de la Entrega',
-            style: TextStyle(
-              fontSize: AppTextStyles.bodyLarge(context).fontSize!,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          const SizedBox(height: 12),
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: Row(
-              children: imagenes.asMap().entries.map((entry) {
-                final index = entry.key;
-                final imagenUrl = entry.value;
-
-                return Padding(
-                  padding: const EdgeInsets.only(right: 12),
-                  child: GestureDetector(
-                    onTap: () =>
-                        _mostrarVisorImagenes(context, imagenes, index),
-                    child: Container(
-                      width: 100,
-                      height: 100,
-                      decoration: BoxDecoration(
-                        border: Border.all(color: Colors.grey[300]!),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(8),
-                        child: Image.network(
-                          imagenUrl,
-                          fit: BoxFit.cover,
-                          errorBuilder: (context, error, stackTrace) {
-                            return Container(
-                              color: Colors.grey[200],
-                              child: const Icon(
-                                Icons.broken_image,
-                                color: Colors.grey,
-                              ),
-                            );
-                          },
-                          loadingBuilder: (context, child, loadingProgress) {
-                            if (loadingProgress == null) return child;
-                            return Container(
-                              color: Colors.grey[200],
-                              child: const Center(
-                                child: CircularProgressIndicator(),
-                              ),
-                            );
-                          },
-                        ),
-                      ),
-                    ),
-                  ),
-                );
-              }).toList(),
-            ),
-          ),
-        ],
-      ),
+      ],
     );
   }
 
-  /// Mostrar visor de imágenes en pantalla completa
-  void _mostrarVisorImagenes(
+  /// ✅ NUEVO 2026-06-13: Registrar NUEVA confirmación
+  /// Si confirmacion != null, usa sus datos como referencia
+  /// Si confirmacion == null, crea una nueva desde cero
+  void _navegarARegistrarOtraConfirmacion(
     BuildContext context,
-    List<String> imagenes,
-    int indiceInicial,
-  ) {
+    Venta venta, [
+    EntregaVentaConfirmacion? confirmacion,
+  ]) {
+    // Obtener entrega de la confirmación si existe, sino crear una mínima
+    final entregaMinima = Entrega(
+      id: confirmacion?.entregaId ?? venta.entregaId ?? 0,
+      estado: 'ENTREGADA',
+      historialEstados: [],
+      ventas: [venta],
+      productosGenerico: [],
+    );
+
+    final entregaProvider = context.read<EntregaProvider>();
+
     Navigator.of(context).push(
       MaterialPageRoute(
-        builder: (context) => _ImagenViewerModal(
-          imagenes: imagenes,
-          indiceInicial: indiceInicial,
-          onDescargar: _descargarImagen,
+        builder: (_) => ConfirmarEntregaVentaScreen(
+          entrega: entregaMinima,
+          venta: venta,
+          provider: entregaProvider,
+          isEditing: false, // Modo CREAR
+          tipoEntregaExistente: confirmacion?.tipoEntrega,
+          tipoNovedadExistente: confirmacion?.tipoNovedad,
+          fotosExistentes: confirmacion?.fotos ?? [],
+          observacionesExistentes: confirmacion?.observacionesLogistica ?? '',
+          tiendaAbiertaExistente: confirmacion?.tiendaAbierta,
+          clientePresenteExistente: confirmacion?.clientePresente,
+          motivoRechazoExistente: confirmacion?.motivoRechazo,
+          productosDevueltosExistentes:
+              (confirmacion?.productosDevueltos
+                  as List<Map<String, dynamic>>?) ??
+              [],
         ),
-        fullscreenDialog: true,
       ),
     );
   }
 
-  /// Descargar imagen a dispositivo
-  Future<void> _descargarImagen(String imagenUrl) async {
-    try {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('⏳ Descargando imagen...')));
+  /// ✅ NUEVO 2026-06-13: EDITAR confirmación existente usando PUT /api/confirmaciones/{id}
+  void _navegarAEditarConfirmacion(
+    BuildContext context,
+    Venta venta,
+    EntregaVentaConfirmacion confirmacion,
+  ) {
+    final entregaMinima = Entrega(
+      id: confirmacion.entregaId,
+      estado: 'ENTREGADA',
+      historialEstados: [],
+      ventas: [venta],
+      productosGenerico: [],
+    );
 
-      // Obtener directorio de documentos
-      final directorio = await getApplicationDocumentsDirectory();
-      final timestamp = DateTime.now().millisecondsSinceEpoch;
-      final nombreArchivo = 'entrega_$timestamp.jpg';
-      final rutaArchivo = '${directorio.path}/$nombreArchivo';
+    final entregaProvider = context.read<EntregaProvider>();
 
-      // Descargar archivo
-      final response = await http.get(Uri.parse(imagenUrl));
-
-      if (response.statusCode == 200) {
-        // Guardar archivo
-        final archivo = File(rutaArchivo);
-        await archivo.writeAsBytes(response.bodyBytes);
-
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('✅ Imagen descargada: $nombreArchivo')),
-          );
-        }
-      } else {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('❌ Error al descargar imagen')),
-          );
-        }
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('❌ Error: $e')));
-      }
-    }
-  }
-}
-
-/// Modal para visualizar imágenes en pantalla completa
-class _ImagenViewerModal extends StatefulWidget {
-  final List<String> imagenes;
-  final int indiceInicial;
-  final Function(String) onDescargar;
-
-  const _ImagenViewerModal({
-    required this.imagenes,
-    required this.indiceInicial,
-    required this.onDescargar,
-  });
-
-  @override
-  State<_ImagenViewerModal> createState() => _ImagenViewerModalState();
-}
-
-class _ImagenViewerModalState extends State<_ImagenViewerModal> {
-  late int _indiceActual;
-  late PageController _pageController;
-
-  @override
-  void initState() {
-    super.initState();
-    _indiceActual = widget.indiceInicial;
-    _pageController = PageController(initialPage: widget.indiceInicial);
-  }
-
-  @override
-  void dispose() {
-    _pageController.dispose();
-    super.dispose();
-  }
-
-  void _irAlAnterior() {
-    if (_indiceActual > 0) {
-      _pageController.previousPage(
-        duration: const Duration(milliseconds: 300),
-        curve: Curves.easeInOut,
-      );
-    }
-  }
-
-  void _irAlSiguiente() {
-    if (_indiceActual < widget.imagenes.length - 1) {
-      _pageController.nextPage(
-        duration: const Duration(milliseconds: 300),
-        curve: Curves.easeInOut,
-      );
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.black,
-      appBar: AppBar(
-        backgroundColor: Colors.black87,
-        title: Text(
-          'Imagen ${_indiceActual + 1} de ${widget.imagenes.length}',
-          style: const TextStyle(color: Colors.white),
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => ConfirmarEntregaVentaScreen(
+          entrega: entregaMinima,
+          venta: venta,
+          provider: entregaProvider,
+          isEditing: true, // ✅ Modo EDITAR
+          confirmacionId:
+              confirmacion.id, // ✅ Pasar ID para PUT /confirmaciones/{id}
+          tipoEntregaExistente: confirmacion.tipoEntrega,
+          tipoNovedadExistente: confirmacion.tipoNovedad,
+          fotosExistentes: confirmacion.fotos ?? [],
+          observacionesExistentes: confirmacion.observacionesLogistica ?? '',
+          tiendaAbiertaExistente: confirmacion.tiendaAbierta,
+          clientePresenteExistente: confirmacion.clientePresente,
+          motivoRechazoExistente: confirmacion.motivoRechazo,
+          pagosExistentes: confirmacion.desglosePageos
+              .map(
+                (pago) => {
+                  'tipo_pago_id': pago.tipoPagoId,
+                  'tipo_pago_nombre': pago.tipoPagoNombre,
+                  'monto': pago.monto,
+                  'referencia': pago.referencia,
+                },
+              )
+              .toList(),
+          productosDevueltosExistentes:
+              (confirmacion.productosDevueltos
+                  as List<Map<String, dynamic>>?) ??
+              [],
         ),
-        leading: IconButton(
-          icon: const Icon(Icons.close, color: Colors.white),
-          onPressed: () => Navigator.pop(context),
-        ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.download, color: Colors.white),
-            onPressed: () {
-              widget.onDescargar(widget.imagenes[_indiceActual]);
-            },
-          ),
-        ],
-      ),
-      body: Stack(
-        children: [
-          // PageView para navegar entre imágenes
-          PageView.builder(
-            controller: _pageController,
-            onPageChanged: (index) {
-              setState(() {
-                _indiceActual = index;
-              });
-            },
-            itemCount: widget.imagenes.length,
-            itemBuilder: (context, index) {
-              return InteractiveViewer(
-                panEnabled: true,
-                boundaryMargin: const EdgeInsets.all(80),
-                minScale: 0.5,
-                maxScale: 4,
-                child: Image.network(
-                  widget.imagenes[index],
-                  fit: BoxFit.contain,
-                  errorBuilder: (context, error, stackTrace) {
-                    return Container(
-                      color: Colors.grey[900],
-                      child: const Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(
-                              Icons.broken_image,
-                              color: Colors.grey,
-                              size: 80,
-                            ),
-                            SizedBox(height: 16),
-                            Text(
-                              'Error al cargar imagen',
-                              style: TextStyle(color: Colors.grey),
-                            ),
-                          ],
-                        ),
-                      ),
-                    );
-                  },
-                  loadingBuilder: (context, child, loadingProgress) {
-                    if (loadingProgress == null) return child;
-                    return Container(
-                      color: Colors.grey[900],
-                      child: const Center(child: CircularProgressIndicator()),
-                    );
-                  },
-                ),
-              );
-            },
-          ),
-
-          // Botones de navegación
-          if (widget.imagenes.length > 1) ...[
-            // Botón anterior (izquierda)
-            if (_indiceActual > 0)
-              Positioned(
-                left: 16,
-                top: 0,
-                bottom: 0,
-                child: Center(
-                  child: GestureDetector(
-                    onTap: _irAlAnterior,
-                    child: Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: Colors.black54,
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: const Icon(
-                        Icons.chevron_left,
-                        color: Colors.white,
-                        size: 32,
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-
-            // Botón siguiente (derecha)
-            if (_indiceActual < widget.imagenes.length - 1)
-              Positioned(
-                right: 16,
-                top: 0,
-                bottom: 0,
-                child: Center(
-                  child: GestureDetector(
-                    onTap: _irAlSiguiente,
-                    child: Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: Colors.black54,
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: const Icon(
-                        Icons.chevron_right,
-                        color: Colors.white,
-                        size: 32,
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-          ],
-        ],
       ),
     );
   }

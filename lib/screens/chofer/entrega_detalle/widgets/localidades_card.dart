@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../../config/app_text_styles.dart';
+import '../../../../config/app_urls.dart'; // ✅ NUEVO: Para BASE_URL_IMG
 import '../../../../models/entrega.dart';
 import '../../../../widgets/map_location_selector.dart';
 
@@ -16,6 +17,7 @@ class LocalidadesCard extends StatelessWidget {
   }) : super(key: key);
 
   /// ✅ NUEVO 2026-02-17: Extraer ubicaciones de ventas para mostrar en mapa
+  /// ✅ ACTUALIZADO 2026-06-14: Incluye razón social, teléfono, ID de venta y color del estado logístico
   List<MapLocation> _obtenerUbicacionesVentas() {
     final ubicaciones = <MapLocation>[];
 
@@ -25,14 +27,25 @@ class LocalidadesCard extends StatelessWidget {
 
     // ✅ NUEVO: Crear MapLocation para cada venta con ubicación válida
     for (final venta in entrega.ventas) {
-      if (venta.latitud != null && venta.longitud != null) {
+      if (venta.direccionCliente?.latitud != null &&
+          venta.direccionCliente?.longitud != null) {
+        // ✅ NUEVO 2026-06-14: Construir URL completa de foto usando BASE_URL_IMG
+        final fotoPerfil = venta.cliente?.fotoPerfil != null
+            ? '${AppUrls.baseUrlImg}${venta.cliente!.fotoPerfil}'
+            : null;
+
         ubicaciones.add(
           MapLocation(
-            latitude: venta.latitud!,
-            longitude: venta.longitud!,
-            title: venta.clienteNombre ?? 'Cliente #${venta.cliente}',
-            subtitle: venta.numero,
+            latitude: venta.direccionCliente!.latitud!,
+            longitude: venta.direccionCliente!.longitud!,
+            title: venta.cliente?.nombre ?? 'Sin nombre', // ✅ Nombre del cliente
+            subtitle: venta.numero, // ✅ Número de venta
             isSelected: false,
+            razonSocial: venta.cliente?.razonSocial, // ✅ Razón social
+            telefono: venta.cliente?.telefono, // ✅ Teléfono del cliente
+            ventaId: venta.id, // ✅ ID de venta
+            markerColor: venta.estadoLogisticoColor, // ✅ Color según estado logístico
+            fotoPerfil: fotoPerfil, // ✅ NUEVO: Foto de perfil con URL completa
           ),
         );
       }

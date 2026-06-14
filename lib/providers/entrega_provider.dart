@@ -275,9 +275,7 @@ class EntregaProvider with ChangeNotifier {
       return false;
     } finally {
       _isLoading = false;
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        notifyListeners();
-      });
+      notifyListeners();
     }
   }
 
@@ -332,9 +330,7 @@ class EntregaProvider with ChangeNotifier {
       return false;
     } finally {
       _isLoading = false;
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        notifyListeners();
-      });
+      notifyListeners();
     }
   }
 
@@ -534,7 +530,6 @@ class EntregaProvider with ChangeNotifier {
       });
     }
   }
-
 
   // Calcular ETA
   Future<bool> calcularETA(
@@ -1136,6 +1131,74 @@ class EntregaProvider with ChangeNotifier {
     }
   }
 
+  /// ✅ NUEVO 2026-06-13: Editar confirmación de entrega existente
+  /// Usa endpoint: PUT /api/confirmaciones/{confirmacion_id}
+  Future<bool> editarConfirmacionEntrega(
+    int confirmacionId, {
+    required Function(String) onSuccess,
+    required Function(String) onError,
+    List<String>? fotosBase64,
+    String? observacionesLogistica,
+    String? tipoConfirmacion,
+    String? tipoNovedad,
+    bool? tiendaAbierta,
+    bool? clientePresente,
+    String? motivoRechazo,
+  }) async {
+    _isLoading = true;
+    _errorMessage = null;
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      notifyListeners();
+    });
+
+    try {
+      debugPrint('📝 Editando confirmación #$confirmacionId');
+
+      final response = await _entregaService.editarConfirmacionEntrega(
+        confirmacionId,
+        fotosBase64: fotosBase64,
+        observacionesLogistica: observacionesLogistica,
+        tipoConfirmacion: tipoConfirmacion,
+        tipoNovedad: tipoNovedad,
+        tiendaAbierta: tiendaAbierta,
+        clientePresente: clientePresente,
+        motivoRechazo: motivoRechazo,
+      );
+
+      if (response.success) {
+        _errorMessage = null;
+        onSuccess(response.message ?? 'Confirmación actualizada correctamente');
+
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          notifyListeners();
+        });
+        return true;
+      } else {
+        _errorMessage = response.message;
+        onError(_errorMessage ?? 'Error desconocido');
+
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          notifyListeners();
+        });
+        return false;
+      }
+    } catch (e) {
+      _errorMessage = 'Error inesperado: ${e.toString()}';
+      onError(_errorMessage!);
+
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        notifyListeners();
+      });
+      return false;
+    } finally {
+      _isLoading = false;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        notifyListeners();
+      });
+    }
+  }
+
   // Finalizar entrega (FASE 3: Entrega Completada)
   Future<bool> finalizarEntrega(
     int entregaId, {
@@ -1543,13 +1606,13 @@ class EntregaProvider with ChangeNotifier {
 
     for (var entrega in _entregas) {
       for (var venta in entrega.ventas) {
-        if (venta.clienteLocalidadObj != null) {
-          final locId = venta.clienteLocalidadObj!.id;
+        if (venta.direccionCliente != null) {
+          final locId = venta.direccionCliente?.localidad?.id;
           if (!localidadesMap.containsKey(locId)) {
-            localidadesMap[locId] = {
+            localidadesMap[locId!] = {
               'id': locId,
-              'nombre': venta.clienteLocalidadObj!.nombre,
-              'codigo': venta.clienteLocalidadObj!.codigo,
+              'nombre': venta.direccionCliente?.localidad!.nombre,
+              'codigo': venta.direccionCliente?.localidad!.codigo,
             };
           }
         }

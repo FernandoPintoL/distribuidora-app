@@ -77,6 +77,7 @@ class _EntregasAsignadasScreenState extends State<EntregasAsignadasScreen> {
   Future<void> _ejecutarBusqueda() async {
     setState(() {
       _searchQuery = _searchInput.isEmpty ? null : _searchInput;
+      _mostrarFiltros = !_mostrarFiltros;
     });
     _cargarEntregas();
     debugPrint('🔍 Búsqueda ejecutada: $_searchQuery');
@@ -638,7 +639,9 @@ class _EntregasAsignadasScreenState extends State<EntregasAsignadasScreen> {
                                               '🏘️ Todas las localidades',
                                             ),
                                           ),
-                                          ...localidadProvider.localidades.map((loc) {
+                                          ...localidadProvider.localidades.map((
+                                            loc,
+                                          ) {
                                             return DropdownMenuItem(
                                               value: loc.id,
                                               child: Text(
@@ -654,7 +657,10 @@ class _EntregasAsignadasScreenState extends State<EntregasAsignadasScreen> {
                                   Consumer<EstadoLogisticoProvider>(
                                     builder: (context, estadoProvider, _) {
                                       // ✅ NUEVO: Obtener estados de ENTREGAS del caché centralizado
-                                      final estados = estadoProvider.obtenerEstadosPorCategoria('entrega');
+                                      final estados = estadoProvider
+                                          .obtenerEstadosPorCategoria(
+                                            'entrega',
+                                          );
                                       return DropdownButton<String?>(
                                         value: _filtroEstado,
                                         isExpanded: true,
@@ -668,7 +674,9 @@ class _EntregasAsignadasScreenState extends State<EntregasAsignadasScreen> {
                                           ...estados.map((estado) {
                                             return DropdownMenuItem(
                                               value: estado.codigo,
-                                              child: Text('${estado.icono} ${estado.nombre}'),
+                                              child: Text(
+                                                '${estado.icono} ${estado.nombre}',
+                                              ),
                                             );
                                           }),
                                         ],

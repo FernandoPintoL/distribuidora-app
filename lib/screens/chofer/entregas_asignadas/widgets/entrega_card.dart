@@ -273,10 +273,10 @@ class _EntregaCardState extends State<EntregaCard> {
                                                       CrossAxisAlignment.start,
                                                   children: [
                                                     Text(
-                                                      venta.clienteNombre
-                                                              ?.toUpperCase() ??
-                                                          venta.cliente
-                                                              ?.toUpperCase() ??
+                                                      venta.cliente?.nombre
+                                                              .toUpperCase() ??
+                                                          venta.cliente?.nombre
+                                                              .toUpperCase() ??
                                                           'Cliente desconocido',
                                                       maxLines: 1,
                                                       overflow:
@@ -572,18 +572,19 @@ class _EntregaCardState extends State<EntregaCard> {
 
     // Crear MapLocation para cada venta con ubicación válida
     for (final venta in entrega.ventas) {
-      if (venta.latitud != null && venta.longitud != null) {
+      if (venta.direccionCliente?.latitud != null &&
+          venta.direccionCliente?.longitud != null) {
         ubicaciones.add(
           MapLocation(
-            latitude: venta.latitud!,
-            longitude: venta.longitud!,
-            title: venta.clienteNombre ?? 'Cliente #${venta.cliente}',
+            latitude: venta.direccionCliente!.latitud!,
+            longitude: venta.direccionCliente!.longitud!,
+            title: venta.cliente?.nombre ?? 'Cliente #${venta.cliente}',
             subtitle: venta.numero,
             isSelected: false,
             // ✅ MEJORADO: Agregar información adicional para mostrar en el mapa
             razonSocial:
-                venta.clienteRazonSocial, // ✅ Ahora obtiene del modelo Venta
-            telefono: venta.clienteTelefono,
+                venta.cliente?.razonSocial, // ✅ Ahora obtiene del modelo Venta
+            telefono: venta.cliente?.telefono,
             ventaId: venta.id,
             // ✅ NUEVO 2026-03-12: Pasar color del estado logístico
             markerColor: venta.estadoLogisticoColor,

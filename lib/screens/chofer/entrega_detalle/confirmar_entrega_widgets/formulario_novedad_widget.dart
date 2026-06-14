@@ -15,11 +15,9 @@ class FormularioNovedadWidget extends StatelessWidget {
   final Function(int index) eliminarFoto;
   final VoidCallback capturarFoto;
   final Function(dynamic foto) construirImagenFoto;
-  final Function(BuildContext context, bool isDarkMode) buildTablaProductosRechazados;
-  final Function(double totalVenta) buildResumenMontos;
-  final Function(BuildContext context, bool isDarkMode) buildPagoForm;
-  final List<PagoEntrega> pagos;
-  final List<Map<String, dynamic>> tiposPago;
+  final Function(BuildContext context, bool isDarkMode)
+  buildTablaProductosRechazados;
+  final Widget registroPagosWidget; // ✅ NUEVO: Widget consolidado de pagos
   final Function(String value) onTipoNovedadChanged;
 
   const FormularioNovedadWidget({
@@ -35,16 +33,14 @@ class FormularioNovedadWidget extends StatelessWidget {
     required this.capturarFoto,
     required this.construirImagenFoto,
     required this.buildTablaProductosRechazados,
-    required this.buildResumenMontos,
-    required this.buildPagoForm,
-    required this.pagos,
-    required this.tiposPago,
+    required this.registroPagosWidget,
     required this.onTipoNovedadChanged,
   }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
-    final esNovedadSimple = tipoNovedad == 'CLIENTE_CERRADO' || tipoNovedad == 'RECHAZADO';
+    final esNovedadSimple =
+        tipoNovedad == 'CLIENTE_CERRADO' || tipoNovedad == 'RECHAZADO';
 
     return Column(
       children: [
@@ -58,9 +54,7 @@ class FormularioNovedadWidget extends StatelessWidget {
                   // Tipo de Novedad
                   Text(
                     'Tipo de Novedad',
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w600,
-                    ),
+                    style: TextStyle(fontWeight: FontWeight.w600),
                   ),
                   const SizedBox(height: 12),
                   ..._buildTiposNovedadOptions(context),
@@ -71,27 +65,21 @@ class FormularioNovedadWidget extends StatelessWidget {
                       Column(
                         children: [
                           buildTablaProductosRechazados(context, isDarkMode),
-                          const SizedBox(height: 24),
                         ],
                       ),
-                    // Resumen de montos
-                    buildResumenMontos(venta.total),
+                    // ✅ Widget consolidado de pagos y resumen
+                    registroPagosWidget,
                     const SizedBox(height: 24),
                   ],
                   // Campo de Observaciones
                   Text(
                     'Observaciones',
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w600,
-                    ),
+                    style: TextStyle(fontWeight: FontWeight.w600),
                   ),
                   const SizedBox(height: 8),
                   Text(
                     'Detalla lo sucedido para mejor seguimiento',
-                    style: TextStyle(
-                      fontSize: AppTextStyles.bodySmall(context).fontSize!,
-                      color: Colors.grey[600],
-                    ),
+                    style: TextStyle(color: Colors.grey[600]),
                   ),
                   const SizedBox(height: 8),
                   TextField(
@@ -113,8 +101,7 @@ class FormularioNovedadWidget extends StatelessWidget {
                     children: [
                       Text(
                         'Fotos de la Novedad',
-                        style: Theme.of(context).textTheme.titleMedium
-                            ?.copyWith(fontWeight: FontWeight.w600),
+                        style: TextStyle(fontWeight: FontWeight.w600),
                       ),
                       Container(
                         padding: const EdgeInsets.symmetric(
@@ -138,10 +125,7 @@ class FormularioNovedadWidget extends StatelessWidget {
                   const SizedBox(height: 8),
                   Text(
                     'Captura fotos como evidencia de la novedad',
-                    style: TextStyle(
-                      fontSize: AppTextStyles.bodySmall(context).fontSize!,
-                      color: Colors.grey[600],
-                    ),
+                    style: TextStyle(color: Colors.grey[600]),
                   ),
                   const SizedBox(height: 12),
                   // Galería de fotos
@@ -206,12 +190,6 @@ class FormularioNovedadWidget extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 24),
-                  // Sección de pagos SOLO para devolución parcial
-                  if (tipoNovedad == 'DEVOLUCION_PARCIAL' &&
-                      venta.estadoPago != 'CREDITO') ...[
-                    buildPagoForm(context, isDarkMode),
-                    const SizedBox(height: 24),
-                  ],
                 ],
               ),
             ),
@@ -225,12 +203,12 @@ class FormularioNovedadWidget extends StatelessWidget {
     return tiposNovedad.map((tipo) {
       final isSelected = tipoNovedad == tipo['value'];
       return Padding(
-        padding: const EdgeInsets.only(bottom: 12),
+        padding: const EdgeInsets.only(bottom: 8),
         child: Material(
           color: isSelected
               ? isDarkMode
-                  ? Colors.orange[900]!.withOpacity(0.3)
-                  : Colors.orange.withOpacity(0.15)
+                    ? Colors.orange[900]!.withOpacity(0.3)
+                    : Colors.orange.withOpacity(0.15)
               : isDarkMode
               ? Colors.grey.withOpacity(0.1)
               : Colors.grey.withOpacity(0.05),
@@ -241,14 +219,13 @@ class FormularioNovedadWidget extends StatelessWidget {
             },
             borderRadius: BorderRadius.circular(12),
             child: Container(
-              padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(
                   color: isSelected
                       ? isDarkMode
-                          ? Colors.orange[600]!
-                          : Colors.orange
+                            ? Colors.orange[600]!
+                            : Colors.orange
                       : isDarkMode
                       ? Colors.grey.withOpacity(0.4)
                       : Colors.grey.withOpacity(0.3),
@@ -280,17 +257,10 @@ class FormularioNovedadWidget extends StatelessWidget {
                             fontWeight: isSelected
                                 ? FontWeight.w600
                                 : FontWeight.normal,
-                            fontSize: AppTextStyles.bodyMedium(context).fontSize!,
                           ),
                         ),
                         const SizedBox(height: 4),
-                        Text(
-                          tipo['description']!,
-                          style: TextStyle(
-                            fontSize: AppTextStyles.bodySmall(context).fontSize!,
-                            color: Colors.grey[600],
-                          ),
-                        ),
+                        Text(tipo['description']!),
                       ],
                     ),
                   ),
@@ -303,4 +273,3 @@ class FormularioNovedadWidget extends StatelessWidget {
     }).toList();
   }
 }
-

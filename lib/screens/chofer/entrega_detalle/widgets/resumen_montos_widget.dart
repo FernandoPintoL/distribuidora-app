@@ -25,12 +25,16 @@ class ResumenMontosWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // Calcular total ajustado si es DEVOLUCION_PARCIAL
-    double totalAjustado =
-        tipoNovedad == 'DEVOLUCION_PARCIAL' ? totalVenta - montoRechazado : totalVenta;
+    double totalAjustado = tipoNovedad == 'DEVOLUCION_PARCIAL'
+        ? totalVenta - montoRechazado
+        : totalVenta;
     double totalComprometido = totalRecibido + montoCredito;
-    double faltaPorRecibir = esCredito ? 0 : (totalAjustado - totalRecibido).clamp(0.0, double.infinity);
-    double porcentajePagado =
-        totalAjustado > 0 ? (totalRecibido / totalAjustado * 100) : 0;
+    double faltaPorRecibir = esCredito
+        ? 0
+        : (totalAjustado - totalRecibido).clamp(0.0, double.infinity);
+    double porcentajePagado = totalAjustado > 0
+        ? (totalRecibido / totalAjustado * 100)
+        : 0;
 
     // Determinar estado
     bool estaPerfecto =
@@ -102,18 +106,7 @@ class ResumenMontosWidget extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Expanded(
-                child: Text(
-                  '💰 Resumen de Pagos',
-                  style: Theme.of(context)
-                      .textTheme
-                      .titleSmall
-                      ?.copyWith(
-                        fontWeight: FontWeight.w600,
-                        color: statusColor,
-                      ),
-                ),
-              ),
+              Expanded(child: Text('💰 Resumen de Pagos')),
               const SizedBox(width: 12),
               Container(
                 padding: const EdgeInsets.symmetric(
@@ -136,12 +129,10 @@ class ResumenMontosWidget extends StatelessWidget {
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(statusIcon, size: 14, color: Colors.white),
                     const SizedBox(width: 6),
                     Text(
                       statusLabel,
                       style: TextStyle(
-                        fontSize: AppTextStyles.labelSmall(context).fontSize!,
                         fontWeight: FontWeight.w700,
                         color: Colors.white,
                       ),
@@ -156,26 +147,14 @@ class ResumenMontosWidget extends StatelessWidget {
           // Total de la venta (prominente)
           Container(
             padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: Colors.grey[100],
-              borderRadius: BorderRadius.circular(8),
-            ),
+            decoration: BoxDecoration(borderRadius: BorderRadius.circular(8)),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(
-                  'Total Original:',
-                  style: TextStyle(
-                    fontSize: AppTextStyles.bodyMedium(context).fontSize!,
-                    color: Colors.grey[700],
-                  ),
-                ),
+                Text('Total Original:'),
                 Text(
                   'Bs. ${totalVenta.toStringAsFixed(2)}',
-                  style: TextStyle(
-                    fontSize: AppTextStyles.bodyMedium(context).fontSize!,
-                    fontWeight: FontWeight.w700,
-                  ),
+                  style: TextStyle(fontWeight: FontWeight.w700),
                 ),
               ],
             ),
@@ -199,7 +178,6 @@ class ResumenMontosWidget extends StatelessWidget {
                       Text(
                         'Rechazado:',
                         style: TextStyle(
-                          fontSize: AppTextStyles.bodyMedium(context).fontSize!,
                           color: Colors.orange[700],
                           fontWeight: FontWeight.w600,
                         ),
@@ -207,7 +185,6 @@ class ResumenMontosWidget extends StatelessWidget {
                       Text(
                         '- Bs. ${montoRechazado.toStringAsFixed(2)}',
                         style: TextStyle(
-                          fontSize: AppTextStyles.bodyMedium(context).fontSize!,
                           fontWeight: FontWeight.w700,
                           color: Colors.orange[700],
                         ),
@@ -229,7 +206,6 @@ class ResumenMontosWidget extends StatelessWidget {
                       Text(
                         'Total a Recibir:',
                         style: TextStyle(
-                          fontSize: AppTextStyles.bodyMedium(context).fontSize!,
                           color: Colors.blue[700],
                           fontWeight: FontWeight.w600,
                         ),
@@ -237,7 +213,6 @@ class ResumenMontosWidget extends StatelessWidget {
                       Text(
                         'Bs. ${totalAjustado.toStringAsFixed(2)}',
                         style: TextStyle(
-                          fontSize: AppTextStyles.bodyMedium(context).fontSize!,
                           fontWeight: FontWeight.w700,
                           color: Colors.blue[700],
                         ),
@@ -263,7 +238,6 @@ class ResumenMontosWidget extends StatelessWidget {
                 Text(
                   'Recibido Hoy:',
                   style: TextStyle(
-                    fontSize: AppTextStyles.bodyMedium(context).fontSize!,
                     color: Colors.green[700],
                     fontWeight: FontWeight.w600,
                   ),
@@ -271,7 +245,6 @@ class ResumenMontosWidget extends StatelessWidget {
                 Text(
                   'Bs. ${totalRecibido.toStringAsFixed(2)}',
                   style: TextStyle(
-                    fontSize: AppTextStyles.bodyMedium(context).fontSize!,
                     fontWeight: FontWeight.w700,
                     color: Colors.green[700],
                   ),
@@ -296,10 +269,7 @@ class ResumenMontosWidget extends StatelessWidget {
           const SizedBox(height: 8),
           Text(
             '${porcentajePagado.toStringAsFixed(1)}% pagado',
-            style: TextStyle(
-              fontSize: AppTextStyles.labelSmall(context).fontSize!,
-              color: Colors.grey[600],
-            ),
+            style: TextStyle(color: Colors.grey[600]),
           ),
           const SizedBox(height: 12),
 
@@ -318,7 +288,6 @@ class ResumenMontosWidget extends StatelessWidget {
                   Text(
                     'Promesa de Pago:',
                     style: TextStyle(
-                      fontSize: AppTextStyles.bodyMedium(context).fontSize!,
                       color: Colors.blue[700],
                       fontWeight: FontWeight.w600,
                     ),
@@ -326,7 +295,6 @@ class ResumenMontosWidget extends StatelessWidget {
                   Text(
                     'Bs. ${montoCredito.toStringAsFixed(2)}',
                     style: TextStyle(
-                      fontSize: AppTextStyles.bodyMedium(context).fontSize!,
                       fontWeight: FontWeight.w700,
                       color: Colors.blue[700],
                     ),
@@ -348,7 +316,6 @@ class ResumenMontosWidget extends StatelessWidget {
                   Text(
                     'Falta por Recibir:',
                     style: TextStyle(
-                      fontSize: AppTextStyles.bodyMedium(context).fontSize!,
                       color: Colors.red[700],
                       fontWeight: FontWeight.w600,
                     ),
@@ -356,7 +323,6 @@ class ResumenMontosWidget extends StatelessWidget {
                   Text(
                     'Bs. ${faltaPorRecibir.toStringAsFixed(2)}',
                     style: TextStyle(
-                      fontSize: AppTextStyles.bodyMedium(context).fontSize!,
                       fontWeight: FontWeight.w700,
                       color: Colors.red[700],
                     ),

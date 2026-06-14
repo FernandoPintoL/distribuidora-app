@@ -188,7 +188,7 @@ class Entrega {
 
     // Si no se encontraron coordenadas en el nivel Entrega,
     // buscar en la primera venta disponible
-    if ((latDestino == null || lngDestino == null) && ventasList.isNotEmpty) {
+    /***if ((latDestino == null || lngDestino == null) && ventasList.isNotEmpty) {
       final primeraVenta = ventasList.first;
       // print('[ENTREGA_PARSE] Buscando coords en primera venta: venta.latitud=${primeraVenta.latitud}, venta.longitud=${primeraVenta.longitud}');
       if (primeraVenta.latitud != null && primeraVenta.longitud != null) {
@@ -200,7 +200,7 @@ class Entrega {
       }
     } else {
       // print('[ENTREGA_PARSE] Coordenadas a nivel Entrega: lat=$latDestino, lng=$lngDestino');
-    }
+    }**/
 
     // Parsear chofer si existe en la respuesta
     Chofer? choferObj;
@@ -272,12 +272,12 @@ class Entrega {
     }
 
     return Entrega(
-      id: json['id'] as int,
-      proformaId: json['proforma_id'] as int?, // Ahora opcional
+      id: (json['id'] as int?) ?? 0, // ✅ SEGURO: Con valor por defecto
+      proformaId: json['proforma_id'] as int?,
       choferId: json['chofer_id'] as int?,
       vehiculoId: json['vehiculo_id'] as int?,
       direccionClienteId: json['direccion_cliente_id'] as int?,
-      estado: json['estado'] as String,
+      estado: (json['estado'] as String?) ?? 'DESCONOCIDO',
       estadoEntregaId: estadoEntregaId,
       estadoEntregaCodigo: estadoEntregaCodigo,
       estadoEntregaNombre: estadoEntregaNombre,

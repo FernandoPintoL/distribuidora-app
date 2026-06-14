@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../../models/entrega.dart';
+import '../../../../models/venta.dart';  // ✅ NUEVO: Para parsear ventas JSON
 import '../../../../models/api_response.dart';
 import '../../../../providers/entrega_provider.dart';
 import '../../../../utils/phone_utils.dart';
@@ -22,12 +23,16 @@ class TabVentasWidget extends StatefulWidget {
 }
 
 class _TabVentasWidgetState extends State<TabVentasWidget> {
-  late Future<ApiResponse<Map<String, dynamic>>> _futureVentasResumidas;
+  Future<ApiResponse<Map<String, dynamic>>>? _futureVentasResumidas;
 
   @override
   void initState() {
     super.initState();
-    _cargarVentasResumidas();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      setState(() {
+        _cargarVentasResumidas();
+      });
+    });
   }
 
   void _cargarVentasResumidas() {
@@ -81,10 +86,20 @@ class _TabVentasWidgetState extends State<TabVentasWidget> {
           }
 
           final ventasData = snapshot.data!.data!;
-          final ventas = ventasData['ventas'] as List? ?? [];
+          final ventasJson = ventasData['ventas'] as List? ?? [];
           final resumenTotal = ventasData['resumen_total'] as Map<String, dynamic>? ?? {};
 
-          if (ventas.isEmpty) {
+          // ✅ NUEVO 2026-06-14: Agregar entrega_id a cada venta antes de parsearla
+          final ventasParseadas = ventasJson
+              .cast<Map<String, dynamic>>()
+              .map((v) {
+                // Inyectar el ID de la entrega actual en cada venta
+                v['entrega_id'] = widget.entrega.id;
+                return Venta.fromJson(v);
+              })
+              .toList();
+
+          if (ventasParseadas.isEmpty) {
             return Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -104,10 +119,9 @@ class _TabVentasWidgetState extends State<TabVentasWidget> {
           return ListView(
             padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
             children: [
-              // ✅ LISTA DE VENTAS CON CARDS
               VentasAsignadasCard(
-                key: ValueKey('ventas_${widget.entrega.id}_${ventas.length}'),
-                entrega: widget.entrega,
+                key: ValueKey('ventas_${widget.entrega.id}_${ventasParseadas.length}'),
+                entrega: _crearEntregaConVentas(ventasParseadas),
                 provider: widget.provider,
                 onLlamarCliente: (tel) => PhoneUtils.llamarCliente(widget.context, tel),
                 onEnviarWhatsApp: (tel) => PhoneUtils.enviarWhatsApp(widget.context, tel),
@@ -278,6 +292,16 @@ class _TabVentasWidgetState extends State<TabVentasWidget> {
           ),
         ],
       ),
+    );
+  }
+
+  Entrega _crearEntregaConVentas(List<Venta> ventas) {
+    return Entrega(
+      id: widget.entrega.id,
+      estado: widget.entrega.estado,
+      historialEstados: widget.entrega.historialEstados,
+      ventas: ventas,
+      productosGenerico: widget.entrega.productosGenerico,
     );
   }
 }

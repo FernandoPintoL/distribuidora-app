@@ -740,12 +740,20 @@ class EntregaService {
   /// Confirmar que la carga está lista (transición de EN_CARGA a LISTO_PARA_ENTREGA)
   Future<ApiResponse<Entrega>> confirmarCargoCompleto(int entregaId) async {
     try {
+      debugPrint('🔹 [CONFIRMAR_CARGA] Iniciando solicitud');
+      debugPrint('🔹 [CONFIRMAR_CARGA] URL: /entregas/$entregaId/listo-para-entrega');
+      debugPrint('🔹 [CONFIRMAR_CARGA] Método: POST');
+      debugPrint('🔹 [CONFIRMAR_CARGA] Body: {}');
+
       final response = await _apiService.post(
         '/entregas/$entregaId/listo-para-entrega',
         data: {},
       );
 
+      debugPrint('🟢 [CONFIRMAR_CARGA] Respuesta recibida - Status: ${response.statusCode}');
+
       if (response.statusCode == 200 || response.statusCode == 201) {
+        debugPrint('🟢 [CONFIRMAR_CARGA] ✅ Éxito');
         final entrega = Entrega.fromJson(
           response.data['data'] as Map<String, dynamic>,
         );
@@ -755,17 +763,28 @@ class EntregaService {
           message: 'Carga confirmada - Entrega lista para entrega',
         );
       } else {
+        debugPrint('🔴 [CONFIRMAR_CARGA] Status no esperado: ${response.statusCode}');
         return ApiResponse(
           success: false,
           message: response.data['message'] ?? 'Error al confirmar carga',
         );
       }
     } on DioException catch (e) {
+      debugPrint('🔴 [CONFIRMAR_CARGA] DioException: ${e.type}');
+      debugPrint('🔴 [CONFIRMAR_CARGA] Message: ${e.message}');
+      debugPrint('🔴 [CONFIRMAR_CARGA] Status Code: ${e.response?.statusCode}');
+      debugPrint('🔴 [CONFIRMAR_CARGA] Response: ${e.response?.data}');
+
+      final errorMessage = e.response?.data['message'] ??
+                          e.message ??
+                          'Error DioException: ${e.type}';
       return ApiResponse(
         success: false,
-        message: 'Error al confirmar carga: ${e.message}',
+        message: 'Error al confirmar carga: $errorMessage',
       );
     } catch (e) {
+      debugPrint('🔴 [CONFIRMAR_CARGA] Exception genérica: ${e.runtimeType}');
+      debugPrint('🔴 [CONFIRMAR_CARGA] Detalles: $e');
       return ApiResponse(
         success: false,
         message: 'Error inesperado: ${e.toString()}',
@@ -892,7 +911,7 @@ class EntregaService {
       };
 
       final response = await _apiService.post(
-        '/chofer/entregas/$entregaId/ventas/$ventaId/confirmar-entrega',
+        '/chofer/entregas/$entregaId/ventas/$ventaId/crear-confirmacion',
         data: data,
       );
 
@@ -914,6 +933,70 @@ class EntregaService {
       return ApiResponse(
         success: false,
         message: 'Error al confirmar entrega: ${e.message}',
+      );
+    } catch (e) {
+      return ApiResponse(
+        success: false,
+        message: 'Error inesperado: ${e.toString()}',
+      );
+    }
+  }
+
+  /// ✅ NUEVO 2026-06-13: Editar confirmación de entrega existente
+  /// PUT /api/confirmaciones/{confirmacion_id}
+  ///
+  /// Parámetros (todos opcionales):
+  /// - fotos: List<String> - Fotos en base64 (nuevas)
+  /// - observaciones_logistica: String - Observaciones
+  /// - tipo_confirmacion: String - COMPLETA | CLIENTE_CERRADO | DEVOLUCION_PARCIAL | RECHAZADO
+  /// - tipo_novedad: String - CLIENTE_CERRADO | DEVOLUCION_PARCIAL | RECHAZADO | NO_CONTACTADO
+  /// - tienda_abierta: bool
+  /// - cliente_presente: bool
+  /// - motivo_rechazo: String
+  Future<ApiResponse<Map<String, dynamic>>> editarConfirmacionEntrega(
+    int confirmacionId, {
+    List<String>? fotosBase64,
+    String? observacionesLogistica,
+    String? tipoConfirmacion,
+    String? tipoNovedad,
+    bool? tiendaAbierta,
+    bool? clientePresente,
+    String? motivoRechazo,
+  }) async {
+    try {
+      final data = <String, dynamic>{
+        if (fotosBase64 != null && fotosBase64.isNotEmpty) 'fotos': fotosBase64,
+        if (observacionesLogistica != null && observacionesLogistica.isNotEmpty)
+          'observaciones_logistica': observacionesLogistica,
+        if (tipoConfirmacion != null) 'tipo_confirmacion': tipoConfirmacion,
+        if (tipoNovedad != null) 'tipo_novedad': tipoNovedad,
+        if (tiendaAbierta != null) 'tienda_abierta': tiendaAbierta,
+        if (clientePresente != null) 'cliente_presente': clientePresente,
+        if (motivoRechazo != null) 'motivo_rechazo': motivoRechazo,
+      };
+
+      final response = await _apiService.put(
+        '/chofer/confirmaciones/$confirmacionId',
+        data: data,
+      );
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        final responseData = response.data as Map<String, dynamic>;
+        return ApiResponse(
+          success: true,
+          data: responseData['data'] as Map<String, dynamic>?,
+          message: responseData['message'] ?? 'Confirmación actualizada correctamente',
+        );
+      } else {
+        return ApiResponse(
+          success: false,
+          message: response.data['message'] ?? 'Error al actualizar confirmación',
+        );
+      }
+    } on DioException catch (e) {
+      return ApiResponse(
+        success: false,
+        message: 'Error al editar confirmación: ${e.message}',
       );
     } catch (e) {
       return ApiResponse(

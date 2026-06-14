@@ -12,15 +12,13 @@ import '../../../services/image_compression_service.dart'; // ✅ NUEVO: Para co
 import '../../../services/entrega_service.dart'; // ✅ NUEVO: Para obtener tipos de pago
 
 // ✅ Importar widgets separados para mayor mantenibilidad
-import 'confirmar_entrega_widgets/formulario_completa_widget.dart';
 import 'confirmar_entrega_widgets/formulario_novedad_widget.dart';
 import 'confirmar_entrega_widgets/models.dart';
 
 // ✅ NUEVO 2026-03-12: Importar widgets de registro de pagos
-import 'widgets/sugerencia_pago_widget.dart';
-import 'widgets/pago_form_widget.dart';
 import 'widgets/tabla_productos_rechazados_widget.dart' as tabla_widget;
-import 'widgets/resumen_montos_widget.dart';
+import 'widgets/venta_detalles_card.dart';
+import 'widgets/registro_pagos_completo_widget.dart';
 
 class ConfirmarEntregaVentaScreen extends StatefulWidget {
   final Entrega entrega;
@@ -29,6 +27,7 @@ class ConfirmarEntregaVentaScreen extends StatefulWidget {
 
   // ✅ NUEVO 2026-02-21: Parámetros para modo edición
   final bool isEditing;
+  final int? confirmacionId;  // ✅ NUEVO 2026-06-13: ID de confirmación para usar PUT /confirmaciones/{id}
   final String? tipoEntregaExistente;
   final String? tipoNovedadExistente;
 
@@ -55,6 +54,7 @@ class ConfirmarEntregaVentaScreen extends StatefulWidget {
     required this.venta,
     required this.provider,
     this.isEditing = false,
+    this.confirmacionId,  // ✅ NUEVO: ID de confirmación para editar
     this.tipoEntregaExistente,
     this.tipoNovedadExistente,
     this.cliente,
@@ -92,6 +92,11 @@ class _ConfirmarEntregaVentaScreenState
       TextEditingController();
   final TextEditingController _montoController = TextEditingController();
   final TextEditingController _referenciaController = TextEditingController();
+  // ✅ NUEVO 2026-03-15: Controladores para 2 inputs fijos
+  final TextEditingController _montoEfectivoController =
+      TextEditingController();
+  final TextEditingController _montoTransferenciaController =
+      TextEditingController();
   // ✅ FIX 2026-03-05: Manejar tanto File (fotos nuevas) como String (URLs/base64 de API)
   List<dynamic> _fotosCapturadas = [];
 
@@ -142,6 +147,10 @@ class _ConfirmarEntregaVentaScreenState
   void initState() {
     super.initState();
     _cargarTiposPago();
+
+    // ✅ Listeners para actualizar resumen mientras escribes
+    _montoEfectivoController.addListener(() => setState(() {}));
+    _montoTransferenciaController.addListener(() => setState(() {}));
 
     // ✅ DEBUG: Verificar que cliente y tipoPago llegan correctamente
     debugPrint('👤 [CLIENTE DATA] cliente: ${widget.cliente}');
@@ -479,82 +488,65 @@ class _ConfirmarEntregaVentaScreenState
     }
   }
 
-  /// Obtener tipos de pago disponibles que no están ya registrados
-  List<Map<String, dynamic>> _obtenerTiposPagoDisponibles() {
-    final tipoPagoYaUsados = _pagos.map((p) => p.tipoPagoId).toSet();
-    return _tiposPago
-        .where((tipo) => !tipoPagoYaUsados.contains(tipo['id']))
-        .toList();
-  }
-
-  /// Obtener sugerencias inteligentes de pago basado en saldo pendiente
-  Map<String, dynamic>? _obtenerSugerenciaPago() {
-    if (_pagos.isEmpty) return null;
-
-    double totalRecibido = _pagos.fold(0.0, (sum, pago) => sum + pago.monto);
-
-    // ✅ CORREGIDO 2026-03-05: Considerar monto ajustado en DEVOLUCION_PARCIAL
-    double montoRechazado = _tipoNovedad == 'DEVOLUCION_PARCIAL'
-        ? _productosRechazados.fold(0.0, (sum, p) => sum + p.subtotalRechazado)
-        : 0.0;
-    double totalAjustado = widget.venta.total - montoRechazado;
-    double saldoPendiente = totalAjustado - totalRecibido;
-
-    if (saldoPendiente <= 0) return null;
-
-    // Obtener tipos de pago disponibles
-    final tiposDisponibles = _obtenerTiposPagoDisponibles();
-    if (tiposDisponibles.isEmpty) return null;
-
-    // ✅ FIXED: Preferencia: TRANSFERENCIA > CHEQUE > otros
-    Map<String, dynamic>? tipoPagoSugerido;
-    final preferencia = ['TRANSFERENCIA', 'CHEQUE', 'QR'];
-
-    for (final nombre in preferencia) {
-      try {
-        tipoPagoSugerido = tiposDisponibles.firstWhere(
-          (t) =>
-              (t['nombre'] as String?)?.toUpperCase().contains(nombre) ?? false,
-        );
-        if (tipoPagoSugerido.isNotEmpty &&
-            tipoPagoSugerido.containsKey('nombre')) {
-          break;
-        }
-      } catch (e) {
-        // No encontró en esta preferencia, continúa a la siguiente
-        continue;
-      }
-    }
-
-    // Si no encuentra por preferencia, toma el primero disponible
-    if (tipoPagoSugerido == null || tipoPagoSugerido.isEmpty) {
-      try {
-        tipoPagoSugerido = tiposDisponibles.firstWhere(
-          (t) =>
-              t.containsKey('nombre') &&
-              ((t['nombre'] as String?)?.isNotEmpty ?? false),
-        );
-      } catch (e) {
-        tipoPagoSugerido = null;
-      }
-    }
-
-    return tipoPagoSugerido != null &&
-            tipoPagoSugerido.isNotEmpty &&
-            tipoPagoSugerido.containsKey('nombre')
-        ? {
-            'tipo': tipoPagoSugerido,
-            'saldo': saldoPendiente,
-            'totalRecibido': totalRecibido,
-          }
-        : null;
-  }
-
   /// ✅ NUEVO 2026-03-05: Validar que todos los datos requeridos estén completos
+  /// ✅ NUEVO 2026-06-14: Construir pagos automáticamente desde los inputs
+  void _construirPagosAutomaticamente() {
+    // Limpiar pagos anteriores si los hubiera
+    _pagos.clear();
+
+    double montoEfectivo = double.tryParse(_montoEfectivoController.text) ?? 0;
+    double montoTransferencia =
+        double.tryParse(_montoTransferenciaController.text) ?? 0;
+
+    // Buscar IDs por código
+    int? idEfectivo;
+    int? idTransferencia;
+    for (var tipo in _tiposPago) {
+      final codigo = (tipo['codigo'] as String?)?.toUpperCase() ?? '';
+      if (codigo == 'EFECTIVO') idEfectivo = tipo['id'] as int;
+      if (codigo == 'TRANSFERENCIA/QR') idTransferencia = tipo['id'] as int;
+    }
+
+    // Agregar pagos si hay montos y están configurados en el backend
+    if (montoEfectivo > 0 && idEfectivo != null) {
+      _pagos.add(
+        PagoEntrega(
+          tipoPagoId: idEfectivo,
+          monto: montoEfectivo,
+          referencia: null,
+        ),
+      );
+    }
+
+    if (montoTransferencia > 0 && idTransferencia != null) {
+      _pagos.add(
+        PagoEntrega(
+          tipoPagoId: idTransferencia,
+          monto: montoTransferencia,
+          referencia: null,
+        ),
+      );
+    }
+
+    debugPrint(
+      '✅ Pagos construidos automáticamente: ${_pagos.length} pagos',
+    );
+  }
+
+  /// ✅ MODIFICADO 2026-06-14: Validar incluyendo inputs de Efectivo/QR
   bool _validarDatos() {
     if (_tipoEntrega == 'COMPLETA') {
-      // Para entrega completa: requiere pagos O crédito, y fotos si es cliente cerrado
-      if (!_esCredito && _pagos.isEmpty) return false;
+      // Para entrega completa: requiere pagos O crédito O valores en inputs
+      final esCredito = _esVentaCredito();
+      double montoEfectivo =
+          double.tryParse(_montoEfectivoController.text) ?? 0;
+      double montoTransferencia =
+          double.tryParse(_montoTransferenciaController.text) ?? 0;
+      double totalEnInputs = montoEfectivo + montoTransferencia;
+
+      if (!esCredito && _pagos.isEmpty && totalEnInputs == 0) {
+        return false;
+      }
     } else if (_tipoEntrega == 'CON_NOVEDAD') {
       // Para novedad: requiere tipo de novedad
       if (_tipoNovedad == null) return false;
@@ -565,11 +557,18 @@ class _ConfirmarEntregaVentaScreenState
     return true;
   }
 
-  /// ✅ NUEVO 2026-03-05: Obtener razón del error de validación
+  /// ✅ MODIFICADO 2026-06-14: Obtener razón del error incluyendo inputs
   String _obtenerRazonError() {
     if (_tipoEntrega == 'COMPLETA') {
-      if (!_esCredito && _pagos.isEmpty) {
-        return 'Registra un pago o marca como crédito';
+      final esCredito = _esVentaCredito();
+      double montoEfectivo =
+          double.tryParse(_montoEfectivoController.text) ?? 0;
+      double montoTransferencia =
+          double.tryParse(_montoTransferenciaController.text) ?? 0;
+      double totalEnInputs = montoEfectivo + montoTransferencia;
+
+      if (!esCredito && _pagos.isEmpty && totalEnInputs == 0) {
+        return 'Escribe un monto en Efectivo o QR, o marca como crédito';
       }
     } else if (_tipoEntrega == 'CON_NOVEDAD') {
       if (_tipoNovedad == null) {
@@ -584,6 +583,9 @@ class _ConfirmarEntregaVentaScreenState
 
   /// Confirmar entrega
   Future<void> _confirmarEntrega() async {
+    // ✅ NUEVO 2026-06-14: Construir pagos automáticamente desde los inputs
+    _construirPagosAutomaticamente();
+
     // ✅ NUEVO: Validar que Cliente Cerrado/No Disponible requiere fotos
     if (_tipoNovedad == 'CLIENTE_CERRADO' && _fotosCapturadas.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -662,10 +664,12 @@ class _ConfirmarEntregaVentaScreenState
 
       // ✅ NUEVA 2026-02-15: Construir array de productos rechazados
       final productosRechazadosArray = _productosRechazados
-          .map((prod) => {
-            'detalleVentaId': prod.detalleVentaId,
-            'cantidadRechazada': prod.cantidadRechazada,
-          })
+          .map(
+            (prod) => {
+              'detalleVentaId': prod.detalleVentaId,
+              'cantidadRechazada': prod.cantidadRechazada,
+            },
+          )
           .toList();
 
       // ✅ DEBUG: Ver qué se envía al backend
@@ -837,10 +841,12 @@ class _ConfirmarEntregaVentaScreenState
 
       // ✅ NUEVA 2026-03-05: Construir array de productos rechazados (FALTABA en edición)
       final productosRechazadosArray = _productosRechazados
-          .map((prod) => {
-            'detalleVentaId': prod.detalleVentaId,
-            'cantidadRechazada': prod.cantidadRechazada,
-          })
+          .map(
+            (prod) => {
+              'detalleVentaId': prod.detalleVentaId,
+              'cantidadRechazada': prod.cantidadRechazada,
+            },
+          )
           .toList();
 
       debugPrint('📦 PRODUCTOS RECHAZADOS EN EDICIÓN:');
@@ -853,10 +859,11 @@ class _ConfirmarEntregaVentaScreenState
         }
       }
 
-      // ✅ NUEVA 2026-03-05: Limpiar campos según tipo de confirmación
+      // ✅ NUEVA 2026-03-05: Calcular tipo_confirmacion correctamente
+      // tipo_confirmacion debe ser: COMPLETA | CLIENTE_CERRADO | DEVOLUCION_PARCIAL | RECHAZADO
       final tipoConfirmacionFinal = _tipoEntrega == 'COMPLETA'
           ? 'COMPLETA'
-          : 'CON_NOVEDAD';
+          : _tipoNovedad;  // ✅ FIX: Enviar el tipo específico de novedad, no 'CON_NOVEDAD'
 
       String? tipoNovedadFinal = _tipoNovedad;
       bool? tiendaAbiertaFinal = _tiendaAbierta;
@@ -874,30 +881,50 @@ class _ConfirmarEntregaVentaScreenState
         debugPrint('✅ EDICIÓN CON_NOVEDAD: Enviando campos de novedad');
       }
 
-      // ✅ FIX 2026-03-05: Llamar a confirmarVentaEntregada() en lugar de cambiarTipoEntrega()
-      // para registrar TODAS las fotos, observaciones y pagos
-      final success = await widget.provider.confirmarVentaEntregada(
-        widget.entrega.id,
-        widget.venta.id,
-        onSuccess: (mensaje) {
-          debugPrint('✅ Venta actualizada: $mensaje');
-        },
-        onError: (error) {
-          debugPrint('❌ Error: $error');
-        },
-        fotosBase64: fotosBase64,
-        observacionesLogistica: observacionesFinales,
-        pagos: pagosArray,
-        esCredito: _esCredito,
-        tipoConfirmacion: tipoConfirmacionFinal,
-        // ✅ NUEVA 2026-03-05: Enviar productos rechazados (ANTES FALTABA)
-        productosRechazados: productosRechazadosArray,
-        // ✅ NUEVA 2026-03-05: Enviar campos de novedad SOLO si es CON_NOVEDAD
-        tipoNovedad: tipoNovedadFinal,
-        tiendaAbierta: tiendaAbiertaFinal,
-        clientePresente: clientePresenteFinal,
-        motivoRechazo: motivoRechazoFinal,
-      );
+      // ✅ 2026-06-13: Detectar si es edición o creación nueva
+      bool success;
+
+      if (widget.confirmacionId != null) {
+        // ✅ EDICIÓN: Usar PUT /api/confirmaciones/{id}
+        success = await widget.provider.editarConfirmacionEntrega(
+          widget.confirmacionId!,
+          onSuccess: (mensaje) {
+            debugPrint('✅ Confirmación actualizada: $mensaje');
+          },
+          onError: (error) {
+            debugPrint('❌ Error: $error');
+          },
+          fotosBase64: fotosBase64,
+          observacionesLogistica: observacionesFinales,
+          tipoConfirmacion: tipoConfirmacionFinal,
+          tipoNovedad: tipoNovedadFinal,
+          tiendaAbierta: tiendaAbiertaFinal,
+          clientePresente: clientePresenteFinal,
+          motivoRechazo: motivoRechazoFinal,
+        );
+      } else {
+        // ✅ CREACIÓN NUEVA: Usar POST /api/chofer/entregas/{id}/ventas/{id}/confirmar-entrega
+        success = await widget.provider.confirmarVentaEntregada(
+          widget.entrega.id,
+          widget.venta.id,
+          onSuccess: (mensaje) {
+            debugPrint('✅ Nueva confirmación registrada: $mensaje');
+          },
+          onError: (error) {
+            debugPrint('❌ Error: $error');
+          },
+          fotosBase64: fotosBase64,
+          observacionesLogistica: observacionesFinales,
+          pagos: pagosArray,
+          esCredito: _esCredito,
+          tipoConfirmacion: tipoConfirmacionFinal,
+          productosRechazados: productosRechazadosArray,
+          tipoNovedad: tipoNovedadFinal,
+          tiendaAbierta: tiendaAbiertaFinal,
+          clientePresente: clientePresenteFinal,
+          motivoRechazo: motivoRechazoFinal,
+        );
+      }
 
       if (mounted) {
         Navigator.pop(context); // Cerrar loading
@@ -957,7 +984,6 @@ class _ConfirmarEntregaVentaScreenState
   @override
   Widget build(BuildContext context) {
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
-
     return WillPopScope(
       onWillPop: () async {
         if (_paso > 1) {
@@ -968,11 +994,60 @@ class _ConfirmarEntregaVentaScreenState
       },
       child: Scaffold(
         appBar: AppBar(
-          title: Text(
-            widget.isEditing
-                ? '✏️ Editar Entrega F.${widget.venta.id}'
-                : 'Entrega a Venta F.${widget.venta.id}',
-          ),
+          title: widget.isEditing
+              ? Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.orange,
+                        borderRadius: BorderRadius.circular(6),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.orange.withOpacity(0.3),
+                            blurRadius: 8,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      child: const Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.edit,
+                            size: 16,
+                            color: Colors.white,
+                          ),
+                          SizedBox(width: 6),
+                          Text(
+                            'EDITAR',
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Flexible(
+                      child: Text(
+                        'Folio #${widget.venta.id}',
+                        style: const TextStyle(fontSize: 16),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                )
+              : Text(
+                  'Entrega del Folio #${widget.venta.id}',
+                  style: const TextStyle(fontSize: 16),
+                ),
           centerTitle: true,
           elevation: 0,
           leading: IconButton(
@@ -995,20 +1070,22 @@ class _ConfirmarEntregaVentaScreenState
                     onSelectionChanged: (Set<String> newSelection) {
                       setState(() {
                         _tipoEntrega = newSelection.first;
-                        // ✅ Limpiar campos cuando cambia de tipo
+                        // ✅ FIX CRÍTICO: Actualizar _tipoConfirmacion cuando cambia _tipoEntrega
                         if (_tipoEntrega == 'COMPLETA') {
+                          _tipoConfirmacion = 'COMPLETA';
                           _tipoNovedad = null;
                           _tiendaAbierta = false;
                           _clientePresente = false;
                           _motivoRechazo = null;
                           _productosRechazados.clear();
                           debugPrint(
-                            '✅ Cambiado a COMPLETA - campos de novedad limpiados',
+                            '✅ Cambiado a COMPLETA - _tipoConfirmacion: COMPLETA - campos de novedad limpiados',
                           );
                         } else {
+                          _tipoConfirmacion = 'CON_NOVEDAD';
                           _pagos.clear();
                           debugPrint(
-                            '✅ Cambiado a CON_NOVEDAD - pagos limpiados',
+                            '✅ Cambiado a CON_NOVEDAD - _tipoConfirmacion: CON_NOVEDAD - pagos limpiados',
                           );
                         }
                       });
@@ -1017,12 +1094,12 @@ class _ConfirmarEntregaVentaScreenState
                       ButtonSegment(
                         value: 'COMPLETA',
                         label: Text('✅ Completa'),
-                        icon: Icon(Icons.check_circle),
+                        // icon: Icon(Icons.check_circle),
                       ),
                       ButtonSegment(
-                        value: 'NOVEDAD',
+                        value: 'CON_NOVEDAD',
                         label: Text('⚠️ Con Novedad'),
-                        icon: Icon(Icons.warning),
+                        // icon: Icon(Icons.warning),
                       ),
                     ],
                   ),
@@ -1039,231 +1116,153 @@ class _ConfirmarEntregaVentaScreenState
           ],
         ),
         body: SafeArea(
-          child:
-              // ✅ SIMPLIFICADO: SIEMPRE mostrar el formulario según tipo seleccionado (sin Paso 1)
-              _tipoEntrega == 'COMPLETA'
-              ? FormularioCompletaWidget(
-                  venta: widget.venta,
-                  isDarkMode: isDarkMode,
-                  fotosCapturadas: _fotosCapturadas,
-                  tiposPago: _tiposPago,
-                  pagos: _pagos,
-                  esCredito: _esCredito,
-                  observacionesController: _observacionesController,
-                  tipoNovedad: _tipoNovedad,
-                  buildResumenMontos: (total) => ResumenMontosWidget(
-                    totalVenta: total,
-                    totalRecibido: _pagos.fold(0.0, (sum, pago) => sum + pago.monto),
-                    montoRechazado: _tipoNovedad == 'DEVOLUCION_PARCIAL'
-                        ? _productosRechazados.fold(0.0, (sum, p) => sum + p.subtotalRechazado)
-                        : 0.0,
-                    montoCredito: _esCredito
-                        ? (total - _pagos.fold(0.0, (sum, pago) => sum + pago.monto)).clamp(0.0, double.infinity)
-                        : 0,
-                    esCredito: _esCredito,
-                    tipoNovedad: _tipoNovedad ?? '',
-                    isDarkMode: isDarkMode,
-                  ),
-                  buildPagoForm: (ctx, dark) => Column(
-                    children: [
-                      if (_pagos.isNotEmpty) ...[
-                        SugerenciaPagoWidget(
-                          sugerencia: _obtenerSugerenciaPago(),
-                          isDarkMode: dark,
-                          onAplicarSugerencia: () {
-                            final sugerencia = _obtenerSugerenciaPago();
-                            if (sugerencia != null) {
-                              final saldoPendiente = sugerencia['saldo'] as double;
-                              setState(() {
-                                _montoController.text = saldoPendiente.toStringAsFixed(2);
-                              });
-                              ScaffoldMessenger.of(ctx).showSnackBar(
-                                SnackBar(
-                                  content: Text('Monto de Bs. ${saldoPendiente.toStringAsFixed(2)} pre-completado'),
-                                  backgroundColor: dark ? Colors.blue[700] : Colors.blue,
-                                  duration: const Duration(seconds: 2),
-                                ),
-                              );
-                            }
-                          },
-                          montoController: _montoController,
-                        ),
-                        const SizedBox(height: 16),
-                      ],
-                      PagoFormWidget(
-                        tiposDisponibles: _obtenerTiposPagoDisponibles(),
-                        tipoPagoSeleccionado: _tipoPagoSeleccionado,
-                        montoController: _montoController,
-                        referenciaController: _referenciaController,
-                        cargandoTiposPago: _cargandoTiposPago,
-                        isDarkMode: dark,
-                        onAgregarPago: (tipoPagoId, monto, referencia) {
-                          setState(() {
-                            _pagos.add(
-                              PagoEntrega(
-                                tipoPagoId: tipoPagoId,
-                                monto: monto,
-                                referencia: referencia,
-                              ),
-                            );
-                          });
-                          _montoController.clear();
-                          _referenciaController.clear();
-                          setState(() => _tipoPagoSeleccionado = null);
-                          ScaffoldMessenger.of(ctx).showSnackBar(
-                            const SnackBar(
-                              content: Text('✅ Pago agregado'),
-                              backgroundColor: Colors.green,
-                              duration: Duration(seconds: 2),
-                            ),
-                          );
-                        },
-                        onTipoPagoChanged: (value) {
-                          setState(() => _tipoPagoSeleccionado = value);
-                        },
-                      ),
-                    ],
-                  ),
-                )
-              : FormularioNovedadWidget(
-                  screenContext: context,
-                  isDarkMode: isDarkMode,
-                  tipoNovedad: _tipoNovedad,
-                  tiposNovedad: _tiposNovedad,
-                  venta: widget.venta,
-                  observacionesController: _observacionesController,
-                  fotosCapturadas: _fotosCapturadas,
-                  eliminarFoto: _eliminarFoto,
-                  capturarFoto: _capturarFoto,
-                  construirImagenFoto: (foto) => _construirImagenFoto(foto),
-                  buildTablaProductosRechazados: (ctx, dark) => tabla_widget.TablaProductosRechazadosWidget(
-                    detalles: widget.venta.detalles ?? [],
-                    productosRechazados: _productosRechazados,
-                    cantidadRechazadaControllers: _cantidadRechazadaControllers,
-                    isDarkMode: dark,
-                    onMarcarRechazo: (detalleId, producto) {
+          child: Column(
+            children: [
+              // ✅ NUEVO: Mostrar detalles de la venta en ambos formularios
+              VentaDetallesCard(venta: widget.venta, isDarkMode: isDarkMode),
+              // ✅ FORMULARIOS: SIEMPRE mostrar el formulario según tipo seleccionado
+              if (_tipoEntrega == 'COMPLETA')
+                Expanded(
+                  child: RegistroPagosCompletoWidget(
+                    totalVenta: widget.venta.total,
+                    pagos: _pagos,
+                    tiposPago: _tiposPago,
+                    esCredito: _esVentaCredito(),
+                    montoEfectivoController: _montoEfectivoController,
+                    montoTransferenciaController: _montoTransferenciaController,
+                    onAgregarPago: (tipoPagoId, monto) {
                       setState(() {
-                        if (!_productosRechazados.any((p) => p.detalleVentaId == detalleId)) {
-                          _productosRechazados.add(producto);
+                        _pagos.add(
+                          PagoEntrega(
+                            tipoPagoId: tipoPagoId,
+                            monto: monto,
+                            referencia: null,
+                          ),
+                        );
+                      });
+                    },
+                    onEliminarPago: (index) {
+                      setState(() {
+                        if (index >= 0 && index < _pagos.length) {
+                          _pagos.removeAt(index);
                         }
                       });
                     },
-                    onDesmarcarRechazo: (detalleId) {
-                      setState(() {
-                        _productosRechazados.removeWhere((p) => p.detalleVentaId == detalleId);
-                      });
-                    },
-                    onCantidadRechazadaChanged: (detalleId, cantidad) {
-                      final producto = _productosRechazados.firstWhere(
-                        (p) => p.detalleVentaId == detalleId,
-                        orElse: () => tabla_widget.ProductoRechazado(
-                          detalleVentaId: detalleId,
-                          productoId: null,
-                          nombreProducto: '',
-                          cantidadOriginal: 0,
-                          cantidadRechazada: 0,
-                          precioUnitario: 0,
-                          subtotalOriginal: 0,
-                        ),
-                      );
-                      if (producto.detalleVentaId == detalleId) {
-                        setState(() {
-                          producto.cantidadRechazada = cantidad;
-                        });
-                      }
-                    },
                   ),
-                  buildResumenMontos: (total) => ResumenMontosWidget(
-                    totalVenta: total,
-                    totalRecibido: _pagos.fold(0.0, (sum, pago) => sum + pago.monto),
-                    montoRechazado: _tipoNovedad == 'DEVOLUCION_PARCIAL'
-                        ? _productosRechazados.fold(0.0, (sum, p) => sum + p.subtotalRechazado)
-                        : 0.0,
-                    montoCredito: _esCredito
-                        ? (total - _pagos.fold(0.0, (sum, pago) => sum + pago.monto)).clamp(0.0, double.infinity)
-                        : 0,
-                    esCredito: _esCredito,
-                    tipoNovedad: _tipoNovedad ?? '',
-                    isDarkMode: isDarkMode,
-                  ),
-                  buildPagoForm: (ctx, dark) => Column(
-                    children: [
-                      if (_pagos.isNotEmpty) ...[
-                        SugerenciaPagoWidget(
-                          sugerencia: _obtenerSugerenciaPago(),
-                          isDarkMode: dark,
-                          onAplicarSugerencia: () {
-                            final sugerencia = _obtenerSugerenciaPago();
-                            if (sugerencia != null) {
-                              final saldoPendiente = sugerencia['saldo'] as double;
-                              setState(() {
-                                _montoController.text = saldoPendiente.toStringAsFixed(2);
-                              });
-                              ScaffoldMessenger.of(ctx).showSnackBar(
-                                SnackBar(
-                                  content: Text('Monto de Bs. ${saldoPendiente.toStringAsFixed(2)} pre-completado'),
-                                  backgroundColor: dark ? Colors.blue[700] : Colors.blue,
-                                  duration: const Duration(seconds: 2),
-                                ),
-                              );
-                            }
-                          },
-                          montoController: _montoController,
-                        ),
-                        const SizedBox(height: 16),
-                      ],
-                      PagoFormWidget(
-                        tiposDisponibles: _obtenerTiposPagoDisponibles(),
-                        tipoPagoSeleccionado: _tipoPagoSeleccionado,
-                        montoController: _montoController,
-                        referenciaController: _referenciaController,
-                        cargandoTiposPago: _cargandoTiposPago,
-                        isDarkMode: dark,
-                        onAgregarPago: (tipoPagoId, monto, referencia) {
-                          setState(() {
-                            _pagos.add(
-                              PagoEntrega(
-                                tipoPagoId: tipoPagoId,
-                                monto: monto,
-                                referencia: referencia,
-                              ),
-                            );
-                          });
-                          _montoController.clear();
-                          _referenciaController.clear();
-                          setState(() => _tipoPagoSeleccionado = null);
-                          ScaffoldMessenger.of(ctx).showSnackBar(
-                            const SnackBar(
-                              content: Text('✅ Pago agregado'),
-                              backgroundColor: Colors.green,
-                              duration: Duration(seconds: 2),
-                            ),
-                          );
-                        },
-                        onTipoPagoChanged: (value) {
-                          setState(() => _tipoPagoSeleccionado = value);
-                        },
-                      ),
-                    ],
-                  ),
-                  pagos: _pagos,
-                  tiposPago: _tiposPago,
-                  onTipoNovedadChanged: (value) {
-                    setState(() {
-                      _tipoNovedad = value;
-                      _productosRechazados.clear();
-                      _cantidadRechazadaControllers.clear();
-                    });
-                  },
-                ),
+                )
+              else
+                Expanded(child: _buildFormularioNovedad(isDarkMode)),
+            ],
+          ),
         ),
       ),
     );
   }
 
-  /// ✅ NUEVA 2026-02-15: Sugerencia inteligente de pago
+  /// ✅ Detectar si la venta es a CRÉDITO basado en estadoPago
+  bool _esVentaCredito() {
+    return widget.venta.tipoPago?.codigo == 'CREDITO';
+  }
 
-  /// ✅ NUEVA 2026-02-15: Formulario para agregar pago
+  /// ✅ Helper para crear el widget consolidado de pagos
+  Widget _buildRegistroPagosWidget() {
+    final esCredito = _esVentaCredito();
+
+    return RegistroPagosCompletoWidget(
+      totalVenta: widget.venta.total,
+      pagos: _pagos,
+      tiposPago: _tiposPago,
+      esCredito: esCredito,
+      montoEfectivoController: _montoEfectivoController,
+      montoTransferenciaController: _montoTransferenciaController,
+      onAgregarPago: (tipoPagoId, monto) {
+        setState(() {
+          _pagos.add(
+            PagoEntrega(tipoPagoId: tipoPagoId, monto: monto, referencia: null),
+          );
+        });
+      },
+      onEliminarPago: (index) {
+        setState(() {
+          if (index >= 0 && index < _pagos.length) {
+            _pagos.removeAt(index);
+          }
+        });
+      },
+    );
+  }
+
+  /// ✅ Helper para crear FormularioNovedadWidget
+  Widget _buildFormularioNovedad(bool isDarkMode) {
+    return FormularioNovedadWidget(
+      screenContext: context,
+      isDarkMode: isDarkMode,
+      tipoNovedad: _tipoNovedad,
+      tiposNovedad: _tiposNovedad,
+      venta: widget.venta,
+      observacionesController: _observacionesController,
+      fotosCapturadas: _fotosCapturadas,
+      eliminarFoto: _eliminarFoto,
+      capturarFoto: _capturarFoto,
+      construirImagenFoto: (foto) => _construirImagenFoto(foto),
+      buildTablaProductosRechazados: (ctx, dark) =>
+          tabla_widget.TablaProductosRechazadosWidget(
+            detalles: widget.venta.detalles ?? [],
+            productosRechazados: _productosRechazados,
+            cantidadRechazadaControllers: _cantidadRechazadaControllers,
+            isDarkMode: dark,
+            onMarcarRechazo: (detalleId, producto) {
+              setState(() {
+                if (!_productosRechazados.any(
+                  (p) => p.detalleVentaId == detalleId,
+                )) {
+                  _productosRechazados.add(producto);
+                }
+              });
+            },
+            onDesmarcarRechazo: (detalleId) {
+              setState(() {
+                _productosRechazados.removeWhere(
+                  (p) => p.detalleVentaId == detalleId,
+                );
+              });
+            },
+            onCantidadRechazadaChanged: (detalleId, cantidad) {
+              final producto = _productosRechazados.firstWhere(
+                (p) => p.detalleVentaId == detalleId,
+                orElse: () => tabla_widget.ProductoRechazado(
+                  detalleVentaId: detalleId,
+                  productoId: null,
+                  nombreProducto: '',
+                  cantidadOriginal: 0,
+                  cantidadRechazada: 0,
+                  precioUnitario: 0,
+                  subtotalOriginal: 0,
+                ),
+              );
+              if (producto.detalleVentaId == detalleId) {
+                setState(() {
+                  producto.cantidadRechazada = cantidad;
+                });
+              }
+            },
+          ),
+      registroPagosWidget: _buildRegistroPagosWidget(),
+      onTipoNovedadChanged: (value) {
+        setState(() {
+          _tipoNovedad = value;
+          // ✅ FIX: Automáticamente actualizar _tipoEntrega a CON_NOVEDAD (siempre, porque value es String)
+          _tipoEntrega = 'CON_NOVEDAD';
+          // ✅ FIX CRÍTICO: También actualizar _tipoConfirmacion para que refleje el cambio
+          _tipoConfirmacion = value;
+          debugPrint('🔄 [AUTO] _tipoEntrega actualizado a CON_NOVEDAD (tipo: $value)');
+          debugPrint('🔄 [AUTO] _tipoConfirmacion actualizado a $value');
+          _productosRechazados.clear();
+          _cantidadRechazadaControllers.clear();
+        });
+      },
+    );
+  }
 
   /// ✅ NUEVO 2026-03-05: Construir botón de acción dinámico para AppBar
   Widget _construirBotonAccion() {
@@ -1327,7 +1326,6 @@ class _ConfirmarEntregaVentaScreenState
   }
 
   /// ✅ MEJORADA 2026-02-15: Tabla de productos con rechazos PARCIALES editables
-
 
   // Métodos auxiliares privados
   String _bytesToBase64(List<int> bytes) {

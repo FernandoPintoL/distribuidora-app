@@ -1,16 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import 'package:collection/collection.dart';
-import '../../../../config/app_text_styles.dart';
 import '../../../../config/app_urls.dart';
 import '../../../../models/entrega.dart';
 import '../../../../models/venta.dart';
 import '../../../../models/estado_logistico.dart';
 import '../../../../providers/entrega_provider.dart';
 import '../../../../services/print_service.dart';
-import '../../../../widgets/chofer/productos_agrupados_widget.dart';
-import '../dialogs/confirmar_venta_entregada_dialog.dart';
-import '../confirmar_entrega_venta_screen.dart'; // ✅ NUEVO: Para abrir la pantalla de confirmación
+import '../confirmar_entrega_venta_screen.dart';
 
 class VentasAsignadasCard extends StatefulWidget {
   final Entrega entrega;
@@ -49,17 +44,21 @@ class _VentasAsignadasCardState extends State<VentasAsignadasCard> {
   @override
   Widget build(BuildContext context) {
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
-    final entregaActual = widget.provider.entregaActual ?? widget.entrega;
+    final entrega = widget.entrega;
 
-    final esPreparacion = entregaActual.estado == 'PREPARACION_CARGA';
-    final esEnCarga = entregaActual.estado == 'EN_CARGA';
+    final esPreparacion = entrega.estado == 'PREPARACION_CARGA';
+    final esEnCarga = entrega.estado == 'EN_CARGA';
     final esModoCarga = esPreparacion || esEnCarga;
 
-    if (entregaActual.ventas.isEmpty) {
+    if (entrega.ventas.isEmpty) {
       return const SizedBox.shrink();
     }
 
-    final totalVentas = entregaActual.ventas.length;
+    // ✅ NUEVO: Ordenar ventas por ID ascendente (como el backend)
+    final ventasOrdenadas = List<Venta>.from(entrega.ventas)
+      ..sort((a, b) => a.id.compareTo(b.id));
+
+    final totalVentas = ventasOrdenadas.length;
     final ventasConfirmadas = _ventasConfirmadas.values.where((v) => v).length;
     final porcentaje = (ventasConfirmadas / totalVentas * 100).toStringAsFixed(
       0,
@@ -151,18 +150,18 @@ class _VentasAsignadasCardState extends State<VentasAsignadasCard> {
             ListView.builder(
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
-              itemCount: entregaActual.ventas.length,
+              itemCount: ventasOrdenadas.length,
               itemBuilder: (context, index) {
-                final venta = entregaActual.ventas[index];
-                final confirmada = _ventasConfirmadas[venta.id] ?? false;
-                final cargando = _cargandoVenta[venta.id] ?? false;
-
+                final venta = ventasOrdenadas[index];
                 final isEnRuta = venta.estadoLogisticoCodigo == 'EN_TRANSITO';
-                final borderColor = isEnRuta
-                    ? (isDarkMode ? Colors.green[600]! : Colors.green[200]!)
-                    : (isDarkMode ? Colors.grey[600]! : Colors.grey[300]!);
+                final borderColor = _getEstadoLogisticoColor(
+                  venta.estadoLogisticoCodigo,
+                );
                 final borderWidth = isEnRuta ? 2.0 : 1.0;
 
+                final tipoEntrega = venta.tipoEntregaValue;
+                final tipoConfirmacion = venta.tipoConfirmacionValue;
+                final tipoNovedad = venta.tipoNovedadValue;
                 return InkWell(
                   onTap: () {
                     Navigator.of(
@@ -172,6 +171,8 @@ class _VentasAsignadasCardState extends State<VentasAsignadasCard> {
                   child: Card(
                     elevation: isEnRuta ? 2 : 1,
                     margin: const EdgeInsets.symmetric(vertical: 8),
+                    shadowColor: borderColor,
+                    surfaceTintColor: borderColor,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                       side: BorderSide(color: borderColor, width: borderWidth),
@@ -191,14 +192,15 @@ class _VentasAsignadasCardState extends State<VentasAsignadasCard> {
                                 backgroundColor: isDarkMode
                                     ? Colors.grey[700]
                                     : Colors.grey[200],
-                                backgroundImage: venta.clienteFotoPerfil != null
+                                backgroundImage:
+                                    venta.cliente?.fotoPerfil != null
                                     ? NetworkImage(
                                         AppUrls.buildImageUrl(
-                                          venta.clienteFotoPerfil!,
+                                          venta.cliente!.fotoPerfil!,
                                         ),
                                       )
                                     : null,
-                                child: venta.clienteFotoPerfil == null
+                                child: venta.cliente!.fotoPerfil == null
                                     ? Icon(
                                         Icons.person,
                                         color: isDarkMode
@@ -221,45 +223,147 @@ class _VentasAsignadasCardState extends State<VentasAsignadasCard> {
                                     ),
                                     const SizedBox(height: 4),
                                     Text(
-                                      venta.clienteNombre ?? 'Sin nombre',
+                                      venta.cliente?.nombre ?? 'Sin nombre',
                                       style: TextStyle(
-                                        fontWeight: FontWeight.w500,
+                                        fontWeight: FontWeight.bold,
                                       ),
                                       maxLines: 1,
                                       overflow: TextOverflow.ellipsis,
                                     ),
                                     const SizedBox(height: 4),
-                                    Text(
-                                      venta.clienteRazonSocial ?? '',
-                                      style: TextStyle(
-                                        fontWeight: FontWeight.w500,
+                                    if (venta.cliente?.localidad != null)
+                                      Row(
+                                        children: [
+                                          Icon(
+                                            Icons.location_on,
+                                            size: 16,
+                                            color: isDarkMode
+                                                ? Colors.blue[400]
+                                                : Colors.blue,
+                                          ),
+                                          const SizedBox(width: 4),
+                                          Expanded(
+                                            child: Text(
+                                              venta
+                                                      .cliente
+                                                      ?.localidad
+                                                      ?.nombre ??
+                                                  "S/N Localidad",
+                                              style: TextStyle(
+                                                color: isDarkMode
+                                                    ? Colors.grey[400]
+                                                    : Colors.grey[600],
+                                              ),
+                                              maxLines: 1,
+                                              overflow: TextOverflow.ellipsis,
+                                            ),
+                                          ),
+                                        ],
                                       ),
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
                                   ],
                                 ),
                               ),
                               const SizedBox(width: 12),
                               // ✅ Monto destacado a la derecha
-                              Column(
-                                crossAxisAlignment: CrossAxisAlignment.end,
+                              Row(
+                                crossAxisAlignment: CrossAxisAlignment.center,
                                 children: [
-                                  Text(
-                                    'Bs ${venta.total.toStringAsFixed(2)}',
-                                    style: TextStyle(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.bold,
-                                      color: Colors.green[400],
-                                    ),
+                                  Column(
+                                    children: [
+                                      Text(
+                                        'Bs ${venta.total.toStringAsFixed(2)}',
+                                        style: TextStyle(
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.bold,
+                                          color: Colors.green[400],
+                                        ),
+                                      ),
+                                      // Badge Tipo de Pago
+                                      if (venta.tipoPago != null)
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 10,
+                                            vertical: 6,
+                                          ),
+                                          child: Row(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              Icon(
+                                                _getTipoPagoIcon(
+                                                  venta.tipoPago?.codigo,
+                                                ),
+                                                size: 14,
+                                              ),
+                                              const SizedBox(width: 6),
+                                              Text(
+                                                venta.tipoPago?.nombre
+                                                        .toUpperCase() ??
+                                                    '',
+                                                style: TextStyle(
+                                                  fontSize: 12,
+                                                  fontWeight: FontWeight.w600,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                    ],
                                   ),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    '${venta.detalles.length} productos',
-                                    style: TextStyle(
-                                      fontSize: 12,
+                                  // ✅ NUEVO: Menú popup de acciones (3 puntos)
+                                  PopupMenuButton<String>(
+                                    onSelected: (String value) {
+                                      if (value == 'llamar' &&
+                                          venta.cliente?.telefono != null) {
+                                        widget.onLlamarCliente(
+                                          venta.cliente?.telefono,
+                                        );
+                                      } else if (value == 'whatsapp' &&
+                                          venta.cliente?.telefono != null) {
+                                        widget.onEnviarWhatsApp(
+                                          venta.cliente?.telefono,
+                                        );
+                                      } else if (value == 'pdf') {
+                                        _descargarPDFVenta(venta.id);
+                                      }
+                                    },
+                                    itemBuilder: (BuildContext context) => [
+                                      if (venta.cliente?.telefono != null)
+                                        const PopupMenuItem<String>(
+                                          value: 'llamar',
+                                          child: Row(
+                                            children: [
+                                              Icon(Icons.call, size: 20),
+                                              SizedBox(width: 12),
+                                              Text('Llamar'),
+                                            ],
+                                          ),
+                                        ),
+                                      if (venta.cliente?.telefono != null)
+                                        const PopupMenuItem<String>(
+                                          value: 'whatsapp',
+                                          child: Row(
+                                            children: [
+                                              Icon(Icons.chat, size: 20),
+                                              SizedBox(width: 12),
+                                              Text('WhatsApp'),
+                                            ],
+                                          ),
+                                        ),
+                                      const PopupMenuItem<String>(
+                                        value: 'pdf',
+                                        child: Row(
+                                          children: [
+                                            Icon(Icons.download, size: 20),
+                                            SizedBox(width: 12),
+                                            Text('Descargar PDF'),
+                                          ],
+                                        ),
+                                      ),
+                                    ],
+                                    icon: Icon(
+                                      Icons.more_vert,
                                       color: isDarkMode
-                                          ? Colors.grey[500]
+                                          ? Colors.grey[400]
                                           : Colors.grey[600],
                                     ),
                                   ),
@@ -268,73 +372,198 @@ class _VentasAsignadasCardState extends State<VentasAsignadasCard> {
                             ],
                           ),
                           const SizedBox(height: 12),
-                          // ✅ NUEVO: Información (Localidad | Estado)
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              if (venta.clienteLocalidad != null)
-                                Expanded(
-                                  child: Row(
-                                    children: [
-                                      Icon(
-                                        Icons.location_on,
-                                        size: 16,
-                                        color: isDarkMode
-                                            ? Colors.blue[400]
-                                            : Colors.blue,
+                          // ✅ NUEVO: Resumen de pagos (solo si hay confirmaciones)
+                          if (venta.resumenPago != null &&
+                              venta.confirmaciones.isNotEmpty) ...[
+                            Container(
+                              padding: const EdgeInsets.all(10),
+                              decoration: BoxDecoration(
+                                color: isDarkMode
+                                    ? Colors.grey[900]
+                                    : Colors.grey[100],
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                              child: Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Text(
+                                    'Estado: ${(venta.resumenPago!['estado'] as String?)?.toUpperCase() ?? 'N/A'}',
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.w500,
+                                      color: _getColorEstadoPago(
+                                        venta.resumenPago!['estado'],
                                       ),
-                                      const SizedBox(width: 4),
-                                      Expanded(
-                                        child: Text(
-                                          venta.clienteLocalidad!,
-                                          style: TextStyle(
-                                            fontSize: 13,
-                                            color: isDarkMode
-                                                ? Colors.grey[400]
-                                                : Colors.grey[600],
-                                          ),
-                                          maxLines: 1,
-                                          overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                  if (((venta.resumenPago!['pendiente'] as num?)
+                                              ?.toDouble() ??
+                                          0) >
+                                      0)
+                                    Text(
+                                      'Pendiente: Bs ${((venta.resumenPago!['pendiente'] as num?)?.toDouble() ?? 0).toStringAsFixed(2)}',
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.w500,
+                                        color: Colors.orange[400],
+                                      ),
+                                    ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(height: 12),
+                          ],
+                          // ✅ NUEVO 2026-06-13: Badges de Estado Logístico + Tipo de Pago
+                          Wrap(
+                            spacing: 4,
+                            runSpacing: 8,
+                            children: [
+                              // Badge Estado Logístico de la venta
+                              if (venta.estadoLogistico != null &&
+                                  venta.estadoLogistico!.isNotEmpty)
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 10,
+                                    vertical: 6,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: venta.estadoLogisticoColor != null
+                                        ? Color(
+                                            int.parse(
+                                              venta.estadoLogisticoColor!
+                                                  .replaceFirst('#', '0xFF'),
+                                            ),
+                                          ).withValues(alpha: 0.2)
+                                        : (isDarkMode
+                                              ? Colors.grey[800]
+                                              : Colors.grey[200]),
+                                    border: Border.all(
+                                      color: venta.estadoLogisticoColor != null
+                                          ? Color(
+                                              int.parse(
+                                                venta.estadoLogisticoColor!
+                                                    .replaceFirst('#', '0xFF'),
+                                              ),
+                                            )
+                                          : Colors.grey,
+                                    ),
+                                    borderRadius: BorderRadius.circular(20),
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      if (venta.estadoLogisticoIcon != null)
+                                        Text(
+                                          venta.estadoLogisticoIcon!,
+                                          style: const TextStyle(fontSize: 14),
+                                        ),
+                                      if (venta.estadoLogisticoIcon != null)
+                                        const SizedBox(width: 6),
+                                      Text(
+                                        venta.estadoLogistico!,
+                                        style: TextStyle(
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.w600,
+                                          color:
+                                              venta.estadoLogisticoColor != null
+                                              ? Color(
+                                                  int.parse(
+                                                    venta.estadoLogisticoColor!
+                                                        .replaceFirst(
+                                                          '#',
+                                                          '0xFF',
+                                                        ),
+                                                  ),
+                                                )
+                                              : Colors.grey[700],
                                         ),
                                       ),
                                     ],
                                   ),
                                 ),
-                              const SizedBox(width: 8),
-                              // ✅ Badge de estado vibrantee
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 10,
-                                  vertical: 4,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: _getEstadoColor(
-                                    venta.estadoLogisticoObj,
-                                  ).withValues(alpha: 0.2),
-                                  borderRadius: BorderRadius.circular(20),
-                                  border: Border.all(
-                                    color: _getEstadoColor(
-                                      venta.estadoLogisticoObj,
+                              // ✅ NUEVO: Badge Tipo de Entrega
+                              if (tipoEntrega != null)
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 10,
+                                    vertical: 6,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    border: Border.all(
+                                      color: _getTipoEntregaColor(tipoEntrega),
                                     ),
-                                    width: 1,
+                                    borderRadius: BorderRadius.circular(20),
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(
+                                        _getTipoEntregaIcon(tipoEntrega),
+                                        size: 14,
+                                        color: _getTipoEntregaColor(
+                                          tipoEntrega,
+                                        ),
+                                      ),
+                                      const SizedBox(width: 6),
+                                      Text(
+                                        tipoEntrega!.toUpperCase(),
+                                        style: TextStyle(
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.w600,
+                                          color: _getTipoEntregaColor(
+                                            tipoEntrega,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
                                   ),
                                 ),
-                                child: Text(
-                                  _getEstadoLabel(venta.estadoLogisticoObj),
-                                  style: TextStyle(
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.w600,
-                                    color: _getEstadoColor(
-                                      venta.estadoLogisticoObj,
+
+                              // ✅ NUEVO: Badge Tipo de Confirmación
+                              if (tipoConfirmacion != null)
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 10,
+                                    vertical: 6,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    border: Border.all(
+                                      color: _getTipoConfirmacionColor(
+                                        tipoConfirmacion,
+                                      ),
                                     ),
+                                    borderRadius: BorderRadius.circular(20),
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(
+                                        _getTipoConfirmacionIcon(
+                                          tipoConfirmacion,
+                                        ),
+                                        size: 14,
+                                        color: _getTipoConfirmacionColor(
+                                          tipoConfirmacion,
+                                        ),
+                                      ),
+                                      const SizedBox(width: 6),
+                                      Text(
+                                        tipoConfirmacion!.toUpperCase(),
+                                        style: TextStyle(
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.w600,
+                                          color: _getTipoConfirmacionColor(
+                                            tipoConfirmacion,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
                                   ),
                                 ),
-                              ),
                             ],
                           ),
                           // ✅ NUEVO: Observaciones de la dirección
-                          if (venta.direccionObservaciones != null &&
-                              venta.direccionObservaciones!.isNotEmpty) ...[
+                          if (venta.direccionCliente?.observaciones !=
+                              null) ...[
                             const SizedBox(height: 8),
                             Container(
                               padding: const EdgeInsets.all(8),
@@ -359,7 +588,8 @@ class _VentasAsignadasCardState extends State<VentasAsignadasCard> {
                                   const SizedBox(width: 8),
                                   Expanded(
                                     child: Text(
-                                      venta.direccionObservaciones!,
+                                      venta.direccionCliente!.observaciones ??
+                                          "",
                                       style: TextStyle(
                                         fontSize: 12,
                                         color: isDarkMode
@@ -374,95 +604,17 @@ class _VentasAsignadasCardState extends State<VentasAsignadasCard> {
                               ),
                             ),
                           ],
-                          const SizedBox(height: 12),
-                          // ✅ NUEVO: Mini Resumen de Pago
-                          _buildMiniResumenPago(venta, isDarkMode),
-                          const SizedBox(height: 12),
-                          // ✅ NUEVO: Botones de acción - Horizontal
-                          if (venta.clienteTelefono != null &&
-                              venta.clienteTelefono!.isNotEmpty)
-                            Row(
-                              children: [
-                                Expanded(
-                                  child: SizedBox(
-                                    height: 36,
-                                    child: OutlinedButton.icon(
-                                      onPressed: () => widget.onLlamarCliente(
-                                        venta.clienteTelefono,
-                                      ),
-                                      icon: const Icon(Icons.call, size: 18),
-                                      label: const Text('Llamar'),
-                                      style: OutlinedButton.styleFrom(
-                                        shape: RoundedRectangleBorder(
-                                          borderRadius: BorderRadius.circular(
-                                            8,
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                                const SizedBox(width: 8),
-                                Expanded(
-                                  child: SizedBox(
-                                    height: 36,
-                                    child: OutlinedButton.icon(
-                                      onPressed: () => widget.onEnviarWhatsApp(
-                                        venta.clienteTelefono,
-                                      ),
-                                      icon: const Icon(Icons.chat, size: 18),
-                                      label: const Text('WhatsApp'),
-                                      style: OutlinedButton.styleFrom(
-                                        shape: RoundedRectangleBorder(
-                                          borderRadius: BorderRadius.circular(
-                                            8,
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                                const SizedBox(width: 8),
-                                SizedBox(
-                                  height: 36,
-                                  width: 36,
-                                  child: IconButton(
-                                    onPressed: () =>
-                                        _descargarPDFVenta(venta.id),
-                                    icon: const Icon(Icons.download, size: 18),
-                                    style: IconButton.styleFrom(
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(8),
-                                      ),
-                                      side: BorderSide(
-                                        color: isDarkMode
-                                            ? Colors.grey[600]!
-                                            : Colors.grey[300]!,
-                                      ),
-                                    ),
-                                    tooltip: 'Descargar PDF',
-                                  ),
-                                ),
-                              ],
-                            ),
-                          // ✅ NUEVO: Botón de Registrar Pago/Incidencia
-                          const SizedBox(height: 12),
-                          SizedBox(
-                            width: double.infinity,
-                            child: ElevatedButton.icon(
-                              onPressed: () {
-                                debugPrint('💳 [VENTAS_CARD] Abriendo registro de pago para venta #${venta.id}');
-                                _navegarARegistroPago(context, venta, entregaActual);
-                              },
-                              icon: const Icon(Icons.payment),
-                              label: const Text('Registrar Pago/Incidencia'),
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.purple[600],
-                                foregroundColor: Colors.white,
-                                padding: const EdgeInsets.symmetric(vertical: 12),
-                              ),
-                            ),
-                          ),
+
+                          // ✅ NUEVO: Mini Resumen de Pago (solo si hay desglose)
+                          if (venta.confirmaciones.isNotEmpty &&
+                              venta
+                                  .confirmaciones
+                                  .last
+                                  .desglosePageos
+                                  .isNotEmpty) ...[
+                            const SizedBox(height: 12),
+                            _buildMiniResumenPago(venta, isDarkMode),
+                          ],
                           // ✅ Botón de confirmación solo en EN_TRANSITO
                           if (venta.estadoLogisticoCodigo == 'EN_TRANSITO') ...[
                             const SizedBox(height: 12),
@@ -475,7 +627,7 @@ class _VentasAsignadasCardState extends State<VentasAsignadasCard> {
                                     MaterialPageRoute(
                                       builder: (context) =>
                                           ConfirmarEntregaVentaScreen(
-                                            entrega: entregaActual,
+                                            entrega: entrega,
                                             venta: venta,
                                             provider: widget.provider,
                                           ),
@@ -487,7 +639,7 @@ class _VentasAsignadasCardState extends State<VentasAsignadasCard> {
                                         '✅ [VENTAS_CARD] Confirmación exitosa, recargando...',
                                       );
                                       widget.provider
-                                          .obtenerEntrega(entregaActual.id)
+                                          .obtenerEntrega(entrega.id)
                                           .then((_) {
                                             debugPrint(
                                               '✅ [VENTAS_CARD] Entrega recargada',
@@ -538,7 +690,7 @@ class _VentasAsignadasCardState extends State<VentasAsignadasCard> {
                 ),
               ),
             ],
-            if (entregaActual.ventas.isNotEmpty) ...[
+            if (ventasOrdenadas.isNotEmpty) ...[
               const SizedBox(height: 16),
               Container(
                 padding: const EdgeInsets.all(12),
@@ -555,7 +707,7 @@ class _VentasAsignadasCardState extends State<VentasAsignadasCard> {
                         Text('Total a Entregar'),
                         const SizedBox(height: 4),
                         Text(
-                          'BS ${entregaActual.ventas.fold<double>(0, (sum, v) => sum + v.total).toStringAsFixed(2)}',
+                          'BS ${ventasOrdenadas.fold<double>(0, (sum, v) => sum + v.total).toStringAsFixed(2)}',
                         ),
                       ],
                     ),
@@ -564,7 +716,7 @@ class _VentasAsignadasCardState extends State<VentasAsignadasCard> {
                       children: [
                         Text('Cantidad de Ventas'),
                         const SizedBox(height: 4),
-                        Text('${entregaActual.ventas.length}'),
+                        Text('${ventasOrdenadas.length}'),
                       ],
                     ),
                   ],
@@ -580,70 +732,103 @@ class _VentasAsignadasCardState extends State<VentasAsignadasCard> {
   void _mostrarDialogoConfirmarCarga(BuildContext context) {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Confirmar Carga Completa'),
-        content: const Text(
-          'Todas las ventas han sido marcadas como cargadas. '
-          '¿Confirmas que la carga está lista para entregar?',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancelar'),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              final currentContext = context;
-              Navigator.pop(currentContext);
+      barrierDismissible: false, // ✅ No permitir cerrar tocando afuera
+      builder: (context) => StatefulBuilder(
+        builder: (context, setState) {
+          bool procesando = false;
 
-              try {
-                final exito = await widget.provider.confirmarCargoCompleto(
-                  widget.entrega.id,
-                );
-
-                if (mounted) {
-                  if (exito) {
-                    await widget.provider.obtenerEntrega(widget.entrega.id);
-
-                    if (mounted && currentContext.mounted) {
-                      ScaffoldMessenger.of(currentContext).showSnackBar(
-                        const SnackBar(
-                          content: Text(
-                            'Carga confirmada correctamente. Estado: Listo para entrega',
-                          ),
-                          backgroundColor: Colors.green,
-                          duration: Duration(seconds: 3),
+          return AlertDialog(
+            title: const Text('Confirmar Carga Completa'),
+            content: procesando
+                ? Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      CircularProgressIndicator(
+                        valueColor: AlwaysStoppedAnimation<Color>(
+                          Colors.blue[600]!,
                         ),
-                      );
-                    }
-                  } else {
-                    if (mounted && currentContext.mounted) {
-                      ScaffoldMessenger.of(currentContext).showSnackBar(
-                        SnackBar(
-                          content: Text(
-                            'Error: ${widget.provider.errorMessage ?? 'Error desconocido'}',
+                      ),
+                      const SizedBox(height: 16),
+                      const Text('Confirmando carga...'),
+                    ],
+                  )
+                : const Text(
+                    'Todas las ventas han sido marcadas como cargadas. '
+                    '¿Confirmas que la carga está lista para entregar?',
+                  ),
+            actions: [
+              if (!procesando)
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('Cancelar'),
+                ),
+              if (!procesando)
+                ElevatedButton(
+                  onPressed: () async {
+                    setState(() => procesando = true);
+                    final currentContext = context;
+
+                    try {
+                      final exito = await widget.provider
+                          .confirmarCargoCompleto(widget.entrega.id);
+
+                      if (mounted) {
+                        if (exito) {
+                          // ✅ Esperar a que isLoading sea false antes de cerrar
+                          while (widget.provider.isLoading && mounted) {
+                            await Future.delayed(
+                              const Duration(milliseconds: 100),
+                            );
+                          }
+
+                          if (mounted && currentContext.mounted) {
+                            Navigator.pop(
+                              currentContext,
+                            ); // ✅ Cerrar diálogo después
+                            ScaffoldMessenger.of(currentContext).showSnackBar(
+                              const SnackBar(
+                                content: Text(
+                                  'Carga confirmada correctamente. Estado: Listo para entrega',
+                                ),
+                                backgroundColor: Colors.green,
+                                duration: Duration(seconds: 3),
+                              ),
+                            );
+                          }
+                        } else {
+                          Navigator.pop(currentContext);
+                          if (mounted && currentContext.mounted) {
+                            ScaffoldMessenger.of(currentContext).showSnackBar(
+                              SnackBar(
+                                content: Text(
+                                  'Error: ${widget.provider.errorMessage ?? 'Error desconocido'}',
+                                ),
+                                backgroundColor: Colors.red,
+                              ),
+                            );
+                          }
+                        }
+                      }
+                    } catch (e) {
+                      Navigator.pop(currentContext);
+                      if (mounted && currentContext.mounted) {
+                        ScaffoldMessenger.of(currentContext).showSnackBar(
+                          SnackBar(
+                            content: Text('Error inesperado: ${e.toString()}'),
+                            backgroundColor: Colors.red,
                           ),
-                          backgroundColor: Colors.red,
-                        ),
-                      );
+                        );
+                      }
                     }
-                  }
-                }
-              } catch (e) {
-                if (mounted && currentContext.mounted) {
-                  ScaffoldMessenger.of(currentContext).showSnackBar(
-                    SnackBar(
-                      content: Text('Error inesperado: ${e.toString()}'),
-                      backgroundColor: Colors.red,
-                    ),
-                  );
-                }
-              }
-            },
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
-            child: const Text('Confirmar'),
-          ),
-        ],
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.green,
+                  ),
+                  child: const Text('Confirmar'),
+                ),
+            ],
+          );
+        },
       ),
     );
   }
@@ -686,291 +871,33 @@ class _VentasAsignadasCardState extends State<VentasAsignadasCard> {
     }
   }
 
-  // ✅ NUEVO: Obtener color desde el objeto EstadoLogistico centralizado
-  Color _getEstadoColor(EstadoLogistico? estado) {
-    if (estado != null && estado.color.isNotEmpty) {
-      try {
-        // Intentar parsear el color hex del backend
-        return Color(int.parse('FF${estado.color.replaceFirst('#', '')}', radix: 16));
-      } catch (e) {
-        debugPrint('⚠️ Error parseando color: ${estado.color}');
-      }
-    }
-    // Fallback si no viene color o hay error
-    return _getEstadoColorFallback(estado?.codigo);
-  }
-
-  // ✅ FALLBACK: Colores por defecto si el backend no proporciona color
-  Color _getEstadoColorFallback(String? codigo) {
-    switch (codigo) {
-      case 'PENDIENTE_ENVIO':
-        return Colors.orange;
-      case 'EN_RUTA':
-        return Colors.blue;
-      case 'EN_TRANSITO':
-        return Colors.purple;
-      case 'ENTREGADO':
-        return Colors.green;
-      default:
-        return Colors.grey;
-    }
-  }
-
-  // ✅ NUEVO: Obtener etiqueta desde el objeto EstadoLogistico centralizado
-  String _getEstadoLabel(EstadoLogistico? estado) {
-    return estado?.nombre ?? 'Desconocido';
-  }
-
-  // ✅ NUEVO 2026-03-05: Construir encabezado mejorado (número | cliente | monto)
-  Widget _buildVentaEncabezado(Venta venta) {
-    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                venta.clienteNombre ?? 'Sin cliente',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  color: isDarkMode ? Colors.grey[300] : Colors.grey[700],
-                ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-              const SizedBox(height: 2),
-              Text(
-                'Folio #${venta.id}',
-                style: TextStyle(fontWeight: FontWeight.w700),
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(width: 12),
-        Text(
-          'Bs. ${venta.total.toStringAsFixed(2)}',
-          style: TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w700,
-            color: Colors.green[600],
-          ),
-        ),
-      ],
-    );
-  }
-
-  // ✅ NUEVO 2026-03-05: Construir fila de información (localidad | teléfono | estado)
-  Widget _buildVentaInformacion(Venta venta) {
-    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
-    return Wrap(
-      spacing: 12,
-      runSpacing: 4,
-      children: [
-        // ✅ NUEVO 2026-03-05: Ubicación + Razón Social con tooltip
-        if (venta.clienteLocalidadObj != null ||
-            venta.clienteRazonSocial != null)
-          Tooltip(
-            message: _construirMensajeUbicacion(venta),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text('📍'),
-                const SizedBox(width: 2),
-                Flexible(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        venta.clienteLocalidadObj?.nombre ?? 'Ubicación',
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-        // ✅ NUEVO: Mostrar razón social si existe
-        if (venta.clienteRazonSocial != null &&
-            venta.clienteRazonSocial!.isNotEmpty)
-          Text(
-            venta.clienteRazonSocial!.toUpperCase(),
-            style: TextStyle(fontWeight: FontWeight.w600),
-            overflow: TextOverflow.ellipsis,
-          ),
-        // ✅ NUEVO 2026-03-05: Mostrar tipo de entrega (solo COMPLETA o CON_NOVEDAD)
-        if (venta.tipoEntrega == 'COMPLETA' ||
-            venta.tipoEntrega == 'CON_NOVEDAD')
-          Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(venta.tipoEntrega == 'COMPLETA' ? '✅' : '⚠️'),
-              const SizedBox(width: 2),
-              Text(
-                venta.tipoEntrega == 'COMPLETA' ? 'Completa' : 'Con Novedad',
-                style: TextStyle(
-                  color: venta.tipoEntrega == 'COMPLETA'
-                      ? Colors.green[700]
-                      : Colors.orange[700],
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ],
-          ),
-        // ✅ NUEVO 2026-03-05: Mostrar tipo de novedad específico como badge separado
-        if (venta.tipoNovedad != null)
-          Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text('📋'),
-              const SizedBox(width: 2),
-              Text(
-                _obtenerNombreTipoNovedad(venta.tipoNovedad),
-                style: TextStyle(
-                  color: Colors.red[700],
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ],
-          ),
-      ],
-    );
-  }
-
-  // ✅ NUEVO 2026-03-05: Construir fila de detalles (fotos | pagos | devoluciones)
-  Widget _buildVentaDetalles(Venta venta) {
-    if (venta.confirmaciones.isEmpty) return const SizedBox.shrink();
-
-    final confirmacion = venta.confirmaciones.first;
-    final tieneFotos = (confirmacion['fotos'] as List?)?.isNotEmpty ?? false;
-    final tieneDesglose =
-        (confirmacion['desglose_pagos'] as List?)?.isNotEmpty ?? false;
-    final tieneProductosDevueltos =
-        (confirmacion['productos_devueltos'] as List?)?.isNotEmpty ?? false;
-
-    return Wrap(
-      spacing: 16,
-      runSpacing: 4,
-      children: [
-        if (tieneFotos)
-          Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text('Fotos:', style: TextStyle(fontWeight: FontWeight.w600)),
-              const SizedBox(width: 2),
-              Text(
-                '📷 ${(confirmacion['fotos'] as List?)?.length ?? 0}',
-                style: TextStyle(color: Colors.blue[600]),
-              ),
-            ],
-          ),
-        if (tieneDesglose)
-          Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text('Pagos:', style: TextStyle(fontWeight: FontWeight.w600)),
-              const SizedBox(width: 2),
-              Text(
-                '💳 ${(confirmacion['desglose_pagos'] as List?)?.length ?? 0}',
-                style: TextStyle(color: Colors.purple[600]),
-              ),
-            ],
-          ),
-        if (tieneProductosDevueltos)
-          Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text('Devueltas:', style: TextStyle(fontWeight: FontWeight.w600)),
-              const SizedBox(width: 2),
-              Text(
-                '↩️ ${(confirmacion['productos_devueltos'] as List?)?.length ?? 0}',
-                style: TextStyle(color: Colors.red[600]),
-              ),
-            ],
-          ),
-      ],
-    );
-  }
-
-  // ✅ NUEVO 2026-03-05: Traducir tipos de novedad a nombres legibles
-  String _obtenerNombreTipoNovedad(String? tipo) {
-    if (tipo == null) return 'Novedad';
-    switch (tipo.toUpperCase()) {
-      case 'DEVOLUCION_PARCIAL':
-        return 'Devolución Parcial';
-      case 'CLIENTE_CERRADO':
-        return 'Cliente Cerrado';
-      case 'NO_CONTACTADO':
-        return 'No Contactado';
-      case 'RECHAZADO':
-        return 'Rechazado';
-      default:
-        return tipo;
-    }
-  }
-
-  // ✅ NUEVO 2026-03-05: Badge dinámico del estado_entrega
-  Widget _buildEstadoEntregaBadge(dynamic entrega) {
-    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
-    final codigo = entrega.estadoEntregaCodigo as String?;
-    final nombre = entrega.estadoEntregaNombre as String?;
-    final icono = entrega.estadoEntregaIcono as String?;
-    final colorHex = entrega.estadoEntregaColor as String?;
-
-    if (codigo == null || nombre == null) {
-      return const SizedBox.shrink();
-    }
-
-    // Convertir color hex a Color Flutter
-    Color badgeColor = Colors.blue[400]!;
-    if (colorHex != null && colorHex.startsWith('#')) {
-      try {
-        badgeColor = Color(int.parse(colorHex.replaceFirst('#', '0xff')));
-      } catch (_) {
-        badgeColor = Colors.blue[400]!;
-      }
-    }
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-      decoration: BoxDecoration(
-        color: badgeColor.withOpacity(0.15),
-        borderRadius: BorderRadius.circular(4),
-        border: Border.all(color: badgeColor, width: 1),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          // Mostrar icono emoji si existe
-          if (icono != null && icono.isNotEmpty)
-            Text(icono, style: const TextStyle(fontSize: 12))
-          else
-            Icon(Icons.local_shipping, size: 12, color: badgeColor),
-          const SizedBox(width: 4),
-          Text(
-            nombre,
-            style: TextStyle(fontWeight: FontWeight.bold, color: badgeColor),
-          ),
-        ],
-      ),
-    );
-  }
-
   // ✅ NUEVO 2026-03-12: Mini resumen de pago para cada venta
   Widget _buildMiniResumenPago(Venta venta, bool isDarkMode) {
     // Obtener datos de confirmación más reciente
-    final confirmacionReciente = (venta.confirmaciones as List?)?.isNotEmpty ?? false
-        ? (venta.confirmaciones.first as Map<String, dynamic>?)
+    final confirmacionReciente = venta.confirmaciones.isNotEmpty
+        ? venta.confirmaciones.last
         : null;
 
-    final efectivo = (confirmacionReciente?['efectivo'] as num?)?.toDouble() ?? 0.0;
-    final qr = (confirmacionReciente?['qr'] as num?)?.toDouble() ?? 0.0;
-    final pendiente = (confirmacionReciente?['pendiente'] as num?)?.toDouble() ?? 0.0;
-    final estado = confirmacionReciente?['estado'] as String? ?? 'PENDIENTE';
+    // ✅ Extraer efectivo y QR de desglose_pagos
+    double efectivo = 0.0;
+    double qr = 0.0;
+
+    if (confirmacionReciente != null &&
+        confirmacionReciente.desglosePageos.isNotEmpty) {
+      for (var pago in confirmacionReciente.desglosePageos) {
+        final nombre = pago.tipoPagoNombre.toUpperCase();
+        final monto = pago.monto;
+
+        if (nombre.contains('EFECTIVO')) {
+          efectivo = monto;
+        } else if (nombre.contains('TRANSFERENCIA') || nombre.contains('QR')) {
+          qr = monto;
+        }
+      }
+    }
+
+    final pendiente = confirmacionReciente?.montoPendiente ?? 0.0;
+    final estado = confirmacionReciente?.estadoPago ?? 'PENDIENTE';
 
     // Determinar color según estado
     Color estadoColor;
@@ -998,10 +925,7 @@ class _VentasAsignadasCardState extends State<VentasAsignadasCard> {
       decoration: BoxDecoration(
         color: estadoColor.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(
-          color: estadoColor.withValues(alpha: 0.3),
-          width: 1,
-        ),
+        border: Border.all(color: estadoColor.withValues(alpha: 0.3), width: 1),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1015,11 +939,7 @@ class _VentasAsignadasCardState extends State<VentasAsignadasCard> {
             ),
             child: Text(
               estadoLabel,
-              style: TextStyle(
-                fontSize: 11,
-                fontWeight: FontWeight.bold,
-                color: estadoColor,
-              ),
+              style: TextStyle(fontWeight: FontWeight.bold, color: estadoColor),
             ),
           ),
           const SizedBox(height: 8),
@@ -1035,15 +955,13 @@ class _VentasAsignadasCardState extends State<VentasAsignadasCard> {
                     Text(
                       '💵 Efectivo',
                       style: TextStyle(
-                        fontSize: 11,
                         color: isDarkMode ? Colors.grey[400] : Colors.grey[600],
                       ),
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      '\$${efectivo.toStringAsFixed(0)}',
+                      'Bs ${efectivo.toStringAsFixed(2)}',
                       style: TextStyle(
-                        fontSize: 13,
                         fontWeight: FontWeight.bold,
                         color: Colors.green[400],
                       ),
@@ -1059,15 +977,13 @@ class _VentasAsignadasCardState extends State<VentasAsignadasCard> {
                     Text(
                       '📱 QR',
                       style: TextStyle(
-                        fontSize: 11,
                         color: isDarkMode ? Colors.grey[400] : Colors.grey[600],
                       ),
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      '\$${qr.toStringAsFixed(0)}',
+                      'Bs ${qr.toStringAsFixed(2)}',
                       style: TextStyle(
-                        fontSize: 13,
                         fontWeight: FontWeight.bold,
                         color: Colors.blue[400],
                       ),
@@ -1083,17 +999,17 @@ class _VentasAsignadasCardState extends State<VentasAsignadasCard> {
                     Text(
                       '⏳ Pendiente',
                       style: TextStyle(
-                        fontSize: 11,
                         color: isDarkMode ? Colors.grey[400] : Colors.grey[600],
                       ),
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      '\$${pendiente.toStringAsFixed(0)}',
+                      'Bs ${pendiente.toStringAsFixed(2)}',
                       style: TextStyle(
-                        fontSize: 13,
                         fontWeight: FontWeight.bold,
-                        color: pendiente > 0 ? Colors.orange[400] : Colors.grey[400],
+                        color: pendiente > 0
+                            ? Colors.orange[400]
+                            : Colors.grey[400],
                       ),
                     ),
                   ],
@@ -1106,50 +1022,117 @@ class _VentasAsignadasCardState extends State<VentasAsignadasCard> {
     );
   }
 
-  /// ✅ NUEVO 2026-03-12: Navegar a pantalla de registro de pago/incidencia
-  /// Sigue el patrón de resumen_pagos_entrega_screen.dart
-  void _navegarARegistroPago(BuildContext context, Venta venta, Entrega entrega) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => ConfirmarEntregaVentaScreen(
-          entrega: entrega,
-          venta: venta,
-          provider: widget.provider,
-          isEditing: true, // Modo edición para volver a registrar
-        ),
-      ),
-    ).then((result) {
-      // Si se guardó correctamente, recargar la lista de ventas
-      if (result == true) {
-        debugPrint('✅ [VENTAS_CARD] Pago registrado, recargando ventas...');
-        widget.provider.obtenerEntrega(entrega.id);
-      }
-    });
+  // ✅ NUEVO 2026-06-12: Obtener color del estado de pago
+  Color _getColorEstadoPago(dynamic estado) {
+    final estadoStr = (estado as String?)?.toUpperCase() ?? '';
+    switch (estadoStr) {
+      case 'PAGADO':
+        return Colors.green;
+      case 'NO_PAGADO':
+      case 'PENDIENTE':
+        return Colors.orange;
+      case 'RECHAZADO':
+        return Colors.red;
+      default:
+        return Colors.grey;
+    }
   }
 
-  // ✅ NUEVO 2026-03-05: Construir mensaje de ubicación completo con dirección y observaciones
-  String _construirMensajeUbicacion(Venta venta) {
-    final parts = <String>[];
-
-    if (venta.clienteLocalidadObj != null) {
-      parts.add('📍 ${venta.clienteLocalidadObj!.nombre}');
+  // ✅ NUEVO 2026-06-13: Obtener icono para Estado Logistico de la venta
+  Color _getEstadoLogisticoColor(String? estado) {
+    final estadoUpper = estado?.toUpperCase() ?? '';
+    switch (estadoUpper) {
+      case 'EN_TRANSITO':
+        return Colors.blue;
+      case 'ENTREGADA':
+        return Colors.green;
+      case 'PROBLEMAS':
+        return Colors.deepOrange;
+      case 'RECHAZADA':
+        return Colors.red;
+      default:
+        return Colors.grey;
     }
+  }
 
-    if (venta.clienteRazonSocial != null &&
-        venta.clienteRazonSocial!.isNotEmpty) {
-      parts.add('🏢 ${venta.clienteRazonSocial}');
+  // ✅ NUEVO 2026-06-13: Obtener icono para tipo de pago
+  IconData _getTipoPagoIcon(String? codigo) {
+    final codigoUpper = codigo?.toUpperCase() ?? '';
+    switch (codigoUpper) {
+      case 'EFECTIVO':
+        return Icons.money;
+      case 'QR':
+        return Icons.qr_code_2;
+      case 'TRANSFERENCIA':
+        return Icons.transfer_within_a_station;
+      case 'CHEQUE':
+        return Icons.description;
+      case 'CREDITO':
+        return Icons.credit_card;
+      default:
+        return Icons.payment;
     }
+  }
 
-    if (venta.direccion != null && venta.direccion!.isNotEmpty) {
-      parts.add('🏠 ${venta.direccion}');
+  // ✅ NUEVO 2026-06-13: Obtener color para tipo de confirmación
+  Color _getTipoConfirmacionColor(String? tipo) {
+    final tipoUpper = tipo?.toUpperCase() ?? '';
+    switch (tipoUpper) {
+      case 'COMPLETA':
+        return Colors.green[700]!;
+      case 'PARCIAL':
+        return Colors.orange[700]!;
+      case 'RECHAZADO':
+      case 'CLIENTE_CERRADO':
+        return Colors.red[700]!;
+      default:
+        return Colors.grey[700]!;
     }
+  }
 
-    if (venta.direccionObservaciones != null &&
-        venta.direccionObservaciones!.isNotEmpty) {
-      parts.add('📝 ${venta.direccionObservaciones}');
+  // ✅ NUEVO 2026-06-13: Obtener icono para tipo de confirmación
+  IconData _getTipoConfirmacionIcon(String? tipo) {
+    final tipoUpper = tipo?.toUpperCase() ?? '';
+    switch (tipoUpper) {
+      case 'COMPLETA':
+        return Icons.check_circle;
+      case 'PARCIAL':
+        return Icons.warning;
+      case 'RECHAZADO':
+      case 'CLIENTE_CERRADO':
+        return Icons.cancel;
+      default:
+        return Icons.info;
     }
+  }
 
-    return parts.isEmpty ? 'Sin información de ubicación' : parts.join('\n');
+  // ✅ NUEVO 2026-06-13: Obtener color para tipo de entrega
+  Color _getTipoEntregaColor(String? tipo) {
+    final tipoUpper = tipo?.toUpperCase() ?? '';
+    switch (tipoUpper) {
+      case 'COMPLETA':
+        return Colors.green[700]!;
+      case 'PARCIAL':
+        return Colors.orange[700]!;
+      case 'CON_NOVEDAD':
+        return Colors.amber[700]!;
+      default:
+        return Colors.grey[700]!;
+    }
+  }
+
+  // ✅ NUEVO 2026-06-13: Obtener icono para tipo de entrega
+  IconData _getTipoEntregaIcon(String? tipo) {
+    final tipoUpper = tipo?.toUpperCase() ?? '';
+    switch (tipoUpper) {
+      case 'COMPLETA':
+        return Icons.local_shipping;
+      case 'PARCIAL':
+        return Icons.inventory_2;
+      case 'CON_NOVEDAD':
+        return Icons.error_outline;
+      default:
+        return Icons.info;
+    }
   }
 }

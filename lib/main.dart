@@ -13,7 +13,6 @@ import 'screens/screens.dart';
 import 'screens/carrito/carrito_abandonado_list_screen.dart';
 import 'screens/cliente/mis_direcciones_screen.dart';
 import 'screens/cliente/direccion_form_screen.dart';
-import 'screens/chofer/iniciar_ruta_screen.dart';
 import 'widgets/realtime_notifications_listener.dart';
 import 'config/app_themes.dart';
 import 'config/app_urls.dart';
@@ -355,7 +354,7 @@ class MyApp extends StatelessWidget {
                   ),
                 );
 
-              case '/chofer/iniciar-ruta':
+              /*case '/chofer/iniciar-ruta':
                 final entregaId = settings.arguments as int?;
                 if (entregaId == null) {
                   return MaterialPageRoute(
@@ -368,7 +367,7 @@ class MyApp extends StatelessWidget {
                 }
                 return MaterialPageRoute(
                   builder: (context) => IniciarRutaScreen(entregaId: entregaId),
-                );
+                );*/
 
               case '/credito':
                 final args = settings.arguments as Map<String, dynamic>?;

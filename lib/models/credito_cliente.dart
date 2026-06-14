@@ -252,9 +252,10 @@ class Pago {
 class TipoPago {
   final int id;
   final String nombre;
-  final String? codigo; // ✅ NUEVO: código del tipo de pago
+  final String? codigo;
+  final bool? esCredito; // ✅ Si es pago a crédito
 
-  TipoPago({required this.id, required this.nombre, this.codigo});
+  TipoPago({required this.id, required this.nombre, this.codigo, this.esCredito});
 
   factory TipoPago.fromJson(Map<String, dynamic> json) {
     try {
@@ -264,6 +265,7 @@ class TipoPago {
             : int.tryParse(json['id'].toString()) ?? 0,
         nombre: json['nombre'] ?? '',
         codigo: json['codigo'] as String?,
+        esCredito: json['es_credito'] as bool?,
       );
     } catch (e) {
       debugPrint('❌ Error parsing TipoPago: $e');
@@ -277,6 +279,7 @@ class TipoPago {
       'id': id,
       'nombre': nombre,
       'codigo': codigo,
+      'es_credito': esCredito,
     };
   }
 }

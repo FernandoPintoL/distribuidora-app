@@ -84,12 +84,6 @@ class IniciarEntregaDialog {
     );
 
     if (resultado == true && context.mounted) {
-      showDialog(
-        context: context,
-        barrierDismissible: false,
-        builder: (context) => const Center(child: CircularProgressIndicator()),
-      );
-
       try {
         debugPrint('🚀 Iniciando entrega #${entrega.id}...');
 
@@ -103,11 +97,16 @@ class IniciarEntregaDialog {
           },
         );
 
-        if (context.mounted) {
-          Navigator.pop(context);
+        if (success) {
+          debugPrint('✅ Entrega iniciada correctamente');
 
+          await provider.obtenerEntrega(entrega.id);
+
+          debugPrint('✅ Datos de entrega actualizados');
+        }
+
+        if (context.mounted) {
           if (success) {
-            debugPrint('✅ Entrega iniciada correctamente');
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: const Text('✅ Entrega iniciada correctamente.'),
@@ -115,8 +114,6 @@ class IniciarEntregaDialog {
                 duration: const Duration(seconds: 3),
               ),
             );
-
-            await provider.obtenerEntrega(entrega.id);
           } else {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
@@ -132,7 +129,6 @@ class IniciarEntregaDialog {
       } catch (e) {
         debugPrint('❌ Excepción: $e');
         if (context.mounted) {
-          Navigator.pop(context);
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text('Error inesperado: ${e.toString()}'),

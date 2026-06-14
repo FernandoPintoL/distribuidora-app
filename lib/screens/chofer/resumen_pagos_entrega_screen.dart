@@ -1382,7 +1382,6 @@ class _ResumenPagosEntregaScreenState extends State<ResumenPagosEntregaScreen> {
       orElse: () => Venta(
         id: ventaId,
         numero: 'VEN-$ventaId',
-        clienteNombre: '',
         subtotal: 0,
         impuesto: 0,
         total: 0,
@@ -1414,4 +1413,3 @@ class _ResumenPagosEntregaScreenState extends State<ResumenPagosEntregaScreen> {
     });
   }
 }
-

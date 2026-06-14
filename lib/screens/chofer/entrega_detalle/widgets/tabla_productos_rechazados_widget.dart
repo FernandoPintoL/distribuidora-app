@@ -70,18 +70,12 @@ class TablaProductosRechazadosWidget extends StatelessWidget {
         // Encabezado mejorado
         Text(
           '📦 Productos de la Venta',
-          style: Theme.of(context)
-              .textTheme
-              .titleMedium
-              ?.copyWith(fontWeight: FontWeight.w600),
+          style: TextStyle(fontWeight: FontWeight.w600),
         ),
         const SizedBox(height: 8),
         Text(
           'Marca productos con rechazo parcial e ingresa cantidad rechazada',
-          style: TextStyle(
-            fontSize: AppTextStyles.bodySmall(context).fontSize!,
-            color: Colors.grey[600],
-          ),
+          style: TextStyle(color: Colors.grey[600]),
         ),
         const SizedBox(height: 12),
 
@@ -173,27 +167,27 @@ class TablaProductosRechazadosWidget extends StatelessWidget {
                               ProductoRechazado(
                                 detalleVentaId: detalle.id,
                                 productoId: detalle.producto?.id,
-                                nombreProducto: detalle.producto?.nombre ??
+                                nombreProducto:
+                                    detalle.producto?.nombre ??
                                     detalle.nombreProducto ??
                                     'Producto',
-                                cantidadOriginal:
-                                    detalle.cantidad.toDouble(),
+                                cantidadOriginal: detalle.cantidad.toDouble(),
                                 cantidadRechazada: 1.0,
-                                precioUnitario:
-                                    detalle.precioUnitario.toDouble(),
+                                precioUnitario: detalle.precioUnitario
+                                    .toDouble(),
                                 subtotalOriginal:
                                     detalle.subtotal?.toDouble() ?? 0,
                               ),
                             );
-                            if (!cantidadRechazadaControllers
-                                .containsKey(detalle.id)) {
+                            if (!cantidadRechazadaControllers.containsKey(
+                              detalle.id,
+                            )) {
                               cantidadRechazadaControllers[detalle.id] =
                                   TextEditingController(text: '1.0');
                             }
                           } else {
                             onDesmarcarRechazo(detalle.id);
-                            cantidadRechazadaControllers[detalle.id]
-                                ?.dispose();
+                            cantidadRechazadaControllers[detalle.id]?.dispose();
                             cantidadRechazadaControllers.remove(detalle.id);
                           }
                         },
@@ -242,16 +236,15 @@ class TablaProductosRechazadosWidget extends StatelessWidget {
                                   ),
                                 ],
                                 onChanged: (value) {
-                                  final cantidad =
-                                      double.tryParse(value) ?? 0;
+                                  final cantidad = double.tryParse(value) ?? 0;
                                   if (cantidad > detalle.cantidad) {
                                     onCantidadRechazadaChanged(
                                       detalle.id,
                                       detalle.cantidad.toDouble(),
                                     );
                                     cantidadRechazadaControllers[detalle.id]
-                                            ?.text =
-                                        detalle.cantidad.toStringAsFixed(1);
+                                        ?.text = detalle.cantidad
+                                        .toStringAsFixed(1);
                                   } else if (cantidad >= 0) {
                                     onCantidadRechazadaChanged(
                                       detalle.id,
@@ -263,6 +256,7 @@ class TablaProductosRechazadosWidget extends StatelessWidget {
                                   isDense: true,
                                   contentPadding: EdgeInsets.symmetric(
                                     horizontal: 4,
+                                    vertical: 4,
                                   ),
                                   border: OutlineInputBorder(
                                     borderRadius: BorderRadius.circular(4),
@@ -295,9 +289,7 @@ class TablaProductosRechazadosWidget extends StatelessWidget {
                     ),
                     // Precio unitario
                     DataCell(
-                      Text(
-                        'Bs. ${detalle.precioUnitario.toStringAsFixed(2)}',
-                      ),
+                      Text('Bs. ${detalle.precioUnitario.toStringAsFixed(2)}'),
                     ),
                     // Subtotal de rechazadas (calculado)
                     DataCell(
@@ -342,11 +334,8 @@ class TablaProductosRechazadosWidget extends StatelessWidget {
                 Text(
                   '📋 Desglose de Rechazos Parciales:',
                   style: TextStyle(
-                    fontSize: AppTextStyles.bodySmall(context).fontSize!,
                     fontWeight: FontWeight.w600,
-                    color: isDarkMode
-                        ? Colors.blue[300]!
-                        : Colors.blue[800]!,
+                    color: isDarkMode ? Colors.blue[300]! : Colors.blue[800]!,
                   ),
                 ),
                 const SizedBox(height: 8),
@@ -359,15 +348,12 @@ class TablaProductosRechazadosWidget extends StatelessWidget {
                         Expanded(
                           child: Text(
                             '  • ${prod.nombreProducto}',
-                            style: TextStyle(fontSize: 12),
                             overflow: TextOverflow.ellipsis,
                           ),
                         ),
                         Text(
                           '${prod.cantidadRechazada.toStringAsFixed(1)}/${prod.cantidadOriginal.toStringAsFixed(0)} rechazadas',
                           style: TextStyle(
-                            fontSize:
-                                AppTextStyles.labelSmall(context).fontSize!,
                             color: isDarkMode
                                 ? Colors.orange[400]!
                                 : Colors.orange[700]!,
@@ -378,10 +364,8 @@ class TablaProductosRechazadosWidget extends StatelessWidget {
                     ),
                   ),
                 ),
-                const SizedBox(height: 12),
                 Divider(
-                  color:
-                      isDarkMode ? Colors.orange[600]! : Colors.orange[300]!,
+                  color: isDarkMode ? Colors.orange[600]! : Colors.orange[300]!,
                 ),
                 const SizedBox(height: 8),
                 // Total Entregado
@@ -391,7 +375,6 @@ class TablaProductosRechazadosWidget extends StatelessWidget {
                     Text(
                       '✓ Total Entregado:',
                       style: TextStyle(
-                        fontSize: AppTextStyles.bodyMedium(context).fontSize!,
                         fontWeight: FontWeight.w500,
                         color: isDarkMode
                             ? Colors.green[400]!
@@ -401,7 +384,6 @@ class TablaProductosRechazadosWidget extends StatelessWidget {
                     Text(
                       'Bs. ${montoEntregado.toStringAsFixed(2)}',
                       style: TextStyle(
-                        fontSize: AppTextStyles.bodyMedium(context).fontSize!,
                         fontWeight: FontWeight.w700,
                         color: isDarkMode
                             ? Colors.green[400]!
@@ -418,31 +400,24 @@ class TablaProductosRechazadosWidget extends StatelessWidget {
                     Text(
                       '✗ Total Rechazado:',
                       style: TextStyle(
-                        fontSize: AppTextStyles.bodyMedium(context).fontSize!,
                         fontWeight: FontWeight.w500,
-                        color: isDarkMode
-                            ? Colors.red[400]!
-                            : Colors.red[700]!,
+                        color: isDarkMode ? Colors.red[400]! : Colors.red[700]!,
                       ),
                     ),
                     Text(
                       'Bs. ${montoRechazado.toStringAsFixed(2)}',
                       style: TextStyle(
-                        fontSize: AppTextStyles.bodyMedium(context).fontSize!,
                         fontWeight: FontWeight.w700,
-                        color: isDarkMode
-                            ? Colors.red[400]!
-                            : Colors.red[700]!,
+                        color: isDarkMode ? Colors.red[400]! : Colors.red[700]!,
                       ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 8),
+                /*const SizedBox(height: 8),
                 Divider(
-                  color:
-                      isDarkMode ? Colors.orange[600]! : Colors.orange[300]!,
-                ),
-                const SizedBox(height: 8),
+                  color: isDarkMode ? Colors.orange[600]! : Colors.orange[300]!,
+                ),*/
+                /*const SizedBox(height: 8),
                 // Total Original
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -450,7 +425,6 @@ class TablaProductosRechazadosWidget extends StatelessWidget {
                     Text(
                       'Total Original:',
                       style: TextStyle(
-                        fontSize: AppTextStyles.bodyMedium(context).fontSize!,
                         fontWeight: FontWeight.w500,
                         color: isDarkMode
                             ? Colors.grey[400]!
@@ -460,7 +434,6 @@ class TablaProductosRechazadosWidget extends StatelessWidget {
                     Text(
                       'Bs. ${totalOriginal.toStringAsFixed(2)}',
                       style: TextStyle(
-                        fontSize: AppTextStyles.bodyMedium(context).fontSize!,
                         fontWeight: FontWeight.w700,
                         color: isDarkMode
                             ? Colors.grey[400]!
@@ -468,7 +441,7 @@ class TablaProductosRechazadosWidget extends StatelessWidget {
                       ),
                     ),
                   ],
-                ),
+                ),*/
               ],
             ),
           ),

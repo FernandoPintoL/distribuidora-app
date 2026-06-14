@@ -64,6 +64,8 @@ class MapLocation {
   final int? ventaId;
   final String?
   markerColor; // ✅ NUEVO 2026-03-12: Color hex para el pin en el mapa (ej: "#FF6B6B")
+  final String?
+  fotoPerfil; // ✅ NUEVO 2026-06-14: URL de foto de perfil del cliente
 
   MapLocation({
     required this.latitude,
@@ -75,6 +77,7 @@ class MapLocation {
     this.telefono,
     this.ventaId,
     this.markerColor,
+    this.fotoPerfil,
   });
 }
 
@@ -272,8 +275,13 @@ class _MapLocationSelectorState extends State<MapLocationSelector> {
     // ✅ NUEVO 2026-02-17: Guardar el ID del primer marker para mostrar infoWindow automáticamente
     _markerIdToShowInfoWindow ??= markerId.value;
 
-    // ✅ Construir snippet compacto en una sola línea (sin saltos de línea)
+    // ✅ ACTUALIZADO 2026-06-14: Construir snippet con foto de perfil
     final snippetParts = <String>[];
+
+    // ✅ NUEVO: Agregar foto de perfil si existe
+    if (location.fotoPerfil != null && location.fotoPerfil!.isNotEmpty) {
+      snippetParts.add('📸 Toca para ver foto');
+    }
 
     if (location.razonSocial != null && location.razonSocial!.isNotEmpty) {
       snippetParts.add('🏢 ${location.razonSocial}');
@@ -296,6 +304,11 @@ class _MapLocationSelectorState extends State<MapLocationSelector> {
         ? 'Sin información'
         : snippetParts.join(' | ');
 
+    // ✅ DEBUG 2026-06-14: Log de color y foto para diagnóstico
+    debugPrint(
+      '🗺️ Marker: ${location.title} | markerColor: ${location.markerColor} | fotoPerfil: ${location.fotoPerfil}',
+    );
+
     // ✅ NUEVO 2026-03-12: Convertir color hex a hue para el pin
     final markerHue = _hexToHue(location.markerColor);
 
@@ -308,9 +321,15 @@ class _MapLocationSelectorState extends State<MapLocationSelector> {
           snippet: snippet,
           onTap: () {
             debugPrint(
-              '📍 Cliente: ${location.title} | Razón Social: ${location.razonSocial} | \n'
-              'Teléfono: ${location.telefono} | Venta: ${location.subtitle} | ID: ${location.ventaId} | Color: ${location.markerColor}',
+              '📍 Tapped: ${location.title} | markerColor: ${location.markerColor} | markerHue: $markerHue | '
+              'fotoPerfil: ${location.fotoPerfil}',
             );
+
+            // ✅ NUEVO 2026-06-14: Mostrar foto en diálogo si existe
+            if (location.fotoPerfil != null &&
+                location.fotoPerfil!.isNotEmpty) {
+              _mostrarDialogoFotoPerfil(location);
+            }
 
             // ✅ NUEVO: Llamar callback si existe ventaId y se proporcionó onVentaSelected
             if (location.ventaId != null && widget.onVentaSelected != null) {
@@ -319,6 +338,134 @@ class _MapLocationSelectorState extends State<MapLocationSelector> {
           },
         ),
         icon: BitmapDescriptor.defaultMarkerWithHue(markerHue),
+      ),
+    );
+  }
+
+  // ✅ NUEVO 2026-06-14: Mostrar foto de perfil del cliente en un diálogo
+  void _mostrarDialogoFotoPerfil(MapLocation location) {
+    debugPrint(location.fotoPerfil ?? '❌ Sin foto de perfil');
+    showDialog(
+      context: context,
+      builder: (context) => Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // ✅ Header mejorado
+            Container(
+              decoration: BoxDecoration(
+                color: Theme.of(context).primaryColor,
+                borderRadius: const BorderRadius.vertical(
+                  top: Radius.circular(16),
+                ),
+              ),
+              padding: const EdgeInsets.all(16),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Expanded(
+                    child: Text(
+                      '👤 ${location.title}',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.close, color: Colors.white),
+                    onPressed: () => Navigator.pop(context),
+                  ),
+                ],
+              ),
+            ),
+            // ✅ Contenido expandible
+            Flexible(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    // ✅ AUMENTADO: Imagen más grande (500x500)
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(16),
+                      child: Image.network(
+                        location.fotoPerfil!,
+                        height: 500,
+                        width: 500,
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) {
+                          return Container(
+                            height: 500,
+                            width: 500,
+                            decoration: BoxDecoration(
+                              color: Colors.grey[300],
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                            child: const Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(Icons.image_not_supported, size: 100),
+                                SizedBox(height: 16),
+                                Text(
+                                  '❌ No se pudo cargar la foto',
+                                  style: TextStyle(fontSize: 18),
+                                ),
+                              ],
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                    const SizedBox(height: 32),
+                    // ✅ Información del cliente mejorada
+                    if (location.razonSocial != null)
+                      Text(
+                        '${location.razonSocial}',
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 22,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    if (location.telefono != null) ...[
+                      const SizedBox(height: 16),
+                      Text(
+                        '📱 ${location.telefono}',
+                        style: const TextStyle(fontSize: 18),
+                        textAlign: TextAlign.center,
+                      ),
+                    ],
+                    const SizedBox(height: 32),
+                    // ✅ Botón más grande y ancho
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(
+                            vertical: 16,
+                            horizontal: 48,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        onPressed: () => Navigator.pop(context),
+                        child: const Text(
+                          'Cerrar',
+                          style: TextStyle(fontSize: 18),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

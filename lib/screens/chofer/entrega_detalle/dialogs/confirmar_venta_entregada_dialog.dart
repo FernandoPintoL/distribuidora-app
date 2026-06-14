@@ -159,7 +159,7 @@ class _ConfirmarVentaEntregadaContentState
             const SizedBox(height: 16),
 
             // ✅ NUEVO: Información de la venta
-            if (widget.venta.clienteNombre != null) ...[
+            if (widget.venta.cliente?.nombre != null) ...[
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
@@ -184,7 +184,7 @@ class _ConfirmarVentaEntregadaContentState
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      '${widget.venta.numero} - ${widget.venta.clienteNombre}',
+                      '${widget.venta.numero} - ${widget.venta.cliente?.nombre}',
                       style: TextStyle(
                         fontSize: AppTextStyles.bodySmall(context).fontSize!,
                         fontWeight: FontWeight.bold,

@@ -89,12 +89,6 @@ class ConfirmarCargaListaDialog {
     );
 
     if (resultado == true && context.mounted) {
-      showDialog(
-        context: context,
-        barrierDismissible: false,
-        builder: (context) => const Center(child: CircularProgressIndicator()),
-      );
-
       try {
         debugPrint('📦 Confirmando carga lista para entrega #${entrega.id}...');
 
@@ -108,11 +102,18 @@ class ConfirmarCargaListaDialog {
           },
         );
 
-        if (context.mounted) {
-          Navigator.pop(context);
+        if (success) {
+          debugPrint('✅ Carga confirmada correctamente');
 
+          // ✅ Recargar entrega completa CON reinicio de isLoading
+          await provider.obtenerEntrega(entrega.id);
+
+          debugPrint('✅ Datos de entrega actualizados');
+        }
+
+        // ✅ Mostrar mensaje al usuario
+        if (context.mounted) {
           if (success) {
-            debugPrint('✅ Carga confirmada correctamente');
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: const Text(
@@ -122,10 +123,6 @@ class ConfirmarCargaListaDialog {
                 duration: const Duration(seconds: 3),
               ),
             );
-
-            await provider.obtenerEntrega(entrega.id);
-
-            // ✅ Recargar la pantalla después de confirmar
             onReload?.call();
           } else {
             ScaffoldMessenger.of(context).showSnackBar(
@@ -142,7 +139,6 @@ class ConfirmarCargaListaDialog {
       } catch (e) {
         debugPrint('❌ Excepción: $e');
         if (context.mounted) {
-          Navigator.pop(context);
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text('Error inesperado: ${e.toString()}'),

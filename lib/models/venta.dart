@@ -1,18 +1,16 @@
 import 'package:flutter/foundation.dart';
-import 'credito_cliente.dart'; // Para importar TipoPago
-import 'localidad.dart'; // ✅ Importar Localidad existente
-import 'estado_logistico.dart'; // ✅ Importar EstadoLogistico centralizado
+import 'credito_cliente.dart';
+import 'cliente.dart';
+import 'localidad.dart';
+import 'direccion_cliente.dart';
+import 'estado_logistico.dart';
+import 'pedido.dart';
+import 'entrega_venta_confirmacion.dart';
 
 class Venta {
   final int id;
   final String numero;
-  final String? cliente;
-  final String? clienteNombre;
-  final String? clienteTelefono; // Nuevo: Teléfono del cliente
-  final String? clienteRazonSocial; // ✅ NUEVO: Razón social del cliente
-  final String? clienteFotoPerfil; // ✅ NUEVO: Foto de perfil del cliente
-  final String? clienteLocalidad; // ✅ DEPRECADO: Usar clienteLocalidadObj en su lugar
-  final Localidad? clienteLocalidadObj; // ✅ NUEVO: Localidad completa del cliente
+  final Cliente? cliente; // ✅ NUEVO 2026-06-14: Cliente como objeto completo
   final double total;
   final double subtotal;
   final double descuento; // Puede venir del backend o calcularse
@@ -26,15 +24,13 @@ class Venta {
   final String? estadoLogisticoColor; // Color del estado (hex)
   final String? estadoLogisticoIcon; // Icono del estado
   final EstadoLogistico? estadoLogisticoObj; // ✅ NUEVO: Objeto EstadoLogistico completo (centralizado)
+  final EstadoDocumento? estadoDocumentoObj; // ✅ NUEVO: Objeto EstadoDocumento (Aprobado, Rechazado, etc)
   final String estadoPago;
   final DateTime fecha;
   final List<VentaDetalle> detalles;
 
-  // Ubicación de entrega desde direccionCliente
-  final double? latitud; // Latitud de entrega
-  final double? longitud; // Longitud de entrega
-  final String? direccion; // Dirección de entrega completa
-  final String? direccionObservaciones; // ✅ NUEVO 2026-03-05: Observaciones de la dirección
+  // ✅ NUEVO 2026-06-14: Información de dirección del cliente como objeto
+  final DireccionCliente? direccionCliente;
 
   // ✅ NUEVO: Campos de pago y origen
   final String? canalOrigen; // Canal de venta: PRESENCIAL, ONLINE, etc.
@@ -47,18 +43,13 @@ class Venta {
   final String? estadoEntrega; // Estado de la entrega (ASIGNADA, EN_CAMINO, ENTREGADO, etc)
   final String? tipoEntrega; // ✅ NUEVO (2026-03-05): Tipo de entrega (COMPLETA, CON_NOVEDAD)
   final String? tipoNovedad; // ✅ NUEVO (2026-03-05): Tipo de novedad (CLIENTE_CERRADO, DEVOLUCION_PARCIAL, etc)
-  final List<Map<String, dynamic>> confirmaciones; // ✅ NUEVO (2026-03-05): Confirmaciones de entrega
+  final List<EntregaVentaConfirmacion> confirmaciones; // ✅ NUEVO (2026-03-05): Confirmaciones de entrega
+  final Map<String, dynamic>? resumenPago; // ✅ NUEVO (2026-06-12): Resumen de pagos (estado, pendiente, fecha)
 
   Venta({
     required this.id,
     required this.numero,
-    this.cliente,
-    this.clienteNombre,
-    this.clienteTelefono,
-    this.clienteRazonSocial,  // ✅ NUEVO: Razón social del cliente
-    this.clienteFotoPerfil,  // ✅ NUEVO: Foto de perfil del cliente
-    this.clienteLocalidad,
-    this.clienteLocalidadObj,  // ✅ NUEVO
+    this.cliente, // ✅ NUEVO 2026-06-14: Cliente como objeto
     required this.total,
     required this.subtotal,
     required this.descuento,
@@ -71,13 +62,11 @@ class Venta {
     this.estadoLogisticoColor,
     this.estadoLogisticoIcon,
     this.estadoLogisticoObj, // ✅ NUEVO: Objeto EstadoLogistico
+    this.estadoDocumentoObj, // ✅ NUEVO: Objeto EstadoDocumento
     required this.estadoPago,
     required this.fecha,
     this.detalles = const [],
-    this.latitud,
-    this.longitud,
-    this.direccion,
-    this.direccionObservaciones, // ✅ NUEVO
+    this.direccionCliente, // ✅ NUEVO 2026-06-14
     this.canalOrigen,
     this.politicaPago,
     this.tipoPago,
@@ -87,30 +76,14 @@ class Venta {
     this.tipoEntrega, // ✅ NUEVO
     this.tipoNovedad, // ✅ NUEVO
     this.confirmaciones = const [], // ✅ NUEVO
+    this.resumenPago, // ✅ NUEVO: Resumen de pagos
   });
 
   factory Venta.fromJson(Map<String, dynamic> json) {
-    // Extraer nombre, teléfono, razón social, foto y localidad del cliente si es un objeto
-    String? clienteNom;
-    String? clienteTel;
-    String? clienteRazonSoc;  // ✅ NUEVO: Razón social del cliente
-    String? clienteFoto;  // ✅ NUEVO: Foto de perfil del cliente
-    String? clienteLocalidadNom;
-    Localidad? clienteLocalidadObj;  // ✅ NUEVO: Objeto Localidad completo
+    // ✅ NUEVO 2026-06-14: Parsear cliente como objeto completo
+    Cliente? clienteObj;
     if (json['cliente'] is Map<String, dynamic>) {
-      final clienteObj = json['cliente'] as Map<String, dynamic>;
-      clienteNom = clienteObj['nombre'] as String?;
-      clienteTel = clienteObj['telefono'] as String?;
-      clienteRazonSoc = clienteObj['razon_social'] as String?;  // ✅ NUEVO: Extraer razón social
-      clienteFoto = clienteObj['foto_perfil'] as String?;  // ✅ NUEVO: Extraer foto de perfil
-      // ✅ NUEVO: Extraer localidad del cliente
-      if (clienteObj['localidad'] is Map<String, dynamic>) {
-        final localidadObj = clienteObj['localidad'] as Map<String, dynamic>;
-        clienteLocalidadNom = localidadObj['nombre'] as String?;
-        clienteLocalidadObj = Localidad.fromJson(localidadObj);  // ✅ NUEVO: Parsear objeto completo
-      }
-    } else {
-      clienteNom = json['cliente'] as String?;
+      clienteObj = Cliente.fromJson(json['cliente'] as Map<String, dynamic>);
     }
 
     // Parsear detalles/productos si existen
@@ -161,32 +134,35 @@ class Venta {
       estadoLogisticoCodigo = null; // No disponible en fallback
     }
 
-    // Parsear ubicación desde direccionCliente (probar ambos formatos: camelCase y snake_case)
-    double? latEntrega;
-    double? lngEntrega;
-    String? direccionEntrega;
+    // ✅ NUEVO: Parsear estado documento (Aprobado, Rechazado, etc)
+    EstadoDocumento? estadoDocumentoObjValue;
+    if (json['estado_documento'] is Map<String, dynamic>) {
+      try {
+        estadoDocumentoObjValue =
+            EstadoDocumento.fromJson(json['estado_documento'] as Map<String, dynamic>);
+      } catch (e) {
+        debugPrint('⚠️ Error parseando EstadoDocumento: $e');
+      }
+    }
 
-    Map<String, dynamic>? dirCliente;
+    // ✅ NUEVO 2026-06-14: Parsear direccionCliente como objeto completo (si viene como relación)
+    DireccionCliente? direccionClienteObj;
 
-    // Intentar camelCase primero
+    Map<String, dynamic>? dirClienteJson;
     if (json['direccionCliente'] is Map<String, dynamic>) {
-      dirCliente = json['direccionCliente'] as Map<String, dynamic>;
-    }
-    // Si no, intentar snake_case
-    else if (json['direccion_cliente'] is Map<String, dynamic>) {
-      dirCliente = json['direccion_cliente'] as Map<String, dynamic>;
+      dirClienteJson = json['direccionCliente'] as Map<String, dynamic>;
+    } else if (json['direccion_cliente'] is Map<String, dynamic>) {
+      dirClienteJson = json['direccion_cliente'] as Map<String, dynamic>;
     }
 
-    String? direccionObservacionesValue;
-    if (dirCliente != null) {
-      latEntrega = (dirCliente['latitud'] as num?)?.toDouble();
-      lngEntrega = (dirCliente['longitud'] as num?)?.toDouble();
-      direccionEntrega = dirCliente['direccion'] as String?;
-      direccionObservacionesValue = dirCliente['observaciones'] as String?; // ✅ NUEVO 2026-03-05
-      // print('[VENTA_PARSE] direccionCliente encontrada: lat=$latEntrega, lng=$lngEntrega, dir=$direccionEntrega, obs=$direccionObservacionesValue');
-    } else {
-      // print('[VENTA_PARSE] NO se encontró direccionCliente en JSON. Keys: ${json.keys.toList()}');
+    if (dirClienteJson != null) {
+      try {
+        direccionClienteObj = DireccionCliente.fromJson(dirClienteJson);
+      } catch (e) {
+        debugPrint('⚠️ [VENTA] Error parseando direccionCliente: $e');
+      }
     }
+    // Si no viene la relación direccionCliente, simplemente quedará null (es normal en algunos endpoints)
 
     // Calcular descuento si no viene en el JSON
     double descuentoValue = 0.0;
@@ -194,24 +170,21 @@ class Venta {
       descuentoValue = _parseDouble(json['descuento']);
     }
 
-    // ✅ NUEVO: Parsear tipoPago si existe
+    // ✅ ACTUALIZADO 2026-06-14: Parsear tipoPago si viene como objeto (algunos endpoints no incluyen la relación)
     TipoPago? tipoPago;
     if (json['tipo_pago'] is Map<String, dynamic>) {
       tipoPago = TipoPago.fromJson(json['tipo_pago'] as Map<String, dynamic>);
+      debugPrint('✅ [VENTA] Tipo de pago parseado: ${tipoPago.nombre}');
     } else if (json['tipoPago'] is Map<String, dynamic>) {
       tipoPago = TipoPago.fromJson(json['tipoPago'] as Map<String, dynamic>);
+      debugPrint('✅ [VENTA] Tipo de pago parseado (camelCase): ${tipoPago.nombre}');
     }
+    // Si no viene la relación tipoPago, simplemente quedará null (es normal en algunos endpoints)
 
     return Venta(
       id: _parseInt(json['id']),
       numero: json['numero'] as String? ?? '',
-      cliente: json['cliente'] is String ? json['cliente'] as String? : null,
-      clienteNombre: clienteNom,
-      clienteTelefono: clienteTel,
-      clienteRazonSocial: clienteRazonSoc,  // ✅ NUEVO: Razón social del cliente
-      clienteFotoPerfil: clienteFoto,  // ✅ NUEVO: Foto de perfil del cliente
-      clienteLocalidad: clienteLocalidadNom,
-      clienteLocalidadObj: clienteLocalidadObj,  // ✅ NUEVO: Objeto Localidad completo
+      cliente: clienteObj, // ✅ NUEVO 2026-06-14: Cliente como objeto
       total: _parseDouble(json['total']),
       subtotal: _parseDouble(json['subtotal']),
       descuento: descuentoValue,
@@ -224,15 +197,13 @@ class Venta {
       estadoLogisticoColor: estadoLogisticoColor,
       estadoLogisticoIcon: estadoLogisticoIcon,
       estadoLogisticoObj: estadoLogisticoObjValue, // ✅ NUEVO: Objeto EstadoLogistico centralizado
+      estadoDocumentoObj: estadoDocumentoObjValue, // ✅ NUEVO: Objeto EstadoDocumento
       estadoPago: json['estado_pago'] as String? ?? 'PENDIENTE',
       fecha: json['fecha'] != null
           ? DateTime.parse(json['fecha'] as String)
           : DateTime.now(),
       detalles: detallesList,
-      latitud: latEntrega,
-      longitud: lngEntrega,
-      direccion: direccionEntrega,
-      direccionObservaciones: direccionObservacionesValue, // ✅ NUEVO 2026-03-05
+      direccionCliente: direccionClienteObj, // ✅ NUEVO 2026-06-14
       canalOrigen: json['canal_origen'] as String?,
       politicaPago: json['politica_pago'] as String?,
       tipoPago: tipoPago,
@@ -247,21 +218,28 @@ class Venta {
       })(),
       // ✅ CORREGIDO 2026-03-05: Extraer tipo_entrega y tipo_novedad de la primera confirmación
       tipoEntrega: (() {
-        final confirmaciones = (json['confirmaciones'] as List<dynamic>?)?.cast<Map<String, dynamic>>() ?? [];
-        if (confirmaciones.isNotEmpty) {
-          return confirmaciones.first['tipo_entrega'] as String?;
+        final confirmacionesList = (json['entregas_venta_confirmaciones'] as List<dynamic>?)?.cast<Map<String, dynamic>>() ?? (json['confirmaciones'] as List<dynamic>?)?.cast<Map<String, dynamic>>() ?? [];
+        if (confirmacionesList.isNotEmpty) {
+          return confirmacionesList.first['tipo_confirmacion'] as String?;
         }
         return json['tipo_entrega'] as String?;
       })(),
       tipoNovedad: (() {
-        final confirmaciones = (json['confirmaciones'] as List<dynamic>?)?.cast<Map<String, dynamic>>() ?? [];
-        if (confirmaciones.isNotEmpty) {
-          return confirmaciones.first['tipo_novedad'] as String?;
+        final confirmacionesList = (json['entregas_venta_confirmaciones'] as List<dynamic>?)?.cast<Map<String, dynamic>>() ?? (json['confirmaciones'] as List<dynamic>?)?.cast<Map<String, dynamic>>() ?? [];
+        if (confirmacionesList.isNotEmpty) {
+          return confirmacionesList.first['tipo_novedad'] as String?;
         }
         return json['tipo_novedad'] as String?;
       })(),
-      confirmaciones: (json['confirmaciones'] as List<dynamic>?)
-          ?.cast<Map<String, dynamic>>() ?? [], // ✅ NUEVO: Confirmaciones de entrega
+      confirmaciones: (() {
+        final confirmacionesList = (json['entregas_venta_confirmaciones'] as List<dynamic>?)?.cast<Map<String, dynamic>>() ?? (json['confirmaciones'] as List<dynamic>?)?.cast<Map<String, dynamic>>() ?? [];
+        return confirmacionesList
+            .map((c) => EntregaVentaConfirmacion.fromJson(c))
+            .toList();
+      })(), // ✅ NUEVO: Confirmaciones de entrega (entregas_venta_confirmaciones del backend)
+      resumenPago: json['resumen_pago'] is Map<String, dynamic>
+          ? json['resumen_pago'] as Map<String, dynamic>
+          : null, // ✅ NUEVO: Resumen de pagos
     );
   }
 
@@ -301,14 +279,13 @@ class Venta {
     return {
       'id': id,
       'numero': numero,
-      'cliente': cliente,
-      'cliente_telefono': clienteTelefono,
+      'cliente': cliente?.toJson(), // ✅ NUEVO 2026-06-14: Cliente como objeto
       'total': total,
       'subtotal': subtotal,
       'descuento': descuento,
       'impuesto': impuesto,
       'observaciones': observaciones,
-      'observaciones_logistica': observacionesLogistica,  // ✅ NUEVO
+      'observaciones_logistica': observacionesLogistica,
       'estado_logistico_id': estadoLogisticoId,
       'estado_logistico_codigo': estadoLogisticoCodigo,
       'estado_logistico': estadoLogistico,
@@ -316,18 +293,44 @@ class Venta {
       'estado_logistico_icon': estadoLogisticoIcon,
       'estado_pago': estadoPago,
       'fecha': fecha.toIso8601String(),
-      'latitud': latitud,
-      'longitud': longitud,
-      'direccion': direccion,
+      'direccion_cliente': direccionCliente?.toJson(),
       'canal_origen': canalOrigen,
       'politica_pago': politicaPago,
       'tipo_pago': tipoPago?.toJson(),
     };
   }
 
+  /// Obtener tipo de confirmación de la primera confirmación
+  String? get tipoConfirmacionValue {
+    if (confirmaciones.isEmpty) return tipoNovedad;
+    return confirmaciones.first.tipoConfirmacion;
+  }
+
+  /// Obtener tipo de novedad de la primera confirmación
+  String? get tipoNovedadValue {
+    if (confirmaciones.isEmpty) return tipoNovedad;
+    return confirmaciones.first.tipoNovedad;
+  }
+
+  /// Obtener tipo de entrega de la primera confirmación
+  String? get tipoEntregaValue {
+    if (confirmaciones.isEmpty) return tipoEntrega;
+    return confirmaciones.first.tipoEntrega;
+  }
+
+  /// Obtener la primera confirmación de la venta
+  EntregaVentaConfirmacion? get confirmacionPrimera {
+    return confirmaciones.isNotEmpty ? confirmaciones.first : null;
+  }
+
+  /// Obtener la última confirmación de la venta
+  EntregaVentaConfirmacion? get confirmacionReciente {
+    return confirmaciones.isNotEmpty ? confirmaciones.last : null;
+  }
+
   @override
   String toString() =>
-      'Venta(numero: $numero, cliente: $clienteNombre, total: $total)';
+      'Venta(numero: $numero, cliente: ${cliente?.nombre}, total: $total)';
 }
 
 /// Representa un detalle/línea de producto en una venta
@@ -463,10 +466,22 @@ class Producto {
 
   factory Producto.fromJson(Map<String, dynamic> json) {
     List<ImagenProducto>? imagenes;
+
+    // Intentar parsear 'imagenes' como array (formato antiguo)
     if (json['imagenes'] != null && json['imagenes'] is List) {
       imagenes = (json['imagenes'] as List)
           .map((img) => ImagenProducto.fromJson(img))
           .toList();
+    }
+    // Si no, intentar parsear 'imagen' como objeto singular (formato nuevo)
+    else if (json['imagen'] != null && json['imagen'] is Map<String, dynamic>) {
+      try {
+        final imagenObj = ImagenProducto.fromJson(json['imagen'] as Map<String, dynamic>);
+        imagenes = [imagenObj];
+      } catch (e) {
+        debugPrint('⚠️ Error parseando imagen singular: $e');
+        imagenes = null;
+      }
     }
 
     return Producto(

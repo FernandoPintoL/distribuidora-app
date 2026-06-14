@@ -1908,11 +1908,11 @@ class _PedidoCard extends StatelessWidget {
                     margin: const EdgeInsets.only(bottom: 8),
                     decoration: BoxDecoration(
                       color: _hexToColor(
-                        pedido.venta!.estadoDocumento!.color,
+                        pedido.venta!.estadoDocumento!.color ?? '#808080',
                       ).withOpacity(0.15),
                       border: Border.all(
                         color: _hexToColor(
-                          pedido.venta!.estadoDocumento!.color,
+                          pedido.venta!.estadoDocumento!.color ?? '#808080',
                         ),
                         width: 1.5,
                       ),
@@ -1940,7 +1940,7 @@ class _PedidoCard extends StatelessWidget {
                                 style: DefaultTextStyle.of(context).style
                                     .copyWith(
                                       color: _hexToColor(
-                                        pedido.venta!.estadoDocumento!.color,
+                                        pedido.venta!.estadoDocumento!.color ?? '#808080',
                                       ),
                                       fontWeight: FontWeight.w600,
                                     ),
@@ -1961,11 +1961,11 @@ class _PedidoCard extends StatelessWidget {
                     margin: const EdgeInsets.only(bottom: 8),
                     decoration: BoxDecoration(
                       color: _hexToColor(
-                        pedido.venta!.estadoLogistica!.color,
+                        pedido.venta!.estadoLogistica!.color ?? '#808080',
                       ).withOpacity(0.15),
                       border: Border.all(
                         color: _hexToColor(
-                          pedido.venta!.estadoLogistica!.color,
+                          pedido.venta!.estadoLogistica!.color ?? '#808080',
                         ),
                         width: 1.5,
                       ),
@@ -1993,7 +1993,7 @@ class _PedidoCard extends StatelessWidget {
                                 style: DefaultTextStyle.of(context).style
                                     .copyWith(
                                       color: _hexToColor(
-                                        pedido.venta!.estadoLogistica!.color,
+                                        pedido.venta!.estadoLogistica!.color ?? '#808080',
                                       ),
                                       fontWeight: FontWeight.w600,
                                     ),

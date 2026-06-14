@@ -11,11 +11,7 @@ class NuevoReporteScreen extends StatefulWidget {
   final int? ventaId;
   final Venta? ventaPredeterminada;
 
-  const NuevoReporteScreen({
-    super.key,
-    this.ventaId,
-    this.ventaPredeterminada,
-  });
+  const NuevoReporteScreen({super.key, this.ventaId, this.ventaPredeterminada});
 
   @override
   State<NuevoReporteScreen> createState() => _NuevoReporteScreenState();
@@ -81,16 +77,18 @@ class _NuevoReporteScreenState extends State<NuevoReporteScreen> {
         _observacionesController.text.length < 10) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-            content: Text(
-                'Las observaciones deben tener al menos 10 caracteres')),
+          content: Text('Las observaciones deben tener al menos 10 caracteres'),
+        ),
       );
       return;
     }
 
     setState(() => _isLoading = true);
 
-    final provider =
-        Provider.of<ReporteProductoDanadoProvider>(context, listen: false);
+    final provider = Provider.of<ReporteProductoDanadoProvider>(
+      context,
+      listen: false,
+    );
 
     // Crear reporte
     final exito = await provider.crearReporte(
@@ -119,8 +117,8 @@ class _NuevoReporteScreenState extends State<NuevoReporteScreen> {
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-            content: Text(
-                'Error al crear reporte: ${provider.errorMessage}')),
+          content: Text('Error al crear reporte: ${provider.errorMessage}'),
+        ),
       );
       setState(() => _isLoading = false);
     }
@@ -165,9 +163,9 @@ class _NuevoReporteScreenState extends State<NuevoReporteScreen> {
       children: [
         Text(
           'Venta relacionada *',
-          style: AppTextStyles.titleSmall(context).copyWith(
-            fontWeight: FontWeight.bold,
-          ),
+          style: AppTextStyles.titleSmall(
+            context,
+          ).copyWith(fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 12),
         Container(
@@ -220,11 +218,12 @@ class _NuevoReporteScreenState extends State<NuevoReporteScreen> {
                           children: [
                             Text(
                               'Venta #${_ventaSeleccionada!.numero}',
-                              style: AppTextStyles.bodyMedium(context)
-                                  .copyWith(fontWeight: FontWeight.bold),
+                              style: AppTextStyles.bodyMedium(
+                                context,
+                              ).copyWith(fontWeight: FontWeight.bold),
                             ),
                             Text(
-                              _ventaSeleccionada!.clienteNombre ?? 'Cliente',
+                              _ventaSeleccionada!.cliente?.nombre ?? 'Cliente',
                               style: AppTextStyles.bodySmall(context),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
@@ -232,10 +231,7 @@ class _NuevoReporteScreenState extends State<NuevoReporteScreen> {
                           ],
                         ),
                       ),
-                      Icon(
-                        Icons.check_circle,
-                        color: Colors.green,
-                      ),
+                      Icon(Icons.check_circle, color: Colors.green),
                     ],
                   ),
                 ),
@@ -251,9 +247,9 @@ class _NuevoReporteScreenState extends State<NuevoReporteScreen> {
       children: [
         Text(
           'Descripcion del defecto *',
-          style: AppTextStyles.titleSmall(context).copyWith(
-            fontWeight: FontWeight.bold,
-          ),
+          style: AppTextStyles.titleSmall(
+            context,
+          ).copyWith(fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 12),
         TextField(
@@ -263,12 +259,9 @@ class _NuevoReporteScreenState extends State<NuevoReporteScreen> {
           decoration: InputDecoration(
             hintText:
                 'Describe detalladamente el problema (minimo 10 caracteres)',
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
-            ),
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
             contentPadding: const EdgeInsets.all(12),
-            counterText:
-                '${_observacionesController.text.length} caracteres',
+            counterText: '${_observacionesController.text.length} caracteres',
           ),
           onChanged: (_) => setState(() {}),
         ),
@@ -276,9 +269,9 @@ class _NuevoReporteScreenState extends State<NuevoReporteScreen> {
         if (_observacionesController.text.length < 10)
           Text(
             'Minimo 10 caracteres requeridos',
-            style: AppTextStyles.labelSmall(context).copyWith(
-              color: Colors.red,
-            ),
+            style: AppTextStyles.labelSmall(
+              context,
+            ).copyWith(color: Colors.red),
           ),
       ],
     );
@@ -294,15 +287,14 @@ class _NuevoReporteScreenState extends State<NuevoReporteScreen> {
           children: [
             Text(
               'Fotos del defecto',
-              style: AppTextStyles.titleSmall(context).copyWith(
-                fontWeight: FontWeight.bold,
-              ),
+              style: AppTextStyles.titleSmall(
+                context,
+              ).copyWith(fontWeight: FontWeight.bold),
             ),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
               decoration: BoxDecoration(
-                color:
-                    Theme.of(context).colorScheme.primaryContainer,
+                color: Theme.of(context).colorScheme.primaryContainer,
                 borderRadius: BorderRadius.circular(4),
               ),
               child: Text(
@@ -329,8 +321,7 @@ class _NuevoReporteScreenState extends State<NuevoReporteScreen> {
             const SizedBox(width: 12),
             Expanded(
               child: OutlinedButton.icon(
-                onPressed: () =>
-                    _seleccionarImagen(ImageSource.gallery),
+                onPressed: () => _seleccionarImagen(ImageSource.gallery),
                 icon: const Icon(Icons.photo_library),
                 label: const Text('Galeria'),
               ),
@@ -403,10 +394,9 @@ class _NuevoReporteScreenState extends State<NuevoReporteScreen> {
                 style: BorderStyle.solid,
               ),
               borderRadius: BorderRadius.circular(8),
-              color: Theme.of(context)
-                  .colorScheme
-                  .primaryContainer
-                  .withOpacity(0.1),
+              color: Theme.of(
+                context,
+              ).colorScheme.primaryContainer.withOpacity(0.1),
             ),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -414,8 +404,7 @@ class _NuevoReporteScreenState extends State<NuevoReporteScreen> {
                 Icon(
                   Icons.image_not_supported,
                   size: 48,
-                  color:
-                      Theme.of(context).colorScheme.outlineVariant,
+                  color: Theme.of(context).colorScheme.outlineVariant,
                 ),
                 const SizedBox(height: 12),
                 Text(
@@ -478,9 +467,7 @@ class _NuevoReporteScreenState extends State<NuevoReporteScreen> {
 class _SelectorVentasDialog extends StatefulWidget {
   final Function(Venta) onVentaSeleccionada;
 
-  const _SelectorVentasDialog({
-    required this.onVentaSeleccionada,
-  });
+  const _SelectorVentasDialog({required this.onVentaSeleccionada});
 
   @override
   State<_SelectorVentasDialog> createState() => _SelectorVentasDialogState();
@@ -509,9 +496,9 @@ class _SelectorVentasDialogState extends State<_SelectorVentasDialog> {
       _ventasDisponibles = [];
       _ventasFiltradas = [];
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error al cargar ventas: $e')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Error al cargar ventas: $e')));
     } finally {
       setState(() => _isLoading = false);
     }
@@ -523,10 +510,14 @@ class _SelectorVentasDialogState extends State<_SelectorVentasDialog> {
         _ventasFiltradas = _ventasDisponibles;
       } else {
         _ventasFiltradas = _ventasDisponibles
-            .where((v) =>
-                v.numero.toLowerCase().contains(query.toLowerCase()) ||
-                (v.clienteNombre?.toLowerCase().contains(query.toLowerCase()) ??
-                    false))
+            .where(
+              (v) =>
+                  v.numero.toLowerCase().contains(query.toLowerCase()) ||
+                  (v.cliente?.nombre.toLowerCase().contains(
+                        query.toLowerCase(),
+                      ) ??
+                      false),
+            )
             .toList();
       }
     });
@@ -560,9 +551,7 @@ class _SelectorVentasDialogState extends State<_SelectorVentasDialog> {
             ),
             const SizedBox(height: 16),
             if (_isLoading)
-              const Expanded(
-                child: Center(child: CircularProgressIndicator()),
-              )
+              const Expanded(child: Center(child: CircularProgressIndicator()))
             else if (_ventasFiltradas.isEmpty)
               Expanded(
                 child: Center(
@@ -596,7 +585,7 @@ class _SelectorVentasDialogState extends State<_SelectorVentasDialog> {
                     final venta = _ventasFiltradas[index];
                     return ListTile(
                       title: Text('Venta #${venta.numero}'),
-                      subtitle: Text(venta.clienteNombre ?? 'Cliente'),
+                      subtitle: Text(venta.cliente?.nombre ?? 'Cliente'),
                       trailing: Text('\$${venta.total.toStringAsFixed(2)}'),
                       onTap: () {
                         widget.onVentaSeleccionada(venta);
