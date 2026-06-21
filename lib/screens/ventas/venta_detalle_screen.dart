@@ -101,11 +101,11 @@ class _VentaDetalleScreenState extends State<VentaDetalleScreen> {
                               padding: const EdgeInsets.all(12),
                               decoration: BoxDecoration(
                                 color: _getEstadoDocumentoColor(
-                                  venta.estadoDocumentoObj?.nombre,
+                                  venta.estadoDocumentoObj?.codigo,
                                 ).withValues(alpha: 0.1),
                                 border: Border.all(
                                   color: _getEstadoDocumentoColor(
-                                    venta.estadoDocumentoObj?.nombre,
+                                    venta.estadoDocumentoObj?.codigo,
                                   ),
                                   width: 1.5,
                                 ),
@@ -117,7 +117,7 @@ class _VentaDetalleScreenState extends State<VentaDetalleScreen> {
                                     Icons.check_circle_outline,
                                     size: 20,
                                     color: _getEstadoDocumentoColor(
-                                      venta.estadoDocumentoObj?.nombre,
+                                      venta.estadoDocumentoObj?.codigo,
                                     ),
                                   ),
                                   const SizedBox(width: 8),
@@ -134,12 +134,12 @@ class _VentaDetalleScreenState extends State<VentaDetalleScreen> {
                                           ),
                                         ),
                                         Text(
-                                          venta.estadoDocumentoObj?.nombre ??
+                                          venta.estadoDocumentoObj?.codigo ??
                                               'Desconocido',
                                           style: TextStyle(
                                             fontWeight: FontWeight.bold,
                                             color: _getEstadoDocumentoColor(
-                                              venta.estadoDocumentoObj?.nombre,
+                                              venta.estadoDocumentoObj?.codigo,
                                             ),
                                           ),
                                           overflow: TextOverflow.ellipsis,
@@ -261,13 +261,37 @@ class _VentaDetalleScreenState extends State<VentaDetalleScreen> {
                                   ),
                                 ),
                                 if (venta.tipoPago != null)
-                                  Chip(
-                                    label: Text(venta.tipoPago!.nombre),
-                                    avatar: const Icon(
-                                      Icons.payment,
-                                      size: 16,
-                                      color: Colors.lightGreen,
-                                    ),
+                                  Column(
+                                    children: [
+                                      Row(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.spaceBetween,
+                                        children: [
+                                          Text(
+                                            'Total:',
+                                            style: TextStyle(
+                                              color: Colors.green,
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
+                                          Text(
+                                            'Bs. ${venta.total.toStringAsFixed(2)}',
+                                            style: TextStyle(
+                                              fontWeight: FontWeight.bold,
+                                              color: Colors.green,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                      Chip(
+                                        label: Text(venta.tipoPago!.nombre),
+                                        avatar: const Icon(
+                                          Icons.payment,
+                                          size: 16,
+                                          color: Colors.lightGreen,
+                                        ),
+                                      ),
+                                    ],
                                   ),
                               ],
                             ),
@@ -297,10 +321,36 @@ class _VentaDetalleScreenState extends State<VentaDetalleScreen> {
                                           ),
                                         ),
                                         const SizedBox(height: 2),
+                                        if (venta
+                                                .direccionCliente
+                                                ?.observaciones !=
+                                            null)
+                                          Text(
+                                            venta
+                                                    .direccionCliente!
+                                                    .observaciones ??
+                                                'Sin dirección específica',
+                                            style: TextStyle(
+                                              fontWeight: FontWeight.w500,
+                                            ),
+                                            maxLines: 2,
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                        /*const SizedBox(height: 2),
+                                        Text(
+                                          venta.direccionCliente!.direccion,
+                                          style: TextStyle(
+                                            fontWeight: FontWeight.w500,
+                                          ),
+                                          maxLines: 2,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),*/
+                                        const SizedBox(height: 2),
                                         Text(
                                           venta
-                                                  .direccionCliente!
-                                                  .observaciones ??
+                                                  .direccionCliente
+                                                  ?.localidad
+                                                  ?.nombre ??
                                               'Sin dirección específica',
                                           style: TextStyle(
                                             fontWeight: FontWeight.w500,
@@ -475,63 +525,13 @@ class _VentaDetalleScreenState extends State<VentaDetalleScreen> {
                       ),
                     );
                   }),
-                // Resumen de pago
-                Card(
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 4,
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        if (venta.impuesto > 0) ...[
-                          const SizedBox(height: 8),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              const Text('Impuesto:'),
-                              Text('Bs. ${venta.impuesto.toStringAsFixed(2)}'),
-                            ],
-                          ),
-                        ],
-                        const SizedBox(height: 8),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            const Text('Descuento:'),
-                            Text('Bs. ${venta.descuento.toStringAsFixed(2)}'),
-                          ],
-                        ),
-                        const SizedBox(height: 12),
-                        const Divider(),
-                        const SizedBox(height: 12),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text(
-                              'Total:',
-                              style: TextStyle(fontWeight: FontWeight.bold),
-                            ),
-                            Text(
-                              'Bs. ${venta.total.toStringAsFixed(2)}',
-                              style: TextStyle(
-                                fontWeight: FontWeight.bold,
-                                color: Colors.green,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
                 const SizedBox(height: 24),
                 // Sección de entregas
                 if (venta.confirmaciones.isNotEmpty)
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
+                      const Divider(),
                       // ✅ NUEVO 2026-06-13: Header con título y botón "Registrar otra"
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -568,7 +568,6 @@ class _VentaDetalleScreenState extends State<VentaDetalleScreen> {
 
                         return Card(
                           margin: const EdgeInsets.only(bottom: 12),
-                          color: tipoEntregaColor.withValues(alpha: 0.1),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(8),
                             side: BorderSide(color: tipoEntregaColor, width: 2),
@@ -644,7 +643,13 @@ class _VentaDetalleScreenState extends State<VentaDetalleScreen> {
                                   ],
                                 ],
                                 // Desglose de pagos si existe
-                                if (confirmacion.desglosePageos.isNotEmpty) ...[
+                                if (confirmacion.tipoConfirmacion ==
+                                        'COMPLETA' ||
+                                    confirmacion.tipoConfirmacion ==
+                                            'DEVOLUCION_PARCIAL' &&
+                                        confirmacion
+                                            .desglosePageos
+                                            .isNotEmpty) ...[
                                   const Divider(height: 16),
                                   const Text(
                                     'Desglose de Pagos:',
@@ -761,7 +766,6 @@ class _VentaDetalleScreenState extends State<VentaDetalleScreen> {
                       const SizedBox(height: 24),
                     ],
                   ),
-
                 const SizedBox(height: 24),
               ],
             ),
@@ -980,7 +984,7 @@ class _VentaDetalleScreenState extends State<VentaDetalleScreen> {
     );
   }
 
-  /// ✅ NUEVO 2026-06-13: Registrar NUEVA confirmación
+  /// ✅ REFACTORIZADO 2026-06-14: Registrar NUEVA confirmación
   /// Si confirmacion != null, usa sus datos como referencia
   /// Si confirmacion == null, crea una nueva desde cero
   void _navegarARegistrarOtraConfirmacion(
@@ -988,7 +992,6 @@ class _VentaDetalleScreenState extends State<VentaDetalleScreen> {
     Venta venta, [
     EntregaVentaConfirmacion? confirmacion,
   ]) {
-    // Obtener entrega de la confirmación si existe, sino crear una mínima
     final entregaMinima = Entrega(
       id: confirmacion?.entregaId ?? venta.entregaId ?? 0,
       estado: 'ENTREGADA',
@@ -1005,24 +1008,13 @@ class _VentaDetalleScreenState extends State<VentaDetalleScreen> {
           entrega: entregaMinima,
           venta: venta,
           provider: entregaProvider,
-          isEditing: false, // Modo CREAR
-          tipoEntregaExistente: confirmacion?.tipoEntrega,
-          tipoNovedadExistente: confirmacion?.tipoNovedad,
-          fotosExistentes: confirmacion?.fotos ?? [],
-          observacionesExistentes: confirmacion?.observacionesLogistica ?? '',
-          tiendaAbiertaExistente: confirmacion?.tiendaAbierta,
-          clientePresenteExistente: confirmacion?.clientePresente,
-          motivoRechazoExistente: confirmacion?.motivoRechazo,
-          productosDevueltosExistentes:
-              (confirmacion?.productosDevueltos
-                  as List<Map<String, dynamic>>?) ??
-              [],
+          confirmacionExistente: confirmacion,
         ),
       ),
     );
   }
 
-  /// ✅ NUEVO 2026-06-13: EDITAR confirmación existente usando PUT /api/confirmaciones/{id}
+  /// ✅ REFACTORIZADO 2026-06-14: EDITAR confirmación existente pasando objeto completo
   void _navegarAEditarConfirmacion(
     BuildContext context,
     Venta venta,
@@ -1044,30 +1036,7 @@ class _VentaDetalleScreenState extends State<VentaDetalleScreen> {
           entrega: entregaMinima,
           venta: venta,
           provider: entregaProvider,
-          isEditing: true, // ✅ Modo EDITAR
-          confirmacionId:
-              confirmacion.id, // ✅ Pasar ID para PUT /confirmaciones/{id}
-          tipoEntregaExistente: confirmacion.tipoEntrega,
-          tipoNovedadExistente: confirmacion.tipoNovedad,
-          fotosExistentes: confirmacion.fotos ?? [],
-          observacionesExistentes: confirmacion.observacionesLogistica ?? '',
-          tiendaAbiertaExistente: confirmacion.tiendaAbierta,
-          clientePresenteExistente: confirmacion.clientePresente,
-          motivoRechazoExistente: confirmacion.motivoRechazo,
-          pagosExistentes: confirmacion.desglosePageos
-              .map(
-                (pago) => {
-                  'tipo_pago_id': pago.tipoPagoId,
-                  'tipo_pago_nombre': pago.tipoPagoNombre,
-                  'monto': pago.monto,
-                  'referencia': pago.referencia,
-                },
-              )
-              .toList(),
-          productosDevueltosExistentes:
-              (confirmacion.productosDevueltos
-                  as List<Map<String, dynamic>>?) ??
-              [],
+          confirmacionExistente: confirmacion, // ✅ Pasar objeto completo
         ),
       ),
     );

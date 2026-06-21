@@ -62,16 +62,9 @@ class _PrestamosAsignadosScreenState extends State<PrestamosAsignadosScreen>
       children: [
         // Tabs
         Container(
-          // color: isDark
-          //     ? Colors.grey.shade800
-          //     : Colors.grey.shade100, // ✅ Modo oscuro
           child: TabBar(
             controller: _tabController,
             labelColor: Theme.of(context).colorScheme.secondary,
-            // ✅ Color dinámico
-            unselectedLabelColor: isDark
-                ? Colors.grey.shade400
-                : Colors.grey.shade600,
             indicatorColor: Theme.of(context).colorScheme.secondary,
             tabs: const [
               Tab(text: 'Clientes', icon: Icon(Icons.person)),
@@ -136,12 +129,7 @@ class _PrestamosAsignadosScreenState extends State<PrestamosAsignadosScreen>
                   color: isDark ? Colors.grey.shade600 : Colors.grey.shade400,
                 ),
                 const SizedBox(height: 16),
-                Text(
-                  'No hay préstamos asignados',
-                  style: AppTextStyles.bodyMedium(context).copyWith(
-                    color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
-                  ),
-                ),
+                Text('No hay préstamos asignados'),
               ],
             ),
           );
@@ -190,12 +178,7 @@ class _PrestamosAsignadosScreenState extends State<PrestamosAsignadosScreen>
       elevation: 2,
       child: ListTile(
         leading: Icon(_getIconForType(tipo)), // ✅ CORREGIDO: Envolver en Icon()
-        title: Text(
-          nombre,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: AppTextStyles.labelLarge(context),
-        ),
+        title: Text(nombre, maxLines: 1, overflow: TextOverflow.ellipsis),
         subtitle: Text(subtitulo, maxLines: 1, overflow: TextOverflow.ellipsis),
         trailing: const Icon(Icons.arrow_forward_ios, size: 16),
         onTap: () {

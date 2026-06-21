@@ -51,15 +51,13 @@ class _HomeChoferScreenState extends State<HomeChoferScreen>
   /// ✅ NUEVO: Cargar estados logísticos (entrega, venta_logistica, proforma)
   /// Estos se cachean en el provider para uso en toda la app
   void _cargarEstadosLogisticos() {
-    context.read<EstadoLogisticoProvider>().obtenerTodosLosEstados().then(
-      (ok) {
-        if (ok) {
-          debugPrint('✅ [HOME_CHOFER] Todos los estados logísticos cacheados');
-        } else {
-          debugPrint('⚠️ [HOME_CHOFER] Error cacheando estados logísticos');
-        }
-      },
-    );
+    context.read<EstadoLogisticoProvider>().obtenerTodosLosEstados().then((ok) {
+      if (ok) {
+        debugPrint('✅ [HOME_CHOFER] Todos los estados logísticos cacheados');
+      } else {
+        debugPrint('⚠️ [HOME_CHOFER] Error cacheando estados logísticos');
+      }
+    });
   }
 
   void _cargarPrestamos() {
@@ -109,7 +107,7 @@ class _HomeChoferScreenState extends State<HomeChoferScreen>
 
   PreferredSizeWidget _buildAppBar() {
     return AppBar(
-      title: const Text('Bienvenido Chofer!'),
+      title: const Text('Bienvenido!'),
       elevation: 0,
       actions: [
         // Notificaciones

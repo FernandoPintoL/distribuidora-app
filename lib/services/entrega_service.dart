@@ -744,12 +744,15 @@ class EntregaService {
       debugPrint('🔹 [CONFIRMAR_CARGA] URL: /entregas/$entregaId/listo-para-entrega');
       debugPrint('🔹 [CONFIRMAR_CARGA] Método: POST');
       debugPrint('🔹 [CONFIRMAR_CARGA] Body: {}');
+      debugPrint('🔹 [CONFIRMAR_CARGA] ApiService inicializado: $_apiService');
 
+      debugPrint('🔹 [CONFIRMAR_CARGA] Realizando POST...');
       final response = await _apiService.post(
         '/entregas/$entregaId/listo-para-entrega',
         data: {},
       );
 
+      debugPrint('🔹 [CONFIRMAR_CARGA] POST completado exitosamente');
       debugPrint('🟢 [CONFIRMAR_CARGA] Respuesta recibida - Status: ${response.statusCode}');
 
       if (response.statusCode == 200 || response.statusCode == 201) {
@@ -770,10 +773,13 @@ class EntregaService {
         );
       }
     } on DioException catch (e) {
-      debugPrint('🔴 [CONFIRMAR_CARGA] DioException: ${e.type}');
+      debugPrint('🔴 [CONFIRMAR_CARGA] DioException lanzada');
+      debugPrint('🔴 [CONFIRMAR_CARGA] Type: ${e.type}');
       debugPrint('🔴 [CONFIRMAR_CARGA] Message: ${e.message}');
       debugPrint('🔴 [CONFIRMAR_CARGA] Status Code: ${e.response?.statusCode}');
-      debugPrint('🔴 [CONFIRMAR_CARGA] Response: ${e.response?.data}');
+      debugPrint('🔴 [CONFIRMAR_CARGA] Response Data: ${e.response?.data}');
+      debugPrint('🔴 [CONFIRMAR_CARGA] Error: ${e.error}');
+      debugPrint('🔴 [CONFIRMAR_CARGA] Stack: ${e.stackTrace}');
 
       final errorMessage = e.response?.data['message'] ??
                           e.message ??
@@ -783,8 +789,10 @@ class EntregaService {
         message: 'Error al confirmar carga: $errorMessage',
       );
     } catch (e) {
-      debugPrint('🔴 [CONFIRMAR_CARGA] Exception genérica: ${e.runtimeType}');
+      debugPrint('🔴 [CONFIRMAR_CARGA] Exception genérica lanzada');
+      debugPrint('🔴 [CONFIRMAR_CARGA] Tipo: ${e.runtimeType}');
       debugPrint('🔴 [CONFIRMAR_CARGA] Detalles: $e');
+      debugPrint('🔴 [CONFIRMAR_CARGA] Stack trace: ${StackTrace.current}');
       return ApiResponse(
         success: false,
         message: 'Error inesperado: ${e.toString()}',

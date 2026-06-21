@@ -45,8 +45,14 @@ class HttpLogger {
         bodyDisplay = options.data;
       } else if (options.data is Map) {
         bodyDisplay = _prettyPrintJson(options.data);
-        // ✅ NUEVO: Destacar campos importantes
-        _highlightDeliveryFields(options.data as Map<String, dynamic>);
+        // ✅ NUEVO 2026-06-14: Destacar campos importantes (con validación segura)
+        try {
+          if (options.data is Map<String, dynamic>) {
+            _highlightDeliveryFields(options.data as Map<String, dynamic>);
+          }
+        } catch (e) {
+          debugPrint('⚠️ Error al destacar campos: $e');
+        }
       } else if (options.data is List) {
         bodyDisplay = _prettyPrintJson(options.data);
       } else {

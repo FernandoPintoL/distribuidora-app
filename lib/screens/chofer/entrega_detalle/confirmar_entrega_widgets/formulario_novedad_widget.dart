@@ -8,6 +8,8 @@ class FormularioNovedadWidget extends StatelessWidget {
   final BuildContext screenContext;
   final bool isDarkMode;
   final String? tipoNovedad;
+  final String?
+  tipoConfirmacion; // ✅ NUEVO 2026-06-14: Para verificar ambos campos
   final List<Map<String, String>> tiposNovedad;
   final Venta venta;
   final TextEditingController observacionesController;
@@ -25,6 +27,7 @@ class FormularioNovedadWidget extends StatelessWidget {
     required this.screenContext,
     required this.isDarkMode,
     required this.tipoNovedad,
+    this.tipoConfirmacion,
     required this.tiposNovedad,
     required this.venta,
     required this.observacionesController,
@@ -47,7 +50,7 @@ class FormularioNovedadWidget extends StatelessWidget {
         Expanded(
           child: SingleChildScrollView(
             child: Padding(
-              padding: const EdgeInsets.all(20),
+              padding: const EdgeInsets.symmetric(horizontal: 12),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -58,18 +61,13 @@ class FormularioNovedadWidget extends StatelessWidget {
                   ),
                   const SizedBox(height: 12),
                   ..._buildTiposNovedadOptions(context),
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 8),
                   // Mostrar tabla y resumen SOLO si NO es novedad simple
                   if (!esNovedadSimple) ...[
-                    if (tipoNovedad == 'DEVOLUCION_PARCIAL')
-                      Column(
-                        children: [
-                          buildTablaProductosRechazados(context, isDarkMode),
-                        ],
-                      ),
                     // ✅ Widget consolidado de pagos y resumen
+                    buildTablaProductosRechazados(context, isDarkMode),
                     registroPagosWidget,
-                    const SizedBox(height: 24),
+                    const SizedBox(height: 8),
                   ],
                   // Campo de Observaciones
                   Text(
@@ -201,7 +199,9 @@ class FormularioNovedadWidget extends StatelessWidget {
 
   List<Widget> _buildTiposNovedadOptions(BuildContext context) {
     return tiposNovedad.map((tipo) {
-      final isSelected = tipoNovedad == tipo['value'];
+      // ✅ NUEVO 2026-06-14: Verificar ambos campos (tipoNovedad y tipoConfirmacion)
+      final isSelected =
+          tipoNovedad == tipo['value'] || tipoConfirmacion == tipo['value'];
       return Padding(
         padding: const EdgeInsets.only(bottom: 8),
         child: Material(
@@ -236,7 +236,7 @@ class FormularioNovedadWidget extends StatelessWidget {
                 children: [
                   Radio<String>(
                     value: tipo['value']!,
-                    groupValue: tipoNovedad,
+                    groupValue: tipoNovedad ?? tipoConfirmacion,
                     onChanged: (value) {
                       if (value != null) {
                         onTipoNovedadChanged(value);

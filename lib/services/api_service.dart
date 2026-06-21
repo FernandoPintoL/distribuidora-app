@@ -9,6 +9,7 @@ class ApiService {
   static const String tokenKey = 'auth_token';
 
   late Dio _dio;
+  bool _isInitialized = false;
   String? _token;
 
   String get baseUrl {
@@ -34,6 +35,11 @@ class ApiService {
   }
 
   void _initializeDio() {
+    // ✅ FIX 2026-06-14: Solo inicializar una vez para evitar interceptores duplicados
+    if (_isInitialized) {
+      return; // Ya está inicializado
+    }
+
     _dio = Dio(
       BaseOptions(
         baseUrl: baseUrl,
@@ -50,7 +56,10 @@ class ApiService {
       ),
     );
 
-    _dio.interceptors.addAll([_authInterceptor(), _loggingInterceptor()]);
+    _dio.interceptors.add(_authInterceptor());
+    // ✅ 2026-06-14: Logging restaurado con mejor manejo de errores
+    _dio.interceptors.add(_loggingInterceptor());
+    _isInitialized = true;
   }
 
   bool _isRefreshing = false;

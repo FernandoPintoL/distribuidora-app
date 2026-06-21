@@ -14,7 +14,8 @@ import 'package:flutter/material.dart';
 ///   title: 'Mi Pantalla',
 /// )
 /// ```
-class CustomGradientAppBar extends StatelessWidget implements PreferredSizeWidget {
+class CustomGradientAppBar extends StatelessWidget
+    implements PreferredSizeWidget {
   /// Título de texto (alternativa a titleWidget)
   final String? title;
 
@@ -36,6 +37,9 @@ class CustomGradientAppBar extends StatelessWidget implements PreferredSizeWidge
   /// Widget personalizado en la parte inferior del AppBar (ej: TabBar)
   final PreferredSizeWidget? bottom;
 
+  /// ✅ NUEVO 2026-06-15: Color de fondo personalizado (hex string o Color)
+  final Color? backgroundColor;
+
   const CustomGradientAppBar({
     super.key,
     this.title,
@@ -45,19 +49,22 @@ class CustomGradientAppBar extends StatelessWidget implements PreferredSizeWidge
     this.elevation = 0,
     this.centerTitle = false,
     this.bottom,
-  })  : assert(
-          title != null || titleWidget != null,
-          'Either title or titleWidget must be provided',
-        );
+    this.backgroundColor,
+  }) : assert(
+         title != null || titleWidget != null,
+         'Either title or titleWidget must be provided',
+       );
 
   @override
   Widget build(BuildContext context) {
+    // ✅ NUEVO 2026-06-15: Usar color personalizado o fallback a deepOrange
+    final bgColor = backgroundColor ?? Theme.of(context).primaryColor;
+
     return AppBar(
-      title: titleWidget ??
-          Text(
-            title!,
-            style: const TextStyle(fontWeight: FontWeight.bold),
-          ),
+      backgroundColor: bgColor,
+      title:
+          titleWidget ??
+          Text(title!, style: const TextStyle(fontWeight: FontWeight.bold)),
       elevation: elevation,
       centerTitle: centerTitle,
       leading: leading,
@@ -67,7 +74,6 @@ class CustomGradientAppBar extends StatelessWidget implements PreferredSizeWidge
   }
 
   @override
-  Size get preferredSize => Size.fromHeight(
-        kToolbarHeight + (bottom?.preferredSize.height ?? 0),
-      );
+  Size get preferredSize =>
+      Size.fromHeight(kToolbarHeight + (bottom?.preferredSize.height ?? 0));
 }

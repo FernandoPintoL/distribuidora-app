@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../../models/entrega.dart';
-import '../../../../models/venta.dart';  // ✅ NUEVO: Para parsear ventas JSON
+import '../../../../models/venta.dart'; // ✅ NUEVO: Para parsear ventas JSON
 import '../../../../models/api_response.dart';
 import '../../../../providers/entrega_provider.dart';
 import '../../../../utils/phone_utils.dart';
@@ -36,8 +36,9 @@ class _TabVentasWidgetState extends State<TabVentasWidget> {
   }
 
   void _cargarVentasResumidas() {
-    _futureVentasResumidas =
-        widget.provider.obtenerVentasResumidas(widget.entrega.id);
+    _futureVentasResumidas = widget.provider.obtenerVentasResumidas(
+      widget.entrega.id,
+    );
   }
 
   @override
@@ -54,9 +55,7 @@ class _TabVentasWidgetState extends State<TabVentasWidget> {
         future: _futureVentasResumidas,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(
-              child: CircularProgressIndicator(),
-            );
+            return const Center(child: CircularProgressIndicator());
           }
 
           if (!snapshot.hasData || !snapshot.data!.success) {
@@ -64,11 +63,7 @@ class _TabVentasWidgetState extends State<TabVentasWidget> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(
-                    Icons.error_outline,
-                    size: 48,
-                    color: Colors.red[400],
-                  ),
+                  Icon(Icons.error_outline, size: 48, color: Colors.red[400]),
                   const SizedBox(height: 16),
                   Text(
                     'Error: ${snapshot.data?.message ?? 'No se pudieron cargar las ventas'}',
@@ -87,17 +82,17 @@ class _TabVentasWidgetState extends State<TabVentasWidget> {
 
           final ventasData = snapshot.data!.data!;
           final ventasJson = ventasData['ventas'] as List? ?? [];
-          final resumenTotal = ventasData['resumen_total'] as Map<String, dynamic>? ?? {};
+          final resumenTotal =
+              ventasData['resumen_total'] as Map<String, dynamic>? ?? {};
 
           // ✅ NUEVO 2026-06-14: Agregar entrega_id a cada venta antes de parsearla
-          final ventasParseadas = ventasJson
-              .cast<Map<String, dynamic>>()
-              .map((v) {
-                // Inyectar el ID de la entrega actual en cada venta
-                v['entrega_id'] = widget.entrega.id;
-                return Venta.fromJson(v);
-              })
-              .toList();
+          final ventasParseadas = ventasJson.cast<Map<String, dynamic>>().map((
+            v,
+          ) {
+            // Inyectar el ID de la entrega actual en cada venta
+            v['entrega_id'] = widget.entrega.id;
+            return Venta.fromJson(v);
+          }).toList();
 
           if (ventasParseadas.isEmpty) {
             return Center(
@@ -119,18 +114,21 @@ class _TabVentasWidgetState extends State<TabVentasWidget> {
           return ListView(
             padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
             children: [
+              if (widget.entrega.estado == 'EN_TRANSITO' ||
+                  widget.entrega.estado == 'ENTREGADO')
+                // ✅ RESUMEN TOTAL FINANCIERO (al final)
+                _buildResumenTotal(resumenTotal, isDarkMode),
               VentasAsignadasCard(
-                key: ValueKey('ventas_${widget.entrega.id}_${ventasParseadas.length}'),
+                key: ValueKey(
+                  'ventas_${widget.entrega.id}_${ventasParseadas.length}',
+                ),
                 entrega: _crearEntregaConVentas(ventasParseadas),
                 provider: widget.provider,
-                onLlamarCliente: (tel) => PhoneUtils.llamarCliente(widget.context, tel),
-                onEnviarWhatsApp: (tel) => PhoneUtils.enviarWhatsApp(widget.context, tel),
+                onLlamarCliente: (tel) =>
+                    PhoneUtils.llamarCliente(widget.context, tel),
+                onEnviarWhatsApp: (tel) =>
+                    PhoneUtils.enviarWhatsApp(widget.context, tel),
               ),
-              const SizedBox(height: 24),
-
-              // ✅ RESUMEN TOTAL FINANCIERO (al final)
-              _buildResumenTotal(resumenTotal, isDarkMode),
-              const SizedBox(height: 16),
             ],
           );
         },
@@ -138,17 +136,15 @@ class _TabVentasWidgetState extends State<TabVentasWidget> {
     );
   }
 
-  /// ✅ NUEVO: Construir resumen total de pagos
-  Widget _buildResumenTotal(
-    Map<String, dynamic> resumen,
-    bool isDarkMode,
-  ) {
+  /// ✅ NUEVO 2026-06-15: Resumen total de pagos (simplificado)
+  Widget _buildResumenTotal(Map<String, dynamic> resumen, bool isDarkMode) {
     return Card(
-      elevation: 2,
+      elevation: 1,
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(12),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Row(
               children: [
@@ -156,93 +152,41 @@ class _TabVentasWidgetState extends State<TabVentasWidget> {
                   Icons.assessment,
                   color: isDarkMode ? Colors.amber[400] : Colors.amber[700],
                 ),
-                const SizedBox(width: 12),
                 Text(
                   'Resumen Total',
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
                 ),
               ],
             ),
-            const SizedBox(height: 16),
-
-            // Grid 2x2: Totales principales
-            GridView.count(
-              crossAxisCount: 2,
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              mainAxisSpacing: 12,
-              crossAxisSpacing: 12,
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
               children: [
-                _buildResumenItem(
-                  label: 'Total Efectivo',
-                  valor: '\$${(resumen['efectivo_registrado'] as num?)?.toStringAsFixed(2) ?? '0.00'}',
-                  icono: Icons.money,
+                _buildResumenItemCompacto(
+                  label: 'Efectivo',
+                  valor:
+                      '\$${(resumen['efectivo_registrado'] as num?)?.toStringAsFixed(2) ?? '0.00'}',
                   color: Colors.green,
                 ),
-                _buildResumenItem(
-                  label: 'Total QR',
-                  valor: '\$${(resumen['qr_registrado'] as num?)?.toStringAsFixed(2) ?? '0.00'}',
-                  icono: Icons.qr_code_2,
+                _buildResumenItemCompacto(
+                  label: 'QR',
+                  valor:
+                      '\$${(resumen['qr_registrado'] as num?)?.toStringAsFixed(2) ?? '0.00'}',
                   color: Colors.blue,
                 ),
-                _buildResumenItem(
+                _buildResumenItemCompacto(
                   label: 'Pendiente',
-                  valor: '\$${(resumen['total_pendiente'] as num?)?.toStringAsFixed(2) ?? '0.00'}',
-                  icono: Icons.hourglass_empty,
+                  valor:
+                      '\$${(resumen['total_pendiente'] as num?)?.toStringAsFixed(2) ?? '0.00'}',
                   color: Colors.orange,
                 ),
-                _buildResumenItem(
+                _buildResumenItemCompacto(
                   label: 'Rechazadas',
-                  valor: '\$${(resumen['total_rechazado'] as num?)?.toStringAsFixed(2) ?? '0.00'}',
-                  icono: Icons.cancel,
+                  valor:
+                      '\$${(resumen['total_rechazado'] as num?)?.toStringAsFixed(2) ?? '0.00'}',
                   color: Colors.red,
-                ),
-              ],
-            ),
-
-            const SizedBox(height: 16),
-            const Divider(),
-            const SizedBox(height: 8),
-
-            // Monto total y porcentaje
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Monto Total',
-                      style: Theme.of(context).textTheme.bodySmall,
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      '\$${(resumen['monto_total'] as num?)?.toStringAsFixed(2) ?? '0.00'}',
-                      style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: Colors.green[400],
-                      ),
-                    ),
-                  ],
-                ),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    Text(
-                      'Completado',
-                      style: Theme.of(context).textTheme.bodySmall,
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      '${(resumen['porcentaje_completado'] as num?)?.toStringAsFixed(1) ?? '0'}%',
-                      style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: Colors.blue[400],
-                      ),
-                    ),
-                  ],
                 ),
               ],
             ),
@@ -252,40 +196,35 @@ class _TabVentasWidgetState extends State<TabVentasWidget> {
     );
   }
 
-  /// ✅ Item pequeño de resumen
-  Widget _buildResumenItem({
+  /// ✅ NUEVO 2026-06-15: Item compacto de resumen
+  Widget _buildResumenItemCompacto({
     required String label,
     required String valor,
-    required IconData icono,
     required Color color,
   }) {
     return Container(
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: color.withValues(alpha: 0.3)),
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(color: color.withValues(alpha: 0.3), width: 0.5),
       ),
       child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        crossAxisAlignment: CrossAxisAlignment.center,
+        mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icono, color: color, size: 24),
-          const SizedBox(height: 8),
           Text(
             label,
             style: TextStyle(
-              fontSize: 12,
+              fontSize: 11,
               color: color,
               fontWeight: FontWeight.w500,
             ),
-            textAlign: TextAlign.center,
           ),
-          const SizedBox(height: 4),
+          const SizedBox(height: 2),
           Text(
             valor,
             style: TextStyle(
-              fontSize: 14,
+              fontSize: 13,
               fontWeight: FontWeight.bold,
               color: color,
             ),

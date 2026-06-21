@@ -87,20 +87,24 @@ class _EntregaCardState extends State<EntregaCard> {
                     ],
                   ),
                 ),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 4,
-                  ),
-                  decoration: BoxDecoration(
-                    color: Colors.white24,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Text(
-                    entrega.estadoLabel,
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
+                Flexible(
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 6,
+                      vertical: 3,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.white24,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Text(
+                      entrega.estadoLabel,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 12,
+                      ),
                     ),
                   ),
                 ),
@@ -128,21 +132,29 @@ class _EntregaCardState extends State<EntregaCard> {
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Row(
-                          children: [
-                            Icon(Icons.local_shipping, size: 20),
-                            const SizedBox(width: 8),
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  '📦 Productos a Entregar',
-                                  style: TextStyle(fontWeight: FontWeight.w600),
+                        Expanded(
+                          child: Row(
+                            children: [
+                              Icon(Icons.local_shipping, size: 20),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      '📦 Productos a Entregar',
+                                      style: TextStyle(fontWeight: FontWeight.w600),
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                    Text(
+                                      'Ver resumen consolidado',
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ],
                                 ),
-                                Text('Ver resumen consolidado'),
-                              ],
-                            ),
-                          ],
+                              ),
+                            ],
+                          ),
                         ),
                         Icon(
                           _productosExpandidos
@@ -190,24 +202,30 @@ class _EntregaCardState extends State<EntregaCard> {
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Row(
-                          children: [
-                            Icon(Icons.receipt_long, size: 20),
-                            const SizedBox(width: 8),
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  '📦 ${entrega.ventas.length} venta${entrega.ventas.length > 1 ? 's' : ''} asignada${entrega.ventas.length > 1 ? 's' : ''}',
-                                  style: TextStyle(fontWeight: FontWeight.w600),
+                        Expanded(
+                          child: Row(
+                            children: [
+                              Icon(Icons.receipt_long, size: 20),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      '📦 ${entrega.ventas.length} venta${entrega.ventas.length > 1 ? 's' : ''} asignada${entrega.ventas.length > 1 ? 's' : ''}',
+                                      style: TextStyle(fontWeight: FontWeight.w600),
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                    if (entrega.ventas.isNotEmpty)
+                                      Text(
+                                        'Total: BS ${entrega.ventas.fold<double>(0, (sum, v) => sum + v.subtotal).toStringAsFixed(2)}',
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                  ],
                                 ),
-                                if (entrega.ventas.isNotEmpty)
-                                  Text(
-                                    'Total: BS ${entrega.ventas.fold<double>(0, (sum, v) => sum + v.subtotal).toStringAsFixed(2)}',
-                                  ),
-                              ],
-                            ),
-                          ],
+                              ),
+                            ],
+                          ),
                         ),
                         Icon(
                           _ventasExpandidas

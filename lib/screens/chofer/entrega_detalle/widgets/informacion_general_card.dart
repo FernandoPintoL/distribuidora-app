@@ -33,16 +33,23 @@ class _InformacionGeneralCardState extends State<InformacionGeneralCard> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Row(
-                  children: [
-                    Icon(
-                      Icons.info_outline,
-                      size: 18,
-                      color: colorScheme.primary,
-                    ),
-                    const SizedBox(width: 8),
-                    Text('Detalles de Entrega'),
-                  ],
+                Expanded(
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.info_outline,
+                        size: 18,
+                        color: colorScheme.primary,
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          'Detalles de Entrega',
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
                 if (widget.entrega.observaciones != null &&
                     widget.entrega.observaciones!.isNotEmpty)

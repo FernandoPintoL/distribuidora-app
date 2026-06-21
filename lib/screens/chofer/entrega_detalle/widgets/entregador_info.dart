@@ -29,7 +29,9 @@ class EntregadorInfo extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: isDarkMode ? Colors.blue[900]!.withValues(alpha: 0.2) : Colors.blue[50],
+        color: isDarkMode
+            ? Colors.blue[900]!.withValues(alpha: 0.2)
+            : Colors.blue[50],
         border: Border.all(
           color: isDarkMode ? Colors.blue[700]! : Colors.blue[200]!,
         ),
@@ -37,11 +39,7 @@ class EntregadorInfo extends StatelessWidget {
       ),
       child: Row(
         children: [
-          Icon(
-            Icons.person,
-            color: Colors.blue,
-            size: 20,
-          ),
+          Icon(Icons.person, color: Colors.blue, size: 20),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
@@ -49,18 +47,10 @@ class EntregadorInfo extends StatelessWidget {
               children: [
                 Text(
                   'Entregador',
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: isDarkMode ? Colors.grey[400] : Colors.grey[600],
-                        fontWeight: FontWeight.w500,
-                      ),
+                  style: TextStyle(fontWeight: FontWeight.w500),
                 ),
                 const SizedBox(height: 4),
-                Text(
-                  nombre,
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        fontWeight: FontWeight.w600,
-                      ),
-                ),
+                Text(nombre, style: TextStyle(fontWeight: FontWeight.w600)),
               ],
             ),
           ),

@@ -7,6 +7,7 @@ import 'package:flutter/services.dart'; // ✅ Necesario para FilteringTextInput
 import '../../../config/app_text_styles.dart';
 import '../../../models/entrega.dart';
 import '../../../models/venta.dart';
+import '../../../models/entrega_venta_confirmacion.dart';
 import '../../../providers/entrega_provider.dart';
 import '../../../services/image_compression_service.dart'; // ✅ NUEVO: Para comprimir imágenes
 import '../../../services/entrega_service.dart'; // ✅ NUEVO: Para obtener tipos de pago
@@ -25,48 +26,16 @@ class ConfirmarEntregaVentaScreen extends StatefulWidget {
   final Venta venta;
   final EntregaProvider provider;
 
-  // ✅ NUEVO 2026-02-21: Parámetros para modo edición
-  final bool isEditing;
-  final int? confirmacionId;  // ✅ NUEVO 2026-06-13: ID de confirmación para usar PUT /confirmaciones/{id}
-  final String? tipoEntregaExistente;
-  final String? tipoNovedadExistente;
-
-  // ✅ NUEVO 2026-03-05: Información del cliente y tipo de pago desde resumen
-  final Map<String, dynamic>? cliente;
-  final Map<String, dynamic>? tipoPago;
-
-  // ✅ NUEVO 2026-03-05: Información previa de fotos, observaciones y pagos para edición
-  final List<String> fotosExistentes;
-  final String observacionesExistentes;
-  final List<Map<String, dynamic>> pagosExistentes;
-
-  // ✅ NUEVA 2026-03-05: Campos de novedad existentes
-  final bool? tiendaAbiertaExistente;
-  final bool? clientePresenteExistente;
-  final String? motivoRechazoExistente;
-
-  // ✅ NUEVO 2026-03-05: Productos devueltos existentes en modo edición
-  final List<Map<String, dynamic>> productosDevueltosExistentes;
+  // ✅ REFACTORIZADO 2026-06-14: Usar objeto completo en lugar de parámetros individuales
+  final EntregaVentaConfirmacion? confirmacionExistente;
 
   const ConfirmarEntregaVentaScreen({
-    Key? key,
+    super.key,
     required this.entrega,
     required this.venta,
     required this.provider,
-    this.isEditing = false,
-    this.confirmacionId,  // ✅ NUEVO: ID de confirmación para editar
-    this.tipoEntregaExistente,
-    this.tipoNovedadExistente,
-    this.cliente,
-    this.tipoPago,
-    this.fotosExistentes = const [],
-    this.observacionesExistentes = '',
-    this.tiendaAbiertaExistente,
-    this.clientePresenteExistente,
-    this.motivoRechazoExistente,
-    this.productosDevueltosExistentes = const [],
-    this.pagosExistentes = const [],
-  }) : super(key: key);
+    this.confirmacionExistente,
+  });
 
   @override
   State<ConfirmarEntregaVentaScreen> createState() =>
@@ -152,104 +121,73 @@ class _ConfirmarEntregaVentaScreenState
     _montoEfectivoController.addListener(() => setState(() {}));
     _montoTransferenciaController.addListener(() => setState(() {}));
 
-    // ✅ DEBUG: Verificar que cliente y tipoPago llegan correctamente
-    debugPrint('👤 [CLIENTE DATA] cliente: ${widget.cliente}');
-    debugPrint('💳 [TIPO PAGO DATA] tipoPago: ${widget.tipoPago}');
+    // ✅ REFACTORIZADO 2026-06-14: Usar datos del objeto confirmacionExistente
+    if (widget.confirmacionExistente != null) {
+      final confirmacion = widget.confirmacionExistente!;
 
-    // ✅ NUEVO 2026-03-05: Detectar si es crédito desde widget.tipoPago o widget.venta.estadoPago
-    final esCredito =
-        (widget.tipoPago?['codigo']?.toString().toUpperCase().contains(
-              'CREDITO',
-            ) ??
-            false) ||
-        widget.venta.estadoPago == 'CREDITO';
+      _tipoEntrega = confirmacion.tipoEntrega;
 
-    if (esCredito) {
-      _esCredito = true;
-      debugPrint(
-        '💳 [VENTA CRÉDITO] Venta #${widget.venta.numero} es a crédito - no mostrar sección pagos',
-      );
-    }
+      // ✅ NUEVO 2026-06-14: Usar tipoNovedad si existe, sino usar tipoConfirmacion
+      _tipoNovedad = confirmacion.tipoNovedad ?? (confirmacion.tipoConfirmacion == 'COMPLETA' ? null : confirmacion.tipoConfirmacion);
+      _tipoConfirmacion = confirmacion.tipoConfirmacion;
 
-    // ✅ NUEVO 2026-02-21: Si está en modo edición, cargar datos existentes
-    if (widget.isEditing && widget.tipoEntregaExistente != null) {
-      _tipoEntrega = widget.tipoEntregaExistente!;
-      _tipoNovedad = widget.tipoNovedadExistente;
-      // ✅ FIX 2026-03-05: Si hay novedad existente, tipo_confirmacion debe ser CON_NOVEDAD
-      if (_tipoNovedad != null) {
-        _tipoConfirmacion = 'CON_NOVEDAD';
-      } else {
-        _tipoConfirmacion = 'COMPLETA';
-      }
-
-      // ✅ NUEVA 2026-03-05: Sin Paso 1/2, mostrar directo el formulario seleccionable
-
-      // ✅ NUEVO 2026-03-05: Cargar productos devueltos existentes para DEVOLUCION_PARCIAL
-      if (_tipoNovedad == 'DEVOLUCION_PARCIAL' &&
-          widget.productosDevueltosExistentes.isNotEmpty) {
-        _productosRechazados = widget.productosDevueltosExistentes
-            .map(
-              (prod) => tabla_widget.ProductoRechazado(
-                detalleVentaId:
-                    prod['detalle_venta_id'] as int? ??
-                    (prod['id'] as int?) ??
-                    0,
-                productoId: prod['producto_id'] as int?,
-                nombreProducto:
-                    prod['producto_nombre'] as String? ?? 'Desconocido',
-                cantidadOriginal:
-                    (prod['cantidad_original'] as num?)?.toDouble() ?? 0,
-                cantidadRechazada: (prod['cantidad'] as num?)?.toDouble() ?? 0,
-                precioUnitario:
-                    (prod['precio_unitario'] as num?)?.toDouble() ?? 0,
-                subtotalOriginal: (prod['subtotal'] as num?)?.toDouble() ?? 0,
-              ),
-            )
-            .toList();
+      // ✅ Cargar fotos existentes
+      if (confirmacion.fotos != null && confirmacion.fotos!.isNotEmpty) {
+        _fotosCapturadas = List<dynamic>.from(confirmacion.fotos!);
         debugPrint(
-          '✅ Cargados ${_productosRechazados.length} productos devueltos existentes',
-        );
-      }
-      debugPrint(
-        '📝 [EDITAR ENTREGA] Cargando datos existentes: tipo=$_tipoEntrega, novedad=$_tipoNovedad, confirmacion=$_tipoConfirmacion',
-      );
-
-      // ✅ NUEVO 2026-03-05: Cargar fotos existentes (URLs/base64 de API)
-      if (widget.fotosExistentes.isNotEmpty) {
-        _fotosCapturadas = List<dynamic>.from(widget.fotosExistentes);
-        debugPrint(
-          '📸 [FOTOS CARGADAS] ${_fotosCapturadas.length} fotos existentes cargadas (URLs/base64)',
+          '📸 [FOTOS CARGADAS] ${_fotosCapturadas.length} fotos existentes',
         );
       }
 
-      // ✅ NUEVO 2026-03-05: Cargar observaciones existentes
-      if (widget.observacionesExistentes.isNotEmpty) {
-        _observacionesController.text = widget.observacionesExistentes;
+      // ✅ Cargar observaciones existentes
+      if (confirmacion.observacionesLogistica != null &&
+          confirmacion.observacionesLogistica!.isNotEmpty) {
+        _observacionesController.text = confirmacion.observacionesLogistica!;
+      }
+
+      // ✅ Cargar campos de novedad existentes
+      _tiendaAbierta = confirmacion.tiendaAbierta ?? false;
+      _clientePresente = confirmacion.clientePresente ?? false;
+      _motivoRechazo = confirmacion.motivoRechazo;
+
+      // ✅ NUEVO 2026-06-14: Cargar pagos existentes en los controllers
+      if (confirmacion.desglosePageos.isNotEmpty) {
+        for (final desglose in confirmacion.desglosePageos) {
+          // Agregar a la lista de pagos existentes
+          _pagos.add(
+            PagoEntrega(
+              tipoPagoId: desglose.tipoPagoId,
+              monto: desglose.monto,
+              referencia: desglose.referencia,
+            ),
+          );
+
+          // Cargar en los controllers si es EFECTIVO o TRANSFERENCIA
+          if (desglose.tipoPagoNombre.toUpperCase().contains('EFECTIVO')) {
+            _montoEfectivoController.text = desglose.monto.toString();
+          } else if (desglose.tipoPagoNombre.toUpperCase().contains(
+                'Tranferencia / QR',
+              ) ||
+              desglose.tipoPagoNombre.toUpperCase().contains('QR')) {
+            _montoTransferenciaController.text = desglose.monto.toString();
+          }
+        }
         debugPrint(
-          '📝 [OBSERVACIONES CARGADAS] Observaciones existentes cargadas',
+          '💳 [PAGOS CARGADOS] ${confirmacion.desglosePageos.length} desgloses de pago cargados',
         );
       }
 
-      // ✅ NUEVA 2026-03-05: Cargar campos de novedad existentes
-      if (widget.tiendaAbiertaExistente != null) {
-        _tiendaAbierta = widget.tiendaAbiertaExistente!;
-      }
-      if (widget.clientePresenteExistente != null) {
-        _clientePresente = widget.clientePresenteExistente!;
-      }
-      if (widget.motivoRechazoExistente != null) {
-        _motivoRechazo = widget.motivoRechazoExistente;
-      }
       debugPrint(
-        '⚠️ [CAMPOS NOVEDAD CARGADOS] tienda_abierta=$_tiendaAbierta, cliente_presente=$_clientePresente, motivo_rechazo=$_motivoRechazo',
+        '📝 [EDITAR CONFIRMACIÓN] ID: ${confirmacion.id} | tipo=$_tipoEntrega | novedad=$_tipoNovedad | confirmacion=$_tipoConfirmacion',
       );
-
-      // ✅ FIX 2026-03-05: NO cargar pagosExistentes en _pagos
-      // _pagos debe contener SOLO pagos NUEVOS que el usuario agrega
-      // Los pagos existentes se mantienen en el backend automáticamente
-      debugPrint(
-        '💳 [PAGOS MODO EDICIÓN] No se cargan pagos existentes - _pagos inicia vacío para nuevos pagos',
-      );
+    } else {
+      // ✅ Detectar si es crédito desde venta.estadoPago
+      if (widget.venta.estadoPago == 'CREDITO') {
+        _esCredito = true;
+        debugPrint(
+          '💳 [VENTA CRÉDITO] Venta #${widget.venta.numero} es a crédito - no mostrar sección pagos',
+        );
+      }
     }
   }
 
@@ -528,9 +466,7 @@ class _ConfirmarEntregaVentaScreenState
       );
     }
 
-    debugPrint(
-      '✅ Pagos construidos automáticamente: ${_pagos.length} pagos',
-    );
+    debugPrint('✅ Pagos construidos automáticamente: ${_pagos.length} pagos');
   }
 
   /// ✅ MODIFICADO 2026-06-14: Validar incluyendo inputs de Efectivo/QR
@@ -863,7 +799,7 @@ class _ConfirmarEntregaVentaScreenState
       // tipo_confirmacion debe ser: COMPLETA | CLIENTE_CERRADO | DEVOLUCION_PARCIAL | RECHAZADO
       final tipoConfirmacionFinal = _tipoEntrega == 'COMPLETA'
           ? 'COMPLETA'
-          : _tipoNovedad;  // ✅ FIX: Enviar el tipo específico de novedad, no 'CON_NOVEDAD'
+          : _tipoNovedad; // ✅ FIX: Enviar el tipo específico de novedad, no 'CON_NOVEDAD'
 
       String? tipoNovedadFinal = _tipoNovedad;
       bool? tiendaAbiertaFinal = _tiendaAbierta;
@@ -881,13 +817,13 @@ class _ConfirmarEntregaVentaScreenState
         debugPrint('✅ EDICIÓN CON_NOVEDAD: Enviando campos de novedad');
       }
 
-      // ✅ 2026-06-13: Detectar si es edición o creación nueva
+      // ✅ 2026-06-14: Detectar si es edición o creación nueva
       bool success;
 
-      if (widget.confirmacionId != null) {
+      if (widget.confirmacionExistente != null) {
         // ✅ EDICIÓN: Usar PUT /api/confirmaciones/{id}
         success = await widget.provider.editarConfirmacionEntrega(
-          widget.confirmacionId!,
+          widget.confirmacionExistente!.id,
           onSuccess: (mensaje) {
             debugPrint('✅ Confirmación actualizada: $mensaje');
           },
@@ -994,7 +930,7 @@ class _ConfirmarEntregaVentaScreenState
       },
       child: Scaffold(
         appBar: AppBar(
-          title: widget.isEditing
+          title: widget.confirmacionExistente != null
               ? Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
@@ -1017,11 +953,7 @@ class _ConfirmarEntregaVentaScreenState
                       child: const Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Icon(
-                            Icons.edit,
-                            size: 16,
-                            color: Colors.white,
-                          ),
+                          Icon(Icons.edit, size: 16, color: Colors.white),
                           SizedBox(width: 6),
                           Text(
                             'EDITAR',
@@ -1198,6 +1130,7 @@ class _ConfirmarEntregaVentaScreenState
       screenContext: context,
       isDarkMode: isDarkMode,
       tipoNovedad: _tipoNovedad,
+      tipoConfirmacion: _tipoConfirmacion, // ✅ NUEVO 2026-06-14: Para verificar ambos campos
       tiposNovedad: _tiposNovedad,
       venta: widget.venta,
       observacionesController: _observacionesController,
@@ -1255,7 +1188,9 @@ class _ConfirmarEntregaVentaScreenState
           _tipoEntrega = 'CON_NOVEDAD';
           // ✅ FIX CRÍTICO: También actualizar _tipoConfirmacion para que refleje el cambio
           _tipoConfirmacion = value;
-          debugPrint('🔄 [AUTO] _tipoEntrega actualizado a CON_NOVEDAD (tipo: $value)');
+          debugPrint(
+            '🔄 [AUTO] _tipoEntrega actualizado a CON_NOVEDAD (tipo: $value)',
+          );
           debugPrint('🔄 [AUTO] _tipoConfirmacion actualizado a $value');
           _productosRechazados.clear();
           _cantidadRechazadaControllers.clear();
@@ -1267,7 +1202,7 @@ class _ConfirmarEntregaVentaScreenState
   /// ✅ NUEVO 2026-03-05: Construir botón de acción dinámico para AppBar
   Widget _construirBotonAccion() {
     // Si está en modo edición, siempre mostrar botón de guardar
-    if (widget.isEditing) {
+    if (widget.confirmacionExistente != null) {
       final puedGuardar = _validarDatos();
       return Column(
         mainAxisAlignment: MainAxisAlignment.center,

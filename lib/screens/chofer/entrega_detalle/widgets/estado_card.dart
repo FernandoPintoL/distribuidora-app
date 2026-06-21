@@ -24,15 +24,13 @@ class EstadoCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Estado Actual'),
-            const SizedBox(height: 8),
             Row(
               children: [
                 Text(
                   entrega.estadoIcon,
                   style: const TextStyle(fontSize: 24),
                 ), // TODO: usar AppTextStyles.displaySmall),
-                const SizedBox(width: 12),
+                const SizedBox(width: 2),
                 Expanded(
                   child: Text(
                     entrega.estadoLabel,

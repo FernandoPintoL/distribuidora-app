@@ -76,8 +76,6 @@ class ConfirmarVentaEntregadaDialog {
             entrega: entrega,
             venta: venta,
             provider: provider,
-            cliente: cliente,
-            tipoPago: tipoPago,
           ),
         ),
       );

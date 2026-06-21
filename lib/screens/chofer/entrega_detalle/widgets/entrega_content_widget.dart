@@ -10,10 +10,8 @@ import 'ventas_asignadas_card.dart';
 class EntregaContentWidget extends StatelessWidget {
   final EntregaProvider provider;
 
-  const EntregaContentWidget({
-    Key? key,
-    required this.provider,
-  }) : super(key: key);
+  const EntregaContentWidget({Key? key, required this.provider})
+    : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -40,19 +38,6 @@ class EntregaContentWidget extends StatelessWidget {
           isDarkMode: Theme.of(context).brightness == Brightness.dark,
         ),
         const SizedBox(height: 16),
-
-        // SLA Status - FASE 6
-        /*if (entrega.fechaEntrega != null) ...[
-          SlaStatusWidget(
-            key: ValueKey('sla_${entrega.id}'),
-            fechaEntregaComprometida: entrega.fechaEntregaComprometida,
-            ventanaEntregaIni: entrega.ventanaEntregaIni,
-            ventanaEntregaFin: entrega.ventanaEntregaFin,
-            estado: entrega.estado,
-            compact: false,
-          ),
-          const SizedBox(height: 16),
-        ],*/
         // Información general - Widget extraído
         InformacionGeneralCard(
           key: ValueKey('info_${entrega.id}'),

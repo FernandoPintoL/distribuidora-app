@@ -29,6 +29,7 @@ class EntregaVentaConfirmacion {
   final List<dynamic>? productosDevueltos;
   final double? montoDevuelto;
   final double montoAceptado;
+  final DateTime? actualizadoEn;
 
   EntregaVentaConfirmacion({
     required this.id,
@@ -58,6 +59,7 @@ class EntregaVentaConfirmacion {
     this.productosDevueltos,
     this.montoDevuelto,
     required this.montoAceptado,
+    this.actualizadoEn,
   });
 
   factory EntregaVentaConfirmacion.fromJson(Map<String, dynamic> json) {
@@ -107,12 +109,15 @@ class EntregaVentaConfirmacion {
       tipoNovedad: tipoNovededadParsed,
       tuvoProblema: json['tuvo_problema'] as bool? ?? false,
       desglosePageos: desgloses,
-      totalDineroRecibido: _parseDouble(json['total_dinero_recibido']),
+      totalDineroRecibido: _parseDouble(json['total_dinero_recibido'] ?? json['monto_recibido']),
       montoPendiente: _parseDouble(json['pendiente'] ?? json['monto_pendiente']),
       tipoConfirmacion: tipoConfirmacionParsed,
       productosDevueltos: json['productos_devueltos'] as List<dynamic>?,
       montoDevuelto: (json['monto_devuelto'] as num?)?.toDouble(),
-      montoAceptado: _parseDouble(json['monto_aceptado']),
+      montoAceptado: _parseDouble(json['monto_aceptado'] ?? json['monto_recibido']),
+      actualizadoEn: json['updated_at'] != null
+          ? _parseUtcToLocal(json['updated_at'] as String)
+          : null,
     );
   }
 
@@ -129,6 +134,39 @@ class EntregaVentaConfirmacion {
     }
     if (value is num) return value.toDouble();
     return 0.0;
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'entrega_id': entregaId,
+      'venta_id': ventaId,
+      'firma_digital_url': firmaDigitalUrl,
+      'fotos': fotos,
+      'observaciones_logistica': observacionesLogistica,
+      'tienda_abierta': tiendaAbierta,
+      'cliente_presente': clientePresente,
+      'motivo_rechazo': motivoRechazo,
+      'estado_pago': estadoPago,
+      'monto_recibido': montoRecibido,
+      'tipo_pago_id': tipoPagoId,
+      'motivo_no_pago': motivoNoPago,
+      'confirmado_por': confirmadoPor,
+      'confirmado_en': confirmadoEn?.toIso8601String(),
+      'created_at': creadoEn?.toIso8601String(),
+      'foto_comprobante': fotoComprobante,
+      'tipo_entrega': tipoEntrega,
+      'tipo_novedad': tipoNovedad,
+      'tuvo_problema': tuvoProblema,
+      'desglose_pagos': desglosePageos.map((d) => d.toJson()).toList(),
+      'total_dinero_recibido': totalDineroRecibido,
+      'monto_pendiente': montoPendiente,
+      'tipo_confirmacion': tipoConfirmacion,
+      'productos_devueltos': productosDevueltos,
+      'monto_devuelto': montoDevuelto,
+      'monto_aceptado': montoAceptado,
+      'updated_at': actualizadoEn?.toIso8601String(),
+    };
   }
 
   String get fechaConfirmacionFormato {
@@ -200,6 +238,15 @@ class DesglosePago {
       monto: _parseDouble(json['monto']),
       referencia: json['referencia'] as String?,
     );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'tipo_pago_id': tipoPagoId,
+      'tipo_pago_nombre': tipoPagoNombre,
+      'monto': monto,
+      'referencia': referencia,
+    };
   }
 
   static double _parseDouble(dynamic value) {

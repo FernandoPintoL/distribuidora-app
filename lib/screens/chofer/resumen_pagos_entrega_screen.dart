@@ -830,43 +830,6 @@ class _ResumenPagosEntregaScreenState extends State<ResumenPagosEntregaScreen> {
                                 entrega: widget.entrega,
                                 venta: ventaTmp,
                                 provider: widget.provider,
-                                isEditing: true,
-                                tipoEntregaExistente: tipoEntrega,
-                                tipoNovedadExistente: tipoNovedad,
-                                // âœ… NUEVO 2026-03-05: Pasar cliente especÃ­fico de la venta y tipo de pago
-                                cliente: clienteVentaData,
-                                tipoPago: pagos.isNotEmpty
-                                    ? {
-                                        'id': _convertirAInt(
-                                          pagos[0]['tipo_pago_id'],
-                                        ),
-                                        'nombre':
-                                            pagos[0]['tipo_pago'] as String? ??
-                                            'No especificado',
-                                        'codigo':
-                                            pagos[0]['tipo_pago_codigo']
-                                                as String?,
-                                      }
-                                    : null,
-                                // âœ… NUEVO 2026-03-05: Pasar informaciÃ³n previa de fotos, observaciones y pagos
-                                fotosExistentes: fotos.cast<String>(),
-                                observacionesExistentes: observacionesLogistica,
-                                pagosExistentes: pagos
-                                    .map(
-                                      (pago) => {
-                                        'tipo_pago_id': pago['tipo_pago_id'],
-                                        'monto': pago['monto'],
-                                        'referencia': pago['referencia'],
-                                      },
-                                    )
-                                    .toList(),
-                                // âœ… NUEVA 2026-03-05: Pasar campos de novedad
-                                tiendaAbiertaExistente: tiendaAbierta,
-                                clientePresenteExistente: clientePresente,
-                                motivoRechazoExistente: motivoRechazo,
-                                // âœ… NUEVO 2026-03-05: Pasar productos devueltos existentes para DEVOLUCION_PARCIAL
-                                productosDevueltosExistentes: productosDevueltos
-                                    .cast<Map<String, dynamic>>(),
                               ),
                             ),
                           ).then((result) {
@@ -1400,7 +1363,6 @@ class _ResumenPagosEntregaScreenState extends State<ResumenPagosEntregaScreen> {
           entrega: widget.entrega,
           venta: venta,
           provider: widget.provider,
-          isEditing: true, // Modo ediciÃ³n para volver a subir
         ),
       ),
     ).then((result) {

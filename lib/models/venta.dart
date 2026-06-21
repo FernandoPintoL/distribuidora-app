@@ -153,14 +153,38 @@ class Venta {
       dirClienteJson = json['direccionCliente'] as Map<String, dynamic>;
     } else if (json['direccion_cliente'] is Map<String, dynamic>) {
       dirClienteJson = json['direccion_cliente'] as Map<String, dynamic>;
+    } else if (json['direccion_cliente'] is List) {
+      // ✅ NUEVO 2026-06-14: Si viene como array, buscar la dirección con coordenadas
+      final direccionesArray = json['direccion_cliente'] as List<dynamic>;
+
+      // Preferir dirección con latitud/longitud y que sea principal o de entrega
+      for (var dir in direccionesArray) {
+        if (dir is Map<String, dynamic>) {
+          final lat = dir['latitud'];
+          final lng = dir['longitud'];
+          if (lat != null && lng != null) {
+            dirClienteJson = dir;
+            break; // Usar la primera con coordenadas válidas
+          }
+        }
+      }
+
+      // Si ninguna tiene coordenadas, usar la principal o la primera
+      if (dirClienteJson == null && direccionesArray.isNotEmpty) {
+        final primera = direccionesArray.first as Map<String, dynamic>;
+        dirClienteJson = primera;
+      }
     }
 
     if (dirClienteJson != null) {
       try {
         direccionClienteObj = DireccionCliente.fromJson(dirClienteJson);
+        debugPrint('✅ [VENTA] DireccionCliente parseada - Venta: ${json['numero']} | Lat: ${direccionClienteObj.latitud}, Lng: ${direccionClienteObj.longitud}');
       } catch (e) {
         debugPrint('⚠️ [VENTA] Error parseando direccionCliente: $e');
       }
+    } else {
+      debugPrint('⚠️ [VENTA] No se encontró direccionCliente para venta: ${json['numero']}');
     }
     // Si no viene la relación direccionCliente, simplemente quedará null (es normal en algunos endpoints)
 

@@ -5,6 +5,7 @@ import '../../../../models/venta.dart';
 import '../../../../models/estado_logistico.dart';
 import '../../../../providers/entrega_provider.dart';
 import '../../../../services/print_service.dart';
+import '../../../../widgets/map_location_selector.dart';
 import '../confirmar_entrega_venta_screen.dart';
 
 class VentasAsignadasCard extends StatefulWidget {
@@ -46,6 +47,16 @@ class _VentasAsignadasCardState extends State<VentasAsignadasCard> {
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
     final entrega = widget.entrega;
 
+    // ✅ DEBUG 2026-06-14: Verificar si se están parseando las direcciones
+    for (var venta in entrega.ventas) {
+      final tieneDir = venta.direccionCliente != null;
+      final tieneLat = venta.direccionCliente?.latitud != null;
+      final tieneLng = venta.direccionCliente?.longitud != null;
+      debugPrint(
+        '🗺️ [VENTAS_CARD] Venta ${venta.numero} | DireccionCliente: $tieneDir | Lat: $tieneLat | Lng: $tieneLng | Lat=${venta.direccionCliente?.latitud}, Lng=${venta.direccionCliente?.longitud}',
+      );
+    }
+
     final esPreparacion = entrega.estado == 'PREPARACION_CARGA';
     final esEnCarga = entrega.estado == 'EN_CARGA';
     final esModoCarga = esPreparacion || esEnCarga;
@@ -67,7 +78,7 @@ class _VentasAsignadasCardState extends State<VentasAsignadasCard> {
     return Card(
       elevation: 2,
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 16),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -146,7 +157,6 @@ class _VentasAsignadasCardState extends State<VentasAsignadasCard> {
                 ),
               ),
             ],
-            const SizedBox(height: 16),
             ListView.builder(
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
@@ -161,7 +171,9 @@ class _VentasAsignadasCardState extends State<VentasAsignadasCard> {
 
                 final tipoEntrega = venta.tipoEntregaValue;
                 final tipoConfirmacion = venta.tipoConfirmacionValue;
-                final tipoNovedad = venta.tipoNovedadValue;
+                bool mostrarResumen =
+                    tipoConfirmacion == 'COMPLETA' ||
+                    tipoConfirmacion == 'DEVOLUCION_PARCIAL';
                 return InkWell(
                   onTap: () {
                     Navigator.of(
@@ -260,6 +272,36 @@ class _VentasAsignadasCardState extends State<VentasAsignadasCard> {
                                           ),
                                         ],
                                       ),
+                                    // ✅ NUEVO: Observaciones de la dirección
+                                    if (venta.direccionCliente?.observaciones !=
+                                        null) ...[
+                                      Row(
+                                        children: [
+                                          Icon(
+                                            Icons.pin_drop_outlined,
+                                            size: 16,
+                                            color: Colors.orange[400],
+                                          ),
+                                          const SizedBox(width: 8),
+                                          Expanded(
+                                            child: Text(
+                                              venta
+                                                      .direccionCliente!
+                                                      .observaciones ??
+                                                  "",
+                                              style: TextStyle(
+                                                fontSize: 12,
+                                                color: isDarkMode
+                                                    ? Colors.orange[300]
+                                                    : Colors.orange[800],
+                                              ),
+                                              maxLines: 2,
+                                              overflow: TextOverflow.ellipsis,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ],
                                   ],
                                 ),
                               ),
@@ -324,6 +366,12 @@ class _VentasAsignadasCardState extends State<VentasAsignadasCard> {
                                         );
                                       } else if (value == 'pdf') {
                                         _descargarPDFVenta(venta.id);
+                                      } else if (value == 'mapa' &&
+                                          venta.direccionCliente?.latitud !=
+                                              null &&
+                                          venta.direccionCliente?.longitud !=
+                                              null) {
+                                        _abrirMapa(venta);
                                       }
                                     },
                                     itemBuilder: (BuildContext context) => [
@@ -359,6 +407,21 @@ class _VentasAsignadasCardState extends State<VentasAsignadasCard> {
                                           ],
                                         ),
                                       ),
+                                      // ✅ NUEVO 2026-06-14: Opción para mostrar mapa
+                                      if (venta.direccionCliente?.latitud !=
+                                              null &&
+                                          venta.direccionCliente?.longitud !=
+                                              null)
+                                        const PopupMenuItem<String>(
+                                          value: 'mapa',
+                                          child: Row(
+                                            children: [
+                                              Icon(Icons.map, size: 20),
+                                              SizedBox(width: 12),
+                                              Text('Mapa'),
+                                            ],
+                                          ),
+                                        ),
                                     ],
                                     icon: Icon(
                                       Icons.more_vert,
@@ -372,46 +435,6 @@ class _VentasAsignadasCardState extends State<VentasAsignadasCard> {
                             ],
                           ),
                           const SizedBox(height: 12),
-                          // ✅ NUEVO: Resumen de pagos (solo si hay confirmaciones)
-                          if (venta.resumenPago != null &&
-                              venta.confirmaciones.isNotEmpty) ...[
-                            Container(
-                              padding: const EdgeInsets.all(10),
-                              decoration: BoxDecoration(
-                                color: isDarkMode
-                                    ? Colors.grey[900]
-                                    : Colors.grey[100],
-                                borderRadius: BorderRadius.circular(6),
-                              ),
-                              child: Row(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceBetween,
-                                children: [
-                                  Text(
-                                    'Estado: ${(venta.resumenPago!['estado'] as String?)?.toUpperCase() ?? 'N/A'}',
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.w500,
-                                      color: _getColorEstadoPago(
-                                        venta.resumenPago!['estado'],
-                                      ),
-                                    ),
-                                  ),
-                                  if (((venta.resumenPago!['pendiente'] as num?)
-                                              ?.toDouble() ??
-                                          0) >
-                                      0)
-                                    Text(
-                                      'Pendiente: Bs ${((venta.resumenPago!['pendiente'] as num?)?.toDouble() ?? 0).toStringAsFixed(2)}',
-                                      style: TextStyle(
-                                        fontWeight: FontWeight.w500,
-                                        color: Colors.orange[400],
-                                      ),
-                                    ),
-                                ],
-                              ),
-                            ),
-                            const SizedBox(height: 12),
-                          ],
                           // ✅ NUEVO 2026-06-13: Badges de Estado Logístico + Tipo de Pago
                           Wrap(
                             spacing: 4,
@@ -561,57 +584,14 @@ class _VentasAsignadasCardState extends State<VentasAsignadasCard> {
                                 ),
                             ],
                           ),
-                          // ✅ NUEVO: Observaciones de la dirección
-                          if (venta.direccionCliente?.observaciones !=
-                              null) ...[
-                            const SizedBox(height: 8),
-                            Container(
-                              padding: const EdgeInsets.all(8),
-                              decoration: BoxDecoration(
-                                color: isDarkMode
-                                    ? Colors.orange[900]?.withValues(alpha: 0.2)
-                                    : Colors.orange[50],
-                                borderRadius: BorderRadius.circular(8),
-                                border: Border.all(
-                                  color: isDarkMode
-                                      ? Colors.orange[700]!
-                                      : Colors.orange[200]!,
-                                ),
-                              ),
-                              child: Row(
-                                children: [
-                                  Icon(
-                                    Icons.pin_drop_outlined,
-                                    size: 16,
-                                    color: Colors.orange[400],
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Expanded(
-                                    child: Text(
-                                      venta.direccionCliente!.observaciones ??
-                                          "",
-                                      style: TextStyle(
-                                        fontSize: 12,
-                                        color: isDarkMode
-                                            ? Colors.orange[300]
-                                            : Colors.orange[800],
-                                      ),
-                                      maxLines: 2,
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-
                           // ✅ NUEVO: Mini Resumen de Pago (solo si hay desglose)
                           if (venta.confirmaciones.isNotEmpty &&
                               venta
                                   .confirmaciones
                                   .last
                                   .desglosePageos
-                                  .isNotEmpty) ...[
+                                  .isNotEmpty &&
+                              mostrarResumen) ...[
                             const SizedBox(height: 12),
                             _buildMiniResumenPago(venta, isDarkMode),
                           ],
@@ -690,7 +670,7 @@ class _VentasAsignadasCardState extends State<VentasAsignadasCard> {
                 ),
               ),
             ],
-            if (ventasOrdenadas.isNotEmpty) ...[
+            /*if (ventasOrdenadas.isNotEmpty) ...[
               const SizedBox(height: 16),
               Container(
                 padding: const EdgeInsets.all(12),
@@ -704,7 +684,10 @@ class _VentasAsignadasCardState extends State<VentasAsignadasCard> {
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('Total a Entregar'),
+                        Text(
+                          'Total a Entregar',
+                          style: TextStyle(fontWeight: FontWeight.bold),
+                        ),
                         const SizedBox(height: 4),
                         Text(
                           'BS ${ventasOrdenadas.fold<double>(0, (sum, v) => sum + v.total).toStringAsFixed(2)}',
@@ -714,7 +697,10 @@ class _VentasAsignadasCardState extends State<VentasAsignadasCard> {
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.end,
                       children: [
-                        Text('Cantidad de Ventas'),
+                        Text(
+                          'Cantidad de Ventas',
+                          style: TextStyle(fontWeight: FontWeight.bold),
+                        ),
                         const SizedBox(height: 4),
                         Text('${ventasOrdenadas.length}'),
                       ],
@@ -722,7 +708,7 @@ class _VentasAsignadasCardState extends State<VentasAsignadasCard> {
                   ],
                 ),
               ),
-            ],
+            ],*/
           ],
         ),
       ),
@@ -865,6 +851,54 @@ class _VentasAsignadasCardState extends State<VentasAsignadasCard> {
           SnackBar(
             content: Text('Error: ${e.toString()}'),
             duration: const Duration(seconds: 2),
+          ),
+        );
+      }
+    }
+  }
+
+  // ✅ NUEVO 2026-06-14: Abrir mapa de ubicación de la venta
+  Future<void> _abrirMapa(Venta venta) async {
+    try {
+      if (!mounted) return;
+
+      final fotoPerfil = venta.cliente?.fotoPerfil != null
+          ? '${AppUrls.baseUrlImg}${venta.cliente!.fotoPerfil}'
+          : null;
+
+      final ubicacionVenta = MapLocation(
+        latitude: venta.direccionCliente!.latitud!,
+        longitude: venta.direccionCliente!.longitud!,
+        title: venta.cliente?.nombre ?? 'Sin nombre',
+        subtitle: venta.id.toString(),
+        isSelected: false,
+        razonSocial: venta.cliente?.razonSocial,
+        telefono: venta.cliente?.telefono,
+        ventaId: venta.id,
+        markerColor: venta.estadoLogisticoColor,
+        fotoPerfil: fotoPerfil,
+      );
+
+      if (mounted) {
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (context) => MapLocationSelector(
+              initialLatitude: venta.direccionCliente!.latitud!,
+              initialLongitude: venta.direccionCliente!.longitud!,
+              onLocationSelected: (lat, lng, address) {
+                Navigator.pop(context);
+              },
+              additionalLocations: [ubicacionVenta],
+            ),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error al abrir mapa: ${e.toString()}'),
+            backgroundColor: Colors.red,
           ),
         );
       }
@@ -1020,22 +1054,6 @@ class _VentasAsignadasCardState extends State<VentasAsignadasCard> {
         ],
       ),
     );
-  }
-
-  // ✅ NUEVO 2026-06-12: Obtener color del estado de pago
-  Color _getColorEstadoPago(dynamic estado) {
-    final estadoStr = (estado as String?)?.toUpperCase() ?? '';
-    switch (estadoStr) {
-      case 'PAGADO':
-        return Colors.green;
-      case 'NO_PAGADO':
-      case 'PENDIENTE':
-        return Colors.orange;
-      case 'RECHAZADO':
-        return Colors.red;
-      default:
-        return Colors.grey;
-    }
   }
 
   // ✅ NUEVO 2026-06-13: Obtener icono para Estado Logistico de la venta

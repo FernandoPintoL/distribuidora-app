@@ -65,10 +65,7 @@ class _ProductosAgrupadsWidgetState extends State<ProductosAgrupadsWidget> {
                 children: [
                   const CircularProgressIndicator(),
                   const SizedBox(height: 16),
-                  Text(
-                    'Cargando productos...',
-                    style: Theme.of(context).textTheme.bodyMedium,
-                  ),
+                  Text('Cargando productos...'),
                 ],
               ),
             ),
@@ -118,7 +115,12 @@ class _ProductosAgrupadsWidgetState extends State<ProductosAgrupadsWidget> {
               children: [
                 const Icon(Icons.info_outline, color: Colors.orange),
                 const SizedBox(width: 12),
-                const Text('No hay productos en esta entrega'),
+                const Expanded(
+                  child: Text(
+                    'No hay productos en esta entrega',
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
               ],
             ),
           );
@@ -146,7 +148,13 @@ class _ProductosAgrupadsWidgetState extends State<ProductosAgrupadsWidget> {
                       size: 24,
                     ),
                     const SizedBox(width: 12),
-                    Text('Lista Generica #${widget.entregaId}'),
+                    Expanded(
+                      child: Text(
+                        'Lista Generica #${widget.entregaId}',
+                        style: TextStyle(fontWeight: FontWeight.bold),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -167,9 +175,12 @@ class _ProductosAgrupadsWidgetState extends State<ProductosAgrupadsWidget> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text('Tipos'),
+                            Text('Items'),
                             const SizedBox(height: 4),
-                            Text(provider.totalProductos.toString()),
+                            Text(
+                              provider.totalProductos.toString(),
+                              style: TextStyle(fontWeight: FontWeight.bold),
+                            ),
                           ],
                         ),
                       ),
@@ -188,7 +199,10 @@ class _ProductosAgrupadsWidgetState extends State<ProductosAgrupadsWidget> {
                           children: [
                             Text('Cantidad'),
                             const SizedBox(height: 4),
-                            Text('${provider.cantidadTotal.toInt()}'),
+                            Text(
+                              '${provider.cantidadTotal.toInt()}',
+                              style: TextStyle(fontWeight: FontWeight.bold),
+                            ),
                           ],
                         ),
                       ),
@@ -207,7 +221,10 @@ class _ProductosAgrupadsWidgetState extends State<ProductosAgrupadsWidget> {
                           children: [
                             Text('Total'),
                             const SizedBox(height: 4),
-                            Text('Bs. ${totalGeneral.toStringAsFixed(2)}'),
+                            Text(
+                              'Bs. ${totalGeneral.toStringAsFixed(2)}',
+                              style: TextStyle(fontWeight: FontWeight.bold),
+                            ),
                           ],
                         ),
                       ),

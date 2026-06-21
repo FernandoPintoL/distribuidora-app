@@ -125,10 +125,25 @@ class _EntregaDetalleScreenState extends State<EntregaDetalleScreen>
   @override
   Widget build(BuildContext context) {
     final provider = context.watch<EntregaProvider>();
+    final entrega = provider.entregaActual;
+
+    // ✅ NUEVO 2026-06-15: Convertir color hex del estado de entrega a Color
+    Color appBarColor = Colors.deepOrange; // fallback
+    if (entrega?.estadoEntregaColor != null) {
+      try {
+        final colorHex = entrega!.estadoEntregaColor!.replaceFirst('#', '');
+        appBarColor = Color(int.parse('FF$colorHex', radix: 16));
+      } catch (e) {
+        debugPrint(
+          '⚠️ Error al parsear color: ${entrega?.estadoEntregaColor} - $e',
+        );
+      }
+    }
 
     return Scaffold(
       appBar: CustomGradientAppBar(
-        title: 'Detalle de Entrega # ${widget.entregaId}',
+        title: 'Entrega #${widget.entregaId}',
+        backgroundColor: appBarColor,
         actions: [
           // ✅ Botón para actualizar/recargar la pantalla
           Padding(
@@ -152,7 +167,7 @@ class _EntregaDetalleScreenState extends State<EntregaDetalleScreen>
             controller: _tabController,
             indicatorColor: Colors.amber[300],
             labelColor: Colors.amber[300],
-            unselectedLabelColor: Colors.white.withValues(alpha: 0.6),
+            unselectedLabelColor: Colors.white,
             indicatorWeight: 3,
             tabs: [
               const Tab(icon: Icon(Icons.info), text: 'General'),
@@ -183,6 +198,7 @@ class _EntregaDetalleScreenState extends State<EntregaDetalleScreen>
             ),
             child: SingleChildScrollView(
               child: BotonesAccion(
+                colorButton: appBarColor,
                 key: ValueKey(
                   'botones_${entregaActual.id}_${entregaActual.estado}',
                 ),

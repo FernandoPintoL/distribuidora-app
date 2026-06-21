@@ -382,68 +382,6 @@ class _EntregasAsignadasScreenState extends State<EntregasAsignadasScreen> {
                               child: Column(
                                 spacing: 12,
                                 children: [
-                                  // ✅ NUEVO: Campo de búsqueda + botón (Row)
-                                  /*Row(
-                                    spacing: 8,
-                                    children: [
-                                      // TextField
-                                      Expanded(
-                                        child: TextField(
-                                          controller: _searchController,
-                                          onChanged: (value) {
-                                            setState(
-                                              () => _searchInput = value,
-                                            );
-                                          },
-                                          decoration: InputDecoration(
-                                            hintText:
-                                                '🔍 Buscar (ID, número, cliente, NIT, teléfono)',
-                                            prefixIcon: const Icon(
-                                              Icons.search,
-                                            ),
-                                            suffixIcon: _searchInput.isNotEmpty
-                                                ? GestureDetector(
-                                                    onTap: _limpiarBusqueda,
-                                                    child: Icon(
-                                                      Icons.close,
-                                                      size: 20,
-                                                      color: Colors.red[400],
-                                                    ),
-                                                  )
-                                                : null,
-                                            border: OutlineInputBorder(
-                                              borderRadius:
-                                                  BorderRadius.circular(8),
-                                            ),
-                                            contentPadding:
-                                                const EdgeInsets.symmetric(
-                                                  horizontal: 12,
-                                                  vertical: 12,
-                                                ),
-                                          ),
-                                        ),
-                                      ),
-                                      // ✅ Botón Buscar
-                                      Material(
-                                        color: Theme.of(context).primaryColor,
-                                        borderRadius: BorderRadius.circular(8),
-                                        child: InkWell(
-                                          onTap: _ejecutarBusqueda,
-                                          borderRadius: BorderRadius.circular(
-                                            8,
-                                          ),
-                                          child: Container(
-                                            padding: const EdgeInsets.all(12),
-                                            child: const Icon(
-                                              Icons.search,
-                                              color: Colors.white,
-                                              size: 24,
-                                            ),
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  ),*/
                                   // ✅ NUEVO: Input para búsqueda por ID de entrega
                                   TextField(
                                     controller: _entregaIdController,

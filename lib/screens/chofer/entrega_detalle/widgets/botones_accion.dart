@@ -10,10 +10,17 @@ class BotonesAccion extends StatelessWidget {
   final Function(BuildContext, Entrega, EntregaProvider) onMarcarLlegada;
   final Function(BuildContext, Entrega, EntregaProvider) onMarcarEntregada;
   final Function(BuildContext, Entrega, EntregaProvider) onReportarNovedad;
-  final Function(BuildContext, Entrega, EntregaProvider, {VoidCallback? onReload})? onConfirmarCargaLista;
+  final Function(
+    BuildContext,
+    Entrega,
+    EntregaProvider, {
+    VoidCallback? onReload,
+  })?
+  onConfirmarCargaLista;
   final Function(BuildContext, Entrega, EntregaProvider)? onEntregasTerminadas;
   final VoidCallback? onReintentarGps;
   final VoidCallback? onReload;
+  final Color colorButton;
 
   const BotonesAccion({
     Key? key,
@@ -27,6 +34,7 @@ class BotonesAccion extends StatelessWidget {
     this.onEntregasTerminadas,
     this.onReintentarGps,
     this.onReload,
+    this.colorButton = Colors.blue,
   }) : super(key: key);
 
   @override
@@ -56,7 +64,7 @@ class BotonesAccion extends StatelessWidget {
           BotonAccion(
             label: 'Confirmar Carga Lista',
             icon: Icons.check_circle,
-            color: Colors.blue,
+            color: colorButton,
             onPressed: () {
               onConfirmarCargaLista!(
                 context,
@@ -70,7 +78,7 @@ class BotonesAccion extends StatelessWidget {
           BotonAccion(
             label: 'Iniciar Entrega',
             icon: Icons.play_circle,
-            color: Colors.green,
+            color: colorButton,
             onPressed: () {
               onIniciarEntrega(context, entrega, provider);
             },
@@ -79,10 +87,11 @@ class BotonesAccion extends StatelessWidget {
           BotonAccion(
             label: 'Iniciar Ruta',
             icon: Icons.navigation,
-            color: Colors.green,
+            color: colorButton,
             onPressed: () {
-              Navigator.of(context)
-                  .pushNamed('/chofer/iniciar-ruta', arguments: entrega.id);
+              Navigator.of(
+                context,
+              ).pushNamed('/chofer/iniciar-ruta', arguments: entrega.id);
             },
           ),
         // ❌ OCULTO: Botón Entregas Terminadas - Solo el cajero en oficina puede terminar entregas
