@@ -307,52 +307,58 @@ class _VentasAsignadasCardState extends State<VentasAsignadasCard> {
                               ),
                               const SizedBox(width: 12),
                               // ✅ Monto destacado a la derecha
-                              Row(
-                                crossAxisAlignment: CrossAxisAlignment.center,
-                                children: [
-                                  Column(
-                                    children: [
-                                      Text(
-                                        'Bs ${venta.total.toStringAsFixed(2)}',
-                                        style: TextStyle(
-                                          fontSize: 16,
-                                          fontWeight: FontWeight.bold,
-                                          color: Colors.green[400],
-                                        ),
-                                      ),
-                                      // Badge Tipo de Pago
-                                      if (venta.tipoPago != null)
-                                        Container(
-                                          padding: const EdgeInsets.symmetric(
-                                            horizontal: 10,
-                                            vertical: 6,
+                              Flexible(
+                                child: Row(
+                                  crossAxisAlignment: CrossAxisAlignment.center,
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Column(
+                                      children: [
+                                        Text(
+                                          'Bs ${venta.total.toStringAsFixed(2)}',
+                                          style: TextStyle(
+                                            fontSize: 14,
+                                            fontWeight: FontWeight.bold,
+                                            color: Colors.green[400],
                                           ),
-                                          child: Row(
-                                            mainAxisSize: MainAxisSize.min,
-                                            children: [
-                                              Icon(
-                                                _getTipoPagoIcon(
-                                                  venta.tipoPago?.codigo,
-                                                ),
-                                                size: 14,
-                                              ),
-                                              const SizedBox(width: 6),
-                                              Text(
-                                                venta.tipoPago?.nombre
-                                                        .toUpperCase() ??
-                                                    '',
-                                                style: TextStyle(
-                                                  fontSize: 12,
-                                                  fontWeight: FontWeight.w600,
-                                                ),
-                                              ),
-                                            ],
-                                          ),
+                                          overflow: TextOverflow.ellipsis,
                                         ),
-                                    ],
-                                  ),
-                                  // ✅ NUEVO: Menú popup de acciones (3 puntos)
-                                  PopupMenuButton<String>(
+                                        // Badge Tipo de Pago
+                                        if (venta.tipoPago != null)
+                                          Container(
+                                            padding: const EdgeInsets.symmetric(
+                                              horizontal: 8,
+                                              vertical: 4,
+                                            ),
+                                            child: Row(
+                                              mainAxisSize: MainAxisSize.min,
+                                              children: [
+                                                Icon(
+                                                  _getTipoPagoIcon(
+                                                    venta.tipoPago?.codigo,
+                                                  ),
+                                                  size: 12,
+                                                ),
+                                                const SizedBox(width: 4),
+                                                Flexible(
+                                                  child: Text(
+                                                    venta.tipoPago?.nombre
+                                                            .toUpperCase() ??
+                                                        '',
+                                                    style: TextStyle(
+                                                      fontSize: 10,
+                                                      fontWeight: FontWeight.w600,
+                                                    ),
+                                                    overflow: TextOverflow.ellipsis,
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                      ],
+                                    ),
+                                    // ✅ NUEVO: Menú popup de acciones (3 puntos)
+                                    PopupMenuButton<String>(
                                     onSelected: (String value) {
                                       if (value == 'llamar' &&
                                           venta.cliente?.telefono != null) {
@@ -431,6 +437,7 @@ class _VentasAsignadasCardState extends State<VentasAsignadasCard> {
                                     ),
                                   ),
                                 ],
+                              ),
                               ),
                             ],
                           ),
