@@ -41,7 +41,7 @@ class ProductListViewBuilder extends StatelessWidget {
                 combos.length +
                 productosNormales.length +
                 (tieneCombosSeparados ? 1 : 0),
-            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 12),
+            // padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 16),
             itemBuilder: (context, index) {
               // Sección de Combos
               if (index < combos.length) {
@@ -68,13 +68,7 @@ class ProductListViewBuilder extends StatelessWidget {
                         height: 1,
                       ),
                       const SizedBox(height: 8),
-                      Text(
-                        'Productos Regulares',
-                        style: Theme.of(context).textTheme.labelMedium
-                            ?.copyWith(
-                              color: Theme.of(context).colorScheme.outline,
-                            ),
-                      ),
+                      Text('Productos Regulares'),
                     ],
                   ),
                 );

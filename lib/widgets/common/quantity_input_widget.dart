@@ -72,150 +72,91 @@ class _QuantityInputWidgetState extends State<QuantityInputWidget> {
 
   @override
   Widget build(BuildContext context) {
-    final brownColor = widget.primaryColor ?? const Color(0xFF795548);
-    final containerSize = widget.size ?? 38.0;
+    final accentColor = widget.primaryColor ?? const Color(0xFFFFB800);
+    final buttonSize = widget.size ?? 40.0;
     final opacity = widget.enabled ? 1.0 : 0.5;
 
     return Opacity(
       opacity: opacity,
       child: Container(
         decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              brownColor.withAlpha(25),
-              brownColor.withAlpha(15),
-            ],
-          ),
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(
-            color: brownColor.withAlpha(80),
-            width: 1,
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: brownColor.withAlpha(40),
-              blurRadius: 8,
-              offset: const Offset(0, 2),
-            ),
-          ],
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: accentColor.withAlpha(150), width: 2),
         ),
-        padding: const EdgeInsets.symmetric(
-          horizontal: 8,
-          vertical: 6,
-        ),
+        // padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
         child: Row(
           mainAxisSize: widget.fullWidth ? MainAxisSize.max : MainAxisSize.min,
-          mainAxisAlignment: widget.fullWidth ? MainAxisAlignment.spaceEvenly : MainAxisAlignment.start,
+          mainAxisAlignment: widget.fullWidth
+              ? MainAxisAlignment.spaceEvenly
+              : MainAxisAlignment.center,
           children: [
+            // Botón Decrementar
             SizedBox(
-              width: containerSize,
-              height: containerSize,
-              child: IconButton(
-                onPressed: widget.enabled ? widget.onDecrement : null,
-                icon: Icon(Icons.remove, size: containerSize * 0.47),
-                padding: EdgeInsets.zero,
-                style: IconButton.styleFrom(
-                  backgroundColor: brownColor.withAlpha(60),
-                  foregroundColor: Colors.white,
+              width: buttonSize,
+              height: buttonSize,
+              child: Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  onTap: widget.enabled ? widget.onDecrement : null,
+                  borderRadius: BorderRadius.circular(10),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: accentColor,
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Icon(Icons.remove, size: 18, color: Colors.black87),
+                  ),
                 ),
               ),
             ),
-            widget.fullWidth
-                ? Expanded(
-                    child: SizedBox(
-                      height: containerSize,
-                      child: Container(
-                        margin: const EdgeInsets.symmetric(horizontal: 6),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withAlpha(200),
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(
-                            color: brownColor.withAlpha(100),
-                            width: 1,
-                          ),
-                        ),
-                        child: TextField(
-                          controller: _controller,
-                          focusNode: _focusNode,
-                          textAlign: TextAlign.center,
-                          keyboardType: TextInputType.number,
-                          enabled: widget.enabled,
-                          onChanged: _handleChange,
-                          style: TextStyle(
-                            fontWeight: FontWeight.w700,
-                            fontSize: 16,
-                            color: brownColor,
-                          ),
-                          decoration: InputDecoration(
-                            contentPadding: const EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 6,
-                            ),
-                            border: InputBorder.none,
-                            hintText: '1',
-                            hintStyle: TextStyle(
-                              color: brownColor.withAlpha(80),
-                              fontSize: 16,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                  )
-                : SizedBox(
-                    width: containerSize + 20,
-                    height: containerSize,
-                    child: Container(
-                      margin: const EdgeInsets.symmetric(horizontal: 6),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withAlpha(200),
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(
-                          color: brownColor.withAlpha(100),
-                          width: 1,
-                        ),
-                      ),
-                      child: TextField(
-                        controller: _controller,
-                        focusNode: _focusNode,
-                        textAlign: TextAlign.center,
-                        keyboardType: TextInputType.number,
-                        enabled: widget.enabled,
-                        onChanged: _handleChange,
-                        style: TextStyle(
-                          fontWeight: FontWeight.w700,
-                          fontSize: 16,
-                          color: brownColor,
-                        ),
-                        decoration: InputDecoration(
-                          contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 6,
-                          ),
-                          border: InputBorder.none,
-                          hintText: '1',
-                          hintStyle: TextStyle(
-                            color: brownColor.withAlpha(80),
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ),
+            // Campo de cantidad editable
+            Expanded(
+              child: SizedBox(
+                height: buttonSize,
+                child: TextField(
+                  controller: _controller,
+                  focusNode: _focusNode,
+                  textAlign: TextAlign.center,
+                  keyboardType: TextInputType.number,
+                  enabled: widget.enabled,
+                  onChanged: _handleChange,
+                  style: TextStyle(
+                    fontWeight: FontWeight.w700,
+                    fontSize: 16,
+                    color: accentColor,
+                    letterSpacing: 0.5,
+                  ),
+                  decoration: InputDecoration(
+                    border: InputBorder.none,
+                    enabledBorder: InputBorder.none,
+                    focusedBorder: InputBorder.none,
+                    contentPadding: EdgeInsets.zero,
+                    hintText: '0',
+                    hintStyle: TextStyle(
+                      color: accentColor.withAlpha(80),
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
+                ),
+              ),
+            ),
+            // Botón Incrementar
             SizedBox(
-              width: containerSize,
-              height: containerSize,
-              child: IconButton(
-                onPressed: widget.enabled ? widget.onIncrement : null,
-                icon: Icon(Icons.add, size: containerSize * 0.47),
-                padding: EdgeInsets.zero,
-                style: IconButton.styleFrom(
-                  backgroundColor: brownColor.withAlpha(60),
-                  foregroundColor: Colors.white,
+              width: buttonSize,
+              height: buttonSize,
+              child: Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  onTap: widget.enabled ? widget.onIncrement : null,
+                  borderRadius: BorderRadius.circular(10),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: accentColor,
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Icon(Icons.add, size: 18, color: Colors.black87),
+                  ),
                 ),
               ),
             ),

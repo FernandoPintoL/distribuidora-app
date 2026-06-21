@@ -5,7 +5,6 @@ import '../../models/client.dart';
 import '../../widgets/carrito/index.dart';
 import '../../widgets/carrito/carrito_total_bar.dart';
 import '../../widgets/widgets.dart';
-import '../../config/config.dart';
 import '../products/producto_detalle_screen.dart' as producto;
 import 'carrito_helpers.dart';
 
@@ -87,7 +86,7 @@ class _CarritoScreenState extends State<CarritoScreen> {
               (role) => role.toLowerCase() == 'preventista',
             );
           } catch (e) {
-            debugPrint('âŒ Error al verificar rol en CarritoScreen: $e');
+            debugPrint('Error al verificar rol en CarritoScreen: $e');
           }
 
           return SingleChildScrollView(
@@ -293,11 +292,11 @@ class _CarritoScreenState extends State<CarritoScreen> {
           return FloatingActionButton(
             onPressed: () {
               debugPrint(
-                'âž• Abriendo pantalla de productos para agregar mÃ¡s items a la proforma',
+                'Abriendo pantalla de productos para agregar más items a la proforma',
               );
               Navigator.pushNamed(context, '/products');
             },
-            tooltip: 'Agregar mÃ¡s productos a la proforma',
+            tooltip: 'Agregar más productos al pedido',
             child: const Icon(Icons.add),
           );
         },
@@ -305,4 +304,3 @@ class _CarritoScreenState extends State<CarritoScreen> {
     );
   }
 }
-

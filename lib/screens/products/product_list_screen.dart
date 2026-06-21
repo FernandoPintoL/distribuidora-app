@@ -105,18 +105,12 @@ class _ProductListScreenState extends State<ProductListScreen>
               brandId: filtrosProvider.marcaIdSeleccionada,
             )
             .then((_) {
-          _isLoadingMore = false;
-        }).catchError((e) {
-          _isLoadingMore = false;
-        });
+              _isLoadingMore = false;
+            })
+            .catchError((e) {
+              _isLoadingMore = false;
+            });
       }
-    }
-  }
-
-  Future<void> _loadProductsIfNeeded() async {
-    final productProvider = context.read<ProductProvider>();
-    if (productProvider.products.isEmpty && !productProvider.isLoading) {
-      await productProvider.loadProducts();
     }
   }
 
@@ -192,10 +186,16 @@ class _ProductListScreenState extends State<ProductListScreen>
       appBar: isPreventista
           ? AppBar(
               title: const Text('Crear Pedido'),
-              elevation: 0,
-              backgroundColor: colorScheme.surface,
-              foregroundColor: colorScheme.onSurface,
+              // backgroundColor: colorScheme.surface,
+              // foregroundColor: colorScheme.onSurface,
               centerTitle: false,
+              actions: [
+                IconButton(
+                  onPressed: _refreshProducts,
+                  icon: Icon(Icons.refresh, size: 24),
+                  tooltip: 'Recargar',
+                ),
+              ],
               leading: IconButton(
                 icon: const Icon(Icons.arrow_back),
                 onPressed: () => Navigator.pop(context),
@@ -205,134 +205,51 @@ class _ProductListScreenState extends State<ProductListScreen>
       body: Column(
         children: [
           Container(
-            padding: const EdgeInsets.all(16.0),
-            decoration: BoxDecoration(
-              color: isDark ? colorScheme.surface : colorScheme.surface,
-              border: Border(
-                bottom: BorderSide(color: colorScheme.outline.withAlpha(50)),
-              ),
+            padding: const EdgeInsets.symmetric(
+              horizontal: 16.0,
+              vertical: 8.0,
             ),
-            child: Row(
-              children: [
-                Expanded(
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 200),
-                    curve: Curves.easeInOut,
-                    height: 56,
-                    decoration: BoxDecoration(
-                      color: isDark
-                          ? colorScheme.surfaceContainerHighest
-                          : colorScheme.surfaceContainerHighest.withAlpha(100),
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(
-                        color: _isSearchFocused
-                            ? colorScheme.primary.withAlpha(80)
-                            : colorScheme.outline.withAlpha(30),
-                        width: _isSearchFocused ? 2 : 1,
-                      ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: _isSearchFocused
-                              ? colorScheme.primary.withAlpha(20)
-                              : Colors.black.withAlpha(6),
-                          blurRadius: _isSearchFocused ? 16 : 12,
-                          offset: const Offset(0, 4),
+            child: TextField(
+              controller: _searchController,
+              focusNode: _searchFocusNode,
+              onChanged: _onSearchChanged,
+              onSubmitted: (_) => _performSearch(),
+              decoration: InputDecoration(
+                hintText: 'Buscar productos...',
+                // prefixIcon: Icon(Icons.search),
+                suffixIcon: _searchController.text.isNotEmpty
+                    ? SizedBox(
+                        width: 96,
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.end,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            IconButton(
+                              onPressed: _performSearch,
+                              icon: const Icon(Icons.search, size: 20),
+                              tooltip: 'Buscar',
+                              padding: EdgeInsets.zero,
+                              constraints: const BoxConstraints(
+                                minHeight: 40,
+                                minWidth: 40,
+                              ),
+                            ),
+                            IconButton(
+                              icon: const Icon(Icons.clear, size: 20),
+                              onPressed: _clearSearch,
+                              padding: EdgeInsets.zero,
+                              constraints: const BoxConstraints(
+                                minHeight: 40,
+                                minWidth: 40,
+                              ),
+                            ),
+                          ],
                         ),
-                      ],
-                    ),
-                    child: TextField(
-                      controller: _searchController,
-                      focusNode: _searchFocusNode,
-                      onChanged: _onSearchChanged,
-                      onSubmitted: (_) => _performSearch(),
-                      decoration: InputDecoration(
-                        hintText: 'Buscar productos...',
-                        hintStyle: TextStyle(
-                          color: context.textTheme.bodySmall?.color,
-                        ),
-                        prefixIcon: Icon(
-                          Icons.search,
-                          color: colorScheme.primary,
-                        ),
-                        suffixIcon: _searchController.text.isNotEmpty
-                            ? IconButton(
-                                icon: const Icon(Icons.clear),
-                                onPressed: _clearSearch,
-                              )
-                            : null,
-                        border: InputBorder.none,
-                        contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 20,
-                          vertical: 18,
-                        ),
-                      ),
-                      textInputAction: TextInputAction.search,
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Container(
-                  height: 56,
-                  width: 56,
-                  decoration: BoxDecoration(
-                    color: isDark
-                        ? colorScheme.surfaceContainerHighest
-                        : colorScheme.surfaceContainerHighest.withAlpha(100),
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(
-                      color: colorScheme.outline.withAlpha(30),
-                      width: 1,
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withAlpha(6),
-                        blurRadius: 12,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
-                  ),
-                  child: IconButton(
-                    onPressed: _performSearch,
-                    icon: Icon(
-                      Icons.search,
-                      color: colorScheme.primary,
-                      size: 24,
-                    ),
-                    tooltip: 'Buscar',
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Container(
-                  height: 56,
-                  width: 56,
-                  decoration: BoxDecoration(
-                    color: isDark
-                        ? colorScheme.surfaceContainerHighest
-                        : colorScheme.surfaceContainerHighest.withAlpha(100),
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(
-                      color: colorScheme.outline.withAlpha(30),
-                      width: 1,
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withAlpha(6),
-                        blurRadius: 12,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
-                  ),
-                  child: IconButton(
-                    onPressed: _refreshProducts,
-                    icon: Icon(
-                      Icons.refresh,
-                      color: colorScheme.primary,
-                      size: 24,
-                    ),
-                    tooltip: 'Recargar',
-                  ),
-                ),
-              ],
+                      )
+                    : null,
+                border: InputBorder.none,
+              ),
+              textInputAction: TextInputAction.search,
             ),
           ),
           Consumer<FiltrosProductoProvider>(
@@ -342,164 +259,111 @@ class _ProductListScreenState extends State<ProductListScreen>
                   if ((filtrosProvider.categorias.isNotEmpty ||
                       filtrosProvider.marcas.isNotEmpty)) ...[
                     Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                      child: Container(
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            colors: [
-                              colorScheme.primaryContainer.withAlpha(120),
-                              colorScheme.primaryContainer.withAlpha(80),
-                            ],
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                          ),
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(
-                            color: colorScheme.primary.withAlpha(100),
-                            width: 1,
-                          ),
-                          boxShadow: [
-                            BoxShadow(
-                              color: colorScheme.primary.withAlpha(20),
-                              blurRadius: 8,
-                              offset: const Offset(0, 2),
-                            ),
-                          ],
-                        ),
-                        child: Row(
-                          children: [
-                            Expanded(
-                              child: Material(
-                                color: Colors.transparent,
-                                child: InkWell(
-                                  onTap: () {
-                                    setState(() => _mostrarCategorias = true);
-                                  },
-                                  borderRadius: BorderRadius.only(
-                                    topLeft: Radius.circular(16),
-                                    bottomLeft: Radius.circular(16),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 8,
+                      ),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: Material(
+                              color: Colors.transparent,
+                              child: InkWell(
+                                onTap: () {
+                                  setState(() => _mostrarCategorias = true);
+                                },
+                                borderRadius: BorderRadius.circular(12),
+                                child: AnimatedContainer(
+                                  duration: const Duration(milliseconds: 200),
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 8,
+                                    horizontal: 16,
                                   ),
-                                  child: AnimatedContainer(
-                                    duration: const Duration(milliseconds: 200),
-                                    padding: const EdgeInsets.symmetric(
-                                      vertical: 12,
+                                  decoration: BoxDecoration(
+                                    color: _mostrarCategorias
+                                        ? const Color(0xFFFFB800)
+                                        : colorScheme.surfaceContainerHighest,
+                                    borderRadius: BorderRadius.circular(12),
+                                    border: Border.all(
+                                      color: _mostrarCategorias
+                                          ? const Color(0xFFFFB800)
+                                          : colorScheme.outline.withAlpha(50),
+                                      width: 1,
                                     ),
-                                    decoration: BoxDecoration(
-                                      gradient: _mostrarCategorias
-                                          ? LinearGradient(
-                                              colors: [
-                                                colorScheme.primary,
-                                                colorScheme.primary
-                                                    .withAlpha(200),
-                                              ],
-                                            )
-                                          : null,
-                                      borderRadius: BorderRadius.only(
-                                        topLeft: Radius.circular(16),
-                                        bottomLeft: Radius.circular(16),
+                                  ),
+                                  child: Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Icon(Icons.category, size: 16),
+                                      const SizedBox(width: 4),
+                                      Text(
+                                        'CATEGORÍAS',
+                                        style: TextStyle(
+                                          fontSize: 12,
+                                          fontWeight: _mostrarCategorias
+                                              ? FontWeight.w700
+                                              : FontWeight.w600,
+                                          letterSpacing: 0.5,
+                                        ),
                                       ),
-                                    ),
-                                    child: Row(
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.center,
-                                      children: [
-                                        Icon(
-                                          Icons.category,
-                                          size: 18,
-                                          color: _mostrarCategorias
-                                              ? colorScheme.onPrimary
-                                              : colorScheme.onPrimaryContainer,
-                                        ),
-                                        const SizedBox(width: 8),
-                                        Text(
-                                          'CATEGORÍAS',
-                                          style: TextStyle(
-                                            fontSize: 13,
-                                            fontWeight: _mostrarCategorias
-                                                ? FontWeight.w700
-                                                : FontWeight.w600,
-                                            color: _mostrarCategorias
-                                                ? colorScheme.onPrimary
-                                                : colorScheme
-                                                    .onPrimaryContainer,
-                                            letterSpacing: 0.5,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
+                                    ],
                                   ),
                                 ),
                               ),
                             ),
-                            Expanded(
-                              child: Material(
-                                color: Colors.transparent,
-                                child: InkWell(
-                                  onTap: () {
-                                    setState(() => _mostrarCategorias = false);
-                                  },
-                                  borderRadius: BorderRadius.only(
-                                    topRight: Radius.circular(16),
-                                    bottomRight: Radius.circular(16),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Material(
+                              color: Colors.transparent,
+                              child: InkWell(
+                                onTap: () {
+                                  setState(() => _mostrarCategorias = false);
+                                },
+                                borderRadius: BorderRadius.circular(12),
+                                child: AnimatedContainer(
+                                  duration: const Duration(milliseconds: 200),
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 8,
+                                    horizontal: 16,
                                   ),
-                                  child: AnimatedContainer(
-                                    duration: const Duration(milliseconds: 200),
-                                    padding: const EdgeInsets.symmetric(
-                                      vertical: 12,
+                                  decoration: BoxDecoration(
+                                    color: !_mostrarCategorias
+                                        ? const Color(0xFFFFB800)
+                                        : colorScheme.surfaceContainerHighest,
+                                    borderRadius: BorderRadius.circular(12),
+                                    border: Border.all(
+                                      color: !_mostrarCategorias
+                                          ? const Color(0xFFFFB800)
+                                          : colorScheme.outline.withAlpha(50),
+                                      width: 1,
                                     ),
-                                    decoration: BoxDecoration(
-                                      gradient: !_mostrarCategorias
-                                          ? LinearGradient(
-                                              colors: [
-                                                colorScheme.secondary,
-                                                colorScheme.secondary
-                                                    .withAlpha(200),
-                                              ],
-                                            )
-                                          : null,
-                                      borderRadius: BorderRadius.only(
-                                        topRight: Radius.circular(16),
-                                        bottomRight: Radius.circular(16),
+                                  ),
+                                  child: Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Icon(Icons.local_offer, size: 16),
+                                      const SizedBox(width: 4),
+                                      Text(
+                                        'MARCAS',
+                                        style: TextStyle(
+                                          fontSize: 12,
+                                          fontWeight: !_mostrarCategorias
+                                              ? FontWeight.w700
+                                              : FontWeight.w600,
+                                          letterSpacing: 0.5,
+                                        ),
                                       ),
-                                    ),
-                                    child: Row(
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.center,
-                                      children: [
-                                        Icon(
-                                          Icons.local_offer,
-                                          size: 18,
-                                          color: !_mostrarCategorias
-                                              ? colorScheme.onSecondary
-                                              : colorScheme
-                                                  .onSecondaryContainer,
-                                        ),
-                                        const SizedBox(width: 8),
-                                        Text(
-                                          'MARCAS',
-                                          style: TextStyle(
-                                            fontSize: 13,
-                                            fontWeight: !_mostrarCategorias
-                                                ? FontWeight.w700
-                                                : FontWeight.w600,
-                                            color: !_mostrarCategorias
-                                                ? colorScheme.onSecondary
-                                                : colorScheme
-                                                    .onSecondaryContainer,
-                                            letterSpacing: 0.5,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
+                                    ],
                                   ),
                                 ),
                               ),
                             ),
-                          ],
-                        ),
+                          ),
+                        ],
                       ),
                     ),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: 4),
                     if (_mostrarCategorias &&
                         filtrosProvider.categorias.isNotEmpty)
                       SizedBox(
@@ -512,68 +376,48 @@ class _ProductListScreenState extends State<ProductListScreen>
                             if (index == 0) {
                               final isSelected =
                                   filtrosProvider.categoriaIdSeleccionada ==
-                                      null;
+                                  null;
                               return Padding(
-                                padding:
-                                    const EdgeInsets.symmetric(horizontal: 4),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 4,
+                                ),
                                 child: AnimatedContainer(
                                   duration: const Duration(milliseconds: 200),
                                   decoration: BoxDecoration(
-                                    gradient: isSelected
-                                        ? LinearGradient(
-                                            colors: [
-                                              colorScheme.primary,
-                                              colorScheme.primary
-                                                  .withAlpha(180),
-                                            ],
-                                          )
-                                        : null,
-                                    color: !isSelected
-                                        ? colorScheme.surfaceContainerHighest
-                                        : null,
-                                    borderRadius:
-                                        BorderRadius.circular(20),
+                                    color: isSelected
+                                        ? const Color(0xFFFFB800)
+                                        : colorScheme.surfaceContainerHighest,
+                                    borderRadius: BorderRadius.circular(12),
                                     border: Border.all(
                                       color: isSelected
-                                          ? colorScheme.primary
-                                          : colorScheme.outline
-                                              .withAlpha(40),
+                                          ? const Color(0xFFFFB800)
+                                          : colorScheme.outline.withAlpha(40),
                                       width: isSelected ? 2 : 1,
                                     ),
-                                    boxShadow: isSelected
-                                        ? [
-                                            BoxShadow(
-                                              color: colorScheme.primary
-                                                  .withAlpha(30),
-                                              blurRadius: 8,
-                                              offset: const Offset(0, 2),
-                                            )
-                                          ]
-                                        : null,
                                   ),
                                   child: Material(
                                     color: Colors.transparent,
                                     child: InkWell(
                                       onTap: () {
-                                        filtrosProvider
-                                            .seleccionarCategoria(null);
+                                        filtrosProvider.seleccionarCategoria(
+                                          null,
+                                        );
                                         _loadProducts();
                                       },
-                                      borderRadius:
-                                          BorderRadius.circular(20),
+                                      borderRadius: BorderRadius.circular(20),
                                       child: Padding(
                                         padding: const EdgeInsets.symmetric(
-                                          horizontal: 16,
-                                          vertical: 8,
+                                          horizontal: 8,
+                                          vertical: 4,
                                         ),
                                         child: Center(
                                           child: Text(
                                             'Todas',
                                             style: TextStyle(
                                               color: isSelected
-                                                  ? colorScheme.onPrimary
+                                                  ? Colors.black87
                                                   : colorScheme
-                                                      .onSurfaceVariant,
+                                                        .onSurfaceVariant,
                                               fontWeight: isSelected
                                                   ? FontWeight.w700
                                                   : FontWeight.w500,
@@ -587,68 +431,46 @@ class _ProductListScreenState extends State<ProductListScreen>
                                 ),
                               );
                             }
-                            final category = filtrosProvider
-                                .categorias[index - 1];
+                            final category =
+                                filtrosProvider.categorias[index - 1];
                             final categoryId = category['id'] as int?;
                             final categoryName =
                                 category['nombre'] as String? ?? '';
                             final isSelected =
                                 filtrosProvider.categoriaIdSeleccionada ==
-                                    categoryId;
+                                categoryId;
                             return Padding(
-                              padding:
-                                  const EdgeInsets.symmetric(horizontal: 4),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 4,
+                              ),
                               child: AnimatedContainer(
                                 duration: const Duration(milliseconds: 200),
                                 decoration: BoxDecoration(
-                                  gradient: isSelected
-                                      ? LinearGradient(
-                                          colors: [
-                                            colorScheme.primary,
-                                            colorScheme.primary
-                                                .withAlpha(180),
-                                          ],
-                                        )
-                                      : null,
-                                  color: !isSelected
-                                      ? colorScheme.surfaceContainerHighest
-                                      : null,
-                                  borderRadius:
-                                      BorderRadius.circular(20),
+                                  color: isSelected
+                                      ? const Color(0xFFFFB800)
+                                      : colorScheme.surfaceContainerHighest,
+                                  borderRadius: BorderRadius.circular(12),
                                   border: Border.all(
                                     color: isSelected
-                                        ? colorScheme.primary
-                                        : colorScheme.outline
-                                            .withAlpha(40),
+                                        ? const Color(0xFFFFB800)
+                                        : colorScheme.outline.withAlpha(40),
                                     width: isSelected ? 2 : 1,
                                   ),
-                                  boxShadow: isSelected
-                                      ? [
-                                          BoxShadow(
-                                            color: colorScheme.primary
-                                                .withAlpha(30),
-                                            blurRadius: 8,
-                                            offset: const Offset(0, 2),
-                                          )
-                                        ]
-                                      : null,
                                 ),
                                 child: Material(
                                   color: Colors.transparent,
                                   child: InkWell(
                                     onTap: () {
-                                      filtrosProvider
-                                          .seleccionarCategoria(
+                                      filtrosProvider.seleccionarCategoria(
                                         categoryId,
                                       );
                                       _loadProducts();
                                     },
-                                    borderRadius:
-                                        BorderRadius.circular(20),
+                                    borderRadius: BorderRadius.circular(20),
                                     child: Padding(
                                       padding: const EdgeInsets.symmetric(
-                                        horizontal: 16,
-                                        vertical: 8,
+                                        horizontal: 8,
+                                        vertical: 4,
                                       ),
                                       child: Row(
                                         mainAxisSize: MainAxisSize.min,
@@ -657,7 +479,7 @@ class _ProductListScreenState extends State<ProductListScreen>
                                             Icon(
                                               Icons.check_circle,
                                               size: 14,
-                                              color: colorScheme.onPrimary,
+                                              color: Colors.black87,
                                             ),
                                           if (isSelected)
                                             const SizedBox(width: 6),
@@ -665,9 +487,9 @@ class _ProductListScreenState extends State<ProductListScreen>
                                             categoryName,
                                             style: TextStyle(
                                               color: isSelected
-                                                  ? colorScheme.onPrimary
+                                                  ? Colors.black87
                                                   : colorScheme
-                                                      .onSurfaceVariant,
+                                                        .onSurfaceVariant,
                                               fontWeight: isSelected
                                                   ? FontWeight.w700
                                                   : FontWeight.w500,
@@ -697,66 +519,44 @@ class _ProductListScreenState extends State<ProductListScreen>
                               final isSelected =
                                   filtrosProvider.marcaIdSeleccionada == null;
                               return Padding(
-                                padding:
-                                    const EdgeInsets.symmetric(horizontal: 4),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 4,
+                                ),
                                 child: AnimatedContainer(
                                   duration: const Duration(milliseconds: 200),
                                   decoration: BoxDecoration(
-                                    gradient: isSelected
-                                        ? LinearGradient(
-                                            colors: [
-                                              colorScheme.secondary,
-                                              colorScheme.secondary
-                                                  .withAlpha(180),
-                                            ],
-                                          )
-                                        : null,
-                                    color: !isSelected
-                                        ? colorScheme.surfaceContainerHighest
-                                        : null,
-                                    borderRadius:
-                                        BorderRadius.circular(20),
+                                    color: isSelected
+                                        ? const Color(0xFFFFB800)
+                                        : colorScheme.surfaceContainerHighest,
+                                    borderRadius: BorderRadius.circular(12),
                                     border: Border.all(
                                       color: isSelected
-                                          ? colorScheme.secondary
-                                          : colorScheme.outline
-                                              .withAlpha(40),
+                                          ? const Color(0xFFFFB800)
+                                          : colorScheme.outline.withAlpha(40),
                                       width: isSelected ? 2 : 1,
                                     ),
-                                    boxShadow: isSelected
-                                        ? [
-                                            BoxShadow(
-                                              color: colorScheme.secondary
-                                                  .withAlpha(30),
-                                              blurRadius: 8,
-                                              offset: const Offset(0, 2),
-                                            )
-                                          ]
-                                        : null,
                                   ),
                                   child: Material(
                                     color: Colors.transparent,
                                     child: InkWell(
                                       onTap: () {
-                                        filtrosProvider
-                                            .seleccionarMarca(null);
+                                        filtrosProvider.seleccionarMarca(null);
                                         _loadProducts();
                                       },
-                                      borderRadius:
-                                          BorderRadius.circular(20),
+                                      borderRadius: BorderRadius.circular(20),
                                       child: Padding(
                                         padding: const EdgeInsets.symmetric(
-                                          horizontal: 16,
-                                          vertical: 8,
+                                          horizontal: 8,
+                                          vertical: 4,
                                         ),
                                         child: Center(
                                           child: Text(
                                             'Todas',
                                             style: TextStyle(
                                               color: isSelected
-                                                  ? colorScheme.onSecondary
+                                                  ? Colors.black87
                                                   : colorScheme
-                                                      .onSurfaceVariant,
+                                                        .onSurfaceVariant,
                                               fontWeight: isSelected
                                                   ? FontWeight.w700
                                                   : FontWeight.w500,
@@ -770,66 +570,42 @@ class _ProductListScreenState extends State<ProductListScreen>
                                 ),
                               );
                             }
-                            final marca =
-                                filtrosProvider.marcas[index - 1];
+                            final marca = filtrosProvider.marcas[index - 1];
                             final marcaId = marca['id'] as int?;
                             final marcaNombre =
                                 marca['nombre'] as String? ?? '';
                             final isSelected =
-                                filtrosProvider.marcaIdSeleccionada ==
-                                    marcaId;
+                                filtrosProvider.marcaIdSeleccionada == marcaId;
                             return Padding(
-                              padding:
-                                  const EdgeInsets.symmetric(horizontal: 4),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 4,
+                              ),
                               child: AnimatedContainer(
                                 duration: const Duration(milliseconds: 200),
                                 decoration: BoxDecoration(
-                                  gradient: isSelected
-                                      ? LinearGradient(
-                                          colors: [
-                                            colorScheme.secondary,
-                                            colorScheme.secondary
-                                                .withAlpha(180),
-                                          ],
-                                        )
-                                      : null,
-                                  color: !isSelected
-                                      ? colorScheme.surfaceContainerHighest
-                                      : null,
-                                  borderRadius:
-                                      BorderRadius.circular(20),
+                                  color: isSelected
+                                      ? const Color(0xFFFFB800)
+                                      : colorScheme.surfaceContainerHighest,
+                                  borderRadius: BorderRadius.circular(12),
                                   border: Border.all(
                                     color: isSelected
-                                        ? colorScheme.secondary
-                                        : colorScheme.outline
-                                            .withAlpha(40),
+                                        ? const Color(0xFFFFB800)
+                                        : colorScheme.outline.withAlpha(40),
                                     width: isSelected ? 2 : 1,
                                   ),
-                                  boxShadow: isSelected
-                                      ? [
-                                          BoxShadow(
-                                            color: colorScheme.secondary
-                                                .withAlpha(30),
-                                            blurRadius: 8,
-                                            offset: const Offset(0, 2),
-                                          )
-                                        ]
-                                      : null,
                                 ),
                                 child: Material(
                                   color: Colors.transparent,
                                   child: InkWell(
                                     onTap: () {
-                                      filtrosProvider
-                                          .seleccionarMarca(marcaId);
+                                      filtrosProvider.seleccionarMarca(marcaId);
                                       _loadProducts();
                                     },
-                                    borderRadius:
-                                        BorderRadius.circular(20),
+                                    borderRadius: BorderRadius.circular(20),
                                     child: Padding(
                                       padding: const EdgeInsets.symmetric(
-                                        horizontal: 16,
-                                        vertical: 8,
+                                        horizontal: 8,
+                                        vertical: 4,
                                       ),
                                       child: Row(
                                         mainAxisSize: MainAxisSize.min,
@@ -838,8 +614,7 @@ class _ProductListScreenState extends State<ProductListScreen>
                                             Icon(
                                               Icons.check_circle,
                                               size: 14,
-                                              color:
-                                                  colorScheme.onSecondary,
+                                              color: Colors.black87,
                                             ),
                                           if (isSelected)
                                             const SizedBox(width: 6),
@@ -847,9 +622,9 @@ class _ProductListScreenState extends State<ProductListScreen>
                                             marcaNombre,
                                             style: TextStyle(
                                               color: isSelected
-                                                  ? colorScheme.onSecondary
+                                                  ? Colors.black87
                                                   : colorScheme
-                                                      .onSurfaceVariant,
+                                                        .onSurfaceVariant,
                                               fontWeight: isSelected
                                                   ? FontWeight.w700
                                                   : FontWeight.w500,
@@ -905,8 +680,9 @@ class _ProductListScreenState extends State<ProductListScreen>
                         Text(
                           'Error: ${productProvider.errorMessage}',
                           textAlign: TextAlign.center,
-                          style: context.textTheme.bodyLarge?.copyWith(
-                            color: colorScheme.error,
+                          style: TextStyle(
+                            fontSize: 16,
+                            color: colorScheme.onSurfaceVariant,
                           ),
                         ),
                         const SizedBox(height: 16),
@@ -932,7 +708,7 @@ class _ProductListScreenState extends State<ProductListScreen>
                         const SizedBox(height: 16),
                         Text(
                           'No hay productos disponibles',
-                          style: context.textTheme.bodyLarge,
+                          style: TextStyle(fontSize: 18),
                         ),
                       ],
                     ),

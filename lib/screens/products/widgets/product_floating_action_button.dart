@@ -28,11 +28,7 @@ class ProductFloatingActionButton extends StatelessWidget {
             ),
             label: Text(
               'Carrito (${carritoProvider.items.length})',
-              style: TextStyle(
-                fontWeight: FontWeight.w700,
-                fontSize: AppTextStyles.bodyMedium(context).fontSize!,
-                letterSpacing: 0.5,
-              ),
+              style: TextStyle(fontWeight: FontWeight.w700, letterSpacing: 0.5),
             ),
           );
         }

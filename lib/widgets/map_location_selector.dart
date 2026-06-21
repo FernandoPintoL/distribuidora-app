@@ -564,21 +564,25 @@ class _MapLocationSelectorState extends State<MapLocationSelector> {
       appBar: AppBar(
         title: Row(
           children: [
-            const Text('Mapa de Entregas'),
-            const SizedBox(width: 12),
-            // ✅ NUEVO: Badge con cantidad de ventas
+            Expanded(
+              child: const Text(
+                'Mapa',
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
             if (cantidadVentas > 0)
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                 decoration: BoxDecoration(
                   color: Colors.orange[600],
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(10),
                 ),
                 child: Text(
-                  '$cantidadVentas ${cantidadVentas == 1 ? 'venta' : 'ventas'}',
+                  '$cantidadVentas',
                   style: const TextStyle(
                     fontWeight: FontWeight.bold,
                     color: Colors.white,
+                    fontSize: 11,
                   ),
                 ),
               ),

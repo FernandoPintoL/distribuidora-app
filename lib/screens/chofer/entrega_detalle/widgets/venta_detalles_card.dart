@@ -66,18 +66,25 @@ class VentaDetallesCard extends StatelessWidget {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(
-                  'Total de la Venta:',
-                  style: TextStyle(
-                    fontWeight: FontWeight.w600,
-                    color: isDarkMode ? Colors.blue[300] : Colors.blue[700],
+                Expanded(
+                  child: Text(
+                    'Total de la Venta:',
+                    style: TextStyle(
+                      fontWeight: FontWeight.w600,
+                      color: isDarkMode ? Colors.blue[300] : Colors.blue[700],
+                    ),
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
-                Text(
-                  'Bs. ${venta.total.toStringAsFixed(2)}',
-                  style: TextStyle(
-                    fontWeight: FontWeight.w700,
-                    color: isDarkMode ? Colors.blue[300] : Colors.blue[700],
+                Expanded(
+                  child: Text(
+                    'Bs. ${venta.total.toStringAsFixed(2)}',
+                    style: TextStyle(
+                      fontWeight: FontWeight.w700,
+                      color: isDarkMode ? Colors.blue[300] : Colors.blue[700],
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                    textAlign: TextAlign.end,
                   ),
                 ),
               ],

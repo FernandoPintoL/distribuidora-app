@@ -632,31 +632,39 @@ class _VentaDetalleScreenState extends State<VentaDetalleScreen> {
                                         overflow: TextOverflow.ellipsis,
                                       ),
                                     ),
-                                    const SizedBox(width: 8),
-                                    Text(
-                                      confirmacion.tipoConfirmacion,
-                                      style: TextStyle(
-                                        fontWeight: FontWeight.bold,
-                                        color: tipoConfirmacion,
+                                    const SizedBox(width: 6),
+                                    Flexible(
+                                      child: Text(
+                                        confirmacion.tipoConfirmacion,
+                                        style: TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                          color: tipoConfirmacion,
+                                          fontSize: 11,
+                                        ),
+                                        overflow: TextOverflow.ellipsis,
                                       ),
                                     ),
-                                    Container(
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 8,
-                                        vertical: 4,
-                                      ),
-                                      decoration: BoxDecoration(
-                                        color: _getEstadoPagoColor(
-                                          confirmacion.estadoPago,
+                                    const SizedBox(width: 4),
+                                    Flexible(
+                                      child: Container(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 6,
+                                          vertical: 2,
                                         ),
-                                        borderRadius: BorderRadius.circular(4),
-                                      ),
-                                      child: Text(
-                                        confirmacion.estadoPagoFormato,
-                                        style: const TextStyle(
-                                          color: Colors.white,
-                                          fontWeight: FontWeight.bold,
+                                        decoration: BoxDecoration(
+                                          color: _getEstadoPagoColor(
+                                            confirmacion.estadoPago,
+                                          ),
+                                          borderRadius: BorderRadius.circular(4),
                                         ),
+                                        child: Text(
+                                          confirmacion.estadoPagoFormato,
+                                          style: const TextStyle(
+                                            color: Colors.white,
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 9,
+                                        ),
+                                      ),
                                       ),
                                     ),
                                   ],

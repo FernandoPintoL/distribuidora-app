@@ -4,6 +4,7 @@ import '../../models/models.dart';
 import '../../providers/providers.dart';
 import '../../utils/stock_status.dart';
 import '../../extensions/theme_extension.dart';
+import '../../config/app_colors.dart';
 import '../product/index.dart';
 import '../common/quantity_input_widget.dart';
 
@@ -157,6 +158,12 @@ class _ProductListItemState extends State<ProductListItem>
     carritoProvider.calcularCarritoConRangos();
   }
 
+  void _eliminarDelCarrito() {
+    final carritoProvider = context.read<CarritoProvider>();
+    carritoProvider.eliminarProducto(widget.product.id);
+    carritoProvider.calcularCarritoConRangos();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Consumer<CarritoProvider>(
@@ -201,26 +208,25 @@ class _ProductListItemState extends State<ProductListItem>
             ? (widget.product.stockPrincipal!.cantidadDisponible as num).toInt()
             : 0;
 
-        // Color marrón fijo para botones, precios y categoría
-        const brownColor = Color(0xFF795548);
-        final brownColorLight = brownColor.withAlpha(isDark ? 100 : 40);
-        final brownShadow = brownColor.withAlpha(isDark ? 30 : 15);
-        final brownBorder = brownColor.withAlpha(120);
+        // Color dorado secundario de AppColors
+        final primaryAccentColor = AppColors.secondary;
+        final accentColorLight = primaryAccentColor.withAlpha(isDark ? 85 : 30);
+
+        // Colores para estado seleccionado
+        final isSelected = _quantity > 0;
+        final selectedBgColor = AppColors.secondary.withAlpha(isDark ? 40 : 25);
+        final selectedBorderColor = AppColors.secondary;
 
         return Card(
           margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          elevation: 4,
-          color: _quantity > 0
-              ? brownColorLight
-              : (isDark ? colorScheme.surface : Colors.white),
-          shadowColor: brownShadow,
+          elevation: isSelected ? 6 : 4,
+          shadowColor: isSelected ? AppColors.secondary.withAlpha(80) : Colors.black.withAlpha(30),
+          color: isSelected ? selectedBgColor : (isDark ? colorScheme.surface : Colors.white),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(12),
             side: BorderSide(
-              color: _quantity > 0
-                  ? brownBorder
-                  : colorScheme.outline.withAlpha(20),
-              width: _quantity > 0 ? 2 : 1,
+              color: isSelected ? selectedBorderColor : colorScheme.outline.withAlpha(20),
+              width: isSelected ? 2 : 1,
             ),
           ),
           child: InkWell(
@@ -239,7 +245,38 @@ class _ProductListItemState extends State<ProductListItem>
                   children: [
                     Row(
                       children: [
-                        ProductImageWidget(product: widget.product),
+                        Column(
+                          children: [
+                            ProductImageWidget(product: widget.product),
+                            // Badge de cantidad disponible para preventistas
+                            if (isPreventista)
+                              Padding(
+                                padding: const EdgeInsets.only(top: 6.0),
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 4,
+                                    vertical: 2,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: colorScheme.primaryContainer
+                                        .withAlpha(200),
+                                    borderRadius: BorderRadius.circular(8),
+                                    border: Border.all(
+                                      color: colorScheme.primary.withAlpha(150),
+                                      width: 0.5,
+                                    ),
+                                  ),
+                                  child: Text(
+                                    '📦 Disp.: $cantidadDisponible ${widget.product.unidadMedida?.nombre ?? ""}',
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.w600,
+                                      color: colorScheme.onPrimaryContainer,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                          ],
+                        ),
                         const SizedBox(width: 12),
                         Flexible(
                           fit: FlexFit.loose,
@@ -252,38 +289,10 @@ class _ProductListItemState extends State<ProductListItem>
                                 cantidad: _quantity,
                                 detalleConRango: detalleConRango,
                               ),
-                              // Badge de cantidad disponible para preventistas
-                              if (isPreventista)
-                                Padding(
-                                  padding: const EdgeInsets.only(top: 6.0),
-                                  child: Container(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 4,
-                                      vertical: 2,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: colorScheme.primaryContainer.withAlpha(
-                                        200,
-                                      ),
-                                      borderRadius: BorderRadius.circular(8),
-                                      border: Border.all(
-                                        color: colorScheme.primary.withAlpha(150),
-                                        width: 0.5,
-                                      ),
-                                    ),
-                                    child: Text(
-                                      '📦 Disp.: $cantidadDisponible ${widget.product.unidadMedida?.nombre ?? ""}',
-                                      style: context.textTheme.bodyLarge?.copyWith(
-                                        fontWeight: FontWeight.w600,
-                                        color: colorScheme.onPrimaryContainer,
-                                      ),
-                                    ),
-                                  ),
-                                ),
                             ],
                           ),
                         ),
-                        const SizedBox(width: 4,),
+                        const SizedBox(width: 4),
                         if (_quantity == 0)
                           ScaleTransition(
                             scale: _bounceAnimation,
@@ -292,30 +301,50 @@ class _ProductListItemState extends State<ProductListItem>
                               height: 44,
                               child: IconButton(
                                 onPressed: _incrementQuantity,
-                                icon: const Icon(Icons.add_shopping_cart),
+                                icon: const Icon(Icons.shopping_cart_outlined),
                                 style: IconButton.styleFrom(
-                                  backgroundColor: brownColor,
-                                  foregroundColor: Colors.white,
+                                  backgroundColor: primaryAccentColor,
                                   elevation: 3,
-                                  shadowColor: brownColor.withAlpha(40),
+                                  shadowColor: primaryAccentColor.withAlpha(40),
                                 ),
                                 tooltip: 'Agregar al carrito',
                               ),
                             ),
-                          )
-                      ]
+                          ),
+                      ],
                     ),
                     const SizedBox(height: 8),
                     // Stock badge y botón/cantidad
                     if (canAddToCart && _quantity > 0)
-                      QuantityInputWidget(
-                        quantity: _quantity,
-                        maxQuantity: stock,
-                        onIncrement: _incrementQuantity,
-                        onDecrement: _decrementQuantity,
-                        onChanged: _actualizarCantidadDesdeInput,
-                        primaryColor: brownColor,
-                        fullWidth: true,
+                      Row(
+                        children: [
+                          Expanded(
+                            child: QuantityInputWidget(
+                              quantity: _quantity,
+                              maxQuantity: stock,
+                              onIncrement: _incrementQuantity,
+                              onDecrement: _decrementQuantity,
+                              onChanged: _actualizarCantidadDesdeInput,
+                              primaryColor: primaryAccentColor,
+                              fullWidth: true,
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          SizedBox(
+                            width: 44,
+                            height: 44,
+                            child: IconButton(
+                              onPressed: _eliminarDelCarrito,
+                              icon: const Icon(Icons.delete_outline),
+                              style: IconButton.styleFrom(
+                                backgroundColor: AppColors.error,
+                                elevation: 2,
+                                shadowColor: AppColors.error.withAlpha(40),
+                              ),
+                              tooltip: 'Eliminar del carrito',
+                            ),
+                          ),
+                        ],
                       ),
                   ],
                 ),

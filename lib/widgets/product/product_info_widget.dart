@@ -25,21 +25,31 @@ class ProductInfoWidget extends StatelessWidget {
     final isDark = context.isDark;
 
     // ✅ NUEVO: Calcular descuentos y precios
-    final tipoPrecionNombre = detalleConRango?.tipoPrecioNombre.toUpperCase() ?? '';
-    final bool esDescuento = detalleConRango != null &&
+    final tipoPrecionNombre =
+        detalleConRango?.tipoPrecioNombre.toUpperCase() ?? '';
+    final bool esDescuento =
+        detalleConRango != null &&
         cantidad > 0 &&
         tipoPrecionNombre.contains('DESCUENTO');
-    final bool esEspecial = detalleConRango != null &&
+    final bool esEspecial =
+        detalleConRango != null &&
         cantidad > 0 &&
         tipoPrecionNombre.contains('ESPECIAL');
     final bool tieneDescuento = esDescuento || esEspecial;
 
-    final precioActual = detalleConRango?.precioUnitario ?? product.precioVenta ?? 0.0;
+    final precioActual =
+        detalleConRango?.precioUnitario ?? product.precioVenta ?? 0.0;
     final subtotal = precioActual * cantidad;
     final precioOriginal = product.precioVenta ?? 0.0;
 
     // Colores para cada tipo de descuento
-    final colorDescuento = esDescuento ? Colors.orange : (esEspecial ? Colors.green : colorScheme.primary);
+    final colorDescuento = esDescuento
+        ? Colors.orange
+        : (esEspecial
+              ? Colors.green
+              : isDark
+              ? Colors.white
+              : colorScheme.primary);
 
     return Flexible(
       fit: FlexFit.loose,
@@ -50,7 +60,7 @@ class ProductInfoWidget extends StatelessWidget {
           // Nombre del producto
           Text(
             product.nombre,
-            style: context.textTheme.titleLarge?.copyWith(
+            style: TextStyle(
               fontWeight: FontWeight.w700,
               color: colorScheme.onSurface,
             ),
@@ -59,35 +69,30 @@ class ProductInfoWidget extends StatelessWidget {
           ),
 
           // ✅ Badge de COMBO (debajo del nombre)
+          Text(
+            'SKU: ${product.sku}',
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+          // SKU, Marca y Categoría en fila
           if (product.esCombo)
             Padding(
               padding: const EdgeInsets.only(top: 6.0),
               child: Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 8,
-                  vertical: 4,
-                ),
+                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
                 decoration: BoxDecoration(
                   color: Colors.amber.shade600,
                   borderRadius: BorderRadius.circular(8),
-                  border: Border.all(
-                    color: Colors.amber.shade700,
-                    width: 0.5,
-                  ),
+                  border: Border.all(color: Colors.amber.shade700, width: 0.5),
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(
-                      Icons.card_giftcard,
-                      size: 12,
-                      color: Colors.white,
-                    ),
+                    Icon(Icons.card_giftcard, size: 12, color: Colors.white),
                     const SizedBox(width: 3),
                     Text(
                       'COMBO',
-                      style: context.textTheme.labelSmall?.copyWith(
-                        fontSize: 10,
+                      style: TextStyle(
                         fontWeight: FontWeight.w700,
                         color: Colors.white,
                       ),
@@ -96,185 +101,72 @@ class ProductInfoWidget extends StatelessWidget {
                 ),
               ),
             ),
-
           const SizedBox(height: 6),
-
-          // SKU, Marca y Categoría en fila
-          Row(
-            children: [
-              Flexible(
-                child: Text(
-                  'SKU: ${product.sku}',
-                  style: context.textTheme.bodySmall?.copyWith(
-                    color: context.textTheme.bodySmall?.color,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 6),
-
-          // ✅ MEJORADO: Badges modernos para Marca y Categoría
-          Wrap(
-            spacing: 4,
-            runSpacing: 4,
-            children: [
-              // Badge Marca
-              if (product.marca != null)
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 3,
-                  ),
-                  decoration: BoxDecoration(
-                    color: colorScheme.secondary.withAlpha(isDark ? 80 : 120),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: colorScheme.secondary.withAlpha(150),
-                      width: 0.5,
-                    ),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        Icons.local_offer,
-                        size: 10,
-                        color: colorScheme.onSecondary,
-                      ),
-                      const SizedBox(width: 3),
-                      Text(
-                        product.marca!.nombre,
-                        style: context.textTheme.labelSmall?.copyWith(
-                          fontSize: 10,
-                          fontWeight: FontWeight.w600,
-                          color: colorScheme.onSecondary,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ],
-                  ),
-                ),
-
-              // Badge Categoría
-              if (product.categoria != null)
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 3,
-                  ),
-                  decoration: BoxDecoration(
-                    color: colorScheme.tertiary.withAlpha(isDark ? 80 : 120),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: colorScheme.tertiary.withAlpha(150),
-                      width: 0.5,
-                    ),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        Icons.category,
-                        size: 10,
-                        color: colorScheme.onTertiary,
-                      ),
-                      const SizedBox(width: 3),
-                      Text(
-                        product.categoria!.nombre,
-                        style: context.textTheme.labelSmall?.copyWith(
-                          fontSize: 10,
-                          fontWeight: FontWeight.w600,
-                          color: colorScheme.onTertiary,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ],
-                  ),
-                ),
-            ],
-          ),
-          const SizedBox(height: 4),
-
-          // Unidad de medida
-          if (product.unidadMedida != null)
-            Text(
-              'Unidad: ${product.unidadMedida!.nombre}',
-              style: context.textTheme.bodySmall?.copyWith(
-                fontSize: 9,
-                color: Colors.grey,
-              ),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-          const SizedBox(height: 2),
 
           // ✅ NUEVO: Precio con soporte para rangos y descuentos
           if (product.precioVenta != null)
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                // Mostrar precio original tachado si hay descuento
-                if (tieneDescuento)
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 4.0),
-                    child: Text(
-                      'Bs ${precioOriginal.toStringAsFixed(2)}',
-                      style: context.textTheme.bodySmall?.copyWith(
-                        color: Colors.grey,
-                        decoration: TextDecoration.lineThrough,
-                      ),
-                    ),
-                  ),
-
-                // Mostrar precio actual con color según tipo
-                Row(
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      'Bs ${precioActual.toStringAsFixed(2)}',
-                      style: context.textTheme.titleLarge?.copyWith(
-                        color: colorDescuento,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
                     // ✅ NUEVO: Mostrar tipo de precio si aplica rango
                     if (detalleConRango != null && cantidad > 0)
-                      Padding(
-                        padding: const EdgeInsets.only(left: 8.0),
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 6,
-                            vertical: 2,
-                          ),
-                          decoration: BoxDecoration(
-                            color: colorDescuento.withAlpha(100),
-                            borderRadius: BorderRadius.circular(4),
-                          ),
-                          child: Text(
-                            detalleConRango!.tipoPrecioNombre,
-                            style: context.textTheme.labelSmall?.copyWith(
-                              fontWeight: FontWeight.w600,
-                              color: esDescuento
-                                  ? Colors.orange.shade900
-                                  : (esEspecial ? Colors.green.shade900 : colorScheme.onPrimaryContainer),
-                            ),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 4,
+                          vertical: 2,
+                        ),
+                        decoration: BoxDecoration(
+                          color: colorDescuento.withAlpha(100),
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: Text(
+                          detalleConRango!.tipoPrecioNombre,
+                          style: TextStyle(
+                            fontWeight: FontWeight.w600,
+                            color: esDescuento
+                                ? Colors.orange
+                                : (esEspecial
+                                      ? Colors.green
+                                      : colorScheme.onPrimaryContainer),
                           ),
                         ),
                       ),
+                    // Mostrar precio actual con color según tipo
+                    Row(
+                      children: [
+                        // Mostrar precio original tachado si hay descuento
+                        if (tieneDescuento)
+                          Text(
+                            'Bs ${precioOriginal.toStringAsFixed(2)}',
+                            style: TextStyle(
+                              color: Colors.red,
+                              decoration: TextDecoration.lineThrough,
+                            ),
+                          ),
+                        const SizedBox(width: 8),
+                        Text(
+                          'Bs ${precioActual.toStringAsFixed(2)}',
+                          style: TextStyle(
+                            color: colorDescuento,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(width: 4),
+                      ],
+                    ),
                   ],
                 ),
-
                 // ✅ NUEVO: Mostrar subtotal si hay cantidad
                 if (cantidad > 0)
                   Padding(
                     padding: const EdgeInsets.only(top: 4.0),
                     child: Text(
-                      'Subtotal: Bs ${subtotal.toStringAsFixed(2)}',
-                      style: context.textTheme.bodySmall?.copyWith(
+                      'Sub.: Bs ${subtotal.toStringAsFixed(2)}',
+                      style: TextStyle(
                         color: colorDescuento,
                         fontWeight: FontWeight.w600,
                       ),

@@ -934,36 +934,18 @@ class _ConfirmarEntregaVentaScreenState
               ? Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 4,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Colors.orange,
-                        borderRadius: BorderRadius.circular(6),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.orange.withOpacity(0.3),
-                            blurRadius: 8,
-                            offset: const Offset(0, 2),
-                          ),
-                        ],
-                      ),
-                      child: const Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(Icons.edit, size: 16, color: Colors.white),
-                          SizedBox(width: 6),
-                          Text(
-                            'EDITAR',
-                            style: TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
-                            ),
-                          ),
-                        ],
+                    Tooltip(
+                      message: 'Editar',
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 6,
+                          vertical: 2,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.orange,
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: const Icon(Icons.edit, size: 14, color: Colors.white),
                       ),
                     ),
                     const SizedBox(width: 12),
@@ -997,24 +979,25 @@ class _ConfirmarEntregaVentaScreenState
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   // ✅ SIMPLIFICADO: SegmentedButton para elegir tipo
-                  SegmentedButton<String>(
-                    selected: {_tipoEntrega},
-                    onSelectionChanged: (Set<String> newSelection) {
-                      setState(() {
-                        _tipoEntrega = newSelection.first;
-                        // ✅ FIX CRÍTICO: Actualizar _tipoConfirmacion cuando cambia _tipoEntrega
-                        if (_tipoEntrega == 'COMPLETA') {
-                          _tipoConfirmacion = 'COMPLETA';
-                          _tipoNovedad = null;
-                          _tiendaAbierta = false;
-                          _clientePresente = false;
-                          _motivoRechazo = null;
-                          _productosRechazados.clear();
-                          debugPrint(
-                            '✅ Cambiado a COMPLETA - _tipoConfirmacion: COMPLETA - campos de novedad limpiados',
-                          );
-                        } else {
-                          _tipoConfirmacion = 'CON_NOVEDAD';
+                  Flexible(
+                    child: SegmentedButton<String>(
+                      selected: {_tipoEntrega},
+                      onSelectionChanged: (Set<String> newSelection) {
+                        setState(() {
+                          _tipoEntrega = newSelection.first;
+                          // ✅ FIX CRÍTICO: Actualizar _tipoConfirmacion cuando cambia _tipoEntrega
+                          if (_tipoEntrega == 'COMPLETA') {
+                            _tipoConfirmacion = 'COMPLETA';
+                            _tipoNovedad = null;
+                            _tiendaAbierta = false;
+                            _clientePresente = false;
+                            _motivoRechazo = null;
+                            _productosRechazados.clear();
+                            debugPrint(
+                              '✅ Cambiado a COMPLETA - _tipoConfirmacion: COMPLETA - campos de novedad limpiados',
+                            );
+                          } else {
+                            _tipoConfirmacion = 'CON_NOVEDAD';
                           _pagos.clear();
                           debugPrint(
                             '✅ Cambiado a CON_NOVEDAD - _tipoConfirmacion: CON_NOVEDAD - pagos limpiados',
@@ -1034,6 +1017,7 @@ class _ConfirmarEntregaVentaScreenState
                         // icon: Icon(Icons.warning),
                       ),
                     ],
+                    ),
                   ),
                 ],
               ),
@@ -1204,30 +1188,20 @@ class _ConfirmarEntregaVentaScreenState
     // Si está en modo edición, siempre mostrar botón de guardar
     if (widget.confirmacionExistente != null) {
       final puedGuardar = _validarDatos();
-      return Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Tooltip(
-            message: puedGuardar
-                ? 'Guardar cambios'
-                : 'Completa los datos requeridos',
-            child: ElevatedButton.icon(
-              onPressed: puedGuardar ? _guardarCambiosTipoEntrega : null,
-              icon: const Icon(Icons.save, size: 18),
-              label: const Text('Guardar'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.blue,
-                disabledBackgroundColor: Colors.grey[400],
-                foregroundColor: Colors.white,
-                disabledForegroundColor: Colors.grey[600],
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 8,
-                ),
-              ),
-            ),
+      return Tooltip(
+        message: puedGuardar
+            ? 'Guardar cambios'
+            : 'Completa los datos requeridos',
+        child: IconButton(
+          onPressed: puedGuardar ? _guardarCambiosTipoEntrega : null,
+          icon: const Icon(Icons.save, size: 20),
+          color: Colors.blue,
+          disabledColor: Colors.grey[400],
+          constraints: const BoxConstraints(
+            minWidth: 32,
+            minHeight: 32,
           ),
-        ],
+        ),
       );
     }
 

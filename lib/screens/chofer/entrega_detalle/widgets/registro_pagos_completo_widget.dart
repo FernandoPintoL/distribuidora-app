@@ -91,20 +91,27 @@ class RegistroPagosCompletoWidget extends StatelessWidget {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text(
-                          'Ingresado:',
-                          style: TextStyle(
-                            fontSize: 16,
-                            color: Colors.green[700],
-                            fontWeight: FontWeight.bold,
+                        Expanded(
+                          child: Text(
+                            'Ingresado:',
+                            style: TextStyle(
+                              fontSize: 16,
+                              color: Colors.green[700],
+                              fontWeight: FontWeight.bold,
+                            ),
+                            overflow: TextOverflow.ellipsis,
                           ),
                         ),
-                        Text(
-                          'Bs. ${totalIngresado.toStringAsFixed(2)}',
-                          style: TextStyle(
-                            fontSize: 16,
-                            color: Colors.green[700],
-                            fontWeight: FontWeight.bold,
+                        Expanded(
+                          child: Text(
+                            'Bs. ${totalIngresado.toStringAsFixed(2)}',
+                            style: TextStyle(
+                              fontSize: 16,
+                              color: Colors.green[700],
+                              fontWeight: FontWeight.bold,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                            textAlign: TextAlign.end,
                           ),
                         ),
                       ],
