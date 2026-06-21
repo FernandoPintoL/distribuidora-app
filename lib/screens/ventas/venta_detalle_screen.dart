@@ -578,11 +578,12 @@ class _VentaDetalleScreenState extends State<VentaDetalleScreen> {
                             'Entregas',
                             style: TextStyle(fontWeight: FontWeight.bold),
                           ),
-                          ElevatedButton.icon(
-                            onPressed: () => _navegarARegistrarOtraConfirmacion(
-                              context,
-                              venta,
-                            ),
+                          Flexible(
+                            child: ElevatedButton.icon(
+                              onPressed: () => _navegarARegistrarOtraConfirmacion(
+                                context,
+                                venta,
+                              ),
                             icon: const Icon(Icons.note_add, size: 16),
                             label: const Text('Registrar otra'),
                             style: ElevatedButton.styleFrom(
@@ -590,6 +591,7 @@ class _VentaDetalleScreenState extends State<VentaDetalleScreen> {
                                 horizontal: 12,
                                 vertical: 8,
                               ),
+                            ),
                             ),
                           ),
                         ],
@@ -620,13 +622,17 @@ class _VentaDetalleScreenState extends State<VentaDetalleScreen> {
                                   mainAxisAlignment:
                                       MainAxisAlignment.spaceBetween,
                                   children: [
-                                    Text(
-                                      confirmacion.tipoEntregaFormato,
-                                      style: TextStyle(
-                                        fontWeight: FontWeight.bold,
-                                        color: tipoEntregaColor,
+                                    Expanded(
+                                      child: Text(
+                                        confirmacion.tipoEntregaFormato,
+                                        style: TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                          color: tipoEntregaColor,
+                                        ),
+                                        overflow: TextOverflow.ellipsis,
                                       ),
                                     ),
+                                    const SizedBox(width: 8),
                                     Text(
                                       confirmacion.tipoConfirmacion,
                                       style: TextStyle(
@@ -1013,10 +1019,20 @@ class _VentaDetalleScreenState extends State<VentaDetalleScreen> {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(label),
-        Text(
-          value,
-          style: TextStyle(fontWeight: FontWeight.bold, color: color),
+        Expanded(
+          child: Text(
+            label,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Text(
+            value,
+            style: TextStyle(fontWeight: FontWeight.bold, color: color),
+            overflow: TextOverflow.ellipsis,
+            textAlign: TextAlign.end,
+          ),
         ),
       ],
     );
