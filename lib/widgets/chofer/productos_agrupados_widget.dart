@@ -282,6 +282,9 @@ class _ProductosAgrupadsWidgetState extends State<ProductosAgrupadsWidget> {
                                     if (producto.codigoProducto.isNotEmpty)
                                       Text(
                                         'Código: ${producto.codigoProducto}',
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: const TextStyle(fontSize: 12),
                                       ),
                                   ],
                                 ),
