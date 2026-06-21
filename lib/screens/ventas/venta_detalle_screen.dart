@@ -266,9 +266,10 @@ class _VentaDetalleScreenState extends State<VentaDetalleScreen> {
                                   ),
                                 ),
                                 if (venta.tipoPago != null)
-                                  Column(
-                                    children: [
-                                      Row(
+                                  Flexible(
+                                    child: Column(
+                                      children: [
+                                        Row(
                                         mainAxisAlignment:
                                             MainAxisAlignment.spaceBetween,
                                         children: [
@@ -297,6 +298,7 @@ class _VentaDetalleScreenState extends State<VentaDetalleScreen> {
                                         ),
                                       ),
                                     ],
+                                    ),
                                   ),
                               ],
                             ),
