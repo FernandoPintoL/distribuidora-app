@@ -276,15 +276,19 @@ class _ProductosAgrupadsWidgetState extends State<ProductosAgrupadsWidget> {
                                   children: [
                                     Text(
                                       producto.nombreProducto,
-                                      maxLines: 2,
+                                      maxLines: 1,
                                       overflow: TextOverflow.ellipsis,
+                                      style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500),
                                     ),
                                     if (producto.codigoProducto.isNotEmpty)
-                                      Text(
-                                        'Código: ${producto.codigoProducto}',
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
-                                        style: const TextStyle(fontSize: 12),
+                                      Padding(
+                                        padding: const EdgeInsets.only(top: 2),
+                                        child: Text(
+                                          'Código: ${producto.codigoProducto}',
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                          style: const TextStyle(fontSize: 11, color: Colors.grey),
+                                        ),
                                       ),
                                   ],
                                 ),
