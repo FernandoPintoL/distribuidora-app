@@ -244,7 +244,12 @@ class _VentaDetalleScreenState extends State<VentaDetalleScreen> {
                                         overflow: TextOverflow.ellipsis,
                                       ),
                                       const SizedBox(height: 2),
-                                      Text(venta.cliente?.razonSocial ?? 'N/A'),
+                                      Text(
+                                        venta.cliente?.razonSocial ?? 'N/A',
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: TextStyle(fontSize: 12),
+                                      ),
                                       if (venta.cliente?.localidad != null) ...[
                                         const SizedBox(height: 2),
                                         Text(
@@ -374,43 +379,65 @@ class _VentaDetalleScreenState extends State<VentaDetalleScreen> {
                                     MainAxisAlignment.spaceEvenly,
                                 children: [
                                   // Botón Llamar
-                                  ContactButton(
-                                    icon: Icons.phone,
-                                    label: 'Llamar',
-                                    color: Colors.green,
-                                    onPressed: () => PhoneUtils.llamarCliente(
-                                      context,
-                                      venta.cliente?.telefono,
+                                  Tooltip(
+                                    message: 'Llamar',
+                                    child: IconButton(
+                                      icon: Icon(Icons.phone),
+                                      color: Colors.green,
+                                      onPressed: () => PhoneUtils.llamarCliente(
+                                        context,
+                                        venta.cliente?.telefono,
+                                      ),
+                                      constraints: const BoxConstraints(
+                                        minWidth: 40,
+                                        minHeight: 40,
+                                      ),
                                     ),
                                   ),
                                   // Botón WhatsApp
-                                  ContactButton(
-                                    icon: Icons.chat,
-                                    label: 'WhatsApp',
-                                    color: Colors.green[600]!,
-                                    onPressed: () => PhoneUtils.enviarWhatsApp(
-                                      context,
-                                      venta.cliente?.telefono,
+                                  Tooltip(
+                                    message: 'WhatsApp',
+                                    child: IconButton(
+                                      icon: Icon(Icons.chat),
+                                      color: Colors.green[600],
+                                      onPressed: () => PhoneUtils.enviarWhatsApp(
+                                        context,
+                                        venta.cliente?.telefono,
+                                      ),
+                                      constraints: const BoxConstraints(
+                                        minWidth: 40,
+                                        minHeight: 40,
+                                      ),
                                     ),
                                   ),
                                   // Botón Descargar PDF
-                                  ContactButton(
-                                    icon: Icons.download,
-                                    label: 'Nota',
-                                    color: Colors.blue,
-                                    onPressed: () =>
-                                        _descargarPDFVenta(venta.id),
+                                  Tooltip(
+                                    message: 'Descargar Nota',
+                                    child: IconButton(
+                                      icon: Icon(Icons.download),
+                                      color: Colors.blue,
+                                      onPressed: () =>
+                                          _descargarPDFVenta(venta.id),
+                                      constraints: const BoxConstraints(
+                                        minWidth: 40,
+                                        minHeight: 40,
+                                      ),
+                                    ),
                                   ),
                                   // ✅ Botón Mapa (solo si hay dirección con coordenadas)
                                   if (venta.direccionCliente?.latitud != null &&
                                       venta.direccionCliente?.longitud != null)
-                                    ContactButton(
-                                      icon: Icons.map,
-                                      label: 'Mapa',
-                                      color: Colors.lightGreen,
-                                      onPressed: () => _abrirMapa(
-                                        venta,
-                                      ), // ✅ Pasar venta completa
+                                    Tooltip(
+                                      message: 'Ver en Mapa',
+                                      child: IconButton(
+                                        icon: Icon(Icons.map),
+                                        color: Colors.lightGreen,
+                                        onPressed: () => _abrirMapa(venta),
+                                        constraints: const BoxConstraints(
+                                          minWidth: 40,
+                                          minHeight: 40,
+                                        ),
+                                      ),
                                     ),
                                 ],
                               ),
@@ -498,21 +525,27 @@ class _VentaDetalleScreenState extends State<VentaDetalleScreen> {
                                     mainAxisAlignment:
                                         MainAxisAlignment.spaceBetween,
                                     children: [
-                                      Text(
-                                        'Bs. ${detalle.precioUnitario.toStringAsFixed(2)}',
-                                        style: TextStyle(
-                                          fontWeight: FontWeight.w500,
+                                      Expanded(
+                                        child: Text(
+                                          'Bs. ${detalle.precioUnitario.toStringAsFixed(2)}',
+                                          style: TextStyle(
+                                            fontWeight: FontWeight.w500,
+                                          ),
+                                          overflow: TextOverflow.ellipsis,
                                         ),
                                       ),
-                                      Text(
-                                        'Sub.: Bs. ${detalle.subtotal.toStringAsFixed(2)}',
-                                        style: TextStyle(
-                                          fontWeight: FontWeight.bold,
-                                          color:
-                                              Theme.of(context).brightness ==
-                                                  Brightness.dark
+                                      Expanded(
+                                        child: Text(
+                                          'Sub.: Bs. ${detalle.subtotal.toStringAsFixed(2)}',
+                                          style: TextStyle(
+                                            fontWeight: FontWeight.bold,
+                                            color:
+                                                Theme.of(context).brightness ==
+                                                    Brightness.dark
                                               ? Colors.greenAccent
                                               : Colors.green,
+                                          ),
+                                          overflow: TextOverflow.ellipsis,
                                         ),
                                       ),
                                     ],
