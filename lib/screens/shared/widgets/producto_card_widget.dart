@@ -41,12 +41,18 @@ class ProductoCardWidget extends StatelessWidget {
 
   // Obtener URL de imagen del producto del combo item
   String? _obtenerImagenComboItem(int comboItemId) {
-    if (comboItems == null) return null;
+    if (comboItems == null) {
+      debugPrint('⚠️ [ProductoCard] comboItems es null para combo item $comboItemId');
+      return null;
+    }
     try {
       final comboItemsList = comboItems as List;
       final comboItem = comboItemsList.firstWhere((c) => c.id == comboItemId);
-      return comboItem.producto?.imagenPrincipal?.url;
+      final imagenUrl = comboItem.producto?.imagenPrincipal?.url;
+      debugPrint('✅ [ProductoCard] Combo item $comboItemId - Producto: ${comboItem.producto?.nombre} - Imagen: ${imagenUrl != null ? "✓" : "✗"}');
+      return imagenUrl;
     } catch (e) {
+      debugPrint('❌ [ProductoCard] Error obteniendo imagen para combo item $comboItemId: $e');
       return null;
     }
   }
@@ -155,7 +161,16 @@ class ProductoCardWidget extends StatelessWidget {
           ),
         ),
         // Mostrar componentes del combo si existen
-        if (tieneCombo)
+        if (tieneCombo) ...[
+          if (comboItems == null)
+            Container(
+              padding: const EdgeInsets.all(12),
+              color: Colors.amber.shade50,
+              child: Text(
+                '⚠️ comboItems es null',
+                style: TextStyle(color: Colors.orange.shade700, fontSize: 12),
+              ),
+            ),
           Container(
             margin: const EdgeInsets.only(left: 8, right: 8, bottom: 12),
             decoration: BoxDecoration(
@@ -342,6 +357,7 @@ class ProductoCardWidget extends StatelessWidget {
               ],
             ),
           ),
+        ],
       ],
     );
   }
