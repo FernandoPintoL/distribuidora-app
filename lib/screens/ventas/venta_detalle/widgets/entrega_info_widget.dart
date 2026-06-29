@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import '../../../models/entrega_info.dart';
-import '../../../config/app_colors.dart';
-import '../../../extensions/theme_extension.dart';
+import '../../../../models/entrega_info.dart';
+import '../../../../config/app_colors.dart';
+import '../../../../extensions/theme_extension.dart';
 
 class EntregaInfoWidget extends StatelessWidget {
   final EntregaInfo entrega;
