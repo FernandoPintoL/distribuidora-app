@@ -11,6 +11,7 @@ class PedidoItem {
   final double subtotal;
   final String? observaciones;
   final double? descuento; // Added field for backend compatibility
+  final List<Map<String, dynamic>>? comboItemsSeleccionados; // NUEVO: Items del combo seleccionados
 
   PedidoItem({
     required this.id,
@@ -22,6 +23,7 @@ class PedidoItem {
     required this.subtotal,
     this.observaciones,
     this.descuento,
+    this.comboItemsSeleccionados,
   });
 
   factory PedidoItem.fromJson(Map<String, dynamic> json) {
@@ -38,6 +40,9 @@ class PedidoItem {
         subtotal: _parseDouble(json['subtotal']),
         observaciones: json['observaciones'] as String?,
         descuento: _parseDouble(json['descuento']),
+        comboItemsSeleccionados: json['combo_items_seleccionados'] != null
+            ? List<Map<String, dynamic>>.from(json['combo_items_seleccionados'] as List)
+            : null,
       );
     } catch (e) {
       debugPrint('❌ Error parsing PedidoItem: $e');
@@ -91,6 +96,8 @@ class PedidoItem {
       'subtotal': subtotal,
       'observaciones': observaciones,
       'descuento': descuento,
+      if (comboItemsSeleccionados != null)
+        'combo_items_seleccionados': comboItemsSeleccionados,
     };
   }
 
@@ -104,6 +111,7 @@ class PedidoItem {
     double? subtotal,
     String? observaciones,
     double? descuento,
+    List<Map<String, dynamic>>? comboItemsSeleccionados,
   }) {
     return PedidoItem(
       id: id ?? this.id,
@@ -115,6 +123,7 @@ class PedidoItem {
       subtotal: subtotal ?? this.subtotal,
       observaciones: observaciones ?? this.observaciones,
       descuento: descuento ?? this.descuento,
+      comboItemsSeleccionados: comboItemsSeleccionados ?? this.comboItemsSeleccionados,
     );
   }
 }
