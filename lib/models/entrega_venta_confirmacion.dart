@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:intl/intl.dart';
+import 'dart:convert';
 
 class EntregaVentaConfirmacion {
   final int id;
@@ -70,6 +71,19 @@ class EntregaVentaConfirmacion {
           .toList();
     }
 
+    List<dynamic>? productosDevueltos;
+    if (json['productos_devueltos'] is String) {
+      try {
+        final jsonDecoded = jsonDecode(json['productos_devueltos'] as String) as List;
+        productosDevueltos = jsonDecoded;
+      } catch (e) {
+        debugPrint('⚠️ Error parseando productos_devueltos: $e');
+        productosDevueltos = null;
+      }
+    } else if (json['productos_devueltos'] is List) {
+      productosDevueltos = json['productos_devueltos'] as List<dynamic>;
+    }
+
     final tipoConfirmacionParsed = json['tipo_confirmacion'] as String? ?? 'COMPLETA';
     final tipoNovededadParsed = json['tipo_novedad'] as String?;
     final tipoEntregaParsed = json['tipo_entrega'] as String? ?? 'COMPLETA';
@@ -112,7 +126,7 @@ class EntregaVentaConfirmacion {
       totalDineroRecibido: _parseDouble(json['total_dinero_recibido'] ?? json['monto_recibido']),
       montoPendiente: _parseDouble(json['pendiente'] ?? json['monto_pendiente']),
       tipoConfirmacion: tipoConfirmacionParsed,
-      productosDevueltos: json['productos_devueltos'] as List<dynamic>?,
+      productosDevueltos: productosDevueltos,
       montoDevuelto: (json['monto_devuelto'] as num?)?.toDouble(),
       montoAceptado: _parseDouble(json['monto_aceptado'] ?? json['monto_recibido']),
       actualizadoEn: json['updated_at'] != null
