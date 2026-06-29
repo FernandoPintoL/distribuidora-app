@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../../models/models.dart';
 import '../../../../config/app_text_styles.dart';
+import '../../../shared/widgets/index.dart'; // NUEVO: ProductoCardWidget
 
 class ProductosSection extends StatelessWidget {
   final Pedido pedido;
@@ -14,8 +15,6 @@ class ProductosSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(parentContext).colorScheme;
-
     return Padding(
       padding: const EdgeInsets.all(16),
       child: Column(
@@ -30,79 +29,16 @@ class ProductosSection extends StatelessWidget {
           ),
           const SizedBox(height: 12),
           ...pedido.items.map(
-            (item) => Card(
-              margin: const EdgeInsets.only(bottom: 8),
-              child: Padding(
-                padding: const EdgeInsets.all(12),
-                child: Row(
-                  children: [
-                    // Imagen
-                    Container(
-                      width: 60,
-                      height: 60,
-                      decoration: BoxDecoration(
-                        color: colorScheme.surfaceContainerHighest.withOpacity(0.5),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: item.producto?.imagenPrincipal != null
-                          ? ClipRRect(
-                              borderRadius: BorderRadius.circular(8),
-                              child: Image.network(
-                                item.producto!.imagenPrincipal!.url,
-                                fit: BoxFit.cover,
-                                errorBuilder: (_, __, ___) =>
-                                    const Icon(Icons.image),
-                              ),
-                            )
-                          : const Icon(Icons.image, size: 32),
-                    ),
-                    const SizedBox(width: 12),
-
-                    // Info
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            item.producto?.nombre ?? 'Producto',
-                            style: TextStyle(fontWeight: FontWeight.w600),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            'Cantidad: ${item.cantidad}',
-                            style: TextStyle(
-                              color: colorScheme.onSurface.withOpacity(0.6),
-                              fontSize: AppTextStyles.bodyMedium(
-                                parentContext,
-                              ).fontSize!,
-                            ),
-                          ),
-                          const SizedBox(height: 2),
-                          Text(
-                            'Bs. ${item.precioUnitario.toStringAsFixed(2)} c/u',
-                            style: TextStyle(
-                              color: colorScheme.onSurface.withOpacity(0.6),
-                              fontSize: AppTextStyles.bodySmall(
-                                parentContext,
-                              ).fontSize!,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-
-                    // Subtotal
-                    Text(
-                      'Bs. ${item.subtotal.toStringAsFixed(2)}',
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: AppTextStyles.bodyLarge(parentContext).fontSize!,
-                        color: colorScheme.onSurface,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+            (item) => ProductoCardWidget(
+              imagenUrl: item.producto?.imagenPrincipal?.url,
+              nombreProducto: item.producto?.nombre,
+              cantidad: item.cantidad.toDouble(),
+              precioUnitario: item.precioUnitario,
+              subtotal: item.subtotal,
+              mostrarAvatarWidget: false,
+              comboItemsSeleccionados: item.comboItemsSeleccionados,
+              comboItems: item.producto?.comboItems,
+              parentContext: parentContext,
             ),
           ),
         ],
