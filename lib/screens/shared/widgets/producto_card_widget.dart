@@ -28,13 +28,20 @@ class ProductoCardWidget extends StatelessWidget {
   });
 
   String? _obtenerNombreComboItem(int comboItemId) {
-    if (comboItems == null) return null;
+    if (comboItems == null) {
+      debugPrint('⚠️ [ProductoCard] comboItems es null para _obtenerNombreComboItem');
+      return null;
+    }
     try {
       final comboItemsList = comboItems as List;
-      return comboItemsList
-          .firstWhere((c) => c.id == comboItemId)
-          .productoNombre;
+      final comboItem = comboItemsList.firstWhere((c) => c.id == comboItemId);
+
+      // Intentar productoNombre primero, luego producto.nombre
+      final nombre = comboItem.productoNombre ?? comboItem.producto?.nombre;
+      debugPrint('🏷️ [ProductoCard] _obtenerNombreComboItem($comboItemId): productoNombre="${comboItem.productoNombre}" → Usando: "$nombre"');
+      return nombre;
     } catch (e) {
+      debugPrint('❌ [ProductoCard] Error en _obtenerNombreComboItem($comboItemId): $e');
       return null;
     }
   }
