@@ -6,10 +6,7 @@ import '../../../../extensions/theme_extension.dart';
 class EntregaInfoWidget extends StatelessWidget {
   final EntregaInfo entrega;
 
-  const EntregaInfoWidget({
-    super.key,
-    required this.entrega,
-  });
+  const EntregaInfoWidget({super.key, required this.entrega});
 
   @override
   Widget build(BuildContext context) {
@@ -25,7 +22,7 @@ class EntregaInfoWidget extends StatelessWidget {
         side: BorderSide(color: colorScheme.outline.withAlpha(20), width: 1),
       ),
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -62,27 +59,34 @@ class EntregaInfoWidget extends StatelessWidget {
               const SizedBox(height: 12),
             ],
 
-            // Chofer
-            if (entrega.chofer != null) ...[
-              _buildInfoSection(
-                context,
-                icon: Icons.person_outline,
-                label: 'Chofer',
-                value: entrega.chofer!.nombre,
-                subValue: entrega.chofer!.telefono,
-              ),
-              const SizedBox(height: 12),
-            ],
+            Row(
+              children: [
+                // Chofer
+                if (entrega.chofer != null)
+                  Expanded(
+                    child: _buildInfoSection(
+                      context,
+                      icon: Icons.person_outline,
+                      label: 'Chofer',
+                      value: entrega.chofer!.nombre,
+                      subValue: entrega.chofer!.telefono,
+                    ),
+                  ),
+                if (entrega.chofer != null && entrega.vehiculo != null)
+                  const SizedBox(width: 16),
 
-            // Vehículo
-            if (entrega.vehiculo != null) ...[
-              _buildInfoSection(
-                context,
-                icon: Icons.directions_car_outlined,
-                label: 'Vehículo',
-                value: entrega.vehiculo!.placa,
-              ),
-            ],
+                // Vehículo
+                if (entrega.vehiculo != null)
+                  Expanded(
+                    child: _buildInfoSection(
+                      context,
+                      icon: Icons.directions_car_outlined,
+                      label: 'Vehículo',
+                      value: entrega.vehiculo!.placa,
+                    ),
+                  ),
+              ],
+            ),
           ],
         ),
       ),
@@ -103,11 +107,7 @@ class EntregaInfoWidget extends StatelessWidget {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Icon(
-          icon,
-          size: 20,
-          color: color != null ? Color(int.parse('0xFF${color.replaceFirst('#', '')}')).withOpacity(0.8) : colorScheme.primary,
-        ),
+        Icon(icon, size: 20),
         const SizedBox(width: 12),
         Expanded(
           child: Column(
