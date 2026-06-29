@@ -123,7 +123,7 @@ class EntregaVentaConfirmacion {
       montoRecibido: _parseDouble(json['monto_recibido']),
       tipoPagoId: json['tipo_pago_id'] as int? ?? 0,
       motivoNoPago: json['motivo_no_pago'] as String?,
-      confirmadoPor: json['confirmado_por'] as int?,
+      confirmadoPor: _extractIntFromValue(json['confirmado_por']),
       confirmadoEn: json['confirmado_en'] != null
           ? _parseUtcToLocal(json['confirmado_en'] as String)
           : null,
@@ -162,6 +162,15 @@ class EntregaVentaConfirmacion {
     }
     if (value is num) return value.toDouble();
     return 0.0;
+  }
+
+  static int? _extractIntFromValue(dynamic value) {
+    if (value == null) return null;
+    if (value is int) return value;
+    if (value is Map<String, dynamic>) {
+      return (value['id'] as int?);
+    }
+    return null;
   }
 
   Map<String, dynamic> toJson() {
