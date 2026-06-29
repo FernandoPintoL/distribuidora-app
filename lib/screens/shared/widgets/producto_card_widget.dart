@@ -47,8 +47,28 @@ class ProductoCardWidget extends StatelessWidget {
     }
     try {
       final comboItemsList = comboItems as List;
+      debugPrint('📊 [ProductoCard] Buscando combo item $comboItemId en lista de ${comboItemsList.length} items');
+
       final comboItem = comboItemsList.firstWhere((c) => c.id == comboItemId);
-      final imagenUrl = comboItem.producto?.imagenPrincipal?.url;
+      debugPrint('✅ [ProductoCard] ComboItem encontrado: ${comboItem.producto?.nombre}');
+
+      if (comboItem.producto == null) {
+        debugPrint('⚠️ [ProductoCard] comboItem.producto es null');
+        return null;
+      }
+
+      debugPrint('✅ [ProductoCard] Producto existe: ${comboItem.producto?.nombre}');
+
+      if (comboItem.producto?.imagenes == null) {
+        debugPrint('⚠️ [ProductoCard] producto.imagenes es null');
+      } else {
+        debugPrint('📷 [ProductoCard] Imágenes disponibles: ${comboItem.producto?.imagenes?.length}');
+      }
+
+      final imagenPrincipal = comboItem.producto?.imagenPrincipal;
+      debugPrint('🖼️ [ProductoCard] imagenPrincipal: ${imagenPrincipal?.url ?? "null"}');
+
+      final imagenUrl = imagenPrincipal?.url;
       debugPrint('✅ [ProductoCard] Combo item $comboItemId - Producto: ${comboItem.producto?.nombre} - Imagen: ${imagenUrl != null ? "✓" : "✗"}');
       return imagenUrl;
     } catch (e) {
