@@ -98,13 +98,10 @@ class _VentaDetalleScreenState extends State<VentaDetalleScreen> {
                 const SizedBox(height: 8),
                 // ✅ Información de Entrega (chofer, vehículo, estado)
                 if (venta.entrega != null)
-                  EntregaInfoWidget(entrega: venta.entrega!)
-                else
-                  const SizedBox(height: 8),
-                const SizedBox(height: 16),
+                  EntregaInfoWidget(entrega: venta.entrega!),
+                const SizedBox(height: 8),
                 // Sección de productos
                 Text('Productos'),
-                const SizedBox(height: 12),
                 if (venta.detalles.isEmpty)
                   Card(
                     child: Padding(
@@ -131,7 +128,7 @@ class _VentaDetalleScreenState extends State<VentaDetalleScreen> {
                       parentContext: context,
                     );
                   }),
-                const SizedBox(height: 24),
+                const SizedBox(height: 8),
                 // Sección de entregas
                 if (venta.confirmaciones.isNotEmpty)
                   Column(

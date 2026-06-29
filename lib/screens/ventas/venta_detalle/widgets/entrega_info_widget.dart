@@ -28,36 +28,38 @@ class EntregaInfoWidget extends StatelessWidget {
           children: [
             // Header
             Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                Icon(
-                  Icons.local_shipping_outlined,
-                  color: AppColors.secondary,
-                  size: 20,
+                Row(
+                  children: [
+                    Icon(
+                      Icons.local_shipping_outlined,
+                      color: AppColors.secondary,
+                      size: 20,
+                    ),
+                    Text(
+                      ' Información de Entrega',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                        color: AppColors.secondary,
+                      ),
+                    ),
+                  ],
                 ),
-                const SizedBox(width: 8),
-                Text(
-                  'Información de Entrega',
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16,
-                    color: AppColors.secondary,
+                // Estado de Entrega
+                if (entrega.estadoEntrega != null)
+                  _buildInfoSection(
+                    context,
+                    icon: Icons.info_outline,
+                    label: 'Estado',
+                    value: entrega.estadoEntrega!.nombre,
+                    color: entrega.estadoEntrega!.color,
                   ),
-                ),
               ],
             ),
             const SizedBox(height: 16),
-
-            // Estado de Entrega
-            if (entrega.estadoEntrega != null) ...[
-              _buildInfoSection(
-                context,
-                icon: Icons.info_outline,
-                label: 'Estado',
-                value: entrega.estadoEntrega!.nombre,
-                color: entrega.estadoEntrega!.color,
-              ),
-              const SizedBox(height: 12),
-            ],
 
             Row(
               children: [

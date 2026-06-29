@@ -178,7 +178,7 @@ class VentaClienteHeaderWidget extends StatelessWidget {
                 ),
               ],
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 6),
             // Cliente - Card mejorada con Avatar, Ubicación y Botones
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 4),
@@ -231,27 +231,28 @@ class VentaClienteHeaderWidget extends StatelessWidget {
                               Column(
                                 crossAxisAlignment: CrossAxisAlignment.end,
                                 children: [
-                                  Text(
+                                  /*Text(
                                     'Total:',
                                     style: TextStyle(
                                       color: Colors.green,
                                       fontWeight: FontWeight.bold,
                                       fontSize: 11,
                                     ),
-                                  ),
+                                  ),*/
                                   const SizedBox(height: 2),
                                   Text(
                                     'Bs. ${venta.total.toStringAsFixed(2)}',
                                     style: TextStyle(
                                       fontWeight: FontWeight.bold,
                                       color: Colors.green,
-                                      fontSize: 12,
+                                      fontSize: 18,
                                     ),
                                     overflow: TextOverflow.ellipsis,
                                   ),
                                 ],
                               ),
                               Chip(
+                                padding: const EdgeInsets.all(0),
                                 label: Text(venta.tipoPago!.nombre),
                                 avatar: const Icon(
                                   Icons.payment,
@@ -315,7 +316,7 @@ class VentaClienteHeaderWidget extends StatelessWidget {
                   // Botones de Contacto
                   if (venta.cliente?.telefono != null) ...[
                     const Divider(height: 1),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: 2),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                       children: [
