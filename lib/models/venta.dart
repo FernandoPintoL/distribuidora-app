@@ -8,6 +8,7 @@ import 'pedido.dart';
 import 'entrega_venta_confirmacion.dart';
 import 'product.dart';
 import 'combo_item_seleccionado.dart';
+import 'entrega_info.dart';
 
 // ✅ NUEVO 2026-06-23: Clase para información de proforma relacionada a una venta
 class Proforma {
@@ -89,6 +90,9 @@ class Venta {
   final int? proformaId; // ID de la proforma relacionada
   final Proforma? proforma; // Proforma relacionada a esta venta (si existe)
 
+  // ✅ NUEVO (2026-06-29): Información completa de la entrega
+  final EntregaInfo? entrega; // Información de entrega (chofer, vehículo, estado, etc)
+
   Venta({
     required this.id,
     required this.numero,
@@ -122,6 +126,7 @@ class Venta {
     this.resumenPago, // ✅ NUEVO: Resumen de pagos
     this.proformaId, // ✅ NUEVO 2026-06-23: ID de proforma
     this.proforma, // ✅ NUEVO 2026-06-23: Proforma relacionada
+    this.entrega, // ✅ NUEVO 2026-06-29: Información de entrega
   });
 
   factory Venta.fromJson(Map<String, dynamic> json) {
@@ -321,6 +326,17 @@ class Venta {
         }
         return null;
       })(),
+      // ✅ NUEVO 2026-06-29: Parsear información de entrega
+      entrega: (() {
+        try {
+          if (json['entrega'] is Map<String, dynamic>) {
+            return EntregaInfo.fromJson(json['entrega'] as Map<String, dynamic>);
+          }
+        } catch (e) {
+          debugPrint('⚠️ Error parseando entrega: $e');
+        }
+        return null;
+      })(),
     );
   }
 
@@ -380,6 +396,7 @@ class Venta {
       'tipo_pago': tipoPago?.toJson(),
       'proforma_id': proformaId, // ✅ NUEVO 2026-06-23: ID de proforma
       'proforma': proforma?.toJson(), // ✅ NUEVO 2026-06-23: Proforma relacionada
+      'entrega': entrega?.toJson(), // ✅ NUEVO 2026-06-29: Información de entrega
     };
   }
 

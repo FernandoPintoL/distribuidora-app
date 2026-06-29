@@ -27,6 +27,7 @@ export 'proforma_stats.dart';
 export 'ruta.dart';
 export 'ruta_detalle.dart';
 export 'entrega.dart';
+export 'entrega_info.dart';
 export 'venta.dart';
 export 'entrega_venta_confirmacion.dart';
 export 'reporte_producto_danado.dart';
