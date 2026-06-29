@@ -6,6 +6,7 @@ import 'direccion_cliente.dart';
 import 'estado_logistico.dart';
 import 'pedido.dart';
 import 'entrega_venta_confirmacion.dart';
+import 'product.dart'; // NUEVO: Para ComboItem
 
 // ✅ NUEVO 2026-06-23: Clase para información de proforma relacionada a una venta
 class Proforma {
@@ -425,6 +426,7 @@ class VentaDetalle {
   final double subtotal;
   final Producto? producto;
   final String? nombreProducto; // ✅ NUEVO 2026-02-21: Nombre del producto desde backend
+  final List<Map<String, dynamic>>? comboItemsSeleccionados; // NUEVO: Items del combo seleccionados
 
   VentaDetalle({
     required this.id,
@@ -436,6 +438,7 @@ class VentaDetalle {
     required this.subtotal,
     this.producto,
     this.nombreProducto,
+    this.comboItemsSeleccionados,
   });
 
   factory VentaDetalle.fromJson(Map<String, dynamic> json) {
@@ -468,6 +471,9 @@ class VentaDetalle {
       subtotal: _parseDouble(json['subtotal']),
       producto: productoObj,
       nombreProducto: json['producto_nombre'] as String?, // ✅ NUEVO 2026-02-21
+      comboItemsSeleccionados: json['combo_items_seleccionados'] != null
+          ? List<Map<String, dynamic>>.from(json['combo_items_seleccionados'] as List)
+          : null,
     );
   }
 
@@ -513,6 +519,8 @@ class VentaDetalle {
       'descuento': descuento,
       'subtotal': subtotal,
       'producto': producto?.toJson(),
+      if (comboItemsSeleccionados != null)
+        'combo_items_seleccionados': comboItemsSeleccionados,
     };
   }
 }
@@ -524,6 +532,7 @@ class Producto {
   final String? descripcion;
   final double? peso;
   final List<ImagenProducto>? imagenes;
+  final List<ComboItem>? comboItems; // NUEVO: Items del combo
 
   Producto({
     required this.id,
@@ -531,6 +540,7 @@ class Producto {
     this.descripcion,
     this.peso,
     this.imagenes,
+    this.comboItems,
   });
 
   /// Obtener la imagen principal (es_principal == true) o la primera imagen
@@ -565,12 +575,21 @@ class Producto {
       }
     }
 
+    // Parsear combo items
+    List<ComboItem>? comboItems;
+    if (json['comboItems'] != null && json['comboItems'] is List) {
+      comboItems = (json['comboItems'] as List)
+          .map((item) => ComboItem.fromJson(item as Map<String, dynamic>))
+          .toList();
+    }
+
     return Producto(
       id: json['id'] as int,
       nombre: json['nombre'] as String,
       descripcion: json['descripcion'] as String?,
       peso: (json['peso'] as num?)?.toDouble(),
       imagenes: imagenes,
+      comboItems: comboItems,
     );
   }
 
@@ -581,6 +600,8 @@ class Producto {
       'descripcion': descripcion,
       'peso': peso,
       'imagenes': imagenes?.map((img) => img.toJson()).toList(),
+      if (comboItems != null)
+        'comboItems': comboItems!.map((item) => item.toJson()).toList(),
     };
   }
 }

@@ -39,6 +39,21 @@ class ProductoCardWidget extends StatelessWidget {
     }
   }
 
+  // Obtener datos del combo item incluyendo imagen
+  Map<String, dynamic>? _obtenerComboItemData(int comboItemId) {
+    if (comboItems == null) return null;
+    try {
+      final comboItemsList = comboItems as List;
+      final comboItem = comboItemsList.firstWhere((c) => c.id == comboItemId);
+      return {
+        'nombre': comboItem.productoNombre,
+        'imagen': comboItem.producto?.imagenPrincipal?.url,
+      };
+    } catch (e) {
+      return null;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final tieneImagen = imagenUrl != null && imagenUrl!.isNotEmpty;
@@ -192,7 +207,7 @@ class ProductoCardWidget extends StatelessWidget {
                           final index = entry.key;
                           final comboItem = entry.value;
                           final cantidadRaw = comboItem['cantidad'] ?? 1;
-                          final cantidadCombo = cantidadRaw is int
+                          final cantidadComponente = cantidadRaw is int
                               ? cantidadRaw
                               : (cantidadRaw as num).toInt();
                           final comboItemId = comboItem['combo_item_id'] ?? 0;
@@ -200,7 +215,10 @@ class ProductoCardWidget extends StatelessWidget {
                               _obtenerNombreComboItem(comboItemId) ?? 'Producto';
                           final isLast =
                               index == comboItemsSeleccionados!.length - 1;
-                          final cantidadTotal = cantidadCombo * cantidad.toInt();
+                          final cantidadTotal = cantidadComponente * cantidad.toInt();
+                          final comboItemData = _obtenerComboItemData(comboItemId);
+                          final imagenUrl = comboItemData?['imagen'] as String?;
+                          final tieneImagen = imagenUrl != null && imagenUrl.isNotEmpty;
 
                           return Container(
                             padding: const EdgeInsets.symmetric(
@@ -217,13 +235,40 @@ class ProductoCardWidget extends StatelessWidget {
                             ),
                             child: Row(
                               children: [
+                                // Imagen del componente
+                                if (tieneImagen)
+                                  Padding(
+                                    padding: const EdgeInsets.only(right: 12),
+                                    child: ClipRRect(
+                                      borderRadius: BorderRadius.circular(6),
+                                      child: Image.network(
+                                        imagenUrl,
+                                        width: 48,
+                                        height: 48,
+                                        fit: BoxFit.cover,
+                                        errorBuilder: (_, __, ___) => Container(
+                                          width: 48,
+                                          height: 48,
+                                          decoration: BoxDecoration(
+                                            color: Colors.blue.shade100,
+                                            borderRadius: BorderRadius.circular(6),
+                                          ),
+                                          child: Icon(
+                                            Icons.image,
+                                            size: 24,
+                                            color: Colors.blue.shade600,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
                                 Expanded(
                                   child: Column(
                                     crossAxisAlignment:
                                         CrossAxisAlignment.start,
                                     children: [
                                       Text(
-                                        '• $nombreProductoCombo',
+                                        nombreProductoCombo,
                                         style: TextStyle(
                                           fontSize: parentContext != null
                                               ? AppTextStyles.bodySmall(
@@ -238,7 +283,7 @@ class ProductoCardWidget extends StatelessWidget {
                                       ),
                                       const SizedBox(height: 2),
                                       Text(
-                                        'ID: ${comboItem['producto_id'] ?? 'N/A'}',
+                                        'Producto ID: ${comboItem['producto_id'] ?? 'N/A'}',
                                         style: TextStyle(
                                           fontSize: parentContext != null
                                               ? AppTextStyles.labelSmall(
@@ -279,7 +324,7 @@ class ProductoCardWidget extends StatelessWidget {
                                     ),
                                     if (cantidad > 1)
                                       Text(
-                                        '($cantidadCombo×${cantidad.toInt()})',
+                                        '($cantidadComponente×${cantidad.toInt()})',
                                         style: TextStyle(
                                           fontSize: parentContext != null
                                               ? AppTextStyles.labelSmall(

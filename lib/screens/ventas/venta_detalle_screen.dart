@@ -118,8 +118,8 @@ class _VentaDetalleScreenState extends State<VentaDetalleScreen> {
                       precioUnitario: detalle.precioUnitario,
                       subtotal: detalle.subtotal,
                       mostrarAvatarWidget: true,
-                      comboItemsSeleccionados: null,
-                      comboItems: null,
+                      comboItemsSeleccionados: detalle.comboItemsSeleccionados,
+                      comboItems: detalle.producto?.comboItems,
                       parentContext: context,
                     );
                   }),
