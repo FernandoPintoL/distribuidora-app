@@ -65,8 +65,22 @@ class EntregaVentaConfirmacion {
 
   factory EntregaVentaConfirmacion.fromJson(Map<String, dynamic> json) {
     List<DesglosePago> desgloses = [];
-    if (json['desglose_pagos'] is List) {
-      desgloses = (json['desglose_pagos'] as List)
+
+    // desglose_pagos puede venir como string JSON o como array directo
+    List<dynamic>? desgloseList;
+    if (json['desglose_pagos'] is String) {
+      try {
+        desgloseList = jsonDecode(json['desglose_pagos'] as String) as List;
+      } catch (e) {
+        debugPrint('⚠️ Error parseando desglose_pagos string: $e');
+        desgloseList = null;
+      }
+    } else if (json['desglose_pagos'] is List) {
+      desgloseList = json['desglose_pagos'] as List;
+    }
+
+    if (desgloseList != null) {
+      desgloses = desgloseList
           .map((item) => DesglosePago.fromJson(item as Map<String, dynamic>))
           .toList();
     }
