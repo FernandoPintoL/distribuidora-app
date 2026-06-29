@@ -171,7 +171,9 @@ class Product {
             ? (json['imagenes'] as List)
                   .map((i) => ProductImage.fromJson(i))
                   .toList()
-            : null,
+            : (json['imagen'] != null && json['imagen'] is Map<String, dynamic>
+                ? [ProductImage.fromJson(json['imagen'] as Map<String, dynamic>)]
+                : null),
         codigosBarra:
             json['codigos_barra'] != null && json['codigos_barra'] is List
             ? List<String>.from(json['codigos_barra'])
