@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../../models/models.dart';
 import '../../../../config/app_text_styles.dart';
+import '../../../ventas/venta_detalle/cliente_avatar_widget.dart';
 import 'client_info_item_widget.dart';
 
 class ClienteSection extends StatelessWidget {
@@ -54,17 +55,9 @@ class ClienteSection extends StatelessWidget {
               children: [
                 Row(
                   children: [
-                    Container(
-                      padding: const EdgeInsets.all(10),
-                      decoration: BoxDecoration(
-                        color: colorScheme.primary.withOpacity(0.2),
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: Icon(
-                        Icons.person,
-                        color: colorScheme.primary,
-                        size: 24,
-                      ),
+                    ClienteAvatarWidget(
+                      clienteNombre: cliente.nombre,
+                      clienteFotoPerfil: cliente.fotoPerfil,
                     ),
                     const SizedBox(width: 12),
                     Expanded(

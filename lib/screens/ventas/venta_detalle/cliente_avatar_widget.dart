@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import '../../../config/app_text_styles.dart';
 import '../../../config/app_urls.dart';
 
 class ClienteAvatarWidget extends StatelessWidget {
@@ -19,7 +18,7 @@ class ClienteAvatarWidget extends StatelessWidget {
 
     return CircleAvatar(
       radius: 32,
-      backgroundColor: Theme.of(context).primaryColor,
+      // backgroundColor: Theme.of(context).primaryColor,
       backgroundImage: tieneImagen
           ? NetworkImage('${AppUrls.baseUrlImg}$clienteFotoPerfil')
           : null,

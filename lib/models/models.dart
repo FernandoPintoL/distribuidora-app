@@ -17,6 +17,7 @@ export 'estado.dart'; // ✅ Estados dinámicos desde API
 export 'pedido.dart';
 export 'pedido_item.dart';
 export 'pedido_estado_historial.dart';
+export 'combo_item_seleccionado.dart';
 export 'reserva_stock.dart';
 export 'chofer.dart';
 export 'camion.dart';

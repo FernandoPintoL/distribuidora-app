@@ -28,9 +28,11 @@ class DireccionSection extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Dirección de Entrega',
+                'Dirección de Entregas',
                 style: TextStyle(
-                  fontSize: AppTextStyles.headlineSmall(parentContext).fontSize!,
+                  fontSize: AppTextStyles.headlineSmall(
+                    parentContext,
+                  ).fontSize!,
                   fontWeight: FontWeight.bold,
                 ),
               ),
@@ -84,8 +86,9 @@ class DireccionSection extends StatelessWidget {
                               vertical: 4,
                             ),
                             decoration: BoxDecoration(
-                              color: colorScheme.primary
-                                  .withOpacity(isDark ? 0.15 : 0.1),
+                              color: colorScheme.primary.withOpacity(
+                                isDark ? 0.15 : 0.1,
+                              ),
                               borderRadius: BorderRadius.circular(4),
                             ),
                             child: Text(

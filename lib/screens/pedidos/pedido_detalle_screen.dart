@@ -1,22 +1,17 @@
 ﻿import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:provider/provider.dart';
-import '../../models/models.dart';
 import '../../providers/providers.dart';
-import 'package:intl/intl.dart';
-import 'package:timeline_tile/timeline_tile.dart';
+import '../../models/pedido.dart'; // NUEVO: Para el tipo Pedido en _abrirMapa
 import '../../widgets/widgets.dart';
-import '../../widgets/venta/venta_info_card.dart';
 import '../../widgets/dialogs/renovacion_reservas_dialog.dart';
-import '../../widgets/dialogs/print_format_dialog.dart';
-import '../../widgets/dialogs/payment_registration_dialog.dart';
-import '../../config/config.dart';
-import '../../services/estados_helpers.dart'; // âœ… AGREGADO para estados dinÃ¡micos
-import '../../services/print_service.dart';
-import '../../extensions/theme_extension.dart'; // âœ… AGREGADO para dark mode
-import '../reportes/nuevo_reporte_screen.dart'; // âœ… NUEVO: Para reportar productos daÃ±ados
-import '../ventas/venta_detalle_screen.dart'; // âœ… NUEVO: Para ver detalles de venta
-import 'pedido_detalle/widgets/index.dart'; // âœ… REFACTORIZADO: Widgets separados
+import '../../widgets/map_location_selector.dart'; // NUEVO: Para mapa
+import '../../utils/phone_utils.dart'; // NUEVO: Para contacto
+import '../../config/app_urls.dart'; // NUEVO: Para URLs
+import '../../extensions/theme_extension.dart'; // AGREGADO para dark mode
+import '../ventas/venta_detalle_screen.dart'; // NUEVO: Para ver detalles de venta
+import '../ventas/venta_detalle/cliente_avatar_widget.dart'; // NUEVO: Avatar del cliente
+import 'pedido_detalle/widgets/index.dart'; // REFACTORIZADO: Widgets separados
 
 class PedidoDetalleScreen extends StatefulWidget {
   final int pedidoId;
@@ -48,39 +43,6 @@ class _PedidoDetalleScreenState extends State<PedidoDetalleScreen> {
 
   Future<void> _onRefresh() async {
     await _cargarPedido();
-  }
-
-  /// Reportar producto daÃ±ado
-  Future<void> _reportarProductoDanado(Pedido pedido) async {
-    if (pedido.venta == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('No hay venta asociada a este pedido'),
-          backgroundColor: Colors.red,
-        ),
-      );
-      return;
-    }
-
-    // Navegar a la pantalla de nuevo reporte con el ID de la venta
-    final resultado = await Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => NuevoReporteScreen(
-          ventaId: pedido.venta!.id,
-        ),
-      ),
-    );
-
-    // Mostrar mensaje de Ã©xito si el reporte fue creado
-    if (resultado != null && mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Reporte creado exitosamente'),
-          backgroundColor: Colors.green,
-        ),
-      );
-    }
   }
 
   Future<void> _extenderReserva() async {
@@ -197,7 +159,9 @@ class _PedidoDetalleScreenState extends State<PedidoDetalleScreen> {
 
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('âœ… Reservas renovadas. Reintentando conversiÃ³n...'),
+            content: Text(
+              'âœ… Reservas renovadas. Reintentando conversiÃ³n...',
+            ),
             backgroundColor: Colors.blue,
           ),
         );
@@ -230,101 +194,6 @@ class _PedidoDetalleScreenState extends State<PedidoDetalleScreen> {
         );
       }
     }
-  }
-
-  /// Imprimir ticket de venta
-  Future<void> _printTicket(int ventaId) async {
-    try {
-      // 1. Mostrar diÃ¡logo de selecciÃ³n de formato
-      final selectedFormat = await showPrintFormatDialog(context);
-      if (selectedFormat == null) {
-        // Usuario cancelÃ³
-        return;
-      }
-
-      if (!mounted) return;
-
-      // 2. Mostrar loading
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Abriendo ticket...'),
-          backgroundColor: Colors.blue,
-          duration: Duration(seconds: 1),
-        ),
-      );
-
-      // 3. Llamar PrintService
-      final printService = PrintService();
-      final success = await printService.printTicket(
-        ventaId: ventaId,
-        format: selectedFormat,
-      );
-
-      if (!mounted) return;
-
-      // 4. Mostrar feedback
-      if (success) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Abriendo ticket en ${selectedFormat.label}...'),
-            backgroundColor: Colors.green,
-            duration: const Duration(seconds: 2),
-          ),
-        );
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text(
-              'No se pudo abrir el navegador. Verifica tu conexiÃ³n.',
-            ),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error: ${e.toString()}'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    }
-  }
-
-  /// Registrar pago rÃ¡pido
-  Future<void> _registerPayment(Venta venta) async {
-    try {
-      // Mostrar diÃ¡logo de registraciÃ³n de pago
-      final result = await showDialog<bool>(
-        context: context,
-        builder: (context) => PaymentRegistrationDialog(
-          venta: venta,
-          onPaymentSuccess: _onPaymentSuccess,
-        ),
-      );
-
-      // Si el pago fue registrado exitosamente, recargar la venta
-      if (result == true && mounted) {
-        await _cargarPedido();
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error: ${e.toString()}'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    }
-  }
-
-  /// Callback cuando el pago se registra exitosamente
-  void _onPaymentSuccess() {
-    // Recargar datos cuando se registra un pago
-    // El diÃ¡logo ya muestra el mensaje de Ã©xito
   }
 
   /// âœ… NUEVO: Navegar a ProductListScreen para editar carrito y actualizar proforma
@@ -466,17 +335,6 @@ class _PedidoDetalleScreenState extends State<PedidoDetalleScreen> {
     }
   }
 
-  /// Mostrar menÃº de mÃ¡s opciones
-  Future<void> _showMoreOptions(Venta venta) async {
-    // TODO: Implementar despuÃ©s de crear diÃ¡logos adicionales
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('MÃ¡s opciones prÃ³ximamente disponibles'),
-        backgroundColor: Colors.blue,
-      ),
-    );
-  }
-
   /// âœ… NUEVO: Navegar a detalles de venta
   Future<void> _irADetallesVenta(int ventaId) async {
     if (!mounted) return;
@@ -484,38 +342,9 @@ class _PedidoDetalleScreenState extends State<PedidoDetalleScreen> {
     await Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => VentaDetalleScreen(
-          ventaId: ventaId,
-        ),
+        builder: (context) => VentaDetalleScreen(ventaId: ventaId),
       ),
     );
-  }
-
-  String _formatearFecha(DateTime fecha) {
-    final formatter = DateFormat('dd MMM yyyy, HH:mm', 'es_ES');
-    return formatter.format(fecha);
-  }
-
-  String _formatearSoloFecha(DateTime fecha) {
-    final formatter = DateFormat('dd MMMM yyyy', 'es_ES');
-    return formatter.format(fecha);
-  }
-
-  String _getLocalidadNombre(Client cliente) {
-    // âœ… El backend carga la relaciÃ³n localidad como objeto Localidad
-    if (cliente.localidad != null) {
-      if (cliente.localidad is Map) {
-        // Si viene como Map (aunque no deberÃ­a)
-        return (cliente.localidad as Map)['nombre'] ?? 'No disponible';
-      }
-      // Si viene como objeto Localidad
-      try {
-        return cliente.localidad.nombre ?? 'No disponible';
-      } catch (e) {
-        return 'No disponible';
-      }
-    }
-    return 'No disponible';
   }
 
   @override
@@ -525,7 +354,7 @@ class _PedidoDetalleScreenState extends State<PedidoDetalleScreen> {
 
     return Scaffold(
       appBar: CustomGradientAppBar(
-        title: 'Detalle del Pedido',
+        title: 'Pedido #${widget.pedidoId.toString()}',
         actions: [RefreshAction(isLoading: false, onRefresh: _onRefresh)],
       ),
       bottomNavigationBar: Consumer<PedidoProvider>(
@@ -586,7 +415,8 @@ class _PedidoDetalleScreenState extends State<PedidoDetalleScreen> {
                       children: [
                         Expanded(
                           child: ElevatedButton.icon(
-                            onPressed: () => _irADetallesVenta(pedido.venta!.id),
+                            onPressed: () =>
+                                _irADetallesVenta(pedido.venta!.id),
                             icon: const Icon(Icons.receipt_long),
                             label: const Text('Ver Venta'),
                             style: ElevatedButton.styleFrom(
@@ -630,7 +460,11 @@ class _PedidoDetalleScreenState extends State<PedidoDetalleScreen> {
 
               if (pedidoProvider.errorMessage != null &&
                   pedidoProvider.pedidoActual == null) {
-                return ErrorStateWidget(error: pedidoProvider.errorMessage!, onRetry: _cargarPedido, parentContext: context,);
+                return ErrorStateWidget(
+                  error: pedidoProvider.errorMessage!,
+                  onRetry: _cargarPedido,
+                  parentContext: context,
+                );
               }
 
               final pedido = pedidoProvider.pedidoActual;
@@ -645,94 +479,262 @@ class _PedidoDetalleScreenState extends State<PedidoDetalleScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Header con estado
-                      HeaderWidget(pedido: pedido, parentContext: context, hexToColor: _hexToColor,),
-
-                      // âœ… NUEVO: InformaciÃ³n del cliente
+                      // âœ… CABECERA: Estado, Cliente, DirecciÃ³n y Botones (formato venta_cliente_header_widget)
                       if (pedido.cliente != null)
-                        ClienteSection(cliente: pedido.cliente!, parentContext: context),
-
-                      // âœ… NUEVO: Estados de venta convertida (si estÃ¡ convertida)
-                      if (pedido.venta != null)
-                        VentaConvertidaSection(pedido: pedido, colorScheme: Theme.of(context).colorScheme, parentContext: context,),
-
-                      // âœ… NUEVO: InformaciÃ³n de venta (si es una venta convertida)
-                      Consumer<PedidoProvider>(
-                        builder: (context, provider, _) {
-                          debugPrint(
-                            'ðŸ” PedidoDetalle Debug: estadoCategoria=${pedido.estadoCategoria}, '
-                            'ventaActual=${provider.ventaActual != null}, '
-                            'isLoadingVenta=${provider.isLoadingVenta}',
-                          );
-
-                          if (provider.isLoadingVenta) {
-                            return const Padding(
-                              padding: EdgeInsets.all(16),
-                              child: Center(child: CircularProgressIndicator()),
-                            );
-                          }
-
-                          final venta = provider.ventaActual;
-                          if (venta != null &&
-                              pedido.estadoCategoria == 'venta') {
-                            debugPrint(
-                              'âœ… Mostrando VentaInfoCard: ${venta.numero}',
-                            );
-                            return VentaInfoCard(
-                              venta: venta,
-                              onPrintTicket: () => _printTicket(venta.id),
-                              onRegisterPayment: () => _registerPayment(venta),
-                              onMoreOptions: () => _showMoreOptions(venta),
-                            );
-                          }
-
-                          if (pedido.estadoCategoria != 'venta') {
-                            debugPrint(
-                              'âš ï¸ No es una venta, es: ${pedido.estadoCategoria}',
-                            );
-                          }
-
-                          return const SizedBox.shrink();
-                        },
-                      ),
-
-                      // BotÃ³n de tracking (si estÃ¡ en ruta)
-                      // âœ… ACTUALIZADO: Usar cÃ³digos de estado String en lugar de enum
-                      if (pedido.estadoCodigo == 'EN_RUTA' ||
-                          pedido.estadoCodigo == 'LLEGO')
-                        TrackingSection(pedido: pedido, parentContext: context,),
-
-                      // Timeline de estados
-                      if (pedido.historialEstados.isNotEmpty)
-                        TimelineEstadosWidget(pedido: pedido, parentContext: context, hexToColor: _hexToColor,),
-
+                        Padding(
+                          padding: const EdgeInsets.all(16),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.center,
+                            children: [
+                              // Estado del Pedido
+                              Container(
+                                padding: const EdgeInsets.all(12),
+                                decoration: BoxDecoration(
+                                  color: Colors.blue.withValues(alpha: 0.1),
+                                  border: Border.all(
+                                    color: Colors.blue,
+                                    width: 1.5,
+                                  ),
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: Row(
+                                  children: [
+                                    Icon(
+                                      Icons.receipt,
+                                      size: 20,
+                                      color: Colors.blue,
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          const Text(
+                                            'Estado',
+                                            style: TextStyle(
+                                              fontSize: 11,
+                                              color: Colors.grey,
+                                            ),
+                                          ),
+                                          Text(
+                                            pedido.estadoNombre ??
+                                                pedido.estadoCodigo ??
+                                                'Desconocido',
+                                            style: const TextStyle(
+                                              fontWeight: FontWeight.bold,
+                                              color: Colors.blue,
+                                            ),
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(height: 12),
+                              // Cliente, Dirección y Botones
+                              Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 4,
+                                ),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    // Avatar y Nombre del Cliente
+                                    Row(
+                                      children: [
+                                        ClienteAvatarWidget(
+                                          clienteNombre: pedido.cliente?.nombre,
+                                          clienteFotoPerfil: pedido.cliente?.fotoPerfil,
+                                        ),
+                                        const SizedBox(width: 12),
+                                        Expanded(
+                                          child: Column(
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.start,
+                                            children: [
+                                              Text(
+                                                pedido.cliente?.nombre ??
+                                                    'Cliente desconocido',
+                                                style: const TextStyle(
+                                                  fontWeight: FontWeight.bold,
+                                                ),
+                                                maxLines: 2,
+                                                overflow: TextOverflow.ellipsis,
+                                              ),
+                                              const SizedBox(height: 2),
+                                              Text(
+                                                pedido.cliente?.razonSocial ??
+                                                    'N/A',
+                                                maxLines: 1,
+                                                overflow: TextOverflow.ellipsis,
+                                                style: const TextStyle(
+                                                  fontSize: 12,
+                                                ),
+                                              ),
+                                              if (pedido.cliente?.localidad !=
+                                                  null) ...[
+                                                const SizedBox(height: 2),
+                                                Text(
+                                                  '📍 ${pedido.cliente?.localidad?.nombre ?? 'Localidad desconocida'}',
+                                                  style: const TextStyle(
+                                                    fontWeight: FontWeight.w500,
+                                                  ),
+                                                  maxLines: 1,
+                                                  overflow:
+                                                      TextOverflow.ellipsis,
+                                                ),
+                                              ],
+                                            ],
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 12),
+                                    // Dirección de Entrega
+                                    if (pedido.direccionEntrega != null) ...[
+                                      const Divider(height: 1),
+                                      const SizedBox(height: 12),
+                                      Row(
+                                        children: [
+                                          const Icon(
+                                            Icons.location_on,
+                                            size: 16,
+                                            color: Colors.red,
+                                          ),
+                                          const SizedBox(width: 8),
+                                          Expanded(
+                                            child: Column(
+                                              crossAxisAlignment:
+                                                  CrossAxisAlignment.start,
+                                              children: [
+                                                const Text(
+                                                  'Dirección de Entrega',
+                                                  style: TextStyle(
+                                                    fontWeight: FontWeight.w600,
+                                                    color: Colors.grey,
+                                                  ),
+                                                ),
+                                                const SizedBox(height: 2),
+                                                Text(
+                                                  pedido
+                                                          .direccionEntrega
+                                                          ?.observaciones ??
+                                                      pedido
+                                                          .direccionEntrega
+                                                          ?.direccion ??
+                                                      'Sin dirección',
+                                                  style: const TextStyle(
+                                                    fontWeight: FontWeight.w500,
+                                                  ),
+                                                  maxLines: 2,
+                                                  overflow:
+                                                      TextOverflow.ellipsis,
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                      const SizedBox(height: 12),
+                                    ],
+                                    // Botones de Contacto
+                                    if (pedido.cliente?.telefono != null) ...[
+                                      const Divider(height: 1),
+                                      const SizedBox(height: 12),
+                                      Row(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.spaceEvenly,
+                                        children: [
+                                          Tooltip(
+                                            message: 'Llamar',
+                                            child: IconButton(
+                                              icon: const Icon(Icons.phone),
+                                              color: Colors.green,
+                                              onPressed: () => PhoneUtils.llamarCliente(
+                                                context,
+                                                pedido.cliente?.telefono,
+                                              ),
+                                              constraints: const BoxConstraints(
+                                                minWidth: 40,
+                                                minHeight: 40,
+                                              ),
+                                            ),
+                                          ),
+                                          Tooltip(
+                                            message: 'WhatsApp',
+                                            child: IconButton(
+                                              icon: const Icon(Icons.chat),
+                                              color: Colors.green,
+                                              onPressed: () => PhoneUtils.enviarWhatsApp(
+                                                context,
+                                                pedido.cliente?.telefono,
+                                              ),
+                                              constraints: const BoxConstraints(
+                                                minWidth: 40,
+                                                minHeight: 40,
+                                              ),
+                                            ),
+                                          ),
+                                          // ✅ Botón Mapa (solo si hay dirección con coordenadas)
+                                          if (pedido.direccionEntrega?.latitud != null &&
+                                              pedido.direccionEntrega?.longitud != null)
+                                            Tooltip(
+                                              message: 'Ver en Mapa',
+                                              child: IconButton(
+                                                icon: const Icon(Icons.map),
+                                                color: Colors.lightGreen,
+                                                onPressed: () => _abrirMapa(pedido),
+                                                constraints: const BoxConstraints(
+                                                  minWidth: 40,
+                                                  minHeight: 40,
+                                                ),
+                                              ),
+                                            ),
+                                        ],
+                                      ),
+                                    ],
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
                       const SizedBox(height: 16),
-
-                      // InformaciÃ³n general
-                      InfoSection(pedido: pedido, parentContext: context,),
 
                       // DirecciÃ³n de entrega
                       if (pedido.direccionEntrega != null)
-                        DireccionSection(pedido: pedido, parentContext: context,),
+                        DireccionSection(
+                          pedido: pedido,
+                          parentContext: context,
+                        ),
 
                       // Fecha programada
                       if (pedido.fechaProgramada != null)
-                        FechaProgramadaSection(pedido: pedido, parentContext: context,),
+                        FechaProgramadaSection(
+                          pedido: pedido,
+                          parentContext: context,
+                        ),
 
                       // Productos
-                      ProductosSection(pedido: pedido, parentContext: context,),
+                      ProductosSection(pedido: pedido, parentContext: context),
 
                       // Reservas de stock
                       if (pedido.reservas.isNotEmpty)
-                        ReservasSection(pedido: pedido, parentContext: context,),
+                        ReservasSection(pedido: pedido, parentContext: context),
 
                       // Resumen de montos
-                      ResumenSection(pedido: pedido, parentContext: context,),
+                      ResumenSection(pedido: pedido, parentContext: context),
 
                       // Observaciones
                       if (pedido.observaciones != null &&
                           pedido.observaciones!.isNotEmpty)
-                        ObservacionesSection(pedido: pedido, parentContext: context,),
+                        ObservacionesSection(
+                          pedido: pedido,
+                          parentContext: context,
+                        ),
 
                       const SizedBox(height: 100),
                     ],
@@ -768,19 +770,51 @@ class _PedidoDetalleScreenState extends State<PedidoDetalleScreen> {
     );
   }
 
+  Future<void> _abrirMapa(Pedido pedido) async {
+    try {
+      if (mounted) {
+        final fotoPerfil = pedido.cliente?.fotoPerfil != null
+            ? '${AppUrls.baseUrlImg}${pedido.cliente!.fotoPerfil}'
+            : null;
 
-  /// âœ… HELPER: Convertir hex string (#RRGGBB) a Color
-  Color _hexToColor(String hexString) {
-    final buffer = StringBuffer();
-    if (hexString.length == 6 || hexString.length == 7) {
-      buffer.write('ff');
-      buffer.write(hexString.replaceFirst('#', ''));
-    } else if (hexString.length == 8 || hexString.length == 9) {
-      buffer.write(hexString.replaceFirst('#', ''));
-    } else {
-      return Colors.grey; // Fallback
+        final ubicacionPedido = MapLocation(
+          latitude: pedido.direccionEntrega!.latitud!,
+          longitude: pedido.direccionEntrega!.longitud!,
+          title: pedido.cliente?.nombre ?? 'Sin nombre',
+          subtitle: pedido.id.toString(),
+          isSelected: false,
+          razonSocial: pedido.cliente?.razonSocial,
+          telefono: pedido.cliente?.telefono,
+          ventaId: pedido.id,
+          markerColor: '#1E90FF',
+          fotoPerfil: fotoPerfil,
+        );
+
+        showDialog(
+          context: context,
+          barrierDismissible: true,
+          builder: (BuildContext context) {
+            return Scaffold(
+              body: MapLocationSelector(
+                initialLatitude: pedido.direccionEntrega!.latitud!,
+                initialLongitude: pedido.direccionEntrega!.longitud!,
+                additionalLocations: [ubicacionPedido],
+                onLocationSelected: (lat, lng, address) {
+                  Navigator.pop(context);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('📍 ${address ?? "Ubicación: $lat, $lng"}'),
+                      duration: const Duration(seconds: 2),
+                    ),
+                  );
+                },
+              ),
+            );
+          },
+        );
+      }
+    } catch (e) {
+      debugPrint('⚠️ Error abriendo mapa: $e');
     }
-    return Color(int.parse(buffer.toString(), radix: 16));
   }
 }
-

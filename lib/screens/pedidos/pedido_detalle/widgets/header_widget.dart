@@ -25,24 +25,19 @@ class HeaderWidget extends StatelessWidget {
 
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
         color: estadoColor.withOpacity(0.1),
         border: Border(bottom: BorderSide(color: estadoColor.withOpacity(0.3))),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(
-            pedido.numero,
-            style: TextStyle(
-              fontSize: AppTextStyles.displaySmall(parentContext).fontSize!,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
+          Text(pedido.numero, style: TextStyle(fontWeight: FontWeight.bold)),
           const SizedBox(height: 12),
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
             decoration: BoxDecoration(
               color: estadoColor,
               borderRadius: BorderRadius.circular(20),
@@ -63,7 +58,6 @@ class HeaderWidget extends StatelessWidget {
                   style: TextStyle(
                     color: Colors.white,
                     fontWeight: FontWeight.w600,
-                    fontSize: AppTextStyles.bodyLarge(parentContext).fontSize!,
                   ),
                 ),
               ],

@@ -3,6 +3,8 @@ import '../../../config/app_text_styles.dart';
 import '../../../config/app_colors.dart';
 import '../../../extensions/theme_extension.dart';
 import '../../../screens/ventas/venta_detalle/producto_avatar_widget.dart';
+import '../../../models/combo_item_seleccionado.dart';
+import '../../../models/product.dart';
 
 class ProductoCardWidget extends StatelessWidget {
   final String? imagenUrl;
@@ -11,8 +13,8 @@ class ProductoCardWidget extends StatelessWidget {
   final double precioUnitario;
   final double subtotal;
   final bool mostrarAvatarWidget;
-  final List<Map<String, dynamic>>? comboItemsSeleccionados;
-  final dynamic comboItems;
+  final List<ComboItemSeleccionado>? comboItemsSeleccionados;
+  final List<ComboItem>? comboItems;
   final BuildContext? parentContext;
 
   const ProductoCardWidget({
@@ -28,90 +30,13 @@ class ProductoCardWidget extends StatelessWidget {
     this.parentContext,
   });
 
-  String? _obtenerNombreComboItem(int comboItemId) {
-    if (comboItems == null) {
-      debugPrint(
-        '⚠️ [ProductoCard] comboItems es null para _obtenerNombreComboItem',
-      );
+  ComboItem? _obtenerComboItem(int comboItemId) {
+    if (comboItems == null || comboItems!.isEmpty) {
       return null;
     }
     try {
-      final comboItemsList = comboItems as List;
-      final comboItem = comboItemsList.firstWhere((c) => c.id == comboItemId);
-
-      final nombre = comboItem.productoNombre ?? comboItem.producto?.nombre;
-      debugPrint(
-        '🏷️ [ProductoCard] _obtenerNombreComboItem($comboItemId): productoNombre="${comboItem.productoNombre}" → Usando: "$nombre"',
-      );
-      return nombre;
+      return comboItems!.firstWhere((c) => c.id == comboItemId);
     } catch (e) {
-      debugPrint(
-        '❌ [ProductoCard] Error en _obtenerNombreComboItem($comboItemId): $e',
-      );
-      return null;
-    }
-  }
-
-  String? _obtenerSkuComboItem(int comboItemId) {
-    if (comboItems == null) return null;
-    try {
-      final comboItemsList = comboItems as List;
-      final comboItem = comboItemsList.firstWhere((c) => c.id == comboItemId);
-      return comboItem.producto?.sku;
-    } catch (e) {
-      return null;
-    }
-  }
-
-  String? _obtenerImagenComboItem(int comboItemId) {
-    if (comboItems == null) {
-      debugPrint(
-        '⚠️ [ProductoCard] comboItems es null para combo item $comboItemId',
-      );
-      return null;
-    }
-    try {
-      final comboItemsList = comboItems as List;
-      debugPrint(
-        '📊 [ProductoCard] Buscando combo item $comboItemId en lista de ${comboItemsList.length} items',
-      );
-
-      final comboItem = comboItemsList.firstWhere((c) => c.id == comboItemId);
-      debugPrint(
-        '✅ [ProductoCard] ComboItem encontrado: ${comboItem.producto?.nombre}',
-      );
-
-      if (comboItem.producto == null) {
-        debugPrint('⚠️ [ProductoCard] comboItem.producto es null');
-        return null;
-      }
-
-      debugPrint(
-        '✅ [ProductoCard] Producto existe: ${comboItem.producto?.nombre}',
-      );
-
-      if (comboItem.producto?.imagenes == null) {
-        debugPrint('⚠️ [ProductoCard] producto.imagenes es null');
-      } else {
-        debugPrint(
-          '📷 [ProductoCard] Imágenes disponibles: ${comboItem.producto?.imagenes?.length}',
-        );
-      }
-
-      final imagenPrincipal = comboItem.producto?.imagenPrincipal;
-      debugPrint(
-        '🖼️ [ProductoCard] imagenPrincipal: ${imagenPrincipal?.url ?? "null"}',
-      );
-
-      final imagenUrl = imagenPrincipal?.url;
-      debugPrint(
-        '✅ [ProductoCard] Combo item $comboItemId - Producto: ${comboItem.producto?.nombre} - Imagen: ${imagenUrl != null ? "✓" : "✗"}',
-      );
-      return imagenUrl;
-    } catch (e) {
-      debugPrint(
-        '❌ [ProductoCard] Error obteniendo imagen para combo item $comboItemId: $e',
-      );
       return null;
     }
   }
@@ -269,19 +194,15 @@ class ProductoCardWidget extends StatelessWidget {
                   const SizedBox(height: 12),
                   ...comboItemsSeleccionados!.asMap().entries.map((entry) {
                     final index = entry.key;
-                    final comboItem = entry.value;
-                    final cantidadRaw = comboItem['cantidad'] ?? 1;
-                    final cantidadComponente = cantidadRaw is int
-                        ? cantidadRaw
-                        : (cantidadRaw as num).toInt();
-                    final comboItemId = comboItem['combo_item_id'] ?? 0;
-                    final nombreProductoCombo =
-                        _obtenerNombreComboItem(comboItemId) ?? 'Producto';
+                    final comboItemSel = entry.value;
+                    final comboItem = _obtenerComboItem(comboItemSel.comboItemId);
                     final isLast = index == comboItemsSeleccionados!.length - 1;
-                    final cantidadTotal = cantidadComponente * cantidad.toInt();
-                    final imagenUrl = _obtenerImagenComboItem(comboItemId);
-                    final tieneImagen =
-                        imagenUrl != null && imagenUrl.isNotEmpty;
+                    final cantidadTotal = comboItemSel.cantidad * cantidad.toInt();
+
+                    final nombreProducto = comboItem?.producto?.nombre ?? 'Producto desconocido';
+                    final imagenUrl = comboItem?.producto?.imagenPrincipal?.url;
+                    final tieneImagen = imagenUrl != null && imagenUrl.isNotEmpty;
+                    final sku = comboItem?.producto?.sku ?? 'N/A';
 
                     return Column(
                       children: [
@@ -320,7 +241,7 @@ class ProductoCardWidget extends StatelessWidget {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
-                                    nombreProductoCombo,
+                                    nombreProducto,
                                     style: TextStyle(
                                       fontWeight: FontWeight.w500,
                                       color: colorScheme.onSurface,
@@ -330,7 +251,7 @@ class ProductoCardWidget extends StatelessWidget {
                                   ),
                                   const SizedBox(height: 2),
                                   Text(
-                                    'ID: ${comboItem['id'] ?? 'N/A'}',
+                                    'ID: ${comboItemSel.comboItemId}',
                                     style: TextStyle(
                                       color: colorScheme.onSurface.withOpacity(
                                         0.6,
@@ -340,7 +261,7 @@ class ProductoCardWidget extends StatelessWidget {
                                   ),
                                   const SizedBox(height: 1),
                                   Text(
-                                    'SKU: ${_obtenerSkuComboItem(comboItemId) ?? 'N/A'}',
+                                    'SKU: $sku',
                                     style: TextStyle(
                                       color: colorScheme.onSurface.withOpacity(
                                         0.6,
@@ -374,7 +295,7 @@ class ProductoCardWidget extends StatelessWidget {
                                 ),
                                 if (cantidad > 1)
                                   Text(
-                                    '($cantidadComponente×${cantidad.toInt()})',
+                                    '(${comboItemSel.cantidad}×${cantidad.toInt()})',
                                     style: TextStyle(
                                       color: colorScheme.onSurface.withOpacity(
                                         0.6,

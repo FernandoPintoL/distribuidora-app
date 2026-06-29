@@ -93,14 +93,12 @@ class ResumenSection extends StatelessWidget {
                       'Total',
                       style: textTheme.titleMedium?.copyWith(
                         fontWeight: FontWeight.bold,
-                        color: colorScheme.onSurface,
                       ),
                     ),
                     Text(
                       'Bs. ${pedido.total.toStringAsFixed(2)}',
                       style: textTheme.titleLarge?.copyWith(
                         fontWeight: FontWeight.bold,
-                        color: colorScheme.primary,
                       ),
                     ),
                   ],

@@ -687,20 +687,6 @@ class _ProductListScreenState extends State<ProductListScreen>
                   );
                 }
 
-                // ✅ DEBUG: Verificar parsing de precios
-                /*debugPrint('📦 ProductListScreen: ${productProvider.products.length} productos cargados');
-                for (int i = 0; i < productProvider.products.length && i < 2; i++) {
-                  final p = productProvider.products[i];
-                  debugPrint('   Producto ${i + 1}: ${p.nombre}');
-                  debugPrint('     - precios array: ${p.precios?.length} items');
-                  debugPrint('     - precioVentaFinal: ${p.precioVentaFinal}');
-                  if (p.precios != null) {
-                    for (var precio in p.precios!) {
-                      debugPrint('       - Tipo ${precio.tipoPrecioId}: \$${precio.precio}');
-                    }
-                  }
-                }*/
-
                 try {
                   return ProductListViewBuilder(
                     productProvider: productProvider,

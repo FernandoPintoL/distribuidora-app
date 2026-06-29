@@ -36,22 +36,13 @@ class ObservacionesSection extends StatelessWidget {
             children: [
               Text(
                 'Observaciones',
-                style: textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: colorScheme.onSurface,
-                ),
+                style: TextStyle(fontWeight: FontWeight.bold),
               ),
               Divider(
                 height: 20,
                 color: colorScheme.outline.withOpacity(isDark ? 0.2 : 0.15),
               ),
-              Text(
-                pedido.observaciones!,
-                style: textTheme.bodyMedium?.copyWith(
-                  color: colorScheme.onSurface.withOpacity(0.85),
-                  height: 1.5,
-                ),
-              ),
+              Text(pedido.observaciones!, style: TextStyle(height: 1.5)),
             ],
           ),
         ),

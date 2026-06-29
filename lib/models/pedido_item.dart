@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'product.dart';
+import 'combo_item_seleccionado.dart';
 
 class PedidoItem {
   final int id;
@@ -11,7 +12,7 @@ class PedidoItem {
   final double subtotal;
   final String? observaciones;
   final double? descuento; // Added field for backend compatibility
-  final List<Map<String, dynamic>>? comboItemsSeleccionados; // NUEVO: Items del combo seleccionados
+  final List<ComboItemSeleccionado>? comboItemsSeleccionados;
 
   PedidoItem({
     required this.id,
@@ -41,7 +42,9 @@ class PedidoItem {
         observaciones: json['observaciones'] as String?,
         descuento: _parseDouble(json['descuento']),
         comboItemsSeleccionados: json['combo_items_seleccionados'] != null
-            ? List<Map<String, dynamic>>.from(json['combo_items_seleccionados'] as List)
+            ? (json['combo_items_seleccionados'] as List)
+                .map((item) => ComboItemSeleccionado.fromJson(item as Map<String, dynamic>))
+                .toList()
             : null,
       );
     } catch (e) {
@@ -111,7 +114,7 @@ class PedidoItem {
     double? subtotal,
     String? observaciones,
     double? descuento,
-    List<Map<String, dynamic>>? comboItemsSeleccionados,
+    List<ComboItemSeleccionado>? comboItemsSeleccionados,
   }) {
     return PedidoItem(
       id: id ?? this.id,

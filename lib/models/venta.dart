@@ -6,7 +6,8 @@ import 'direccion_cliente.dart';
 import 'estado_logistico.dart';
 import 'pedido.dart';
 import 'entrega_venta_confirmacion.dart';
-import 'product.dart'; // NUEVO: Para ComboItem
+import 'product.dart';
+import 'combo_item_seleccionado.dart';
 
 // ✅ NUEVO 2026-06-23: Clase para información de proforma relacionada a una venta
 class Proforma {
@@ -426,7 +427,7 @@ class VentaDetalle {
   final double subtotal;
   final Producto? producto;
   final String? nombreProducto; // ✅ NUEVO 2026-02-21: Nombre del producto desde backend
-  final List<Map<String, dynamic>>? comboItemsSeleccionados; // NUEVO: Items del combo seleccionados
+  final List<ComboItemSeleccionado>? comboItemsSeleccionados;
 
   VentaDetalle({
     required this.id,
@@ -470,9 +471,11 @@ class VentaDetalle {
       descuento: _parseDouble(json['descuento']),
       subtotal: _parseDouble(json['subtotal']),
       producto: productoObj,
-      nombreProducto: json['producto_nombre'] as String?, // ✅ NUEVO 2026-02-21
+      nombreProducto: json['producto_nombre'] as String?,
       comboItemsSeleccionados: json['combo_items_seleccionados'] != null
-          ? List<Map<String, dynamic>>.from(json['combo_items_seleccionados'] as List)
+          ? (json['combo_items_seleccionados'] as List)
+              .map((item) => ComboItemSeleccionado.fromJson(item as Map<String, dynamic>))
+              .toList()
           : null,
     );
   }
