@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
-import '../../../config/app_urls.dart';
 import '../../../config/app_text_styles.dart';
+import '../../../config/app_colors.dart';
+import '../../../extensions/theme_extension.dart';
 import '../../../screens/ventas/venta_detalle/producto_avatar_widget.dart';
 
 class ProductoCardWidget extends StatelessWidget {
@@ -29,7 +30,9 @@ class ProductoCardWidget extends StatelessWidget {
 
   String? _obtenerNombreComboItem(int comboItemId) {
     if (comboItems == null) {
-      debugPrint('⚠️ [ProductoCard] comboItems es null para _obtenerNombreComboItem');
+      debugPrint(
+        '⚠️ [ProductoCard] comboItems es null para _obtenerNombreComboItem',
+      );
       return null;
     }
     try {
@@ -38,10 +41,14 @@ class ProductoCardWidget extends StatelessWidget {
 
       // Intentar productoNombre primero, luego producto.nombre
       final nombre = comboItem.productoNombre ?? comboItem.producto?.nombre;
-      debugPrint('🏷️ [ProductoCard] _obtenerNombreComboItem($comboItemId): productoNombre="${comboItem.productoNombre}" → Usando: "$nombre"');
+      debugPrint(
+        '🏷️ [ProductoCard] _obtenerNombreComboItem($comboItemId): productoNombre="${comboItem.productoNombre}" → Usando: "$nombre"',
+      );
       return nombre;
     } catch (e) {
-      debugPrint('❌ [ProductoCard] Error en _obtenerNombreComboItem($comboItemId): $e');
+      debugPrint(
+        '❌ [ProductoCard] Error en _obtenerNombreComboItem($comboItemId): $e',
+      );
       return null;
     }
   }
@@ -49,37 +56,53 @@ class ProductoCardWidget extends StatelessWidget {
   // Obtener URL de imagen del producto del combo item
   String? _obtenerImagenComboItem(int comboItemId) {
     if (comboItems == null) {
-      debugPrint('⚠️ [ProductoCard] comboItems es null para combo item $comboItemId');
+      debugPrint(
+        '⚠️ [ProductoCard] comboItems es null para combo item $comboItemId',
+      );
       return null;
     }
     try {
       final comboItemsList = comboItems as List;
-      debugPrint('📊 [ProductoCard] Buscando combo item $comboItemId en lista de ${comboItemsList.length} items');
+      debugPrint(
+        '📊 [ProductoCard] Buscando combo item $comboItemId en lista de ${comboItemsList.length} items',
+      );
 
       final comboItem = comboItemsList.firstWhere((c) => c.id == comboItemId);
-      debugPrint('✅ [ProductoCard] ComboItem encontrado: ${comboItem.producto?.nombre}');
+      debugPrint(
+        '✅ [ProductoCard] ComboItem encontrado: ${comboItem.producto?.nombre}',
+      );
 
       if (comboItem.producto == null) {
         debugPrint('⚠️ [ProductoCard] comboItem.producto es null');
         return null;
       }
 
-      debugPrint('✅ [ProductoCard] Producto existe: ${comboItem.producto?.nombre}');
+      debugPrint(
+        '✅ [ProductoCard] Producto existe: ${comboItem.producto?.nombre}',
+      );
 
       if (comboItem.producto?.imagenes == null) {
         debugPrint('⚠️ [ProductoCard] producto.imagenes es null');
       } else {
-        debugPrint('📷 [ProductoCard] Imágenes disponibles: ${comboItem.producto?.imagenes?.length}');
+        debugPrint(
+          '📷 [ProductoCard] Imágenes disponibles: ${comboItem.producto?.imagenes?.length}',
+        );
       }
 
       final imagenPrincipal = comboItem.producto?.imagenPrincipal;
-      debugPrint('🖼️ [ProductoCard] imagenPrincipal: ${imagenPrincipal?.url ?? "null"}');
+      debugPrint(
+        '🖼️ [ProductoCard] imagenPrincipal: ${imagenPrincipal?.url ?? "null"}',
+      );
 
       final imagenUrl = imagenPrincipal?.url;
-      debugPrint('✅ [ProductoCard] Combo item $comboItemId - Producto: ${comboItem.producto?.nombre} - Imagen: ${imagenUrl != null ? "✓" : "✗"}');
+      debugPrint(
+        '✅ [ProductoCard] Combo item $comboItemId - Producto: ${comboItem.producto?.nombre} - Imagen: ${imagenUrl != null ? "✓" : "✗"}',
+      );
       return imagenUrl;
     } catch (e) {
-      debugPrint('❌ [ProductoCard] Error obteniendo imagen para combo item $comboItemId: $e');
+      debugPrint(
+        '❌ [ProductoCard] Error obteniendo imagen para combo item $comboItemId: $e',
+      );
       return null;
     }
   }
@@ -87,18 +110,39 @@ class ProductoCardWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final tieneImagen = imagenUrl != null && imagenUrl!.isNotEmpty;
-    final tieneCombo = comboItemsSeleccionados != null && comboItemsSeleccionados!.isNotEmpty;
+    final tieneCombo =
+        comboItemsSeleccionados != null && comboItemsSeleccionados!.isNotEmpty;
     final ctx = parentContext ?? context;
+
+    final isDark = ctx.isDark;
+    final colorScheme = Theme.of(ctx).colorScheme;
 
     return Column(
       children: [
         Card(
-          margin: const EdgeInsets.only(bottom: 12),
-          child: Padding(
-            padding: const EdgeInsets.all(8),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
+          margin: const EdgeInsets.symmetric(horizontal: 0, vertical: 8),
+          elevation: 4,
+          shadowColor: Colors.black.withAlpha(30),
+          color: isDark ? colorScheme.surface : Colors.white,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+            side: BorderSide(
+              color: colorScheme.outline.withAlpha(20),
+              width: 1,
+            ),
+          ),
+          child: InkWell(
+            borderRadius: BorderRadius.circular(12),
+            splashColor: colorScheme.primary.withAlpha(30),
+            highlightColor: colorScheme.primary.withAlpha(15),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(
+                horizontal: 16.0,
+                vertical: 12,
+              ),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
                 // Avatar a la izquierda
                 if (tieneImagen && mostrarAvatarWidget)
                   Padding(
@@ -148,9 +192,7 @@ class ProductoCardWidget extends StatelessWidget {
                               overflow: TextOverflow.ellipsis,
                             ),
                           ),
-                          Text(
-                            'x${cantidad.toStringAsFixed(2)}',
-                          ),
+                          Text('x${cantidad.toStringAsFixed(2)}'),
                         ],
                       ),
                       const SizedBox(height: 8),
@@ -160,18 +202,18 @@ class ProductoCardWidget extends StatelessWidget {
                           Expanded(
                             child: Text(
                               'Bs. ${precioUnitario.toStringAsFixed(2)}',
-                              style: TextStyle(
-                                fontWeight: FontWeight.w500,
-                              ),
+                              style: TextStyle(fontWeight: FontWeight.w500),
                               overflow: TextOverflow.ellipsis,
                             ),
                           ),
                           Expanded(
                             child: Text(
-                              'Sub.: Bs. ${subtotal.toStringAsFixed(2)}',
+                              'Subss.: Bs. ${subtotal.toStringAsFixed(2)}',
                               style: TextStyle(
                                 fontWeight: FontWeight.bold,
-                                color: Theme.of(context).brightness == Brightness.dark
+                                color:
+                                    Theme.of(context).brightness ==
+                                        Brightness.dark
                                     ? Colors.greenAccent
                                     : Colors.green,
                               ),
@@ -184,6 +226,7 @@ class ProductoCardWidget extends StatelessWidget {
                   ),
                 ),
               ],
+              ),
             ),
           ),
         ),
@@ -198,13 +241,20 @@ class ProductoCardWidget extends StatelessWidget {
                 style: TextStyle(color: Colors.orange.shade700, fontSize: 12),
               ),
             ),
-          Container(
-            margin: const EdgeInsets.only(left: 8, right: 8, bottom: 12),
-            decoration: BoxDecoration(
-              color: Colors.blue.shade50,
-              border: Border.all(color: Colors.blue.shade200),
-              borderRadius: BorderRadius.circular(8),
+          Card(
+            margin: const EdgeInsets.symmetric(horizontal: 0, vertical: 8),
+            elevation: 2,
+            shadowColor: AppColors.secondary.withAlpha(40),
+            color: AppColors.secondary.withAlpha(isDark ? 20 : 10),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+              side: BorderSide(
+                color: AppColors.secondary.withAlpha(60),
+                width: 1,
+              ),
             ),
+            child: Container(
+              decoration: const BoxDecoration(),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -225,8 +275,9 @@ class ProductoCardWidget extends StatelessWidget {
                             fontWeight: FontWeight.bold,
                             color: Colors.blue.shade700,
                             fontSize: parentContext != null
-                                ? AppTextStyles.bodySmall(parentContext!)
-                                    .fontSize!
+                                ? AppTextStyles.bodySmall(
+                                    parentContext!,
+                                  ).fontSize!
                                 : 12,
                           ),
                         ),
@@ -236,165 +287,170 @@ class ProductoCardWidget extends StatelessWidget {
                 ),
                 Container(
                   decoration: BoxDecoration(
-                    border: Border(top: BorderSide(color: Colors.blue.shade200)),
+                    border: Border(
+                      top: BorderSide(color: Colors.blue.shade200),
+                    ),
                   ),
                   child: Column(
-                    children: comboItemsSeleccionados!
-                        .asMap()
-                        .entries
-                        .map((entry) {
-                          final index = entry.key;
-                          final comboItem = entry.value;
-                          final cantidadRaw = comboItem['cantidad'] ?? 1;
-                          final cantidadComponente = cantidadRaw is int
-                              ? cantidadRaw
-                              : (cantidadRaw as num).toInt();
-                          final comboItemId = comboItem['combo_item_id'] ?? 0;
-                          final nombreProductoCombo =
-                              _obtenerNombreComboItem(comboItemId) ?? 'Producto';
-                          debugPrint('🏷️ [ProductoCard] Nombre para mostrar: "$nombreProductoCombo" (comboItemId: $comboItemId)');
-                          final isLast =
-                              index == comboItemsSeleccionados!.length - 1;
-                          final cantidadTotal = cantidadComponente * cantidad.toInt();
-                          final imagenUrl = _obtenerImagenComboItem(comboItemId);
-                          final tieneImagen = imagenUrl != null && imagenUrl.isNotEmpty;
+                    children: comboItemsSeleccionados!.asMap().entries.map((
+                      entry,
+                    ) {
+                      final index = entry.key;
+                      final comboItem = entry.value;
+                      final cantidadRaw = comboItem['cantidad'] ?? 1;
+                      final cantidadComponente = cantidadRaw is int
+                          ? cantidadRaw
+                          : (cantidadRaw as num).toInt();
+                      final comboItemId = comboItem['combo_item_id'] ?? 0;
+                      final nombreProductoCombo =
+                          _obtenerNombreComboItem(comboItemId) ?? 'Producto';
+                      debugPrint(
+                        '🏷️ [ProductoCard] Nombre para mostrar: "$nombreProductoCombo" (comboItemId: $comboItemId)',
+                      );
+                      final isLast =
+                          index == comboItemsSeleccionados!.length - 1;
+                      final cantidadTotal =
+                          cantidadComponente * cantidad.toInt();
+                      final imagenUrl = _obtenerImagenComboItem(comboItemId);
+                      final tieneImagen =
+                          imagenUrl != null && imagenUrl.isNotEmpty;
 
-                          return Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 12,
-                              vertical: 8,
-                            ),
-                            decoration: BoxDecoration(
-                              border: isLast
-                                  ? null
-                                  : Border(
-                                      bottom:
-                                          BorderSide(color: Colors.blue.shade100),
-                                    ),
-                            ),
-                            child: Row(
-                              children: [
-                                // Imagen del componente
-                                if (tieneImagen)
-                                  Padding(
-                                    padding: const EdgeInsets.only(right: 12),
-                                    child: ClipRRect(
-                                      borderRadius: BorderRadius.circular(6),
-                                      child: Image.network(
-                                        imagenUrl,
-                                        width: 48,
-                                        height: 48,
-                                        fit: BoxFit.cover,
-                                        errorBuilder: (_, __, ___) => Container(
-                                          width: 48,
-                                          height: 48,
-                                          decoration: BoxDecoration(
-                                            color: Colors.blue.shade100,
-                                            borderRadius: BorderRadius.circular(6),
-                                          ),
-                                          child: Icon(
-                                            Icons.image,
-                                            size: 24,
-                                            color: Colors.blue.shade600,
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      if (nombreProductoCombo.isEmpty)
-                                        Container(
-                                          color: Colors.red.shade100,
-                                          child: Text(
-                                            'ERROR: Nombre vacío',
-                                            style: TextStyle(
-                                              color: Colors.red.shade700,
-                                              fontSize: 10,
-                                            ),
-                                          ),
-                                        )
-                                      else
-                                        Text(
-                                          nombreProductoCombo,
-                                          style: TextStyle(
-                                            fontSize: parentContext != null
-                                                ? AppTextStyles.bodySmall(
-                                                        parentContext!)
-                                                    .fontSize!
-                                                : 11,
-                                            fontWeight: FontWeight.w500,
-                                            color: Colors.blue.shade900,
-                                          ),
-                                          maxLines: 2,
-                                          overflow: TextOverflow.ellipsis,
-                                        ),
-                                      const SizedBox(height: 2),
-                                      Text(
-                                        'Producto ID: ${comboItem['producto_id'] ?? 'N/A'}',
-                                        style: TextStyle(
-                                          fontSize: parentContext != null
-                                              ? AppTextStyles.labelSmall(
-                                                      parentContext!)
-                                                  .fontSize!
-                                              : 10,
-                                          color: Colors.blue.shade600,
-                                        ),
-                                      ),
-                                    ],
+                      return Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 8,
+                        ),
+                        decoration: BoxDecoration(
+                          border: isLast
+                              ? null
+                              : Border(
+                                  bottom: BorderSide(
+                                    color: Colors.blue.shade100,
                                   ),
                                 ),
-                                const SizedBox(width: 8),
-                                Column(
-                                  crossAxisAlignment: CrossAxisAlignment.end,
-                                  children: [
-                                    Container(
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 8,
-                                        vertical: 4,
-                                      ),
+                        ),
+                        child: Row(
+                          children: [
+                            // Imagen del componente
+                            if (tieneImagen)
+                              Padding(
+                                padding: const EdgeInsets.only(right: 12),
+                                child: ClipRRect(
+                                  borderRadius: BorderRadius.circular(6),
+                                  child: Image.network(
+                                    imagenUrl,
+                                    width: 48,
+                                    height: 48,
+                                    fit: BoxFit.cover,
+                                    errorBuilder: (_, __, ___) => Container(
+                                      width: 48,
+                                      height: 48,
                                       decoration: BoxDecoration(
                                         color: Colors.blue.shade100,
-                                        borderRadius: BorderRadius.circular(4),
+                                        borderRadius: BorderRadius.circular(6),
                                       ),
-                                      child: Text(
-                                        '${cantidadTotal}x',
-                                        style: TextStyle(
-                                          fontWeight: FontWeight.bold,
-                                          color: Colors.blue.shade700,
-                                          fontSize: parentContext != null
-                                              ? AppTextStyles.bodySmall(
-                                                      parentContext!)
-                                                  .fontSize!
-                                              : 12,
-                                        ),
+                                      child: Icon(
+                                        Icons.image,
+                                        size: 24,
+                                        color: Colors.blue.shade600,
                                       ),
                                     ),
-                                    if (cantidad > 1)
-                                      Text(
-                                        '($cantidadComponente×${cantidad.toInt()})',
+                                  ),
+                                ),
+                              ),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  if (nombreProductoCombo.isEmpty)
+                                    Container(
+                                      color: Colors.red.shade100,
+                                      child: Text(
+                                        'ERROR: Nombre vacío',
                                         style: TextStyle(
-                                          fontSize: parentContext != null
-                                              ? AppTextStyles.labelSmall(
-                                                      parentContext!)
-                                                  .fontSize!
-                                              : 10,
-                                          color: Colors.blue.shade600,
+                                          color: Colors.red.shade700,
+                                          fontSize: 10,
                                         ),
                                       ),
-                                  ],
+                                    )
+                                  else
+                                    Text(
+                                      nombreProductoCombo,
+                                      style: TextStyle(
+                                        fontSize: parentContext != null
+                                            ? AppTextStyles.bodySmall(
+                                                parentContext!,
+                                              ).fontSize!
+                                            : 11,
+                                        fontWeight: FontWeight.w500,
+                                        color: Colors.blue.shade900,
+                                      ),
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    'Producto ID: ${comboItem['producto_id'] ?? 'N/A'}',
+                                    style: TextStyle(
+                                      fontSize: parentContext != null
+                                          ? AppTextStyles.labelSmall(
+                                              parentContext!,
+                                            ).fontSize!
+                                          : 10,
+                                      color: Colors.blue.shade600,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.end,
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 8,
+                                    vertical: 4,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: Colors.blue.shade100,
+                                    borderRadius: BorderRadius.circular(4),
+                                  ),
+                                  child: Text(
+                                    '${cantidadTotal}x',
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.blue.shade700,
+                                      fontSize: parentContext != null
+                                          ? AppTextStyles.bodySmall(
+                                              parentContext!,
+                                            ).fontSize!
+                                          : 12,
+                                    ),
+                                  ),
                                 ),
+                                if (cantidad > 1)
+                                  Text(
+                                    '($cantidadComponente×${cantidad.toInt()})',
+                                    style: TextStyle(
+                                      fontSize: parentContext != null
+                                          ? AppTextStyles.labelSmall(
+                                              parentContext!,
+                                            ).fontSize!
+                                          : 10,
+                                      color: Colors.blue.shade600,
+                                    ),
+                                  ),
                               ],
                             ),
-                          );
-                        })
-                        .toList(),
+                          ],
+                        ),
+                      );
+                    }).toList(),
                   ),
                 ),
               ],
+            ),
             ),
           ),
         ],
