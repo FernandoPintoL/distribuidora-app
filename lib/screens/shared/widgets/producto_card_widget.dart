@@ -39,16 +39,13 @@ class ProductoCardWidget extends StatelessWidget {
     }
   }
 
-  // Obtener datos del combo item incluyendo imagen
-  Map<String, dynamic>? _obtenerComboItemData(int comboItemId) {
+  // Obtener URL de imagen del producto del combo item
+  String? _obtenerImagenComboItem(int comboItemId) {
     if (comboItems == null) return null;
     try {
       final comboItemsList = comboItems as List;
       final comboItem = comboItemsList.firstWhere((c) => c.id == comboItemId);
-      return {
-        'nombre': comboItem.productoNombre,
-        'imagen': comboItem.producto?.imagenPrincipal?.url,
-      };
+      return comboItem.producto?.imagenPrincipal?.url;
     } catch (e) {
       return null;
     }
@@ -216,8 +213,7 @@ class ProductoCardWidget extends StatelessWidget {
                           final isLast =
                               index == comboItemsSeleccionados!.length - 1;
                           final cantidadTotal = cantidadComponente * cantidad.toInt();
-                          final comboItemData = _obtenerComboItemData(comboItemId);
-                          final imagenUrl = comboItemData?['imagen'] as String?;
+                          final imagenUrl = _obtenerImagenComboItem(comboItemId);
                           final tieneImagen = imagenUrl != null && imagenUrl.isNotEmpty;
 
                           return Container(
