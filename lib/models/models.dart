@@ -45,3 +45,5 @@ export 'prestamo_proveedor.dart';
 export 'prestamos_proveedor_response.dart';
 export 'estado_logistico.dart';
 export 'preventist_stats.dart';
+export 'cuenta_por_cobrar.dart';
+export 'pago.dart';

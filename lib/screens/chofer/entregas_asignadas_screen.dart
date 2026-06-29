@@ -4,6 +4,7 @@ import '../../config/app_text_styles.dart';
 import '../../providers/entrega_provider.dart';
 import '../../providers/estado_logistico_provider.dart';
 import '../../providers/localidad_provider.dart';
+import '../../utils/date_picker_utils.dart';
 import 'entregas_asignadas/widgets/entrega_card.dart';
 
 class EntregasAsignadasScreen extends StatefulWidget {
@@ -146,7 +147,7 @@ class _EntregasAsignadasScreenState extends State<EntregasAsignadasScreen> {
 
   // ✅ NUEVO: Cambiar fecha DESDE del rango
   Future<void> _onCambiarFechaDesde() async {
-    final fecha = await showDatePicker(
+    final fecha = await DatePickerUtils.showThemedDatePicker(
       context: context,
       initialDate: _fechaDesde ?? DateTime.now(),
       firstDate: DateTime(2020),
@@ -160,7 +161,7 @@ class _EntregasAsignadasScreenState extends State<EntregasAsignadasScreen> {
 
   // ✅ NUEVO: Cambiar fecha HASTA del rango
   Future<void> _onCambiarFechaHasta() async {
-    final fecha = await showDatePicker(
+    final fecha = await DatePickerUtils.showThemedDatePicker(
       context: context,
       initialDate: _fechaHasta ?? DateTime.now(),
       firstDate: _fechaDesde ?? DateTime(2020),

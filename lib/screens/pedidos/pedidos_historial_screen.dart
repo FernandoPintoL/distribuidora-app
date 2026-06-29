@@ -2,130 +2,15 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:share_plus/share_plus.dart';
-import '../../models/models.dart';
 import '../../providers/providers.dart';
 import '../../widgets/widgets.dart';
-import '../../config/config.dart';
 import '../../extensions/theme_extension.dart';
-import '../../services/estados_helpers.dart';
-import '../../services/api_service.dart';
 import '../../services/print_service.dart';
-import 'package:intl/intl.dart';
 import 'widgets/filtros_avanzados_modal.dart';
 import 'widgets/filtros_container.dart';
-
-/// âœ… HELPER: Convertir hex string (#RRGGBB) a Color
-Color _hexToColor(String hexString) {
-  final buffer = StringBuffer();
-  if (hexString.length == 6 || hexString.length == 7) {
-    buffer.write('ff');
-    buffer.write(hexString.replaceFirst('#', ''));
-  } else if (hexString.length == 8 || hexString.length == 9) {
-    buffer.write(hexString.replaceFirst('#', ''));
-  } else {
-    return Colors.grey; // Fallback
-  }
-  return Color(int.parse(buffer.toString(), radix: 16));
-}
-
-/// âœ… HELPER: Estilos de texto responsivos adaptables a zoom y tamaÃ±o de dispositivo
-class ResponsiveTextStyles {
-  static double getScaleFactor(BuildContext context) {
-    final textScaleFactor = MediaQuery.textScaleFactorOf(context);
-    final screenWidth = MediaQuery.of(context).size.width;
-
-    // Ajustar basado en ancho de pantalla
-    double sizeMultiplier = 1.0;
-    if (screenWidth < 360) {
-      sizeMultiplier = 0.9; // Pantallas muy pequeÃ±as
-    } else if (screenWidth > 600) {
-      sizeMultiplier = 1.1; // Tablets
-    }
-
-    return textScaleFactor * sizeMultiplier;
-  }
-
-  // âœ… TÃ­tulos grandes (pantalla principal)
-  static TextStyle titleLarge(BuildContext context) {
-    final scale = getScaleFactor(context);
-    return TextStyle(
-      fontSize: 18 * scale,
-      fontWeight: FontWeight.w600,
-      height: 1.3,
-    );
-  }
-
-  // âœ… TÃ­tulos medianos
-  static TextStyle titleMedium(BuildContext context) {
-    final scale = getScaleFactor(context);
-    return TextStyle(
-      fontSize: 16 * scale,
-      fontWeight: FontWeight.w600,
-      height: 1.3,
-    );
-  }
-
-  // âœ… Cuerpo principal - Texto normal
-  static TextStyle bodyLarge(BuildContext context) {
-    final scale = getScaleFactor(context);
-    return TextStyle(
-      fontSize: 14 * scale,
-      fontWeight: FontWeight.w500,
-      height: 1.4,
-    );
-  }
-
-  // âœ… Cuerpo normal
-  static TextStyle bodyMedium(BuildContext context) {
-    final scale = getScaleFactor(context);
-    return TextStyle(
-      fontSize: 13 * scale,
-      fontWeight: FontWeight.w400,
-      height: 1.4,
-    );
-  }
-
-  // âœ… Cuerpo pequeÃ±o - Etiquetas, secundario
-  static TextStyle bodySmall(BuildContext context) {
-    final scale = getScaleFactor(context);
-    return TextStyle(
-      fontSize: 12 * scale,
-      fontWeight: FontWeight.w400,
-      height: 1.4,
-    );
-  }
-
-  // âœ… Etiquetas en chips
-  static TextStyle labelSmall(BuildContext context) {
-    final scale = getScaleFactor(context);
-    return TextStyle(
-      fontSize: 11 * scale,
-      fontWeight: FontWeight.w500,
-      height: 1.3,
-    );
-  }
-
-  // âœ… Valores numÃ©ricos (montos)
-  static TextStyle valueLarge(BuildContext context) {
-    final scale = getScaleFactor(context);
-    return TextStyle(
-      fontSize: 16 * scale,
-      fontWeight: FontWeight.bold,
-      height: 1.2,
-      letterSpacing: -0.5,
-    );
-  }
-
-  // âœ… Valores pequeÃ±os
-  static TextStyle valueSmall(BuildContext context) {
-    final scale = getScaleFactor(context);
-    return TextStyle(
-      fontSize: 12 * scale,
-      fontWeight: FontWeight.w600,
-      height: 1.2,
-    );
-  }
-}
+import 'widgets/pedido_card.dart';
+import 'widgets/empty_state.dart';
+import 'widgets/error_state.dart';
 
 /// âœ… REFACTORIZADO: Antes era solo "Proformas", ahora es "Mis Pedidos" unificado
 /// Muestra todo el ciclo: Proforma â†’ Venta â†’ LogÃ­stica
@@ -143,7 +28,6 @@ class _PedidosHistorialScreenState extends State<PedidosHistorialScreen>
   String? _filtroEstadoSeleccionado;
   Timer? _debounceTimer;
   bool _isSearchExpanded = false;
-  bool _isFilterDateExpanded = false;
   DateTime? _filtroFechaDesde;
   DateTime? _filtroFechaHasta;
 
@@ -248,58 +132,6 @@ class _PedidosHistorialScreenState extends State<PedidosHistorialScreen>
     );
   }
 
-  /// âœ… NUEVO: Descargar PDF de proformas con filtros
-  /// EnvÃ­a los filtros actuales al backend para obtener TODOS los resultados
-  Future<void> _descargarPdfProformas() async {
-    try {
-      final apiService = ApiService();
-      final printService = PrintService();
-
-      // Mostrar loading
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Generando PDF con todos los resultados filtrados...'),
-          duration: Duration(seconds: 1),
-        ),
-      );
-
-      // Enviar filtros al backend (no IDs, sino los filtros aplicados)
-      final pdfBytes = await apiService.descargarPdfProformasConFiltros(
-        busqueda: _searchController.text.isEmpty
-            ? null
-            : _searchController.text,
-        estado: _filtroEstadoSeleccionado,
-        fechaDesde: _filtroFechaDesde,
-        fechaHasta: _filtroFechaHasta,
-        fechaVencimientoDesde: _filtroFechaVencimientoDesde,
-        fechaVencimientoHasta: _filtroFechaVencimientoHasta,
-        fechaEntregaSolicitadaDesde: _filtroFechaEntregaSolicitadaDesde,
-        fechaEntregaSolicitadaHasta: _filtroFechaEntregaSolicitadaHasta,
-        formato: 'A4',
-      );
-
-      // Abrir PDF con PrintService
-      await printService.abrirPdfDesdeBytes(
-        pdfBytes: pdfBytes,
-        nombreArchivo: 'proformas_${DateTime.now().millisecondsSinceEpoch}.pdf',
-      );
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('PDF descargado exitosamente'),
-          duration: Duration(seconds: 2),
-        ),
-      );
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Error al descargar PDF: $e'),
-          duration: const Duration(seconds: 3),
-        ),
-      );
-    }
-  }
-
   void _aplicarFiltroEstado(String? estado) {
     // âœ… ACTUALIZADO: Ahora acepta cÃ³digo String en lugar de enum EstadoPedido
     setState(() {
@@ -353,7 +185,6 @@ class _PedidosHistorialScreenState extends State<PedidosHistorialScreen>
     setState(() {
       _filtroEstadoSeleccionado = null;
       _isSearchExpanded = false;
-      _isFilterDateExpanded = false;
       _filtroFechaDesde = null;
       _filtroFechaHasta = null;
       _filtroFechaVencimientoDesde = null;
@@ -375,19 +206,6 @@ class _PedidosHistorialScreenState extends State<PedidosHistorialScreen>
       appBar: CustomGradientAppBar(
         title: 'Mi Historial de Pedidos Cliente',
         actions: [
-          // âœ… NUEVO: BotÃ³n de impresiÃ³n/descarga de PDF
-          /*Consumer<PedidoProvider>(
-            builder: (context, pedidoProvider, _) {
-              return IconButton(
-                icon: const Icon(Icons.print),
-                onPressed: pedidoProvider.pedidos.isEmpty
-                    ? null
-                    : _descargarPdfProformas,
-                tooltip: 'Descargar PDF',
-              );
-            },
-          ),*/
-          // âœ… NUEVO: BotÃ³n para filtros avanzados (fechas)
           IconButton(
             icon: const Icon(Icons.tune),
             onPressed: _mostrarModalFiltrosAvanzados,
@@ -436,9 +254,6 @@ class _PedidosHistorialScreenState extends State<PedidosHistorialScreen>
                             vertical: 8,
                           ),
                           decoration: BoxDecoration(
-                            color: isDark
-                                ? colorScheme.surface
-                                : colorScheme.primary.withOpacity(0.05),
                             border: Border(
                               bottom: BorderSide(
                                 color: colorScheme.outline.withOpacity(0.2),
@@ -461,11 +276,7 @@ class _PedidosHistorialScreenState extends State<PedidosHistorialScreen>
                                   },
                                   decoration: InputDecoration(
                                     hintText:
-                                        'Buscar ID, nÃºmero, nombre o cÃ³digo cliente...',
-                                    prefixIcon: Icon(
-                                      Icons.search,
-                                      color: colorScheme.primary,
-                                    ),
+                                        'Buscar ID, número, nombre o codigo cliente...',
                                     suffixIcon:
                                         _searchController.text.isNotEmpty
                                         ? IconButton(
@@ -523,7 +334,7 @@ class _PedidosHistorialScreenState extends State<PedidosHistorialScreen>
                 ),
 
                 // ============================================================
-                // 2ï¸âƒ£ FILTROS DINÃMICOS - Independiente del listado
+                // Filtros de estados de proformas - Independiente del listado
                 // ============================================================
                 FilterContainers.buildDynamicFilterContainer(
                   context,
@@ -531,60 +342,8 @@ class _PedidosHistorialScreenState extends State<PedidosHistorialScreen>
                   isDark,
                   _filtroEstadoSeleccionado,
                   (estado) => _aplicarFiltroEstado(estado),
+                  _limpiarBusquedaYFiltros,
                 ),
-
-                // ============================================================
-                // 3ï¸âƒ£ BANNER DE FILTRO ACTIVO - Independiente
-                // ============================================================
-                if (_filtroEstadoSeleccionado != null ||
-                    (_searchController.text.isNotEmpty))
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 12,
-                    ),
-                    decoration: BoxDecoration(
-                      color: colorScheme.primaryContainer.withOpacity(0.3),
-                      border: Border(
-                        bottom: BorderSide(
-                          color: colorScheme.primary.withOpacity(0.2),
-                        ),
-                      ),
-                    ),
-                    child: Row(
-                      children: [
-                        Icon(
-                          Icons.filter_alt,
-                          size: 18,
-                          color: colorScheme.primary,
-                        ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
-                            _getFiltroActivoText(),
-                            style: ResponsiveTextStyles.titleLarge(
-                              context,
-                            ).copyWith(color: colorScheme.onSurface),
-                          ),
-                        ),
-                        TextButton.icon(
-                          onPressed: _limpiarBusquedaYFiltros,
-                          icon: const Icon(Icons.clear, size: 16),
-                          label: const Text('Limpiar'),
-                          style: TextButton.styleFrom(
-                            foregroundColor: colorScheme.primary,
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 12,
-                              vertical: 4,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                // âœ… NUEVO: Chips de filtros activos
-                _buildFiltrosChips(),
               ],
             ),
           ),
@@ -632,30 +391,28 @@ class _PedidosHistorialScreenState extends State<PedidosHistorialScreen>
                                     ),
                                     padding: const EdgeInsets.all(12),
                                     decoration: BoxDecoration(
-                                      color: colorScheme.primary.withOpacity(
+                                      color: colorScheme.secondary.withOpacity(
                                         0.1,
                                       ),
                                       borderRadius: BorderRadius.circular(8),
                                       border: Border.all(
-                                        color: colorScheme.primary.withOpacity(
-                                          0.3,
-                                        ),
+                                        color: colorScheme.secondary
+                                            .withOpacity(0.3),
                                       ),
                                     ),
                                     child: Text(
                                       '${pedidoProvider.pedidos.length} resultado${pedidoProvider.pedidos.length != 1 ? 's' : ''} encontrado${pedidoProvider.pedidos.length != 1 ? 's' : ''}',
-                                      style: DefaultTextStyle.of(context).style
-                                          .copyWith(
-                                            color: colorScheme.primary,
-                                            fontWeight: FontWeight.w600,
-                                          ),
+                                      style: TextStyle(
+                                        color: colorScheme.secondary,
+                                        fontWeight: FontWeight.w600,
+                                      ),
                                     ),
                                   ),
                                   // Lista
                                   ...pedidoProvider.pedidos
                                       .take(3)
                                       .map(
-                                        (pedido) => _PedidoCard(
+                                        (pedido) => PedidoCard(
                                           pedido: pedido,
                                           onTap: () {},
                                         ),
@@ -678,27 +435,27 @@ class _PedidosHistorialScreenState extends State<PedidosHistorialScreen>
                                     width: 60,
                                     height: 60,
                                     child: CircularProgressIndicator(
-                                      color: colorScheme.primary,
+                                      color: colorScheme.secondary,
                                       strokeWidth: 4,
                                     ),
                                   ),
                                   const SizedBox(height: 24),
                                   Text(
                                     tieneFilTros
-                                        ? 'ðŸ” Cargando con filtros...'
-                                        : 'ðŸ“‹ Cargando estado...',
-                                    style: DefaultTextStyle.of(context).style
-                                        .copyWith(
-                                          color: colorScheme.primary,
-                                          fontWeight: FontWeight.w500,
-                                        ),
+                                        ? 'Cargando con filtros...'
+                                        : 'Cargando estado...',
+                                    style: TextStyle(
+                                      color: colorScheme.secondary,
+                                      fontWeight: FontWeight.w500,
+                                    ),
                                     textAlign: TextAlign.center,
                                   ),
                                   const SizedBox(height: 8),
                                   Text(
                                     'Por favor espera...',
-                                    style: DefaultTextStyle.of(context).style
-                                        .copyWith(color: colorScheme.outline),
+                                    style: TextStyle(
+                                      color: colorScheme.outline,
+                                    ),
                                   ),
                                 ],
                               ),
@@ -711,8 +468,8 @@ class _PedidosHistorialScreenState extends State<PedidosHistorialScreen>
 
                   // Si no hay datos, mostrar pantalla completa de carga
                   final mensajeCarga = tieneFilTros
-                      ? 'ðŸ” Buscando pedidos con filtros...'
-                      : 'ðŸ“‹ Cargando pedidos...';
+                      ? 'Buscando pedidos con filtros...'
+                      : 'Cargando pedidos...';
 
                   return Center(
                     child: Padding(
@@ -725,24 +482,20 @@ class _PedidosHistorialScreenState extends State<PedidosHistorialScreen>
                             width: 60,
                             height: 60,
                             child: CircularProgressIndicator(
-                              color: colorScheme.primary,
+                              color: colorScheme.secondary,
                               strokeWidth: 4,
                             ),
                           ),
                           const SizedBox(height: 24),
                           Text(
                             mensajeCarga,
-                            style: ResponsiveTextStyles.bodyLarge(
-                              context,
-                            ).copyWith(color: colorScheme.primary),
+                            style: TextStyle(color: colorScheme.secondary),
                             textAlign: TextAlign.center,
                           ),
                           const SizedBox(height: 8),
                           Text(
                             'Por favor espera...',
-                            style: ResponsiveTextStyles.bodyMedium(
-                              context,
-                            ).copyWith(color: colorScheme.outline),
+                            style: TextStyle(color: colorScheme.outline),
                           ),
                         ],
                       ),
@@ -753,150 +506,143 @@ class _PedidosHistorialScreenState extends State<PedidosHistorialScreen>
                 // Estado de error
                 if (pedidoProvider.errorMessage != null &&
                     pedidoProvider.pedidos.isEmpty) {
-                  return _buildErrorState(pedidoProvider.errorMessage!);
+                  return ErrorState(
+                    error: pedidoProvider.errorMessage!,
+                    onReintentar: _cargarPedidos,
+                  );
                 }
 
-                // Estado vacÃ­o
+                // Estado vacío
                 if (pedidoProvider.pedidos.isEmpty) {
-                  return _buildEmptyState();
+                  final tieneFilTros =
+                      _filtroEstadoSeleccionado != null ||
+                      _searchController.text.isNotEmpty ||
+                      _filtroFechaDesde != null ||
+                      _filtroFechaHasta != null ||
+                      _filtroFechaVencimientoDesde != null ||
+                      _filtroFechaVencimientoHasta != null ||
+                      _filtroFechaEntregaSolicitadaDesde != null ||
+                      _filtroFechaEntregaSolicitadaHasta != null;
+
+                  final filtrosActivos = <String>[];
+                  if (_searchController.text.isNotEmpty) {
+                    filtrosActivos.add('búsqueda: "${_searchController.text}"');
+                  }
+                  if (_filtroEstadoSeleccionado != null) {
+                    filtrosActivos.add('estado: $_filtroEstadoSeleccionado');
+                  }
+                  if (_filtroFechaDesde != null || _filtroFechaHasta != null) {
+                    final desde =
+                        _filtroFechaDesde?.toString().split(' ')[0] ?? '...';
+                    final hasta =
+                        _filtroFechaHasta?.toString().split(' ')[0] ?? '...';
+                    filtrosActivos.add('fechas: $desde a $hasta');
+                  }
+
+                  return EmptyState(
+                    tieneFilTros: tieneFilTros,
+                    filtrosActivos: filtrosActivos,
+                    onVerProductos: () =>
+                        Navigator.pushNamed(context, '/products'),
+                  );
                 }
 
                 // Lista de pedidos
                 return RefreshIndicator(
                   onRefresh: _onRefresh,
                   color: colorScheme.primary,
-                  child: ListView(
+                  child: ListView.builder(
                     controller: _scrollController,
                     padding: const EdgeInsets.symmetric(vertical: 8),
-                    children: [
-                      // âœ… NUEVO: Resumen de resultados
-                      Container(
-                        margin: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 12,
-                        ),
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: colorScheme.primary.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(
-                            color: colorScheme.primary.withOpacity(0.3),
-                          ),
-                        ),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Expanded(
-                              child: Text(
-                                '${pedidoProvider.pedidos.length} de ${pedidoProvider.totalItems} resultado${pedidoProvider.totalItems != 1 ? 's' : ''}',
-                                style: ResponsiveTextStyles.bodyLarge(
-                                  context,
-                                ).copyWith(color: colorScheme.primary),
+                    itemCount:
+                        pedidoProvider.pedidos.length +
+                        (pedidoProvider.isLoadingMore ||
+                                !pedidoProvider.hasMorePages
+                            ? 1
+                            : 0),
+                    itemBuilder: (context, index) {
+                      // Elemento final: carga o fin de lista
+                      if (index == pedidoProvider.pedidos.length) {
+                        // Indicador de carga
+                        if (pedidoProvider.isLoadingMore) {
+                          return Padding(
+                            padding: const EdgeInsets.all(16),
+                            child: Center(
+                              child: Column(
+                                children: [
+                                  CircularProgressIndicator(
+                                    color: colorScheme.primary,
+                                  ),
+                                  const SizedBox(height: 8),
+                                  Text(
+                                    'Cargando más pedidos...',
+                                    style: TextStyle(
+                                      color: colorScheme.primary,
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
-                            // Mostrar indicador si hay mÃ¡s pÃ¡ginas
-                            if (pedidoProvider.hasMorePages)
-                              Chip(
-                                label: const Text('Hay mÃ¡s'),
-                                backgroundColor: colorScheme.primaryContainer,
-                                labelStyle: AppTextStyles.labelSmall(context)
-                                    .copyWith(
-                                      color: colorScheme.onPrimaryContainer,
+                          );
+                        }
+                        // Mensaje de fin de lista
+                        else {
+                          return Padding(
+                            padding: const EdgeInsets.all(16),
+                            child: Center(
+                              child: Column(
+                                children: [
+                                  Icon(
+                                    Icons.done_all,
+                                    color: colorScheme.outline.withOpacity(0.5),
+                                    size: 32,
+                                  ),
+                                  const SizedBox(height: 8),
+                                  Text(
+                                    'No hay más pedidos',
+                                    style: TextStyle(
+                                      color: colorScheme.outline.withOpacity(
+                                        0.6,
+                                      ),
                                     ),
+                                  ),
+                                ],
                               ),
-                          ],
-                        ),
-                      ),
+                            ),
+                          );
+                        }
+                      }
 
-                      // Lista de pedidos
-                      ListView.builder(
-                        shrinkWrap: true,
-                        physics: const NeverScrollableScrollPhysics(),
-                        itemCount:
-                            pedidoProvider.pedidos.length +
-                            (pedidoProvider.isLoadingMore ||
-                                    !pedidoProvider.hasMorePages
-                                ? 1
-                                : 0),
-                        padding: const EdgeInsets.symmetric(vertical: 0),
-                        itemBuilder: (context, index) {
-                          // Elemento final: carga o fin de lista
-                          if (index == pedidoProvider.pedidos.length) {
-                            // Indicador de carga
-                            if (pedidoProvider.isLoadingMore) {
-                              return Padding(
-                                padding: const EdgeInsets.all(16),
-                                child: Center(
-                                  child: Column(
-                                    children: [
-                                      CircularProgressIndicator(
-                                        color: colorScheme.primary,
-                                      ),
-                                      const SizedBox(height: 8),
-                                      Text(
-                                        'Cargando mÃ¡s pedidos...',
-                                        style: ResponsiveTextStyles.bodyMedium(
-                                          context,
-                                        ).copyWith(color: colorScheme.primary),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              );
-                            }
-                            // Mensaje de fin de lista
-                            else {
-                              return Padding(
-                                padding: const EdgeInsets.all(16),
-                                child: Center(
-                                  child: Column(
-                                    children: [
-                                      Icon(
-                                        Icons.done_all,
-                                        color: colorScheme.outline.withOpacity(
-                                          0.5,
-                                        ),
-                                        size: 32,
-                                      ),
-                                      const SizedBox(height: 8),
-                                      Text(
-                                        'No hay mÃ¡s proformas',
-                                        style:
-                                            ResponsiveTextStyles.bodySmall(
-                                              context,
-                                            ).copyWith(
-                                              color: colorScheme.outline
-                                                  .withOpacity(0.6),
-                                            ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              );
-                            }
-                          }
-
-                          final pedido = pedidoProvider.pedidos[index];
-                          return _PedidoCard(
-                            pedido: pedido,
-                            onTap: () {
-                              Navigator.pushNamed(
-                                context,
-                                '/pedido-detalle',
-                                arguments: pedido.id,
-                              );
-                            },
-                            onPrint: _handlePrintProforma,
+                      final pedido = pedidoProvider.pedidos[index];
+                      return PedidoCard(
+                        pedido: pedido,
+                        onTap: () {
+                          Navigator.pushNamed(
+                            context,
+                            '/pedido-detalle',
+                            arguments: pedido.id,
                           );
                         },
-                      ),
-                    ],
+                        onPrint: _handlePrintProforma,
+                      );
+                      // return Text("no se que esta pasando");
+                    },
                   ),
                 );
               },
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  // Método temporal para reemplazar el build
+  Widget _buildSimplifiedScreen() {
+    return Scaffold(
+      appBar: AppBar(title: const Text('Pedidos - Simplified')),
+      body: Center(
+        child: Text('PedidoCard o lista tiene problema de semantics'),
       ),
     );
   }
@@ -1029,1344 +775,5 @@ class _PedidosHistorialScreenState extends State<PedidosHistorialScreen>
         );
       }
     }
-  }
-
-  String _getFiltroActivoText() {
-    final List<String> filtros = [];
-
-    if (_searchController.text.isNotEmpty) {
-      filtros.add('ðŸ” "${_searchController.text}"');
-    }
-
-    if (_filtroEstadoSeleccionado != null) {
-      final esProforma = [
-        'PENDIENTE',
-        'APROBADA',
-        'CONVERTIDA',
-        'RECHAZADA',
-        'VENCIDA',
-      ].contains(_filtroEstadoSeleccionado?.toUpperCase());
-
-      final categoria = esProforma ? 'proforma' : 'venta_logistica';
-      final icono = esProforma ? 'ðŸ“‹' : 'ðŸšš';
-
-      filtros.add(
-        '$icono ${EstadosHelper.getEstadoLabel(categoria, _filtroEstadoSeleccionado!)}',
-      );
-    }
-
-    // âœ… MEJORADO: Incluir todos los filtros de fecha
-    if (_filtroFechaDesde != null || _filtroFechaHasta != null) {
-      final desdeText = _filtroFechaDesde != null
-          ? DateFormat('dd/MM').format(_filtroFechaDesde!)
-          : '';
-      final hastaText = _filtroFechaHasta != null
-          ? DateFormat('dd/MM').format(_filtroFechaHasta!)
-          : '';
-
-      if (_filtroFechaDesde != null && _filtroFechaHasta != null) {
-        filtros.add('ðŸ“… CreaciÃ³n: $desdeText - $hastaText');
-      } else if (_filtroFechaDesde != null) {
-        filtros.add('ðŸ“… Desde: $desdeText');
-      } else if (_filtroFechaHasta != null) {
-        filtros.add('ðŸ“… Hasta: $hastaText');
-      }
-    }
-
-    if (_filtroFechaVencimientoDesde != null ||
-        _filtroFechaVencimientoHasta != null) {
-      final desdeText = _filtroFechaVencimientoDesde != null
-          ? DateFormat('dd/MM').format(_filtroFechaVencimientoDesde!)
-          : '';
-      final hastaText = _filtroFechaVencimientoHasta != null
-          ? DateFormat('dd/MM').format(_filtroFechaVencimientoHasta!)
-          : '';
-
-      if (_filtroFechaVencimientoDesde != null &&
-          _filtroFechaVencimientoHasta != null) {
-        filtros.add('â° Vencimiento: $desdeText - $hastaText');
-      }
-    }
-
-    if (_filtroFechaEntregaSolicitadaDesde != null ||
-        _filtroFechaEntregaSolicitadaHasta != null) {
-      final desdeText = _filtroFechaEntregaSolicitadaDesde != null
-          ? DateFormat('dd/MM').format(_filtroFechaEntregaSolicitadaDesde!)
-          : '';
-      final hastaText = _filtroFechaEntregaSolicitadaHasta != null
-          ? DateFormat('dd/MM').format(_filtroFechaEntregaSolicitadaHasta!)
-          : '';
-
-      if (_filtroFechaEntregaSolicitadaDesde != null &&
-          _filtroFechaEntregaSolicitadaHasta != null) {
-        if (desdeText == hastaText) {
-          filtros.add('ðŸšš Entrega: $desdeText');
-        } else {
-          filtros.add('ðŸšš Entrega: $desdeText - $hastaText');
-        }
-      }
-    }
-
-    return filtros.isEmpty ? 'Sin filtros aplicados' : filtros.join(' â€¢ ');
-  }
-
-  /// âœ… NUEVO: Widget de chips removibles para filtros
-  Widget _buildFiltrosChips() {
-    final colorScheme = context.colorScheme;
-    final chips = <Widget>[];
-
-    if (_filtroEstadoSeleccionado != null) {
-      chips.add(
-        Chip(
-          label: Text(
-            'ðŸ“‹ Estado: $_filtroEstadoSeleccionado',
-            style: ResponsiveTextStyles.bodySmall(context),
-          ),
-          backgroundColor: colorScheme.primaryContainer,
-          labelStyle: TextStyle(color: colorScheme.onPrimaryContainer),
-          onDeleted: () {
-            setState(() => _filtroEstadoSeleccionado = null);
-            _cargarPedidos();
-          },
-        ),
-      );
-    }
-
-    // âœ… FILTRO: Fecha de CreaciÃ³n
-    if (_filtroFechaDesde != null || _filtroFechaHasta != null) {
-      final desdeText = _filtroFechaDesde != null
-          ? DateFormat('dd/MM').format(_filtroFechaDesde!)
-          : '';
-      final hastaText = _filtroFechaHasta != null
-          ? DateFormat('dd/MM').format(_filtroFechaHasta!)
-          : '';
-
-      final texto = _filtroFechaDesde != null && _filtroFechaHasta != null
-          ? desdeText == hastaText
-                ? 'ðŸ“… CreaciÃ³n: $desdeText'
-                : 'ðŸ“… CreaciÃ³n: $desdeText - $hastaText'
-          : 'ðŸ“… CreaciÃ³n';
-
-      chips.add(
-        Chip(
-          label: Text(texto, style: ResponsiveTextStyles.bodySmall(context)),
-          backgroundColor: Colors.green.withOpacity(0.2),
-          labelStyle: TextStyle(color: Colors.green[700]),
-          onDeleted: () {
-            setState(() {
-              _filtroFechaDesde = null;
-              _filtroFechaHasta = null;
-            });
-            _cargarPedidos();
-          },
-        ),
-      );
-    }
-
-    // âœ… FILTRO: Fecha de Entrega Solicitada
-    if (_filtroFechaEntregaSolicitadaDesde != null ||
-        _filtroFechaEntregaSolicitadaHasta != null) {
-      final desdeText = _filtroFechaEntregaSolicitadaDesde != null
-          ? DateFormat('dd/MM').format(_filtroFechaEntregaSolicitadaDesde!)
-          : '';
-      final hastaText = _filtroFechaEntregaSolicitadaHasta != null
-          ? DateFormat('dd/MM').format(_filtroFechaEntregaSolicitadaHasta!)
-          : '';
-
-      final texto =
-          _filtroFechaEntregaSolicitadaDesde != null &&
-              _filtroFechaEntregaSolicitadaHasta != null
-          ? desdeText == hastaText
-                ? 'ðŸšš Entrega Solicitada: $desdeText'
-                : 'ðŸšš Entrega Solicitada: $desdeText - $hastaText'
-          : 'ðŸšš Entrega Solicitada';
-
-      chips.add(
-        Chip(
-          label: Text(texto, style: ResponsiveTextStyles.bodySmall(context)),
-          backgroundColor: Colors.orange.withOpacity(0.2),
-          labelStyle: TextStyle(color: Colors.orange[700]),
-          onDeleted: () {
-            setState(() {
-              _filtroFechaEntregaSolicitadaDesde = null;
-              _filtroFechaEntregaSolicitadaHasta = null;
-            });
-            _cargarPedidos();
-          },
-        ),
-      );
-    }
-
-    // âœ… FILTRO: Fecha de Vencimiento
-    if (_filtroFechaVencimientoDesde != null ||
-        _filtroFechaVencimientoHasta != null) {
-      final desdeText = _filtroFechaVencimientoDesde != null
-          ? DateFormat('dd/MM').format(_filtroFechaVencimientoDesde!)
-          : '';
-      final hastaText = _filtroFechaVencimientoHasta != null
-          ? DateFormat('dd/MM').format(_filtroFechaVencimientoHasta!)
-          : '';
-
-      final texto =
-          _filtroFechaVencimientoDesde != null &&
-              _filtroFechaVencimientoHasta != null
-          ? desdeText == hastaText
-                ? 'â° Vencimiento: $desdeText'
-                : 'â° Vencimiento: $desdeText - $hastaText'
-          : 'â° Vencimiento';
-
-      chips.add(
-        Chip(
-          label: Text(texto, style: ResponsiveTextStyles.bodySmall(context)),
-          backgroundColor: Colors.red.withOpacity(0.2),
-          labelStyle: TextStyle(color: Colors.red[700]),
-          onDeleted: () {
-            setState(() {
-              _filtroFechaVencimientoDesde = null;
-              _filtroFechaVencimientoHasta = null;
-            });
-            _cargarPedidos();
-          },
-        ),
-      );
-    }
-
-    // âœ… FILTRO: BÃºsqueda
-    if (_searchController.text.isNotEmpty) {
-      chips.add(
-        Chip(
-          label: Text(
-            'ðŸ” "${_searchController.text}"',
-            style: ResponsiveTextStyles.bodySmall(context),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
-          backgroundColor: Colors.blue.withOpacity(0.2),
-          labelStyle: TextStyle(color: Colors.blue[700]),
-          onDeleted: () {
-            setState(() => _searchController.clear());
-            _cargarPedidos();
-          },
-        ),
-      );
-    }
-
-    if (chips.isEmpty) return const SizedBox.shrink();
-
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      child: Wrap(spacing: 8, runSpacing: 8, children: chips),
-    );
-  }
-
-  Widget _buildEmptyState() {
-    final colorScheme = context.colorScheme;
-    final isDark = context.isDark;
-
-    // Detectar si hay filtros activos
-    final tieneFilTros =
-        _filtroEstadoSeleccionado != null ||
-        _searchController.text.isNotEmpty ||
-        _filtroFechaDesde != null ||
-        _filtroFechaHasta != null ||
-        _filtroFechaVencimientoDesde != null ||
-        _filtroFechaVencimientoHasta != null ||
-        _filtroFechaEntregaSolicitadaDesde != null ||
-        _filtroFechaEntregaSolicitadaHasta != null;
-
-    // Construir descripciÃ³n de filtros activos
-    final filtrosActivos = <String>[];
-    if (_searchController.text.isNotEmpty) {
-      filtrosActivos.add('bÃºsqueda: "${_searchController.text}"');
-    }
-    if (_filtroEstadoSeleccionado != null) {
-      filtrosActivos.add('estado: $_filtroEstadoSeleccionado');
-    }
-    if (_filtroFechaDesde != null || _filtroFechaHasta != null) {
-      final desde = _filtroFechaDesde?.toString().split(' ')[0] ?? '...';
-      final hasta = _filtroFechaHasta?.toString().split(' ')[0] ?? '...';
-      filtrosActivos.add('fechas: $desde a $hasta');
-    }
-
-    return SingleChildScrollView(
-      child: Center(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 32, horizontal: 16),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                tieneFilTros ? Icons.search_off : Icons.receipt_long_outlined,
-                size: 80,
-                color: isDark
-                    ? colorScheme.onSurface.withOpacity(0.3)
-                    : colorScheme.outline,
-              ),
-              const SizedBox(height: 16),
-              Text(
-                tieneFilTros
-                    ? 'ðŸ˜” No se encontraron pedidos'
-                    : 'ðŸ“­ No tienes pedidos aÃºn',
-                style: ResponsiveTextStyles.titleLarge(
-                  context,
-                ).copyWith(color: colorScheme.onSurface),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 8),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: Column(
-                  children: [
-                    Text(
-                      tieneFilTros
-                          ? 'Intenta ajustar tus filtros de bÃºsqueda'
-                          : 'Crea tu primer pedido desde el catÃ¡logo',
-                      style: ResponsiveTextStyles.bodyMedium(
-                        context,
-                      ).copyWith(color: colorScheme.onSurface.withOpacity(0.7)),
-                      textAlign: TextAlign.center,
-                    ),
-                    // âœ… MEJORADO: Mostrar filtros activos con mejor tipografÃ­a
-                    if (tieneFilTros && filtrosActivos.isNotEmpty) ...[
-                      const SizedBox(height: 12),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 10,
-                        ),
-                        decoration: BoxDecoration(
-                          color: colorScheme.errorContainer.withOpacity(0.3),
-                          border: Border.all(
-                            color: colorScheme.error.withOpacity(0.2),
-                            width: 1,
-                          ),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'ðŸ” Filtros activos:',
-                              style: ResponsiveTextStyles.bodyLarge(context)
-                                  .copyWith(
-                                    color: colorScheme.error,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                            ),
-                            const SizedBox(height: 8),
-                            ...filtrosActivos.map(
-                              (filtro) => Padding(
-                                padding: const EdgeInsets.only(bottom: 4),
-                                child: Row(
-                                  children: [
-                                    Text(
-                                      'â€¢',
-                                      style:
-                                          ResponsiveTextStyles.bodyMedium(
-                                            context,
-                                          ).copyWith(
-                                            color: colorScheme.error,
-                                            fontWeight: FontWeight.bold,
-                                          ),
-                                    ),
-                                    const SizedBox(width: 8),
-                                    Expanded(
-                                      child: Text(
-                                        filtro,
-                                        style:
-                                            ResponsiveTextStyles.bodyMedium(
-                                              context,
-                                            ).copyWith(
-                                              color: colorScheme.onSurface,
-                                            ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ],
-                ),
-              ),
-              if (_filtroEstadoSeleccionado == null &&
-                  _searchController.text.isEmpty) ...[
-                const SizedBox(height: 24), // Reducido de 32
-                ElevatedButton.icon(
-                  onPressed: () => Navigator.pushNamed(context, '/products'),
-                  icon: const Icon(Icons.shopping_bag, size: 18),
-                  label: const Text('Ver Productos'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: colorScheme.primary,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 24,
-                      vertical: 12,
-                    ),
-                  ),
-                ),
-              ],
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildErrorState(String error) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
-
-    return SingleChildScrollView(
-      child: Center(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 32, horizontal: 16),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                Icons.error_outline,
-                size: 70, // Reducido de 80
-                color: colorScheme.error,
-              ),
-              const SizedBox(height: 16), // Reducido de 24
-              Text(
-                'Error al cargar pedidos',
-                style: ResponsiveTextStyles.titleMedium(
-                  context,
-                ).copyWith(color: colorScheme.onSurface),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 12),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: Text(
-                  error,
-                  textAlign: TextAlign.center,
-                  style: ResponsiveTextStyles.bodyMedium(
-                    context,
-                  ).copyWith(color: colorScheme.onSurface),
-                ),
-              ),
-              const SizedBox(height: 24), // Reducido de 32
-              ElevatedButton.icon(
-                onPressed: _cargarPedidos,
-                icon: const Icon(Icons.refresh, size: 18),
-                label: const Text('Reintentar'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: colorScheme.primary,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 24,
-                    vertical: 12,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-/// âœ… NUEVO: Helper para mostrar diÃ¡logo de anulaciÃ³n de proforma
-void _mostrarDialogoAnularProforma(BuildContext context, Pedido proforma) {
-  final TextEditingController motivoController = TextEditingController();
-
-  showDialog(
-    context: context,
-    builder: (dialogContext) => AlertDialog(
-      title: const Text('Anular Proforma'),
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(
-            'Â¿EstÃ¡s seguro que deseas anular la proforma #${proforma.numero}?',
-            style: Theme.of(dialogContext).textTheme.bodyMedium,
-          ),
-          const SizedBox(height: 16),
-          TextField(
-            controller: motivoController,
-            decoration: InputDecoration(
-              hintText: 'Motivo de anulaciÃ³n (requerido)',
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
-              prefixIcon: const Icon(Icons.info_outlined),
-            ),
-            maxLines: 2,
-            minLines: 1,
-          ),
-        ],
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(dialogContext),
-          child: const Text('Cancelar'),
-        ),
-        ElevatedButton.icon(
-          onPressed: () async {
-            final motivo = motivoController.text.trim();
-
-            if (motivo.isEmpty) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('El motivo de anulaciÃ³n es requerido'),
-                ),
-              );
-              return;
-            }
-
-            Navigator.pop(dialogContext);
-
-            // âœ… NUEVO: Anular proforma
-            final pedidoProvider = context.read<PedidoProvider>();
-            final result = await pedidoProvider.anularProforma(
-              proforma.id,
-              motivo,
-            );
-
-            // âœ… No mostrar snackbar en caso de Ã©xito
-            // La notificaciÃ³n nativa serÃ¡ mostrada por el listener de WebSocket
-            if (!result) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(
-                    'Error: ${pedidoProvider.errorMessage ?? "No se pudo anular la proforma"}',
-                  ),
-                  backgroundColor: Colors.red,
-                ),
-              );
-            }
-          },
-          style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.red,
-            foregroundColor: Colors.white,
-          ),
-          icon: const Icon(Icons.delete_outline),
-          label: const Text('Anular'),
-        ),
-      ],
-    ),
-  );
-}
-
-/// âœ… REFACTORIZADA: Nueva card con Timeline unificado
-/// Muestra: Proforma â†’ Venta â†’ LogÃ­stica en paralelo
-class _PedidoCard extends StatelessWidget {
-  final Pedido pedido;
-  final VoidCallback onTap;
-  final Function(String action, String url, String numero)? onPrint;
-
-  const _PedidoCard({required this.pedido, required this.onTap, this.onPrint});
-
-  String _formatearFecha(DateTime fecha) {
-    final formatter = DateFormat('dd MMM yyyy', 'es_ES');
-    return formatter.format(fecha);
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final colorScheme = context.colorScheme;
-    final isDark = context.isDark;
-
-    return Card(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      elevation: isDark ? 2 : 1,
-      color: isDark ? colorScheme.surface : Colors.white,
-      shadowColor: isDark
-          ? Colors.black.withOpacity(0.3)
-          : Colors.black.withOpacity(0.1),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-              // 1ï¸âƒ£ HEADER: NÃºmero, Cliente, Fecha
-              // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // âœ… ID de la proforma (pequeÃ±o, arriba)
-                        Text(
-                          'Folio: ${pedido.id}',
-                          style: DefaultTextStyle.of(context).style.copyWith(
-                            color: colorScheme.onSurface.withOpacity(0.5),
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                        const SizedBox(height: 2),
-                        // âœ… CLIENTE - Resaltado en negrita (principal)
-                        Text(
-                          pedido.cliente?.nombre ?? 'Cliente desconocido',
-                          style: DefaultTextStyle.of(context).style.copyWith(
-                            fontWeight: FontWeight.bold,
-                            color: colorScheme.onSurface,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        const SizedBox(height: 4),
-                        // NÃºmero de pedido (secundario)
-                        Row(
-                          children: [
-                            Icon(
-                              Icons.receipt_long_outlined,
-                              size: 12,
-                              color: colorScheme.onSurface.withOpacity(0.6),
-                            ),
-                            const SizedBox(width: 4),
-                            Expanded(
-                              child: Text(
-                                '#${pedido.numero}',
-                                style: DefaultTextStyle.of(context).style
-                                    .copyWith(
-                                      color: colorScheme.onSurface.withOpacity(
-                                        0.7,
-                                      ),
-                                    ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  // Monto total
-                  Expanded(
-                    flex: 0,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.end,
-                      children: [
-                        Text(
-                          'Bs. ${pedido.total.toStringAsFixed(2)}',
-                          style: ResponsiveTextStyles.valueLarge(context)
-                              .copyWith(
-                                color: isDark
-                                    ? const Color(0xFF4ADE80)
-                                    : const Color(0xFF16A34A),
-                              ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          _formatearFecha(pedido.fechaCreacion),
-                          style: ResponsiveTextStyles.bodySmall(context)
-                              .copyWith(
-                                color: colorScheme.onSurface.withOpacity(0.6),
-                              ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  // âœ… BotÃ³n de descargar/compartir impresiÃ³n
-                  PopupMenuButton<String>(
-                    onSelected: (value) {
-                      // âœ… CORREGIDO: Usar ApiService para obtener baseUrl dinÃ¡micamente
-                      final apiService = ApiService();
-                      final baseUrl = apiService
-                          .getBaseUrl(); // http://localhost:8000/api
-
-                      String impresionUrl;
-                      if (value == 'imagen') {
-                        // ðŸ–¼ï¸ NUEVO: Descargar como imagen
-                        impresionUrl =
-                            '$baseUrl/proformas/${pedido.id}/descargar-imagen?formato=jpeg&dpi=150&quality=85';
-                      } else {
-                        // PDF original
-                        impresionUrl =
-                            '$baseUrl/proformas/${pedido.id}/imprimir?formato=TICKET_80&accion=$value';
-                      }
-
-                      if (onPrint != null) {
-                        onPrint!(value, impresionUrl, pedido.numero);
-                      }
-                    },
-                    itemBuilder: (BuildContext context) => [
-                      PopupMenuItem<String>(
-                        value: 'download',
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              Icons.download,
-                              size: 18,
-                              color: colorScheme.primary,
-                            ),
-                            const SizedBox(width: 8),
-                            const Text('Descargar PDF'),
-                          ],
-                        ),
-                      ),
-                      // ðŸ–¼ï¸ NUEVO: OpciÃ³n para descargar como imagen
-                      PopupMenuItem<String>(
-                        value: 'imagen',
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              Icons.image,
-                              size: 18,
-                              color: colorScheme.primary,
-                            ),
-                            const SizedBox(width: 8),
-                            const Text('Descargar como Imagen'),
-                          ],
-                        ),
-                      ),
-                      PopupMenuItem<String>(
-                        value: 'stream',
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              Icons.preview,
-                              size: 18,
-                              color: colorScheme.primary,
-                            ),
-                            const SizedBox(width: 8),
-                            const Text('Ver en navegador'),
-                          ],
-                        ),
-                      ),
-                      PopupMenuItem<String>(
-                        value: 'compartir',
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              Icons.share,
-                              size: 18,
-                              color: colorScheme.primary,
-                            ),
-                            const SizedBox(width: 8),
-                            const Text('Compartir'),
-                          ],
-                        ),
-                      ),
-                    ],
-                    icon: Icon(
-                      Icons.more_vert,
-                      size: 20,
-                      color: colorScheme.onSurface.withOpacity(0.6),
-                    ),
-                    padding: EdgeInsets.zero,
-                  ),
-                ],
-              ),
-
-              const SizedBox(height: 16),
-              Divider(height: 1, color: colorScheme.outline.withOpacity(0.2)),
-              const SizedBox(height: 16),
-
-              // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-              // 2ï¸âƒ£ ESTADO ACTUAL (Simple)
-              // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: [
-                  // Estado principal de la Proforma/Venta
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 6,
-                    ),
-                    decoration: BoxDecoration(
-                      color: _hexToColor(
-                        EstadosHelper.getEstadoColor(
-                          pedido.estadoCategoria,
-                          pedido.estadoCodigo,
-                        ),
-                      ).withOpacity(0.15),
-                      border: Border.all(
-                        color: _hexToColor(
-                          EstadosHelper.getEstadoColor(
-                            pedido.estadoCategoria,
-                            pedido.estadoCodigo,
-                          ),
-                        ),
-                        width: 1.5,
-                      ),
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: Text(
-                      pedido.esVenta ? 'âœ… Convertida' : pedido.estadoCodigo,
-                      style: DefaultTextStyle.of(context).style.copyWith(
-                        color: _hexToColor(
-                          EstadosHelper.getEstadoColor(
-                            pedido.estadoCategoria,
-                            pedido.estadoCodigo,
-                          ),
-                        ),
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
-
-                  // NÃºmero de venta si estÃ¡ convertida
-                  if (pedido.esVenta && pedido.ventaNumero != null)
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 6,
-                      ),
-                      decoration: BoxDecoration(
-                        color: colorScheme.primaryContainer.withOpacity(0.5),
-                        border: Border.all(
-                          color: colorScheme.primary,
-                          width: 1.5,
-                        ),
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      child: Text(
-                        'ðŸ›ï¸ ${pedido.ventaNumero}',
-                        style: DefaultTextStyle.of(context).style.copyWith(
-                          color: colorScheme.primary,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
-
-                  // Estado logÃ­stico si existe
-                  if (pedido.tieneEstadoLogistico)
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 6,
-                      ),
-                      decoration: BoxDecoration(
-                        color: _hexToColor(
-                          EstadosHelper.getEstadoColor(
-                            pedido.estadoCategoria,
-                            pedido.estadoCodigo,
-                          ),
-                        ).withOpacity(0.15),
-                        border: Border.all(
-                          color: _hexToColor(
-                            EstadosHelper.getEstadoColor(
-                              pedido.estadoCategoria,
-                              pedido.estadoCodigo,
-                            ),
-                          ),
-                          width: 1.5,
-                        ),
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      child: Text(
-                        'ðŸšš ${pedido.estadoNombre}',
-                        style: DefaultTextStyle.of(context).style.copyWith(
-                          color: _hexToColor(
-                            EstadosHelper.getEstadoColor(
-                              pedido.estadoCategoria,
-                              pedido.estadoCodigo,
-                            ),
-                          ),
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
-                ],
-              ),
-
-              // âœ… NUEVO 2026-02-27: Estados de la venta convertida
-              if (pedido.venta != null) ...[
-                const SizedBox(height: 16),
-                Divider(height: 1, color: colorScheme.outline.withOpacity(0.2)),
-                const SizedBox(height: 16),
-                Text(
-                  'ðŸ“‹ Estados de Venta Convertida',
-                  style: DefaultTextStyle.of(context).style.copyWith(
-                    color: colorScheme.primary,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                const SizedBox(height: 12),
-                // Estado del Documento
-                if (pedido.venta!.estadoDocumento != null)
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 8,
-                    ),
-                    margin: const EdgeInsets.only(bottom: 8),
-                    decoration: BoxDecoration(
-                      color: _hexToColor(
-                        pedido.venta!.estadoDocumento!.color ?? '#808080',
-                      ).withOpacity(0.15),
-                      border: Border.all(
-                        color: _hexToColor(
-                          pedido.venta!.estadoDocumento!.color ?? '#808080',
-                        ),
-                        width: 1.5,
-                      ),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Row(
-                      children: [
-                        Text('ðŸ“„', style: DefaultTextStyle.of(context).style),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'Documento',
-                                style: DefaultTextStyle.of(context).style
-                                    .copyWith(
-                                      color: colorScheme.onSurface.withOpacity(
-                                        0.7,
-                                      ),
-                                    ),
-                              ),
-                              Text(
-                                pedido.venta!.estadoDocumento!.nombre,
-                                style: DefaultTextStyle.of(context).style
-                                    .copyWith(
-                                      color: _hexToColor(
-                                        pedido.venta!.estadoDocumento!.color ?? '#808080',
-                                      ),
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                // Estado LogÃ­stico
-                if (pedido.venta!.estadoLogistica != null)
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 8,
-                    ),
-                    margin: const EdgeInsets.only(bottom: 8),
-                    decoration: BoxDecoration(
-                      color: _hexToColor(
-                        pedido.venta!.estadoLogistica!.color ?? '#808080',
-                      ).withOpacity(0.15),
-                      border: Border.all(
-                        color: _hexToColor(
-                          pedido.venta!.estadoLogistica!.color ?? '#808080',
-                        ),
-                        width: 1.5,
-                      ),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Row(
-                      children: [
-                        Text('ðŸšš', style: DefaultTextStyle.of(context).style),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'LogÃ­stica',
-                                style: DefaultTextStyle.of(context).style
-                                    .copyWith(
-                                      color: colorScheme.onSurface.withOpacity(
-                                        0.7,
-                                      ),
-                                    ),
-                              ),
-                              Text(
-                                pedido.venta!.estadoLogistica!.nombre,
-                                style: DefaultTextStyle.of(context).style
-                                    .copyWith(
-                                      color: _hexToColor(
-                                        pedido.venta!.estadoLogistica!.color ?? '#808080',
-                                      ),
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                // âœ… NUEVO 2026-02-27: Motivo de anulaciÃ³n si estÃ¡ anulada
-                if (pedido.venta!.estadoDocumento?.codigo == 'ANULADA' &&
-                    pedido.venta!.observaciones != null &&
-                    pedido.venta!.observaciones!.isNotEmpty)
-                  Container(
-                    padding: const EdgeInsets.all(10),
-                    margin: const EdgeInsets.only(bottom: 8),
-                    decoration: BoxDecoration(
-                      color: Colors.red.withOpacity(0.1),
-                      border: Border.all(color: Colors.red.withOpacity(0.3)),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            Icon(
-                              Icons.warning_rounded,
-                              color: Colors.red,
-                              size: 16,
-                            ),
-                            const SizedBox(width: 8),
-                            Text(
-                              'Motivo de AnulaciÃ³n',
-                              style: DefaultTextStyle.of(context).style
-                                  .copyWith(
-                                    color: Colors.red,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 6),
-                        Text(
-                          pedido.venta!.observaciones!,
-                          style: DefaultTextStyle.of(context).style,
-                        ),
-                      ],
-                    ),
-                  ),
-                // Confirmaciones de Entrega
-                if (pedido.venta!.confirmacionesEntrega.isNotEmpty) ...[
-                  const SizedBox(height: 4),
-                  Text(
-                    'Confirmaciones de Entrega',
-                    style: DefaultTextStyle.of(context).style.copyWith(
-                      color: colorScheme.onSurface.withOpacity(0.7),
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  ...pedido.venta!.confirmacionesEntrega.map((confirmacion) {
-                    final isConfirmado =
-                        confirmacion.estado == 'CONFIRMADO' ||
-                        confirmacion.estado == 'ENTREGADO';
-                    return Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 6,
-                      ),
-                      margin: const EdgeInsets.only(bottom: 6),
-                      decoration: BoxDecoration(
-                        color: isConfirmado
-                            ? Colors.green.withOpacity(0.1)
-                            : Colors.orange.withOpacity(0.1),
-                        border: Border.all(
-                          color: isConfirmado
-                              ? Colors.green.withOpacity(0.5)
-                              : Colors.orange.withOpacity(0.5),
-                          width: 1,
-                        ),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Row(
-                        children: [
-                          Text(
-                            isConfirmado ? 'âœ…' : 'â³',
-                            style: DefaultTextStyle.of(context).style,
-                          ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  '${confirmacion.chofer ?? 'Chofer'} â†’ ${confirmacion.cliente ?? 'Cliente'}',
-                                  style: DefaultTextStyle.of(
-                                    context,
-                                  ).style.copyWith(fontWeight: FontWeight.w500),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                                if (confirmacion.fecha != null)
-                                  Text(
-                                    DateFormat(
-                                      'dd/MM/yy HH:mm',
-                                    ).format(confirmacion.fecha!),
-                                    style: AppTextStyles.labelSmall(context)
-                                        .copyWith(
-                                          color: colorScheme.onSurface
-                                              .withOpacity(0.6),
-                                        ),
-                                  ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                    );
-                  }),
-                ],
-              ],
-
-              // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-              // 3ï¸âƒ£ INFORMACIÃ“N ADICIONAL
-              // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-              if (pedido.cantidadItems > 0 ||
-                  pedido.direccionEntrega != null ||
-                  pedido.tieneReservasProximasAVencer ||
-                  pedido.fechaVencimiento != null ||
-                  pedido.fechaEntregaSolicitada != null) ...[
-                const SizedBox(height: 16),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 12,
-                  ),
-                  decoration: BoxDecoration(
-                    color: colorScheme.surfaceContainerHighest.withOpacity(0.3),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Cantidad de productos
-                      Row(
-                        children: [
-                          Icon(
-                            Icons.shopping_bag_outlined,
-                            size: 14,
-                            color: colorScheme.onSurface.withOpacity(0.6),
-                          ),
-                          const SizedBox(width: 8),
-                          Text(
-                            '${pedido.cantidadItems} productos',
-                            style: DefaultTextStyle.of(context).style.copyWith(
-                              color: colorScheme.onSurface.withOpacity(0.7),
-                            ),
-                          ),
-                        ],
-                      ),
-
-                      // DirecciÃ³n de entrega
-                      if (pedido.direccionEntrega != null) ...[
-                        const SizedBox(height: 8),
-                        Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Icon(
-                              Icons.location_on_outlined,
-                              size: 14,
-                              color: colorScheme.onSurface.withOpacity(0.6),
-                            ),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: Text(
-                                pedido.direccionEntrega!.direccion ?? '',
-                                style: DefaultTextStyle.of(context).style
-                                    .copyWith(
-                                      color: colorScheme.onSurface.withOpacity(
-                                        0.7,
-                                      ),
-                                    ),
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-
-                      // âœ… NUEVO: Fecha de vencimiento
-                      if (pedido.fechaVencimiento != null) ...[
-                        const SizedBox(height: 8),
-                        Row(
-                          children: [
-                            Icon(
-                              Icons.event_note,
-                              size: 14,
-                              color: colorScheme.onSurface.withOpacity(0.6),
-                            ),
-                            const SizedBox(width: 8),
-                            Text(
-                              'ðŸ“… Vencimiento: ${_formatearFecha(pedido.fechaVencimiento!)}',
-                              style: DefaultTextStyle.of(context).style
-                                  .copyWith(
-                                    color: colorScheme.onSurface.withOpacity(
-                                      0.7,
-                                    ),
-                                  ),
-                            ),
-                          ],
-                        ),
-                      ],
-
-                      // âœ… NUEVO: Fecha de entrega solicitada
-                      if (pedido.fechaEntregaSolicitada != null) ...[
-                        const SizedBox(height: 8),
-                        Row(
-                          children: [
-                            Icon(
-                              Icons.local_shipping,
-                              size: 14,
-                              color: colorScheme.onSurface.withOpacity(0.6),
-                            ),
-                            const SizedBox(width: 8),
-                            Text(
-                              'ðŸšš Entrega Solicitada: ${_formatearFecha(pedido.fechaEntregaSolicitada!)}',
-                              style: DefaultTextStyle.of(context).style
-                                  .copyWith(
-                                    color: colorScheme.onSurface.withOpacity(
-                                      0.7,
-                                    ),
-                                  ),
-                            ),
-                          ],
-                        ),
-                      ],
-
-                      // Alerta de reserva prÃ³xima a vencer
-                      if (pedido.tieneReservasProximasAVencer) ...[
-                        const SizedBox(height: 8),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 6,
-                          ),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFFB923C).withOpacity(0.15),
-                            borderRadius: BorderRadius.circular(6),
-                          ),
-                          child: Row(
-                            children: [
-                              Icon(
-                                Icons.warning_amber_rounded,
-                                size: 14,
-                                color: const Color(0xFFC2410C),
-                              ),
-                              const SizedBox(width: 6),
-                              Expanded(
-                                child: Text(
-                                  'â° Reserva expira ${pedido.reservaMasProximaAVencer?.tiempoRestanteFormateado ?? 'pronto'}',
-                                  style: DefaultTextStyle.of(context).style
-                                      .copyWith(
-                                        color: const Color(0xFFC2410C),
-                                        fontWeight: FontWeight.w500,
-                                      ),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ],
-                  ),
-                ),
-              ],
-
-              // âœ… NUEVO: Botones de acciÃ³n (Editar y Anular)
-              if ((pedido.estadoCodigo == 'PENDIENTE' ||
-                      pedido.estadoCodigo == 'APROBADA') &&
-                  pedido.estadoCategoria == 'proforma') ...[
-                const SizedBox(height: 16),
-                Divider(height: 1, color: colorScheme.outline.withOpacity(0.2)),
-                const SizedBox(height: 12),
-                Row(
-                  children: [
-                    // BotÃ³n Editar (solo para PENDIENTE)
-                    if (pedido.estadoCodigo == 'PENDIENTE')
-                      Expanded(
-                        child: ElevatedButton.icon(
-                          onPressed: () async {
-                            // âœ… NUEVO: Mostrar loading mientras se cargan stocks
-                            showDialog(
-                              context: context,
-                              barrierDismissible: false,
-                              builder: (loadingContext) => const AlertDialog(
-                                content: Column(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    CircularProgressIndicator(),
-                                    SizedBox(height: 16),
-                                    Text('Cargando datos actualizados...'),
-                                  ],
-                                ),
-                              ),
-                            );
-
-                            final carritoProvider = context
-                                .read<CarritoProvider>();
-                            final success = await carritoProvider
-                                .cargarProformaEnCarrito(pedido);
-
-                            // Cerrar diÃ¡logo de loading
-                            if (context.mounted) {
-                              Navigator.pop(context);
-
-                              if (success) {
-                                // âœ… ACTUALIZADO: Navegar a /products con carrito cargado para editar
-                                Navigator.pushNamedAndRemoveUntil(
-                                  context,
-                                  '/products',
-                                  (route) => route.isFirst,
-                                );
-                              } else {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    content: Text(
-                                      'Error: ${carritoProvider.errorMessage ?? "No se pudo cargar la proforma"}',
-                                    ),
-                                    backgroundColor: Colors.red,
-                                  ),
-                                );
-                              }
-                            }
-                          },
-                          icon: const Icon(Icons.edit_outlined),
-                          label: const Text('Editar'),
-                          style: ElevatedButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(vertical: 12),
-                            backgroundColor: colorScheme.primary,
-                            foregroundColor: colorScheme.onPrimary,
-                          ),
-                        ),
-                      ),
-                    // Espaciador
-                    if (pedido.estadoCodigo == 'PENDIENTE')
-                      const SizedBox(width: 12),
-                    // BotÃ³n Anular
-                    Expanded(
-                      child: ElevatedButton.icon(
-                        onPressed: () {
-                          _mostrarDialogoAnularProforma(context, pedido);
-                        },
-                        icon: const Icon(Icons.cancel_outlined),
-                        label: const Text('Anular'),
-                        style: ElevatedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 12),
-                          backgroundColor: Colors.red,
-                          foregroundColor: Colors.white,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ],
-          ),
-        ),
-      ),
-    );
   }
 }

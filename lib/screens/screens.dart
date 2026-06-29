@@ -22,6 +22,9 @@ export 'notifications_screen.dart';
 export 'visitas/orden_del_dia_screen.dart';
 export 'ventas/mis_ventas_screen.dart';
 export 'ventas/venta_detalle_screen.dart';
+export 'ventas/ventas_list_screen.dart'; // ✅ NUEVO: Pantalla de listado de ventas para preventistas/admins
+export 'cuentas_por_cobrar/cuentas_por_cobrar_list_screen.dart'; // ✅ NUEVO: Pantalla de cuentas por cobrar
+export 'cuentas_por_cobrar/cuenta_por_cobrar_detalle_screen.dart'; // ✅ NUEVO: Pantalla de detalle de cuenta con pagos
 export 'reportes/reportes_productos_danados_screen.dart';
 export 'reportes/nuevo_reporte_screen.dart';
 export 'reportes/detalle_reporte_screen.dart';

@@ -1,10 +1,13 @@
 import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 import 'client.dart';
 import 'pedido_item.dart';
 import 'pedido_estado_historial.dart';
 import 'reserva_stock.dart';
 import 'chofer.dart';
 import 'camion.dart';
+import 'direccion_cliente.dart';
+import 'user.dart';
 import '../services/estados_helpers.dart';
 
 // ✅ NUEVO 2026-02-27: Clase para estado del documento
@@ -96,8 +99,8 @@ class PedidoVenta {
       estadoLogistica: json['estado_logistica'] != null
           ? EstadoDocumento.fromJson(json['estado_logistica'] as Map<String, dynamic>)
           : null,
-      confirmacionesEntrega: json['confirmaciones_entrega'] != null
-          ? (json['confirmaciones_entrega'] as List)
+      confirmacionesEntrega: (json['confirmaciones_entrega'] ?? json['confirmaciones']) != null
+          ? ((json['confirmaciones_entrega'] ?? json['confirmaciones']) as List)
               .map((c) => ConfirmacionEntrega.fromJson(c as Map<String, dynamic>))
               .toList()
           : [],
@@ -154,10 +157,12 @@ class Pedido {
 
   // Montos
   final double subtotal;
+  final double descuento; // Descuento aplicado
   final double impuesto;
   final double total;
   final String? observaciones;
   final String? observacionesRechazo;
+  final int? monedaId; // ID de la moneda
 
   // Items del pedido
   final List<PedidoItem> items;
@@ -175,15 +180,24 @@ class Pedido {
   // Metadata
   final String canalOrigen;
   final DateTime fechaCreacion;
+  final DateTime? updatedAt; // Última actualización
   final DateTime? fechaAprobacion;
   final DateTime? fechaEntrega;
   final int? usuarioAprobadorId;
+  final int? usuarioCreadorId; // ID del usuario que creó el pedido
+  final User? usuarioCreador; // Usuario que creó el pedido
   final String? comentariosAprobacion;
   final String? comentarioRechazo;
 
   // ✅ NUEVO: Fechas de vencimiento y entrega solicitada
   final DateTime? fechaVencimiento;
   final DateTime? fechaEntregaSolicitada;
+  final String? horaEntregaSolicitada; // Hora solicitada (HH:MM:SS)
+  final DateTime? fechaEntregaConfirmada; // Fecha confirmada de entrega
+  final String? horaEntregaConfirmada; // Hora confirmada (HH:MM:SS)
+
+  // ✅ NUEVO: Información de dirección de entrega
+  final DireccionCliente? direccionEntregaConfirmada; // Dirección confirmada de entrega
 
   // Comprobantes de entrega
   final String? firmaDigitalUrl;
@@ -192,6 +206,13 @@ class Pedido {
 
   // Campos de proforma (nuevo backend)
   final int? estadoProformaId;
+
+  // ✅ NUEVO: Información de entrega y coordinación
+  final String? tipoEntrega; // DELIVERY, PICKUP
+  final String? politicaPago; // CONTRA_ENTREGA, CREDITO, etc
+  final int? preventistaId; // ID del preventista asignado
+  final bool requiereEnvio; // ¿Requiere envío?
+  final bool coordinacionCompletada; // ¿Coordinación completada?
 
   // ✅ NUEVO: Información de la venta cuando se convierte
   final int? ventaId;
@@ -212,8 +233,10 @@ class Pedido {
     this.horaInicioPreferida,
     this.horaFinPreferida,
     required this.subtotal,
+    this.descuento = 0.0,
     required this.impuesto,
     required this.total,
+    this.monedaId,
     this.observaciones,
     this.observacionesRechazo,
     this.items = const [],
@@ -225,9 +248,12 @@ class Pedido {
     this.camion,
     required this.canalOrigen,
     required this.fechaCreacion,
+    this.updatedAt,
     this.fechaAprobacion,
     this.fechaEntrega,
     this.usuarioAprobadorId,
+    this.usuarioCreadorId,
+    this.usuarioCreador,
     this.comentariosAprobacion,
     this.comentarioRechazo,
     this.firmaDigitalUrl,
@@ -236,6 +262,15 @@ class Pedido {
     this.estadoProformaId,
     this.fechaVencimiento,
     this.fechaEntregaSolicitada,
+    this.horaEntregaSolicitada,
+    this.fechaEntregaConfirmada,
+    this.horaEntregaConfirmada,
+    this.direccionEntregaConfirmada,
+    this.tipoEntrega,
+    this.politicaPago,
+    this.preventistaId,
+    this.requiereEnvio = false,
+    this.coordinacionCompletada = false,
     this.ventaId,
     this.ventaNumero,
     this.venta,
@@ -243,6 +278,10 @@ class Pedido {
 
   factory Pedido.fromJson(Map<String, dynamic> json) {
     try {
+      if (json.isEmpty) {
+        throw Exception('Empty JSON provided for Pedido');
+      }
+
       // Safely parse all datetime fields (backend can use created_at or fecha_creacion)
       final createdAtString = json['created_at'] ?? json['fecha_creacion'];
       final createdAt = createdAtString != null
@@ -277,17 +316,34 @@ class Pedido {
         debugPrint('⚠️ Pedido.fromJson - No se encontró estado, usando default: $estadoCodigo');
       }
 
+      // Safely parse nested objects with fallback
+      Client? cliente;
+      try {
+        if (json['cliente'] != null) {
+          cliente = Client.fromJson(json['cliente'] as Map<String, dynamic>);
+        }
+      } catch (e) {
+        debugPrint('⚠️ Error parsing cliente: $e');
+      }
+
+      ClientAddress? direccionEntrega;
+      try {
+        if (json['direccion_entrega'] != null) {
+          direccionEntrega = ClientAddress.fromJson(json['direccion_entrega'] as Map<String, dynamic>);
+        } else if (json['direccion_solicitada'] != null) {
+          direccionEntrega = ClientAddress.fromJson(json['direccion_solicitada'] as Map<String, dynamic>);
+        }
+      } catch (e) {
+        debugPrint('⚠️ Error parsing direccionEntrega: $e');
+      }
+
       return Pedido(
         id: json['id'] as int,
         numero: json['numero'] as String,
         clienteId: json['cliente_id'] as int?,
-        cliente: json['cliente'] != null
-            ? Client.fromJson(json['cliente'] as Map<String, dynamic>)
-            : null,
+        cliente: cliente,
         direccionId: json['direccion_id'] as int?,
-        direccionEntrega: json['direccion_entrega'] != null
-            ? ClientAddress.fromJson(json['direccion_entrega'] as Map<String, dynamic>)
-            : null,
+        direccionEntrega: direccionEntrega,
         estadoCodigo: estadoCodigo,
         estadoCategoria: estadoCategoria,
         estadoData: estadoData,
@@ -309,8 +365,10 @@ class Pedido {
             : null,
         // Convert string numbers to double
         subtotal: _parseDouble(json['subtotal']),
+        descuento: _parseDouble(json['descuento']),
         impuesto: _parseDouble(json['impuesto']),
         total: _parseDouble(json['total']),
+        monedaId: json['moneda_id'] as int?,
         observaciones: json['observaciones'] as String?,
         observacionesRechazo: json['observaciones_rechazo'] as String?,
         // Backend returns detalles instead of items
@@ -334,15 +392,14 @@ class Pedido {
                 .toList()
             : [],
         choferId: json['chofer_id'] as int?,
-        chofer: json['chofer'] != null
-            ? Chofer.fromJson(json['chofer'] as Map<String, dynamic>)
-            : null,
+        chofer: _safeParseChofer(json['chofer']),
         camionId: json['camion_id'] as int?,
-        camion: json['camion'] != null
-            ? Camion.fromJson(json['camion'] as Map<String, dynamic>)
-            : null,
+        camion: _safeParseCamion(json['camion']),
         canalOrigen: json['canal_origen'] as String? ?? 'APP_EXTERNA',
         fechaCreacion: createdAt,
+        updatedAt: json['updated_at'] != null
+            ? DateTime.parse(json['updated_at'] as String)
+            : null,
         fechaAprobacion: json['fecha_aprobacion'] != null
             ? DateTime.parse(json['fecha_aprobacion'] as String)
             : null,
@@ -350,6 +407,8 @@ class Pedido {
             ? DateTime.parse(json['fecha_entrega'] as String)
             : null,
         usuarioAprobadorId: json['usuario_aprobador_id'] as int?,
+        usuarioCreadorId: json['usuario_creador_id'] as int?,
+        usuarioCreador: _safeParseUser(json['usuario_creador']),
         comentariosAprobacion: json['comentarios_aprobacion'] as String?,
         comentarioRechazo: json['comentario_rechazo'] as String? ?? json['observaciones_rechazo'] as String?,
         firmaDigitalUrl: json['firma_digital_url'] as String?,
@@ -365,12 +424,21 @@ class Pedido {
         fechaEntregaSolicitada: json['fecha_entrega_solicitada'] != null
             ? DateTime.parse(json['fecha_entrega_solicitada'] as String)
             : null,
+        horaEntregaSolicitada: json['hora_entrega_solicitada'] as String?,
+        fechaEntregaConfirmada: json['fecha_entrega_confirmada'] != null
+            ? DateTime.parse(json['fecha_entrega_confirmada'] as String)
+            : null,
+        horaEntregaConfirmada: json['hora_entrega_confirmada'] as String?,
+        direccionEntregaConfirmada: _safeParseDireccionCliente(json['direccion_entrega_confirmada']),
+        tipoEntrega: json['tipo_entrega'] as String?,
+        politicaPago: json['politica_pago'] as String?,
+        preventistaId: json['preventista_id'] as int?,
+        requiereEnvio: json['requiere_envio'] as bool? ?? false,
+        coordinacionCompletada: json['coordinacion_completada'] as bool? ?? false,
         // ✅ NUEVO: Información de venta cuando se convierte
         ventaId: json['venta_id'] as int?,
         ventaNumero: json['venta_numero'] as String? ?? json['venta']?['numero'] as String?,
-        venta: json['venta'] != null
-            ? PedidoVenta.fromJson(json['venta'] as Map<String, dynamic>)
-            : null,
+        venta: _safeParsePedidoVenta(json['venta']),
       );
     } catch (e) {
       debugPrint('❌ Error parsing Pedido: $e');
@@ -395,6 +463,61 @@ class Pedido {
     return 0.0;
   }
 
+  static Chofer? _safeParseChofer(dynamic data) {
+    try {
+      if (data != null && data is Map<String, dynamic>) {
+        return Chofer.fromJson(data);
+      }
+    } catch (e) {
+      debugPrint('⚠️ Error parsing Chofer: $e');
+    }
+    return null;
+  }
+
+  static Camion? _safeParseCamion(dynamic data) {
+    try {
+      if (data != null && data is Map<String, dynamic>) {
+        return Camion.fromJson(data);
+      }
+    } catch (e) {
+      debugPrint('⚠️ Error parsing Camion: $e');
+    }
+    return null;
+  }
+
+  static User? _safeParseUser(dynamic data) {
+    try {
+      if (data != null && data is Map<String, dynamic>) {
+        return User.fromJson(data);
+      }
+    } catch (e) {
+      debugPrint('⚠️ Error parsing User: $e');
+    }
+    return null;
+  }
+
+  static DireccionCliente? _safeParseDireccionCliente(dynamic data) {
+    try {
+      if (data != null && data is Map<String, dynamic>) {
+        return DireccionCliente.fromJson(data);
+      }
+    } catch (e) {
+      debugPrint('⚠️ Error parsing DireccionCliente: $e');
+    }
+    return null;
+  }
+
+  static PedidoVenta? _safeParsePedidoVenta(dynamic data) {
+    try {
+      if (data != null && data is Map<String, dynamic>) {
+        return PedidoVenta.fromJson(data);
+      }
+    } catch (e) {
+      debugPrint('⚠️ Error parsing PedidoVenta: $e');
+    }
+    return null;
+  }
+
   Map<String, dynamic> toJson() {
     return {
       'id': id,
@@ -411,8 +534,10 @@ class Pedido {
       'hora_inicio_preferida': horaInicioPreferida?.toIso8601String(),
       'hora_fin_preferida': horaFinPreferida?.toIso8601String(),
       'subtotal': subtotal,
+      'descuento': descuento,
       'impuesto': impuesto,
       'total': total,
+      'moneda_id': monedaId,
       'observaciones': observaciones,
       'observaciones_rechazo': observacionesRechazo,
       'items': items.map((item) => item.toJson()).toList(),
@@ -424,9 +549,12 @@ class Pedido {
       'camion': camion?.toJson(),
       'canal_origen': canalOrigen,
       'fecha_creacion': fechaCreacion.toIso8601String(),
+      'updated_at': updatedAt?.toIso8601String(),
       'fecha_aprobacion': fechaAprobacion?.toIso8601String(),
       'fecha_entrega': fechaEntrega?.toIso8601String(),
       'usuario_aprobador_id': usuarioAprobadorId,
+      'usuario_creador_id': usuarioCreadorId,
+      'usuario_creador': usuarioCreador?.toJson(),
       'comentarios_aprobacion': comentariosAprobacion,
       'comentario_rechazo': comentarioRechazo,
       'firma_digital_url': firmaDigitalUrl,
@@ -436,6 +564,15 @@ class Pedido {
       // ✅ NUEVO: Incluir fechas de vencimiento y entrega solicitada
       'fecha_vencimiento': fechaVencimiento?.toIso8601String(),
       'fecha_entrega_solicitada': fechaEntregaSolicitada?.toIso8601String(),
+      'hora_entrega_solicitada': horaEntregaSolicitada,
+      'fecha_entrega_confirmada': fechaEntregaConfirmada?.toIso8601String(),
+      'hora_entrega_confirmada': horaEntregaConfirmada,
+      'direccion_entrega_confirmada': direccionEntregaConfirmada?.toJson(),
+      'tipo_entrega': tipoEntrega,
+      'politica_pago': politicaPago,
+      'preventista_id': preventistaId,
+      'requiere_envio': requiereEnvio,
+      'coordinacion_completada': coordinacionCompletada,
       // ✅ NUEVO: Incluir información de venta
       'venta_id': ventaId,
       'venta_numero': ventaNumero,
@@ -456,8 +593,10 @@ class Pedido {
     DateTime? horaInicioPreferida,
     DateTime? horaFinPreferida,
     double? subtotal,
+    double? descuento,
     double? impuesto,
     double? total,
+    int? monedaId,
     String? observaciones,
     String? observacionesRechazo,
     List<PedidoItem>? items,
@@ -469,9 +608,12 @@ class Pedido {
     Camion? camion,
     String? canalOrigen,
     DateTime? fechaCreacion,
+    DateTime? updatedAt,
     DateTime? fechaAprobacion,
     DateTime? fechaEntrega,
     int? usuarioAprobadorId,
+    int? usuarioCreadorId,
+    User? usuarioCreador,
     String? comentariosAprobacion,
     String? comentarioRechazo,
     String? firmaDigitalUrl,
@@ -480,8 +622,18 @@ class Pedido {
     int? estadoProformaId,
     DateTime? fechaVencimiento,
     DateTime? fechaEntregaSolicitada,
+    String? horaEntregaSolicitada,
+    DateTime? fechaEntregaConfirmada,
+    String? horaEntregaConfirmada,
+    DireccionCliente? direccionEntregaConfirmada,
+    String? tipoEntrega,
+    String? politicaPago,
+    int? preventistaId,
+    bool? requiereEnvio,
+    bool? coordinacionCompletada,
     int? ventaId,
     String? ventaNumero,
+    PedidoVenta? venta,
   }) {
     return Pedido(
       id: id ?? this.id,
@@ -497,8 +649,10 @@ class Pedido {
       horaInicioPreferida: horaInicioPreferida ?? this.horaInicioPreferida,
       horaFinPreferida: horaFinPreferida ?? this.horaFinPreferida,
       subtotal: subtotal ?? this.subtotal,
+      descuento: descuento ?? this.descuento,
       impuesto: impuesto ?? this.impuesto,
       total: total ?? this.total,
+      monedaId: monedaId ?? this.monedaId,
       observaciones: observaciones ?? this.observaciones,
       observacionesRechazo: observacionesRechazo ?? this.observacionesRechazo,
       items: items ?? this.items,
@@ -510,9 +664,12 @@ class Pedido {
       camion: camion ?? this.camion,
       canalOrigen: canalOrigen ?? this.canalOrigen,
       fechaCreacion: fechaCreacion ?? this.fechaCreacion,
+      updatedAt: updatedAt ?? this.updatedAt,
       fechaAprobacion: fechaAprobacion ?? this.fechaAprobacion,
       fechaEntrega: fechaEntrega ?? this.fechaEntrega,
       usuarioAprobadorId: usuarioAprobadorId ?? this.usuarioAprobadorId,
+      usuarioCreadorId: usuarioCreadorId ?? this.usuarioCreadorId,
+      usuarioCreador: usuarioCreador ?? this.usuarioCreador,
       comentariosAprobacion: comentariosAprobacion ?? this.comentariosAprobacion,
       comentarioRechazo: comentarioRechazo ?? this.comentarioRechazo,
       firmaDigitalUrl: firmaDigitalUrl ?? this.firmaDigitalUrl,
@@ -521,8 +678,18 @@ class Pedido {
       estadoProformaId: estadoProformaId ?? this.estadoProformaId,
       fechaVencimiento: fechaVencimiento ?? this.fechaVencimiento,
       fechaEntregaSolicitada: fechaEntregaSolicitada ?? this.fechaEntregaSolicitada,
+      horaEntregaSolicitada: horaEntregaSolicitada ?? this.horaEntregaSolicitada,
+      fechaEntregaConfirmada: fechaEntregaConfirmada ?? this.fechaEntregaConfirmada,
+      horaEntregaConfirmada: horaEntregaConfirmada ?? this.horaEntregaConfirmada,
+      direccionEntregaConfirmada: direccionEntregaConfirmada ?? this.direccionEntregaConfirmada,
+      tipoEntrega: tipoEntrega ?? this.tipoEntrega,
+      politicaPago: politicaPago ?? this.politicaPago,
+      preventistaId: preventistaId ?? this.preventistaId,
+      requiereEnvio: requiereEnvio ?? this.requiereEnvio,
+      coordinacionCompletada: coordinacionCompletada ?? this.coordinacionCompletada,
       ventaId: ventaId ?? this.ventaId,
       ventaNumero: ventaNumero ?? this.ventaNumero,
+      venta: venta ?? this.venta,
     );
   }
 

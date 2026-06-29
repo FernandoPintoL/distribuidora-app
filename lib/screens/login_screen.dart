@@ -94,21 +94,6 @@ class _LoginScreenState extends State<LoginScreen>
         child: Container(
           width: size.width,
           height: size.height,
-          /*decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: isDarkMode
-                  ? [
-                      const Color(0xFF1E3A5F), // Azul marino
-                      const Color(0xFF132B47), // Azul marino oscuro
-                    ]
-                  : [
-                      Theme.of(context).primaryColor, // Azul marino #1E3A5F
-                      const Color(0xFFD4A017).withValues(alpha: 0.85), // Dorado
-                    ],
-            ),
-          ),*/
           child: SafeArea(
             child: Center(
               child: SingleChildScrollView(
@@ -133,21 +118,10 @@ class _LoginScreenState extends State<LoginScreen>
 
     return Consumer<AuthProvider>(
       builder: (context, authProvider, child) {
-        return Container(
-          constraints: const BoxConstraints(maxWidth: 400),
-          decoration: BoxDecoration(
-            color: Theme.of(context).cardColor,
-            borderRadius: BorderRadius.circular(24),
-            boxShadow: [
-              BoxShadow(
-                color: isDarkMode
-                    ? Colors.black.withValues(alpha: 0.5)
-                    : Colors.black.withValues(alpha: 0.2),
-                blurRadius: 20,
-                offset: const Offset(0, 10),
-              ),
-            ],
-          ),
+        return Card(
+          // constraints: const BoxConstraints(maxWidth: 400),
+          // decoration: BoxDecoration(borderRadius: BorderRadius.circular(24)),
+          borderOnForeground: true,
           child: Padding(
             padding: const EdgeInsets.all(32.0),
             child: Form(
@@ -204,31 +178,33 @@ class _LoginScreenState extends State<LoginScreen>
     return Column(
       children: [
         // Logo con gradiente Grafito + Rojo Paucara
-        Container(
-          width: 80,
-          height: 80,
-          decoration: BoxDecoration(
-            shape: BoxShape.rectangle,
-            gradient: const LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                Color(0xFF1E3A5F), // Azul Marino
-                Color(0xFFD4A017), // Dorado
+        ClipRRect(
+          borderRadius: BorderRadius.circular(16),
+          child: Container(
+            width: 80,
+            height: 80,
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  Color(0xFF1E3A5F), // Azul Marino
+                  Color(0xFFD4A017), // Dorado
+                ],
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: const Color(0xFFD4A017).withValues(alpha: 0.3),
+                  blurRadius: 15,
+                  offset: const Offset(0, 5),
+                ),
               ],
             ),
-            boxShadow: [
-              BoxShadow(
-                color: const Color(0xFFD4A017).withValues(alpha: 0.3),
-                blurRadius: 15,
-                offset: const Offset(0, 5),
+            child: const Center(
+              child: Image(
+                image: AssetImage('assets/icons/icon.png'),
+                fit: BoxFit.contain,
               ),
-            ],
-          ),
-          child: const Center(
-            child: Image(
-              image: AssetImage('assets/icons/icon.png'),
-              fit: BoxFit.contain,
             ),
           ),
         ),
@@ -242,13 +218,6 @@ class _LoginScreenState extends State<LoginScreen>
           textAlign: TextAlign.center,
         ),
         const SizedBox(height: 8),
-        /* Text(
-          'Bienvenido de vuelta',
-          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
-              ),
-          textAlign: TextAlign.center,
-        ), */
       ],
     );
   }
@@ -261,27 +230,28 @@ class _LoginScreenState extends State<LoginScreen>
       controller: _loginController,
       decoration: InputDecoration(
         labelText: 'Usuario o Email',
+        labelStyle: TextStyle(
+          color: isDarkMode
+              ? colorScheme.onSurfaceVariant
+              : colorScheme.onSurface,
+        ),
         hintText: 'Ingresa tu usuario',
-        prefixIcon: Icon(Icons.person_outline, color: colorScheme.primary),
+        prefixIcon: Icon(Icons.person_outline),
         filled: true,
-        fillColor: isDarkMode
-            ? colorScheme.surfaceContainerHighest
-            : colorScheme.surfaceContainerHighest,
+        // fillColor: isDarkMode
+        //     ? colorScheme.surfaceContainerHighest
+        //     : colorScheme.surfaceContainerHighest,
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
           borderSide: BorderSide.none,
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(
-            color: isDarkMode
-                ? colorScheme.outline.withValues(alpha: 0.3)
-                : colorScheme.outline.withValues(alpha: 0.2),
-          ),
+          borderSide: BorderSide(color: colorScheme.secondary),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: colorScheme.primary, width: 2),
+          borderSide: BorderSide(width: 2, color: colorScheme.secondary),
         ),
         errorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
@@ -311,14 +281,18 @@ class _LoginScreenState extends State<LoginScreen>
       obscureText: _obscurePassword,
       decoration: InputDecoration(
         labelText: 'Contraseña',
+        labelStyle: TextStyle(
+          color: isDarkMode
+              ? colorScheme.onSurfaceVariant
+              : colorScheme.onSurface,
+        ),
         hintText: 'Ingresa tu contraseña',
-        prefixIcon: Icon(Icons.lock_outline, color: colorScheme.primary),
+        prefixIcon: Icon(Icons.lock_outline),
         suffixIcon: IconButton(
           icon: Icon(
             _obscurePassword
                 ? Icons.visibility_outlined
                 : Icons.visibility_off_outlined,
-            color: colorScheme.onSurfaceVariant,
           ),
           onPressed: () {
             setState(() {
@@ -336,15 +310,11 @@ class _LoginScreenState extends State<LoginScreen>
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(
-            color: isDarkMode
-                ? colorScheme.outline.withValues(alpha: 0.3)
-                : colorScheme.outline.withValues(alpha: 0.2),
-          ),
+          borderSide: BorderSide(color: colorScheme.secondary),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: colorScheme.primary, width: 2),
+          borderSide: BorderSide(color: colorScheme.secondary, width: 2),
         ),
         errorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
@@ -387,9 +357,6 @@ class _LoginScreenState extends State<LoginScreen>
         Expanded(
           child: Text(
             'Recordar mis credenciales',
-            style: Theme.of(
-              context,
-            ).textTheme.bodyMedium?.copyWith(fontSize: 14),
             overflow: TextOverflow.ellipsis,
           ),
         ),
@@ -424,10 +391,7 @@ class _LoginScreenState extends State<LoginScreen>
           Expanded(
             child: Text(
               message,
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: colorScheme.onErrorContainer,
-                fontSize: AppTextStyles.bodyMedium(context).fontSize!,
-              ),
+              style: TextStyle(color: colorScheme.onErrorContainer),
             ),
           ),
         ],
@@ -461,10 +425,7 @@ class _LoginScreenState extends State<LoginScreen>
               )
             : Text(
                 'Iniciar Sesión',
-                style: TextStyle(
-                  fontSize: AppTextStyles.bodyLarge(context).fontSize!,
-                  fontWeight: FontWeight.w600,
-                ),
+                style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16),
               ),
       ),
     );
@@ -587,18 +548,10 @@ class _LoginScreenState extends State<LoginScreen>
   }
 
   void _login() async {
-    debugPrint('═══════════════════════════════════════════════════════════');
-    debugPrint('👆 BUTTON PRESSED: _login() METHOD CALLED');
-    debugPrint('═══════════════════════════════════════════════════════════');
-
     if (_formKey.currentState?.validate() ?? false) {
-      debugPrint('✅ Form validation passed');
       final authProvider = context.read<AuthProvider>();
-
-      debugPrint('📞 About to call LoadingOverlay.show()');
       // Mostrar el LoadingOverlay
       LoadingOverlay.show(context, message: 'Iniciando sesión...');
-      debugPrint('✅ LoadingOverlay.show() called');
 
       final success = await authProvider.login(
         _loginController.text.trim(),

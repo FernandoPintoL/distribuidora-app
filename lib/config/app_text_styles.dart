@@ -93,6 +93,29 @@ class AppTextStyles {
   static TextStyle hint(BuildContext context) =>
       bodySmall(context).copyWith(color: Colors.grey[600]);
 
+  /// Valores numéricos grandes (montos)
+  static TextStyle valueLarge(BuildContext context) =>
+      _applyTextScale(
+        context,
+        TextStyle(
+          fontSize: 16,
+          fontWeight: FontWeight.bold,
+          height: 1.2,
+          letterSpacing: -0.5,
+        ),
+      );
+
+  /// Valores numéricos pequeños
+  static TextStyle valueSmall(BuildContext context) =>
+      _applyTextScale(
+        context,
+        TextStyle(
+          fontSize: 12,
+          fontWeight: FontWeight.w600,
+          height: 1.2,
+        ),
+      );
+
   // ============================================================================
   // HELPER PRIVADO - Aplica textScaleFactor automáticamente
   // ============================================================================

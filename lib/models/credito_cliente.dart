@@ -5,9 +5,9 @@ class DetallesCreditoCliente {
   final double saldoUtilizado;
   final double saldoDisponible;
   final double porcentajeUtilizacion;
-  final List<CuentaPorCobrar> cuentasPendientes;
-  final List<CuentaPorCobrar> cuentasVencidas;
-  final List<Pago> historialPagos;
+  final List<CreditoClienteCuenta> cuentasPendientes;
+  final List<CreditoClienteCuenta> cuentasVencidas;
+  final List<PagoCredito> historialPagos;
 
   DetallesCreditoCliente({
     required this.limiteCredito,
@@ -25,14 +25,14 @@ class DetallesCreditoCliente {
       final creditoData = json['credito'] ?? json;
 
       // ✅ Parsear todas_las_cuentas de forma SUPER segura
-      List<CuentaPorCobrar> cuentasPend = [];
-      List<CuentaPorCobrar> cuentasVenc = [];
+      List<CreditoClienteCuenta> cuentasPend = [];
+      List<CreditoClienteCuenta> cuentasVenc = [];
 
       if (json['todas_las_cuentas'] is List) {
         final List<dynamic> rawList = json['todas_las_cuentas'] as List;
         for (final item in rawList) {
           if (item is Map<String, dynamic>) {
-            final cuenta = CuentaPorCobrar.fromJson(item);
+            final cuenta = CreditoClienteCuenta.fromJson(item);
             // Solo agregar si tiene saldo pendiente
             if ((cuenta.saldoPendiente) > 0) {
               cuentasPend.add(cuenta);
@@ -63,7 +63,7 @@ class DetallesCreditoCliente {
         historialPagos: json['historial_pagos'] is List
             ? (json['historial_pagos'] as List)
                 .whereType<Map<String, dynamic>>()
-                .map((p) => Pago.fromJson(p))
+                .map((p) => PagoCredito.fromJson(p))
                 .toList()
             : [],
       );
@@ -76,7 +76,7 @@ class DetallesCreditoCliente {
   }
 }
 
-class CuentaPorCobrar {
+class CreditoClienteCuenta {
   final int id;
   final int? ventaId;
   final double montoOriginal;
@@ -85,9 +85,9 @@ class CuentaPorCobrar {
   final int? diasVencido;
   final String? estado;
   final VentaInfo? venta;
-  final List<Pago>? pagos;
+  final List<PagoCredito>? pagos;
 
-  CuentaPorCobrar({
+  CreditoClienteCuenta({
     required this.id,
     this.ventaId,
     required this.montoOriginal,
@@ -99,7 +99,7 @@ class CuentaPorCobrar {
     this.pagos,
   });
 
-  factory CuentaPorCobrar.fromJson(Map<String, dynamic> json) {
+  factory CreditoClienteCuenta.fromJson(Map<String, dynamic> json) {
     try {
       // Crear objeto VentaInfo a partir de los datos planos del backend
       final venta = VentaInfo(
@@ -114,7 +114,7 @@ class CuentaPorCobrar {
         estadoPago: json['estado'] as String?,
       );
 
-      return CuentaPorCobrar(
+      return CreditoClienteCuenta(
         id: json['id'] is int
             ? json['id']
             : int.tryParse(json['id'].toString()) ?? 0,
@@ -140,12 +140,12 @@ class CuentaPorCobrar {
         pagos: json['pagos'] != null
             ? (json['pagos'] as List)
                 .whereType<Map<String, dynamic>>()
-                .map((p) => Pago.fromJson(p))
+                .map((p) => PagoCredito.fromJson(p))
                 .toList()
             : null,
       );
     } catch (e) {
-      debugPrint('❌ Error parsing CuentaPorCobrar: $e');
+      debugPrint('❌ Error parsing CreditoClienteCuenta: $e');
       debugPrint('   JSON: $json');
       rethrow;
     }
@@ -182,7 +182,7 @@ class VentaInfo {
   }
 }
 
-class Pago {
+class PagoCredito {
   final int id;
   final int? ventaId;
   final int? tipoPagoId;
@@ -194,7 +194,7 @@ class Pago {
   final TipoPago? tipoPago;
   final Usuario? usuario;
 
-  Pago({
+  PagoCredito({
     required this.id,
     this.ventaId,
     this.tipoPagoId,
@@ -207,9 +207,9 @@ class Pago {
     this.usuario,
   });
 
-  factory Pago.fromJson(Map<String, dynamic> json) {
+  factory PagoCredito.fromJson(Map<String, dynamic> json) {
     try {
-      return Pago(
+      return PagoCredito(
         id: json['id'] is int
             ? json['id']
             : int.tryParse(json['id'].toString()) ?? 0,
@@ -242,7 +242,7 @@ class Pago {
             : null,
       );
     } catch (e) {
-      debugPrint('❌ Error parsing Pago: $e');
+      debugPrint('❌ Error parsing PagoCredito: $e');
       debugPrint('   JSON: $json');
       rethrow;
     }

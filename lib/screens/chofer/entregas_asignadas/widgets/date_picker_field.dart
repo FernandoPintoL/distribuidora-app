@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../../config/app_text_styles.dart';
+import '../../../../utils/date_picker_utils.dart';
 
 class DatePickerField extends StatelessWidget {
   final String label;
@@ -20,7 +21,7 @@ class DatePickerField extends StatelessWidget {
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: () async {
-        final selectedDate = await showDatePicker(
+        final selectedDate = await DatePickerUtils.showThemedDatePicker(
           context: context,
           initialDate: date ?? DateTime.now(),
           firstDate: DateTime(2020),

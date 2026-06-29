@@ -23,3 +23,5 @@ export 'banner_publicitario_provider.dart';
 export 'prestamos_provider.dart';  // ✅ NUEVO: Gestión de préstamos para choferes
 export 'estado_logistico_provider.dart';  // ✅ NUEVO: Estados logísticos dinámicos
 export 'localidad_provider.dart';  // ✅ NUEVO: Localidades dinámicas
+export 'cuentas_por_cobrar_provider.dart';  // ✅ NUEVO: Cuentas por cobrar con filtros
+export 'cuenta_por_cobrar_detalle_provider.dart';  // ✅ NUEVO: Detalle de cuenta con pagos

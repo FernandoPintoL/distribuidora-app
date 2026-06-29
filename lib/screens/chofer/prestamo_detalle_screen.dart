@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/prestamos_provider.dart';
 import '../../config/app_text_styles.dart';
+import '../../models/prestamo_completo.dart';
+import '../../models/prestamo_evento.dart';
+import '../../models/prestamo_proveedor.dart';
 import 'registrar_devolucion_screen.dart';
 
 /// Pantalla que muestra los detalles de un préstamo
@@ -116,6 +119,58 @@ class PrestamoDetalleScreen extends StatelessWidget {
     }
   }
 
+  // ✅ NUEVO: Obtener devoluciones según tipo de préstamo
+  List<dynamic> _obtenerDevoluciones(dynamic detalle) {
+    if (tipo == 'evento' && detalle is PrestamoEventoDetalle) {
+      return detalle.devoluciones ?? [];
+    }
+    // Para cliente
+    if (tipo == 'cliente' && detalle is PrestamoDetalle) {
+      return detalle.devolucionDetalles ?? [];
+    }
+    // Para proveedor
+    if (tipo == 'proveedor' && detalle is PrestamoProveedorDetalle) {
+      return detalle.devolucionDetalles ?? [];
+    }
+    return [];
+  }
+
+  // ✅ NUEVO: Calcular total devuelto según tipo
+  int _calcularTotalDevuelto(dynamic detalle) {
+    final devoluciones = _obtenerDevoluciones(detalle);
+
+    if (tipo == 'evento') {
+      // Para eventos: usar DevolucionEventoDetalle
+      return (devoluciones as List<dynamic>)
+          .fold<int>(0, (sum, dev) {
+            if (dev is DevolucionEventoDetalle) {
+              return sum + dev.cantidadDevuelta;
+            }
+            return sum;
+          });
+    }
+
+    if (tipo == 'proveedor') {
+      // Para proveedor: usar DevolucionProveedorDetalle
+      return (devoluciones as List<dynamic>)
+          .fold<int>(0, (sum, dev) {
+            if (dev is DevolucionProveedorDetalle) {
+              return sum + dev.cantidadDevuelta;
+            }
+            return sum;
+          });
+    }
+
+    // Para cliente: usar DevolucionDetalle
+    return (devoluciones as List<dynamic>)
+        .fold<int>(0, (sum, dev) {
+          if (dev is DevolucionDetalle) {
+            return sum + dev.cantidadDevuelta;
+          }
+          return sum;
+        });
+  }
+
   Widget _buildSeccion(
     BuildContext context,  // ✅ Parámetro ahora es consistente
     String titulo,
@@ -225,9 +280,10 @@ class PrestamoDetalleScreen extends StatelessWidget {
                                 color: isDark ? Colors.grey.shade400 : Colors.grey,
                               ),
                             ),
-                            if (detalle.devolucionDetalles != null && detalle.devolucionDetalles!.isNotEmpty)
+                            // ✅ NUEVO: Obtener devoluciones según tipo de préstamo
+                            if (_obtenerDevoluciones(detalle).isNotEmpty)
                               Text(
-                                'Devuelto: ${detalle.devolucionDetalles!.fold<int>(0, (sum, d) => sum + d.cantidadDevuelta)} unidades',
+                                'Devuelto: ${_calcularTotalDevuelto(detalle)} unidades',
                                 style: TextStyle(
                                   fontSize: 12,
                                   color: Colors.green.shade600,

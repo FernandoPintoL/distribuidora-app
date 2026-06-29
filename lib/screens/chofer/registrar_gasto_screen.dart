@@ -290,10 +290,13 @@ class _RegistrarGastoScreenState extends State<RegistrarGastoScreen> {
       );
       Navigator.pop(context);
     } else {
+      final errorMsg = gastoProvider.errorMessage?.toString() ?? 'Error desconocido';
+      debugPrint('❌ Error registrando gasto: $errorMsg');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('❌ Error: ${gastoProvider.errorMessage}'),
+          content: Text('❌ Error: $errorMsg'),
           backgroundColor: Colors.red,
+          duration: const Duration(seconds: 3),
         ),
       );
     }

@@ -172,7 +172,7 @@ class PrestamosProvider extends ChangeNotifier {
         data: payload,
       );
 
-      if (response.statusCode == 200) {
+      if (response.statusCode == 201 || response.statusCode == 200) {
         _prestamosClientes.removeWhere((p) => p.id == prestamoId);
         notifyListeners();
         return true;
@@ -196,7 +196,7 @@ class PrestamosProvider extends ChangeNotifier {
         data: payload,
       );
 
-      if (response.statusCode == 200) {
+      if (response.statusCode == 201 || response.statusCode == 200) {
         _prestamosEventos.removeWhere((p) => p.id == prestamoId);
         notifyListeners();
         return true;
@@ -220,7 +220,7 @@ class PrestamosProvider extends ChangeNotifier {
         data: payload,
       );
 
-      if (response.statusCode == 200) {
+      if (response.statusCode == 201 || response.statusCode == 200) {
         _prestamosProveedores.removeWhere((p) => p.id == prestamoId);
         notifyListeners();
         return true;

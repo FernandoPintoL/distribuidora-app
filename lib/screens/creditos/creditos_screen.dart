@@ -1,10 +1,9 @@
 ﻿import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../../config/app_colors.dart';
-import '../../config/app_gradients.dart';
 import '../../config/app_text_styles.dart';
 import '../../models/credito.dart';
-import '../../extensions/theme_extension.dart';
+import '../../models/credito_cliente.dart';
 import '../../widgets/widgets.dart';
 
 /// Pantalla para visualizar crÃ©ditos del cliente
@@ -34,40 +33,50 @@ class _CreditosScreenState extends State<CreditosScreen>
     fechaUltimaActualizacion: DateTime.now(),
   );
 
-  final List<CuentaPorCobrar> _cuentasPendientes = [
-    CuentaPorCobrar(
+  final List<CreditoClienteCuenta> _cuentasPendientes = [
+    CreditoClienteCuenta(
       id: 1,
-      clienteId: 1,
       ventaId: 100,
       montoOriginal: 5000,
       saldoPendiente: 2500,
       diasVencido: 5,
-      fechaVencimiento: DateTime.now().subtract(const Duration(days: 5)),
+      fechaVencimiento: '2024-12-15',
       estado: 'vencida',
-      clienteNombre: 'Cliente A',
-      ventaNumero: 'V-001',
+      venta: VentaInfo(
+        id: 100,
+        numero: 'V-001',
+        fecha: DateTime.now().subtract(const Duration(days: 5)).toString(),
+        total: 5000,
+      ),
       pagos: [
-        Pago(
+        PagoCredito(
           id: 1,
-          cuentaPorCobrarId: 1,
+          ventaId: 100,
           monto: 2500,
-          tipoPago: 'efectivo',
+          tipoPagoId: 1,
           numeroRecibo: 'REC-001',
-          fechaPago: DateTime.now().subtract(const Duration(days: 10)),
+          fechaPago: DateTime.now().subtract(const Duration(days: 10)).toString(),
+          observaciones: null,
+          usuarioId: null,
+          tipoPago: null,
+          usuario: null,
         ),
       ],
     ),
-    CuentaPorCobrar(
+    CreditoClienteCuenta(
       id: 2,
-      clienteId: 1,
       ventaId: 101,
       montoOriginal: 8000,
       saldoPendiente: 8000,
       diasVencido: 0,
-      fechaVencimiento: DateTime.now().add(const Duration(days: 10)),
+      fechaVencimiento: DateTime.now().add(const Duration(days: 10)).toString(),
       estado: 'pendiente',
-      clienteNombre: 'Cliente A',
-      ventaNumero: 'V-002',
+      venta: VentaInfo(
+        id: 101,
+        numero: 'V-002',
+        fecha: DateTime.now().toString(),
+        total: 8000,
+      ),
     ),
   ];
 
@@ -86,9 +95,7 @@ class _CreditosScreenState extends State<CreditosScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: CustomGradientAppBar(
-        title: 'Mis CrÃ©ditos',
-      ),
+      appBar: CustomGradientAppBar(title: 'Mis CrÃ©ditos'),
       body: Column(
         children: [
           // âœ… Card de resumen de crÃ©dito
@@ -421,7 +428,7 @@ class _CreditosScreenState extends State<CreditosScreen>
     final todosPagos = _cuentasPendientes
         .expand((c) => c.pagos ?? [])
         .toList()
-        .cast<Pago>();
+        .cast<PagoCredito>();
 
     if (todosPagos.isEmpty) {
       return Center(
@@ -450,8 +457,8 @@ class _CreditosScreenState extends State<CreditosScreen>
   }
 
   /// Card de cuenta por cobrar
-  Widget _buildCuentaCard(CuentaPorCobrar cuenta) {
-    final estaVencida = cuenta.estaVencida;
+  Widget _buildCuentaCard(CreditoClienteCuenta cuenta) {
+    final estaVencida = cuenta.diasVencido != null && cuenta.diasVencido! > 0;
     final colorVencimiento = estaVencida ? Colors.red : Colors.orange;
 
     return Card(
@@ -469,20 +476,12 @@ class _CreditosScreenState extends State<CreditosScreen>
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Venta ${cuenta.ventaNumero ?? '#${cuenta.ventaId}'}',
+                      'Venta ${cuenta.venta?.numero ?? '#${cuenta.ventaId}'}',
                       style: TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: AppTextStyles.bodyMedium(context).fontSize!,
                       ),
                     ),
-                    if (cuenta.clienteNombre != null)
-                      Text(
-                        cuenta.clienteNombre!,
-                        style: TextStyle(
-                          fontSize: AppTextStyles.bodySmall(context).fontSize!,
-                          color: Colors.grey[600],
-                        ),
-                      ),
                   ],
                 ),
                 Container(
@@ -559,7 +558,7 @@ class _CreditosScreenState extends State<CreditosScreen>
                       ),
                     ),
                     Text(
-                      '${cuenta.porcentajePagado.toStringAsFixed(0)}%',
+                      '${(((cuenta.montoOriginal ?? 0) - (cuenta.saldoPendiente ?? 0)) / (cuenta.montoOriginal ?? 1) * 100).toStringAsFixed(0)}%',
                       style: const TextStyle(
                         fontWeight: FontWeight.bold,
                         color: Colors.green,
@@ -575,7 +574,7 @@ class _CreditosScreenState extends State<CreditosScreen>
             ClipRRect(
               borderRadius: BorderRadius.circular(4),
               child: LinearProgressIndicator(
-                value: cuenta.porcentajePagado / 100,
+                value: (((cuenta.montoOriginal ?? 0) - (cuenta.saldoPendiente ?? 0)) / (cuenta.montoOriginal ?? 1)).clamp(0.0, 1.0),
                 minHeight: 6,
                 backgroundColor: Colors.grey[300],
                 valueColor: const AlwaysStoppedAnimation<Color>(Colors.green),
@@ -589,7 +588,7 @@ class _CreditosScreenState extends State<CreditosScreen>
                 Icon(Icons.calendar_today, size: 14, color: Colors.grey[600]),
                 const SizedBox(width: 6),
                 Text(
-                  'Vence: ${DateFormat('dd/MM/yyyy').format(cuenta.fechaVencimiento)}',
+                  'Vence: ${cuenta.fechaVencimiento != null ? DateFormat('dd/MM/yyyy').format(DateTime.parse(cuenta.fechaVencimiento!)) : 'Sin fecha'}',
                   style: TextStyle(
                     fontSize: AppTextStyles.labelSmall(context).fontSize!,
                     color: Colors.grey[600],
@@ -625,7 +624,7 @@ class _CreditosScreenState extends State<CreditosScreen>
   }
 
   /// Card de pago
-  Widget _buildPagoCard(Pago pago) {
+  Widget _buildPagoCard(PagoCredito pago) {
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
       child: Padding(
@@ -653,14 +652,14 @@ class _CreditosScreenState extends State<CreditosScreen>
                     ),
                   ),
                   Text(
-                    '${pago.tipoPago.toUpperCase()} â€¢ ${pago.numeroRecibo ?? 'Sin recibo'}',
+                    '${pago.tipoPago?.nombre?.toUpperCase() ?? 'N/A'} â€¢ ${pago.numeroRecibo ?? 'Sin recibo'}',
                     style: TextStyle(
                       fontSize: AppTextStyles.labelSmall(context).fontSize!,
                       color: Colors.grey[600],
                     ),
                   ),
                   Text(
-                    DateFormat('dd/MM/yyyy HH:mm').format(pago.fechaPago),
+                    pago.fechaPago ?? 'Sin fecha',
                     style: TextStyle(
                       fontSize: AppTextStyles.labelSmall(context).fontSize!,
                       color: Colors.grey[500],
@@ -669,9 +668,9 @@ class _CreditosScreenState extends State<CreditosScreen>
                 ],
               ),
             ),
-            if (pago.usuarioNombre != null)
+            if (pago.usuario?.name != null)
               Text(
-                pago.usuarioNombre!,
+                pago.usuario!.name!,
                 style: TextStyle(
                   fontSize: AppTextStyles.labelSmall(context).fontSize!,
                   color: Colors.grey[600],
@@ -755,4 +754,3 @@ class _CreditosScreenState extends State<CreditosScreen>
     );
   }
 }
-

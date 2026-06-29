@@ -4,6 +4,7 @@ import '../../widgets/widgets.dart';
 import '../../widgets/custom_time_picker_dialog.dart';
 import '../../config/config.dart';
 import '../../extensions/theme_extension.dart';
+import '../../utils/date_picker_utils.dart';
 
 class FechaHoraEntregaScreen extends StatefulWidget {
   final ClientAddress? direccion; // Nullable para soportar PICKUP
@@ -49,7 +50,7 @@ class _FechaHoraEntregaScreenState extends State<FechaHoraEntregaScreen> {
     ); // Hoy es el mÃ­nimo
     final DateTime lastDate = now.add(const Duration(days: 30));
 
-    final DateTime? picked = await showDatePicker(
+    final DateTime? picked = await DatePickerUtils.showThemedDatePicker(
       context: context,
       initialDate: _fechaSeleccionada ?? firstDate,
       firstDate: firstDate,

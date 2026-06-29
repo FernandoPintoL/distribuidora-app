@@ -202,6 +202,7 @@ class PrestamoDetalle {
   final String? estado;
   final Prestable? prestable;
   final List<DevolucionDetalle>? devolucionDetalles;
+  final List<PrestamoClienteAlmacen>? almacenes;
 
   PrestamoDetalle({
     required this.id,
@@ -211,6 +212,7 @@ class PrestamoDetalle {
     this.estado,
     this.prestable,
     this.devolucionDetalles,
+    this.almacenes,
   });
 
   factory PrestamoDetalle.fromJson(Map<String, dynamic> json) {
@@ -228,6 +230,9 @@ class PrestamoDetalle {
           : null,
       devolucionDetalles: (json['devolucion_detalles'] as List?)
           ?.map((d) => DevolucionDetalle.fromJson(d as Map<String, dynamic>))
+          .toList(),
+      almacenes: (json['almacenes'] as List?)
+          ?.map((a) => PrestamoClienteAlmacen.fromJson(a as Map<String, dynamic>))
           .toList(),
     );
   }
@@ -266,7 +271,6 @@ class DevolucionDetalle {
   final int id;
   final int cantidadDevuelta;
   final int cantidadDaniadaTotal;
-  final int? cantidadDaniadaParcial;
   final String? montoCobradoDanio;
   final String? montoGarantiaDevuelta;
   final String? montoExcedidoDetalle;
@@ -277,7 +281,6 @@ class DevolucionDetalle {
     required this.id,
     required this.cantidadDevuelta,
     required this.cantidadDaniadaTotal,
-    this.cantidadDaniadaParcial,
     this.montoCobradoDanio,
     this.montoGarantiaDevuelta,
     this.montoExcedidoDetalle,
@@ -290,7 +293,6 @@ class DevolucionDetalle {
       id: json['id'] as int? ?? 0,
       cantidadDevuelta: json['cantidad_devuelta'] as int? ?? 0,
       cantidadDaniadaTotal: json['cantidad_dañada_total'] as int? ?? 0,
-      cantidadDaniadaParcial: json['cantidad_dañada_parcial'] as int?,
       montoCobradoDanio: json['monto_cobrado_daño'] as String?,
       montoGarantiaDevuelta: json['monto_garantia_devuelta'] as String?,
       montoExcedidoDetalle: json['monto_excedido_detalle'] as String?,
@@ -438,6 +440,38 @@ class VehiculoPrestamo {
       createdAt: json['created_at'] as String?,
       updatedAt: json['updated_at'] as String?,
       localidadId: json['localidad_id'] as int?,
+    );
+  }
+}
+
+class PrestamoClienteAlmacen {
+  final int id;
+  final int prestamoClienteDetalleId;
+  final int almacenesPrestasblesId;
+  final int cantidad;
+  final bool esProveedor;
+  final String? createdAt;
+  final String? updatedAt;
+
+  PrestamoClienteAlmacen({
+    required this.id,
+    required this.prestamoClienteDetalleId,
+    required this.almacenesPrestasblesId,
+    required this.cantidad,
+    this.esProveedor = false,
+    this.createdAt,
+    this.updatedAt,
+  });
+
+  factory PrestamoClienteAlmacen.fromJson(Map<String, dynamic> json) {
+    return PrestamoClienteAlmacen(
+      id: json['id'] as int? ?? 0,
+      prestamoClienteDetalleId: json['prestamo_cliente_detalle_id'] as int? ?? 0,
+      almacenesPrestasblesId: json['almacenes_prestables_id'] as int? ?? 0,
+      cantidad: json['cantidad'] as int? ?? 0,
+      esProveedor: json['es_proveedor'] as bool? ?? false,
+      createdAt: json['created_at'] as String?,
+      updatedAt: json['updated_at'] as String?,
     );
   }
 }

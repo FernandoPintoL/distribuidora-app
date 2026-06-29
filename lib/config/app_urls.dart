@@ -5,6 +5,7 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 /// Maneja automáticamente cambios entre desarrollo y producción
 class AppUrls {
   static late String _baseUrl;
+  static late String _baseUrlWeb;
   static late String _baseUrlImg;
   static late String _publicPricesUrl;
   static late String _publicStockUrl;
@@ -12,6 +13,7 @@ class AppUrls {
   /// Inicializar URLs desde .env (llamar en main.dart)
   static void initialize() {
     _baseUrl = dotenv.env['BASE_URL'] ?? 'http://192.168.100.22:8000/api';
+    _baseUrlWeb = dotenv.env['BASE_URL_WEB'] ?? 'http://192.168.100.22:8000';
     _baseUrlImg =
         dotenv.env['BASE_URL_IMG'] ?? 'http://192.168.100.22:8000/storage/';
     _publicPricesUrl =
@@ -27,6 +29,9 @@ class AppUrls {
   /// URL base para la API
   static String get baseUrl => _baseUrl;
 
+  /// URL base para la web (sin /api)
+  static String get baseUrlWeb => _baseUrlWeb;
+
   /// URL base para imágenes
   static String get baseUrlImg => _baseUrlImg;
 
@@ -40,6 +45,7 @@ class AppUrls {
   static void debugPrintUrls() {
     debugPrint('🌐 ============= URLs Configuration =============');
     debugPrint('📍 Base URL: $_baseUrl');
+    debugPrint('🌐 Base URL Web: $_baseUrlWeb');
     debugPrint('🖼️  Images URL: $_baseUrlImg');
     debugPrint('💰 Public Prices URL: $_publicPricesUrl');
     debugPrint('📦 Public Stock URL: $_publicStockUrl');

@@ -96,6 +96,7 @@ class PrestamoProveedorDetalle {
   final String? almacenesIds;
   final Prestable? prestable;
   final List<DevolucionProveedorDetalle>? devolucionDetalles;
+  final List<PrestamoProveedorAlmacen>? almacenes;
 
   PrestamoProveedorDetalle({
     required this.id,
@@ -110,6 +111,7 @@ class PrestamoProveedorDetalle {
     this.almacenesIds,
     this.prestable,
     this.devolucionDetalles,
+    this.almacenes,
   });
 
   factory PrestamoProveedorDetalle.fromJson(Map<String, dynamic> json) {
@@ -130,6 +132,10 @@ class PrestamoProveedorDetalle {
       devolucionDetalles: (json['devolucion_detalles'] as List?)
           ?.map((d) => DevolucionProveedorDetalle.fromJson(
               d as Map<String, dynamic>))
+          .toList(),
+      // ✅ NUEVO: Parsear almacenes
+      almacenes: (json['almacenes'] as List?)
+          ?.map((a) => PrestamoProveedorAlmacen.fromJson(a as Map<String, dynamic>))
           .toList(),
     );
   }
@@ -178,6 +184,39 @@ class DevolucionProveedorDetalle {
       cantidadDaniadaTotal: json['cantidad_dañada_total'] as int?,
       montoCobradoDanio: json['monto_cobrado_daño'] as String?,
       montoGarantiaDevuelta: json['monto_garantia_devuelta'] as String?,
+    );
+  }
+}
+
+// ✅ NUEVO: Almacenes en los que se distribuyó un préstamo de proveedor
+class PrestamoProveedorAlmacen {
+  final int id;
+  final int prestamoProveedorDetalleId;
+  final int almacenesPrestasblesId;
+  final int cantidad;
+  final bool esProveedor;
+  final String? createdAt;
+  final String? updatedAt;
+
+  PrestamoProveedorAlmacen({
+    required this.id,
+    required this.prestamoProveedorDetalleId,
+    required this.almacenesPrestasblesId,
+    required this.cantidad,
+    required this.esProveedor,
+    this.createdAt,
+    this.updatedAt,
+  });
+
+  factory PrestamoProveedorAlmacen.fromJson(Map<String, dynamic> json) {
+    return PrestamoProveedorAlmacen(
+      id: json['id'] as int? ?? 0,
+      prestamoProveedorDetalleId: json['prestamo_proveedor_detalle_id'] as int? ?? 0,
+      almacenesPrestasblesId: json['almacenes_prestables_id'] as int? ?? 0,
+      cantidad: json['cantidad'] as int? ?? 0,
+      esProveedor: json['es_proveedor'] as bool? ?? false,
+      createdAt: json['created_at'] as String?,
+      updatedAt: json['updated_at'] as String?,
     );
   }
 }

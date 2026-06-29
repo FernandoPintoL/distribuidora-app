@@ -14,8 +14,13 @@ import '../notifications_screen.dart';
 /// - Listado de entregas asignadas
 /// - Listado de préstamos asignados (clientes, eventos, proveedores)
 /// - Acceso rápido a perfil
+///
+/// Parámetros opcionales:
+/// - showBackButton: si true, muestra botón de regreso en lugar de menú de usuario
 class HomeChoferScreen extends StatefulWidget {
-  const HomeChoferScreen({super.key});
+  final bool showBackButton;
+
+  const HomeChoferScreen({super.key, this.showBackButton = false});
 
   @override
   State<HomeChoferScreen> createState() => _HomeChoferScreenState();
@@ -109,6 +114,12 @@ class _HomeChoferScreenState extends State<HomeChoferScreen>
     return AppBar(
       title: const Text('Bienvenido!'),
       elevation: 0,
+      leading: widget.showBackButton
+          ? IconButton(
+              icon: const Icon(Icons.arrow_back),
+              onPressed: () => Navigator.of(context).pop(),
+            )
+          : null,
       actions: [
         // Notificaciones
         Consumer<NotificationProvider>(
@@ -155,42 +166,43 @@ class _HomeChoferScreenState extends State<HomeChoferScreen>
             );
           },
         ),
-        // Menú de usuario (Perfil y Logout)
-        PopupMenuButton<String>(
-          icon: const Icon(Icons.account_circle),
-          onSelected: (value) async {
-            if (value == 'perfil') {
-              Navigator.of(context).push(
-                MaterialPageRoute(builder: (context) => const PerfilScreen()),
-              );
-            } else if (value == 'logout') {
-              _mostrarDialogoConfirmarLogout();
-            }
-          },
-          itemBuilder: (BuildContext context) => [
-            const PopupMenuItem<String>(
-              value: 'perfil',
-              child: Row(
-                children: [
-                  Icon(Icons.person, size: 20),
-                  SizedBox(width: 12),
-                  Text('Mi Perfil'),
-                ],
-              ),
+        // Menú de usuario (solo si NO muestra botón de regreso)
+        if (!widget.showBackButton)
+          PopupMenuButton<String>(
+            icon: const Icon(Icons.account_circle),
+            onSelected: (value) async {
+              if (value == 'perfil') {
+                Navigator.of(context).push(
+                  MaterialPageRoute(builder: (context) => const PerfilScreen()),
+                );
+              } else if (value == 'logout') {
+                _mostrarDialogoConfirmarLogout();
+              }
+            },
+              itemBuilder: (BuildContext context) => [
+                const PopupMenuItem<String>(
+                  value: 'perfil',
+                  child: Row(
+                    children: [
+                      Icon(Icons.person, size: 20),
+                      SizedBox(width: 12),
+                      Text('Mi Perfil'),
+                    ],
+                  ),
+                ),
+                const PopupMenuDivider(),
+                const PopupMenuItem<String>(
+                  value: 'logout',
+                  child: Row(
+                    children: [
+                      Icon(Icons.logout, size: 20, color: Colors.red),
+                      SizedBox(width: 12),
+                      Text('Cerrar Sesión', style: TextStyle(color: Colors.red)),
+                    ],
+                  ),
+                ),
+              ],
             ),
-            const PopupMenuDivider(),
-            const PopupMenuItem<String>(
-              value: 'logout',
-              child: Row(
-                children: [
-                  Icon(Icons.logout, size: 20, color: Colors.red),
-                  SizedBox(width: 12),
-                  Text('Cerrar Sesión', style: TextStyle(color: Colors.red)),
-                ],
-              ),
-            ),
-          ],
-        ),
         const SizedBox(width: 8),
       ],
     );

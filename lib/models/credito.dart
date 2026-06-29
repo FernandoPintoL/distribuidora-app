@@ -109,7 +109,7 @@ class Credito {
 
 /// Modelo para Cuentas por Cobrar (Créditos en detalle)
 /// Representa una deuda específica de un cliente por una venta
-class CuentaPorCobrar {
+class CreditoCuenta {
   final int id;
   final int clienteId;
   final int ventaId;
@@ -122,7 +122,7 @@ class CuentaPorCobrar {
   final String? ventaNumero;
   final List<Pago>? pagos;
 
-  CuentaPorCobrar({
+  CreditoCuenta({
     required this.id,
     required this.clienteId,
     required this.ventaId,
@@ -136,8 +136,8 @@ class CuentaPorCobrar {
     this.pagos,
   });
 
-  factory CuentaPorCobrar.fromJson(Map<String, dynamic> json) {
-    return CuentaPorCobrar(
+  factory CreditoCuenta.fromJson(Map<String, dynamic> json) {
+    return CreditoCuenta(
       id: json['id'] as int,
       clienteId: json['cliente_id'] as int,
       ventaId: json['venta_id'] as int,
@@ -180,7 +180,7 @@ class CuentaPorCobrar {
   }
 
   /// Copiar con modificaciones
-  CuentaPorCobrar copyWith({
+  CreditoCuenta copyWith({
     int? id,
     int? clienteId,
     int? ventaId,
@@ -193,7 +193,7 @@ class CuentaPorCobrar {
     String? ventaNumero,
     List<Pago>? pagos,
   }) {
-    return CuentaPorCobrar(
+    return CreditoCuenta(
       id: id ?? this.id,
       clienteId: clienteId ?? this.clienteId,
       ventaId: ventaId ?? this.ventaId,

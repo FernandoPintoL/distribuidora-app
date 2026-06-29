@@ -1,7 +1,9 @@
+import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/prestamos_provider.dart';
 import '../../config/app_text_styles.dart';
+import '../../utils/date_picker_utils.dart';
 
 /// Pantalla para registrar devoluciones de préstamos
 class RegistrarDevolucionScreen extends StatefulWidget {
@@ -25,6 +27,8 @@ class _RegistrarDevolucionScreenState extends State<RegistrarDevolucionScreen> {
   late TextEditingController _observacionesController;
   late Map<int, int> _cantidadesDevoluciones;
   late Map<int, int> _cantidadesDanadas;
+  late Map<int, TextEditingController> _controladorDevoluciones;
+  late Map<int, TextEditingController> _controladorDanados;
   bool _enviando = false;
 
   @override
@@ -34,35 +38,110 @@ class _RegistrarDevolucionScreenState extends State<RegistrarDevolucionScreen> {
     _observacionesController = TextEditingController();
     _cantidadesDevoluciones = {};
     _cantidadesDanadas = {};
+    _controladorDevoluciones = {};
+    _controladorDanados = {};
 
-    // Inicializar mapa de cantidades
     _inicializarCantidades();
   }
 
   void _inicializarCantidades() {
     final detalles = widget.prestamo.detalles as List? ?? [];
-    for (var i = 0; i < detalles.length; i++) {
-      final detalle = detalles[i];
-      final detalleId = detalle['id'] as int;
-      final cantidadPrestada = (detalle['cantidad_prestada'] as int?) ?? 0;
-
-      _cantidadesDevoluciones[detalleId] = 0;
-      _cantidadesDanadas[detalleId] = 0;
+    for (var detalle in detalles) {
+      _cantidadesDevoluciones[detalle.id] = 0;
+      _cantidadesDanadas[detalle.id] = 0;
+      _controladorDevoluciones[detalle.id] = TextEditingController(text: '0');
+      _controladorDanados[detalle.id] = TextEditingController(text: '0');
     }
   }
 
   @override
   void dispose() {
     _observacionesController.dispose();
+    for (var controller in _controladorDevoluciones.values) {
+      controller.dispose();
+    }
+    for (var controller in _controladorDanados.values) {
+      controller.dispose();
+    }
     super.dispose();
+  }
+
+  void _actualizarDevolucion(int detalleId, String value) {
+    final cantidad = int.tryParse(value) ?? 0;
+    setState(() {
+      _cantidadesDevoluciones[detalleId] = cantidad;
+    });
+    _actualizarParCanastillaEmbases(detalleId, cantidad, _controladorDevoluciones, _cantidadesDevoluciones);
+  }
+
+  void _actualizarDanados(int detalleId, String value) {
+    final cantidadDanada = int.tryParse(value) ?? 0;
+    final cantidadDevueltaActual = _cantidadesDevoluciones[detalleId] ?? 0;
+    final totalAnterior = cantidadDevueltaActual + (_cantidadesDanadas[detalleId] ?? 0);
+
+    // ✅ NUEVO: Ajustar "Devolviendo" automáticamente
+    // Si el usuario ingresa dañados, se descuentan del total anterior
+    final nuevaCantidadDevuelta = totalAnterior - cantidadDanada;
+
+    setState(() {
+      _cantidadesDanadas[detalleId] = cantidadDanada;
+      _cantidadesDevoluciones[detalleId] = max(0, nuevaCantidadDevuelta); // No puede ser negativo
+    });
+
+    // Actualizar el controller visual de "Devolviendo"
+    _controladorDevoluciones[detalleId]?.text = max(0, nuevaCantidadDevuelta).toString();
+
+    _actualizarParCanastillaEmbases(detalleId, cantidadDanada, _controladorDanados, _cantidadesDanadas);
+  }
+
+  void _actualizarParCanastillaEmbases(
+    int detalleId,
+    int cantidad,
+    Map<int, TextEditingController> controllers,
+    Map<int, int> cantidades,
+  ) {
+    final detalles = widget.prestamo.detalles as List? ?? [];
+
+    dynamic detalleActual;
+    for (var d in detalles) {
+      if (d.id == detalleId) {
+        detalleActual = d;
+        break;
+      }
+    }
+
+    if (detalleActual == null) return;
+
+    final tipoPrestable = detalleActual.prestable?.tipo?.toUpperCase() ?? '';
+    final int capacidad = detalleActual.prestable?.capacidad?.toInt() ?? 1;
+
+    print('DEBUG: tipoPrestable=$tipoPrestable, capacidad=$capacidad');
+    print('DEBUG: Todos los prestables:');
+    for (var d in detalles) {
+      print('  - ${d.prestable?.nombre} (tipo: ${d.prestable?.tipo})');
+    }
+
+    if (tipoPrestable == 'CANASTILLA') {
+      print('DEBUG: Es canastilla, buscando embase...');
+      for (var detalle in detalles) {
+        final tipoOtro = detalle.prestable?.tipo?.toUpperCase() ?? '';
+        if (tipoOtro == 'EMBASES') {
+          print('DEBUG: Encontrado embase: ${detalle.prestable?.nombre}');
+          final nuevoValor = cantidad * capacidad;
+          setState(() {
+            cantidades[detalle.id] = nuevoValor;
+          });
+          controllers[detalle.id]?.text = nuevoValor.toString();
+          break;
+        }
+      }
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Registrar Devolución'),
-      ),
+      appBar: AppBar(title: const Text('Registrar Devolución')),
       body: Form(
         key: _formKey,
         child: SingleChildScrollView(
@@ -75,10 +154,7 @@ class _RegistrarDevolucionScreenState extends State<RegistrarDevolucionScreen> {
               const SizedBox(height: 20),
 
               // Detalles para devolver
-              Text(
-                'Items a Devolver',
-                style: AppTextStyles.titleMedium(context),
-              ),
+              Text('Items a Devolver'),
               const SizedBox(height: 12),
               _buildDetallesDevolucion(),
               const SizedBox(height: 20),
@@ -96,9 +172,7 @@ class _RegistrarDevolucionScreenState extends State<RegistrarDevolucionScreen> {
                       ? const SizedBox(
                           width: 20,
                           height: 20,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                          ),
+                          child: CircularProgressIndicator(strokeWidth: 2),
                         )
                       : const Icon(Icons.check_circle),
                   label: Text(
@@ -117,29 +191,18 @@ class _RegistrarDevolucionScreenState extends State<RegistrarDevolucionScreen> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     return Card(
       elevation: 1,
-      color: isDark ? Theme.of(context).cardColor : Colors.white,  // ✅ Modo oscuro
       child: Padding(
         padding: const EdgeInsets.all(12),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              'Fecha de Devolución',
-              style: AppTextStyles.labelLarge(context),
-            ),
-            const SizedBox(height: 8),
+            Text('Fecha de Devolución'),
             ListTile(
-              leading: Icon(
-                Icons.calendar_today,
-                color: Theme.of(context).colorScheme.primary,
-              ),
+              leading: Icon(Icons.calendar_today),
               title: Text(
                 '${_fechaDevolucion.day}/${_fechaDevolucion.month}/${_fechaDevolucion.year}',
               ),
-              trailing: Icon(
-                Icons.edit,
-                color: Theme.of(context).colorScheme.primary,
-              ),
+              trailing: Icon(Icons.edit),
               onTap: () => _selectFecha(context),
             ),
           ],
@@ -149,7 +212,7 @@ class _RegistrarDevolucionScreenState extends State<RegistrarDevolucionScreen> {
   }
 
   Future<void> _selectFecha(BuildContext context) async {
-    final picked = await showDatePicker(
+    final picked = await DatePickerUtils.showThemedDatePicker(
       context: context,
       initialDate: _fechaDevolucion,
       firstDate: DateTime(2024),
@@ -171,36 +234,31 @@ class _RegistrarDevolucionScreenState extends State<RegistrarDevolucionScreen> {
       children: detalles.asMap().entries.map((entry) {
         final index = entry.key;
         final detalle = entry.value;
-        final detalleId = detalle['id'] as int;
-        final cantidadPrestada = (detalle['cantidad_prestada'] as int?) ?? 0;
-        final prestableName = detalle['prestable']?['nombre'] ?? 'N/A';
+        final detalleId = detalle.id;
+        final cantidadPrestada = detalle.cantidadPrestada;
+        final prestableName = detalle.prestable?.nombre ?? 'N/A';
+        final capacidad_prestable = detalle.prestable?.capacidad ?? 0;
 
         return Card(
           margin: const EdgeInsets.only(bottom: 12),
-          color: isDark ? Theme.of(context).cardColor : Colors.white,  // ✅ Modo oscuro
+          color: isDark
+              ? Theme.of(context).cardColor
+              : Colors.white, // ✅ Modo oscuro
           child: Padding(
             padding: const EdgeInsets.all(12),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  prestableName,
-                  style: AppTextStyles.labelLarge(context),
-                ),
-                Text(
-                  'Prestado: $cantidadPrestada unidades',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: isDark ? Colors.grey.shade400 : Colors.grey,
-                  ),
-                ),
+                Text(prestableName),
+                Text('Capacidad: $capacidad_prestable unidades'),
+                Text('Prestado: $cantidadPrestada unidades'),
                 const SizedBox(height: 12),
                 Row(
                   children: [
                     // Cantidad devuelta
                     Expanded(
                       child: TextFormField(
-                        initialValue: '0',
+                        controller: _controladorDevoluciones[detalleId],
                         keyboardType: TextInputType.number,
                         decoration: InputDecoration(
                           labelText: 'Devolviendo',
@@ -208,22 +266,19 @@ class _RegistrarDevolucionScreenState extends State<RegistrarDevolucionScreen> {
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(8),
                           ),
-                          fillColor: isDark ? Colors.grey.shade800 : Colors.white,  // ✅ Modo oscuro
+                          fillColor: isDark
+                              ? Colors.grey.shade800
+                              : Colors.white,
                           filled: true,
                         ),
-                        onChanged: (value) {
-                          setState(() {
-                            _cantidadesDevoluciones[detalleId] =
-                                int.tryParse(value) ?? 0;
-                          });
-                        },
+                        onChanged: (value) => _actualizarDevolucion(detalleId, value),
                       ),
                     ),
                     const SizedBox(width: 12),
                     // Cantidad dañada
                     Expanded(
                       child: TextFormField(
-                        initialValue: '0',
+                        controller: _controladorDanados[detalleId],
                         keyboardType: TextInputType.number,
                         decoration: InputDecoration(
                           labelText: 'Dañados',
@@ -231,15 +286,12 @@ class _RegistrarDevolucionScreenState extends State<RegistrarDevolucionScreen> {
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(8),
                           ),
-                          fillColor: isDark ? Colors.grey.shade800 : Colors.white,  // ✅ Modo oscuro
+                          fillColor: isDark
+                              ? Colors.grey.shade800
+                              : Colors.white,
                           filled: true,
                         ),
-                        onChanged: (value) {
-                          setState(() {
-                            _cantidadesDanadas[detalleId] =
-                                int.tryParse(value) ?? 0;
-                          });
-                        },
+                        onChanged: (value) => _actualizarDanados(detalleId, value),
                       ),
                     ),
                   ],
@@ -260,10 +312,10 @@ class _RegistrarDevolucionScreenState extends State<RegistrarDevolucionScreen> {
       decoration: InputDecoration(
         labelText: 'Observaciones',
         hintText: 'Agregar observaciones sobre la devolución (opcional)',
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8),
-        ),
-        fillColor: isDark ? Colors.grey.shade800 : Colors.white,  // ✅ Modo oscuro
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+        fillColor: isDark
+            ? Colors.grey.shade800
+            : Colors.white, // ✅ Modo oscuro
         filled: true,
       ),
     );
@@ -276,18 +328,61 @@ class _RegistrarDevolucionScreenState extends State<RegistrarDevolucionScreen> {
 
     try {
       final detalles = widget.prestamo.detalles as List? ?? [];
+
+      // Construir payload con ID del préstamo según tipo
       final payload = {
+        // ✅ ID del préstamo según tipo (requerido por API)
+        _getPrestamIdKey(): widget.prestamo.id,
         'fecha_devolucion': _fechaDevolucion.toString().split(' ')[0],
         'observaciones': _observacionesController.text,
+        // ✅ NUEVO: Flag para devolución automática por almacén
+        'devolucion_automatica': true,
         'detalles': detalles.map((detalle) {
-          final detalleId = detalle['id'] as int;
+          final detalleId = detalle.id;
           final keyName = _getKeyNameForDetalle();
+          final cantidadDevuelta = _cantidadesDevoluciones[detalleId] ?? 0; // Solo los buenos
+          final cantidadDanada = _cantidadesDanadas[detalleId] ?? 0; // Solo los dañados
+
+          // ✅ NUEVO: Enviar almacenes que ya vienen en el modelo
+          final almacenesDelDetalle = detalle.almacenes ?? [];
+
+          // Distribuir cantidad a devolver SECUENCIALMENTE entre almacenes (FIFO)
+          // Se completa un almacén antes de pasar al siguiente
+          final devolucionAlmacenes = <Map<String, dynamic>>[];
+          if (almacenesDelDetalle.isNotEmpty && cantidadDevuelta > 0) {
+            int cantidadRestante = cantidadDevuelta;
+
+            for (final almacen in almacenesDelDetalle) {
+              if (cantidadRestante <= 0) break;
+
+              final cantidadPrestada = (almacen.cantidad as int);
+              final cantidadDeEsteAlmacen = (cantidadRestante > cantidadPrestada
+                  ? cantidadPrestada
+                  : cantidadRestante);
+
+              devolucionAlmacenes.add({
+                'almacenes_prestables_id': almacen.almacenesPrestasblesId,
+                'cantidad_devuelta': cantidadDeEsteAlmacen,
+                'cantidad_dañada_total': 0,  // Se asignará al último almacén
+                'es_proveedor': almacen.esProveedor,
+              });
+
+              cantidadRestante -= cantidadDeEsteAlmacen;
+            }
+
+            // ✅ Asignar dañadas al ÚLTIMO almacén que recibió devoluciones
+            if (cantidadDanada > 0 && devolucionAlmacenes.isNotEmpty) {
+              devolucionAlmacenes.last['cantidad_dañada_total'] = cantidadDanada;
+            }
+          }
 
           return {
             keyName: detalleId,
-            'cantidad_devuelta':
-                _cantidadesDevoluciones[detalleId] ?? 0,
-            'cantidad_dañada_total': _cantidadesDanadas[detalleId] ?? 0,
+            'cantidad_devuelta': cantidadDevuelta,
+            'cantidad_dañada_parcial': 0,
+            'cantidad_dañada_total': cantidadDanada,
+            if (devolucionAlmacenes.isNotEmpty)
+              'devolucion_almacenes': devolucionAlmacenes,
           };
         }).toList(),
       };
@@ -329,6 +424,21 @@ class _RegistrarDevolucionScreenState extends State<RegistrarDevolucionScreen> {
     }
   }
 
+  /// Obtiene la clave para el ID del préstamo según el tipo
+  String _getPrestamIdKey() {
+    switch (widget.tipo) {
+      case 'cliente':
+        return 'prestamo_cliente_id';
+      case 'evento':
+        return 'prestamo_evento_id';
+      case 'proveedor':
+        return 'prestamo_proveedor_id';
+      default:
+        return 'prestamo_cliente_id';
+    }
+  }
+
+  /// Obtiene la clave para el ID del detalle del préstamo según el tipo
   String _getKeyNameForDetalle() {
     switch (widget.tipo) {
       case 'cliente':
@@ -346,8 +456,8 @@ class _RegistrarDevolucionScreenState extends State<RegistrarDevolucionScreen> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: const Text('✅ Devolución registrada exitosamente'),
-        backgroundColor: Colors.green.shade600,  // ✅ Mejor visibilidad
-        behavior: SnackBarBehavior.floating,  // ✅ Flotante para mejor UX
+        backgroundColor: Colors.green.shade600, // ✅ Mejor visibilidad
+        behavior: SnackBarBehavior.floating, // ✅ Flotante para mejor UX
       ),
     );
     Navigator.of(context).pop();
@@ -358,8 +468,8 @@ class _RegistrarDevolucionScreenState extends State<RegistrarDevolucionScreen> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text('❌ Error: $error'),
-        backgroundColor: Colors.red.shade600,  // ✅ Mejor visibilidad
-        behavior: SnackBarBehavior.floating,  // ✅ Flotante para mejor UX
+        backgroundColor: Colors.red.shade600, // ✅ Mejor visibilidad
+        behavior: SnackBarBehavior.floating, // ✅ Flotante para mejor UX
       ),
     );
   }

@@ -7,6 +7,43 @@ import 'estado_logistico.dart';
 import 'pedido.dart';
 import 'entrega_venta_confirmacion.dart';
 
+// ✅ NUEVO 2026-06-23: Clase para información de proforma relacionada a una venta
+class Proforma {
+  final int id;
+  final String numero;
+  final String? estado;
+  final DateTime? fecha;
+  final double? total;
+
+  Proforma({
+    required this.id,
+    required this.numero,
+    this.estado,
+    this.fecha,
+    this.total,
+  });
+
+  factory Proforma.fromJson(Map<String, dynamic> json) {
+    return Proforma(
+      id: json['id'] as int,
+      numero: json['numero'] as String,
+      estado: json['estado'] as String?,
+      fecha: json['fecha'] != null ? DateTime.tryParse(json['fecha'] as String) : null,
+      total: (json['total'] as num?)?.toDouble(),
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'numero': numero,
+      'estado': estado,
+      'fecha': fecha?.toIso8601String(),
+      'total': total,
+    };
+  }
+}
+
 class Venta {
   final int id;
   final String numero;
@@ -46,6 +83,10 @@ class Venta {
   final List<EntregaVentaConfirmacion> confirmaciones; // ✅ NUEVO (2026-03-05): Confirmaciones de entrega
   final Map<String, dynamic>? resumenPago; // ✅ NUEVO (2026-06-12): Resumen de pagos (estado, pendiente, fecha)
 
+  // ✅ NUEVO (2026-06-23): Información de proforma y entrega relacionadas
+  final int? proformaId; // ID de la proforma relacionada
+  final Proforma? proforma; // Proforma relacionada a esta venta (si existe)
+
   Venta({
     required this.id,
     required this.numero,
@@ -77,6 +118,8 @@ class Venta {
     this.tipoNovedad, // ✅ NUEVO
     this.confirmaciones = const [], // ✅ NUEVO
     this.resumenPago, // ✅ NUEVO: Resumen de pagos
+    this.proformaId, // ✅ NUEVO 2026-06-23: ID de proforma
+    this.proforma, // ✅ NUEVO 2026-06-23: Proforma relacionada
   });
 
   factory Venta.fromJson(Map<String, dynamic> json) {
@@ -264,6 +307,18 @@ class Venta {
       resumenPago: json['resumen_pago'] is Map<String, dynamic>
           ? json['resumen_pago'] as Map<String, dynamic>
           : null, // ✅ NUEVO: Resumen de pagos
+      // ✅ NUEVO 2026-06-23: Parsear proforma relacionada
+      proformaId: json['proforma_id'] as int?,
+      proforma: (() {
+        try {
+          if (json['proforma'] is Map<String, dynamic>) {
+            return Proforma.fromJson(json['proforma'] as Map<String, dynamic>);
+          }
+        } catch (e) {
+          debugPrint('⚠️ Error parseando proforma: $e');
+        }
+        return null;
+      })(),
     );
   }
 
@@ -321,6 +376,8 @@ class Venta {
       'canal_origen': canalOrigen,
       'politica_pago': politicaPago,
       'tipo_pago': tipoPago?.toJson(),
+      'proforma_id': proformaId, // ✅ NUEVO 2026-06-23: ID de proforma
+      'proforma': proforma?.toJson(), // ✅ NUEVO 2026-06-23: Proforma relacionada
     };
   }
 

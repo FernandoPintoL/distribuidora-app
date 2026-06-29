@@ -369,19 +369,29 @@ class PedidoCard extends StatelessWidget {
 
       switch (estado) {
         case 'PENDIENTE':
+        case 'PENDIENTE_ENVIO':
           subtitulo = '⏳ Pendiente';
           color = Colors.blue;
           break;
         case 'EN_RUTA':
+        case 'EN_CAMINO':
           subtitulo = '📍 En Ruta';
           color = Colors.purple;
           break;
         case 'ENTREGADO':
+        case 'COMPLETADO':
           subtitulo = '✅ Entregado';
           color = Colors.green;
           break;
         case 'RECHAZADA':
+        case 'RECHAZADO':
+        case 'FALLIDA':
           subtitulo = '❌ Rechazada';
+          color = Colors.red;
+          break;
+        case 'CANCELADA':
+        case 'CANCELADO':
+          subtitulo = '⛔ Cancelada';
           color = Colors.red;
           break;
         default:

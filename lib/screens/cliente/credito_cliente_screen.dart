@@ -350,7 +350,7 @@ class _CreditoClienteScreenState extends State<CreditoClienteScreen> {
     );
   }
 
-  Widget _buildCuentaCard(CuentaPorCobrar cuenta, {required bool isVencida}) {
+  Widget _buildCuentaCard(CreditoClienteCuenta cuenta, {required bool isVencida}) {
     final backgroundColor = isVencida
         ? Colors.red.withOpacity(0.05)
         : Colors.blue.withOpacity(0.05);
@@ -489,7 +489,7 @@ class _CreditoClienteScreenState extends State<CreditoClienteScreen> {
     );
   }
 
-  Widget _buildPagoCard(Pago pago) {
+  Widget _buildPagoCard(PagoCredito pago) {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(12),

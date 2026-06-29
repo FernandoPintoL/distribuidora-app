@@ -110,7 +110,8 @@ class HttpLogger {
       String bodyDisplay = '';
       if (error.requestOptions.data is String) {
         bodyDisplay = error.requestOptions.data;
-      } else if (error.requestOptions.data is Map || error.requestOptions.data is List) {
+      } else if (error.requestOptions.data is Map ||
+          error.requestOptions.data is List) {
         bodyDisplay = _prettyPrintJson(error.requestOptions.data);
       } else {
         bodyDisplay = error.requestOptions.data.toString();

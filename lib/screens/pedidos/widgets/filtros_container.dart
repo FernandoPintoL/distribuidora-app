@@ -5,6 +5,7 @@ import '../../../config/app_text_styles.dart';
 import '../../../models/models.dart';
 import '../../../providers/providers.dart';
 import '../../../extensions/theme_extension.dart';
+import '../../../utils/date_picker_utils.dart';
 
 /// ✅ Widgets para contenedores de filtros (fechas y estados)
 class FilterContainers {
@@ -424,7 +425,7 @@ class FilterContainers {
               // Botón Desde
               InkWell(
                 onTap: () async {
-                  final fecha = await showDatePicker(
+                  final fecha = await DatePickerUtils.showThemedDatePicker(
                     context: context,
                     initialDate: desde ?? DateTime.now(),
                     firstDate: minDate ?? DateTime(2020),
@@ -488,7 +489,7 @@ class FilterContainers {
               // Botón Hasta
               InkWell(
                 onTap: () async {
-                  final fecha = await showDatePicker(
+                  final fecha = await DatePickerUtils.showThemedDatePicker(
                     context: context,
                     initialDate: hasta ?? DateTime.now(),
                     firstDate: desde ?? minDate ?? DateTime(2020),
@@ -567,8 +568,63 @@ class FilterContainers {
     );
   }
 
-  /// Construir contenedor de filtros dinámicos cargados desde EstadosProvider
+  /// Contenedor dinámico de filtros con botón de limpiar
   static Widget buildDynamicFilterContainer(
+    BuildContext context,
+    ColorScheme colorScheme,
+    bool isDark,
+    String? filtroEstadoSeleccionado,
+    Function(String?) onEstadoChanged,
+    VoidCallback? onLimpiarFiltros,
+  ) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        border: Border(
+          bottom: BorderSide(color: colorScheme.outline.withOpacity(0.1)),
+        ),
+      ),
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            buildEstadosFilterChipsContent(
+              context,
+              colorScheme,
+              isDark,
+              filtroEstadoSeleccionado,
+              onEstadoChanged,
+            ),
+            if (onLimpiarFiltros != null) ...[
+              const SizedBox(width: 8),
+              IconButton(
+                style: IconButton.styleFrom(
+                  backgroundColor: colorScheme.primary,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+                icon: Icon(
+                  Icons.clear_all,
+                  size: 22,
+                  color: colorScheme.secondary,
+                ),
+                onPressed: onLimpiarFiltros,
+                tooltip: 'Limpiar filtros',
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// Contenido de chips de estados (sin Consumer para evitar reconstrucciones anidadas)
+  static Widget buildEstadosFilterChipsContent(
     BuildContext context,
     ColorScheme colorScheme,
     bool isDark,
@@ -578,27 +634,15 @@ class FilterContainers {
     return Consumer<EstadosProvider>(
       builder: (context, estadosProvider, _) {
         if (estadosProvider.isLoading && estadosProvider.estados.isEmpty) {
-          return Container(
-            width: double.infinity,
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            decoration: BoxDecoration(
-              color: isDark
-                  ? colorScheme.surface
-                  : colorScheme.surfaceContainerHighest.withOpacity(0.3),
-              border: Border(
-                bottom: BorderSide(color: colorScheme.outline.withOpacity(0.1)),
-              ),
-            ),
-            child: SizedBox(
-              height: 40,
-              child: Center(
-                child: SizedBox(
-                  width: 20,
-                  height: 20,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    color: colorScheme.primary,
-                  ),
+          return SizedBox(
+            height: 40,
+            child: Center(
+              child: SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: colorScheme.primary,
                 ),
               ),
             ),
@@ -607,58 +651,44 @@ class FilterContainers {
 
         final states = estadosProvider.estados;
 
-        return Container(
-          width: double.infinity,
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          decoration: BoxDecoration(
-            color: isDark
-                ? colorScheme.surface
-                : colorScheme.surfaceContainerHighest.withOpacity(0.3),
-            border: Border(
-              bottom: BorderSide(color: colorScheme.outline.withOpacity(0.1)),
+        return Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _buildDynamicFilterChip(
+              context: context,
+              label: 'Todos',
+              codigo: null,
+              contador: estadosProvider.stats?.total ?? 0,
+              isSelected: filtroEstadoSeleccionado == null,
+              onTap: () => onEstadoChanged(null),
+              icon: Icons.list_alt,
+              colorScheme: colorScheme,
+              isDark: isDark,
             ),
-          ),
-          child: SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: Row(
-              children: [
-                _buildDynamicFilterChip(
+            const SizedBox(width: 8),
+            ...states.map((estado) {
+              final contador = estadosProvider.getContadorEstado(
+                estado.codigo,
+              );
+              final color = _hexToColor(estado.color);
+
+              return Padding(
+                padding: const EdgeInsets.only(right: 8),
+                child: _buildDynamicFilterChip(
                   context: context,
-                  label: 'Todos',
-                  codigo: null,
-                  contador: estadosProvider.stats?.total ?? 0,
-                  isSelected: filtroEstadoSeleccionado == null,
-                  onTap: () => onEstadoChanged(null),
-                  icon: Icons.list_alt,
+                  label: estado.nombre,
+                  codigo: estado.codigo,
+                  contador: contador,
+                  isSelected: filtroEstadoSeleccionado == estado.codigo,
+                  onTap: () => onEstadoChanged(estado.codigo),
+                  icon: _getIconoParaEstado(estado.codigo),
+                  color: color,
                   colorScheme: colorScheme,
                   isDark: isDark,
                 ),
-                const SizedBox(width: 8),
-                ...states.map((estado) {
-                  final contador = estadosProvider.getContadorEstado(
-                    estado.codigo,
-                  );
-                  final color = _hexToColor(estado.color);
-
-                  return Padding(
-                    padding: const EdgeInsets.only(right: 8),
-                    child: _buildDynamicFilterChip(
-                      context: context,
-                      label: estado.nombre,
-                      codigo: estado.codigo,
-                      contador: contador,
-                      isSelected: filtroEstadoSeleccionado == estado.codigo,
-                      onTap: () => onEstadoChanged(estado.codigo),
-                      icon: _getIconoParaEstado(estado.codigo),
-                      color: color,
-                      colorScheme: colorScheme,
-                      isDark: isDark,
-                    ),
-                  );
-                }).toList(),
-              ],
-            ),
-          ),
+              );
+            }).toList(),
+          ],
         );
       },
     );
@@ -705,7 +735,7 @@ class FilterContainers {
     required ColorScheme colorScheme,
     required bool isDark,
   }) {
-    final chipColor = color ?? colorScheme.primary;
+    final chipColor = color ?? colorScheme.secondary;
 
     return Material(
       color: Colors.transparent,
@@ -716,14 +746,9 @@ class FilterContainers {
           duration: const Duration(milliseconds: 200),
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
           decoration: BoxDecoration(
-            color: isSelected
-                ? chipColor
-                : (isDark ? colorScheme.surfaceContainerHighest : Colors.white),
             borderRadius: BorderRadius.circular(20),
             border: Border.all(
-              color: isSelected
-                  ? chipColor
-                  : colorScheme.outline.withOpacity(0.3),
+              color: isSelected ? chipColor : colorScheme.primary,
               width: isSelected ? 2 : 1,
             ),
             boxShadow: isSelected
@@ -749,7 +774,7 @@ class FilterContainers {
               const SizedBox(width: 6),
               Text(
                 label,
-                style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                style: TextStyle(
                   color: isSelected
                       ? Colors.white
                       : (isDark ? Colors.white : colorScheme.onSurface),
@@ -767,7 +792,7 @@ class FilterContainers {
                 ),
                 child: Text(
                   '$contador',
-                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                  style: TextStyle(
                     color: isSelected ? Colors.white : colorScheme.onSurface,
                     fontWeight: FontWeight.bold,
                   ),

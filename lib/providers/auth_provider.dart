@@ -386,6 +386,24 @@ class AuthProvider with ChangeNotifier {
     }
   }
 
+  /// ✅ NUEVO: Verificar si el usuario tiene un permiso específico
+  bool hasPermission(String permission) {
+    if (_user?.permissions == null) return false;
+    return _user!.permissions!.contains(permission);
+  }
+
+  /// ✅ NUEVO: Verificar si el usuario tiene alguno de los permisos especificados
+  bool hasAnyPermission(List<String> permissions) {
+    if (_user?.permissions == null) return false;
+    return permissions.any((permission) => _user!.permissions!.contains(permission));
+  }
+
+  /// ✅ NUEVO: Verificar si el usuario tiene todos los permisos especificados
+  bool hasAllPermissions(List<String> permissions) {
+    if (_user?.permissions == null) return false;
+    return permissions.every((permission) => _user!.permissions!.contains(permission));
+  }
+
   /// Conectar al WebSocket después de autenticación exitosa
   /// Utiliza validación de token Sanctum contra BD de Laravel
   void _connectWebSocket(String token) {
@@ -448,12 +466,6 @@ class AuthProvider with ChangeNotifier {
     }
 
     return 'client'; // Default si no hay rol conocido
-  }
-
-  // Check if user has specific permission
-  bool hasPermission(String permission) {
-    if (_user?.permissions == null) return false;
-    return _user!.permissions!.contains(permission);
   }
 
   // Check if user has specific role

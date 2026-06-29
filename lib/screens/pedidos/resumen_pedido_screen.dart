@@ -7,6 +7,7 @@ import '../../widgets/widgets.dart';
 import '../../widgets/pedidos/direccion_selector_modal.dart';
 import '../../config/config.dart';
 import '../../extensions/theme_extension.dart';
+import '../../utils/date_picker_utils.dart';
 import 'widgets/cliente_info_widget.dart';
 import 'widgets/tipo_entrega_widget.dart';
 import 'widgets/direccion_widget.dart';
@@ -155,7 +156,7 @@ class _ResumenPedidoScreenState extends State<ResumenPedidoScreen> {
 
   // âœ… Seleccionar fecha personalizada (UI action)
   Future<void> _seleccionarFechaPersonalizada() async {
-    final DateTime? picked = await showDatePicker(
+    final DateTime? picked = await DatePickerUtils.showThemedDatePicker(
       context: context,
       initialDate: _fechaProgramada ?? DateTime.now(),
       firstDate: DateTime.now(),
