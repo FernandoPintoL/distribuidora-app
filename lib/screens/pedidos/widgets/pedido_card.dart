@@ -244,7 +244,17 @@ class PedidoCard extends StatelessWidget {
         colorScheme,
       ));
 
-      // 4. CONFIRMACIONES DE ENTREGA (si hay)
+      // 4. INFORMACIÓN DE ENTREGA ASIGNADA (si hay)
+      if (pedido.venta?.entrega != null) {
+        items.add(_buildTimelineSeparator(colorScheme));
+        items.add(_buildEntregaInfoWidget(
+          ctx,
+          pedido.venta!.entrega!,
+          colorScheme,
+        ));
+      }
+
+      // 5. CONFIRMACIONES DE ENTREGA (si hay)
       if (pedido.venta?.confirmacionesEntrega.isNotEmpty ?? false) {
         items.add(_buildTimelineSeparator(colorScheme));
         for (final confirmacion in pedido.venta!.confirmacionesEntrega) {
@@ -310,6 +320,92 @@ class PedidoCard extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  Widget _buildEntregaInfoWidget(
+    BuildContext context,
+    DetalleEntrega entrega,
+    ColorScheme colorScheme,
+  ) {
+    final color = _getEntregaStatusColor(entrega.estado);
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 8),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+        decoration: BoxDecoration(
+          color: color.withOpacity(0.1),
+          borderRadius: BorderRadius.circular(6),
+          border: Border.all(color: color.withOpacity(0.3)),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Número de entrega
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  '🚗 ${entrega.numeroEntrega}',
+                  style: TextStyle(
+                    color: color,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 12,
+                  ),
+                ),
+              ],
+            ),
+            SizedBox(height: 4),
+            // Chofer y Vehículo
+            if (entrega.choferNombre != null || entrega.vehiculoPlaca != null)
+              Text(
+                '👤 ${entrega.choferNombre ?? 'Sin chofer'} • 🚙 ${entrega.vehiculoPlaca ?? 'Sin vehículo'}',
+                style: TextStyle(
+                  color: colorScheme.onSurfaceVariant,
+                  fontSize: 10,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            if (entrega.observaciones != null && entrega.observaciones!.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.only(top: 4),
+                child: Text(
+                  entrega.observaciones!,
+                  style: TextStyle(
+                    color: colorScheme.onSurfaceVariant,
+                    fontSize: 9,
+                    fontStyle: FontStyle.italic,
+                  ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Color _getEntregaStatusColor(String estado) {
+    final upperEstado = estado.toUpperCase();
+    switch (upperEstado) {
+      case 'LISTO_PARA_ENTREGA':
+        return Colors.blue;
+      case 'EN_CAMINO':
+      case 'EN_RUTA':
+        return Colors.purple;
+      case 'ENTREGADO':
+      case 'COMPLETADO':
+        return Colors.green;
+      case 'CANCELADA':
+      case 'CANCELADO':
+      case 'FALLIDA':
+        return Colors.red;
+      default:
+        return Colors.grey;
+    }
   }
 
   Map<String, dynamic> _getProformaStatus(Pedido pedido) {
