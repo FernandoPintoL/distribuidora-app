@@ -245,6 +245,7 @@ class ProductoCardWidget extends StatelessWidget {
                           final comboItemId = comboItem['combo_item_id'] ?? 0;
                           final nombreProductoCombo =
                               _obtenerNombreComboItem(comboItemId) ?? 'Producto';
+                          debugPrint('🏷️ [ProductoCard] Nombre para mostrar: "$nombreProductoCombo" (comboItemId: $comboItemId)');
                           final isLast =
                               index == comboItemsSeleccionados!.length - 1;
                           final cantidadTotal = cantidadComponente * cantidad.toInt();
@@ -298,20 +299,32 @@ class ProductoCardWidget extends StatelessWidget {
                                     crossAxisAlignment:
                                         CrossAxisAlignment.start,
                                     children: [
-                                      Text(
-                                        nombreProductoCombo,
-                                        style: TextStyle(
-                                          fontSize: parentContext != null
-                                              ? AppTextStyles.bodySmall(
-                                                      parentContext!)
-                                                  .fontSize!
-                                              : 11,
-                                          fontWeight: FontWeight.w500,
-                                          color: Colors.blue.shade900,
+                                      if (nombreProductoCombo.isEmpty)
+                                        Container(
+                                          color: Colors.red.shade100,
+                                          child: Text(
+                                            'ERROR: Nombre vacío',
+                                            style: TextStyle(
+                                              color: Colors.red.shade700,
+                                              fontSize: 10,
+                                            ),
+                                          ),
+                                        )
+                                      else
+                                        Text(
+                                          nombreProductoCombo,
+                                          style: TextStyle(
+                                            fontSize: parentContext != null
+                                                ? AppTextStyles.bodySmall(
+                                                        parentContext!)
+                                                    .fontSize!
+                                                : 11,
+                                            fontWeight: FontWeight.w500,
+                                            color: Colors.blue.shade900,
+                                          ),
+                                          maxLines: 2,
+                                          overflow: TextOverflow.ellipsis,
                                         ),
-                                        maxLines: 2,
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
                                       const SizedBox(height: 2),
                                       Text(
                                         'Producto ID: ${comboItem['producto_id'] ?? 'N/A'}',
