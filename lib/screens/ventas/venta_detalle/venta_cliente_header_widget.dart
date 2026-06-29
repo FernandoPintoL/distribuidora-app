@@ -52,11 +52,17 @@ class VentaClienteHeaderWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
+    return Card(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      elevation: 2,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
           // Estados (Documento y Logístico) - Mejorados con colores
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -381,6 +387,7 @@ class VentaClienteHeaderWidget extends StatelessWidget {
             ),
           ),
         ],
+        ),
       ),
     );
   }

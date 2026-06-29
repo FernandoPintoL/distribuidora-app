@@ -148,18 +148,19 @@ class _VentaDetalleScreenState extends State<VentaDetalleScreen> {
                           ),
                           Flexible(
                             child: ElevatedButton.icon(
-                              onPressed: () => _navegarARegistrarOtraConfirmacion(
-                                context,
-                                venta,
+                              onPressed: () =>
+                                  _navegarARegistrarOtraConfirmacion(
+                                    context,
+                                    venta,
+                                  ),
+                              icon: const Icon(Icons.note_add, size: 16),
+                              label: const Text('Registrar otra'),
+                              style: ElevatedButton.styleFrom(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                  vertical: 8,
+                                ),
                               ),
-                            icon: const Icon(Icons.note_add, size: 16),
-                            label: const Text('Registrar otra'),
-                            style: ElevatedButton.styleFrom(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 12,
-                                vertical: 8,
-                              ),
-                            ),
                             ),
                           ),
                         ],
@@ -223,7 +224,9 @@ class _VentaDetalleScreenState extends State<VentaDetalleScreen> {
                                           color: _getEstadoPagoColor(
                                             confirmacion.estadoPago,
                                           ),
-                                          borderRadius: BorderRadius.circular(4),
+                                          borderRadius: BorderRadius.circular(
+                                            4,
+                                          ),
                                         ),
                                         child: Text(
                                           confirmacion.estadoPagoFormato,
@@ -231,8 +234,8 @@ class _VentaDetalleScreenState extends State<VentaDetalleScreen> {
                                             color: Colors.white,
                                             fontWeight: FontWeight.bold,
                                             fontSize: 9,
+                                          ),
                                         ),
-                                      ),
                                       ),
                                     ),
                                   ],
@@ -557,50 +560,11 @@ class _VentaDetalleScreenState extends State<VentaDetalleScreen> {
     }
   }
 
-  Color _getEstadoDocumentoColor(String? estado) {
-    switch (estado?.toUpperCase()) {
-      case 'APROBADO':
-        return Colors.green;
-      case 'RECHAZADO':
-        return Colors.red;
-      case 'PENDIENTE':
-        return Colors.orange;
-      case 'ANULADO':
-        return Colors.grey;
-      default:
-        return Colors.blue;
-    }
-  }
-
-  Color _getEstadoLogisticoColor(String? codigo) {
-    switch (codigo?.toUpperCase()) {
-      case 'PENDIENTE_ENVIO':
-        return Colors.brown;
-      case 'PROBLEMAS':
-        return Colors.deepOrangeAccent.shade200;
-      case 'EN_TRANSITO':
-        return Colors.purple;
-      case 'ENTREGADA':
-        return Colors.green;
-      case 'RECHAZADO':
-        return Colors.red;
-      case 'EN_TRANSITO':
-        return Colors.blueAccent;
-      default:
-        return Colors.blue;
-    }
-  }
-
   Widget _buildPaymentInfoRow(String label, String value, {Color? color}) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Expanded(
-          child: Text(
-            label,
-            overflow: TextOverflow.ellipsis,
-          ),
-        ),
+        Expanded(child: Text(label, overflow: TextOverflow.ellipsis)),
         const SizedBox(width: 8),
         Expanded(
           child: Text(
