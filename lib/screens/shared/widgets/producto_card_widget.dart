@@ -52,6 +52,17 @@ class ProductoCardWidget extends StatelessWidget {
     }
   }
 
+  String? _obtenerSkuComboItem(int comboItemId) {
+    if (comboItems == null) return null;
+    try {
+      final comboItemsList = comboItems as List;
+      final comboItem = comboItemsList.firstWhere((c) => c.id == comboItemId);
+      return comboItem.producto?.sku;
+    } catch (e) {
+      return null;
+    }
+  }
+
   String? _obtenerImagenComboItem(int comboItemId) {
     if (comboItems == null) {
       debugPrint(
@@ -121,10 +132,7 @@ class ProductoCardWidget extends StatelessWidget {
       color: isDark ? colorScheme.surface : Colors.white,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
-        side: BorderSide(
-          color: colorScheme.outline.withAlpha(20),
-          width: 1,
-        ),
+        side: BorderSide(color: colorScheme.outline.withAlpha(20), width: 1),
       ),
       child: Column(
         children: [
@@ -207,8 +215,9 @@ class ProductoCardWidget extends StatelessWidget {
                                 'Sub.: Bs. ${subtotal.toStringAsFixed(2)}',
                                 style: TextStyle(
                                   fontWeight: FontWeight.bold,
-                                  color: Theme.of(context).brightness ==
-                                      Brightness.dark
+                                  color:
+                                      Theme.of(context).brightness ==
+                                          Brightness.dark
                                       ? Colors.greenAccent
                                       : Colors.green,
                                 ),
@@ -226,17 +235,14 @@ class ProductoCardWidget extends StatelessWidget {
           ),
           // SECCIÓN 2: Componentes del combo
           if (tieneCombo) ...[
-            Divider(
-              height: 1,
-              color: colorScheme.outline.withAlpha(40),
-            ),
+            Divider(height: 1, color: colorScheme.outline.withAlpha(40)),
             Container(
               padding: const EdgeInsets.symmetric(
                 horizontal: 16.0,
                 vertical: 12,
               ),
               decoration: BoxDecoration(
-                color: AppColors.secondary.withAlpha(isDark ? 20 : 10),
+                color: AppColors.secondary.withAlpha(10),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -244,7 +250,7 @@ class ProductoCardWidget extends StatelessWidget {
                   Row(
                     children: [
                       Icon(
-                        Icons.shopping_cart_checkout,
+                        Icons.shopping_cart_outlined,
                         color: AppColors.secondary,
                         size: 18,
                       ),
@@ -255,10 +261,6 @@ class ProductoCardWidget extends StatelessWidget {
                           style: TextStyle(
                             fontWeight: FontWeight.bold,
                             color: AppColors.secondary,
-                            fontSize: parentContext != null
-                                ? AppTextStyles.bodySmall(parentContext!)
-                                    .fontSize!
-                                : 12,
                           ),
                         ),
                       ),
@@ -275,8 +277,7 @@ class ProductoCardWidget extends StatelessWidget {
                     final comboItemId = comboItem['combo_item_id'] ?? 0;
                     final nombreProductoCombo =
                         _obtenerNombreComboItem(comboItemId) ?? 'Producto';
-                    final isLast =
-                        index == comboItemsSeleccionados!.length - 1;
+                    final isLast = index == comboItemsSeleccionados!.length - 1;
                     final cantidadTotal = cantidadComponente * cantidad.toInt();
                     final imagenUrl = _obtenerImagenComboItem(comboItemId);
                     final tieneImagen =
@@ -300,10 +301,10 @@ class ProductoCardWidget extends StatelessWidget {
                                       width: 48,
                                       height: 48,
                                       decoration: BoxDecoration(
-                                        color: AppColors.secondary
-                                            .withAlpha(30),
-                                        borderRadius:
-                                            BorderRadius.circular(6),
+                                        color: AppColors.secondary.withAlpha(
+                                          30,
+                                        ),
+                                        borderRadius: BorderRadius.circular(6),
                                       ),
                                       child: Icon(
                                         Icons.image,
@@ -316,17 +317,11 @@ class ProductoCardWidget extends StatelessWidget {
                               ),
                             Expanded(
                               child: Column(
-                                crossAxisAlignment:
-                                    CrossAxisAlignment.start,
+                                crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
                                     nombreProductoCombo,
                                     style: TextStyle(
-                                      fontSize: parentContext != null
-                                          ? AppTextStyles.bodySmall(
-                                              parentContext!,
-                                            ).fontSize!
-                                          : 11,
                                       fontWeight: FontWeight.w500,
                                       color: colorScheme.onSurface,
                                     ),
@@ -335,15 +330,22 @@ class ProductoCardWidget extends StatelessWidget {
                                   ),
                                   const SizedBox(height: 2),
                                   Text(
-                                    'ID: ${comboItem['producto_id'] ?? 'N/A'}',
+                                    'ID: ${comboItem['id'] ?? 'N/A'}',
                                     style: TextStyle(
-                                      fontSize: parentContext != null
-                                          ? AppTextStyles.labelSmall(
-                                              parentContext!,
-                                            ).fontSize!
-                                          : 10,
-                                      color: colorScheme.onSurface
-                                          .withOpacity(0.6),
+                                      color: colorScheme.onSurface.withOpacity(
+                                        0.6,
+                                      ),
+                                      fontSize: 10,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 1),
+                                  Text(
+                                    'SKU: ${_obtenerSkuComboItem(comboItemId) ?? 'N/A'}',
+                                    style: TextStyle(
+                                      color: colorScheme.onSurface.withOpacity(
+                                        0.6,
+                                      ),
+                                      fontSize: 10,
                                     ),
                                   ),
                                 ],
@@ -359,8 +361,7 @@ class ProductoCardWidget extends StatelessWidget {
                                     vertical: 4,
                                   ),
                                   decoration: BoxDecoration(
-                                    color: AppColors.secondary
-                                        .withAlpha(30),
+                                    color: AppColors.secondary.withAlpha(30),
                                     borderRadius: BorderRadius.circular(4),
                                   ),
                                   child: Text(
@@ -368,11 +369,6 @@ class ProductoCardWidget extends StatelessWidget {
                                     style: TextStyle(
                                       fontWeight: FontWeight.bold,
                                       color: AppColors.secondary,
-                                      fontSize: parentContext != null
-                                          ? AppTextStyles.bodySmall(
-                                              parentContext!,
-                                            ).fontSize!
-                                          : 12,
                                     ),
                                   ),
                                 ),
@@ -380,13 +376,9 @@ class ProductoCardWidget extends StatelessWidget {
                                   Text(
                                     '($cantidadComponente×${cantidad.toInt()})',
                                     style: TextStyle(
-                                      fontSize: parentContext != null
-                                          ? AppTextStyles.labelSmall(
-                                              parentContext!,
-                                            ).fontSize!
-                                          : 10,
-                                      color: colorScheme.onSurface
-                                          .withOpacity(0.6),
+                                      color: colorScheme.onSurface.withOpacity(
+                                        0.6,
+                                      ),
                                     ),
                                   ),
                               ],
