@@ -14,6 +14,7 @@ import 'venta_detalle/contact_button_widget.dart';
 import 'venta_detalle/cliente_avatar_widget.dart';
 import 'venta_detalle/venta_cliente_header_widget.dart';
 import 'venta_detalle/producto_avatar_widget.dart';
+import 'venta_detalle/widgets/entrega_info_widget.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class VentaDetalleScreen extends StatefulWidget {
@@ -94,6 +95,13 @@ class _VentaDetalleScreenState extends State<VentaDetalleScreen> {
                   onDescargarPDF: (ventaId) => _descargarPDFVenta(ventaId),
                   onAbrirMapa: (venta) => _abrirMapa(venta),
                 ),
+                const SizedBox(height: 8),
+                // ✅ Información de Entrega (chofer, vehículo, estado)
+                if (venta.entrega != null)
+                  EntregaInfoWidget(entrega: venta.entrega!)
+                else
+                  const SizedBox(height: 8),
+                const SizedBox(height: 16),
                 // Sección de productos
                 Text('Productos'),
                 const SizedBox(height: 12),
