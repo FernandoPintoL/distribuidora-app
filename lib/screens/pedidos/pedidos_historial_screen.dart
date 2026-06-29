@@ -414,7 +414,23 @@ class _PedidosHistorialScreenState extends State<PedidosHistorialScreen>
                                       .map(
                                         (pedido) => PedidoCard(
                                           pedido: pedido,
-                                          onTap: () {},
+                                          onTap: () {
+                                            // Si la proforma ya fue convertida a venta, ir a venta-detalle
+                                            if (pedido.esVenta && pedido.ventaId != null) {
+                                              Navigator.pushNamed(
+                                                context,
+                                                '/venta-detalle',
+                                                arguments: pedido.ventaId,
+                                              );
+                                            } else {
+                                              // Si no está convertida, ir a pedido-detalle
+                                              Navigator.pushNamed(
+                                                context,
+                                                '/pedido-detalle',
+                                                arguments: pedido.id,
+                                              );
+                                            }
+                                          },
                                         ),
                                       ),
                                 ],
@@ -617,11 +633,21 @@ class _PedidosHistorialScreenState extends State<PedidosHistorialScreen>
                       return PedidoCard(
                         pedido: pedido,
                         onTap: () {
-                          Navigator.pushNamed(
-                            context,
-                            '/pedido-detalle',
-                            arguments: pedido.id,
-                          );
+                          // Si la proforma ya fue convertida a venta, ir a venta-detalle
+                          if (pedido.esVenta && pedido.ventaId != null) {
+                            Navigator.pushNamed(
+                              context,
+                              '/venta-detalle',
+                              arguments: pedido.ventaId,
+                            );
+                          } else {
+                            // Si no está convertida, ir a pedido-detalle
+                            Navigator.pushNamed(
+                              context,
+                              '/pedido-detalle',
+                              arguments: pedido.id,
+                            );
+                          }
                         },
                         onPrint: _handlePrintProforma,
                       );
