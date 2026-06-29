@@ -244,49 +244,27 @@ class ClientProvider with ChangeNotifier {
     }
   }
 
-  /// ✅ NUEVO: Cargar datos desde las estadísticas del preventista obtenidas en el login
-  /// Esto permite que el dashboard tenga datos iniciales sin hacer llamadas adicionales
-  void loadClientsFromPreventistaStats(PreventistStats stats) {
+  /// ✅ NUEVO: Actualizar datos de resumen desde las estadísticas del preventista
+  /// Solo actualiza contadores, no carga la lista completa de clientes
+  void updateStatsFromPreventistaStats(PreventistStats stats) {
     try {
-      // Convertir ClienteBasico a Client
-      // Nota: Esto crea clientes con datos básicos del login incluyendo crédito
-      _clients = stats.clientesParaReactivar
-          .map(
-            (clienteBasico) => Client(
-              id: clienteBasico.id,
-              nombre: clienteBasico.nombre,
-              razonSocial: clienteBasico.razonSocial,
-              telefono: clienteBasico.telefono,
-              email: clienteBasico.email,
-              activo: clienteBasico.activo,
-              nit: null,
-              fotoPerfil: null,
-              limiteCredito: clienteBasico.limiteCredito,
-              puedeAtenerCredito: clienteBasico.puedeAtenerCredito,
-              fechaRegistro: null,
-              localidad: null,
-              direcciones: [],
-              ventanasEntrega: [],
-              categorias: [],
-            ),
-          )
-          .toList();
-
-      _totalItems = stats.totalClientes;
+      // Solo actualizar información de resumen
+      _totalItems = stats.totalClientesBd;
       _currentPage = 1;
       _totalPages = 1;
       _hasMorePages = false;
       _errorMessage = null;
 
-      print('✅ Clientes cargados desde PreventistStats: ${_clients.length}');
-      print('   Total de clientes: ${stats.totalClientes}');
-      print('   Clientes activos: ${stats.clientesActivos}');
-      print('   Clientes inactivos: ${stats.clientesInactivos}');
+      debugPrint('✅ Stats del preventista actualizado');
+      debugPrint('   Total clientes: ${stats.totalClientesBd}');
+      debugPrint('   Clientes asignados: ${stats.totalClientesAsignados}');
+      debugPrint('   Clientes activos: ${stats.clientesActivos}');
+      debugPrint('   Clientes inactivos: ${stats.clientesInactivos}');
 
       _safeNotifyListeners();
     } catch (e) {
-      print('❌ Error al cargar clientes desde stats: $e');
-      _errorMessage = 'Error al cargar estadísticas del preventista';
+      debugPrint('❌ Error al actualizar stats: $e');
+      _errorMessage = 'Error al actualizar estadísticas del preventista';
       _safeNotifyListeners();
     }
   }

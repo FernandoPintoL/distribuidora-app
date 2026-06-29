@@ -2,11 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../models/models.dart';
 import '../../providers/providers.dart';
-import '../../utils/stock_status.dart';
 import '../../extensions/theme_extension.dart';
 import '../../config/app_colors.dart';
-import '../product/index.dart';
-import '../common/quantity_input_widget.dart';
+import '../product/product_card_base.dart';
 
 /// Widget para mostrar un producto en vista de lista
 class ProductListItem extends StatefulWidget {
@@ -171,14 +169,10 @@ class _ProductListItemState extends State<ProductListItem>
         final colorScheme = context.colorScheme;
         final isDark = context.isDark;
         final stock = _getMainWarehouseStock();
-        final stockStatus = StockStatus.from(
-          stock: stock,
-          minimumStock: widget.product.stockMinimo,
-        );
         final canAddToCart =
             widget.product.activo &&
-            widget.product.precioVenta != null &&
-            stock > 0;
+            widget.product.precioVentaFinal > 0 &&
+            (widget.product.esCombo || stock > 0);
 
         // ✅ NUEVO: Obtener cantidad actual del carrito (sincronizada globalmente)
         final _quantity = carritoProvider.obtenerCantidadProducto(
@@ -210,7 +204,6 @@ class _ProductListItemState extends State<ProductListItem>
 
         // Color dorado secundario de AppColors
         final primaryAccentColor = AppColors.secondary;
-        final accentColorLight = primaryAccentColor.withAlpha(isDark ? 85 : 30);
 
         // Colores para estado seleccionado
         final isSelected = _quantity > 0;
@@ -220,12 +213,18 @@ class _ProductListItemState extends State<ProductListItem>
         return Card(
           margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           elevation: isSelected ? 6 : 4,
-          shadowColor: isSelected ? AppColors.secondary.withAlpha(80) : Colors.black.withAlpha(30),
-          color: isSelected ? selectedBgColor : (isDark ? colorScheme.surface : Colors.white),
+          shadowColor: isSelected
+              ? AppColors.secondary.withAlpha(80)
+              : Colors.black.withAlpha(30),
+          color: isSelected
+              ? selectedBgColor
+              : (isDark ? colorScheme.surface : Colors.white),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
             side: BorderSide(
-              color: isSelected ? selectedBorderColor : colorScheme.outline.withAlpha(20),
+              color: isSelected
+                  ? selectedBorderColor
+                  : colorScheme.outline.withAlpha(20),
               width: isSelected ? 2 : 1,
             ),
           ),
@@ -238,116 +237,34 @@ class _ProductListItemState extends State<ProductListItem>
             onTapUp: (_) => _scaleController.reverse(),
             onTapCancel: () => _scaleController.reverse(),
             child: Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: IntrinsicHeight(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Column(
-                          children: [
-                            ProductImageWidget(product: widget.product),
-                            // Badge de cantidad disponible para preventistas
-                            if (isPreventista)
-                              Padding(
-                                padding: const EdgeInsets.only(top: 6.0),
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 4,
-                                    vertical: 2,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: colorScheme.primaryContainer
-                                        .withAlpha(200),
-                                    borderRadius: BorderRadius.circular(8),
-                                    border: Border.all(
-                                      color: colorScheme.primary.withAlpha(150),
-                                      width: 0.5,
-                                    ),
-                                  ),
-                                  child: Text(
-                                    '📦 Disp.: $cantidadDisponible ${widget.product.unidadMedida?.nombre ?? ""}',
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.w600,
-                                      color: colorScheme.onPrimaryContainer,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                          ],
-                        ),
-                        const SizedBox(width: 12),
-                        Flexible(
-                          fit: FlexFit.loose,
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              ProductInfoWidget(
-                                product: widget.product,
-                                cantidad: _quantity,
-                                detalleConRango: detalleConRango,
-                              ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(width: 4),
-                        if (_quantity == 0)
-                          ScaleTransition(
-                            scale: _bounceAnimation,
-                            child: SizedBox(
-                              width: 44,
-                              height: 44,
-                              child: IconButton(
-                                onPressed: _incrementQuantity,
-                                icon: const Icon(Icons.shopping_cart_outlined),
-                                style: IconButton.styleFrom(
-                                  backgroundColor: primaryAccentColor,
-                                  elevation: 3,
-                                  shadowColor: primaryAccentColor.withAlpha(40),
-                                ),
-                                tooltip: 'Agregar al carrito',
-                              ),
-                            ),
-                          ),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    // Stock badge y botón/cantidad
-                    if (canAddToCart && _quantity > 0)
-                      Row(
-                        children: [
-                          Expanded(
-                            child: QuantityInputWidget(
-                              quantity: _quantity,
-                              maxQuantity: stock,
-                              onIncrement: _incrementQuantity,
-                              onDecrement: _decrementQuantity,
-                              onChanged: _actualizarCantidadDesdeInput,
-                              primaryColor: primaryAccentColor,
-                              fullWidth: true,
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          SizedBox(
-                            width: 44,
-                            height: 44,
-                            child: IconButton(
-                              onPressed: _eliminarDelCarrito,
-                              icon: const Icon(Icons.delete_outline),
-                              style: IconButton.styleFrom(
-                                backgroundColor: AppColors.error,
-                                elevation: 2,
-                                shadowColor: AppColors.error.withAlpha(40),
-                              ),
-                              tooltip: 'Eliminar del carrito',
-                            ),
-                          ),
-                        ],
-                      ),
-                  ],
-                ),
+              padding: const EdgeInsets.symmetric(
+                horizontal: 16.0,
+                vertical: 8,
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Componente base: imagen, nombre, código, precio, subtotal y controles de cantidad
+                  ProductCardBase(
+                    product: widget.product,
+                    quantity: _quantity,
+                    detalleConRango: detalleConRango,
+                    onProductTap: widget.onTap,
+                    showDeleteButton: canAddToCart,
+                    isInCart: _quantity > 0,
+                    onDeletePressed: _eliminarDelCarrito,
+                    onAddToCart: _incrementQuantity,
+                    imageSize: 90,
+                    onIncrement: _incrementQuantity,
+                    onDecrement: _decrementQuantity,
+                    onChanged: _actualizarCantidadDesdeInput,
+                    maxQuantity: stock,
+                    showQuantityControls: _quantity > 0,
+                    cantidadDisponible: cantidadDisponible,
+                    unidadMedida: widget.product.unidadMedida?.nombre,
+                    isPreventista: isPreventista,
+                  ),
+                ],
               ),
             ),
           ),

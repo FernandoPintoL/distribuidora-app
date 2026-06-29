@@ -18,10 +18,20 @@ class CreditSummaryWidget extends StatelessWidget {
     final colorScheme = parentContext.colorScheme;
     final limiteCredito = cliente.limiteCredito ?? 0.0;
     final creditoUtilizado = cliente.creditoUtilizado ?? 0.0;
-    final creditoDisponible = limiteCredito - creditoUtilizado;
+    final creditoDisponible = cliente.creditoDisponible ?? (limiteCredito - creditoUtilizado);
+    final cuentasPorCobrarActivas = cliente.cuentasPorCobrarActivas ?? 0.0;
+    final creditoTotalComprometido = cliente.creditoTotalComprometido ?? 0.0;
+
     final porcentajeUsado = limiteCredito > 0
         ? (creditoUtilizado / limiteCredito) * 100
         : 0.0;
+
+    // Determinar color de alerta
+    final Color colorEstado = creditoDisponible > 0
+        ? Colors.green.shade700
+        : creditoDisponible == 0
+            ? Colors.orange.shade700
+            : Colors.red.shade700;
 
     return Padding(
       padding: const EdgeInsets.only(top: 12),
@@ -29,13 +39,19 @@ class CreditSummaryWidget extends StatelessWidget {
         color: Colors.blue.shade50,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(12),
-          side: BorderSide(color: Colors.blue.shade200, width: 1),
+          side: BorderSide(
+            color: creditoDisponible <= 0
+                ? Colors.red.shade300
+                : Colors.blue.shade200,
+            width: 2,
+          ),
         ),
         child: Padding(
           padding: const EdgeInsets.all(16),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // Encabezado
               Row(
                 children: [
                   Icon(
@@ -56,52 +72,62 @@ class CreditSummaryWidget extends StatelessWidget {
                 ],
               ),
               const SizedBox(height: 12),
+
+              // Fila 1: Límite vs Utilizado
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text(
-                    'Límite de Crédito',
-                    style: TextStyle(
-                      fontSize:
-                          AppTextStyles.bodySmall(parentContext).fontSize!,
-                      color: Colors.blue.shade700,
-                    ),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Límite de Crédito',
+                        style: TextStyle(
+                          fontSize:
+                              AppTextStyles.bodySmall(parentContext).fontSize!,
+                          color: Colors.blue.shade700,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        'Bs. ${limiteCredito.toStringAsFixed(2)}',
+                        style: TextStyle(
+                          fontSize:
+                              AppTextStyles.bodySmall(parentContext).fontSize!,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.blue.shade900,
+                        ),
+                      ),
+                    ],
                   ),
-                  Text(
-                    'Bs. ${limiteCredito.toStringAsFixed(2)}',
-                    style: TextStyle(
-                      fontSize:
-                          AppTextStyles.bodySmall(parentContext).fontSize!,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.blue.shade700,
-                    ),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Text(
+                        'Utilizado',
+                        style: TextStyle(
+                          fontSize:
+                              AppTextStyles.bodySmall(parentContext).fontSize!,
+                          color: Colors.orange.shade700,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        'Bs. ${creditoUtilizado.toStringAsFixed(2)}',
+                        style: TextStyle(
+                          fontSize:
+                              AppTextStyles.bodySmall(parentContext).fontSize!,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.orange.shade900,
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),
-              const SizedBox(height: 8),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    'Utilizado',
-                    style: TextStyle(
-                      fontSize:
-                          AppTextStyles.bodySmall(parentContext).fontSize!,
-                      color: Colors.orange.shade700,
-                    ),
-                  ),
-                  Text(
-                    'Bs. ${creditoUtilizado.toStringAsFixed(2)}',
-                    style: TextStyle(
-                      fontSize:
-                          AppTextStyles.bodySmall(parentContext).fontSize!,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.orange.shade700,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 8),
+              const SizedBox(height: 12),
+
+              // Barra de progreso
               ClipRRect(
                 borderRadius: BorderRadius.circular(4),
                 child: LinearProgressIndicator(
@@ -117,33 +143,95 @@ class CreditSummaryWidget extends StatelessWidget {
                   ),
                 ),
               ),
-              const SizedBox(height: 8),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    'Disponible',
-                    style: TextStyle(
-                      fontSize:
-                          AppTextStyles.bodySmall(parentContext).fontSize!,
-                      fontWeight: FontWeight.bold,
-                      color: creditoDisponible > 0
-                          ? Colors.green.shade700
-                          : Colors.red.shade700,
+              const SizedBox(height: 12),
+
+              // Fila 2: Cuentas por cobrar y Crédito comprometido
+              if (cuentasPorCobrarActivas > 0 || creditoTotalComprometido > 0) ...[
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Deuda Activa',
+                          style: TextStyle(
+                            fontSize:
+                                AppTextStyles.bodySmall(parentContext).fontSize!,
+                            color: Colors.amber.shade700,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          'Bs. ${cuentasPorCobrarActivas.toStringAsFixed(2)}',
+                          style: TextStyle(
+                            fontSize:
+                                AppTextStyles.bodySmall(parentContext).fontSize!,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.amber.shade900,
+                          ),
+                        ),
+                      ],
                     ),
-                  ),
-                  Text(
-                    'Bs. ${creditoDisponible.toStringAsFixed(2)}',
-                    style: TextStyle(
-                      fontSize:
-                          AppTextStyles.bodySmall(parentContext).fontSize!,
-                      fontWeight: FontWeight.bold,
-                      color: creditoDisponible > 0
-                          ? Colors.green.shade700
-                          : Colors.red.shade700,
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        Text(
+                          'Crédito Comprometido',
+                          style: TextStyle(
+                            fontSize:
+                                AppTextStyles.bodySmall(parentContext).fontSize!,
+                            color: Colors.purple.shade700,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          'Bs. ${creditoTotalComprometido.toStringAsFixed(2)}',
+                          style: TextStyle(
+                            fontSize:
+                                AppTextStyles.bodySmall(parentContext).fontSize!,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.purple.shade900,
+                          ),
+                        ),
+                      ],
                     ),
-                  ),
-                ],
+                  ],
+                ),
+                const SizedBox(height: 12),
+              ],
+
+              // Fila 3: Crédito disponible (resaltado)
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: colorEstado.withAlpha(30),
+                  borderRadius: BorderRadius.circular(6),
+                  border: Border.all(color: colorEstado.withAlpha(100)),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'Crédito Disponible',
+                      style: TextStyle(
+                        fontSize:
+                            AppTextStyles.bodySmall(parentContext).fontSize!,
+                        fontWeight: FontWeight.bold,
+                        color: colorEstado,
+                      ),
+                    ),
+                    Text(
+                      'Bs. ${creditoDisponible.toStringAsFixed(2)}',
+                      style: TextStyle(
+                        fontSize:
+                            AppTextStyles.bodySmall(parentContext).fontSize!,
+                        fontWeight: FontWeight.bold,
+                        color: colorEstado,
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ],
           ),

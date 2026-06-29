@@ -22,19 +22,12 @@ class CarritoEditandoProformaBanner extends StatelessWidget {
       decoration: BoxDecoration(
         color: const Color(0xFF2196F3).withOpacity(0.1),
         border: Border(
-          left: BorderSide(
-            color: const Color(0xFF2196F3),
-            width: 4,
-          ),
+          left: BorderSide(color: const Color(0xFF2196F3), width: 4),
         ),
       ),
       child: Row(
         children: [
-          Icon(
-            Icons.edit_document,
-            color: const Color(0xFF2196F3),
-            size: 20,
-          ),
+          Icon(Icons.edit_document, color: const Color(0xFF2196F3), size: 20),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
@@ -42,20 +35,12 @@ class CarritoEditandoProformaBanner extends StatelessWidget {
               children: [
                 Text(
                   'Editando Proforma',
-                  style: TextStyle(
-                    fontSize: AppTextStyles.bodySmall(context).fontSize!,
-                    fontWeight: FontWeight.w600,
-                    color: const Color(0xFF2196F3),
-                  ),
+                  style: TextStyle(fontWeight: FontWeight.w600),
                 ),
                 const SizedBox(height: 2),
                 Text(
                   '#${carritoProvider.proformaEditando?.numero ?? 'N/A'} (ID: ${carritoProvider.proformaEditandoId ?? 'N/A'})',
-                  style: TextStyle(
-                    fontSize: AppTextStyles.bodySmall(context).fontSize!,
-                    fontWeight: FontWeight.w500,
-                    color: const Color(0xFF2196F3),
-                  ),
+                  style: TextStyle(fontWeight: FontWeight.w500),
                 ),
               ],
             ),

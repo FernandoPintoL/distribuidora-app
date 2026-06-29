@@ -5,7 +5,6 @@ import '../../providers/providers.dart';
 import '../../services/services.dart';
 import '../../widgets/widgets.dart';
 import '../../widgets/pedidos/direccion_selector_modal.dart';
-import '../../widgets/pedidos/fecha_hora_selector_modal.dart';
 import '../../config/config.dart';
 import '../../extensions/theme_extension.dart';
 import 'widgets/cliente_info_widget.dart';
@@ -13,7 +12,7 @@ import 'widgets/tipo_entrega_widget.dart';
 import 'widgets/direccion_widget.dart';
 import 'widgets/fecha_hora_widget.dart';
 import 'widgets/credit_summary_widget.dart';
-import 'widgets/combo_detalles_widget.dart';
+import '../../widgets/carrito/carrito_item_card.dart';
 
 class ResumenPedidoScreen extends StatefulWidget {
   const ResumenPedidoScreen({super.key});
@@ -77,7 +76,9 @@ class _ResumenPedidoScreenState extends State<ResumenPedidoScreen> {
       if (cliente == null ||
           cliente.direcciones == null ||
           cliente.direcciones!.isEmpty) {
-        debugPrint('âš ï¸ [ResumenPedidoScreen] No hay direcciones disponibles');
+        debugPrint(
+          'âš ï¸ [ResumenPedidoScreen] No hay direcciones disponibles',
+        );
         return;
       }
 
@@ -513,14 +514,13 @@ class _ResumenPedidoScreenState extends State<ResumenPedidoScreen> {
     final esPreventista = user?.roles?.contains('preventista') ?? false;
 
     final editandoProforma = carritoProvider.editandoProforma;
-    final tituloResumen = esPreventista
+    /*final tituloResumen = esPreventista
         ? (editandoProforma ? 'Actualizar Proforma' : 'Crear Proforma')
-        : (editandoProforma ? 'Actualizar Proforma' : 'Resumen del Pedido');
+        : (editandoProforma ? 'Actualizar Proforma' : 'Resumen del Pedido');*/
+    final tituloResumen = 'Resumen del Pedido';
 
     return Scaffold(
-      appBar: CustomGradientAppBar(
-        title: tituloResumen,
-      ),
+      appBar: CustomGradientAppBar(title: tituloResumen),
       body: Consumer<CarritoProvider>(
         builder: (context, carritoProvider, _) {
           final carrito = carritoProvider.carrito;
@@ -528,87 +528,11 @@ class _ResumenPedidoScreenState extends State<ResumenPedidoScreen> {
           return SingleChildScrollView(
             child: Column(
               children: [
-                // Header
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(16),
-                  color: colorScheme.primary.withOpacity(isDark ? 0.15 : 0.1),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      if (editandoProforma) ...[
-                        Row(
-                          children: [
-                            Icon(
-                              Icons.edit_document,
-                              size: 20,
-                              color: colorScheme.primary,
-                            ),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    'Actualizando Proforma',
-                                    style: TextStyle(
-                                      fontSize: AppTextStyles.bodyLarge(
-                                        context,
-                                      ).fontSize!,
-                                      fontWeight: FontWeight.w600,
-                                      color: colorScheme.onSurface,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 2),
-                                  Text(
-                                    '#${carritoProvider.proformaEditando?.numero ?? 'N/A'} (ID: ${carritoProvider.proformaEditandoId ?? 'N/A'})',
-                                    style: TextStyle(
-                                      fontSize: AppTextStyles.bodySmall(
-                                        context,
-                                      ).fontSize!,
-                                      color: colorScheme.primary,
-                                      fontWeight: FontWeight.w500,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-                      ] else ...[
-                        Text(
-                          esPreventista ? 'Nueva Proforma' : 'Revisa tu pedido',
-                          style: TextStyle(
-                            fontSize: AppTextStyles.bodyLarge(
-                              context,
-                            ).fontSize!,
-                            fontWeight: FontWeight.w500,
-                            color: colorScheme.onSurface,
-                          ),
-                        ),
-                      ],
-                      const SizedBox(height: 4),
-                      Text(
-                        editandoProforma
-                            ? 'Verifica los cambios antes de actualizar'
-                            : 'Verifica que todo estÃ© correcto antes de confirmar',
-                        style: TextStyle(
-                          fontSize: AppTextStyles.bodyMedium(context).fontSize!,
-                          color: colorScheme.onSurfaceVariant,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
                 Padding(
                   padding: const EdgeInsets.all(16),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // âœ… NUEVO: SecciÃ³n InformaciÃ³n del Cliente
-                      ClienteInfoWidget(parentContext: context),
-                      const SizedBox(height: 24),
-
                       // âœ… NUEVO: Selector de Tipo de Entrega
                       TipoEntregaWidget(
                         tipoEntregaSeleccionado: _tipoEntrega,
@@ -622,8 +546,211 @@ class _ResumenPedidoScreenState extends State<ResumenPedidoScreen> {
                         },
                         parentContext: context,
                       ),
-                      const SizedBox(height: 24),
+                      const SizedBox(height: 8),
+                      // âœ… NUEVO: SecciÃ³n InformaciÃ³n del Cliente
+                      ClienteInfoWidget(parentContext: context),
+                      const SizedBox(height: 8),
+                      // âœ… SecciÃ³n de CrÃ©dito (mostrar siempre si hay cliente)
+                      Consumer<CarritoProvider>(
+                        builder: (context, carritoProvider, _) {
+                          final clienteSeleccionado = carritoProvider
+                              .getClienteSeleccionado();
+                          final usarCredito = _politicaPago == POLITICA_CREDITO;
 
+                          // Mostrar solo si hay cliente seleccionado
+                          if (clienteSeleccionado == null) {
+                            return const SizedBox.shrink();
+                          }
+
+                          final puedeUsarCredito =
+                              clienteSeleccionado.puedeAtenerCredito;
+
+                          return Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              // âœ… Tarjeta "Solicitar CrÃ©dito" (solo si puede usar crÃ©dito)
+                              if (puedeUsarCredito)
+                                Card(
+                                  color: usarCredito
+                                      ? Colors.green.shade50
+                                      : colorScheme.surfaceVariant,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                    side: usarCredito
+                                        ? BorderSide(
+                                            color: Colors.green.shade300,
+                                            width: 2,
+                                          )
+                                        : BorderSide.none,
+                                  ),
+                                  child: Padding(
+                                    padding: const EdgeInsets.all(16),
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Row(
+                                          children: [
+                                            Icon(
+                                              Icons.credit_card,
+                                              color: usarCredito
+                                                  ? Colors.green.shade600
+                                                  : colorScheme
+                                                        .onSurfaceVariant,
+                                              size: 24,
+                                            ),
+                                            const SizedBox(width: 12),
+                                            Expanded(
+                                              child: Column(
+                                                crossAxisAlignment:
+                                                    CrossAxisAlignment.start,
+                                                children: [
+                                                  Text(
+                                                    'Solicitar Credito',
+                                                    style: TextStyle(
+                                                      fontWeight:
+                                                          FontWeight.w600,
+                                                      color: usarCredito
+                                                          ? Colors
+                                                                .green
+                                                                .shade700
+                                                          : colorScheme
+                                                                .onSurface,
+                                                    ),
+                                                  ),
+                                                  const SizedBox(height: 4),
+                                                  Text(
+                                                    'Disponible: Bs. ${clienteSeleccionado.creditoDisponible?.toStringAsFixed(2) ?? (clienteSeleccionado.limiteCredito?.toStringAsFixed(2) ?? "0.00")} / ${clienteSeleccionado.limiteCredito?.toStringAsFixed(2) ?? "0.00"}',
+                                                    style: TextStyle(
+                                                      color: usarCredito
+                                                          ? Colors
+                                                                .green
+                                                                .shade600
+                                                          : colorScheme
+                                                                .onSurfaceVariant,
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                            ),
+                                            Switch(
+                                              value: usarCredito,
+                                              activeColor:
+                                                  Colors.green.shade600,
+                                              onChanged: (value) {
+                                                setState(() {
+                                                  _politicaPago = value
+                                                      ? POLITICA_CREDITO
+                                                      : POLITICA_CONTRA_ENTREGA;
+                                                });
+                                              },
+                                            ),
+                                          ],
+                                        ),
+                                        const SizedBox(height: 12),
+                                        // Información de crédito resumida
+                                        Row(
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.spaceBetween,
+                                          children: [
+                                            Column(
+                                              crossAxisAlignment:
+                                                  CrossAxisAlignment.end,
+                                              children: [
+                                                Text(
+                                                  'Deudas Activas',
+                                                  style: TextStyle(
+                                                    color: Colors.grey.shade600,
+                                                  ),
+                                                ),
+                                                const SizedBox(height: 2),
+                                                Text(
+                                                  'Bs. ${clienteSeleccionado.cuentasPorCobrarActivas?.toStringAsFixed(2) ?? "0.00"}',
+                                                  style: TextStyle(
+                                                    fontWeight: FontWeight.bold,
+                                                    color:
+                                                        (clienteSeleccionado
+                                                                    .creditoDisponible ??
+                                                                0) >
+                                                            0
+                                                        ? Colors.green.shade700
+                                                        : Colors.red.shade700,
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                            Column(
+                                              crossAxisAlignment:
+                                                  CrossAxisAlignment.end,
+                                              children: [
+                                                Text(
+                                                  'Deudas x Aprobar',
+                                                  style: TextStyle(
+                                                    color: Colors.grey.shade600,
+                                                  ),
+                                                ),
+                                                const SizedBox(height: 2),
+                                                Text(
+                                                  'Bs. ${clienteSeleccionado.cuentasPorCobrarPorAprobar?.toStringAsFixed(2) ?? "0.00"}',
+                                                  style: TextStyle(
+                                                    fontWeight: FontWeight.bold,
+                                                    color:
+                                                        (clienteSeleccionado
+                                                                    .creditoDisponible ??
+                                                                0) >
+                                                            0
+                                                        ? Colors.green.shade700
+                                                        : Colors.red.shade700,
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ],
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                )
+                              else
+                                // âœ… Mostrar aviso si no puede usar crÃ©dito
+                                Container(
+                                  padding: const EdgeInsets.all(12),
+                                  decoration: BoxDecoration(
+                                    color: Colors.red.shade50,
+                                    border: Border.all(
+                                      color: Colors.red.shade300,
+                                      width: 1,
+                                    ),
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      Icon(
+                                        Icons.warning_amber_rounded,
+                                        color: Colors.red.shade600,
+                                        size: 20,
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Expanded(
+                                        child: Text(
+                                          'Este cliente no puede usar crÃ©dito',
+                                          style: TextStyle(
+                                            fontSize: AppTextStyles.bodySmall(
+                                              context,
+                                            ).fontSize!,
+                                            color: Colors.red.shade700,
+                                            fontWeight: FontWeight.w500,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                            ],
+                          );
+                        },
+                      ),
+                      const SizedBox(height: 8),
                       // âœ… NUEVO: Selector de DirecciÃ³n (solo si DELIVERY)
                       if (_tipoEntrega == 'DELIVERY') ...[
                         DireccionWidget(
@@ -637,9 +764,8 @@ class _ResumenPedidoScreenState extends State<ResumenPedidoScreen> {
                           },
                           cantidadDirecciones: _obtenerCantidadDirecciones(),
                         ),
-                        const SizedBox(height: 24),
                       ],
-
+                      const SizedBox(height: 4),
                       // âœ… NUEVO: Selector de Fecha/Hora
                       FechaHoraWidget(
                         parentContext: context,
@@ -679,255 +805,45 @@ class _ResumenPedidoScreenState extends State<ResumenPedidoScreen> {
                         onSeleccionarFechaPersonalizada:
                             _seleccionarFechaPersonalizada,
                       ),
-                      const SizedBox(height: 24),
+                      const SizedBox(height: 8),
 
                       // Productos
                       Text(
                         'Productos',
                         style: TextStyle(
-                          fontSize: AppTextStyles.headlineSmall(
-                            context,
-                          ).fontSize!,
                           fontWeight: FontWeight.bold,
                           color: colorScheme.onSurface,
                         ),
                       ),
-                      const SizedBox(height: 12),
+                      const SizedBox(height: 8),
 
-                      ...carrito.items.map(
-                        (item) => Column(
-                          children: [
-                            Card(
-                              color: colorScheme.surface,
-                              margin: const EdgeInsets.only(bottom: 8),
-                              child: Padding(
-                                padding: const EdgeInsets.all(12),
-                                child: Row(
-                                  children: [
-                                    Container(
-                                      width: 60,
-                                      height: 60,
-                                      decoration: BoxDecoration(
-                                        color: colorScheme.surfaceVariant,
-                                        borderRadius: BorderRadius.circular(8),
-                                      ),
-                                      child:
-                                          item.producto.imagenes != null &&
-                                              item.producto.imagenes!.isNotEmpty
-                                          ? ClipRRect(
-                                              borderRadius:
-                                                  BorderRadius.circular(8),
-                                              child: Image.network(
-                                                item
-                                                    .producto
-                                                    .imagenes!
-                                                    .first
-                                                    .url,
-                                                fit: BoxFit.cover,
-                                                errorBuilder: (_, __, ___) =>
-                                                    const Icon(Icons.image),
-                                              ),
-                                            )
-                                          : const Icon(Icons.image, size: 32),
-                                    ),
+                      // âœ… Usar el mismo componente CarritoItemCard que en carrito_screen
+                      ...carrito.items.map((item) {
+                        final detalleConRango = carritoProvider
+                            .obtenerDetalleConRango(item.producto.id);
 
-                                    const SizedBox(width: 12),
-
-                                    Expanded(
-                                      child: Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        children: [
-                                          Text(
-                                            item.producto.nombre,
-                                            style: TextStyle(
-                                              fontWeight: FontWeight.w600,
-                                              color: colorScheme.onSurface,
-                                            ),
-                                          ),
-                                          const SizedBox(height: 6),
-                                          Row(
-                                            children: [
-                                              Text(
-                                                'Precio: Bs. ${(item.subtotal / item.cantidad).toStringAsFixed(2)}',
-                                                style: TextStyle(
-                                                  color: colorScheme.primary,
-                                                  fontSize:
-                                                      AppTextStyles.bodySmall(
-                                                        context,
-                                                      ).fontSize!,
-                                                  fontWeight: FontWeight.w500,
-                                                ),
-                                              ),
-                                              const SizedBox(width: 12),
-                                              Text(
-                                                'Ã—${item.cantidad}',
-                                                style: TextStyle(
-                                                  color: colorScheme
-                                                      .onSurfaceVariant,
-                                                  fontSize:
-                                                      AppTextStyles.bodySmall(
-                                                        context,
-                                                      ).fontSize!,
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-
-                                    Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.end,
-                                      children: [
-                                        Text(
-                                          'Bs. ${item.subtotal.toStringAsFixed(2)}',
-                                          style: TextStyle(
-                                            fontWeight: FontWeight.bold,
-                                            fontSize: AppTextStyles.bodyLarge(
-                                              context,
-                                            ).fontSize!,
-                                            color: colorScheme.onSurface,
-                                          ),
-                                        ),
-                                        const SizedBox(height: 4),
-                                        Text(
-                                          'subtotal',
-                                          style: TextStyle(
-                                            fontSize: AppTextStyles.labelSmall(
-                                              context,
-                                            ).fontSize!,
-                                            color: colorScheme.onSurfaceVariant,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-
-                            // âœ… NUEVO: Mostrar detalles del combo si tiene items seleccionados
-                            if (item.producto.esCombo &&
-                                item.comboItemsSeleccionados != null &&
-                                item.comboItemsSeleccionados!.isNotEmpty)
-                              ComboDetallesWidget(
-                                parentContext: context,
-                                item: item,
-                              ),
-                          ],
-                        ),
-                      ),
-
-                      const SizedBox(height: 24),
-
-                      // âœ… SecciÃ³n de CrÃ©dito (solo si el cliente puede usar crÃ©dito)
-                      Consumer<CarritoProvider>(
-                        builder: (context, carritoProvider, _) {
-                          final clienteSeleccionado = carritoProvider
-                              .getClienteSeleccionado();
-                          final usarCredito = _politicaPago == POLITICA_CREDITO;
-
-                          // Solo mostrar si el cliente tiene crÃ©dito habilitado
-                          if (clienteSeleccionado == null ||
-                              !clienteSeleccionado.puedeAtenerCredito) {
-                            return const SizedBox.shrink();
-                          }
-
-                          return Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Card(
-                                color: usarCredito
-                                    ? Colors.green.shade50
-                                    : colorScheme.surfaceVariant,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                  side: usarCredito
-                                      ? BorderSide(
-                                          color: Colors.green.shade300,
-                                          width: 2,
-                                        )
-                                      : BorderSide.none,
-                                ),
-                                child: Padding(
-                                  padding: const EdgeInsets.all(16),
-                                  child: Row(
-                                    children: [
-                                      Icon(
-                                        Icons.credit_card,
-                                        color: usarCredito
-                                            ? Colors.green.shade600
-                                            : colorScheme.onSurfaceVariant,
-                                        size: 24,
-                                      ),
-                                      const SizedBox(width: 12),
-                                      Expanded(
-                                        child: Column(
-                                          crossAxisAlignment:
-                                              CrossAxisAlignment.start,
-                                          children: [
-                                            Text(
-                                              'Solicitar CrÃ©dito',
-                                              style: context
-                                                  .textTheme
-                                                  .bodyMedium
-                                                  ?.copyWith(
-                                                    fontWeight: FontWeight.w600,
-                                                    color: usarCredito
-                                                        ? Colors.green.shade700
-                                                        : colorScheme.onSurface,
-                                                  ),
-                                            ),
-                                            const SizedBox(height: 4),
-                                            Text(
-                                              'LÃ­mite disponible: Bs. ${clienteSeleccionado.limiteCredito?.toStringAsFixed(2) ?? '0.00'}',
-                                              style: context.textTheme.bodySmall
-                                                  ?.copyWith(
-                                                    color: usarCredito
-                                                        ? Colors.green.shade600
-                                                        : colorScheme
-                                                              .onSurfaceVariant,
-                                                  ),
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                      Switch(
-                                        value: usarCredito,
-                                        activeColor: Colors.green.shade600,
-                                        onChanged: (value) {
-                                          setState(() {
-                                            _politicaPago = value
-                                                ? POLITICA_CREDITO
-                                                : POLITICA_CONTRA_ENTREGA;
-                                          });
-                                        },
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(height: 24),
-                            ],
-                          );
-                        },
-                      ),
+                        return CarritoItemCard(
+                          item: item,
+                          detalleConRango: detalleConRango,
+                          isPreventista: false,
+                          showDeleteButton: false,
+                          showQuantityControls: false,
+                          onIncrement: () {},
+                          onDecrement: () {},
+                          onRemove: () {},
+                          onUpdateCantidad: (_) {},
+                        );
+                      }),
 
                       // Resumen de montos
                       Text(
                         'Resumen',
                         style: TextStyle(
-                          fontSize: AppTextStyles.headlineSmall(
-                            context,
-                          ).fontSize!,
                           fontWeight: FontWeight.bold,
                           color: colorScheme.onSurface,
                         ),
                       ),
-                      const SizedBox(height: 12),
-
+                      const SizedBox(height: 4),
                       Card(
                         color: colorScheme.surfaceVariant,
                         child: Padding(
@@ -938,9 +854,6 @@ class _ResumenPedidoScreenState extends State<ResumenPedidoScreen> {
                               Text(
                                 'Total',
                                 style: TextStyle(
-                                  fontSize: AppTextStyles.headlineMedium(
-                                    context,
-                                  ).fontSize!,
                                   fontWeight: FontWeight.bold,
                                   color: colorScheme.onSurface,
                                 ),
@@ -948,9 +861,6 @@ class _ResumenPedidoScreenState extends State<ResumenPedidoScreen> {
                               Text(
                                 'Bs. ${carrito.total.toStringAsFixed(2)}',
                                 style: TextStyle(
-                                  fontSize: AppTextStyles.headlineMedium(
-                                    context,
-                                  ).fontSize!,
                                   fontWeight: FontWeight.bold,
                                   color: Color(0xFF4CAF50),
                                 ),
@@ -960,16 +870,7 @@ class _ResumenPedidoScreenState extends State<ResumenPedidoScreen> {
                         ),
                       ),
 
-                      if (carritoProvider
-                              .clienteSeleccionado
-                              ?.puedeAtenerCredito ??
-                          false)
-                        CreditSummaryWidget(
-                          parentContext: context,
-                          cliente: carritoProvider.clienteSeleccionado!,
-                        ),
-
-                      const SizedBox(height: 80),
+                      const SizedBox(height: 30),
                     ],
                   ),
                 ),
@@ -1027,4 +928,3 @@ class _ResumenPedidoScreenState extends State<ResumenPedidoScreen> {
     );
   }
 }
-

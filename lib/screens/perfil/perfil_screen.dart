@@ -1288,7 +1288,7 @@ class _PerfilScreenState extends State<PerfilScreen>
     return Consumer<AuthProvider>(
       builder: (context, authProvider, _) {
         final stats = authProvider.preventistaStats;
-        final totalClientes = stats?.totalClientes ?? 0;
+        final totalClientesBd = stats?.totalClientesBd ?? 0;
         final clientesActivos = stats?.clientesActivos ?? 0;
 
         return Container(
@@ -1329,7 +1329,7 @@ class _PerfilScreenState extends State<PerfilScreen>
                   Expanded(
                     child: _buildStatItem(
                       'Total Clientes',
-                      totalClientes.toString(),
+                      totalClientesBd.toString(),
                       Icons.people,
                     ),
                   ),

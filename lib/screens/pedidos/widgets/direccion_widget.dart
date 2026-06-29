@@ -31,9 +31,8 @@ class DireccionWidget extends StatelessWidget {
       Navigator.of(parentContext)
           .push(
             MaterialPageRoute(
-              builder: (context) => DireccionFormScreenForClient(
-                clientId: cliente.id,
-              ),
+              builder: (context) =>
+                  DireccionFormScreenForClient(clientId: cliente.id),
             ),
           )
           .then((_) {
@@ -54,7 +53,6 @@ class DireccionWidget extends StatelessWidget {
           Text(
             'Dirección de Entrega',
             style: TextStyle(
-              fontSize: AppTextStyles.headlineSmall(parentContext).fontSize!,
               fontWeight: FontWeight.bold,
               color: colorScheme.onSurface,
             ),
@@ -80,8 +78,7 @@ class DireccionWidget extends StatelessWidget {
                           children: [
                             Text(
                               'Sin dirección registrada',
-                              style: parentContext.textTheme.bodyMedium
-                                  ?.copyWith(
+                              style: TextStyle(
                                 fontWeight: FontWeight.w600,
                                 color: colorScheme.onErrorContainer,
                               ),
@@ -89,8 +86,7 @@ class DireccionWidget extends StatelessWidget {
                             const SizedBox(height: 4),
                             Text(
                               'Registra una dirección para continuar',
-                              style:
-                                  parentContext.textTheme.bodySmall?.copyWith(
+                              style: TextStyle(
                                 color: colorScheme.onErrorContainer,
                               ),
                             ),
@@ -128,7 +124,6 @@ class DireccionWidget extends StatelessWidget {
         Text(
           'Dirección de Entrega',
           style: TextStyle(
-            fontSize: AppTextStyles.headlineSmall(parentContext).fontSize!,
             fontWeight: FontWeight.bold,
             color: colorScheme.onSurface,
           ),
@@ -152,9 +147,7 @@ class DireccionWidget extends StatelessWidget {
                     Expanded(
                       child: Text(
                         'Seleccionar dirección',
-                        style: parentContext.textTheme.bodyMedium?.copyWith(
-                          color: colorScheme.onSurfaceVariant,
-                        ),
+                        style: TextStyle(color: colorScheme.onSurfaceVariant),
                       ),
                     ),
                     Icon(
@@ -188,8 +181,7 @@ class DireccionWidget extends StatelessWidget {
                           children: [
                             Text(
                               direccionSeleccionada!.direccion ?? '',
-                              style:
-                                  parentContext.textTheme.bodyMedium?.copyWith(
+                              style: TextStyle(
                                 fontWeight: FontWeight.w600,
                                 color: colorScheme.onSurface,
                               ),
@@ -200,8 +192,7 @@ class DireccionWidget extends StatelessWidget {
                               const SizedBox(height: 4),
                               Text(
                                 'Ciudad: ${direccionSeleccionada!.ciudad}',
-                                style: parentContext.textTheme.bodySmall
-                                    ?.copyWith(
+                                style: TextStyle(
                                   color: colorScheme.onSurfaceVariant,
                                 ),
                               ),

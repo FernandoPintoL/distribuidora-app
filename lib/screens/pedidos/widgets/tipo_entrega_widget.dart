@@ -87,7 +87,7 @@ class _TipoEntregaChip extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 8),
         decoration: BoxDecoration(
           color: isSelected
               ? color.withOpacity(isDark ? 0.2 : 0.1)
@@ -103,7 +103,6 @@ class _TipoEntregaChip extends StatelessWidget {
         child: Text(
           label,
           style: TextStyle(
-            fontSize: AppTextStyles.bodyMedium(parentContext).fontSize!,
             fontWeight: FontWeight.w600,
             color: isSelected ? color : colorScheme.onSurfaceVariant,
           ),

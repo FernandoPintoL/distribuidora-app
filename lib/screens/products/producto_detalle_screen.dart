@@ -1,10 +1,10 @@
 ﻿import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../models/models.dart';
-import '../../models/detalle_carrito_con_rango.dart';
 import '../../providers/providers.dart';
 import '../../widgets/widgets.dart';
-import '../../widgets/common/quantity_input_widget.dart';
+import '../../widgets/product/product_card_base.dart';
+import '../../widgets/product/product_card_quantity_controls.dart';
 import '../../config/config.dart';
 import '../../extensions/theme_extension.dart';
 
@@ -13,10 +13,7 @@ import '../../extensions/theme_extension.dart';
 class ProductoDetalleScreen extends StatefulWidget {
   final Product producto;
 
-  const ProductoDetalleScreen({
-    super.key,
-    required this.producto,
-  });
+  const ProductoDetalleScreen({super.key, required this.producto});
 
   @override
   State<ProductoDetalleScreen> createState() => _ProductoDetalleScreenState();
@@ -46,7 +43,9 @@ class _ProductoDetalleScreenState extends State<ProductoDetalleScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
         final carritoProvider = context.read<CarritoProvider>();
-        final cantidadEnCarrito = carritoProvider.obtenerCantidadProducto(widget.producto.id);
+        final cantidadEnCarrito = carritoProvider.obtenerCantidadProducto(
+          widget.producto.id,
+        );
         if (cantidadEnCarrito > 0) {
           _cantidad = cantidadEnCarrito;
           _cantidadController.text = _cantidad.toString();
@@ -81,12 +80,15 @@ class _ProductoDetalleScreenState extends State<ProductoDetalleScreen> {
       );
 
       // Si el item tiene comboItemsSeleccionados, cargarlos
-      if (item.comboItemsSeleccionados != null && item.comboItemsSeleccionados!.isNotEmpty) {
+      if (item.comboItemsSeleccionados != null &&
+          item.comboItemsSeleccionados!.isNotEmpty) {
         _itemsOpcionalesSeleccionados.clear();
         _cantidadesOpcionales.clear();
 
         final comboItems = widget.producto.comboItems ?? [];
-        final itemsOpcionales = comboItems.where((c) => !c.esObligatorio).toList();
+        final itemsOpcionales = comboItems
+            .where((c) => !c.esObligatorio)
+            .toList();
 
         for (final selectedItem in item.comboItemsSeleccionados!) {
           final comboItemId = selectedItem['combo_item_id'];
@@ -105,7 +107,9 @@ class _ProductoDetalleScreenState extends State<ProductoDetalleScreen> {
         }
 
         setState(() {});
-        debugPrint('âœ… Items opcionales cargados: ${_itemsOpcionalesSeleccionados.length}');
+        debugPrint(
+          'âœ… Items opcionales cargados: ${_itemsOpcionalesSeleccionados.length}',
+        );
       }
     } catch (e) {
       // No hay item en el carrito para este producto
@@ -122,24 +126,34 @@ class _ProductoDetalleScreenState extends State<ProductoDetalleScreen> {
 
     return [
       // Obligatorios (cantidad fija del combo)
-      ...items.where((i) => i.esObligatorio).map((i) => {
-        'combo_item_id': i.id,
-        'producto_id': i.productoId,
-        'cantidad': i.cantidad,
-      }),
+      ...items
+          .where((i) => i.esObligatorio)
+          .map(
+            (i) => {
+              'combo_item_id': i.id,
+              'producto_id': i.productoId,
+              'cantidad': i.cantidad,
+            },
+          ),
       // Opcionales seleccionados (cantidad modificable)
-      ..._itemsOpcionalesSeleccionados.map((item) => {
-        'combo_item_id': item.id,
-        'producto_id': item.productoId,
-        'cantidad': _cantidadesOpcionales[item.id] ?? item.cantidad,
-      }),
+      ..._itemsOpcionalesSeleccionados.map(
+        (item) => {
+          'combo_item_id': item.id,
+          'producto_id': item.productoId,
+          'cantidad': _cantidadesOpcionales[item.id] ?? item.cantidad,
+        },
+      ),
     ];
   }
 
   void _incrementarCantidad() {
     final carritoProvider = context.read<CarritoProvider>();
-    final cantidadActual = carritoProvider.obtenerCantidadProducto(widget.producto.id);
-    final stock = (widget.producto.stockPrincipal?.cantidadDisponible ?? 0 as num).toInt();
+    final cantidadActual = carritoProvider.obtenerCantidadProducto(
+      widget.producto.id,
+    );
+    final stock =
+        (widget.producto.stockPrincipal?.cantidadDisponible ?? 0 as num)
+            .toInt();
 
     if (cantidadActual < stock) {
       // âœ… ACTUALIZADO: Agregar combo con items obligatorios pre-incluidos
@@ -162,7 +176,9 @@ class _ProductoDetalleScreenState extends State<ProductoDetalleScreen> {
 
   void _decrementarCantidad() {
     final carritoProvider = context.read<CarritoProvider>();
-    final cantidadActual = carritoProvider.obtenerCantidadProducto(widget.producto.id);
+    final cantidadActual = carritoProvider.obtenerCantidadProducto(
+      widget.producto.id,
+    );
 
     if (cantidadActual > 0) {
       // Decrementar 1 unidad del carrito
@@ -182,7 +198,8 @@ class _ProductoDetalleScreenState extends State<ProductoDetalleScreen> {
   void _actualizarCantidad(String valor) {
     final carritoProvider = context.read<CarritoProvider>();
     final stock =
-        (widget.producto.stockPrincipal?.cantidadDisponible ?? 0 as num).toInt();
+        (widget.producto.stockPrincipal?.cantidadDisponible ?? 0 as num)
+            .toInt();
 
     // âœ… NUEVO: Si estÃ¡ vacÃ­o mientras escribe, ignorar (no eliminar)
     if (valor.isEmpty) {
@@ -198,7 +215,9 @@ class _ProductoDetalleScreenState extends State<ProductoDetalleScreen> {
 
     if (cantidadIngresada > stock) {
       // Si excede stock, ajustar al mÃ¡ximo disponible
-      _mostrarError('La cantidad no puede exceder el stock disponible ($stock)');
+      _mostrarError(
+        'La cantidad no puede exceder el stock disponible ($stock)',
+      );
       _cantidadController.text = stock.toString();
       carritoProvider.actualizarCantidad(widget.producto.id, stock);
       // âœ… NUEVO: Recalcular con rangos despuÃ©s de cambiar cantidad
@@ -214,79 +233,11 @@ class _ProductoDetalleScreenState extends State<ProductoDetalleScreen> {
     setState(() => _cantidad = cantidadIngresada);
   }
 
-  // âœ… ACTUALIZADO: El QuantityInputWidget maneja la validaciÃ³n internamente
-  // Este mÃ©todo ya no es necesario, pero lo mantenemos para compatibilidad
   void _onFocusLostCantidad() {
-    // La validaciÃ³n ahora se hace dentro de QuantityInputWidget
-    // Este mÃ©todo solo se llama si el campo se queda vacÃ­o
     if (_cantidad <= 0) {
       final carritoProvider = context.read<CarritoProvider>();
       carritoProvider.eliminarProducto(widget.producto.id);
       setState(() => _cantidad = 1);
-    }
-  }
-
-  Future<void> _agregarAlCarrito() async {
-    final carritoProvider = context.read<CarritoProvider>();
-
-    // Validar cantidad
-    if (_cantidad <= 0) {
-      _mostrarError('La cantidad debe ser mayor a 0');
-      return;
-    }
-
-    // âœ… ACTUALIZADO: Los combos se pueden agregar solo con items obligatorios
-    // Los items opcionales son... opcionales. No es obligatorio seleccionar ninguno.
-
-    setState(() => _agregandoAlCarrito = true);
-
-    try {
-      // Simular delay de procesamiento
-      await Future.delayed(const Duration(milliseconds: 500));
-
-      // âœ… ACTUALIZADO: Usar mÃ©todo auxiliar para construir combo items
-      final comboItemsSeleccionados = _construirComboItems();
-
-      if (widget.producto.esCombo) {
-        debugPrint('ðŸ” [_agregarAlCarrito] Items opcionales seleccionados: ${_itemsOpcionalesSeleccionados.length}');
-        debugPrint('ðŸ“¦ [ProductoDetalle] Combo items construidos: $comboItemsSeleccionados');
-      }
-
-      // âœ… Agregar al carrito con comboItemsSeleccionados
-      carritoProvider.agregarProducto(
-        widget.producto,
-        cantidad: _cantidad,
-        observaciones: _observacionesController.text.isNotEmpty
-            ? _observacionesController.text
-            : null,
-        comboItemsSeleccionados: comboItemsSeleccionados,
-      );
-
-      if (!mounted) return;
-
-      // Verificar si hay error en el provider
-      if (carritoProvider.errorMessage != null) {
-        _mostrarError(carritoProvider.errorMessage!);
-        return;
-      }
-
-      // Ã‰xito
-      _mostrarExito('${widget.producto.nombre} agregado al carrito');
-
-      // Limpiar formulario
-      _cantidadController.text = '1';
-      _observacionesController.clear();
-      setState(() {
-        _cantidad = 1;
-        _itemsOpcionalesSeleccionados.clear();
-        _cantidadesOpcionales.clear();
-      });
-    } catch (e) {
-      _mostrarError('Error al agregar al carrito: $e');
-    } finally {
-      if (mounted) {
-        setState(() => _agregandoAlCarrito = false);
-      }
     }
   }
 
@@ -305,7 +256,9 @@ class _ProductoDetalleScreenState extends State<ProductoDetalleScreen> {
       comboItemsSeleccionados,
     );
 
-    debugPrint('ðŸ’¾ [ProductoDetalle] Combo items guardados en carrito automÃ¡ticamente: ${comboItemsSeleccionados?.length ?? 0} items');
+    debugPrint(
+      'ðŸ’¾ [ProductoDetalle] Combo items guardados en carrito automÃ¡ticamente: ${comboItemsSeleccionados?.length ?? 0} items',
+    );
   }
 
   void _mostrarError(String mensaje) {
@@ -314,16 +267,6 @@ class _ProductoDetalleScreenState extends State<ProductoDetalleScreen> {
         content: Text(mensaje),
         backgroundColor: Colors.red,
         duration: const Duration(seconds: 3),
-      ),
-    );
-  }
-
-  void _mostrarExito(String mensaje) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(mensaje),
-        backgroundColor: Colors.green,
-        duration: const Duration(seconds: 2),
       ),
     );
   }
@@ -338,10 +281,13 @@ class _ProductoDetalleScreenState extends State<ProductoDetalleScreen> {
         final tieneStock = stockDispInt > 0;
         final cantidadMinima = widget.producto.cantidadMinima ?? 1;
 
+        // Obtener detalles de rango de precio
+        final detalleConRango = carritoProvider.obtenerDetalleConRango(
+          widget.producto.id,
+        );
+
         return Scaffold(
-          appBar: CustomGradientAppBar(
-            title: widget.producto.nombre,
-          ),
+          appBar: CustomGradientAppBar(title: widget.producto.nombre),
           body: Padding(
             padding: const EdgeInsets.all(8.0),
             child: SingleChildScrollView(
@@ -350,43 +296,37 @@ class _ProductoDetalleScreenState extends State<ProductoDetalleScreen> {
                 children: [
                   // Imagen del producto
                   _buildImageGallery(),
-
-                  // InformaciÃ³n bÃ¡sica
+                  // InformaciÃ³n de stock
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                    child: _buildStockInfo(tieneStock, stockDispInt),
+                  ),
+                  // InformaciÃ³n bÃ¡sica usando ProductCardBase
                   Padding(
                     padding: const EdgeInsets.all(16),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // Nombre y precio
-                        _buildNombreYPrecio(),
+                        // Usar ProductCardBase para mostrar producto, precio y combo items
+                        ProductCardBase(
+                          product: widget.producto,
+                          quantity: _cantidad,
+                          detalleConRango: detalleConRango,
+                          showDeleteButton: false,
+                          showQuantityControls: false,
+                          showImage: false,
+                          isPreventista: true,
+                          cantidadDisponible: stockDispInt,
+                          unidadMedida: widget.producto.unidadMedida?.nombre,
+                        ),
                         const SizedBox(height: 16),
 
-                        // InformaciÃ³n de stock
-                        _buildStockInfo(tieneStock, stockDispInt),
-                        const SizedBox(height: 16),
-
-                        // DescripciÃ³n
-                        if (widget.producto.descripcion != null &&
-                            widget.producto.descripcion!.isNotEmpty)
-                          _buildDescripcion(),
-
-                        // Detalles adicionales
-                        const SizedBox(height: 16),
-                        _buildDetallesAdicionales(),
-
-                        // Productos del combo si aplica
+                        // Productos del combo si aplica (solo para seleccionar opcionales)
                         if (widget.producto.esCombo &&
                             widget.producto.comboItems != null &&
                             widget.producto.comboItems!.isNotEmpty) ...[
-                          const SizedBox(height: 16),
                           _buildProductosCombo(),
-
-                          // âœ… NUEVO: Componentes requeridos basado en cantidad seleccionada
-                          _buildComponentesRequeridos(),
                         ],
-
-                        // Volume discounts si existen
-                        const SizedBox(height: 16),
                         // AquÃ­ va el widget VolumeDiscountDisplay cuando se integre con descuentos
                       ],
                     ),
@@ -398,7 +338,7 @@ class _ProductoDetalleScreenState extends State<ProductoDetalleScreen> {
                     cantidadMinima: cantidadMinima,
                     stockDisponible: stockDispInt,
                   ),
-                  SizedBox(height: 16,)
+                  SizedBox(height: 16),
                 ],
               ),
             ),
@@ -427,140 +367,35 @@ class _ProductoDetalleScreenState extends State<ProductoDetalleScreen> {
       );
     }
 
-    return Container(
-      width: double.infinity,
-      height: 300,
-      color: colorScheme.surfaceVariant,
-      child: PageView.builder(
-        itemCount: imagenes.length,
-        itemBuilder: (context, index) {
-          return Image.network(
-            imagenes[index].url,
-            fit: BoxFit.cover,
-            errorBuilder: (context, error, stackTrace) {
-              return Container(
-                color: colorScheme.surfaceVariant,
-                child: Icon(
-                  Icons.broken_image,
-                  size: 80,
-                  color: colorScheme.onSurfaceVariant.withOpacity(0.5),
-                ),
+    return Padding(
+      padding: const EdgeInsets.all(16),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(20),
+        child: Container(
+          width: double.infinity,
+          height: 300,
+          color: colorScheme.surfaceVariant,
+          child: PageView.builder(
+            itemCount: imagenes.length,
+            itemBuilder: (context, index) {
+              return Image.network(
+                imagenes[index].url,
+                fit: BoxFit.cover,
+                errorBuilder: (context, error, stackTrace) {
+                  return Container(
+                    color: colorScheme.surfaceVariant,
+                    child: Icon(
+                      Icons.broken_image,
+                      size: 80,
+                      color: colorScheme.onSurfaceVariant.withOpacity(0.5),
+                    ),
+                  );
+                },
               );
             },
-          );
-        },
+          ),
+        ),
       ),
-    );
-  }
-
-  Widget _buildNombreYPrecio() {
-    return Consumer<CarritoProvider>(
-      builder: (context, carritoProvider, _) {
-        final colorScheme = context.colorScheme;
-
-        // âœ… NUEVO: Obtener detalles con rango de precios
-        final detalleConRango = carritoProvider.obtenerDetalleConRango(
-          widget.producto.id,
-        );
-
-        // âœ… NUEVO: Calcular descuentos y precios
-        final tipoPrecionNombre = detalleConRango?.tipoPrecioNombre.toUpperCase() ?? '';
-        final bool esDescuento = detalleConRango != null &&
-            _cantidad > 0 &&
-            tipoPrecionNombre.contains('DESCUENTO');
-        final bool esEspecial = detalleConRango != null &&
-            _cantidad > 0 &&
-            tipoPrecionNombre.contains('ESPECIAL');
-        final bool tieneDescuento = esDescuento || esEspecial;
-
-        final precioActual = detalleConRango?.precioUnitario ?? widget.producto.precioVenta ?? 0.0;
-        final subtotal = precioActual * _cantidad;
-        final precioOriginal = widget.producto.precioVenta ?? 0.0;
-
-        // Colores para cada tipo de descuento
-        final colorDescuento = esDescuento ? Colors.orange : (esEspecial ? Colors.green : colorScheme.primary);
-
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              widget.producto.nombre,
-              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
-            ),
-            const SizedBox(height: 8),
-            if (widget.producto.codigo.isNotEmpty)
-              Text(
-                'CÃ³digo: ${widget.producto.codigo}',
-                style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                      color: colorScheme.onSurfaceVariant,
-                    ),
-              ),
-            const SizedBox(height: 12),
-            // âœ… NUEVO: Mostrar precio original tachado si hay descuento
-            if (tieneDescuento)
-              Padding(
-                padding: const EdgeInsets.only(bottom: 4.0),
-                child: Text(
-                  'Bs ${precioOriginal.toStringAsFixed(2)}',
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: Colors.grey,
-                    decoration: TextDecoration.lineThrough,
-                  ),
-                ),
-              ),
-            // âœ… NUEVO: Mostrar precio actual con color segÃºn tipo
-            Row(
-              children: [
-                Text(
-                  'Bs ${precioActual.toStringAsFixed(2)}',
-                  style: Theme.of(context).textTheme.displaySmall?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: colorDescuento,
-                      ),
-                ),
-                // âœ… NUEVO: Mostrar tipo de precio si aplica rango
-                if (detalleConRango != null && _cantidad > 0)
-                  Padding(
-                    padding: const EdgeInsets.only(left: 12.0),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 4,
-                      ),
-                      decoration: BoxDecoration(
-                        color: colorDescuento.withAlpha(100),
-                        borderRadius: BorderRadius.circular(6),
-                      ),
-                      child: Text(
-                        detalleConRango!.tipoPrecioNombre,
-                        style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                          fontWeight: FontWeight.w700,
-                          color: esDescuento
-                              ? Colors.orange.shade900
-                              : (esEspecial ? Colors.green.shade900 : colorScheme.onPrimaryContainer),
-                        ),
-                      ),
-                    ),
-                  ),
-              ],
-            ),
-            // âœ… NUEVO: Mostrar subtotal si hay cantidad
-            if (_cantidad > 0 && detalleConRango != null)
-              Padding(
-                padding: const EdgeInsets.only(top: 8.0),
-                child: Text(
-                  'Subtotal: Bs ${subtotal.toStringAsFixed(2)}',
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    color: colorDescuento,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-          ],
-        );
-      },
     );
   }
 
@@ -569,7 +404,9 @@ class _ProductoDetalleScreenState extends State<ProductoDetalleScreen> {
     final isDark = context.isDark;
 
     final backgroundColor = tieneStock
-        ? (isDark ? Colors.green.shade900.withOpacity(0.2) : Colors.green.shade50)
+        ? (isDark
+              ? Colors.green.shade900.withOpacity(0.2)
+              : Colors.green.shade50)
         : (isDark ? Colors.red.shade900.withOpacity(0.2) : Colors.red.shade50);
 
     final borderColor = tieneStock
@@ -585,7 +422,7 @@ class _ProductoDetalleScreenState extends State<ProductoDetalleScreen> {
         : (isDark ? Colors.red.shade300 : Colors.red.shade700);
 
     return Container(
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       decoration: BoxDecoration(
         color: backgroundColor,
         border: Border.all(color: borderColor),
@@ -613,8 +450,8 @@ class _ProductoDetalleScreenState extends State<ProductoDetalleScreen> {
                   Text(
                     '${stockDisponible.toStringAsFixed(0)} ${widget.producto.unidadMedida?.nombre ?? 'unidades'} disponibles',
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: colorScheme.onSurfaceVariant,
-                        ),
+                      color: colorScheme.onSurfaceVariant,
+                    ),
                   ),
               ],
             ),
@@ -624,205 +461,61 @@ class _ProductoDetalleScreenState extends State<ProductoDetalleScreen> {
     );
   }
 
-  Widget _buildDescripcion() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'DescripciÃ³n',
-          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
-        ),
-        const SizedBox(height: 8),
-        Text(
-          widget.producto.descripcion!,
-          style: Theme.of(context).textTheme.bodyMedium,
-        ),
-      ],
-    );
-  }
-
-  Widget _buildDetallesAdicionales() {
-    final detalles = <MapEntry<String, String?>>[];
-
-    if (widget.producto.marca != null) {
-      detalles.add(MapEntry('Marca', widget.producto.marca!.nombre));
-    }
-
-    if (widget.producto.categoria != null) {
-      detalles.add(MapEntry('CategorÃ­a', widget.producto.categoria!.nombre));
-    }
-
-    if (widget.producto.unidadMedida != null) {
-      detalles.add(MapEntry('Unidad', widget.producto.unidadMedida!.nombre));
-    }
-
-    /*if (widget.producto.proveedor != null) {
-      detalles.add(MapEntry('Proveedor', widget.producto.proveedor!.nombre));
-    }*/
-
-    if (widget.producto.sku != null) {
-      detalles.add(MapEntry('SKU', widget.producto.sku!));
-    }
-
-    if (widget.producto.codigosBarra != null &&
-        widget.producto.codigosBarra!.isNotEmpty) {
-      detalles.add(
-        MapEntry('CÃ³digo de Barra', widget.producto.codigosBarra!.join(', ')),
-      );
-    }
-
-    if (detalles.isEmpty) {
-      return const SizedBox.shrink();
-    }
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'Detalles',
-          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
-        ),
-        const SizedBox(height: 12),
-        ...detalles.asMap().entries.map((entry) {
-          final index = entry.key;
-          final detalle = entry.value;
-          final isLast = index == detalles.length - 1;
-
-          return Padding(
-            padding: EdgeInsets.only(bottom: isLast ? 0 : 12),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                SizedBox(
-                  width: 120,
-                  child: Text(
-                    detalle.key,
-                    style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                          fontWeight: FontWeight.w600,
-                          color: context.colorScheme.onSurfaceVariant,
-                        ),
-                  ),
-                ),
-                Expanded(
-                  child: Text(
-                    detalle.value ?? '-',
-                    style: Theme.of(context).textTheme.bodyMedium,
-                  ),
-                ),
-              ],
-            ),
-          );
-        }).toList(),
-      ],
-    );
-  }
-
   Widget _buildSeccionAgregarAlCarrito({
     required bool tieneStock,
     required int cantidadMinima,
     required int stockDisponible,
   }) {
-    final colorScheme = context.colorScheme;
-    final isDark = context.isDark;
-
     return Consumer<CarritoProvider>(
       builder: (context, carritoProvider, _) {
-        final cantidadEnCarrito = carritoProvider.obtenerCantidadProducto(widget.producto.id);
-        const brownColor = Color(0xFF795548);
-        final brownColorLight = brownColor.withAlpha(isDark ? 100 : 40);
+        final cantidadEnCarrito = carritoProvider.obtenerCantidadProducto(
+          widget.producto.id,
+        );
 
         // âœ… ACTUALIZADO: Los combos se pueden agregar solo con items obligatorios
         // Items opcionales son realmente opcionales
         final necesitaSeleccionOpcional = false;
 
         return Container(
-          color: cantidadEnCarrito > 0 ? brownColorLight : colorScheme.surface,
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.symmetric(horizontal: 16),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Mostrar cantidad en carrito
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(12),
-                margin: const EdgeInsets.only(bottom: 16),
-                decoration: BoxDecoration(
-                  color: Colors.blue.shade50,
-                  border: Border.all(color: Colors.blue.shade200),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Text(
-                  cantidadEnCarrito > 0
-                      ? 'ðŸ›’ Cantidad en carrito: $cantidadEnCarrito ${widget.producto.unidadMedida?.nombre ?? 'unidades'}'
-                      : 'ðŸ“¦ Este producto no estÃ¡ en el carrito',
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: Colors.blue.shade800,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-
               // Controles de cantidad
               if (tieneStock)
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // âœ… NUEVO: Mostrar advertencia si falta seleccionar opcional
-                    if (necesitaSeleccionOpcional)
-                      Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.all(12),
-                        margin: const EdgeInsets.only(bottom: 16),
-                        decoration: BoxDecoration(
-                          color: Colors.orange.shade50,
-                          border: Border.all(color: Colors.orange.shade200),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Text(
-                          'âš ï¸ Debes seleccionar al menos un item del grupo opcional arriba',
-                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            color: Colors.orange.shade800,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ),
-                    Text(
-                      'Cantidad',
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
-                    ),
-                    const SizedBox(height: 12),
                     if (cantidadEnCarrito == 0)
                       // Mostrar botÃ³n + si no estÃ¡ en carrito
                       SizedBox(
                         width: double.infinity,
                         child: ElevatedButton.icon(
                           // âœ… NUEVO: Deshabilitar si falta seleccionar opcional
-                          onPressed: necesitaSeleccionOpcional ? null : _incrementarCantidad,
-                          icon: const Icon(Icons.add_shopping_cart),
+                          onPressed: necesitaSeleccionOpcional
+                              ? null
+                              : _incrementarCantidad,
+                          icon: const Icon(Icons.shopping_cart_outlined),
                           label: const Text('Agregar al Carrito'),
                           style: ElevatedButton.styleFrom(
                             padding: const EdgeInsets.symmetric(vertical: 16),
-                            backgroundColor: Colors.green.shade500,
-                            foregroundColor: Colors.white,
+                            backgroundColor: AppColors.secondary,
                           ),
                         ),
                       )
                     else
-                      // âœ… NUEVO: Usar el QuantityInputWidget moderno
-                      QuantityInputWidget(
+                      ProductCardQuantityControls(
                         quantity: _cantidad,
-                        maxQuantity: (widget.producto.stockPrincipal?.cantidadDisponible ?? 0 as num).toInt(),
+                        maxQuantity:
+                            (widget
+                                        .producto
+                                        .stockPrincipal
+                                        ?.cantidadDisponible ??
+                                    0 as num)
+                                .toInt(),
                         onIncrement: _incrementarCantidad,
                         onDecrement: _decrementarCantidad,
                         onChanged: _actualizarCantidad,
-                        primaryColor: brownColor,
-                        fullWidth: true,
                       ),
                   ],
                 )
@@ -837,8 +530,8 @@ class _ProductoDetalleScreenState extends State<ProductoDetalleScreen> {
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Text(
-                    'âŒ Producto sin stock disponible',
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    'Producto sin stock disponible',
+                    style: TextStyle(
                       color: Colors.red.shade800,
                       fontWeight: FontWeight.w600,
                     ),
@@ -858,175 +551,108 @@ class _ProductoDetalleScreenState extends State<ProductoDetalleScreen> {
     final isDark = context.isDark;
     final comboItems = widget.producto.comboItems ?? [];
 
-    debugPrint('ðŸ” [_buildProductosCombo] comboItems.length: ${comboItems.length}');
+    debugPrint(
+      'ðŸ” [_buildProductosCombo] comboItems.length: ${comboItems.length}',
+    );
 
     if (comboItems.isEmpty) {
       debugPrint('âš ï¸ [_buildProductosCombo] comboItems estÃ¡ vacÃ­o');
       return const SizedBox.shrink();
     }
 
-    // Separar items obligatorios y opcionales
-    final itemsObligatorios = comboItems.where((item) => item.esObligatorio).toList();
-    final itemsOpcionales = comboItems.where((item) => !item.esObligatorio).toList();
+    // Separar solo items opcionales (obligatorios ya se muestran en ProductCardBase)
+    final itemsOpcionales = comboItems
+        .where((item) => !item.esObligatorio)
+        .toList();
 
-    debugPrint('ðŸ“¦ [_buildProductosCombo] Items obligatorios: ${itemsObligatorios.length}');
-    debugPrint('ðŸ“¦ [_buildProductosCombo] Items opcionales: ${itemsOpcionales.length}');
+    if (itemsOpcionales.isEmpty) {
+      return const SizedBox.shrink();
+    }
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // TÃ­tulo de la secciÃ³n
+        // TÃ­tulo: Items Opcionales
         Row(
           children: [
-            Icon(
-              Icons.card_giftcard,
-              color: Colors.amber.shade600,
-              size: 20,
-            ),
+            Icon(Icons.check_box, color: Colors.orange.shade700, size: 20),
             const SizedBox(width: 8),
-            Text(
-              'Productos del Combo',
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
+            Expanded(
+              child: Text(
+                'Grupo Opcional - Elige uno o mÃ¡s (${_itemsOpcionalesSeleccionados.length} seleccionados)',
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: Colors.orange.shade800,
+                ),
+              ),
             ),
           ],
         ),
         const SizedBox(height: 12),
 
-        // Items obligatorios
-        if (itemsObligatorios.isNotEmpty) ...[
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: Colors.blue.shade50,
-              border: Border.all(color: Colors.blue.shade200),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Icon(
-                      Icons.check_circle,
-                      color: Colors.blue.shade700,
-                      size: 18,
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      'Productos Incluidos (${itemsObligatorios.length})',
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        color: Colors.blue.shade800,
-                        fontSize: AppTextStyles.bodySmall(context).fontSize!,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                ...itemsObligatorios.asMap().entries.map((entry) {
-                  final index = entry.key;
-                  final item = entry.value;
-                  final isLast = index == itemsObligatorios.length - 1;
-
-                  return Padding(
-                    padding: EdgeInsets.only(bottom: isLast ? 0 : 12),
-                    child: _buildComboItemCard(item, colorScheme, isDark),
-                  );
-                }).toList(),
-              ],
-            ),
+        Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: Colors.orange.shade50,
+            border: Border.all(color: Colors.orange.shade200),
+            borderRadius: BorderRadius.circular(8),
           ),
-        ],
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              ...itemsOpcionales.asMap().entries.map((entry) {
+                final index = entry.key;
+                final item = entry.value;
+                final isLast = index == itemsOpcionales.length - 1;
+                final estaSeleccionado = _itemsOpcionalesSeleccionados.any(
+                  (i) => i.id == item.id,
+                );
 
-        // Items opcionales (grupo opcional)
-        if (itemsOpcionales.isNotEmpty) ...[
-          const SizedBox(height: 16),
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: Colors.orange.shade50,
-              border: Border.all(color: Colors.orange.shade200),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Icon(
-                      Icons.check_box,
-                      color: Colors.orange.shade700,
-                      size: 18,
+                return Padding(
+                  padding: EdgeInsets.only(bottom: isLast ? 0 : 12),
+                  child: InkWell(
+                    onTap: () {
+                      setState(() {
+                        if (estaSeleccionado) {
+                          _itemsOpcionalesSeleccionados.removeWhere(
+                            (i) => i.id == item.id,
+                          );
+                          _cantidadesOpcionales.remove(item.id);
+                        } else {
+                          _itemsOpcionalesSeleccionados.add(item);
+                          _cantidadesOpcionales.putIfAbsent(
+                            item.id,
+                            () => item.cantidad.toInt(),
+                          );
+                        }
+                      });
+                      _actualizarComboEnCarrito();
+                    },
+                    borderRadius: BorderRadius.circular(8),
+                    child: _buildComboItemCard(
+                      item,
+                      colorScheme,
+                      isDark,
+                      esSeleccionable: true,
+                      estaSeleccionado: estaSeleccionado,
+                      cantidadModificable: estaSeleccionado
+                          ? _cantidadesOpcionales[item.id] ??
+                                item.cantidad.toInt()
+                          : null,
+                      onCantidadChanged: estaSeleccionado
+                          ? (nuevaCantidad) {
+                              setState(() {
+                                _cantidadesOpcionales[item.id] = nuevaCantidad;
+                              });
+                            }
+                          : null,
                     ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        'Grupo Opcional - Elige uno o mÃ¡s (${_itemsOpcionalesSeleccionados.length} seleccionados)',
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          color: Colors.orange.shade800,
-                          fontSize: AppTextStyles.bodySmall(context).fontSize!,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                ...itemsOpcionales.asMap().entries.map((entry) {
-                  final index = entry.key;
-                  final item = entry.value;
-                  final isLast = index == itemsOpcionales.length - 1;
-                  final estaSeleccionado = _itemsOpcionalesSeleccionados.any((i) => i.id == item.id);
-
-                  return Padding(
-                    padding: EdgeInsets.only(bottom: isLast ? 0 : 12),
-                    // âœ… NUEVO: Hacer el item interactivo con InkWell
-                    child: InkWell(
-                      onTap: () {
-                        setState(() {
-                          if (estaSeleccionado) {
-                            // Remover si ya estÃ¡ seleccionado
-                            _itemsOpcionalesSeleccionados.removeWhere((i) => i.id == item.id);
-                            _cantidadesOpcionales.remove(item.id);
-                          } else {
-                            // Agregar si no estÃ¡ seleccionado
-                            _itemsOpcionalesSeleccionados.add(item);
-                            _cantidadesOpcionales.putIfAbsent(
-                              item.id,
-                              () => item.cantidad.toInt(),
-                            );
-                          }
-                        });
-
-                        // âœ… NUEVO: Guardar automÃ¡ticamente en CarritoProvider
-                        _actualizarComboEnCarrito();
-                      },
-                      borderRadius: BorderRadius.circular(8),
-                      child: _buildComboItemCard(
-                        item,
-                        colorScheme,
-                        isDark,
-                        esSeleccionable: true,
-                        estaSeleccionado: estaSeleccionado,
-                        cantidadModificable:
-                            estaSeleccionado ? _cantidadesOpcionales[item.id] ?? item.cantidad.toInt() : null,
-                        onCantidadChanged: estaSeleccionado
-                            ? (nuevaCantidad) {
-                                setState(() {
-                                  _cantidadesOpcionales[item.id] = nuevaCantidad;
-                                });
-                              }
-                            : null,
-                      ),
-                    ),
-                  );
-                }).toList(),
-              ],
-            ),
+                  ),
+                );
+              }).toList(),
+            ],
           ),
-        ],
+        ),
 
         // InformaciÃ³n de capacidad
         const SizedBox(height: 12),
@@ -1039,11 +665,7 @@ class _ProductoDetalleScreenState extends State<ProductoDetalleScreen> {
           ),
           child: Row(
             children: [
-              Icon(
-                Icons.info,
-                color: colorScheme.secondary,
-                size: 18,
-              ),
+              Icon(Icons.info, color: colorScheme.secondary, size: 18),
               const SizedBox(width: 8),
               Expanded(
                 child: Column(
@@ -1052,8 +674,8 @@ class _ProductoDetalleScreenState extends State<ProductoDetalleScreen> {
                     Text(
                       'Capacidad del Combo',
                       style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                     const SizedBox(height: 4),
                     Text(
@@ -1070,201 +692,6 @@ class _ProductoDetalleScreenState extends State<ProductoDetalleScreen> {
     );
   }
 
-  // âœ… NUEVO: Mostrar componentes requeridos del combo basado en cantidad seleccionada
-  Widget _buildComponentesRequeridos() {
-    if (!widget.producto.esCombo || _cantidad <= 0) {
-      return const SizedBox.shrink();
-    }
-
-    final colorScheme = context.colorScheme;
-    final comboItems = widget.producto.comboItems ?? [];
-
-    // Filtrar solo obligatorios + opcionales seleccionados
-    final itemsObligatorios = comboItems.where((item) => item.esObligatorio).toList();
-    final itemsOpcionalesSeleccionados = _itemsOpcionalesSeleccionados;
-
-    if (itemsObligatorios.isEmpty && itemsOpcionalesSeleccionados.isEmpty) {
-      return const SizedBox.shrink();
-    }
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const SizedBox(height: 16),
-        // TÃ­tulo
-        Row(
-          children: [
-            Icon(
-              Icons.shopping_cart_checkout,
-              color: Colors.blue.shade600,
-              size: 20,
-            ),
-            const SizedBox(width: 8),
-            Text(
-              'Componentes Requeridos para ${ _cantidad > 1 ? '$_cantidad combos' : '1 combo'}',
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 12),
-
-        // Tabla de componentes
-        Container(
-          decoration: BoxDecoration(
-            border: Border.all(color: Colors.blue.shade200),
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: Column(
-            children: [
-              // Encabezados
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Colors.blue.shade50,
-                  borderRadius: const BorderRadius.only(
-                    topLeft: Radius.circular(8),
-                    topRight: Radius.circular(8),
-                  ),
-                ),
-                child: Row(
-                  children: [
-                    Expanded(
-                      flex: 3,
-                      child: Text(
-                        'Componente',
-                        style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: Colors.blue.shade700,
-                        ),
-                      ),
-                    ),
-                    Expanded(
-                      child: Text(
-                        'Cant/Combo',
-                        textAlign: TextAlign.center,
-                        style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: Colors.blue.shade700,
-                        ),
-                      ),
-                    ),
-                    Expanded(
-                      child: Text(
-                        'Total',
-                        textAlign: TextAlign.center,
-                        style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: Colors.blue.shade700,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-
-              // Items obligatorios
-              ...itemsObligatorios.asMap().entries.map((entry) {
-                final item = entry.value;
-                final cantidadTotal = (item.cantidad * _cantidad).toInt();
-                return _buildComponenteRow(item, item.cantidad.toInt(), cantidadTotal, 'Obligatorio');
-              }),
-
-              // Items opcionales seleccionados
-              ...itemsOpcionalesSeleccionados.asMap().entries.map((entry) {
-                final item = entry.value;
-                final cantidadPorCombo = _cantidadesOpcionales[item.id] ?? item.cantidad.toInt();
-                final cantidadTotal = cantidadPorCombo * _cantidad;
-                return _buildComponenteRow(item, cantidadPorCombo, cantidadTotal, 'Opcional');
-              }),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-
-  // Helper para mostrar una fila de componente
-  Widget _buildComponenteRow(
-    ComboItem item,
-    int cantidadPorCombo,
-    int cantidadTotal,
-    String tipo,
-  ) {
-    final colorScheme = context.colorScheme;
-    final bgColor = tipo == 'Obligatorio' ? Colors.blue.shade50 : Colors.orange.shade50;
-    final borderColor = tipo == 'Obligatorio' ? Colors.blue.shade200 : Colors.orange.shade200;
-
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        border: Border(
-          bottom: BorderSide(color: borderColor),
-        ),
-        color: bgColor.withOpacity(0.3),
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            flex: 3,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  item.productoNombre ?? 'Producto',
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    fontWeight: FontWeight.w600,
-                  ),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                const SizedBox(height: 4),
-                Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                      decoration: BoxDecoration(
-                        color: tipo == 'Obligatorio' ? Colors.blue : Colors.orange,
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                      child: Text(
-                        tipo,
-                        style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                          color: Colors.white,
-                          fontSize: AppTextStyles.labelSmall(context).fontSize!,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-          Expanded(
-            child: Text(
-              cantidadPorCombo.toString(),
-              textAlign: TextAlign.center,
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ),
-          Expanded(
-            child: Text(
-              cantidadTotal.toString(),
-              textAlign: TextAlign.center,
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-                color: Colors.green.shade700,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
   Widget _buildComboItemCard(
     ComboItem item,
     ColorScheme colorScheme,
@@ -1276,16 +703,12 @@ class _ProductoDetalleScreenState extends State<ProductoDetalleScreen> {
   }) {
     final esObligatorio = item.esObligatorio;
     final tieneStock = (item.stockDisponible ?? 0) > 0;
-    final stockColor = tieneStock
-        ? Colors.green.shade600
-        : Colors.red.shade600;
+    final stockColor = tieneStock ? Colors.green.shade600 : Colors.red.shade600;
 
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: isDark
-            ? colorScheme.surface.withOpacity(0.5)
-            : Colors.white,
+        color: isDark ? colorScheme.surface.withOpacity(0.5) : Colors.white,
         border: Border.all(
           // âœ… NUEVO: Borde azul si estÃ¡ seleccionado
           color: estaSeleccionado
@@ -1319,9 +742,9 @@ class _ProductoDetalleScreenState extends State<ProductoDetalleScreen> {
               Expanded(
                 child: Text(
                   item.productoNombre ?? 'Producto',
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        fontWeight: FontWeight.w600,
-                      ),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -1342,9 +765,9 @@ class _ProductoDetalleScreenState extends State<ProductoDetalleScreen> {
                   child: Text(
                     'âš ï¸ LÃ­mite',
                     style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                          color: Colors.red.shade700,
-                          fontSize: AppTextStyles.labelSmall(context).fontSize!,
-                        ),
+                      color: Colors.red.shade700,
+                      fontSize: AppTextStyles.labelSmall(context).fontSize!,
+                    ),
                   ),
                 ),
             ],
@@ -1358,24 +781,21 @@ class _ProductoDetalleScreenState extends State<ProductoDetalleScreen> {
                 child: Text(
                   'SKU: ${item.productoSku ?? '-'}',
                   style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                        color: colorScheme.onSurfaceVariant,
-                      ),
+                    color: colorScheme.onSurfaceVariant,
+                  ),
                 ),
               ),
               Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 8,
-                  vertical: 4,
-                ),
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
                   color: colorScheme.primaryContainer.withOpacity(0.5),
                   borderRadius: BorderRadius.circular(4),
                 ),
                 child: Text(
                   'Cantidad: ${item.cantidad.toStringAsFixed(0)}',
-                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                        fontWeight: FontWeight.w600,
-                      ),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.labelSmall?.copyWith(fontWeight: FontWeight.w600),
                 ),
               ),
             ],
@@ -1393,15 +813,15 @@ class _ProductoDetalleScreenState extends State<ProductoDetalleScreen> {
                     Text(
                       'Precio Unitario',
                       style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                            color: colorScheme.onSurfaceVariant,
-                          ),
+                        color: colorScheme.onSurfaceVariant,
+                      ),
                     ),
                     Text(
                       'Bs ${(item.precioUnitario ?? 0).toStringAsFixed(2)}',
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            fontWeight: FontWeight.bold,
-                            color: colorScheme.primary,
-                          ),
+                        fontWeight: FontWeight.bold,
+                        color: colorScheme.primary,
+                      ),
                     ),
                   ],
                 ),
@@ -1413,14 +833,14 @@ class _ProductoDetalleScreenState extends State<ProductoDetalleScreen> {
                     Text(
                       'Unidad',
                       style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                            color: colorScheme.onSurfaceVariant,
-                          ),
+                        color: colorScheme.onSurfaceVariant,
+                      ),
                     ),
                     Text(
                       item.unidadMedidaNombre ?? '-',
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            fontWeight: FontWeight.w500,
-                          ),
+                        fontWeight: FontWeight.w500,
+                      ),
                     ),
                   ],
                 ),
@@ -1433,13 +853,9 @@ class _ProductoDetalleScreenState extends State<ProductoDetalleScreen> {
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: tieneStock
-                  ? Colors.green.shade50
-                  : Colors.red.shade50,
+              color: tieneStock ? Colors.green.shade50 : Colors.red.shade50,
               border: Border.all(
-                color: tieneStock
-                    ? Colors.green.shade300
-                    : Colors.red.shade300,
+                color: tieneStock ? Colors.green.shade300 : Colors.red.shade300,
               ),
               borderRadius: BorderRadius.circular(6),
             ),
@@ -1449,16 +865,16 @@ class _ProductoDetalleScreenState extends State<ProductoDetalleScreen> {
                 Text(
                   'Stock Disponible',
                   style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                        color: stockColor,
-                        fontWeight: FontWeight.w600,
-                      ),
+                    color: stockColor,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
                 Text(
                   '${(item.stockDisponible ?? 0).toStringAsFixed(0)} unidades',
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: stockColor,
-                        fontWeight: FontWeight.bold,
-                      ),
+                    color: stockColor,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ],
             ),
@@ -1469,13 +885,16 @@ class _ProductoDetalleScreenState extends State<ProductoDetalleScreen> {
           Text(
             'Se pueden hacer ${item.combosPosibles ?? 0} combos con este producto',
             style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                  color: colorScheme.onSurfaceVariant,
-                  fontStyle: FontStyle.italic,
-                ),
+              color: colorScheme.onSurfaceVariant,
+              fontStyle: FontStyle.italic,
+            ),
           ),
 
           // âœ… NUEVO: Controles de cantidad para items opcionales seleccionados
-          if (esSeleccionable && estaSeleccionado && cantidadModificable != null && onCantidadChanged != null) ...[
+          if (esSeleccionable &&
+              estaSeleccionado &&
+              cantidadModificable != null &&
+              onCantidadChanged != null) ...[
             const SizedBox(height: 12),
             Container(
               padding: const EdgeInsets.all(8),
@@ -1490,9 +909,9 @@ class _ProductoDetalleScreenState extends State<ProductoDetalleScreen> {
                   Text(
                     'Cantidad:',
                     style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                          fontWeight: FontWeight.w600,
-                          color: Colors.orange.shade800,
-                        ),
+                      fontWeight: FontWeight.w600,
+                      color: Colors.orange.shade800,
+                    ),
                   ),
                   Row(
                     children: [
@@ -1516,14 +935,16 @@ class _ProductoDetalleScreenState extends State<ProductoDetalleScreen> {
                         child: Text(
                           cantidadModificable.toString(),
                           textAlign: TextAlign.center,
-                          style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                          style: Theme.of(context).textTheme.headlineSmall
+                              ?.copyWith(
                                 fontWeight: FontWeight.bold,
                                 color: Colors.orange.shade800,
                               ),
                         ),
                       ),
                       IconButton(
-                        onPressed: () => onCantidadChanged(cantidadModificable + 1),
+                        onPressed: () =>
+                            onCantidadChanged(cantidadModificable + 1),
                         icon: const Icon(Icons.add, size: 18),
                         iconSize: 18,
                         constraints: const BoxConstraints(
@@ -1545,4 +966,3 @@ class _ProductoDetalleScreenState extends State<ProductoDetalleScreen> {
     );
   }
 }
-

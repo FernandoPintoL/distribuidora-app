@@ -145,14 +145,11 @@ class _CarritoClienteSelectorState extends State<CarritoClienteSelector> {
         children: [
           Row(
             children: [
-              Icon(Icons.person_outline, color: colorScheme.primary),
+              Icon(Icons.person_outline),
               SizedBox(width: baseFontSize * 0.5),
               Text(
                 'Creando pedido para:',
-                style: TextStyle(
-                  fontWeight: FontWeight.w500,
-                  color: colorScheme.primary,
-                ),
+                style: TextStyle(fontWeight: FontWeight.w500),
               ),
               const Spacer(),
               ElevatedButton.icon(
@@ -166,7 +163,6 @@ class _CarritoClienteSelectorState extends State<CarritoClienteSelector> {
                   textStyle: TextStyle(fontWeight: FontWeight.w500),
                   backgroundColor: colorScheme.primary,
                   foregroundColor: colorScheme.onPrimary,
-                  minimumSize: Size(0, baseFontSize * 2.2),
                 ),
                 onPressed: () async {
                   final resultado = await Navigator.of(context).push(
@@ -367,17 +363,11 @@ class _CarritoClienteSelectorState extends State<CarritoClienteSelector> {
                         ),
                         child: Row(
                           children: [
-                            Icon(
-                              Icons.person_search,
-                              color: colorScheme.primary,
-                            ),
+                            Icon(Icons.person_search),
                             SizedBox(width: baseFontSize * 0.5),
                             Text(
                               'Resultados de búsqueda',
-                              style: TextStyle(
-                                fontWeight: FontWeight.w600,
-                                color: colorScheme.primary,
-                              ),
+                              style: TextStyle(fontWeight: FontWeight.w600),
                             ),
                             SizedBox(width: baseFontSize * 0.5),
                             Container(
@@ -472,10 +462,7 @@ class _CarritoClienteSelectorState extends State<CarritoClienteSelector> {
                                       ),
                                       // ✅ NUEVO: Botón para ver detalle del cliente
                                       IconButton(
-                                        icon: Icon(
-                                          Icons.arrow_forward_ios,
-                                          color: colorScheme.primary,
-                                        ),
+                                        icon: Icon(Icons.arrow_forward_ios),
                                         onPressed: () {
                                           Navigator.push(
                                             context,
@@ -519,10 +506,7 @@ class _CarritoClienteSelectorState extends State<CarritoClienteSelector> {
                     ),
                     child: Row(
                       children: [
-                        Icon(
-                          Icons.info_outline,
-                          color: Colors.amber.shade700,
-                        ),
+                        Icon(Icons.info_outline, color: Colors.amber.shade700),
                         SizedBox(width: baseFontSize * 0.5),
                         Expanded(
                           child: Text(

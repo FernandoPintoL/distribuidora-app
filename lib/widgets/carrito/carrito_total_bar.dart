@@ -23,10 +23,7 @@ class CarritoTotalBar extends StatelessWidget {
       decoration: BoxDecoration(
         color: isDark ? colorScheme.surface : Colors.white,
         border: Border(
-          top: BorderSide(
-            color: colorScheme.outline.withAlpha(50),
-            width: 1,
-          ),
+          top: BorderSide(color: colorScheme.outline.withAlpha(50), width: 1),
         ),
         boxShadow: [
           BoxShadow(
@@ -52,16 +49,14 @@ class CarritoTotalBar extends StatelessWidget {
             children: [
               Text(
                 'Total a pagar',
-                style: context.textTheme.bodySmall?.copyWith(
-                  color: colorScheme.onSurfaceVariant,
-                ),
+                style: TextStyle(color: colorScheme.onSurfaceVariant),
               ),
               const SizedBox(height: 4),
               Text(
                 'Bs ${total.toStringAsFixed(2)}',
-                style: context.textTheme.titleLarge?.copyWith(
+                style: TextStyle(
                   fontWeight: FontWeight.bold,
-                  color: colorScheme.primary,
+                  color: colorScheme.secondary,
                   fontSize: 20,
                 ),
               ),
@@ -73,7 +68,7 @@ class CarritoTotalBar extends StatelessWidget {
             ElevatedButton(
               onPressed: isLoading ? null : onCheckout,
               style: ElevatedButton.styleFrom(
-                backgroundColor: colorScheme.primary,
+                backgroundColor: colorScheme.secondary,
                 foregroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(
                   horizontal: 24,
@@ -90,7 +85,7 @@ class CarritoTotalBar extends StatelessWidget {
                       child: CircularProgressIndicator(
                         strokeWidth: 2,
                         valueColor: AlwaysStoppedAnimation<Color>(
-                          colorScheme.onPrimary,
+                          colorScheme.onSecondary,
                         ),
                       ),
                     )

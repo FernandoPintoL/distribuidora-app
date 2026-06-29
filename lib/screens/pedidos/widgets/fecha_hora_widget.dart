@@ -48,7 +48,9 @@ class FechaHoraWidget extends StatelessWidget {
 
     bool usarFechaPersonalizada = false;
     if (fechaProgramada != null) {
-      usarFechaPersonalizada = !DateTimeUtilService.esFechaEstandar(fechaProgramada!);
+      usarFechaPersonalizada = !DateTimeUtilService.esFechaEstandar(
+        fechaProgramada!,
+      );
     }
 
     return Column(
@@ -56,147 +58,173 @@ class FechaHoraWidget extends StatelessWidget {
       children: [
         // Título con toggle
         Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Expanded(
               child: Text(
                 'Fecha y Hora de Entrega',
                 style: TextStyle(
-                  fontSize: AppTextStyles.headlineSmall(parentContext).fontSize!,
                   fontWeight: FontWeight.bold,
                   color: colorScheme.onSurface,
                 ),
               ),
             ),
             if (esPreventista)
-              Flexible(
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      'Otra fecha',
-                      style: parentContext.textTheme.bodySmall?.copyWith(
-                        color: colorScheme.onSurfaceVariant,
+              Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  onTap: () {
+                    if (!usarFechaPersonalizada) {
+                      onSeleccionarFechaPersonalizada();
+                    } else {
+                      final now = DateTime.now();
+                      onFechaProgramadaChanged(
+                        DateTime(now.year, now.month, now.day),
+                      );
+                    }
+                  },
+                  borderRadius: BorderRadius.circular(8),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 8,
+                    ),
+                    decoration: BoxDecoration(
+                      color: usarFechaPersonalizada
+                          ? colorScheme.primaryContainer
+                          : colorScheme.surfaceContainerHighest,
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(
+                        color: usarFechaPersonalizada
+                            ? colorScheme.primary
+                            : colorScheme.outline.withAlpha(50),
+                        width: 1.5,
                       ),
                     ),
-                    const SizedBox(width: 8),
-                    Switch(
-                      value: usarFechaPersonalizada,
-                      onChanged: (value) {
-                        if (value) {
-                          onSeleccionarFechaPersonalizada();
-                        } else {
-                          final now = DateTime.now();
-                          onFechaProgramadaChanged(
-                            DateTime(now.year, now.month, now.day),
-                          );
-                        }
-                      },
-                    ),
-                  ],
-                ),
-              ),
-          ],
-        ),
-        const SizedBox(height: 16),
-
-        // SECCIÓN 1: Fechas estándar
-        if (!usarFechaPersonalizada) ...[
-          Text(
-            'Selecciona una fecha',
-            style: parentContext.textTheme.bodyMedium?.copyWith(
-              fontWeight: FontWeight.w500,
-              color: colorScheme.onSurface,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Row(
-            children: fechasDisponibles.entries.toList().asMap().entries.map((
-              indexedEntry,
-            ) {
-              final index = indexedEntry.key;
-              final entry = indexedEntry.value;
-              final isLast = index == fechasDisponibles.length - 1;
-
-              final nombreFecha = entry.key;
-              final fecha = entry.value;
-              final isSelected = fechaProgramada?.year == fecha.year &&
-                  fechaProgramada?.month == fecha.month &&
-                  fechaProgramada?.day == fecha.day;
-
-              final diasSemana = [
-                'Lunes',
-                'Martes',
-                'Miércoles',
-                'Jueves',
-                'Viernes',
-                'Sábado',
-                'Domingo',
-              ];
-              final nombreDia = diasSemana[fecha.weekday - 1];
-              final fechaFormato = '${fecha.day}/${fecha.month}';
-
-              return Expanded(
-                child: Padding(
-                  padding: EdgeInsets.only(right: isLast ? 0 : 8),
-                  child: ElevatedButton(
-                    onPressed: () {
-                      onFechaProgramadaChanged(fecha);
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: isSelected
-                          ? colorScheme.primary
-                          : colorScheme.surfaceVariant,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 12,
-                      ),
-                    ),
-                    child: Column(
+                    child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
+                        Icon(Icons.calendar_today, size: 18),
+                        const SizedBox(width: 6),
                         Text(
-                          nombreFecha,
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            color: isSelected
-                                ? colorScheme.onPrimary
-                                : colorScheme.onSurface,
-                          ),
-                        ),
-                        Text(
-                          '$nombreDia\n$fechaFormato',
-                          style: TextStyle(
-                            fontSize: 11,
-                            color: isSelected
-                                ? colorScheme.onPrimary
-                                : colorScheme.onSurfaceVariant,
-                          ),
-                          textAlign: TextAlign.center,
+                          usarFechaPersonalizada
+                              ? 'Fecha personalizada'
+                              : 'Otra fecha',
+                          style: TextStyle(fontWeight: FontWeight.w500),
                         ),
                       ],
                     ),
                   ),
                 ),
-              );
-            }).toList(),
+              ),
+          ],
+        ),
+        const SizedBox(height: 8),
+
+        // SECCIÓN 1: Fechas estándar en un card compacto
+        if (!usarFechaPersonalizada) ...[
+          Card(
+            child: Row(
+              children: fechasDisponibles.entries.toList().asMap().entries.map((
+                indexedEntry,
+              ) {
+                final index = indexedEntry.key;
+                final entry = indexedEntry.value;
+                final isLast = index == fechasDisponibles.length - 1;
+
+                final nombreFecha = entry.key;
+                final fecha = entry.value;
+                final isSelected =
+                    fechaProgramada?.year == fecha.year &&
+                    fechaProgramada?.month == fecha.month &&
+                    fechaProgramada?.day == fecha.day;
+
+                final diasSemana = [
+                  'Lunes',
+                  'Martes',
+                  'Miércoles',
+                  'Jueves',
+                  'Viernes',
+                  'Sábado',
+                  'Domingo',
+                ];
+                final nombreDia = diasSemana[fecha.weekday - 1];
+                final fechaFormato = '${fecha.day}/${fecha.month}';
+
+                return Expanded(
+                  child: Padding(
+                    padding: EdgeInsets.only(right: isLast ? 0 : 8),
+                    child: Material(
+                      child: InkWell(
+                        onTap: () {
+                          onFechaProgramadaChanged(fecha);
+                        },
+                        borderRadius: BorderRadius.circular(8),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 4,
+                          ),
+                          decoration: BoxDecoration(
+                            color: isSelected
+                                ? colorScheme.primary
+                                : colorScheme.surface,
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(
+                              color: isSelected
+                                  ? colorScheme.primary
+                                  : colorScheme.outlineVariant,
+                              width: 1.5,
+                            ),
+                          ),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                '$nombreFecha - $nombreDia',
+                                style: TextStyle(
+                                  color: isSelected
+                                      ? colorScheme.onPrimary
+                                      : colorScheme.onSurfaceVariant,
+                                ),
+                              ),
+                              Text(
+                                fechaFormato,
+                                style: TextStyle(
+                                  color: isSelected
+                                      ? colorScheme.onPrimary
+                                      : colorScheme.onSurfaceVariant,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                );
+              }).toList(),
+            ),
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 4),
 
           // Sección de Turno
           Text(
             'Selecciona un turno',
-            style: parentContext.textTheme.bodyMedium?.copyWith(
+            style: TextStyle(
               fontWeight: FontWeight.w500,
               color: colorScheme.onSurface,
             ),
           ),
-          const SizedBox(height: 8),
           Row(
             children: [
               Expanded(
                 child: Builder(
                   builder: (context) {
-                    final turnosDisponibles = DateTimeUtilService.obtenerTurnosDisponibles(fechaProgramada);
+                    final turnosDisponibles =
+                        DateTimeUtilService.obtenerTurnosDisponibles(
+                          fechaProgramada,
+                        );
                     final morningDisponible =
                         turnosDisponibles[TURNO_MORNING] ?? false;
 
@@ -215,18 +243,21 @@ class FechaHoraWidget extends StatelessWidget {
                           foregroundColor: turnoSeleccionado == TURNO_MORNING
                               ? Colors.white
                               : colorScheme.onSurface,
-                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          padding: const EdgeInsets.symmetric(vertical: 8),
                         ),
                       ),
                     );
                   },
                 ),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: 4),
               Expanded(
                 child: Builder(
                   builder: (context) {
-                    final turnosDisponibles = DateTimeUtilService.obtenerTurnosDisponibles(fechaProgramada);
+                    final turnosDisponibles =
+                        DateTimeUtilService.obtenerTurnosDisponibles(
+                          fechaProgramada,
+                        );
                     final tardeDisponible =
                         turnosDisponibles[TURNO_AFTERNOON] ?? false;
 
@@ -245,7 +276,7 @@ class FechaHoraWidget extends StatelessWidget {
                           foregroundColor: turnoSeleccionado == TURNO_AFTERNOON
                               ? Colors.white
                               : colorScheme.onSurface,
-                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          padding: const EdgeInsets.symmetric(vertical: 8),
                         ),
                       ),
                     );
@@ -254,94 +285,11 @@ class FechaHoraWidget extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 16),
-
-          // Aviso si no hay turnos disponibles
-          Builder(
-            builder: (context) {
-              final turnosDisponibles = DateTimeUtilService.obtenerTurnosDisponibles(fechaProgramada);
-              final esHoy = fechaProgramada?.year == DateTime.now().year &&
-                  fechaProgramada?.month == DateTime.now().month &&
-                  fechaProgramada?.day == DateTime.now().day;
-              final hayAlgunDisponible =
-                  turnosDisponibles.values.any((v) => v);
-
-              if (esHoy && !hayAlgunDisponible) {
-                return Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: Colors.red.shade50,
-                    border: Border.all(color: Colors.red.shade300),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Row(
-                    children: [
-                      Icon(
-                        Icons.warning_rounded,
-                        color: Colors.red.shade700,
-                        size: 20,
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Text(
-                          'Es muy tarde para hoy. Por favor, selecciona mañana o una fecha posterior.',
-                          style: TextStyle(
-                            color: Colors.red.shade700,
-                            fontSize: AppTextStyles.bodySmall(parentContext)
-                                .fontSize!,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                );
-              }
-
-              if (esHoy && !turnosDisponibles[TURNO_MORNING]!) {
-                return Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: Colors.amber.shade50,
-                    border: Border.all(color: Colors.amber.shade300),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Row(
-                    children: [
-                      Icon(
-                        Icons.info_rounded,
-                        color: Colors.amber.shade700,
-                        size: 20,
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Text(
-                          'El turno matutino ya no está disponible. Solo puedes elegir el turno de la tarde.',
-                          style: TextStyle(
-                            color: Colors.amber.shade700,
-                            fontSize: AppTextStyles.bodySmall(parentContext)
-                                .fontSize!,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                );
-              }
-
-              return const SizedBox.shrink();
-            },
-          ),
-          const SizedBox(height: 16),
         ] else ...[
           // SECCIÓN 2: Fecha personalizada
           Text(
             'Fecha seleccionada',
-            style: parentContext.textTheme.bodyMedium?.copyWith(
-              fontWeight: FontWeight.w500,
-              color: colorScheme.onSurface,
-            ),
+            style: TextStyle(fontWeight: FontWeight.w500),
           ),
           const SizedBox(height: 8),
           GestureDetector(
@@ -352,23 +300,19 @@ class FechaHoraWidget extends StatelessWidget {
                 padding: const EdgeInsets.all(12),
                 child: Row(
                   children: [
-                    Icon(
-                      Icons.calendar_today,
-                      color: colorScheme.primary,
-                      size: 20,
-                    ),
+                    Icon(Icons.calendar_today, size: 20),
                     const SizedBox(width: 12),
                     Expanded(
                       child: Text(
                         fechaProgramada != null
-                            ? DateTimeUtilService.formatearFecha(fechaProgramada!)
+                            ? DateTimeUtilService.formatearFecha(
+                                fechaProgramada!,
+                              )
                             : 'Seleccionar fecha',
-                        style: parentContext.textTheme.bodyMedium?.copyWith(
-                          color: colorScheme.onSurface,
-                        ),
+                        style: TextStyle(color: colorScheme.onSurface),
                       ),
                     ),
-                    Icon(Icons.edit, color: colorScheme.primary, size: 18),
+                    Icon(Icons.edit, size: 18),
                   ],
                 ),
               ),
@@ -376,47 +320,45 @@ class FechaHoraWidget extends StatelessWidget {
           ),
         ],
 
-        const SizedBox(height: 20),
-
         // SECCIÓN 3: Seleccionar Hora Específica
         Text(
           'Selecciona la hora',
-          style: parentContext.textTheme.bodyMedium?.copyWith(
-            fontWeight: FontWeight.w500,
-            color: colorScheme.onSurface,
-          ),
+          style: TextStyle(fontWeight: FontWeight.w500),
         ),
-        const SizedBox(height: 8),
         Wrap(
           spacing: 8,
           runSpacing: 8,
-          children: DateTimeUtilService.obtenerHorasDisponibles(turnoSeleccionado).map((hora) {
-            final isSelected = horaEspecificaSeleccionada == hora;
-            return ElevatedButton(
-              onPressed: () {
-                onHoraEspecificaChanged(hora);
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: isSelected
-                    ? colorScheme.primary
-                    : colorScheme.surfaceVariant,
-                foregroundColor: isSelected
-                    ? colorScheme.onPrimary
-                    : colorScheme.onSurface,
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 12,
-                ),
-              ),
-              child: Text(
-                '$hora:00',
-                style: TextStyle(
-                  fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                  fontSize: 16,
-                ),
-              ),
-            );
-          }).toList(),
+          children:
+              DateTimeUtilService.obtenerHorasDisponibles(
+                turnoSeleccionado,
+              ).map((hora) {
+                final isSelected = horaEspecificaSeleccionada == hora;
+                return ElevatedButton(
+                  onPressed: () {
+                    onHoraEspecificaChanged(hora);
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: isSelected
+                        ? colorScheme.primary
+                        : colorScheme.surfaceVariant,
+                    foregroundColor: isSelected
+                        ? colorScheme.onPrimary
+                        : colorScheme.onSurface,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
+                    ),
+                  ),
+                  child: Text(
+                    '$hora:00',
+                    style: TextStyle(
+                      fontWeight: isSelected
+                          ? FontWeight.bold
+                          : FontWeight.normal,
+                    ),
+                  ),
+                );
+              }).toList(),
         ),
 
         const SizedBox(height: 20),
@@ -424,13 +366,14 @@ class FechaHoraWidget extends StatelessWidget {
         // SECCIÓN 4: Observaciones
         Text(
           'Observaciones (Opcional)',
-          style: parentContext.textTheme.bodyMedium?.copyWith(
+          style: TextStyle(
             fontWeight: FontWeight.w500,
             color: colorScheme.onSurface,
           ),
         ),
         const SizedBox(height: 8),
-        TextField(
+        TextFormField(
+          initialValue: observaciones,
           decoration: InputDecoration(
             hintText: 'Ej: Entregar entre semana, no sábado...',
             border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
@@ -438,7 +381,7 @@ class FechaHoraWidget extends StatelessWidget {
           ),
           maxLines: 2,
           onChanged: onObservacionesChanged,
-          controller: TextEditingController(text: observaciones),
+          textDirection: TextDirection.ltr,
         ),
       ],
     );

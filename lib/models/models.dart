@@ -44,3 +44,4 @@ export 'prestamos_evento_response.dart';
 export 'prestamo_proveedor.dart';
 export 'prestamos_proveedor_response.dart';
 export 'estado_logistico.dart';
+export 'preventist_stats.dart';

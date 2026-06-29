@@ -13,7 +13,7 @@ class CarritoItem {
     double? precioUnitario,
     this.observaciones,
     this.comboItemsSeleccionados,
-  }) : precioUnitario = precioUnitario ?? producto.precioVenta ?? 0.0;
+  }) : precioUnitario = precioUnitario ?? producto.precioVentaFinal;
 
   // Cálculo del subtotal
   double get subtotal {

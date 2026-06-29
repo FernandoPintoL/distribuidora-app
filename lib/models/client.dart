@@ -15,6 +15,12 @@ class Client {
   final double? limiteCredito;
   // ✅ NUEVO: Crédito utilizado (del backend: credito_utilizado)
   final double? creditoUtilizado;
+  // ✅ NUEVO: Información detallada de crédito
+  final double? saldoCredito;
+  final double? cuentasPorCobrarActivas;
+  final double? cuentasPorCobrarPorAprobar;
+  final double? creditoTotalComprometido;
+  final double? creditoDisponible;
   final bool puedeAtenerCredito;
   final int? localidadId;
   final double? latitud;
@@ -44,6 +50,11 @@ class Client {
     this.genero, */
     this.limiteCredito,
     this.creditoUtilizado,
+    this.saldoCredito,
+    this.cuentasPorCobrarActivas,
+    this.cuentasPorCobrarPorAprobar,
+    this.creditoTotalComprometido,
+    this.creditoDisponible,
     this.puedeAtenerCredito = false,
     this.localidadId,
     this.latitud,
@@ -87,6 +98,22 @@ class Client {
       // ✅ NUEVO: Parsear crédito utilizado (campo que retorna el backend)
       creditoUtilizado: json['credito_utilizado'] != null
           ? double.tryParse(json['credito_utilizado'].toString()) ?? 0.0
+          : null,
+      // ✅ NUEVO: Información detallada de crédito desde backend
+      saldoCredito: json['saldo_credito'] != null
+          ? double.tryParse(json['saldo_credito'].toString())
+          : null,
+      cuentasPorCobrarActivas: json['cuentas_por_cobrar_activas'] != null
+          ? double.tryParse(json['cuentas_por_cobrar_activas'].toString())
+          : null,
+      cuentasPorCobrarPorAprobar: json['cuentas_por_cobrar_por_aprobar'] != null
+          ? double.tryParse(json['cuentas_por_cobrar_por_aprobar'].toString())
+          : null,
+      creditoTotalComprometido: json['credito_total_comprometido'] != null
+          ? double.tryParse(json['credito_total_comprometido'].toString())
+          : null,
+      creditoDisponible: json['credito_disponible'] != null
+          ? double.tryParse(json['credito_disponible'].toString())
           : null,
       // ✅ Aceptar ambas variantes: puede_tener_credito y puede_atener_credito
       puedeAtenerCredito:
@@ -147,6 +174,12 @@ class Client {
       'fecha_nacimiento': fechaNacimiento,
       'genero': genero, */
       'limite_credito': limiteCredito,
+      'credito_utilizado': creditoUtilizado,
+      'saldo_credito': saldoCredito,
+      'cuentas_por_cobrar_activas': cuentasPorCobrarActivas,
+      'cuentas_por_cobrar_por_aprobar': cuentasPorCobrarPorAprobar,
+      'credito_total_comprometido': creditoTotalComprometido,
+      'credito_disponible': creditoDisponible,
       'puede_tener_credito': puedeAtenerCredito,
       'localidad_id': localidadId,
       'latitud': latitud,

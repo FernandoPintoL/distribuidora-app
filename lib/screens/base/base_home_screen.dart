@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../config/app_colors.dart';
 import '../../models/navigation_item.dart';
 
 /// Clase base abstracta para todas las pantallas de home por rol
@@ -69,7 +70,7 @@ abstract class BaseHomeScreenState<T extends BaseHomeScreen> extends State<T> {
       currentIndex: _currentIndex,
       onTap: onNavigationItemTapped,
       type: BottomNavigationBarType.fixed,
-      selectedItemColor: colorScheme.primary,
+      selectedItemColor: AppColors.secondary,
       unselectedItemColor: isDarkMode
           ? Colors.grey.shade600
           : Colors.grey.shade500,

@@ -144,25 +144,21 @@ class _CarritoScreenState extends State<CarritoScreen> {
                       final esValido = totalItems >= 5;
                       return Row(
                         children: [
-                          Text('ðŸ“¦ Total de items: '),
+                          Text('Total de items: '),
                           Text(
                             '$totalItems',
-                            style: Theme.of(context).textTheme.bodyLarge
-                                ?.copyWith(
-                                  fontWeight: FontWeight.bold,
-                                  color: esValido
-                                      ? Colors.green
-                                      : Colors.orange,
-                                ),
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color: esValido ? Colors.green : Colors.orange,
+                            ),
                           ),
                           if (!esValido) ...[
                             Text(
-                              ' (mÃ­nimo 5)',
-                              style: Theme.of(context).textTheme.bodyLarge
-                                  ?.copyWith(
-                                    color: Colors.orange,
-                                    fontSize: 13,
-                                  ),
+                              ' (minimo 5)',
+                              style: TextStyle(
+                                color: Colors.orange,
+                                fontSize: 13,
+                              ),
                             ),
                           ],
                         ],
@@ -258,11 +254,14 @@ class _CarritoScreenState extends State<CarritoScreen> {
                             );
                           },
                         ),
-                        // âœ… NUEVO: Mostrar detalles del combo si tiene items seleccionados
-                        if (item.producto.esCombo &&
+                        // Mostrar detalles del combo si tiene items seleccionados
+                        /*if (item.producto.esCombo &&
                             item.comboItemsSeleccionados != null &&
                             item.comboItemsSeleccionados!.isNotEmpty)
-                          CarritoComboDetalles(item: item),
+                          CarritoComboDetalles(
+                            item: item,
+                            productosMap: null, // Puede pasar un mapa si quiere mostrar imágenes
+                          ),*/
                       ],
                     );
                   },

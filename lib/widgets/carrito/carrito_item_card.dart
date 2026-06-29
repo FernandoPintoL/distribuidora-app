@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import '../../models/models.dart';
 import '../../extensions/carrito_theme_extension.dart';
+import '../../extensions/theme_extension.dart';
+import '../../config/app_colors.dart';
+import '../product/product_card_base.dart';
 
 class CarritoItemCard extends StatefulWidget {
   final CarritoItem item;
@@ -12,6 +15,8 @@ class CarritoItemCard extends StatefulWidget {
   final VoidCallback? onAgregarParaAhorrar;
   final VoidCallback? onProductoTap;
   final bool isPreventista;
+  final bool showDeleteButton;
+  final bool showQuantityControls;
 
   const CarritoItemCard({
     super.key,
@@ -24,6 +29,8 @@ class CarritoItemCard extends StatefulWidget {
     this.onAgregarParaAhorrar,
     this.onProductoTap,
     this.isPreventista = false,
+    this.showDeleteButton = true,
+    this.showQuantityControls = true,
   });
 
   @override
@@ -31,88 +38,6 @@ class CarritoItemCard extends StatefulWidget {
 }
 
 class _CarritoItemCardState extends State<CarritoItemCard> {
-  late TextEditingController _observacionesController;
-  late TextEditingController _cantidadController;
-  bool _editandoObservaciones = false;
-  bool _guardandoObservaciones = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _observacionesController = TextEditingController(
-      text: widget.item.observaciones ?? '',
-    );
-    _cantidadController = TextEditingController(
-      text: widget.item.cantidad.toString(),
-    );
-  }
-
-  @override
-  void didUpdateWidget(CarritoItemCard oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    // Actualizar el controller si la cantidad cambió desde otro lugar
-    if (oldWidget.item.cantidad != widget.item.cantidad) {
-      _cantidadController.text = widget.item.cantidad.toString();
-    }
-  }
-
-  @override
-  void dispose() {
-    _observacionesController.dispose();
-    _cantidadController.dispose();
-    super.dispose();
-  }
-
-  void _actualizarCantidadDesdeInput() {
-    final input = _cantidadController.text.trim();
-    if (input.isEmpty) {
-      // Si está vacío, revertir al valor anterior
-      _cantidadController.text = widget.item.cantidad.toString();
-      return;
-    }
-
-    try {
-      final nuevaCantidad = int.parse(input);
-
-      if (nuevaCantidad <= 0) {
-        // Si es 0 o negativo, eliminar el producto
-        widget.onRemove();
-        return;
-      }
-
-      // Actualizar la cantidad
-      widget.onUpdateCantidad(nuevaCantidad);
-      _cantidadController.text = nuevaCantidad.toString();
-    } catch (e) {
-      // Si no es un número válido, revertir
-      debugPrint('❌ Entrada inválida para cantidad: $input');
-      _cantidadController.text = widget.item.cantidad.toString();
-    }
-  }
-
-  Future<void> _guardarObservaciones() async {
-    setState(() => _guardandoObservaciones = true);
-
-    // Simular guardado (en producción, llamaría al provider)
-    await Future.delayed(const Duration(milliseconds: 500));
-
-    if (mounted) {
-      setState(() {
-        _editandoObservaciones = false;
-        _guardandoObservaciones = false;
-      });
-
-      debugPrint(
-        '✅ Observaciones guardadas para ${widget.item.producto?.nombre}',
-      );
-    }
-  }
-
-  void _cancelarEdicion() {
-    _observacionesController.text = widget.item.observaciones ?? '';
-    setState(() => _editandoObservaciones = false);
-  }
-
   @override
   Widget build(BuildContext context) {
     final producto = widget.item.producto;
@@ -121,270 +46,67 @@ class _CarritoItemCardState extends State<CarritoItemCard> {
     final tieneStockSuficiente = widget.item.cantidad <= stockDispInt;
     final excedido = widget.item.cantidadExcedida;
 
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final colorScheme = Theme.of(context).colorScheme;
+    final primaryAccentColor = AppColors.secondary;
+
     return Card(
-      margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-      elevation: excedido > 0 ? 2 : 1,
-      color: excedido > 0 ? context.carritoErrorBg : null,
+      margin: const EdgeInsets.symmetric(vertical: 8),
+      elevation: 4,
+      shadowColor: Colors.black.withAlpha(30),
+      color: isDark ? colorScheme.surface : Colors.white,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: BorderSide(
+          color: excedido > 0
+              ? AppColors.error
+              : colorScheme.outline.withAlpha(20),
+          width: excedido > 0 ? 2 : 1,
+        ),
+      ),
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        padding: const EdgeInsets.all(16.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // ✅ MEJORADO: Encabezado con imagen, nombre y botón eliminar
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Imagen del producto
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(10),
-                  child: SizedBox(
-                    width: 70,
-                    height: 70,
-                    child: _buildImagePlaceholder(),
-                  ),
-                ),
-                const SizedBox(width: 12),
-
-                // Nombre y acciones
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Nombre clickeable con icono
-                      InkWell(
-                        onTap: widget.onProductoTap,
-                        borderRadius: BorderRadius.circular(4),
-                        child: Text(
-                          producto.nombre,
-                          style: Theme.of(context).textTheme.titleLarge
-                              ?.copyWith(
-                                fontWeight: FontWeight.bold,
-                                fontSize: 15,
-                              ),
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-
-                      // Código
-                      Text(
-                        'Código: ${producto.codigo}',
-                        style: Theme.of(context).textTheme.labelMedium
-                            ?.copyWith(color: context.carritoSecondaryText),
-                      ),
-                      const SizedBox(height: 6),
-                      _buildPrecioUnitarioSection(context),
-                    ],
-                  ),
-                ),
-
-                // Botón eliminar
-                Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    SizedBox(
-                      width: 40,
-                      height: 40,
-                      child: IconButton(
-                        onPressed: widget.onRemove,
-                        icon: Icon(
-                          Icons.delete_outline,
-                          color: context.carritoDeleteIconColor,
-                          size: 18,
-                        ),
-                        style: IconButton.styleFrom(
-                          backgroundColor: context.carritoDeleteIconColor
-                              .withAlpha(15),
-                        ),
-                        tooltip: 'Eliminar',
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    // Stock disponible
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 6,
-                      ),
-                      decoration: BoxDecoration(
-                        color: tieneStockSuficiente
-                            ? Colors.green.shade50
-                            : Colors.red.shade50,
-                        border: Border.all(
-                          color: tieneStockSuficiente
-                              ? Colors.green.shade300
-                              : Colors.red.shade300,
-                          width: 1,
-                        ),
-                        borderRadius: BorderRadius.circular(6),
-                      ),
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.end,
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(
-                            'Disp.: ',
-                            style: Theme.of(context).textTheme.labelSmall
-                                ?.copyWith(
-                                  color: context.carritoSecondaryText,
-                                  fontSize: 14,
-                                ),
-                          ),
-                          Text(
-                            '$stockDispInt',
-                            style: Theme.of(context).textTheme.titleSmall
-                                ?.copyWith(
-                                  fontWeight: FontWeight.bold,
-                                  color: tieneStockSuficiente
-                                      ? Colors.green.shade700
-                                      : Colors.red.shade700,
-                                  fontSize: 16,
-                                ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            const Divider(height: 1),
-            const SizedBox(height: 8),
-
-            // ✅ MEJORADO: Controles en fila simplificada
-            Row(
-              children: [
-                // Controles de cantidad - Izquierda
-                Container(
-                  decoration: BoxDecoration(
-                    border: Border.all(
-                      color: tieneStockSuficiente
-                          ? context.carritorBorderColor
-                          : context.carritoErrorBorder,
-                      width: 1.5,
-                    ),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      IconButton(
-                        onPressed: widget.onDecrement,
-                        icon: const Icon(Icons.remove, size: 16),
-                        padding: const EdgeInsets.all(6),
-                        constraints: const BoxConstraints(
-                          minWidth: 32,
-                          minHeight: 32,
-                        ),
-                      ),
-                      SizedBox(
-                        width: 45,
-                        height: 32,
-                        child: TextFormField(
-                          controller: _cantidadController,
-                          textAlign: TextAlign.center,
-                          keyboardType: TextInputType.number,
-                          maxLength: 4,
-                          decoration: InputDecoration(
-                            counterText: '',
-                            border: InputBorder.none,
-                            contentPadding: const EdgeInsets.symmetric(
-                              vertical: 6,
-                            ),
-                            hintText: '0',
-                            hintStyle: TextStyle(
-                              color: context.carritoQuantityText.withAlpha(100),
-                            ),
-                          ),
-                          style: TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.bold,
-                            color: tieneStockSuficiente
-                                ? context.carritoQuantityText
-                                : context.carritoErrorIcon,
-                          ),
-                          onFieldSubmitted: (_) =>
-                              _actualizarCantidadDesdeInput(),
-                          onTapOutside: (_) => _actualizarCantidadDesdeInput(),
-                        ),
-                      ),
-                      IconButton(
-                        onPressed: widget.onIncrement,
-                        icon: const Icon(Icons.add, size: 16),
-                        padding: const EdgeInsets.all(6),
-                        constraints: const BoxConstraints(
-                          minWidth: 32,
-                          minHeight: 32,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-
-                const Spacer(),
-
-                // Subtotal - Derecha
-                _buildSubtotalComparativo(context),
-              ],
+            // ✅ Componente base: imagen, nombre, código, precio, subtotal y controles de cantidad
+            ProductCardBase(
+              product: producto,
+              quantity: widget.item.cantidad,
+              detalleConRango: widget.detalleConRango,
+              onProductTap: widget.onProductoTap,
+              showDeleteButton: widget.showDeleteButton,
+              isInCart: true,
+              onDeletePressed: widget.onRemove,
+              imageSize: 90,
+              onIncrement: widget.onIncrement,
+              onDecrement: widget.onDecrement,
+              onChanged: (valor) {
+                final cantidad = int.tryParse(valor) ?? 0;
+                widget.onUpdateCantidad(cantidad);
+              },
+              maxQuantity: stockDispInt,
+              showQuantityControls: widget.showQuantityControls,
+              cantidadDisponible: stockDispInt,
+              unidadMedida: producto.unidadMedida?.nombre,
+              isPreventista: widget.isPreventista,
             ),
 
-            // Mostrar advertencia de stock si excede
-            if (excedido > 0)
+            const SizedBox(height: 12),
+
+            // Línea compacta de ahorro
+            if (widget.detalleConRango?.tieneOportunidadAhorro ?? false)
               Padding(
                 padding: const EdgeInsets.only(top: 12),
                 child: Container(
                   width: double.infinity,
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    color: context.carritoErrorBg,
-                    border: Border.all(color: context.carritoErrorBorder),
-                    borderRadius: BorderRadius.circular(6),
-                  ),
-                  child: Row(
-                    children: [
-                      Icon(
-                        Icons.error_outline,
-                        color: context.carritoErrorIcon,
-                        size: 18,
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          'Stock insuficiente: $excedido unidades excedidas. Máximo disponible: $stockDispInt',
-                          style: TextStyle(
-                            color: context.carritoErrorText,
-                            fontSize: 12,
-                            fontWeight: FontWeight.w500,
-                          ),
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-
-            // Sección de observaciones (editable en línea)
-            /*Padding(
-              padding: const EdgeInsets.only(top: 12),
-              child: _buildObservacionesSection(),
-            ),*/
-
-            // 🔑 NUEVO: Línea compacta de ahorro (reemplaza el panel grande)
-            if (widget.detalleConRango?.tieneOportunidadAhorro ?? false)
-              Padding(
-                padding: const EdgeInsets.only(top: 8),
-                child: Container(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 10,
                     vertical: 6,
                   ),
                   decoration: BoxDecoration(
-                    color: context.carritoSavingsBg,
-                    border: Border.all(color: context.carritoSavingsBorder),
+                    color: Colors.green.shade50,
+                    border: Border.all(color: Colors.green.shade300),
                     borderRadius: BorderRadius.circular(6),
                   ),
                   child: Row(
@@ -392,7 +114,7 @@ class _CarritoItemCardState extends State<CarritoItemCard> {
                       Icon(
                         Icons.trending_down,
                         size: 14,
-                        color: context.carritoSavingsIcon,
+                        color: Colors.green.shade700,
                       ),
                       const SizedBox(width: 6),
                       Expanded(
@@ -400,7 +122,7 @@ class _CarritoItemCardState extends State<CarritoItemCard> {
                           '💚 Ahorro: Bs ${widget.detalleConRango!.ahorroProximo!.toStringAsFixed(2)} | Agrega ${widget.detalleConRango!.proximoRango!.faltaCantidad}',
                           style: TextStyle(
                             fontSize: 11,
-                            color: context.carritoSavingsText,
+                            color: Colors.green.shade700,
                             fontWeight: FontWeight.w600,
                           ),
                           maxLines: 1,
@@ -420,7 +142,7 @@ class _CarritoItemCardState extends State<CarritoItemCard> {
                           style: TextButton.styleFrom(
                             padding: const EdgeInsets.symmetric(horizontal: 8),
                             visualDensity: VisualDensity.compact,
-                            foregroundColor: context.carritoSavingsIcon,
+                            foregroundColor: Colors.green.shade700,
                           ),
                         ),
                       ),
@@ -430,440 +152,6 @@ class _CarritoItemCardState extends State<CarritoItemCard> {
               ),
           ],
         ),
-      ),
-    );
-  }
-
-  /// Construye la sección de observaciones con edición en línea
-  Widget _buildObservacionesSection() {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: context.carritoNotesBg,
-        border: Border.all(color: context.carritoNotesBorder),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: _editandoObservaciones
-          ? _buildObservacionesEditing()
-          : _buildObservacionesViewing(),
-    );
-  }
-
-  /// Vista de solo lectura (mostrar notas)
-  Widget _buildObservacionesViewing() {
-    return GestureDetector(
-      onTap: () {
-        setState(() => _editandoObservaciones = true);
-      },
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(Icons.note, color: context.carritoNotesIcon, size: 18),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                if (widget.item.observaciones != null &&
-                    widget.item.observaciones!.isNotEmpty)
-                  Text(
-                    widget.item.observaciones!,
-                    style: TextStyle(
-                      color: context.carritoNotesText,
-                      fontSize: 13,
-                    ),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  )
-                else
-                  Text(
-                    'Agregar nota (toca para editar)',
-                    style: TextStyle(
-                      color: context.carritoNotesIcon,
-                      fontSize: 13,
-                      fontStyle: FontStyle.italic,
-                    ),
-                  ),
-              ],
-            ),
-          ),
-          Icon(Icons.edit, color: context.carritoNotesIcon, size: 16),
-        ],
-      ),
-    );
-  }
-
-  /// Vista de edición (campo de texto)
-  Widget _buildObservacionesEditing() {
-    return Column(
-      children: [
-        TextField(
-          controller: _observacionesController,
-          maxLines: 2,
-          decoration: InputDecoration(
-            hintText: 'Agregar nota para este producto...',
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(6)),
-            filled: true,
-            fillColor: Colors.white,
-            contentPadding: const EdgeInsets.symmetric(
-              horizontal: 12,
-              vertical: 8,
-            ),
-          ),
-          style: const TextStyle(fontSize: 13),
-          onSubmitted: (_) => _guardarObservaciones(),
-        ),
-        const SizedBox(height: 8),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.end,
-          children: [
-            TextButton(
-              onPressed: _cancelarEdicion,
-              child: const Text('Cancelar'),
-            ),
-            const SizedBox(width: 8),
-            ElevatedButton.icon(
-              onPressed: _guardandoObservaciones ? null : _guardarObservaciones,
-              icon: _guardandoObservaciones
-                  ? const SizedBox(
-                      width: 16,
-                      height: 16,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : const Icon(Icons.check, size: 18),
-              label: Text(_guardandoObservaciones ? 'Guardando...' : 'Guardar'),
-            ),
-          ],
-        ),
-      ],
-    );
-  }
-
-  Widget _buildStockBadge(BuildContext context, int stockDisponible) {
-    final isLowStock = stockDisponible > 0 && stockDisponible <= 5;
-    final isOutOfStock = stockDisponible <= 0;
-
-    if (isOutOfStock) {
-      return Container(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-        decoration: BoxDecoration(
-          color: Colors.red.shade100,
-          border: Border.all(color: Colors.red.shade300),
-          borderRadius: BorderRadius.circular(4),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.block, size: 14, color: Colors.red.shade700),
-            const SizedBox(width: 4),
-            Text(
-              'Agotado',
-              style: TextStyle(
-                fontSize: 10,
-                fontWeight: FontWeight.bold,
-                color: Colors.red.shade700,
-              ),
-            ),
-          ],
-        ),
-      );
-    }
-
-    if (isLowStock) {
-      return Container(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-        decoration: BoxDecoration(
-          color: Colors.orange.shade100,
-          border: Border.all(color: Colors.orange.shade300),
-          borderRadius: BorderRadius.circular(4),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.warning, size: 14, color: Colors.orange.shade700),
-            const SizedBox(width: 4),
-            Text(
-              'Poco stock',
-              style: TextStyle(
-                fontSize: 10,
-                fontWeight: FontWeight.bold,
-                color: Colors.orange.shade700,
-              ),
-            ),
-          ],
-        ),
-      );
-    }
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(
-        color: Colors.green.shade100,
-        border: Border.all(color: Colors.green.shade300),
-        borderRadius: BorderRadius.circular(4),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(Icons.check_circle, size: 14, color: Colors.green.shade700),
-          const SizedBox(width: 4),
-          Text(
-            'Disponible',
-            style: TextStyle(
-              fontSize: 10,
-              fontWeight: FontWeight.bold,
-              color: Colors.green.shade700,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  /// Construye el subtotal con comparativa si cambió de rango
-  ///
-  /// Muestra el subtotal anterior tachado si se aplicó un descuento por rango
-  Widget _buildSubtotalComparativo(BuildContext context) {
-    final detalleConRango = widget.detalleConRango;
-    final subtotalActual = widget.item.subtotal;
-    final subtotalBajoRango = detalleConRango?.subtotal ?? subtotalActual;
-
-    // Detectar si cambio de tipo de precio (no es VENTA por defecto)
-    final cambioDePrecio =
-        detalleConRango != null &&
-        detalleConRango.tipoPrecioId != 2 &&
-        subtotalBajoRango != subtotalActual;
-
-    if (!cambioDePrecio) {
-      // Sin cambios: mostrar solo el subtotal actual
-      return Text(
-        'Bs ${subtotalActual.toStringAsFixed(2)}',
-        style: Theme.of(context).textTheme.titleMedium?.copyWith(
-          fontWeight: FontWeight.bold,
-          color: Theme.of(context).primaryColor,
-        ),
-        overflow: TextOverflow.ellipsis,
-      );
-    }
-
-    // Con cambios: mostrar comparativa en columna
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.end,
-      children: [
-        // Subtotal anterior tachado
-        Text(
-          'Bs ${subtotalActual.toStringAsFixed(2)}',
-          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-            decoration: TextDecoration.lineThrough,
-            color: Colors.grey.shade500,
-            fontSize: 11,
-          ),
-        ),
-        // Subtotal nuevo con énfasis
-        Text(
-          'Bs ${subtotalBajoRango.toStringAsFixed(2)}',
-          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-            fontWeight: FontWeight.bold,
-            color: Colors.green.shade700,
-          ),
-        ),
-      ],
-    );
-  }
-
-  /// Construye la sección de precio con comparativa si cambió de rango
-  ///
-  /// Si el tipo de precio es diferente al de venta (tipo_precio_id != 2),
-  /// muestra el precio anterior tachado y el nuevo precio
-  Widget _buildPrecioUnitarioSection(BuildContext context) {
-    final detalleConRango = widget.detalleConRango;
-    final precioActual = widget.item.precioUnitario;
-    final precioBajoRango = detalleConRango?.precioUnitario ?? precioActual;
-
-    // Detectar si cambio de tipo de precio (no es VENTA por defecto)
-    final cambioDePrecio =
-        detalleConRango != null &&
-        detalleConRango.tipoPrecioId != 2 &&
-        precioBajoRango != precioActual;
-
-    if (!cambioDePrecio) {
-      // Sin cambios: mostrar solo el precio actual + tipo de precio
-      return Row(
-        children: [
-          Text(
-            'Bs ${precioActual.toStringAsFixed(2)} c/u',
-            style: Theme.of(context).textTheme.bodyLarge,
-          ),
-          const SizedBox(width: 8),
-          // Badge tipo de precio solo si es diferente a VENTA
-          if (detalleConRango != null && detalleConRango.tipoPrecioId != 2)
-            _buildTipoPrecioBadge(detalleConRango.tipoPrecioNombre),
-        ],
-      );
-    }
-
-    // Con cambios: mostrar comparativa (precio anterior tachado + precio nuevo)
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        // Precio anterior tachado
-        Text(
-          'Bs ${precioActual.toStringAsFixed(2)}',
-          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-            decoration: TextDecoration.lineThrough,
-            color: Colors.grey.shade500,
-            fontSize: 11,
-          ),
-        ),
-        const SizedBox(width: 4),
-        // Nuevo precio con énfasis (comprimido)
-        Flexible(
-          child: Text(
-            'Bs ${precioBajoRango.toStringAsFixed(2)}',
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              fontWeight: FontWeight.bold,
-              color: Colors.green.shade700,
-              fontSize: 12,
-            ),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
-        ),
-        const SizedBox(width: 4),
-        // Badge tipo de precio (compacto)
-        _buildTipoPrecioBadge(detalleConRango!.tipoPrecioNombre),
-      ],
-    );
-  }
-
-  /// Construye badge compacto del tipo de precio
-  Widget _buildTipoPrecioBadge(String tipoPrecioNombre) {
-    final colorMap = {
-      'Precio de Venta': Colors.blue,
-      'P. Descuento': Colors.green,
-      'P. Especial': Colors.orange,
-      'Descuento': Colors.green,
-      'Especial': Colors.orange,
-    };
-
-    final color = colorMap.entries
-        .firstWhere(
-          (e) => tipoPrecioNombre.contains(e.key),
-          orElse: () => MapEntry('default', Colors.blue),
-        )
-        .value;
-
-    // 🔑 Crear etiqueta corta pero clara
-    final badgeText = _getBadgeLabel(tipoPrecioNombre);
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-      decoration: BoxDecoration(
-        color: color.shade600,
-        borderRadius: BorderRadius.circular(3),
-      ),
-      child: Text(
-        badgeText,
-        style: const TextStyle(
-          fontSize: 9,
-          fontWeight: FontWeight.bold,
-          color: Colors.white,
-        ),
-      ),
-    );
-  }
-
-  /// Obtener etiqueta corta para el badge del tipo de precio
-  String _getBadgeLabel(String tipoPrecioNombre) {
-    if (tipoPrecioNombre.contains('Venta')) return 'V';
-    if (tipoPrecioNombre.contains('Descuento') ||
-        tipoPrecioNombre.contains('Desc'))
-      return 'D';
-    if (tipoPrecioNombre.contains('Especial') ||
-        tipoPrecioNombre.contains('Esp'))
-      return 'E';
-    return 'P';
-  }
-
-  Widget _buildImagePlaceholder() {
-    final producto = widget.item.producto;
-    final imagenes = producto.imagenes;
-
-    // Si hay imágenes, mostrar la principal (si existe) o la primera
-    if (imagenes != null && imagenes.isNotEmpty) {
-      // Buscar la imagen principal
-      final imagenPrincipal = imagenes.firstWhere(
-        (img) => img.esPrincipal,
-        orElse: () => imagenes.first,
-      );
-
-      return Image.network(
-        imagenPrincipal.url,
-        width: 80,
-        height: 80,
-        fit: BoxFit.cover,
-        errorBuilder: (context, error, stackTrace) {
-          debugPrint('❌ Error cargando imagen: ${imagenPrincipal.url}');
-          return _buildImageError();
-        },
-        loadingBuilder: (context, child, loadingProgress) {
-          if (loadingProgress == null) {
-            return child;
-          }
-          return Container(
-            width: 80,
-            height: 80,
-            decoration: BoxDecoration(
-              color: Colors.grey.shade200,
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Center(
-              child: SizedBox(
-                width: 30,
-                height: 30,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  value: loadingProgress.expectedTotalBytes != null
-                      ? loadingProgress.cumulativeBytesLoaded /
-                            loadingProgress.expectedTotalBytes!
-                      : null,
-                ),
-              ),
-            ),
-          );
-        },
-      );
-    }
-
-    // Si no hay imágenes, mostrar placeholder
-    return _buildImageError();
-  }
-
-  /// Widget para cuando no hay imagen disponible
-  Widget _buildImageError() {
-    return Container(
-      width: 80,
-      height: 80,
-      decoration: BoxDecoration(
-        color: Colors.grey.shade200,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.grey.shade300, width: 1),
-      ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            Icons.image_not_supported,
-            size: 28,
-            color: Colors.grey.shade400,
-          ),
-          const SizedBox(height: 4),
-          Text(
-            'Sin imagen',
-            style: TextStyle(fontSize: 9, color: Colors.grey.shade500),
-          ),
-        ],
       ),
     );
   }

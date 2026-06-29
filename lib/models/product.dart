@@ -21,7 +21,7 @@ class Product {
   final List<String>? codigosBarra;
   final StockWarehouse? stockPrincipal;
   final List<StockWarehouse>? stockPorAlmacenes;
-  final List<Precio>? precios;  // ✅ NUEVO: Array de precios
+  final List<Precio>? precios; // ✅ NUEVO: Array de precios
 
   // ✅ CAMPOS PARA COMBOS
   final bool esCombo;
@@ -54,13 +54,13 @@ class Product {
     this.codigosBarra,
     this.stockPrincipal,
     this.stockPorAlmacenes,
-    this.precios,  // ✅ NUEVO: Parámetro de precios
-    this.esCombo = false,  // ✅ NUEVO: Es combo
-    this.comboItems,  // ✅ NUEVO: Items del combo
-    this.comboGrupos,  // ✅ NUEVO: Grupos opcionales
-    this.capacidad,  // ✅ NUEVO: Capacidad de combos
-    this.tipoPrecioIdRecomendado,  // ✅ NUEVO: ID del tipo de precio recomendado
-    this.tipoPrecioNombreRecomendado,  // ✅ NUEVO: Nombre del tipo de precio recomendado
+    this.precios, // ✅ NUEVO: Parámetro de precios
+    this.esCombo = false, // ✅ NUEVO: Es combo
+    this.comboItems, // ✅ NUEVO: Items del combo
+    this.comboGrupos, // ✅ NUEVO: Grupos opcionales
+    this.capacidad, // ✅ NUEVO: Capacidad de combos
+    this.tipoPrecioIdRecomendado, // ✅ NUEVO: ID del tipo de precio recomendado
+    this.tipoPrecioNombreRecomendado, // ✅ NUEVO: Nombre del tipo de precio recomendado
   });
 
   /// Obtener la imagen principal (es_principal == true) o la primera imagen
@@ -95,6 +95,31 @@ class Product {
     return cantidadDisponible > 0;
   }
 
+  /// Obtener el precio por tipo (tipo_precio_id)
+  /// Retorna null si no existe ese tipo de precio
+  Precio? obtenerPrecioPorTipo(int tipoPrecioId) {
+    if (precios == null || precios!.isEmpty) return null;
+    try {
+      return precios!.firstWhere((p) => p.tipoPrecioId == tipoPrecioId);
+    } catch (e) {
+      return null;
+    }
+  }
+
+  /// Obtener el precio de venta (tipo_precio_id = 5)
+  /// Es el precio por defecto a usar cuando se agrega un producto al carrito
+  double get precioVentaFinal {
+    final precioVentaObj = obtenerPrecioPorTipo(5);
+    // debugPrint('🔍 precioVentaFinal para $nombre: array precios=${precios?.length}, encontrado=$precioVentaObj');
+    if (precioVentaObj != null) {
+      // debugPrint('   ✅ Usando precio de tipo 5: ${precioVentaObj.precio}');
+      return precioVentaObj.precio;
+    }
+    // debugPrint('   ⚠️ No encontrado tipo 5, usando fallback: $precioVenta');
+    // Fallback a precioVenta del producto si existe
+    return precioVenta ?? 0.0;
+  }
+
   factory Product.fromJson(Map<String, dynamic> json) {
     try {
       final product = Product(
@@ -106,18 +131,27 @@ class Product {
         descripcion: json['descripcion'],
         categoria: json['categoria'] != null
             ? (json['categoria'] is Map
-                ? Category.fromJson(json['categoria'])
-                : Category(id: json['categoria_id'] ?? 0, nombre: json['categoria'].toString()))
+                  ? Category.fromJson(json['categoria'])
+                  : Category(
+                      id: json['categoria_id'] ?? 0,
+                      nombre: json['categoria'].toString(),
+                    ))
             : null,
         marca: json['marca'] != null
             ? (json['marca'] is Map
-                ? Brand.fromJson(json['marca'])
-                : Brand(id: json['marca_id'] ?? 0, nombre: json['marca'].toString()))
+                  ? Brand.fromJson(json['marca'])
+                  : Brand(
+                      id: json['marca_id'] ?? 0,
+                      nombre: json['marca'].toString(),
+                    ))
             : null,
         proveedor: json['proveedor'] != null
             ? (json['proveedor'] is Map
-                ? Supplier.fromJson(json['proveedor'])
-                : Supplier(id: json['proveedor_id'] ?? 0, nombre: json['proveedor'].toString()))
+                  ? Supplier.fromJson(json['proveedor'])
+                  : Supplier(
+                      id: json['proveedor_id'] ?? 0,
+                      nombre: json['proveedor'].toString(),
+                    ))
             : null,
         // Backend sends 'unidad', not 'unidad_medida'
         unidadMedida: json['unidad'] != null
@@ -145,12 +179,19 @@ class Product {
         // Map stock_principal or create one from root-level stock fields
         stockPrincipal: json['stock_principal'] != null
             ? StockWarehouse.fromJson(json['stock_principal'])
-            : (json['stock'] != null || json['stock_disponible'] != null || json['cantidad_disponible'] != null
+            : (json['stock'] != null ||
+                      json['stock_disponible'] != null ||
+                      json['cantidad_disponible'] != null
                   ? StockWarehouse(
                       almacenId: 3, // Default to almacén 3 (main warehouse)
                       almacenNombre: 'Principal',
-                      cantidad: (json['stock'] ?? json['cantidad_disponible'] as num?)?.toInt() ?? 0,
-                      cantidadDisponible: json['stock_disponible'] ?? json['cantidad_disponible'],
+                      cantidad:
+                          (json['stock'] ?? json['cantidad_disponible'] as num?)
+                              ?.toInt() ??
+                          0,
+                      cantidadDisponible:
+                          json['stock_disponible'] ??
+                          json['cantidad_disponible'],
                       cantidadReservada: json['stock_reservado'],
                     )
                   : null),
@@ -160,9 +201,14 @@ class Product {
                   .toList()
             : null,
         precios: json['precios'] != null
-            ? (json['precios'] as List)
-                  .map((i) => Precio.fromJson(i))
-                  .toList()
+            ? (json['precios'] as List).map((i) {
+                try {
+                  return Precio.fromJson(i);
+                } catch (e) {
+                  debugPrint('❌ Error parseando Precio: $e, item: $i');
+                  rethrow;
+                }
+              }).toList()
             : null,
         // ✅ NUEVO: Campos de combos
         esCombo: json['es_combo'] ?? false,
@@ -284,8 +330,10 @@ class Product {
       comboItems: comboItems ?? this.comboItems,
       comboGrupos: comboGrupos ?? this.comboGrupos,
       capacidad: capacidad ?? this.capacidad,
-      tipoPrecioIdRecomendado: tipoPrecioIdRecomendado ?? this.tipoPrecioIdRecomendado,
-      tipoPrecioNombreRecomendado: tipoPrecioNombreRecomendado ?? this.tipoPrecioNombreRecomendado,
+      tipoPrecioIdRecomendado:
+          tipoPrecioIdRecomendado ?? this.tipoPrecioIdRecomendado,
+      tipoPrecioNombreRecomendado:
+          tipoPrecioNombreRecomendado ?? this.tipoPrecioNombreRecomendado,
     );
   }
 }
@@ -546,6 +594,7 @@ class ComboItem {
   final int? combosPosibles;
   final int? unidadMedidaId;
   final String? unidadMedidaNombre;
+  final Product? producto;
 
   ComboItem({
     required this.id,
@@ -564,6 +613,7 @@ class ComboItem {
     this.combosPosibles,
     this.unidadMedidaId,
     this.unidadMedidaNombre,
+    this.producto,
   });
 
   factory ComboItem.fromJson(Map<String, dynamic> json) {
@@ -584,6 +634,9 @@ class ComboItem {
       combosPosibles: json['combos_posibles'],
       unidadMedidaId: json['unidad_medida_id'],
       unidadMedidaNombre: json['unidad_medida_nombre'],
+      producto: json['producto'] != null
+          ? Product.fromJson(json['producto'])
+          : null,
     );
   }
 
@@ -605,6 +658,7 @@ class ComboItem {
       'combos_posibles': combosPosibles,
       'unidad_medida_id': unidadMedidaId,
       'unidad_medida_nombre': unidadMedidaNombre,
+      'producto': producto?.toJson(),
     };
   }
 
@@ -664,8 +718,7 @@ class ComboGrupo {
       'cantidad_a_llevar': cantidadALlevar,
       'precio_grupo': precioGrupo,
       'productos': productos,
-      'productos_detalle':
-          productosDetalle?.map((p) => p.toJson()).toList(),
+      'productos_detalle': productosDetalle?.map((p) => p.toJson()).toList(),
     };
   }
 

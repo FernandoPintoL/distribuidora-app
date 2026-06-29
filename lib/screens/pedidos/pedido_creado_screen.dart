@@ -5,7 +5,6 @@ import '../../services/estados_helpers.dart'; // ✅ AGREGADO para estados diná
 import '../../extensions/theme_extension.dart';
 import '../../services/api_service.dart';
 import '../../services/print_service.dart'; // ✅ Para descargar PDFs
-import 'dart:io' show Platform;
 import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -26,7 +25,6 @@ class PedidoCreadoScreen extends StatelessWidget {
     final isDark = context.isDark;
 
     return Scaffold(
-      backgroundColor: colorScheme.surface,
       body: SafeArea(
         child: SingleChildScrollView(
           child: Padding(
@@ -49,39 +47,31 @@ class PedidoCreadoScreen extends StatelessWidget {
                   ),
                 ),
 
-                const SizedBox(height: 32),
+                const SizedBox(height: 16),
 
                 // ✅ NUEVO: Título dinámico según sea creación o actualización
                 Text(
                   esActualizacion ? 'Proforma Actualizada' : 'Proforma Creada',
-                  style: TextStyle(
-                    fontSize: AppTextStyles.displayMedium(context).fontSize!,
-                    fontWeight: FontWeight.bold,
-                    color: colorScheme.onSurface,
-                  ),
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 24),
                   textAlign: TextAlign.center,
                 ),
 
-                const SizedBox(height: 16),
+                const SizedBox(height: 8),
 
                 // ✅ NUEVO: Mensaje dinámico según sea creación o actualización
                 Text(
                   esActualizacion
                       ? 'Los cambios han sido guardados exitosamente'
                       : 'Tu pedido ha sido registrado exitosamente',
-                  style: TextStyle(
-                    fontSize: AppTextStyles.bodyLarge(context).fontSize!,
-                    color: colorScheme.onSurfaceVariant,
-                  ),
+                  style: TextStyle(color: colorScheme.onSurfaceVariant),
                   textAlign: TextAlign.center,
                 ),
 
-                const SizedBox(height: 32),
+                const SizedBox(height: 16),
 
                 // Card con información del pedido
                 Card(
                   elevation: 2,
-                  color: colorScheme.surface,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
                   ),
@@ -97,9 +87,6 @@ class PedidoCreadoScreen extends StatelessWidget {
                               'Folio:',
                               style: TextStyle(
                                 color: colorScheme.onSurfaceVariant,
-                                fontSize: AppTextStyles.bodyMedium(
-                                  context,
-                                ).fontSize!,
                               ),
                             ),
                             Flexible(
@@ -111,10 +98,8 @@ class PedidoCreadoScreen extends StatelessWidget {
                                     child: Text(
                                       '#' + pedido.id.toString(),
                                       style: TextStyle(
+                                        fontSize: 16,
                                         fontWeight: FontWeight.bold,
-                                        fontSize: AppTextStyles.bodyLarge(
-                                          context,
-                                        ).fontSize!,
                                         color: colorScheme.onSurface,
                                       ),
                                       textAlign: TextAlign.right,
@@ -133,7 +118,8 @@ class PedidoCreadoScreen extends StatelessWidget {
                                       String impresionUrl;
                                       if (value == 'imagen') {
                                         // 🖼️ NUEVO: Descargar como imagen
-                                        impresionUrl = '$baseUrl/proformas/${pedido.id}/descargar-imagen?formato=jpeg&dpi=150&quality=85';
+                                        impresionUrl =
+                                            '$baseUrl/proformas/${pedido.id}/descargar-imagen?formato=jpeg&dpi=150&quality=85';
                                       } else {
                                         // PDF original
                                         impresionUrl =
@@ -157,7 +143,7 @@ class PedidoCreadoScreen extends StatelessWidget {
                                           children: [
                                             Icon(
                                               Icons.download,
-                                              size: 18,
+                                              size: 24,
                                               color: colorScheme.primary,
                                             ),
                                             const SizedBox(width: 8),
@@ -227,7 +213,7 @@ class PedidoCreadoScreen extends StatelessWidget {
                         ),
 
                         Divider(
-                          height: 24,
+                          height: 12,
                           color: colorScheme.outline.withAlpha(
                             isDark ? 80 : 40,
                           ),
@@ -241,9 +227,6 @@ class PedidoCreadoScreen extends StatelessWidget {
                               'Estado',
                               style: TextStyle(
                                 color: colorScheme.onSurfaceVariant,
-                                fontSize: AppTextStyles.bodyMedium(
-                                  context,
-                                ).fontSize!,
                               ),
                             ),
                             // ✅ ACTUALIZADO: Badge dinámico usando datos del estado
@@ -271,11 +254,6 @@ class PedidoCreadoScreen extends StatelessWidget {
                                         pedido.estadoCategoria,
                                         pedido.estadoCodigo,
                                       ),
-                                      style: TextStyle(
-                                        fontSize: AppTextStyles.bodyLarge(
-                                          context,
-                                        ).fontSize!,
-                                      ),
                                     ),
                                     const SizedBox(width: 6),
                                     Flexible(
@@ -296,7 +274,7 @@ class PedidoCreadoScreen extends StatelessWidget {
                         ),
 
                         Divider(
-                          height: 24,
+                          height: 12,
                           color: colorScheme.outline.withAlpha(
                             isDark ? 80 : 40,
                           ),
@@ -308,21 +286,13 @@ class PedidoCreadoScreen extends StatelessWidget {
                           children: [
                             Text(
                               'Total',
-                              style: TextStyle(
-                                fontSize: AppTextStyles.headlineSmall(
-                                  context,
-                                ).fontSize!,
-                                fontWeight: FontWeight.w600,
-                                color: colorScheme.onSurface,
-                              ),
+                              style: TextStyle(fontWeight: FontWeight.w600),
                             ),
                             Flexible(
                               child: Text(
                                 'Bs. ${pedido.total.toStringAsFixed(2)}',
                                 style: TextStyle(
-                                  fontSize: AppTextStyles.headlineMedium(
-                                    context,
-                                  ).fontSize!,
+                                  fontSize: 16,
                                   fontWeight: FontWeight.bold,
                                   color: Color(0xFF4CAF50),
                                 ),
@@ -337,7 +307,7 @@ class PedidoCreadoScreen extends StatelessWidget {
                   ),
                 ),
 
-                const SizedBox(height: 24),
+                const SizedBox(height: 12),
 
                 // ✅ NUEVO: Información adicional dinámica según sea creación o actualización
                 Container(
@@ -363,9 +333,6 @@ class PedidoCreadoScreen extends StatelessWidget {
                               ? 'Tu proforma ha sido actualizada correctamente. Los cambios serán revisados por nuestro equipo.'
                               : 'Tu proforma está pendiente de aprobación. Te notificaremos cuando sea aprobada y esté lista para entrega.',
                           style: TextStyle(
-                            fontSize: AppTextStyles.bodyMedium(
-                              context,
-                            ).fontSize!,
                             color: colorScheme.onSurface,
                             height: 1.4,
                           ),
@@ -375,7 +342,7 @@ class PedidoCreadoScreen extends StatelessWidget {
                   ),
                 ),
 
-                const SizedBox(height: 32),
+                const SizedBox(height: 16),
 
                 // Botones
                 Column(
@@ -399,10 +366,8 @@ class PedidoCreadoScreen extends StatelessWidget {
                         child: Text(
                           'Ver Mis Pedidos',
                           style: TextStyle(
-                            fontSize: AppTextStyles.bodyLarge(
-                              context,
-                            ).fontSize!,
                             fontWeight: FontWeight.w600,
+                            fontSize: 18,
                           ),
                         ),
                       ),
@@ -429,9 +394,7 @@ class PedidoCreadoScreen extends StatelessWidget {
                         child: Text(
                           'Volver al Inicio',
                           style: TextStyle(
-                            fontSize: AppTextStyles.bodyLarge(
-                              context,
-                            ).fontSize!,
+                            fontSize: 18,
                             fontWeight: FontWeight.w600,
                           ),
                         ),

@@ -36,7 +36,6 @@ class CarritoErrorBanner extends StatelessWidget {
               message,
               style: TextStyle(
                 color: context.carritoWarningText,
-                fontSize: 13,
                 fontWeight: FontWeight.w500,
               ),
               maxLines: 2,
