@@ -50,12 +50,14 @@ class EntregaInfoWidget extends StatelessWidget {
                 ),
                 // Estado de Entrega
                 if (entrega.estadoEntrega != null)
-                  _buildInfoSection(
-                    context,
-                    icon: Icons.info_outline,
-                    label: 'Estado',
-                    value: entrega.estadoEntrega!.nombre,
-                    color: entrega.estadoEntrega!.color,
+                  Flexible(
+                    child: _buildInfoSection(
+                      context,
+                      icon: Icons.info_outline,
+                      label: 'Estado',
+                      value: entrega.estadoEntrega!.nombre,
+                      color: entrega.estadoEntrega!.color,
+                    ),
                   ),
               ],
             ),
