@@ -29,32 +29,51 @@ class ClienteAvatarWidget extends StatelessWidget {
               ? NetworkImage('${AppUrls.baseUrlImg}$clienteFotoPerfil')
               : null,
           child: !tieneImagen
-              ? Text(
-                  (clienteNombre ?? 'C').substring(0, 1).toUpperCase(),
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                  ),
+              ? Column(
+                  children: [
+                    Text(
+                      (clienteNombre ?? 'C').substring(0, 1).toUpperCase(),
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    ),
+                    if (clienteLocalidad != null &&
+                        clienteLocalidad!.isNotEmpty) ...[
+                      const SizedBox(height: 8),
+                      SizedBox(
+                        width: 85,
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.location_on,
+                              size: 12,
+                              color: colorScheme.primary,
+                            ),
+                            const SizedBox(width: 2),
+                            Expanded(
+                              child: Text(
+                                clienteLocalidad!,
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w600,
+                                  color: colorScheme.primary,
+                                ),
+                                textAlign: TextAlign.center,
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ],
                 )
               : null,
         ),
-        if (clienteLocalidad != null && clienteLocalidad!.isNotEmpty) ...[
-          const SizedBox(height: 8),
-          SizedBox(
-            width: 85,
-            child: Text(
-              clienteLocalidad!,
-              style: TextStyle(
-                fontSize: 11,
-                fontWeight: FontWeight.w600,
-                color: colorScheme.primary,
-              ),
-              textAlign: TextAlign.center,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ),
-        ],
       ],
     );
   }
