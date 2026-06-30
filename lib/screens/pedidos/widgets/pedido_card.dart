@@ -289,7 +289,7 @@ class PedidoCard extends StatelessWidget {
           items.add(
             _buildTimelineItem(
               ctx,
-              '🚚 Confirmación',
+              '📋 Detalles',
               _getConfirmacionStatusDetallado(ultimaConfirmacion),
               colorScheme,
             ),
