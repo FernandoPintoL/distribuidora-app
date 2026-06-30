@@ -265,9 +265,18 @@ class PedidoCard extends StatelessWidget {
 
       // 5. CONFIRMACIONES DE ENTREGA (si hay - solo las que cumplen filtros)
       if (pedido.venta?.confirmacionesEntrega.isNotEmpty ?? false) {
-        final confirmacionesFiltradas = pedido.venta!.confirmacionesEntrega
+        final todasLasConfirmaciones = pedido.venta!.confirmacionesEntrega;
+        debugPrint('🔍 Timeline Pedido #${pedido.numero}: ${todasLasConfirmaciones.length} confirmaciones totales');
+
+        final confirmacionesFiltradas = todasLasConfirmaciones
             .where((c) => _debeActualizarConfirmacion(c))
             .toList();
+
+        debugPrint('   ✅ ${confirmacionesFiltradas.length} confirmaciones filtradas que se mostrarán');
+        for (var i = 0; i < confirmacionesFiltradas.length; i++) {
+          final c = confirmacionesFiltradas[i];
+          debugPrint('      [$i] estado: ${c.estado}');
+        }
 
         if (confirmacionesFiltradas.isNotEmpty) {
           items.add(_buildTimelineSeparator(colorScheme));
