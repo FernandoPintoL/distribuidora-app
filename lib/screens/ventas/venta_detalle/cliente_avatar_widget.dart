@@ -5,12 +5,14 @@ class ClienteAvatarWidget extends StatelessWidget {
   final String? clienteNombre;
   final String? clienteFotoPerfil;
   final String? clienteLocalidad;
+  final String? clienteObservaciones;
 
   const ClienteAvatarWidget({
     Key? key,
     required this.clienteNombre,
     required this.clienteFotoPerfil,
     this.clienteLocalidad,
+    this.clienteObservaciones,
   }) : super(key: key);
 
   @override
@@ -19,56 +21,58 @@ class ClienteAvatarWidget extends StatelessWidget {
         clienteFotoPerfil != null && clienteFotoPerfil!.isNotEmpty;
     final colorScheme = Theme.of(context).colorScheme;
 
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.center,
+    return Row(
       children: [
+        // Avatar
         CircleAvatar(
-          radius: 32,
+          radius: 28,
           backgroundImage: tieneImagen
               ? NetworkImage('${AppUrls.baseUrlImg}$clienteFotoPerfil')
               : null,
           child: !tieneImagen
-              ? Text(
-                  (clienteNombre ?? 'C').substring(0, 1).toUpperCase(),
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                  ),
-                )
+              ? Icon(Icons.person, size: 28, color: colorScheme.onSurface)
               : null,
         ),
-        if (clienteLocalidad != null && clienteLocalidad!.isNotEmpty) ...[
-          const SizedBox(height: 8),
-          SizedBox(
-            width: 85,
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(
-                  Icons.location_on,
-                  size: 12,
-                  color: colorScheme.primary,
-                ),
-                const SizedBox(width: 2),
-                Expanded(
-                  child: Text(
+        const SizedBox(width: 6),
+        // Nombre
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                clienteNombre ?? 'Cliente',
+                style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            // Localidad
+            if (clienteLocalidad != null && clienteLocalidad!.isNotEmpty) ...[
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Icon(Icons.location_on, size: 11, color: Colors.red),
+                  Text(
                     clienteLocalidad!,
-                    style: TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w600,
-                      color: colorScheme.primary,
-                    ),
-                    textAlign: TextAlign.center,
-                    maxLines: 2,
+                    style: TextStyle(fontWeight: FontWeight.w500),
+                    maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
-                ),
-              ],
-            ),
-          ),
-        ],
+                ],
+              ),
+            ],
+            if (clienteObservaciones != null &&
+                clienteObservaciones!.isNotEmpty) ...[
+              Text(
+                "📍 ${clienteObservaciones!}",
+                style: TextStyle(fontWeight: FontWeight.w500),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ],
+          ],
+        ),
+        ),
       ],
     );
   }
