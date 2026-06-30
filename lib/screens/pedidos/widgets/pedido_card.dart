@@ -256,35 +256,41 @@ class PedidoCard extends StatelessWidget {
       );
 
       // 4. INFORMACIÓN DE ENTREGA ASIGNADA (si hay)
-      if (pedido.venta?.entrega != null) {
+      /*if (pedido.venta?.entrega != null) {
         items.add(_buildTimelineSeparator(colorScheme));
         items.add(
           _buildEntregaInfoWidget(ctx, pedido.venta!.entrega!, colorScheme),
         );
-      }
+      }*/
 
       // 5. ÚLTIMA CONFIRMACIÓN DE ENTREGA (solo la más reciente)
       if (pedido.venta?.confirmacionesEntrega.isNotEmpty ?? false) {
         final todasLasConfirmaciones = pedido.venta!.confirmacionesEntrega;
-        debugPrint('🔍 Timeline Pedido #${pedido.numero}: ${todasLasConfirmaciones.length} confirmaciones totales');
+        debugPrint(
+          '🔍 Timeline Pedido #${pedido.numero}: ${todasLasConfirmaciones.length} confirmaciones totales',
+        );
 
         final confirmacionesFiltradas = todasLasConfirmaciones
             .where((c) => _debeActualizarConfirmacion(c))
             .toList();
 
-        debugPrint('   ✅ ${confirmacionesFiltradas.length} confirmaciones filtradas');
+        debugPrint(
+          '   ✅ ${confirmacionesFiltradas.length} confirmaciones filtradas',
+        );
 
         // Mostrar solo la última confirmación registrada
         if (confirmacionesFiltradas.isNotEmpty) {
           final ultimaConfirmacion = confirmacionesFiltradas.last;
-          debugPrint('   📍 Última confirmación: tipo_entrega=${ultimaConfirmacion.tipoEntrega}, tipo_confirmacion=${ultimaConfirmacion.tipoConfirmacion}');
+          debugPrint(
+            '   📍 Última confirmación: tipo_entrega=${ultimaConfirmacion.tipoEntrega}, tipo_confirmacion=${ultimaConfirmacion.tipoConfirmacion}',
+          );
 
           items.add(_buildTimelineSeparator(colorScheme));
           items.add(
             _buildTimelineItem(
               ctx,
-              _getConfirmacionIcon(ultimaConfirmacion),
-              _getConfirmacionStatus(ultimaConfirmacion),
+              '🚚 Confirmación',
+              _getConfirmacionStatusDetallado(ultimaConfirmacion),
               colorScheme,
             ),
           );
@@ -535,7 +541,7 @@ class PedidoCard extends StatelessWidget {
       case 'CLIENTE_CERRADO':
         return '🔒 Cerrado';
       case 'DEVOLUCION_PARCIAL':
-        return '↩️ Parcial';
+        return '↩️ Devolución Parcial';
       default:
         return '📦 ${tipo.replaceAll('_', ' ')}';
     }
@@ -574,11 +580,42 @@ class PedidoCard extends StatelessWidget {
     return {'subtitle': subtitulo, 'color': color};
   }
 
+  Map<String, dynamic> _getConfirmacionStatusDetallado(
+    EntregaVentaConfirmacion confirmacion,
+  ) {
+    // Mostrar tipo_entrega y tipo_confirmacion
+    final tipoEntrega = confirmacion.tipoEntrega.toUpperCase();
+    final tipoConfirmacion = confirmacion.tipoConfirmacion.toUpperCase();
+
+    final subtitle = '$tipoEntrega - $tipoConfirmacion';
+
+    // Color basado en tipo_confirmacion
+    Color color;
+    switch (tipoConfirmacion) {
+      case 'COMPLETA':
+        color = Colors.green;
+        break;
+      case 'RECHAZADA':
+        color = Colors.red;
+        break;
+      case 'CLIENTE_CERRADO':
+        color = Colors.orange;
+        break;
+      case 'DEVOLUCION_PARCIAL':
+        color = Colors.amber;
+        break;
+      default:
+        color = Colors.grey;
+    }
+
+    return {'subtitle': subtitle, 'color': color};
+  }
+
   bool _debeActualizarConfirmacion(EntregaVentaConfirmacion confirmacion) {
     // Filtrar por tipoEntrega y tipoConfirmacion
     final tipoEntregaValido =
         confirmacion.tipoEntrega.toUpperCase() == 'COMPLETA' ||
-            confirmacion.tipoEntrega.toUpperCase() == 'CON_NOVEDAD';
+        confirmacion.tipoEntrega.toUpperCase() == 'CON_NOVEDAD';
 
     final tipoConfirmacionValido = [
       'CLIENTE_CERRADO',
