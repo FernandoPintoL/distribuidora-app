@@ -564,7 +564,9 @@ class Pedido {
   static PedidoVenta? _safeParsePedidoVenta(dynamic data) {
     try {
       if (data != null && data is Map<String, dynamic>) {
-        return PedidoVenta.fromJson(data);
+        final venta = PedidoVenta.fromJson(data);
+        debugPrint('📋 Pedido.fromJson - Venta parseada: #${venta.numero} con ${venta.confirmacionesEntrega.length} confirmaciones');
+        return venta;
       }
     } catch (e) {
       debugPrint('⚠️ Error parsing PedidoVenta: $e');
