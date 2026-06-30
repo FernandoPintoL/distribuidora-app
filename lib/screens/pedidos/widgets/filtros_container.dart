@@ -579,46 +579,44 @@ class FilterContainers {
   ) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
         border: Border(
           bottom: BorderSide(color: colorScheme.outline.withOpacity(0.1)),
         ),
       ),
-      child: SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            buildEstadosFilterChipsContent(
-              context,
-              colorScheme,
-              isDark,
-              filtroEstadoSeleccionado,
-              onEstadoChanged,
+      child: Row(
+        children: [
+          Expanded(
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              child: buildEstadosFilterChipsContent(
+                context,
+                colorScheme,
+                isDark,
+                filtroEstadoSeleccionado,
+                onEstadoChanged,
+              ),
             ),
-            if (onLimpiarFiltros != null) ...[
-              const SizedBox(width: 8),
-              IconButton(
+          ),
+          if (onLimpiarFiltros != null)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              child: IconButton(
                 style: IconButton.styleFrom(
                   backgroundColor: colorScheme.primary,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(8),
                   ),
                 ),
-                icon: Icon(
-                  Icons.clear_all,
-                  size: 22,
-                  color: colorScheme.secondary,
-                ),
+                icon: Icon(Icons.clear_all, size: 22),
                 onPressed: onLimpiarFiltros,
                 tooltip: 'Limpiar filtros',
                 padding: EdgeInsets.zero,
                 constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
               ),
-            ],
-          ],
-        ),
+            ),
+        ],
       ),
     );
   }
@@ -667,9 +665,7 @@ class FilterContainers {
             ),
             const SizedBox(width: 8),
             ...states.map((estado) {
-              final contador = estadosProvider.getContadorEstado(
-                estado.codigo,
-              );
+              final contador = estadosProvider.getContadorEstado(estado.codigo);
               final color = _hexToColor(estado.color);
 
               return Padding(

@@ -89,10 +89,12 @@ class PedidoCard extends StatelessWidget {
                     ),
                     // Cliente con Avatar
                     Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         ClienteAvatarWidget(
                           clienteNombre: pedido.cliente?.nombre,
                           clienteFotoPerfil: pedido.cliente?.fotoPerfil,
+                          clienteLocalidad: pedido.cliente?.localidad?.nombre,
                         ),
                         const SizedBox(width: 12),
                         Expanded(
@@ -117,18 +119,6 @@ class PedidoCard extends StatelessWidget {
                                   overflow: TextOverflow.ellipsis,
                                 ),
                               ],
-                              if (pedido.cliente?.localidad != null) ...[
-                                const SizedBox(height: 2),
-                                Text(
-                                  pedido.cliente!.localidad!.nombre ?? 'Localidad desconocida',
-                                  style: TextStyle(
-                                    fontSize: 11,
-                                    color: colorScheme.onSurfaceVariant.withOpacity(0.7),
-                                  ),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ],
                             ],
                           ),
                         ),
@@ -146,7 +136,7 @@ class PedidoCard extends StatelessWidget {
                           ),
                         ),
                         Text(
-                          _formatearFecha(pedido.fechaCreacion),
+                          "Creada: ${_formatearFecha(pedido.fechaCreacion)}",
                           style: TextStyle(color: colorScheme.onSurfaceVariant),
                         ),
                       ],

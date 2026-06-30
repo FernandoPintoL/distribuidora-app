@@ -187,11 +187,13 @@ class VentaClienteHeaderWidget extends StatelessWidget {
                 children: [
                   // Avatar y Nombre del Cliente
                   Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       // Avatar con foto o iniciales
                       ClienteAvatarWidget(
                         clienteNombre: venta.cliente?.nombre,
                         clienteFotoPerfil: venta.cliente?.fotoPerfil,
+                        clienteLocalidad: venta.cliente?.localidad?.nombre,
                       ),
                       const SizedBox(width: 12),
                       // Información del Cliente
@@ -212,15 +214,6 @@ class VentaClienteHeaderWidget extends StatelessWidget {
                               overflow: TextOverflow.ellipsis,
                               style: TextStyle(fontSize: 12),
                             ),
-                            if (venta.cliente?.localidad != null) ...[
-                              const SizedBox(height: 2),
-                              Text(
-                                '📍 ${venta.cliente?.localidad?.nombre ?? 'Localidad desconocida'}',
-                                style: TextStyle(fontWeight: FontWeight.w500),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ],
                           ],
                         ),
                       ),

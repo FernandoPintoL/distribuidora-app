@@ -235,7 +235,7 @@ class _PedidosHistorialScreenState extends State<PedidosHistorialScreen>
       ),
       body: Column(
         children: [
-          // âœ… NUEVO: Envolver filtros en SingleChildScrollView para que sean scrollables cuando el teclado se abre
+          // NUEVO: Envolver filtros en SingleChildScrollView para que sean scrollables cuando el teclado se abre
           SingleChildScrollView(
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -349,7 +349,7 @@ class _PedidosHistorialScreenState extends State<PedidosHistorialScreen>
           ),
 
           // ============================================================
-          // 4ï¸âƒ£ LISTADO DE PEDIDOS - Dentro del Consumer
+          // 4 LISTADO DE PEDIDOS - Dentro del Consumer
           // ============================================================
           Expanded(
             child: Consumer<PedidoProvider>(
@@ -379,9 +379,6 @@ class _PedidosHistorialScreenState extends State<PedidosHistorialScreen>
                               onRefresh: _onRefresh,
                               color: colorScheme.primary,
                               child: ListView(
-                                padding: const EdgeInsets.symmetric(
-                                  vertical: 8,
-                                ),
                                 children: [
                                   // Resumen de resultados
                                   Container(
@@ -389,7 +386,10 @@ class _PedidosHistorialScreenState extends State<PedidosHistorialScreen>
                                       horizontal: 16,
                                       vertical: 12,
                                     ),
-                                    padding: const EdgeInsets.all(12),
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 12,
+                                      vertical: 8,
+                                    ),
                                     decoration: BoxDecoration(
                                       color: colorScheme.secondary.withOpacity(
                                         0.1,
@@ -416,7 +416,8 @@ class _PedidosHistorialScreenState extends State<PedidosHistorialScreen>
                                           pedido: pedido,
                                           onTap: () {
                                             // Si la proforma ya fue convertida a venta, ir a venta-detalle
-                                            if (pedido.esVenta && pedido.ventaId != null) {
+                                            if (pedido.esVenta &&
+                                                pedido.ventaId != null) {
                                               Navigator.pushNamed(
                                                 context,
                                                 '/venta-detalle',
