@@ -39,15 +39,15 @@ class ClienteAvatarWidget extends StatelessWidget {
               : null,
         ),
         if (clienteLocalidad != null && clienteLocalidad!.isNotEmpty) ...[
-          const SizedBox(height: 6),
+          const SizedBox(height: 8),
           SizedBox(
-            width: 72,
+            width: 85,
             child: Text(
               clienteLocalidad!,
               style: TextStyle(
-                fontSize: 10,
-                fontWeight: FontWeight.w500,
-                color: colorScheme.onSurfaceVariant,
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+                color: colorScheme.primary,
               ),
               textAlign: TextAlign.center,
               maxLines: 2,
