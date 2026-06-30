@@ -566,17 +566,13 @@ class PedidoCard extends StatelessWidget {
   }
 
   bool _debeActualizarConfirmacion(ConfirmacionEntrega confirmacion) {
-    final tipoEntregaValido =
-        confirmacion.tipoEntrega.toUpperCase() == 'COMPLETA' ||
-            confirmacion.tipoEntrega.toUpperCase() == 'CON_NOVEDAD';
-
-    final tipoConfirmacionValido = [
+    // Filtrar solo por estado (tipo_confirmacion)
+    // Valores permitidos: CLIENTE_CERRADO, RECHAZADO, COMPLETA, DEVOLUCION_PARCIAL
+    return [
       'CLIENTE_CERRADO',
       'RECHAZADO',
       'COMPLETA',
       'DEVOLUCION_PARCIAL',
     ].contains(confirmacion.estado.toUpperCase());
-
-    return tipoEntregaValido && tipoConfirmacionValido;
   }
 }
