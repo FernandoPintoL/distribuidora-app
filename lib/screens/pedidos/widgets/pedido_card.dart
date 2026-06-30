@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../../../models/models.dart';
 import '../../../config/app_urls.dart';
+import '../../ventas/venta_detalle/cliente_avatar_widget.dart';
 
 /// Tarjeta de pedido refactorizada con Timeline unificado
 /// Muestra: Proforma → Venta → Logística en paralelo
@@ -61,6 +62,7 @@ class PedidoCard extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    // Folio y Button de impresion
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
@@ -85,11 +87,52 @@ class PedidoCard extends StatelessWidget {
                         ),
                       ],
                     ),
-                    Text(
-                      pedido.cliente?.nombre ?? 'Cliente desconocido',
-                      style: TextStyle(color: colorScheme.onSurfaceVariant),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
+                    // Cliente con Avatar
+                    Row(
+                      children: [
+                        ClienteAvatarWidget(
+                          clienteNombre: pedido.cliente?.nombre,
+                          clienteFotoPerfil: pedido.cliente?.fotoPerfil,
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                pedido.cliente?.nombre ?? 'Cliente desconocido',
+                                style: TextStyle(fontWeight: FontWeight.bold),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              if (pedido.cliente?.razonSocial != null) ...[
+                                const SizedBox(height: 2),
+                                Text(
+                                  pedido.cliente!.razonSocial!,
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: colorScheme.onSurfaceVariant,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ],
+                              if (pedido.cliente?.localidad != null) ...[
+                                const SizedBox(height: 2),
+                                Text(
+                                  pedido.cliente!.localidad!.nombre ?? 'Localidad desconocida',
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    color: colorScheme.onSurfaceVariant.withOpacity(0.7),
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ],
+                            ],
+                          ),
+                        ),
+                      ],
                     ),
                     const SizedBox(height: 4),
                     Row(
