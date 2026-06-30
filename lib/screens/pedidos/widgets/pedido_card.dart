@@ -93,15 +93,17 @@ class PedidoCard extends StatelessWidget {
                     // Cliente con Avatar
                     Row(
                       crossAxisAlignment: CrossAxisAlignment.center,
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        ClienteAvatarWidget(
-                          clienteNombre: pedido.cliente?.nombre,
-                          clienteFotoPerfil: pedido.cliente?.fotoPerfil,
-                          clienteLocalidad: pedido.cliente?.localidad?.nombre,
-                          clienteObservaciones:
-                              pedido.direccionEntrega!.observaciones ?? '',
+                        Flexible(
+                          child: ClienteAvatarWidget(
+                            clienteNombre: pedido.cliente?.nombre,
+                            clienteFotoPerfil: pedido.cliente?.fotoPerfil,
+                            clienteLocalidad: pedido.cliente?.localidad?.nombre,
+                            clienteObservaciones:
+                                pedido.direccionEntrega!.observaciones ?? '',
+                          ),
                         ),
+                        const Spacer(),
                         Column(
                           mainAxisAlignment: MainAxisAlignment.end,
                           crossAxisAlignment: CrossAxisAlignment.end,
