@@ -191,7 +191,7 @@ class VentaConvertidaSection extends StatelessWidget {
                   const SizedBox(height: 8),
                   ...venta.confirmacionesEntrega.map((confirmacion) {
                     final isCompleted =
-                        confirmacion.estado.toUpperCase() == 'COMPLETADA';
+                        confirmacion.tipoConfirmacion.toUpperCase() == 'COMPLETA';
 
                     return Padding(
                       padding: const EdgeInsets.only(bottom: 8),
@@ -222,7 +222,7 @@ class VentaConvertidaSection extends StatelessWidget {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
-                                    confirmacion.estado,
+                                    '${confirmacion.tipoEntrega} - ${confirmacion.tipoConfirmacion}',
                                     style: TextStyle(
                                       fontSize: AppTextStyles.bodySmall(
                                         parentContext,
@@ -233,10 +233,10 @@ class VentaConvertidaSection extends StatelessWidget {
                                           : Colors.orange,
                                     ),
                                   ),
-                                  if (confirmacion.chofer != null) ...[
+                                  if (confirmacion.confirmadoEn != null) ...[
                                     const SizedBox(height: 2),
                                     Text(
-                                      'Chofer: ${confirmacion.chofer}',
+                                      'Confirmado: ${DateFormat('dd/MM/yyyy HH:mm').format(confirmacion.confirmadoEn!)}',
                                       style: TextStyle(
                                         fontSize: AppTextStyles.labelSmall(
                                           parentContext,
@@ -247,10 +247,10 @@ class VentaConvertidaSection extends StatelessWidget {
                                       overflow: TextOverflow.ellipsis,
                                     ),
                                   ],
-                                  if (confirmacion.cliente != null) ...[
+                                  if (confirmacion.observacionesLogistica != null) ...[
                                     const SizedBox(height: 2),
                                     Text(
-                                      'Cliente: ${confirmacion.cliente}',
+                                      'Observaciones: ${confirmacion.observacionesLogistica}',
                                       style: TextStyle(
                                         fontSize: AppTextStyles.labelSmall(
                                           parentContext,
@@ -261,10 +261,10 @@ class VentaConvertidaSection extends StatelessWidget {
                                       overflow: TextOverflow.ellipsis,
                                     ),
                                   ],
-                                  if (confirmacion.fecha != null) ...[
+                                  if (confirmacion.confirmadoEn != null) ...[
                                     const SizedBox(height: 2),
                                     Text(
-                                      'Fecha: ${DateFormat('dd/MM/yyyy HH:mm').format(confirmacion.fecha!)}',
+                                      'Monto: Bs. ${confirmacion.montoRecibido.toStringAsFixed(2)}',
                                       style: TextStyle(
                                         fontSize: AppTextStyles.labelSmall(
                                           parentContext,

@@ -277,7 +277,7 @@ class PedidoCard extends StatelessWidget {
         // Mostrar solo la última confirmación registrada
         if (confirmacionesFiltradas.isNotEmpty) {
           final ultimaConfirmacion = confirmacionesFiltradas.last;
-          debugPrint('   📍 Última confirmación: estado=${ultimaConfirmacion.estado}');
+          debugPrint('   📍 Última confirmación: tipo_entrega=${ultimaConfirmacion.tipoEntrega}, tipo_confirmacion=${ultimaConfirmacion.tipoConfirmacion}');
 
           items.add(_buildTimelineSeparator(colorScheme));
           items.add(
@@ -524,8 +524,8 @@ class PedidoCard extends StatelessWidget {
     return {'subtitle': subtitulo, 'color': color};
   }
 
-  String _getConfirmacionIcon(ConfirmacionEntrega confirmacion) {
-    final tipo = confirmacion.estado.toUpperCase();
+  String _getConfirmacionIcon(EntregaVentaConfirmacion confirmacion) {
+    final tipo = confirmacion.tipoConfirmacion.toUpperCase();
 
     switch (tipo) {
       case 'COMPLETA':
@@ -542,9 +542,9 @@ class PedidoCard extends StatelessWidget {
   }
 
   Map<String, dynamic> _getConfirmacionStatus(
-    ConfirmacionEntrega confirmacion,
+    EntregaVentaConfirmacion confirmacion,
   ) {
-    final tipo = confirmacion.estado.toUpperCase();
+    final tipo = confirmacion.tipoConfirmacion.toUpperCase();
 
     String subtitulo;
     Color color;
@@ -574,14 +574,19 @@ class PedidoCard extends StatelessWidget {
     return {'subtitle': subtitulo, 'color': color};
   }
 
-  bool _debeActualizarConfirmacion(ConfirmacionEntrega confirmacion) {
-    // Filtrar solo por estado (tipo_confirmacion)
-    // Valores permitidos: CLIENTE_CERRADO, RECHAZADO, COMPLETA, DEVOLUCION_PARCIAL
-    return [
+  bool _debeActualizarConfirmacion(EntregaVentaConfirmacion confirmacion) {
+    // Filtrar por tipoEntrega y tipoConfirmacion
+    final tipoEntregaValido =
+        confirmacion.tipoEntrega.toUpperCase() == 'COMPLETA' ||
+            confirmacion.tipoEntrega.toUpperCase() == 'CON_NOVEDAD';
+
+    final tipoConfirmacionValido = [
       'CLIENTE_CERRADO',
       'RECHAZADO',
       'COMPLETA',
       'DEVOLUCION_PARCIAL',
-    ].contains(confirmacion.estado.toUpperCase());
+    ].contains(confirmacion.tipoConfirmacion.toUpperCase());
+
+    return tipoEntregaValido && tipoConfirmacionValido;
   }
 }

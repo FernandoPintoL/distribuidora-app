@@ -664,16 +664,6 @@ class _PedidosHistorialScreenState extends State<PedidosHistorialScreen>
     );
   }
 
-  // Método temporal para reemplazar el build
-  Widget _buildSimplifiedScreen() {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Pedidos - Simplified')),
-      body: Center(
-        child: Text('PedidoCard o lista tiene problema de semantics'),
-      ),
-    );
-  }
-
   /// Manejar acciones de impresiÃ³n de proforma con PrintService
   Future<void> _handlePrintProforma(
     String action,

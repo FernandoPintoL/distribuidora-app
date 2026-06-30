@@ -8,6 +8,7 @@ import 'chofer.dart';
 import 'camion.dart';
 import 'direccion_cliente.dart';
 import 'user.dart';
+import 'entrega_venta_confirmacion.dart';
 import '../services/estados_helpers.dart';
 
 // ✅ NUEVO 2026-02-27: Clase para estado del documento
@@ -122,7 +123,7 @@ class PedidoVenta {
   final DateTime? fecha;
   final EstadoDocumento? estadoDocumento;
   final EstadoDocumento? estadoLogistica;
-  final List<ConfirmacionEntrega> confirmacionesEntrega;
+  final List<EntregaVentaConfirmacion> confirmacionesEntrega; // ✅ ACTUALIZADO: Usar EntregaVentaConfirmacion en lugar de ConfirmacionEntrega
   final String? observaciones; // ✅ NUEVO 2026-02-27: Motivo de anulación u otras observaciones
   final DetalleEntrega? entrega; // ✅ NUEVO: Información de entrega asignada
 
@@ -152,7 +153,7 @@ class PedidoVenta {
           : null,
       confirmacionesEntrega: (json['confirmaciones_entrega'] ?? json['confirmaciones']) != null
           ? ((json['confirmaciones_entrega'] ?? json['confirmaciones']) as List)
-              .map((c) => ConfirmacionEntrega.fromJson(c as Map<String, dynamic>))
+              .map((c) => EntregaVentaConfirmacion.fromJson(c as Map<String, dynamic>))
               .toList()
           : [],
       observaciones: json['observaciones'] as String?,
