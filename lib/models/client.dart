@@ -73,8 +73,9 @@ class Client {
   });
 
   factory Client.fromJson(Map<String, dynamic> json) {
-    // debugPrint('🔍 Parsing Client from JSON: $json');
-    debugPrint("limite_credito: ${json['limite_credito']}");
+    debugPrint("📦 Parsing Client: ${json['nombre']}");
+    debugPrint("   localidad_id: ${json['localidad_id']}");
+    debugPrint("   localidad object: ${json['localidad']}");
     return Client(
       id: json['id'] is int
           ? json['id']
