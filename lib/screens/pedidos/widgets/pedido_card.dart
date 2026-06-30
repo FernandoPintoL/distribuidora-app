@@ -69,7 +69,10 @@ class PedidoCard extends StatelessWidget {
                         Expanded(
                           child: Text(
                             "Folio: #${pedido.id}",
-                            style: TextStyle(fontWeight: FontWeight.bold),
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 18,
+                            ),
                           ),
                         ),
                         IconButton(
@@ -89,74 +92,37 @@ class PedidoCard extends StatelessWidget {
                     ),
                     // Cliente con Avatar
                     Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         ClienteAvatarWidget(
                           clienteNombre: pedido.cliente?.nombre,
                           clienteFotoPerfil: pedido.cliente?.fotoPerfil,
                           clienteLocalidad: pedido.cliente?.localidad?.nombre,
+                          clienteObservaciones:
+                              pedido.direccionEntrega!.observaciones ?? '',
                         ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              if (pedido.cliente?.razonSocial != null) ...[
-                                const SizedBox(height: 2),
-                                Text(
-                                  pedido.cliente!.razonSocial!,
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    color: colorScheme.onSurfaceVariant,
-                                  ),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ],
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 4),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          'Bs. ${pedido.total.toStringAsFixed(2)}',
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            color: colorScheme.secondary,
-                          ),
-                        ),
-                        Text(
-                          "Creada: ${_formatearFecha(pedido.fechaCreacion)}",
-                          style: TextStyle(color: colorScheme.onSurfaceVariant),
-                        ),
-                      ],
-                    ),
-                    if (pedido.direccionEntrega != null &&
-                        pedido.direccionEntrega!.observaciones != null) ...[
-                      Padding(
-                        padding: const EdgeInsets.only(bottom: 4),
-                        child: Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+                        Column(
+                          mainAxisAlignment: MainAxisAlignment.end,
+                          crossAxisAlignment: CrossAxisAlignment.end,
                           children: [
-                            Text('📍 '),
-                            Expanded(
-                              child: Text(
-                                pedido.direccionEntrega!.observaciones ?? '',
-                                style: TextStyle(
-                                  color: colorScheme.onSurfaceVariant,
-                                ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
+                            Text(
+                              'Bs. ${pedido.total.toStringAsFixed(2)}',
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                color: colorScheme.secondary,
+                              ),
+                            ),
+                            Text(
+                              "Creada: ${_formatearFecha(pedido.fechaCreacion)}",
+                              style: TextStyle(
+                                color: colorScheme.onSurfaceVariant,
                               ),
                             ),
                           ],
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ],
                 ),
               ),
@@ -295,18 +261,24 @@ class PedidoCard extends StatelessWidget {
         );
       }
 
-      // 5. CONFIRMACIONES DE ENTREGA (si hay)
+      // 5. CONFIRMACIONES DE ENTREGA (si hay - solo las que cumplen filtros)
       if (pedido.venta?.confirmacionesEntrega.isNotEmpty ?? false) {
-        items.add(_buildTimelineSeparator(colorScheme));
-        for (final confirmacion in pedido.venta!.confirmacionesEntrega) {
-          items.add(
-            _buildTimelineItem(
-              ctx,
-              _getConfirmacionIcon(confirmacion),
-              _getConfirmacionStatus(confirmacion),
-              colorScheme,
-            ),
-          );
+        final confirmacionesFiltradas = pedido.venta!.confirmacionesEntrega
+            .where((c) => _debeActualizarConfirmacion(c))
+            .toList();
+
+        if (confirmacionesFiltradas.isNotEmpty) {
+          items.add(_buildTimelineSeparator(colorScheme));
+          for (final confirmacion in confirmacionesFiltradas) {
+            items.add(
+              _buildTimelineItem(
+                ctx,
+                _getConfirmacionIcon(confirmacion),
+                _getConfirmacionStatus(confirmacion),
+                colorScheme,
+              ),
+            );
+          }
         }
       }
     }
@@ -591,5 +563,20 @@ class PedidoCard extends StatelessWidget {
     }
 
     return {'subtitle': subtitulo, 'color': color};
+  }
+
+  bool _debeActualizarConfirmacion(ConfirmacionEntrega confirmacion) {
+    final tipoEntregaValido =
+        confirmacion.tipoEntrega.toUpperCase() == 'COMPLETA' ||
+            confirmacion.tipoEntrega.toUpperCase() == 'CON_NOVEDAD';
+
+    final tipoConfirmacionValido = [
+      'CLIENTE_CERRADO',
+      'RECHAZADO',
+      'COMPLETA',
+      'DEVOLUCION_PARCIAL',
+    ].contains(confirmacion.estado.toUpperCase());
+
+    return tipoEntregaValido && tipoConfirmacionValido;
   }
 }
