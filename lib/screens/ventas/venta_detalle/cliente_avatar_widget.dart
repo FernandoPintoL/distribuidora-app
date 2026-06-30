@@ -19,8 +19,6 @@ class ClienteAvatarWidget extends StatelessWidget {
         clienteFotoPerfil != null && clienteFotoPerfil!.isNotEmpty;
     final colorScheme = Theme.of(context).colorScheme;
 
-    debugPrint("🎯 ClienteAvatarWidget - nombre: $clienteNombre, localidad: $clienteLocalidad");
-
     return Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.center,
