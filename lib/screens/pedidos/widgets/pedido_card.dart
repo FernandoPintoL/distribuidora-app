@@ -263,7 +263,7 @@ class PedidoCard extends StatelessWidget {
         );
       }
 
-      // 5. CONFIRMACIONES DE ENTREGA (si hay - solo las que cumplen filtros)
+      // 5. ÚLTIMA CONFIRMACIÓN DE ENTREGA (solo la más reciente)
       if (pedido.venta?.confirmacionesEntrega.isNotEmpty ?? false) {
         final todasLasConfirmaciones = pedido.venta!.confirmacionesEntrega;
         debugPrint('🔍 Timeline Pedido #${pedido.numero}: ${todasLasConfirmaciones.length} confirmaciones totales');
@@ -272,24 +272,22 @@ class PedidoCard extends StatelessWidget {
             .where((c) => _debeActualizarConfirmacion(c))
             .toList();
 
-        debugPrint('   ✅ ${confirmacionesFiltradas.length} confirmaciones filtradas que se mostrarán');
-        for (var i = 0; i < confirmacionesFiltradas.length; i++) {
-          final c = confirmacionesFiltradas[i];
-          debugPrint('      [$i] estado: ${c.estado}');
-        }
+        debugPrint('   ✅ ${confirmacionesFiltradas.length} confirmaciones filtradas');
 
+        // Mostrar solo la última confirmación registrada
         if (confirmacionesFiltradas.isNotEmpty) {
+          final ultimaConfirmacion = confirmacionesFiltradas.last;
+          debugPrint('   📍 Última confirmación: estado=${ultimaConfirmacion.estado}');
+
           items.add(_buildTimelineSeparator(colorScheme));
-          for (final confirmacion in confirmacionesFiltradas) {
-            items.add(
-              _buildTimelineItem(
-                ctx,
-                _getConfirmacionIcon(confirmacion),
-                _getConfirmacionStatus(confirmacion),
-                colorScheme,
-              ),
-            );
-          }
+          items.add(
+            _buildTimelineItem(
+              ctx,
+              _getConfirmacionIcon(ultimaConfirmacion),
+              _getConfirmacionStatus(ultimaConfirmacion),
+              colorScheme,
+            ),
+          );
         }
       }
     }
