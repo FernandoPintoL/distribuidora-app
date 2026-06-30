@@ -66,7 +66,7 @@ class PedidoCard extends StatelessWidget {
                       children: [
                         Expanded(
                           child: Text(
-                            pedido.numero,
+                            "Folio: #${pedido.id}",
                             style: TextStyle(fontWeight: FontWeight.bold),
                           ),
                         ),
@@ -108,6 +108,28 @@ class PedidoCard extends StatelessWidget {
                         ),
                       ],
                     ),
+                    if (pedido.direccionEntrega != null &&
+                        pedido.direccionEntrega!.observaciones != null) ...[
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 4),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text('📍 '),
+                            Expanded(
+                              child: Text(
+                                pedido.direccionEntrega!.observaciones ?? '',
+                                style: TextStyle(
+                                  color: colorScheme.onSurfaceVariant,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                   ],
                 ),
               ),
@@ -122,7 +144,12 @@ class PedidoCard extends StatelessWidget {
                   scrollDirection: Axis.horizontal,
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
-                    children: _buildTimelineItems(pedido, colorScheme, isDark, ctx: context),
+                    children: _buildTimelineItems(
+                      pedido,
+                      colorScheme,
+                      isDark,
+                      ctx: context,
+                    ),
                   ),
                 ),
               ),
@@ -141,31 +168,10 @@ class PedidoCard extends StatelessWidget {
                     horizontal: 12,
                     vertical: 8,
                   ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
-                      if (pedido.direccionEntrega != null &&
-                          pedido.direccionEntrega!.observaciones != null) ...[
-                        Padding(
-                          padding: const EdgeInsets.only(bottom: 4),
-                          child: Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text('📍 '),
-                              Expanded(
-                                child: Text(
-                                  pedido.direccionEntrega!.observaciones ?? '',
-                                  style: TextStyle(
-                                    color: colorScheme.onSurfaceVariant,
-                                  ),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
                       if (pedido.fechaEntregaSolicitada != null) ...[
                         Padding(
                           padding: const EdgeInsets.only(bottom: 4),
@@ -177,6 +183,7 @@ class PedidoCard extends StatelessWidget {
                           ),
                         ),
                       ],
+                      const SizedBox(width: 4),
                       if (pedido.fechaVencimiento != null) ...[
                         Padding(
                           padding: const EdgeInsets.only(bottom: 4),
@@ -207,27 +214,33 @@ class PedidoCard extends StatelessWidget {
   }) {
     final items = <Widget>[];
 
-    // 1. ESTADO DE PROFORMA
-    items.add(_buildTimelineItem(
-      ctx,
-      '📋 Proforma',
-      _getProformaStatus(pedido),
-      colorScheme,
-    ));
+    // 1. ESTADO DE PROFORMA (solo si no fue convertida a venta)
+    if (!pedido.esVenta) {
+      items.add(
+        _buildTimelineItem(
+          ctx,
+          '📋 Pedido ->',
+          _getProformaStatus(pedido),
+          colorScheme,
+        ),
+      );
 
-    // Conector después de proforma
-    if (pedido.esVenta || pedido.tieneEstadoLogistico) {
-      items.add(_buildTimelineSeparator(colorScheme));
+      // Conector después de proforma
+      if (pedido.esVenta || pedido.tieneEstadoLogistico) {
+        items.add(_buildTimelineSeparator(colorScheme));
+      }
     }
 
     // 2. ESTADO DE VENTA Y DOCUMENTO (si aplica)
     if (pedido.esVenta && pedido.venta != null) {
-      items.add(_buildTimelineItem(
-        ctx,
-        '🛍️ Venta ${pedido.ventaNumero ?? ''}',
-        _getVentaStatus(pedido.venta!),
-        colorScheme,
-      ));
+      items.add(
+        _buildTimelineItem(
+          ctx,
+          '🛍️ Venta F. #${pedido.ventaId ?? ''}',
+          _getVentaStatus(pedido.venta!),
+          colorScheme,
+        ),
+      );
 
       // Conector después de venta
       if (pedido.tieneEstadoLogistico) {
@@ -236,34 +249,37 @@ class PedidoCard extends StatelessWidget {
     }
 
     // 3. ESTADO LOGÍSTICO / ENTREGAS
-    if (pedido.tieneEstadoLogistico || (pedido.venta?.confirmacionesEntrega.isNotEmpty ?? false)) {
-      items.add(_buildTimelineItem(
-        ctx,
-        '🚚 Entrega',
-        _getLogisticaStatus(pedido),
-        colorScheme,
-      ));
+    if (pedido.tieneEstadoLogistico ||
+        (pedido.venta?.confirmacionesEntrega.isNotEmpty ?? false)) {
+      items.add(
+        _buildTimelineItem(
+          ctx,
+          '🚚 Entrega',
+          _getLogisticaStatus(pedido),
+          colorScheme,
+        ),
+      );
 
       // 4. INFORMACIÓN DE ENTREGA ASIGNADA (si hay)
       if (pedido.venta?.entrega != null) {
         items.add(_buildTimelineSeparator(colorScheme));
-        items.add(_buildEntregaInfoWidget(
-          ctx,
-          pedido.venta!.entrega!,
-          colorScheme,
-        ));
+        items.add(
+          _buildEntregaInfoWidget(ctx, pedido.venta!.entrega!, colorScheme),
+        );
       }
 
       // 5. CONFIRMACIONES DE ENTREGA (si hay)
       if (pedido.venta?.confirmacionesEntrega.isNotEmpty ?? false) {
         items.add(_buildTimelineSeparator(colorScheme));
         for (final confirmacion in pedido.venta!.confirmacionesEntrega) {
-          items.add(_buildTimelineItem(
-            ctx,
-            _getConfirmacionIcon(confirmacion),
-            _getConfirmacionStatus(confirmacion),
-            colorScheme,
-          ));
+          items.add(
+            _buildTimelineItem(
+              ctx,
+              _getConfirmacionIcon(confirmacion),
+              _getConfirmacionStatus(confirmacion),
+              colorScheme,
+            ),
+          );
         }
       }
     }
@@ -298,21 +314,21 @@ class PedidoCard extends StatelessWidget {
           borderRadius: BorderRadius.circular(6),
           border: Border.all(color: color.withOpacity(0.3)),
         ),
-        child: Column(
+        child: Row(
           crossAxisAlignment: CrossAxisAlignment.center,
           mainAxisSize: MainAxisSize.min,
           children: [
             Text(
               label,
-              style: TextStyle(color: color, fontWeight: FontWeight.w600, fontSize: 12),
+              style: TextStyle(color: color, fontWeight: FontWeight.w600),
               maxLines: 1,
             ),
+            const SizedBox(width: 4),
             Text(
               subtitle,
               style: TextStyle(
                 color: color.withOpacity(0.8),
                 fontWeight: FontWeight.w400,
-                fontSize: 11,
               ),
               maxLines: 1,
             ),
@@ -368,7 +384,8 @@ class PedidoCard extends StatelessWidget {
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
               ),
-            if (entrega.observaciones != null && entrega.observaciones!.isNotEmpty)
+            if (entrega.observaciones != null &&
+                entrega.observaciones!.isNotEmpty)
               Padding(
                 padding: const EdgeInsets.only(top: 4),
                 child: Text(
@@ -425,10 +442,7 @@ class PedidoCard extends StatelessWidget {
       color = Colors.blue;
     }
 
-    return {
-      'subtitle': subtitulo,
-      'color': color,
-    };
+    return {'subtitle': subtitulo, 'color': color};
   }
 
   Map<String, dynamic> _getVentaStatus(PedidoVenta venta) {
@@ -449,10 +463,7 @@ class PedidoCard extends StatelessWidget {
       color = Colors.orange;
     }
 
-    return {
-      'subtitle': subtitulo,
-      'color': color,
-    };
+    return {'subtitle': subtitulo, 'color': color};
   }
 
   Map<String, dynamic> _getLogisticaStatus(Pedido pedido) {
@@ -502,10 +513,7 @@ class PedidoCard extends StatelessWidget {
       color = Colors.grey;
     }
 
-    return {
-      'subtitle': subtitulo,
-      'color': color,
-    };
+    return {'subtitle': subtitulo, 'color': color};
   }
 
   String _getConfirmacionIcon(ConfirmacionEntrega confirmacion) {
@@ -525,7 +533,9 @@ class PedidoCard extends StatelessWidget {
     }
   }
 
-  Map<String, dynamic> _getConfirmacionStatus(ConfirmacionEntrega confirmacion) {
+  Map<String, dynamic> _getConfirmacionStatus(
+    ConfirmacionEntrega confirmacion,
+  ) {
     final tipo = confirmacion.estado.toUpperCase();
 
     String subtitulo;
@@ -553,10 +563,6 @@ class PedidoCard extends StatelessWidget {
         color = Colors.grey;
     }
 
-    return {
-      'subtitle': subtitulo,
-      'color': color,
-    };
+    return {'subtitle': subtitulo, 'color': color};
   }
-
 }
