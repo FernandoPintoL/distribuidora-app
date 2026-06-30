@@ -307,6 +307,11 @@ class Venta {
       })(),
       confirmaciones: (() {
         final confirmacionesList = (json['entregas_venta_confirmaciones'] as List<dynamic>?)?.cast<Map<String, dynamic>>() ?? (json['confirmaciones'] as List<dynamic>?)?.cast<Map<String, dynamic>>() ?? [];
+        debugPrint('🔍 Venta #${json['numero']} - Confirmaciones parseadas: ${confirmacionesList.length}');
+        for (var i = 0; i < confirmacionesList.length; i++) {
+          final c = confirmacionesList[i];
+          debugPrint('   [$i] tipoEntrega: ${c['tipo_entrega']}, tipoConfirmacion: ${c['tipo_confirmacion']}');
+        }
         return confirmacionesList
             .map((c) => EntregaVentaConfirmacion.fromJson(c))
             .toList();
