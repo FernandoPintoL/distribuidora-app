@@ -101,12 +101,6 @@ class PedidoCard extends StatelessWidget {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text(
-                                pedido.cliente?.nombre ?? 'Cliente desconocido',
-                                style: TextStyle(fontWeight: FontWeight.bold),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
                               if (pedido.cliente?.razonSocial != null) ...[
                                 const SizedBox(height: 2),
                                 Text(

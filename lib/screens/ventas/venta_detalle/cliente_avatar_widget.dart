@@ -18,7 +18,8 @@ class ClienteAvatarWidget extends StatelessWidget {
     final tieneImagen =
         clienteFotoPerfil != null && clienteFotoPerfil!.isNotEmpty;
     final colorScheme = Theme.of(context).colorScheme;
-    debugPrint("clienteLocalidad: $clienteLocalidad");
+
+    debugPrint("🎯 ClienteAvatarWidget - nombre: $clienteNombre, localidad: $clienteLocalidad");
 
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -40,16 +41,20 @@ class ClienteAvatarWidget extends StatelessWidget {
               : null,
         ),
         if (clienteLocalidad != null && clienteLocalidad!.isNotEmpty) ...[
-          const SizedBox(height: 4),
-          Text(
-            clienteLocalidad!,
-            style: TextStyle(
-              fontSize: 11,
-              color: colorScheme.onSurfaceVariant.withOpacity(0.7),
+          const SizedBox(height: 6),
+          SizedBox(
+            width: 72,
+            child: Text(
+              clienteLocalidad!,
+              style: TextStyle(
+                fontSize: 10,
+                fontWeight: FontWeight.w500,
+                color: colorScheme.onSurfaceVariant,
+              ),
+              textAlign: TextAlign.center,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
             ),
-            textAlign: TextAlign.center,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
           ),
         ],
       ],
