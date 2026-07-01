@@ -49,3 +49,8 @@ export 'estado_logistico.dart';
 export 'preventist_stats.dart';
 export 'cuenta_por_cobrar.dart';
 export 'pago.dart';
+export 'estado_documento.dart';
+export 'confirmacion_entrega.dart';
+export 'detalle_entrega.dart';
+export 'pedido_venta.dart';
+export 'pedido_timeline_event.dart';

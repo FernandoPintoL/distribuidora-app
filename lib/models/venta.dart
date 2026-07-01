@@ -9,6 +9,7 @@ import 'entrega_venta_confirmacion.dart';
 import 'product.dart';
 import 'combo_item_seleccionado.dart';
 import 'entrega_info.dart';
+import 'estado_documento.dart';
 
 // ✅ NUEVO 2026-06-23: Clase para información de proforma relacionada a una venta
 class Proforma {
