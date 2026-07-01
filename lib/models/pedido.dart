@@ -75,6 +75,7 @@ class Pedido {
   final DateTime? fechaAprobacion;
   final DateTime? fechaEntrega;
   final int? usuarioAprobadorId;
+  final User? usuarioAprobador; // Usuario que aprobó el pedido
   final int? usuarioCreadorId; // ID del usuario que creó el pedido
   final User? usuarioCreador; // Usuario que creó el pedido
   final String? comentariosAprobacion;
@@ -144,6 +145,7 @@ class Pedido {
     this.fechaAprobacion,
     this.fechaEntrega,
     this.usuarioAprobadorId,
+    this.usuarioAprobador,
     this.usuarioCreadorId,
     this.usuarioCreador,
     this.comentariosAprobacion,
@@ -242,10 +244,16 @@ class Pedido {
         cliente: cliente,
         direccionId: json['direccion_id'] as int?,
         direccionEntrega: direccionEntrega,
-        direccionEntregaSolicitadaId: json['direccion_entrega_solicitada_id'] as int?,
-        direccionEntregaSolicitada: _safeParseDireccionCliente(json['direccion_entrega_solicitada']),
-        direccionEntregaConfirmadaId: json['direccion_entrega_confirmada_id'] as int?,
-        direccionEntregaConfirmada: _safeParseDireccionCliente(json['direccion_entrega_confirmada']),
+        direccionEntregaSolicitadaId:
+            json['direccion_entrega_solicitada_id'] as int?,
+        direccionEntregaSolicitada: _safeParseDireccionCliente(
+          json['direccion_entrega_solicitada'],
+        ),
+        direccionEntregaConfirmadaId:
+            json['direccion_entrega_confirmada_id'] as int?,
+        direccionEntregaConfirmada: _safeParseDireccionCliente(
+          json['direccion_entrega_confirmada'],
+        ),
         estadoCodigo: estadoCodigo,
         estadoCategoria: estadoCategoria,
         estadoData: estadoData,
@@ -318,6 +326,7 @@ class Pedido {
             ? DateTime.parse(json['fecha_entrega'] as String)
             : null,
         usuarioAprobadorId: json['usuario_aprobador_id'] as int?,
+        usuarioAprobador: _safeParseUser(json['usuario_aprobador']),
         usuarioCreadorId: json['usuario_creador_id'] as int?,
         usuarioCreador: _safeParseUser(json['usuario_creador']),
         comentariosAprobacion: json['comentarios_aprobacion'] as String?,
@@ -476,6 +485,7 @@ class Pedido {
       'fecha_aprobacion': fechaAprobacion?.toIso8601String(),
       'fecha_entrega': fechaEntrega?.toIso8601String(),
       'usuario_aprobador_id': usuarioAprobadorId,
+      'usuario_aprobador': usuarioAprobador?.toJson(),
       'usuario_creador_id': usuarioCreadorId,
       'usuario_creador': usuarioCreador?.toJson(),
       'comentarios_aprobacion': comentariosAprobacion,
@@ -539,6 +549,7 @@ class Pedido {
     DateTime? fechaAprobacion,
     DateTime? fechaEntrega,
     int? usuarioAprobadorId,
+    User? usuarioAprobador,
     int? usuarioCreadorId,
     User? usuarioCreador,
     String? comentariosAprobacion,
@@ -568,10 +579,14 @@ class Pedido {
       cliente: cliente ?? this.cliente,
       direccionId: direccionId ?? this.direccionId,
       direccionEntrega: direccionEntrega ?? this.direccionEntrega,
-      direccionEntregaSolicitadaId: direccionEntregaSolicitadaId ?? this.direccionEntregaSolicitadaId,
-      direccionEntregaSolicitada: direccionEntregaSolicitada ?? this.direccionEntregaSolicitada,
-      direccionEntregaConfirmadaId: direccionEntregaConfirmadaId ?? this.direccionEntregaConfirmadaId,
-      direccionEntregaConfirmada: direccionEntregaConfirmada ?? this.direccionEntregaConfirmada,
+      direccionEntregaSolicitadaId:
+          direccionEntregaSolicitadaId ?? this.direccionEntregaSolicitadaId,
+      direccionEntregaSolicitada:
+          direccionEntregaSolicitada ?? this.direccionEntregaSolicitada,
+      direccionEntregaConfirmadaId:
+          direccionEntregaConfirmadaId ?? this.direccionEntregaConfirmadaId,
+      direccionEntregaConfirmada:
+          direccionEntregaConfirmada ?? this.direccionEntregaConfirmada,
       estadoCodigo: estadoCodigo ?? this.estadoCodigo,
       estadoCategoria: estadoCategoria ?? this.estadoCategoria,
       estadoData: estadoData ?? this.estadoData,
@@ -598,6 +613,7 @@ class Pedido {
       fechaAprobacion: fechaAprobacion ?? this.fechaAprobacion,
       fechaEntrega: fechaEntrega ?? this.fechaEntrega,
       usuarioAprobadorId: usuarioAprobadorId ?? this.usuarioAprobadorId,
+      usuarioAprobador: usuarioAprobador ?? this.usuarioAprobador,
       usuarioCreadorId: usuarioCreadorId ?? this.usuarioCreadorId,
       usuarioCreador: usuarioCreador ?? this.usuarioCreador,
       comentariosAprobacion:
@@ -616,8 +632,6 @@ class Pedido {
           fechaEntregaConfirmada ?? this.fechaEntregaConfirmada,
       horaEntregaConfirmada:
           horaEntregaConfirmada ?? this.horaEntregaConfirmada,
-      direccionEntregaConfirmada:
-          direccionEntregaConfirmada ?? this.direccionEntregaConfirmada,
       tipoEntrega: tipoEntrega ?? this.tipoEntrega,
       politicaPago: politicaPago ?? this.politicaPago,
       preventistaId: preventistaId ?? this.preventistaId,
