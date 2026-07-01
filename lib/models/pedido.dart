@@ -10,6 +10,7 @@ import 'direccion_cliente.dart';
 import 'user.dart';
 import 'pedido_venta.dart';
 import 'pedido_timeline_event.dart';
+import 'venta.dart';
 import '../services/estados_helpers.dart';
 
 class Pedido {
@@ -105,8 +106,7 @@ class Pedido {
 
   // ✅ NUEVO: Información de la venta cuando se convierte
   final int? ventaId;
-  final String? ventaNumero;
-  final PedidoVenta? venta;
+  final Venta? venta;
 
   Pedido({
     required this.id,
@@ -165,7 +165,6 @@ class Pedido {
     this.requiereEnvio = false,
     this.coordinacionCompletada = false,
     this.ventaId,
-    this.ventaNumero,
     this.venta,
   });
 
@@ -359,10 +358,7 @@ class Pedido {
             json['coordinacion_completada'] as bool? ?? false,
         // ✅ NUEVO: Información de venta cuando se convierte
         ventaId: json['venta_id'] as int?,
-        ventaNumero:
-            json['venta_numero'] as String? ??
-            json['venta']?['numero'] as String?,
-        venta: _safeParsePedidoVenta(json['venta']),
+        venta: _safeParseVenta(json['venta']),
       );
     } catch (e) {
       debugPrint('❌ Error parsing Pedido: $e');
@@ -446,6 +442,17 @@ class Pedido {
     return null;
   }
 
+  static Venta? _safeParseVenta(dynamic data) {
+    try {
+      if (data != null && data is Map<String, dynamic>) {
+        return Venta.fromJson(data);
+      }
+    } catch (e) {
+      debugPrint('⚠️ Error parsing Venta: $e');
+    }
+    return null;
+  }
+
   Map<String, dynamic> toJson() {
     return {
       'id': id,
@@ -508,7 +515,7 @@ class Pedido {
       'coordinacion_completada': coordinacionCompletada,
       // ✅ NUEVO: Incluir información de venta
       'venta_id': ventaId,
-      'venta_numero': ventaNumero,
+      'venta': venta?.toJson(),
     };
   }
 
@@ -569,8 +576,7 @@ class Pedido {
     bool? requiereEnvio,
     bool? coordinacionCompletada,
     int? ventaId,
-    String? ventaNumero,
-    PedidoVenta? venta,
+    Venta? venta,
   }) {
     return Pedido(
       id: id ?? this.id,
@@ -639,7 +645,6 @@ class Pedido {
       coordinacionCompletada:
           coordinacionCompletada ?? this.coordinacionCompletada,
       ventaId: ventaId ?? this.ventaId,
-      ventaNumero: ventaNumero ?? this.ventaNumero,
       venta: venta ?? this.venta,
     );
   }
@@ -684,7 +689,7 @@ class Pedido {
   // ✅ NUEVOS HELPERS PARA TIMELINE UNIFICADO
   /// Obtener si este pedido ya se convirtió de proforma a venta
   bool get esVenta {
-    // Verificar si existe relación venta (por ventaId o ventaNumero)
+    // Verificar si existe relación venta (por ventaId)
     return ventaId != null && ventaId! > 0;
   }
 
