@@ -342,9 +342,6 @@ class Pedido {
             ? DateTime.parse(json['fecha_entrega_confirmada'] as String)
             : null,
         horaEntregaConfirmada: json['hora_entrega_confirmada'] as String?,
-        direccionEntregaConfirmada: _safeParseDireccionCliente(
-          json['direccion_entrega_confirmada'],
-        ),
         tipoEntrega: json['tipo_entrega'] as String?,
         politicaPago: json['politica_pago'] as String?,
         preventistaId: json['preventista_id'] as int?,
