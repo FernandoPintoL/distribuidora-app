@@ -552,7 +552,6 @@ class Pedido {
     String? horaEntregaSolicitada,
     DateTime? fechaEntregaConfirmada,
     String? horaEntregaConfirmada,
-    DireccionCliente? direccionEntregaConfirmada,
     String? tipoEntrega,
     String? politicaPago,
     int? preventistaId,
