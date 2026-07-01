@@ -8,10 +8,6 @@ import 'chofer.dart';
 import 'camion.dart';
 import 'direccion_cliente.dart';
 import 'user.dart';
-import 'entrega_venta_confirmacion.dart';
-import 'estado_documento.dart';
-import 'confirmacion_entrega.dart';
-import 'detalle_entrega.dart';
 import 'pedido_venta.dart';
 import 'pedido_timeline_event.dart';
 import '../services/estados_helpers.dart';
@@ -23,11 +19,16 @@ class Pedido {
   final Client? cliente;
   final int? direccionId;
   final ClientAddress? direccionEntrega;
+  final int? direccionEntregaSolicitadaId;
+  final DireccionCliente? direccionEntregaSolicitada;
+  final int? direccionEntregaConfirmadaId;
+  final DireccionCliente? direccionEntregaConfirmada;
 
   // Estados del pedido - AHORA DINÁMICOS desde estados_logistica
-  final String estadoCodigo;              // Ej: 'PENDIENTE', 'APROBADA', 'EN_RUTA'
-  final String estadoCategoria;           // Ej: 'proforma', 'venta_logistica'
-  final Map<String, dynamic>? estadoData; // Datos completos: id, codigo, nombre, color, icono
+  final String estadoCodigo; // Ej: 'PENDIENTE', 'APROBADA', 'EN_RUTA'
+  final String estadoCategoria; // Ej: 'proforma', 'venta_logistica'
+  final Map<String, dynamic>?
+  estadoData; // Datos completos: id, codigo, nombre, color, icono
   final DateTime? fechaProgramada;
   final DateTime? horaInicioPreferida;
   final DateTime? horaFinPreferida;
@@ -86,9 +87,6 @@ class Pedido {
   final DateTime? fechaEntregaConfirmada; // Fecha confirmada de entrega
   final String? horaEntregaConfirmada; // Hora confirmada (HH:MM:SS)
 
-  // ✅ NUEVO: Información de dirección de entrega
-  final DireccionCliente? direccionEntregaConfirmada; // Dirección confirmada de entrega
-
   // Comprobantes de entrega
   final String? firmaDigitalUrl;
   final String? fotoEntregaUrl;
@@ -112,10 +110,14 @@ class Pedido {
   Pedido({
     required this.id,
     required this.numero,
-    required this.clienteId,
+    this.clienteId,
     this.cliente,
     this.direccionId,
     this.direccionEntrega,
+    this.direccionEntregaSolicitadaId,
+    this.direccionEntregaSolicitada,
+    this.direccionEntregaConfirmadaId,
+    this.direccionEntregaConfirmada,
     required this.estadoCodigo,
     required this.estadoCategoria,
     this.estadoData,
@@ -155,7 +157,6 @@ class Pedido {
     this.horaEntregaSolicitada,
     this.fechaEntregaConfirmada,
     this.horaEntregaConfirmada,
-    this.direccionEntregaConfirmada,
     this.tipoEntrega,
     this.politicaPago,
     this.preventistaId,
@@ -184,9 +185,8 @@ class Pedido {
       // 2. Formato snake_case: { 'estado_logistica': { id, codigo, nombre, ... } }
       // 3. Formato camelCase: { 'estadoLogistica': { ... } }
       // 4. Legacy: { 'estado': 'CODIGO_STRING' }
-      final estadoObj = json['estado'] ??
-                        json['estado_logistica'] ??
-                        json['estadoLogistica'];
+      final estadoObj =
+          json['estado'] ?? json['estado_logistica'] ?? json['estadoLogistica'];
       String estadoCodigo = 'PENDIENTE';
       String estadoCategoria = 'proforma';
       Map<String, dynamic>? estadoData;
@@ -196,14 +196,18 @@ class Pedido {
         estadoCodigo = estadoObj['codigo'] as String? ?? 'PENDIENTE';
         estadoCategoria = estadoObj['categoria'] as String? ?? 'proforma';
         estadoData = estadoObj;
-        debugPrint('✅ Pedido.fromJson - Estado parseado: $estadoCodigo ($estadoCategoria)');
+        debugPrint(
+          '✅ Pedido.fromJson - Estado parseado: $estadoCodigo ($estadoCategoria)',
+        );
       } else if (estadoObj is String) {
         // Solo código string (legacy)
         estadoCodigo = estadoObj;
         estadoData = null;
         debugPrint('✅ Pedido.fromJson - Estado string legacy: $estadoCodigo');
       } else {
-        debugPrint('⚠️ Pedido.fromJson - No se encontró estado, usando default: $estadoCodigo');
+        debugPrint(
+          '⚠️ Pedido.fromJson - No se encontró estado, usando default: $estadoCodigo',
+        );
       }
 
       // Safely parse nested objects with fallback
@@ -219,9 +223,13 @@ class Pedido {
       ClientAddress? direccionEntrega;
       try {
         if (json['direccion_entrega'] != null) {
-          direccionEntrega = ClientAddress.fromJson(json['direccion_entrega'] as Map<String, dynamic>);
+          direccionEntrega = ClientAddress.fromJson(
+            json['direccion_entrega'] as Map<String, dynamic>,
+          );
         } else if (json['direccion_solicitada'] != null) {
-          direccionEntrega = ClientAddress.fromJson(json['direccion_solicitada'] as Map<String, dynamic>);
+          direccionEntrega = ClientAddress.fromJson(
+            json['direccion_solicitada'] as Map<String, dynamic>,
+          );
         }
       } catch (e) {
         debugPrint('⚠️ Error parsing direccionEntrega: $e');
@@ -234,6 +242,10 @@ class Pedido {
         cliente: cliente,
         direccionId: json['direccion_id'] as int?,
         direccionEntrega: direccionEntrega,
+        direccionEntregaSolicitadaId: json['direccion_entrega_solicitada_id'] as int?,
+        direccionEntregaSolicitada: _safeParseDireccionCliente(json['direccion_entrega_solicitada']),
+        direccionEntregaConfirmadaId: json['direccion_entrega_confirmada_id'] as int?,
+        direccionEntregaConfirmada: _safeParseDireccionCliente(json['direccion_entrega_confirmada']),
         estadoCodigo: estadoCodigo,
         estadoCategoria: estadoCategoria,
         estadoData: estadoData,
@@ -241,10 +253,10 @@ class Pedido {
         fechaProgramada: json['fecha_programada'] != null
             ? DateTime.parse(json['fecha_programada'] as String)
             : (json['fecha_entrega_solicitada'] != null
-                ? DateTime.parse(json['fecha_entrega_solicitada'] as String)
-                : (json['fecha'] != null
-                    ? DateTime.parse(json['fecha'] as String)
-                    : null)),
+                  ? DateTime.parse(json['fecha_entrega_solicitada'] as String)
+                  : (json['fecha'] != null
+                        ? DateTime.parse(json['fecha'] as String)
+                        : null)),
         // Backend returns hora_inicio_preferida (use only if it's a complete DateTime)
         // Ignore hora_entrega_solicitada as it's just a time string (HH:MM:SS)
         horaInicioPreferida: json['hora_inicio_preferida'] != null
@@ -264,22 +276,31 @@ class Pedido {
         // Backend returns detalles instead of items
         items: json['items'] != null
             ? (json['items'] as List)
-                .map((item) => PedidoItem.fromJson(item as Map<String, dynamic>))
-                .toList()
+                  .map(
+                    (item) => PedidoItem.fromJson(item as Map<String, dynamic>),
+                  )
+                  .toList()
             : (json['detalles'] != null
-                ? (json['detalles'] as List)
-                    .map((item) => PedidoItem.fromJson(item as Map<String, dynamic>))
-                    .toList()
-                : []),
+                  ? (json['detalles'] as List)
+                        .map(
+                          (item) =>
+                              PedidoItem.fromJson(item as Map<String, dynamic>),
+                        )
+                        .toList()
+                  : []),
         historialEstados: json['historial_estados'] != null
             ? (json['historial_estados'] as List)
-                .map((h) => PedidoEstadoHistorial.fromJson(h as Map<String, dynamic>))
-                .toList()
+                  .map(
+                    (h) => PedidoEstadoHistorial.fromJson(
+                      h as Map<String, dynamic>,
+                    ),
+                  )
+                  .toList()
             : [],
         reservas: json['reservas'] != null
             ? (json['reservas'] as List)
-                .map((r) => ReservaStock.fromJson(r as Map<String, dynamic>))
-                .toList()
+                  .map((r) => ReservaStock.fromJson(r as Map<String, dynamic>))
+                  .toList()
             : [],
         choferId: json['chofer_id'] as int?,
         chofer: _safeParseChofer(json['chofer']),
@@ -300,7 +321,9 @@ class Pedido {
         usuarioCreadorId: json['usuario_creador_id'] as int?,
         usuarioCreador: _safeParseUser(json['usuario_creador']),
         comentariosAprobacion: json['comentarios_aprobacion'] as String?,
-        comentarioRechazo: json['comentario_rechazo'] as String? ?? json['observaciones_rechazo'] as String?,
+        comentarioRechazo:
+            json['comentario_rechazo'] as String? ??
+            json['observaciones_rechazo'] as String?,
         firmaDigitalUrl: json['firma_digital_url'] as String?,
         fotoEntregaUrl: json['foto_entrega_url'] as String?,
         fechaFirmaEntrega: json['fecha_firma_entrega'] != null
@@ -319,15 +342,20 @@ class Pedido {
             ? DateTime.parse(json['fecha_entrega_confirmada'] as String)
             : null,
         horaEntregaConfirmada: json['hora_entrega_confirmada'] as String?,
-        direccionEntregaConfirmada: _safeParseDireccionCliente(json['direccion_entrega_confirmada']),
+        direccionEntregaConfirmada: _safeParseDireccionCliente(
+          json['direccion_entrega_confirmada'],
+        ),
         tipoEntrega: json['tipo_entrega'] as String?,
         politicaPago: json['politica_pago'] as String?,
         preventistaId: json['preventista_id'] as int?,
         requiereEnvio: json['requiere_envio'] as bool? ?? false,
-        coordinacionCompletada: json['coordinacion_completada'] as bool? ?? false,
+        coordinacionCompletada:
+            json['coordinacion_completada'] as bool? ?? false,
         // ✅ NUEVO: Información de venta cuando se convierte
         ventaId: json['venta_id'] as int?,
-        ventaNumero: json['venta_numero'] as String? ?? json['venta']?['numero'] as String?,
+        ventaNumero:
+            json['venta_numero'] as String? ??
+            json['venta']?['numero'] as String?,
         venta: _safeParsePedidoVenta(json['venta']),
       );
     } catch (e) {
@@ -401,7 +429,9 @@ class Pedido {
     try {
       if (data != null && data is Map<String, dynamic>) {
         final venta = PedidoVenta.fromJson(data);
-        debugPrint('📋 Pedido.fromJson - Venta parseada: #${venta.numero} con ${venta.confirmacionesEntrega.length} confirmaciones');
+        debugPrint(
+          '📋 Pedido.fromJson - Venta parseada: #${venta.numero} con ${venta.confirmacionesEntrega.length} confirmaciones',
+        );
         return venta;
       }
     } catch (e) {
@@ -418,6 +448,10 @@ class Pedido {
       'cliente': cliente?.toJson(),
       'direccion_id': direccionId,
       'direccion_entrega': direccionEntrega?.toJson(),
+      'direccion_entrega_solicitada_id': direccionEntregaSolicitadaId,
+      'direccion_entrega_solicitada': direccionEntregaSolicitada?.toJson(),
+      'direccion_entrega_confirmada_id': direccionEntregaConfirmadaId,
+      'direccion_entrega_confirmada': direccionEntregaConfirmada?.toJson(),
       // ✅ NUEVO: Devolver objeto estado completo si está disponible
       'estado': estadoData ?? estadoCodigo,
       'estado_codigo': estadoCodigo,
@@ -478,6 +512,10 @@ class Pedido {
     Client? cliente,
     int? direccionId,
     ClientAddress? direccionEntrega,
+    int? direccionEntregaSolicitadaId,
+    DireccionCliente? direccionEntregaSolicitada,
+    int? direccionEntregaConfirmadaId,
+    DireccionCliente? direccionEntregaConfirmada,
     String? estadoCodigo,
     String? estadoCategoria,
     Map<String, dynamic>? estadoData,
@@ -534,6 +572,10 @@ class Pedido {
       cliente: cliente ?? this.cliente,
       direccionId: direccionId ?? this.direccionId,
       direccionEntrega: direccionEntrega ?? this.direccionEntrega,
+      direccionEntregaSolicitadaId: direccionEntregaSolicitadaId ?? this.direccionEntregaSolicitadaId,
+      direccionEntregaSolicitada: direccionEntregaSolicitada ?? this.direccionEntregaSolicitada,
+      direccionEntregaConfirmadaId: direccionEntregaConfirmadaId ?? this.direccionEntregaConfirmadaId,
+      direccionEntregaConfirmada: direccionEntregaConfirmada ?? this.direccionEntregaConfirmada,
       estadoCodigo: estadoCodigo ?? this.estadoCodigo,
       estadoCategoria: estadoCategoria ?? this.estadoCategoria,
       estadoData: estadoData ?? this.estadoData,
@@ -562,23 +604,30 @@ class Pedido {
       usuarioAprobadorId: usuarioAprobadorId ?? this.usuarioAprobadorId,
       usuarioCreadorId: usuarioCreadorId ?? this.usuarioCreadorId,
       usuarioCreador: usuarioCreador ?? this.usuarioCreador,
-      comentariosAprobacion: comentariosAprobacion ?? this.comentariosAprobacion,
+      comentariosAprobacion:
+          comentariosAprobacion ?? this.comentariosAprobacion,
       comentarioRechazo: comentarioRechazo ?? this.comentarioRechazo,
       firmaDigitalUrl: firmaDigitalUrl ?? this.firmaDigitalUrl,
       fotoEntregaUrl: fotoEntregaUrl ?? this.fotoEntregaUrl,
       fechaFirmaEntrega: fechaFirmaEntrega ?? this.fechaFirmaEntrega,
       estadoProformaId: estadoProformaId ?? this.estadoProformaId,
       fechaVencimiento: fechaVencimiento ?? this.fechaVencimiento,
-      fechaEntregaSolicitada: fechaEntregaSolicitada ?? this.fechaEntregaSolicitada,
-      horaEntregaSolicitada: horaEntregaSolicitada ?? this.horaEntregaSolicitada,
-      fechaEntregaConfirmada: fechaEntregaConfirmada ?? this.fechaEntregaConfirmada,
-      horaEntregaConfirmada: horaEntregaConfirmada ?? this.horaEntregaConfirmada,
-      direccionEntregaConfirmada: direccionEntregaConfirmada ?? this.direccionEntregaConfirmada,
+      fechaEntregaSolicitada:
+          fechaEntregaSolicitada ?? this.fechaEntregaSolicitada,
+      horaEntregaSolicitada:
+          horaEntregaSolicitada ?? this.horaEntregaSolicitada,
+      fechaEntregaConfirmada:
+          fechaEntregaConfirmada ?? this.fechaEntregaConfirmada,
+      horaEntregaConfirmada:
+          horaEntregaConfirmada ?? this.horaEntregaConfirmada,
+      direccionEntregaConfirmada:
+          direccionEntregaConfirmada ?? this.direccionEntregaConfirmada,
       tipoEntrega: tipoEntrega ?? this.tipoEntrega,
       politicaPago: politicaPago ?? this.politicaPago,
       preventistaId: preventistaId ?? this.preventistaId,
       requiereEnvio: requiereEnvio ?? this.requiereEnvio,
-      coordinacionCompletada: coordinacionCompletada ?? this.coordinacionCompletada,
+      coordinacionCompletada:
+          coordinacionCompletada ?? this.coordinacionCompletada,
       ventaId: ventaId ?? this.ventaId,
       ventaNumero: ventaNumero ?? this.ventaNumero,
       venta: venta ?? this.venta,
@@ -591,9 +640,8 @@ class Pedido {
   }
 
   bool get tieneReservasProximasAVencer {
-    return reservas.any((r) =>
-      r.estado == EstadoReserva.ACTIVA &&
-      r.tiempoRestante.inHours < 24
+    return reservas.any(
+      (r) => r.estado == EstadoReserva.ACTIVA && r.tiempoRestante.inHours < 24,
     );
   }
 
@@ -604,7 +652,9 @@ class Pedido {
 
     if (reservasActivas.isEmpty) return null;
 
-    reservasActivas.sort((a, b) => a.fechaExpiracion.compareTo(b.fechaExpiracion));
+    reservasActivas.sort(
+      (a, b) => a.fechaExpiracion.compareTo(b.fechaExpiracion),
+    );
     return reservasActivas.first;
   }
 
@@ -631,10 +681,13 @@ class Pedido {
   /// Obtener el estado de pago si es venta (historial)
   String? get estadoPagoFromHistorial {
     // Buscar en el historial un evento de pago
-    final pagoPendiente = historialEstados.where((h) =>
-      h.estadoNuevo.toUpperCase().contains('PAGO') ||
-      h.estadoNuevo.toUpperCase().contains('PENDIENTE')
-    ).toList();
+    final pagoPendiente = historialEstados
+        .where(
+          (h) =>
+              h.estadoNuevo.toUpperCase().contains('PAGO') ||
+              h.estadoNuevo.toUpperCase().contains('PENDIENTE'),
+        )
+        .toList();
 
     if (pagoPendiente.isNotEmpty) {
       return pagoPendiente.last.estadoNuevo;
@@ -645,7 +698,7 @@ class Pedido {
   /// Obtener el estado logístico si es venta (por categoría)
   bool get tieneEstadoLogistico {
     return estadoCategoria.contains('logistica') ||
-           estadoCategoria.contains('entrega');
+        estadoCategoria.contains('entrega');
   }
 
   /// Para display: categoría humanizada
@@ -668,13 +721,15 @@ class Pedido {
     final events = <PedidoTimelineEvent>[];
 
     // Agregar evento de creación (proforma inicial)
-    events.add(PedidoTimelineEvent(
-      categoria: 'proforma',
-      estado: 'PENDIENTE',
-      label: 'Proforma Creada',
-      timestamp: fechaCreacion,
-      icono: '📋',
-    ));
+    events.add(
+      PedidoTimelineEvent(
+        categoria: 'proforma',
+        estado: 'PENDIENTE',
+        label: 'Proforma Creada',
+        timestamp: fechaCreacion,
+        icono: '📋',
+      ),
+    );
 
     // Agregar eventos del historial en orden
     for (final evento in historialEstados) {
@@ -682,43 +737,50 @@ class Pedido {
       final esConversion = evento.estadoNuevo.toUpperCase() == 'CONVERTIDA';
 
       // Detectar si es un evento de proforma (estado anterior/nuevo contiene palabras clave)
-      final esProformaEvent = evento.estadoNuevo.toUpperCase().contains('PENDIENTE') ||
-                              evento.estadoNuevo.toUpperCase().contains('APROBADA') ||
-                              evento.estadoNuevo.toUpperCase().contains('CONVERTIDA') ||
-                              evento.estadoNuevo.toUpperCase().contains('RECHAZADA') ||
-                              evento.estadoNuevo.toUpperCase().contains('VENCIDA');
+      final esProformaEvent =
+          evento.estadoNuevo.toUpperCase().contains('PENDIENTE') ||
+          evento.estadoNuevo.toUpperCase().contains('APROBADA') ||
+          evento.estadoNuevo.toUpperCase().contains('CONVERTIDA') ||
+          evento.estadoNuevo.toUpperCase().contains('RECHAZADA') ||
+          evento.estadoNuevo.toUpperCase().contains('VENCIDA');
 
       if (esProformaEvent) {
-        events.add(PedidoTimelineEvent(
-          categoria: 'proforma',
-          estado: evento.estadoNuevo,
-          label: 'Proforma ${evento.estadoNuevo}',
-          timestamp: evento.fecha,
-          icono: _getIconoParaEstadoProforma(evento.estadoNuevo),
-        ));
+        events.add(
+          PedidoTimelineEvent(
+            categoria: 'proforma',
+            estado: evento.estadoNuevo,
+            label: 'Proforma ${evento.estadoNuevo}',
+            timestamp: evento.fecha,
+            icono: _getIconoParaEstadoProforma(evento.estadoNuevo),
+          ),
+        );
       }
 
       // Si se convirtió, agregar venta
       if (esConversion) {
-        events.add(PedidoTimelineEvent(
-          categoria: 'venta',
-          estado: 'CREADA',
-          label: 'Convertida a Venta',
-          timestamp: evento.fecha,
-          icono: '💳',
-        ));
+        events.add(
+          PedidoTimelineEvent(
+            categoria: 'venta',
+            estado: 'CREADA',
+            label: 'Convertida a Venta',
+            timestamp: evento.fecha,
+            icono: '💳',
+          ),
+        );
       }
     }
 
     // Agregar evento actual si es logística
     if (tieneEstadoLogistico) {
-      events.add(PedidoTimelineEvent(
-        categoria: 'logistica',
-        estado: estadoCodigo,
-        label: estadoNombre,
-        timestamp: DateTime.now(),
-        icono: _getIconoParaEstadoLogistica(estadoCodigo),
-      ));
+      events.add(
+        PedidoTimelineEvent(
+          categoria: 'logistica',
+          estado: estadoCodigo,
+          label: estadoNombre,
+          timestamp: DateTime.now(),
+          icono: _getIconoParaEstadoLogistica(estadoCodigo),
+        ),
+      );
     }
 
     return events;
