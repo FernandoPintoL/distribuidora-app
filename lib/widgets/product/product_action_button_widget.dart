@@ -6,7 +6,7 @@ import '../../screens/carrito/carrito_screen.dart';
 
 /// Widget que muestra el botón de acción (agregar al carrito o cantidad)
 class ProductActionButtonWidget extends StatelessWidget {
-  final Product product;
+  final Producto product;
   final bool canAddToCart;
   final VoidCallback onAddToCart;
 
@@ -55,11 +55,7 @@ class ProductActionButtonWidget extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(
-            Icons.shopping_cart,
-            size: 14,
-            color: Colors.green.shade700,
-          ),
+          Icon(Icons.shopping_cart, size: 14, color: Colors.green.shade700),
           const SizedBox(width: 4),
           Text(
             '$cantidad',

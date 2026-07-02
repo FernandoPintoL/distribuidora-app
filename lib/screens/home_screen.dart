@@ -1,18 +1,7 @@
-import 'dart:io';
-import 'dart:typed_data';
-
 import 'package:flutter/material.dart';
-import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
-import 'package:share_plus/share_plus.dart';
-
-import '../config/app_urls.dart';
-import '../config/config.dart';
 import '../models/navigation_item.dart';
-import '../models/orden_del_dia.dart';
 import '../providers/providers.dart';
-import '../services/api_service.dart';
-import '../services/print_service.dart';
 import '../widgets/widgets.dart';
 import 'base/base_home_screen.dart';
 import 'clients/client_list_screen.dart';

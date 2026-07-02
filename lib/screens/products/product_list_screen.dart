@@ -155,7 +155,7 @@ class _ProductListScreenState extends State<ProductListScreen>
     );
   }
 
-  void _onProductTap(Product product) {
+  void _onProductTap(Producto product) {
     Navigator.push(
       context,
       MaterialPageRoute(

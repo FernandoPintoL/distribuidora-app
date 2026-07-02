@@ -1,17 +1,12 @@
 import 'product.dart';
 
-enum EstadoReserva {
-  ACTIVA,
-  CONFIRMADA,
-  LIBERADA,
-  VENCIDA,
-}
+enum EstadoReserva { ACTIVA, CONFIRMADA, LIBERADA, VENCIDA }
 
 class ReservaStock {
   final int id;
   final int pedidoId;
   final int productoId;
-  final Product? producto;
+  final Producto? producto;
   final int cantidad;
   final EstadoReserva estado;
   final DateTime fechaCreacion;
@@ -36,7 +31,7 @@ class ReservaStock {
       pedidoId: json['pedido_id'] as int,
       productoId: json['producto_id'] as int,
       producto: json['producto'] != null
-          ? Product.fromJson(json['producto'] as Map<String, dynamic>)
+          ? Producto.fromJson(json['producto'] as Map<String, dynamic>)
           : null,
       cantidad: (json['cantidad'] as num).toInt(),
       estado: _estadoFromString(json['estado'] as String),

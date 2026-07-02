@@ -7,6 +7,7 @@ import '../../providers/auth_provider.dart';
 import '../../providers/visita_provider.dart';
 import '../home_screen.dart';
 import '../chofer/home_chofer_screen.dart';
+import '../chofer/prestamos_asignados_screen.dart';
 import 'dashboard_preventista_widgets.dart';
 import 'stock_download_service.dart';
 
@@ -21,7 +22,7 @@ class DashboardPreventista extends StatefulWidget {
 class _DashboardPreventistaState extends State<DashboardPreventista>
     with SingleTickerProviderStateMixin {
   late AnimationController _animationController;
-  Future<OrdenDelDia?>? _ordenDelDiaFuture;
+  // Future<OrdenDelDia?>? _ordenDelDiaFuture;
 
   @override
   void initState() {
@@ -31,38 +32,22 @@ class _DashboardPreventistaState extends State<DashboardPreventista>
       vsync: this,
     );
     _animationController.forward();
-
-    // ✅ OPTIMIZADO: Cargar orden del día una sola vez en initState
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _loadOrdenDelDia();
-    });
   }
 
-  /// Cargar orden del día (solo una vez)
-  void _loadOrdenDelDia() {
+  /// Cargar orden del día (solo cuando sea llamado explícitamente)
+  /*void _loadOrdenDelDia() {
     if (mounted) {
       final visitaProvider = context.read<VisitaProvider>();
       setState(() {
         _ordenDelDiaFuture = visitaProvider.obtenerOrdenDelDia();
       });
     }
-  }
+  }*/
 
   @override
   void dispose() {
     _animationController.dispose();
     super.dispose();
-  }
-
-  String _getGreeting() {
-    final hour = DateTime.now().hour;
-    if (hour < 12) {
-      return 'Buenos días';
-    } else if (hour < 18) {
-      return 'Buenas tardes';
-    } else {
-      return 'Buenas noches';
-    }
   }
 
   /// ✅ NUEVO: Construir lista de cards dinámicamente según permisos
@@ -171,8 +156,31 @@ class _DashboardPreventistaState extends State<DashboardPreventista>
           onTap: () {
             Navigator.of(context).push(
               MaterialPageRoute(
+                builder: (context) => const HomeChoferScreen(
+                  showBackButton: true,
+                  showOnlyDeliveries: true,
+                ),
+              ),
+            );
+          },
+        ),
+      );
+    }
+
+    // Card: Préstamos (solo si tiene permiso)
+    if (authProvider.hasPermission('prestamos.index.app')) {
+      cards.add(
+        DashboardPreventistaWidgets.buildGradientCard(
+          context,
+          title: 'Préstamos',
+          subtitle: 'Ver asignados',
+          icon: Icons.inventory_outlined,
+          gradient: AppGradients.orange,
+          onTap: () {
+            Navigator.of(context).push(
+              MaterialPageRoute(
                 builder: (context) =>
-                    const HomeChoferScreen(showBackButton: true),
+                    const PrestamosAsignadosScreen(showAppBar: true),
               ),
             );
           },
@@ -227,7 +235,7 @@ class _DashboardPreventistaState extends State<DashboardPreventista>
       body: RefreshIndicator(
         onRefresh: () async {
           // ✅ OPTIMIZADO: Refrescar orden del día + animación
-          _loadOrdenDelDia();
+          // _loadOrdenDelDia();
           await Future.delayed(const Duration(milliseconds: 500));
           if (mounted) {
             setState(() {
@@ -263,58 +271,7 @@ class _DashboardPreventistaState extends State<DashboardPreventista>
                         );
                       },
                     ),
-                    // ✅ Reporte de Ventas detallado (sección separada)
-                    /* Padding(
-                      padding: const EdgeInsets.only(top: 24, bottom: 16),
-                      child: Consumer<AuthProvider>(
-                        builder: (context, authProvider, _) {
-                          final stats = authProvider.preventistaStats;
-                          return DashboardPreventistaWidgets.buildReportVentasCard(
-                            context,
-                            cantidadProductos: stats?.cantidadProductosVendidos ?? 0,
-                            sumaProductos: stats?.sumatiorProductosVendidos ?? 0,
-                            cantidadItems: stats?.cantidadTotalItemsVendidos ?? 0,
-                            gradient: AppGradients.teal,
-                            onTap: () {
-                              Navigator.pushNamed(context, '/reporte-productos-vendidos');
-                            },
-                          );
-                        },
-                      ),
-                    ), */
                     const SizedBox(height: 16),
-                    // ✅ NUEVO: Grid con Orden del Día y Stock Disponible
-                    /* Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 0),
-                      child: GridView.count(
-                        shrinkWrap: true,
-                        physics: const NeverScrollableScrollPhysics(),
-                        crossAxisCount: 2,
-                        mainAxisSpacing: 16,
-                        crossAxisSpacing: 16,
-                        childAspectRatio: 0.7,
-                        children: [
-                          DashboardPreventistaWidgets.buildGradientCard(
-                            context,
-                            title: 'Orden del Día',
-                            subtitle: 'Clientes Hoy',
-                            icon: Icons.checklist_rtl,
-                            gradient: AppGradients.teal,
-                            onTap: () {
-                              Navigator.pushNamed(context, '/orden-del-dia');
-                            },
-                          ),
-                          DashboardPreventistaWidgets.buildGradientCard(
-                            context,
-                            title: 'Stock Disponible',
-                            subtitle: 'Descargar',
-                            icon: Icons.file_download_outlined,
-                            gradient: AppGradients.red,
-                            onTap: () => _mostrarOpcionesDescargarStock(),
-                          ),
-                        ],
-                      ),
-                    ), */
                   ],
                 ),
               ),

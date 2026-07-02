@@ -11,7 +11,7 @@ import '../../extensions/theme_extension.dart';
 /// Pantalla de detalle de producto
 /// Muestra informaciÃ³n completa del producto y permite agregar al carrito
 class ProductoDetalleScreen extends StatefulWidget {
-  final Product producto;
+  final Producto producto;
 
   const ProductoDetalleScreen({super.key, required this.producto});
 

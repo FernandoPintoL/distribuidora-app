@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 import 'venta.dart';
 import 'chofer.dart';
 import 'vehiculo.dart';
+import 'estado_logistico.dart';
 
 class Entrega {
   final int id;
@@ -20,6 +21,7 @@ class Entrega {
   estadoEntregaNombre; // Nombre del estado (ej: "Preparación de Carga")
   final String? estadoEntregaColor; // Color hex del estado
   final String? estadoEntregaIcono; // Ícono del estado
+  final EstadoLogistico? estadoEntregaObj; // Objeto completo del estado
   final DateTime? fechaAsignacion;
   final DateTime? fechaInicio;
   final DateTime? fechaEntrega;
@@ -90,6 +92,7 @@ class Entrega {
     this.estadoEntregaNombre,
     this.estadoEntregaColor,
     this.estadoEntregaIcono,
+    this.estadoEntregaObj,
     this.fechaAsignacion,
     this.fechaInicio,
     this.fechaEntrega,
@@ -244,14 +247,16 @@ class Entrega {
     String? estadoEntregaNombre;
     String? estadoEntregaColor;
     String? estadoEntregaIcono;
+    EstadoLogistico? estadoEntregaObjecto;
 
     if (json['estado_entrega'] is Map<String, dynamic>) {
-      final estadoEntregaObj = json['estado_entrega'] as Map<String, dynamic>;
-      estadoEntregaId = estadoEntregaObj['id'] as int?;
-      estadoEntregaCodigo = estadoEntregaObj['codigo'] as String?;
-      estadoEntregaNombre = estadoEntregaObj['nombre'] as String?;
-      estadoEntregaColor = estadoEntregaObj['color'] as String?;
-      estadoEntregaIcono = estadoEntregaObj['icono'] as String?;
+      final estadoEntregaMap = json['estado_entrega'] as Map<String, dynamic>;
+      estadoEntregaObjecto = EstadoLogistico.fromJson(estadoEntregaMap);
+      estadoEntregaId = estadoEntregaMap['id'] as int?;
+      estadoEntregaCodigo = estadoEntregaMap['codigo'] as String?;
+      estadoEntregaNombre = estadoEntregaMap['nombre'] as String?;
+      estadoEntregaColor = estadoEntregaMap['color'] as String?;
+      estadoEntregaIcono = estadoEntregaMap['icono'] as String?;
     } else if (json['estado_entrega_id'] is int) {
       // Fallback: solo guardar el ID si no viene la relación completa
       estadoEntregaId = json['estado_entrega_id'] as int?;
@@ -283,6 +288,7 @@ class Entrega {
       estadoEntregaNombre: estadoEntregaNombre,
       estadoEntregaColor: estadoEntregaColor,
       estadoEntregaIcono: estadoEntregaIcono,
+      estadoEntregaObj: estadoEntregaObjecto,
       fechaAsignacion: json['fecha_asignacion'] != null
           ? DateTime.parse(json['fecha_asignacion'] as String)
           : null,
@@ -356,6 +362,7 @@ class Entrega {
       'estado_entrega_nombre': estadoEntregaNombre,
       'estado_entrega_color': estadoEntregaColor,
       'estado_entrega_icono': estadoEntregaIcono,
+      'estado_entrega': estadoEntregaObj?.toJson(),
       'fecha_asignacion': fechaAsignacion?.toIso8601String(),
       'fecha_inicio': fechaInicio?.toIso8601String(),
       'fecha_entrega': fechaEntrega?.toIso8601String(),
@@ -502,6 +509,7 @@ class Entrega {
     int? vehiculoId,
     int? direccionClienteId,
     String? estado,
+    EstadoLogistico? estadoEntregaObj,
     DateTime? fechaAsignacion,
     DateTime? fechaInicio,
     DateTime? fechaEntrega,
@@ -532,6 +540,7 @@ class Entrega {
       vehiculoId: vehiculoId ?? this.vehiculoId,
       direccionClienteId: direccionClienteId ?? this.direccionClienteId,
       estado: estado ?? this.estado,
+      estadoEntregaObj: estadoEntregaObj ?? this.estadoEntregaObj,
       fechaAsignacion: fechaAsignacion ?? this.fechaAsignacion,
       fechaInicio: fechaInicio ?? this.fechaInicio,
       fechaEntrega: fechaEntrega ?? this.fechaEntrega,

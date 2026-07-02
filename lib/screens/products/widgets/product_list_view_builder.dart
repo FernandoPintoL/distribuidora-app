@@ -7,7 +7,7 @@ import '../../../widgets/product/product_list_item.dart';
 class ProductListViewBuilder extends StatelessWidget {
   final ProductProvider productProvider;
   final ScrollController scrollController;
-  final Function(Product) onProductTap;
+  final Function(Producto) onProductTap;
   final Future<void> Function() onRefresh;
 
   const ProductListViewBuilder({

@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import '../../../models/models.dart';
 import '../../../config/app_text_styles.dart';
 import '../../../utils/phone_utils.dart';
+import '../../pedidos/pedido_detalle/widgets/observaciones_section.dart';
 import 'cliente_avatar_widget.dart';
+import '../../../widgets/info_chip_widget.dart';
 
 class VentaClienteHeaderWidget extends StatelessWidget {
   final Venta venta;
@@ -50,134 +52,27 @@ class VentaClienteHeaderWidget extends StatelessWidget {
     }
   }
 
+  Color _parseHexColor(String? hexColor) {
+    if (hexColor == null) return Colors.transparent;
+    try {
+      final hex = hexColor.replaceFirst('#', '');
+      return Color(int.parse('FF$hex', radix: 16));
+    } catch (e) {
+      return Colors.transparent;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     return Card(
-      margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
       elevation: 2,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 8.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            // Estados (Documento y Logístico) - Mejorados con colores
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                // Estado Documento
-                Expanded(
-                  child: Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: _getEstadoDocumentoColor(
-                        venta.estadoDocumentoObj?.codigo,
-                      ).withValues(alpha: 0.1),
-                      border: Border.all(
-                        color: _getEstadoDocumentoColor(
-                          venta.estadoDocumentoObj?.codigo,
-                        ),
-                        width: 1.5,
-                      ),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Row(
-                      children: [
-                        Icon(
-                          Icons.check_circle_outline,
-                          size: 20,
-                          color: _getEstadoDocumentoColor(
-                            venta.estadoDocumentoObj?.codigo,
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const Text(
-                                'Documento',
-                                style: TextStyle(
-                                  fontSize: 11,
-                                  color: Colors.grey,
-                                ),
-                              ),
-                              Text(
-                                venta.estadoDocumentoObj?.codigo ??
-                                    'Desconocido',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  color: _getEstadoDocumentoColor(
-                                    venta.estadoDocumentoObj?.codigo,
-                                  ),
-                                ),
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                // Estado Logístico
-                Expanded(
-                  child: Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: _getEstadoLogisticoColor(
-                        venta.estadoLogisticoObj?.codigo,
-                      ).withValues(alpha: 0.1),
-                      border: Border.all(
-                        color: _getEstadoLogisticoColor(
-                          venta.estadoLogisticoObj?.codigo,
-                        ),
-                        width: 1.5,
-                      ),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Row(
-                      children: [
-                        Icon(
-                          Icons.local_shipping_outlined,
-                          size: 20,
-                          color: _getEstadoLogisticoColor(
-                            venta.estadoLogisticoObj?.codigo,
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const Text(
-                                'Logística',
-                                style: TextStyle(
-                                  fontSize: 11,
-                                  color: Colors.grey,
-                                ),
-                              ),
-                              Text(
-                                venta.estadoLogisticoObj?.nombre ??
-                                    venta.estadoLogistico,
-                                style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  color: _getEstadoLogisticoColor(
-                                    venta.estadoLogisticoObj?.codigo,
-                                  ),
-                                ),
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ],
-            ),
             const SizedBox(height: 6),
             // Cliente - Card mejorada con Avatar, Ubicación y Botones
             Padding(
@@ -186,126 +81,80 @@ class VentaClienteHeaderWidget extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   // Avatar y Nombre del Cliente
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Avatar con foto o iniciales
-                      ClienteAvatarWidget(
-                        clienteNombre: venta.cliente?.nombre,
-                        clienteFotoPerfil: venta.cliente?.fotoPerfil,
-                        clienteLocalidad: venta.cliente?.localidad?.nombre,
-                      ),
-                      const SizedBox(width: 12),
-                      // Información del Cliente
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              venta.cliente?.nombre ?? 'Cliente desconocido',
-                              style: TextStyle(fontWeight: FontWeight.bold),
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                            const SizedBox(height: 2),
-                            Text(
-                              venta.cliente?.razonSocial ?? 'N/A',
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: TextStyle(fontSize: 12),
-                            ),
-                          ],
-                        ),
-                      ),
-                      if (venta.tipoPago != null)
-                        Flexible(
-                          child: Column(
-                            children: [
-                              Column(
-                                crossAxisAlignment: CrossAxisAlignment.end,
-                                children: [
-                                  /*Text(
-                                    'Total:',
-                                    style: TextStyle(
-                                      color: Colors.green,
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 11,
-                                    ),
-                                  ),*/
-                                  const SizedBox(height: 2),
-                                  Text(
-                                    'Bs. ${venta.total.toStringAsFixed(2)}',
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                      color: Colors.green,
-                                      fontSize: 18,
-                                    ),
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                ],
-                              ),
-                              Chip(
-                                padding: const EdgeInsets.all(0),
-                                label: Text(venta.tipoPago!.nombre),
-                                avatar: const Icon(
-                                  Icons.payment,
-                                  size: 16,
-                                  color: Colors.lightGreen,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                    ],
+                  // Avatar con foto o iniciales
+                  ClienteAvatarWidget(
+                    clienteNombre: venta.cliente?.nombre,
+                    clienteFotoPerfil: venta.cliente?.fotoPerfil,
+                    clienteLocalidad: venta.direccionCliente?.localidad?.nombre,
+                    clienteObservaciones: venta.direccionCliente!.observaciones,
                   ),
-                  const SizedBox(height: 12),
-                  // Ubicación de Entrega (si disponible)
-                  if (venta.direccionCliente != null) ...[
-                    const Divider(height: 1),
-                    const SizedBox(height: 12),
+                  // Información del Cliente
+                  if (venta.tipoPago != null)
                     Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        const Icon(
-                          Icons.location_on,
-                          size: 16,
-                          color: Colors.red,
+                        Text(
+                          'Bs. ${venta.total.toStringAsFixed(2)}',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: Colors.green,
+                            fontSize: 18,
+                          ),
+                          overflow: TextOverflow.ellipsis,
                         ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'Dirección de Entrega',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.w600,
-                                  color: Colors.grey,
-                                ),
-                              ),
-                              const SizedBox(height: 2),
-                              if (venta.direccionCliente?.observaciones != null)
-                                Text(
-                                  venta.direccionCliente!.observaciones ??
-                                      'Sin dirección específica',
-                                  style: TextStyle(fontWeight: FontWeight.w500),
-                                  maxLines: 2,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              const SizedBox(height: 2),
-                              Text(
-                                venta.direccionCliente?.localidad?.nombre ??
-                                    'Sin dirección específica',
-                                style: TextStyle(fontWeight: FontWeight.w500),
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ],
+                        Chip(
+                          padding: const EdgeInsets.all(0),
+                          label: Text(venta.tipoPago!.nombre),
+                          avatar: const Icon(
+                            Icons.payment,
+                            size: 16,
+                            color: Colors.lightGreen,
                           ),
                         ),
                       ],
                     ),
-                    const SizedBox(height: 12),
-                  ],
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 8.0),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        if (venta.proforma != null)
+                          Expanded(
+                            child: InfoChipWidget(
+                              icon: Icons.shopping_cart,
+                              label: 'Folio Pedido',
+                              color:
+                                  venta.proforma?.estadoLogistico?.color != null
+                                  ? _parseHexColor(
+                                      venta.proforma?.estadoLogistico?.color,
+                                    )
+                                  : colorScheme.primary,
+                              id: venta.proforma?.id.toString(),
+                              estadoLogistico:
+                                  venta.proforma?.estadoLogistico?.nombre,
+                            ),
+                          ),
+                        const SizedBox(width: 12),
+                        if (venta.entrega != null)
+                          Expanded(
+                            child: InfoChipWidget(
+                              icon: Icons.delivery_dining,
+                              label: 'Folio Entrega',
+                              color: venta.estadoLogisticoObj?.color != null
+                                  ? _parseHexColor(
+                                      venta.estadoLogisticoObj?.color,
+                                    )
+                                  : colorScheme.secondary,
+                              id: venta.entrega?.id.toString(),
+                              estadoLogistico: venta.estadoLogisticoObj?.nombre,
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 12),
                   // Botones de Contacto
                   if (venta.cliente?.telefono != null) ...[
                     const Divider(height: 1),
@@ -379,8 +228,90 @@ class VentaClienteHeaderWidget extends StatelessWidget {
                 ],
               ),
             ),
+            // Observaciones
+            if (venta.observaciones != null && venta.observaciones!.isNotEmpty)
+              ObservacionesSection(
+                observaciones: venta.observaciones!,
+                parentContext: context,
+                estadoLogisticoColor: venta.estadoLogisticoObj?.color,
+              ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildEstadoBadge(EstadoDocumento estado) {
+    Color badgeColor = Colors.grey;
+    if (estado.color != null) {
+      try {
+        final hex = estado.color!.replaceFirst('#', '');
+        badgeColor = Color(int.parse('FF$hex', radix: 16));
+      } catch (e) {
+        debugPrint('⚠️ Error al parsear color: ${estado.color}');
+      }
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: badgeColor.withOpacity(0.15),
+        border: Border.all(color: badgeColor.withOpacity(0.5)),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Text(
+            'Estado',
+            style: TextStyle(
+              color: badgeColor.withOpacity(0.7),
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          const SizedBox(height: 16),
+          Text(
+            estado.nombre,
+            textAlign: TextAlign.center,
+            style: TextStyle(color: badgeColor, fontWeight: FontWeight.w600),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildEstadoLogisticoBadge(EstadoLogistico estado) {
+    Color badgeColor = Colors.grey;
+    if (estado.color != null) {
+      try {
+        final hex = estado.color!.replaceFirst('#', '');
+        badgeColor = Color(int.parse('FF$hex', radix: 16));
+      } catch (e) {
+        debugPrint('⚠️ Error al parsear color: ${estado.color}');
+      }
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: badgeColor.withOpacity(0.15),
+        border: Border.all(color: badgeColor.withOpacity(0.5)),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          // Icono del estado logístico (si existe)
+          if (estado.icono != null)
+            Text(estado.icono!, style: const TextStyle(fontSize: 18)),
+          Text(
+            estado.nombre,
+            textAlign: TextAlign.center,
+            style: TextStyle(color: badgeColor, fontWeight: FontWeight.w600),
+          ),
+        ],
       ),
     );
   }

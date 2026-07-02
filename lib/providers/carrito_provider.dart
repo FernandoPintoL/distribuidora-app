@@ -35,7 +35,8 @@ class CarritoProvider with ChangeNotifier {
   // Persistencia
   late CarritoService _carritoService;
   late ProformaService _proformaService; // ✅ NUEVO: Para actualizar proformas
-  late ProductService _productService; // ✅ NUEVO: Para obtener stocks actualizados
+  late ProductService
+  _productService; // ✅ NUEVO: Para obtener stocks actualizados
   bool _guardandoCarrito = false;
   bool _recuperandoCarrito = false;
   int? _usuarioId;
@@ -51,8 +52,10 @@ class CarritoProvider with ChangeNotifier {
 
   CarritoProvider() {
     _carritoService = CarritoService(ApiService());
-    _proformaService = ProformaService(); // ✅ NUEVO: Inicializar servicio de proformas
-    _productService = ProductService(); // ✅ NUEVO: Inicializar servicio de productos
+    _proformaService =
+        ProformaService(); // ✅ NUEVO: Inicializar servicio de proformas
+    _productService =
+        ProductService(); // ✅ NUEVO: Inicializar servicio de productos
   }
 
   @override
@@ -145,25 +148,31 @@ class CarritoProvider with ChangeNotifier {
       }
 
       // ✅ NUEVO: Obtener datos actualizados de cada producto (INCLUYENDO STOCKS)
-      debugPrint('📦 Obteniendo datos actualizados de ${proforma.items.length} productos...');
+      debugPrint(
+        '📦 Obteniendo datos actualizados de ${proforma.detalles.length} productos...',
+      );
 
-      for (final item in proforma.items) {
+      for (final item in proforma.detalles) {
         if (item.producto != null) {
           // Obtener producto actualizado del servidor (con stock correcto)
           final response = await _productService.getProduct(item.producto!.id);
 
-          Product productoActualizado = item.producto!;
+          Producto productoActualizado = item.producto!;
 
           if (response.success && response.data != null) {
             productoActualizado = response.data!;
-            debugPrint('✅ Stock obtenido para ${productoActualizado.nombre}: ${productoActualizado.stockPrincipal?.cantidad}');
+            debugPrint(
+              '✅ Stock obtenido para ${productoActualizado.nombre}: ${productoActualizado.stockPrincipal?.cantidad}',
+            );
 
             // ✅ NUEVO: Si este producto ya está en la proforma, ajustar cantidadDisponible
             // para incluir la cantidad reservada (ya que será valida para editar)
             if (productoActualizado.stockPrincipal != null) {
               final cantidadEnProforma = item.cantidad;
               final stockDisponibleAjustado =
-                (productoActualizado.stockPrincipal!.cantidadDisponible ?? 0) + cantidadEnProforma;
+                  (productoActualizado.stockPrincipal!.cantidadDisponible ??
+                      0) +
+                  cantidadEnProforma;
 
               // Crear nuevo StockProducto con cantidad ajustada
               productoActualizado = productoActualizado.copyWith(
@@ -172,11 +181,15 @@ class CarritoProvider with ChangeNotifier {
                 ),
               );
 
-              debugPrint('📌 [CarritoProvider] Stock ajustado para ${productoActualizado.nombre}: '
-                '${stockDisponibleAjustado} (${productoActualizado.stockPrincipal!.cantidadDisponible} + $cantidadEnProforma reservada)');
+              debugPrint(
+                '📌 [CarritoProvider] Stock ajustado para ${productoActualizado.nombre}: '
+                '${stockDisponibleAjustado} (${productoActualizado.stockPrincipal!.cantidadDisponible} + $cantidadEnProforma reservada)',
+              );
             }
           } else {
-            debugPrint('⚠️ No se pudo obtener stock para ${item.producto!.nombre}, usando datos de proforma');
+            debugPrint(
+              '⚠️ No se pudo obtener stock para ${item.producto!.nombre}, usando datos de proforma',
+            );
           }
 
           // Agregar al carrito con producto actualizado
@@ -202,7 +215,9 @@ class CarritoProvider with ChangeNotifier {
 
       _calcularTotales();
       _isLoading = false;
-      debugPrint('📦 [CarritoProvider] Proforma #${proforma.numero} cargada con stocks actualizados (${proforma.items.length} productos)');
+      debugPrint(
+        '📦 [CarritoProvider] Proforma #${proforma.numero} cargada con stocks actualizados (${proforma.detalles.length} productos)',
+      );
       notifyListeners();
       return true;
     } catch (e) {
@@ -269,12 +284,14 @@ class CarritoProvider with ChangeNotifier {
       return false; // No está editando ninguna proforma
     }
 
-    return _proformaEditando!.items.any((item) => item.productoId == productoId);
+    return _proformaEditando!.detalles.any(
+      (item) => item.productoId == productoId,
+    );
   }
 
   // Agregar producto al carrito con validación de stock
   void agregarProducto(
-    Product producto, {
+    Producto producto, {
     int cantidad = 1,
     String? observaciones,
     List<Map<String, dynamic>>? comboItemsSeleccionados,
@@ -338,32 +355,35 @@ class CarritoProvider with ChangeNotifier {
     CarritoItem? itemExistente;
     try {
       itemExistente = nuevosItems.firstWhere((item) {
-      if (item.producto.id != producto.id) return false;
+        if (item.producto.id != producto.id) return false;
 
-      // Para combos, comparar también los items seleccionados
-      if (producto.esCombo) {
-        // Si ambos son null o ambos tienen los mismos items
-        if (item.comboItemsSeleccionados == null && comboItemsSeleccionados == null) {
-          return true;
-        }
-        if (item.comboItemsSeleccionados == null || comboItemsSeleccionados == null) {
-          return false;
-        }
-        // Comparar si tienen los mismos combo_item_ids
-        if (item.comboItemsSeleccionados!.length != comboItemsSeleccionados!.length) {
-          return false;
-        }
-        for (int i = 0; i < item.comboItemsSeleccionados!.length; i++) {
-          if (item.comboItemsSeleccionados![i]['combo_item_id'] !=
-              comboItemsSeleccionados![i]['combo_item_id']) {
+        // Para combos, comparar también los items seleccionados
+        if (producto.esCombo) {
+          // Si ambos son null o ambos tienen los mismos items
+          if (item.comboItemsSeleccionados == null &&
+              comboItemsSeleccionados == null) {
+            return true;
+          }
+          if (item.comboItemsSeleccionados == null ||
+              comboItemsSeleccionados == null) {
             return false;
           }
+          // Comparar si tienen los mismos combo_item_ids
+          if (item.comboItemsSeleccionados!.length !=
+              comboItemsSeleccionados!.length) {
+            return false;
+          }
+          for (int i = 0; i < item.comboItemsSeleccionados!.length; i++) {
+            if (item.comboItemsSeleccionados![i]['combo_item_id'] !=
+                comboItemsSeleccionados![i]['combo_item_id']) {
+              return false;
+            }
+          }
+          return true;
         }
-        return true;
-      }
 
-      // Para productos normales, solo comparar producto.id
-      return true;
+        // Para productos normales, solo comparar producto.id
+        return true;
       });
     } catch (e) {
       itemExistente = null;
@@ -375,7 +395,8 @@ class CarritoProvider with ChangeNotifier {
 
       // ✅ Si estamos editando una proforma que ya tiene este producto, permitir sin validar stock
       if (!productoEnProforma) {
-        final stockDisponible = producto.stockPrincipal?.cantidadDisponible ?? 0;
+        final stockDisponible =
+            producto.stockPrincipal?.cantidadDisponible ?? 0;
         final stockDispInt = (stockDisponible as num).toInt();
 
         if (nuevaCantidadTotal > stockDispInt) {
@@ -396,7 +417,8 @@ class CarritoProvider with ChangeNotifier {
       // ✅ NUEVO: Actualizar también comboItemsSeleccionados si existen
       nuevosItems[index] = itemExistente.copyWith(
         cantidad: nuevaCantidadTotal,
-        comboItemsSeleccionados: comboItemsSeleccionados ?? itemExistente.comboItemsSeleccionados,
+        comboItemsSeleccionados:
+            comboItemsSeleccionados ?? itemExistente.comboItemsSeleccionados,
       );
       debugPrint(
         '✅ Cantidad de ${producto.nombre} aumentada a $nuevaCantidadTotal',
@@ -424,7 +446,9 @@ class CarritoProvider with ChangeNotifier {
       final itemGuardado = nuevosItems.lastWhere(
         (i) => i.producto.id == producto.id,
       );
-      debugPrint('   🔍 Item en carrito - comboItemsSeleccionados: ${itemGuardado.comboItemsSeleccionados}');
+      debugPrint(
+        '   🔍 Item en carrito - comboItemsSeleccionados: ${itemGuardado.comboItemsSeleccionados}',
+      );
     }
 
     _carrito = _carrito.copyWith(items: nuevosItems);
@@ -492,8 +516,10 @@ class CarritoProvider with ChangeNotifier {
     final nuevaCantidadTotal = itemExistente.cantidad + incremento;
 
     // ✅ VALIDAR LÍMITE DE VENTA
-    if (producto.limiteVenta != null && nuevaCantidadTotal > producto.limiteVenta!) {
-      _errorMessage = 'El producto "${producto.nombre}" tiene un límite máximo de venta de ${producto.limiteVenta} unidades.';
+    if (producto.limiteVenta != null &&
+        nuevaCantidadTotal > producto.limiteVenta!) {
+      _errorMessage =
+          'El producto "${producto.nombre}" tiene un límite máximo de venta de ${producto.limiteVenta} unidades.';
       WidgetsBinding.instance.addPostFrameCallback((_) {
         notifyListeners();
       });
@@ -1122,12 +1148,14 @@ class CarritoProvider with ChangeNotifier {
 
         // Convertir items del carrito al formato esperado por la API
         final itemsData = _carrito.items
-            .map((item) => {
-                  'producto_id': item.producto.id,
-                  'cantidad': item.cantidad,
-                  'precio_unitario': item.producto.precioVenta,
-                  'observaciones': item.observaciones,
-                })
+            .map(
+              (item) => {
+                'producto_id': item.producto.id,
+                'cantidad': item.cantidad,
+                'precio_unitario': item.producto.precioVenta,
+                'observaciones': item.observaciones,
+              },
+            )
             .toList();
 
         final response = await _proformaService.actualizarProforma(
@@ -1135,7 +1163,8 @@ class CarritoProvider with ChangeNotifier {
           clienteId: _clienteSeleccionado!.id,
           items: itemsData,
           tipoEntrega: 'DELIVERY',
-          fechaProgramada: _proformaEditando!.fechaEntregaSolicitada ?? DateTime.now(),
+          fechaProgramada:
+              _proformaEditando!.fechaEntregaSolicitada ?? DateTime.now(),
           observaciones: null,
         );
 
@@ -1373,11 +1402,10 @@ class CarritoProvider with ChangeNotifier {
         // ✅ CRÍTICO: Actualizar precios unitarios de items en el carrito
         // La respuesta del API contiene los precios calculados según rangos
         final itemsActualizados = _carrito.items.map((item) {
-          final detalleActualizado = carritoConRangos.detalles
-              .firstWhere(
-                (d) => d.productoId == item.producto.id,
-                orElse: () => null as dynamic,
-              );
+          final detalleActualizado = carritoConRangos.detalles.firstWhere(
+            (d) => d.productoId == item.producto.id,
+            orElse: () => null as dynamic,
+          );
 
           if (detalleActualizado != null) {
             debugPrint(
@@ -1395,21 +1423,22 @@ class CarritoProvider with ChangeNotifier {
         _carrito = _carrito.copyWith(items: itemsActualizados);
 
         debugPrint('✅ Carrito calculado con éxito');
-        debugPrint(
-          '   Subtotal: ${_carrito.subtotal.toStringAsFixed(2)} Bs',
-        );
+        debugPrint('   Subtotal: ${_carrito.subtotal.toStringAsFixed(2)} Bs');
         debugPrint(
           '   Ahorro disponible: ${carritoConRangos.ahorroDisponible.toStringAsFixed(2)} Bs',
         );
         debugPrint('   Items con rango: ${carritoConRangos.detalles.length}');
 
-        _errorMessage = null; // Limpiar error anterior si el cálculo fue exitoso
+        _errorMessage =
+            null; // Limpiar error anterior si el cálculo fue exitoso
         notifyListeners();
         return true;
       }
 
       // ✅ Usar el mensaje de error del servicio (incluye límite de venta)
-      _errorMessage = _carritoService.lastErrorMessage ?? 'No fue posible calcular los precios con rangos';
+      _errorMessage =
+          _carritoService.lastErrorMessage ??
+          'No fue posible calcular los precios con rangos';
       debugPrint('⚠️  Error en cálculo de carrito: $_errorMessage');
 
       // ✅ DETECTAR Y MANEJAR LÍMITE DE VENTA
@@ -1442,10 +1471,14 @@ class CarritoProvider with ChangeNotifier {
 
         // Encontrar cuál producto excede el límite
         for (final item in _carrito.items) {
-          if (item.cantidad > limiteMax && item.producto.limiteVenta == limiteMax) {
-            debugPrint('🔄 Revirtiendo cantidad de "${item.producto.nombre}" a $limiteMax');
+          if (item.cantidad > limiteMax &&
+              item.producto.limiteVenta == limiteMax) {
+            debugPrint(
+              '🔄 Revirtiendo cantidad de "${item.producto.nombre}" a $limiteMax',
+            );
             actualizarCantidad(item.producto.id, limiteMax);
-            _errorMessage = 'Cantidad revertida al límite máximo: $limiteMax unidades';
+            _errorMessage =
+                'Cantidad revertida al límite máximo: $limiteMax unidades';
             return;
           }
         }

@@ -39,7 +39,7 @@ class _InformacionGeneralCardState extends State<InformacionGeneralCard> {
                       Icon(
                         Icons.info_outline,
                         size: 18,
-                        color: colorScheme.primary,
+                        color: colorScheme.secondary,
                       ),
                       const SizedBox(width: 8),
                       Expanded(
@@ -62,7 +62,7 @@ class _InformacionGeneralCardState extends State<InformacionGeneralCard> {
                     child: Icon(
                       _expandirDetalles ? Icons.expand_less : Icons.expand_more,
                       size: 18,
-                      color: colorScheme.primary,
+                      color: colorScheme.secondary,
                     ),
                   ),
               ],
@@ -78,13 +78,13 @@ class _InformacionGeneralCardState extends State<InformacionGeneralCard> {
                   spacing: 8,
                   runSpacing: 8,
                   children: [
-                    CompactInfoChip(
+                    /*CompactInfoChip(
                       icon: Icons.confirmation_number,
                       label: '#${widget.entrega.id}',
                       value: widget.entrega.numeroEntrega ?? 'N/A',
                       isDarkMode: isDarkMode,
                       colorScheme: colorScheme,
-                    ),
+                    ),*/
                     if (widget.entrega.chofer != null)
                       CompactInfoChip(
                         icon: Icons.person,
@@ -143,7 +143,7 @@ class _InformacionGeneralCardState extends State<InformacionGeneralCard> {
             ),
 
             // Sección de Fechas y Tiempos
-            if (widget.entrega.fechaAsignacion != null ||
+            /*if (widget.entrega.fechaAsignacion != null ||
                 widget.entrega.fechaInicio != null ||
                 widget.entrega.fechaEntrega != null) ...[
               const SizedBox(height: 16),
@@ -185,7 +185,7 @@ class _InformacionGeneralCardState extends State<InformacionGeneralCard> {
                     ),
                 ],
               ),
-            ],
+            ],*/
 
             // Observaciones expandibles
             if (widget.entrega.observaciones != null &&
@@ -211,17 +211,16 @@ class _InformacionGeneralCardState extends State<InformacionGeneralCard> {
                           Icon(
                             Icons.notes,
                             size: 16,
-                            color: colorScheme.primary,
+                            color: colorScheme.secondary,
                           ),
                           const SizedBox(width: 8),
                           Expanded(
                             child: Text(
                               'Observaciones',
-                              style: Theme.of(context).textTheme.labelLarge
-                                  ?.copyWith(
-                                    fontWeight: FontWeight.w600,
-                                    color: colorScheme.primary,
-                                  ),
+                              style: TextStyle(
+                                fontWeight: FontWeight.w600,
+                                color: colorScheme.secondary,
+                              ),
                               overflow: TextOverflow.ellipsis,
                             ),
                           ),
@@ -231,7 +230,7 @@ class _InformacionGeneralCardState extends State<InformacionGeneralCard> {
                     Icon(
                       _expandirDetalles ? Icons.expand_less : Icons.expand_more,
                       size: 18,
-                      color: colorScheme.primary,
+                      color: colorScheme.secondary,
                     ),
                   ],
                 ),
@@ -252,12 +251,7 @@ class _InformacionGeneralCardState extends State<InformacionGeneralCard> {
                           : colorScheme.outline.withValues(alpha: 0.1),
                     ),
                   ),
-                  child: Text(
-                    widget.entrega.observaciones!,
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: isDarkMode ? Colors.grey[300] : Colors.grey[700],
-                    ),
-                  ),
+                  child: Text(widget.entrega.observaciones!),
                 ),
               ],
             ],

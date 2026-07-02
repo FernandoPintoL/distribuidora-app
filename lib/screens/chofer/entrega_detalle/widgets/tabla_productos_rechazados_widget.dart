@@ -88,7 +88,7 @@ class TablaProductosRechazadosWidget extends StatelessWidget {
           child: SingleChildScrollView(
             scrollDirection: Axis.horizontal,
             child: DataTable(
-              columnSpacing: 12,
+              columnSpacing: 7,
               headingRowColor: MaterialStateColor.resolveWith(
                 (states) => Colors.orange.withOpacity(0.1),
               ),
@@ -96,42 +96,49 @@ class TablaProductosRechazadosWidget extends StatelessWidget {
                 DataColumn(
                   label: Text(
                     '✗',
+                    textAlign: TextAlign.center,
                     style: TextStyle(fontWeight: FontWeight.w600),
                   ),
                 ),
                 DataColumn(
                   label: Text(
                     'Producto',
+                    textAlign: TextAlign.center,
                     style: TextStyle(fontWeight: FontWeight.w600),
                   ),
                 ),
                 DataColumn(
                   label: Text(
                     'Qty Orig',
+                    textAlign: TextAlign.center,
                     style: TextStyle(fontWeight: FontWeight.w600),
                   ),
                 ),
                 DataColumn(
                   label: Text(
                     'Qty Rech',
+                    textAlign: TextAlign.center,
                     style: TextStyle(fontWeight: FontWeight.w600),
                   ),
                 ),
                 DataColumn(
                   label: Text(
                     'Qty Entre',
+                    textAlign: TextAlign.center,
                     style: TextStyle(fontWeight: FontWeight.w600),
                   ),
                 ),
                 DataColumn(
                   label: Text(
                     'Precio',
+                    textAlign: TextAlign.center,
                     style: TextStyle(fontWeight: FontWeight.w600),
                   ),
                 ),
                 DataColumn(
                   label: Text(
                     'Subtotal Rech',
+                    textAlign: TextAlign.center,
                     style: TextStyle(fontWeight: FontWeight.w600),
                   ),
                 ),
@@ -172,7 +179,7 @@ class TablaProductosRechazadosWidget extends StatelessWidget {
                                     detalle.nombreProducto ??
                                     'Producto',
                                 cantidadOriginal: detalle.cantidad.toDouble(),
-                                cantidadRechazada: 1.0,
+                                cantidadRechazada: 1,
                                 precioUnitario: detalle.precioUnitario
                                     .toDouble(),
                                 subtotalOriginal:
@@ -183,7 +190,7 @@ class TablaProductosRechazadosWidget extends StatelessWidget {
                               detalle.id,
                             )) {
                               cantidadRechazadaControllers[detalle.id] =
-                                  TextEditingController(text: '1.0');
+                                  TextEditingController(text: '1');
                             }
                           } else {
                             onDesmarcarRechazo(detalle.id);
@@ -219,24 +226,23 @@ class TablaProductosRechazadosWidget extends StatelessWidget {
                         ),
                       ),
                     ),
-                    // Input editable para cantidad rechazada
+                    // Input editable para cantidad rechazada - SOLO ENTEROS
                     DataCell(
                       isRechazado
                           ? SizedBox(
                               width: 70,
                               child: TextField(
+                                textAlign: TextAlign.center,
                                 controller:
                                     cantidadRechazadaControllers[detalle.id],
-                                keyboardType: TextInputType.numberWithOptions(
-                                  decimal: true,
-                                ),
+                                keyboardType: TextInputType.number,
                                 inputFormatters: [
                                   FilteringTextInputFormatter.allow(
-                                    RegExp(r'^\d+\.?\d*'),
+                                    RegExp(r'^\d+$'),
                                   ),
                                 ],
                                 onChanged: (value) {
-                                  final cantidad = double.tryParse(value) ?? 0;
+                                  final cantidad = int.tryParse(value) ?? 0;
                                   if (cantidad > detalle.cantidad) {
                                     onCantidadRechazadaChanged(
                                       detalle.id,
@@ -244,11 +250,11 @@ class TablaProductosRechazadosWidget extends StatelessWidget {
                                     );
                                     cantidadRechazadaControllers[detalle.id]
                                         ?.text = detalle.cantidad
-                                        .toStringAsFixed(1);
+                                        .toString();
                                   } else if (cantidad >= 0) {
                                     onCantidadRechazadaChanged(
                                       detalle.id,
-                                      cantidad,
+                                      cantidad.toDouble(),
                                     );
                                   }
                                 },
@@ -289,7 +295,10 @@ class TablaProductosRechazadosWidget extends StatelessWidget {
                     ),
                     // Precio unitario
                     DataCell(
-                      Text('Bs. ${detalle.precioUnitario.toStringAsFixed(2)}'),
+                      Text(
+                        'Bs. ${detalle.precioUnitario.toStringAsFixed(2)}',
+                        textAlign: TextAlign.center,
+                      ),
                     ),
                     // Subtotal de rechazadas (calculado)
                     DataCell(
@@ -297,7 +306,7 @@ class TablaProductosRechazadosWidget extends StatelessWidget {
                         isRechazado
                             ? 'Bs. ${productoRechazado?.subtotalRechazado.toStringAsFixed(2)}'
                             : '-',
-                        textAlign: TextAlign.right,
+                        textAlign: TextAlign.center,
                         style: TextStyle(
                           fontWeight: FontWeight.w600,
                           color: isRechazado ? Colors.red[700] : null,
@@ -318,12 +327,10 @@ class TablaProductosRechazadosWidget extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: isDarkMode
-                    ? [Colors.grey[800]!, Colors.grey[700]!]
-                    : [Colors.green[50]!, Colors.orange[50]!],
+              borderRadius: BorderRadius.only(
+                topLeft: Radius.circular(12),
+                topRight: Radius.circular(12),
               ),
-              borderRadius: BorderRadius.circular(12),
               border: Border.all(
                 color: isDarkMode ? Colors.orange[700]! : Colors.green[300]!,
               ),
@@ -352,7 +359,7 @@ class TablaProductosRechazadosWidget extends StatelessWidget {
                           ),
                         ),
                         Text(
-                          '${prod.cantidadRechazada.toStringAsFixed(1)}/${prod.cantidadOriginal.toStringAsFixed(0)} rechazadas',
+                          '${prod.cantidadRechazada.toStringAsFixed(0)}/${prod.cantidadOriginal.toStringAsFixed(0)} rechazadas',
                           style: TextStyle(
                             color: isDarkMode
                                 ? Colors.orange[400]!
@@ -373,8 +380,9 @@ class TablaProductosRechazadosWidget extends StatelessWidget {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(
-                      '✓ Total Entregado:',
+                      '✓ Nuevo Total:',
                       style: TextStyle(
+                        fontSize: 18,
                         fontWeight: FontWeight.w500,
                         color: isDarkMode
                             ? Colors.green[400]!
@@ -384,6 +392,7 @@ class TablaProductosRechazadosWidget extends StatelessWidget {
                     Text(
                       'Bs. ${montoEntregado.toStringAsFixed(2)}',
                       style: TextStyle(
+                        fontSize: 18,
                         fontWeight: FontWeight.w700,
                         color: isDarkMode
                             ? Colors.green[400]!
@@ -413,35 +422,6 @@ class TablaProductosRechazadosWidget extends StatelessWidget {
                     ),
                   ],
                 ),
-                /*const SizedBox(height: 8),
-                Divider(
-                  color: isDarkMode ? Colors.orange[600]! : Colors.orange[300]!,
-                ),*/
-                /*const SizedBox(height: 8),
-                // Total Original
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      'Total Original:',
-                      style: TextStyle(
-                        fontWeight: FontWeight.w500,
-                        color: isDarkMode
-                            ? Colors.grey[400]!
-                            : Colors.grey[700]!,
-                      ),
-                    ),
-                    Text(
-                      'Bs. ${totalOriginal.toStringAsFixed(2)}',
-                      style: TextStyle(
-                        fontWeight: FontWeight.w700,
-                        color: isDarkMode
-                            ? Colors.grey[400]!
-                            : Colors.grey[700]!,
-                      ),
-                    ),
-                  ],
-                ),*/
               ],
             ),
           ),

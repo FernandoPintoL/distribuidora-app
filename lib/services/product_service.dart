@@ -23,7 +23,7 @@ class ProductService {
   ///    - Stock disponible > 0 en el almacén de la empresa
   ///    - Precio de venta válido (tipo_precio_id = 2, precio > 0)
   ///    - Producto activo
-  Future<PaginatedResponse<Product>> getProducts({
+  Future<PaginatedResponse<Producto>> getProducts({
     int page = 1,
     int perPage = 20,
     String? search,
@@ -33,10 +33,7 @@ class ProductService {
     bool? active,
   }) async {
     try {
-      final queryParams = <String, dynamic>{
-        'page': page,
-        'per_page': perPage,
-      };
+      final queryParams = <String, dynamic>{'page': page, 'per_page': perPage};
 
       // ✅ Parámetros opcionales de búsqueda y filtro
       if (search != null && search.isNotEmpty) {
@@ -60,18 +57,18 @@ class ProductService {
         queryParameters: queryParams,
       );
 
-      return PaginatedResponse<Product>.fromJson(
+      return PaginatedResponse<Producto>.fromJson(
         response.data,
-        (json) => Product.fromJson(json),
+        (json) => Producto.fromJson(json),
       );
     } on DioException catch (e) {
-      return PaginatedResponse<Product>(
+      return PaginatedResponse<Producto>(
         success: false,
         message: _getErrorMessage(e),
         data: null,
       );
     } catch (e) {
-      return PaginatedResponse<Product>(
+      return PaginatedResponse<Producto>(
         success: false,
         message: 'Error inesperado: ${e.toString()}',
         data: null,
@@ -79,7 +76,7 @@ class ProductService {
     }
   }
 
-  Future<ApiResponse<List<Product>>> searchProducts(
+  Future<ApiResponse<List<Producto>>> searchProducts(
     String query, {
     int limit = 10,
   }) async {
@@ -89,20 +86,21 @@ class ProductService {
         queryParameters: {'q': query, 'limite': limit},
       );
 
-      final apiResponse = ApiResponse<List<Product>>.fromJson(
+      final apiResponse = ApiResponse<List<Producto>>.fromJson(
         response.data,
-        (data) => (data as List).map((item) => Product.fromJson(item)).toList(),
+        (data) =>
+            (data as List).map((item) => Producto.fromJson(item)).toList(),
       );
 
       return apiResponse;
     } on DioException catch (e) {
-      return ApiResponse<List<Product>>(
+      return ApiResponse<List<Producto>>(
         success: false,
         message: _getErrorMessage(e),
         data: null,
       );
     } catch (e) {
-      return ApiResponse<List<Product>>(
+      return ApiResponse<List<Producto>>(
         success: false,
         message: 'Error inesperado: ${e.toString()}',
         data: null,
@@ -110,22 +108,22 @@ class ProductService {
     }
   }
 
-  Future<ApiResponse<Product>> getProduct(int id) async {
+  Future<ApiResponse<Producto>> getProduct(int id) async {
     try {
       final response = await _apiService.get('/productos/$id');
 
-      return ApiResponse<Product>.fromJson(
+      return ApiResponse<Producto>.fromJson(
         response.data,
-        (data) => Product.fromJson(data),
+        (data) => Producto.fromJson(data),
       );
     } on DioException catch (e) {
-      return ApiResponse<Product>(
+      return ApiResponse<Producto>(
         success: false,
         message: _getErrorMessage(e),
         data: null,
       );
     } catch (e) {
-      return ApiResponse<Product>(
+      return ApiResponse<Producto>(
         success: false,
         message: 'Error inesperado: ${e.toString()}',
         data: null,
@@ -133,7 +131,7 @@ class ProductService {
     }
   }
 
-  Future<ApiResponse<Product>> createProduct({
+  Future<ApiResponse<Producto>> createProduct({
     required String nombre,
     required String codigo,
     String? descripcion,
@@ -165,18 +163,18 @@ class ProductService {
 
       final response = await _apiService.post('/productos', data: data);
 
-      return ApiResponse<Product>.fromJson(
+      return ApiResponse<Producto>.fromJson(
         response.data,
-        (data) => Product.fromJson(data),
+        (data) => Producto.fromJson(data),
       );
     } on DioException catch (e) {
-      return ApiResponse<Product>(
+      return ApiResponse<Producto>(
         success: false,
         message: _getErrorMessage(e),
         data: null,
       );
     } catch (e) {
-      return ApiResponse<Product>(
+      return ApiResponse<Producto>(
         success: false,
         message: 'Error inesperado: ${e.toString()}',
         data: null,
@@ -184,7 +182,7 @@ class ProductService {
     }
   }
 
-  Future<ApiResponse<Product>> updateProduct(
+  Future<ApiResponse<Producto>> updateProduct(
     int id, {
     String? nombre,
     String? codigo,
@@ -217,18 +215,18 @@ class ProductService {
 
       final response = await _apiService.put('/productos/$id', data: data);
 
-      return ApiResponse<Product>.fromJson(
+      return ApiResponse<Producto>.fromJson(
         response.data,
-        (data) => Product.fromJson(data),
+        (data) => Producto.fromJson(data),
       );
     } on DioException catch (e) {
-      return ApiResponse<Product>(
+      return ApiResponse<Producto>(
         success: false,
         message: _getErrorMessage(e),
         data: null,
       );
     } catch (e) {
-      return ApiResponse<Product>(
+      return ApiResponse<Producto>(
         success: false,
         message: 'Error inesperado: ${e.toString()}',
         data: null,

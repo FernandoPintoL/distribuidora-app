@@ -360,7 +360,6 @@ class _ClientFormScreenState extends State<ClientFormScreen> {
             ),
           ],
         ),
-        backgroundColor: Theme.of(context).colorScheme.surface,
         body: _isInitialized
             ? Form(
                 key: _formKey,
@@ -374,7 +373,8 @@ class _ClientFormScreenState extends State<ClientFormScreen> {
                         child: Container(
                           margin: const EdgeInsets.only(bottom: 32),
                           child: ProfilePhotoSelector(
-                            currentPhotoUrl: _updatedPhotoUrl ?? widget.client?.fotoPerfil,
+                            currentPhotoUrl:
+                                _updatedPhotoUrl ?? widget.client?.fotoPerfil,
                             onPhotoSelected: (file) async {
                               if (file == null) return;
 
@@ -452,7 +452,7 @@ class _ClientFormScreenState extends State<ClientFormScreen> {
                         ],
                       ),
 
-                      const SizedBox(height: 24),
+                      const SizedBox(height: 12),
 
                       // Información de contacto
                       _buildSection(
@@ -484,7 +484,7 @@ class _ClientFormScreenState extends State<ClientFormScreen> {
                         ],
                       ),
 
-                      const SizedBox(height: 24),
+                      const SizedBox(height: 12),
 
                       // Ubicación
                       _buildSection(
@@ -582,8 +582,8 @@ class _ClientFormScreenState extends State<ClientFormScreen> {
                                     prefixIcon: const Icon(Icons.location_city),
                                   ),
                           ),
-                          const SizedBox(height: 16),
-                          TextFormField(
+                          // const SizedBox(height: 16),
+                          /*TextFormField(
                             controller: _addressController,
                             decoration: _buildInputDecoration(
                               labelText: 'Dirección',
@@ -591,7 +591,8 @@ class _ClientFormScreenState extends State<ClientFormScreen> {
                               prefixIcon: Icons.home,
                             ),
                             maxLines: 3,
-                          ),
+                            enabled: false,
+                          ),*/
                           const SizedBox(height: 16),
                           // Campo para observaciones del lugar
                           TextFormField(
@@ -607,7 +608,7 @@ class _ClientFormScreenState extends State<ClientFormScreen> {
                         ],
                       ),
 
-                      const SizedBox(height: 24),
+                      const SizedBox(height: 12),
 
                       // Preferencias de entrega
                       _buildSection(
@@ -676,7 +677,6 @@ class _ClientFormScreenState extends State<ClientFormScreen> {
                           else
                             const Text(
                               'Agrega los días y horarios preferidos para visitas.',
-                              style: TextStyle(color: Colors.grey),
                             ),
                           const SizedBox(height: 8),
                           Align(
@@ -788,9 +788,6 @@ class _ClientFormScreenState extends State<ClientFormScreen> {
                                         Text(
                                           'Estado del Cliente',
                                           style: TextStyle(
-                                            fontSize: AppTextStyles.bodyMedium(
-                                              context,
-                                            ).fontSize!,
                                             color: Colors.grey.shade700,
                                             fontWeight: FontWeight.w500,
                                           ),
@@ -799,9 +796,6 @@ class _ClientFormScreenState extends State<ClientFormScreen> {
                                         Text(
                                           _isActive ? 'Activo' : 'Inactivo',
                                           style: TextStyle(
-                                            fontSize: AppTextStyles.bodyLarge(
-                                              context,
-                                            ).fontSize!,
                                             fontWeight: FontWeight.bold,
                                             color: _isActive
                                                 ? Colors.green.shade700
@@ -821,51 +815,7 @@ class _ClientFormScreenState extends State<ClientFormScreen> {
                                 ],
                               ),
                             ),
-                            // ✅ SEGURIDAD: "Crear Usuario" está OCULTO
-                            // - Al crear cliente: _createUser = true (automático)
-                            // - Al editar cliente: _createUser = false (automático)
-                            // El usuario NO puede cambiar esto. Cambiar contraseña requiere admin.
                             const SizedBox(height: 16),
-                            // 💳 Configuración de Crédito
-                            /* Row(
-                              children: [
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        'Habilitar Crédito',
-                                        style: TextStyle(
-                                          fontSize: AppTextStyles.bodyLarge(context).fontSize!,
-                                          fontWeight: FontWeight.w500,
-                                          color: Theme.of(
-                                            context,
-                                          ).colorScheme.onSurface,
-                                        ),
-                                      ),
-                                      Text(
-                                        'Permite que el cliente use crédito',
-                                        style: TextStyle(
-                                          fontSize: AppTextStyles.bodyMedium(context).fontSize!,
-                                          color: Theme.of(
-                                            context,
-                                          ).colorScheme.onSurfaceVariant,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                                Switch(
-                                  value: _puedeAtenerCredito,
-                                  onChanged: (value) => setState(
-                                    () => _puedeAtenerCredito = value,
-                                  ),
-                                  activeThumbColor: Colors.blue.shade600,
-                                ),
-                              ],
-                            ), */
-                            // Límite de Crédito (solo visible si está habilitado)
                             if (_puedeAtenerCredito) ...[
                               const SizedBox(height: 16),
                               TextFormField(
@@ -909,21 +859,13 @@ class _ClientFormScreenState extends State<ClientFormScreen> {
                   children: [
                     const CircularProgressIndicator(),
                     const SizedBox(height: 16),
-                    Text(
-                      'Cargando datos del formulario...',
-                      style: Theme.of(context).textTheme.titleMedium,
-                    ),
+                    Text('Cargando datos del formulario...'),
                     if (_isLoadingLocalidades)
                       Padding(
                         padding: EdgeInsets.only(top: 8),
                         child: Text(
                           'Cargando localidades...',
-                          style: TextStyle(
-                            fontSize: AppTextStyles.bodyMedium(
-                              context,
-                            ).fontSize!,
-                            color: Colors.grey,
-                          ),
+                          style: TextStyle(color: Colors.grey),
                         ),
                       ),
                   ],
@@ -940,7 +882,9 @@ class _ClientFormScreenState extends State<ClientFormScreen> {
     Widget? suffixIcon,
   }) {
     final colorScheme = Theme.of(context).colorScheme;
-    final accentColor = _isEditing ? colorScheme.tertiary : colorScheme.primary;
+    final accentColor = _isEditing
+        ? colorScheme.tertiary
+        : colorScheme.secondary;
 
     return InputDecoration(
       labelText: labelText,
@@ -950,7 +894,6 @@ class _ClientFormScreenState extends State<ClientFormScreen> {
           : null,
       suffixIcon: suffixIcon,
       filled: true,
-      fillColor: colorScheme.surface,
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
         borderSide: BorderSide(color: colorScheme.outline.withOpacity(0.3)),
@@ -982,7 +925,9 @@ class _ClientFormScreenState extends State<ClientFormScreen> {
     required List<Widget> children,
   }) {
     final colorScheme = Theme.of(context).colorScheme;
-    final accentColor = _isEditing ? colorScheme.tertiary : colorScheme.primary;
+    final accentColor = _isEditing
+        ? colorScheme.tertiary
+        : colorScheme.secondary;
 
     return Container(
       margin: const EdgeInsets.only(bottom: 20),
@@ -1001,9 +946,8 @@ class _ClientFormScreenState extends State<ClientFormScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
-            padding: const EdgeInsets.all(20),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             decoration: BoxDecoration(
-              color: colorScheme.primaryContainer,
               borderRadius: const BorderRadius.only(
                 topLeft: Radius.circular(20),
                 topRight: Radius.circular(20),
@@ -1018,13 +962,6 @@ class _ClientFormScreenState extends State<ClientFormScreen> {
                       colors: [accentColor, accentColor.withOpacity(0.7)],
                     ),
                     borderRadius: BorderRadius.circular(12),
-                    boxShadow: [
-                      BoxShadow(
-                        color: accentColor.withOpacity(0.3),
-                        blurRadius: 8,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
                   ),
                   child: Icon(icon, color: colorScheme.onPrimary, size: 24),
                 ),
@@ -1032,11 +969,7 @@ class _ClientFormScreenState extends State<ClientFormScreen> {
                 Expanded(
                   child: Text(
                     title,
-                    style: TextStyle(
-                      fontSize: AppTextStyles.headlineSmall(context).fontSize!,
-                      fontWeight: FontWeight.bold,
-                      color: colorScheme.onPrimaryContainer,
-                    ),
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
@@ -1044,7 +977,7 @@ class _ClientFormScreenState extends State<ClientFormScreen> {
             ),
           ),
           Padding(
-            padding: const EdgeInsets.all(20),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: children,
@@ -1100,11 +1033,15 @@ class _ClientFormScreenState extends State<ClientFormScreen> {
           // ✅ SEGURIDAD: En modo edición, NUNCA crear usuario (cambiar contraseña requiere admin)
           crearUsuario: false,
           // ✅ MEJORADO: Enviar dirección si hay dirección O coordenadas válidas
-          direcciones: (_addressController.text.isNotEmpty || (_latitude != null && _longitude != null))
+          direcciones:
+              (_addressController.text.isNotEmpty ||
+                  (_latitude != null && _longitude != null))
               ? [
                   ClientAddress(
                     id: null,
-                    direccion: _addressController.text.isNotEmpty ? _addressController.text : '',
+                    direccion: _addressController.text.isNotEmpty
+                        ? _addressController.text
+                        : '',
                     observaciones:
                         _locationObservationsController.text.isNotEmpty
                         ? _locationObservationsController.text
@@ -1205,7 +1142,7 @@ class _ClientFormScreenState extends State<ClientFormScreen> {
                     : 'Cliente creado exitosamente',
                 style: const TextStyle(fontWeight: FontWeight.w500),
               ),
-              backgroundColor: Theme.of(context).colorScheme.primary,
+              backgroundColor: Theme.of(context).colorScheme.secondary,
               duration: const Duration(seconds: 3),
               behavior: SnackBarBehavior.floating,
               shape: RoundedRectangleBorder(
@@ -1224,14 +1161,20 @@ class _ClientFormScreenState extends State<ClientFormScreen> {
 
               // ✅ Si estamos editando, recargar el cliente para asegurar que los datos estén frescos
               if (_isEditing) {
-                debugPrint('🔄 Recargando cliente desde API después de actualizar...');
-                _clientProvider.getClient(widget.client!.id).then((updatedClient) {
+                debugPrint(
+                  '🔄 Recargando cliente desde API después de actualizar...',
+                );
+                _clientProvider.getClient(widget.client!.id).then((
+                  updatedClient,
+                ) {
                   if (mounted && updatedClient != null) {
                     setState(() {
                       // Actualizar la URL de foto con la nueva
                       if (updatedClient.fotoPerfil != null) {
                         _updatedPhotoUrl = updatedClient.fotoPerfil;
-                        debugPrint('✅ Foto de perfil actualizada: $_updatedPhotoUrl');
+                        debugPrint(
+                          '✅ Foto de perfil actualizada: $_updatedPhotoUrl',
+                        );
                       }
                     });
                   }
@@ -1469,4 +1412,3 @@ class _ClientFormScreenState extends State<ClientFormScreen> {
     super.dispose();
   }
 }
-

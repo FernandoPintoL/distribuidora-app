@@ -40,40 +40,31 @@ class ClienteAvatarWidget extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                clienteNombre ?? 'Cliente',
-                style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600),
+                clienteNombre?.toUpperCase() ?? 'Cliente',
+                style: TextStyle(fontWeight: FontWeight.w600),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
               ),
-            // Localidad
-            if (clienteLocalidad != null && clienteLocalidad!.isNotEmpty) ...[
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(Icons.location_on, size: 10, color: Colors.red),
-                  const SizedBox(width: 2),
-                  Expanded(
-                    child: Text(
-                      clienteLocalidad!,
-                      style: TextStyle(fontSize: 9, fontWeight: FontWeight.w500),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                ],
-              ),
+              // Localidad
+              if (clienteLocalidad != null && clienteLocalidad!.isNotEmpty) ...[
+                Text(
+                  "🛖${clienteLocalidad!}",
+                  style: TextStyle(fontWeight: FontWeight.w500),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+              if (clienteObservaciones != null &&
+                  clienteObservaciones!.isNotEmpty) ...[
+                Text(
+                  "📍 ${clienteObservaciones!}",
+                  style: TextStyle(fontWeight: FontWeight.w500),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
             ],
-            if (clienteObservaciones != null &&
-                clienteObservaciones!.isNotEmpty) ...[
-              Text(
-                "📍 ${clienteObservaciones!}",
-                style: TextStyle(fontWeight: FontWeight.w500),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ],
-          ],
-        ),
+          ),
         ),
       ],
     );

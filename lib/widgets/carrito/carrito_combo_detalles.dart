@@ -5,7 +5,7 @@ import 'combo_item_list.dart';
 
 class CarritoComboDetalles extends StatelessWidget {
   final CarritoItem item;
-  final Map<int, Product>? productosMap;
+  final Map<int, Producto>? productosMap;
 
   const CarritoComboDetalles({
     super.key,

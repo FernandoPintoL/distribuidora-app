@@ -4,7 +4,6 @@ import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import '../../models/models.dart';
 import '../../providers/providers.dart';
-import '../../config/app_gradients.dart';
 import '../../extensions/theme_extension.dart';
 import '../../utils/date_picker_utils.dart';
 
@@ -13,10 +12,12 @@ class CuentasPorCobrarListScreen extends StatefulWidget {
   const CuentasPorCobrarListScreen({super.key});
 
   @override
-  State<CuentasPorCobrarListScreen> createState() => _CuentasPorCobrarListScreenState();
+  State<CuentasPorCobrarListScreen> createState() =>
+      _CuentasPorCobrarListScreenState();
 }
 
-class _CuentasPorCobrarListScreenState extends State<CuentasPorCobrarListScreen> {
+class _CuentasPorCobrarListScreenState
+    extends State<CuentasPorCobrarListScreen> {
   late CuentasPorCobrarProvider _provider;
   late TextEditingController _searchController;
   final ScrollController _scrollController = ScrollController();
@@ -44,6 +45,31 @@ class _CuentasPorCobrarListScreenState extends State<CuentasPorCobrarListScreen>
     if (_scrollController.position.pixels >=
         _scrollController.position.maxScrollExtent - 500) {
       _provider.loadMoreCuentas();
+    }
+  }
+
+  Color _parseHexColor(String? hexColor) {
+    if (hexColor == null) return Colors.transparent;
+    try {
+      final hex = hexColor.replaceFirst('#', '');
+      return Color(int.parse('FF$hex', radix: 16));
+    } catch (e) {
+      return Colors.transparent;
+    }
+  }
+
+  Color _getColorForCxCEstado(String estado) {
+    switch (estado.toUpperCase()) {
+      case 'PENDIENTE':
+        return Colors.orange;
+      case 'ANULADO':
+        return Colors.red;
+      case 'PARCIAL':
+        return Colors.blue;
+      case 'PAGADO':
+        return Colors.green;
+      default:
+        return Colors.grey;
     }
   }
 
@@ -108,9 +134,7 @@ class _CuentasPorCobrarListScreenState extends State<CuentasPorCobrarListScreen>
 
                 // Lista de cuentas o estado vacío
                 if (provider.cuentas.isEmpty)
-                  SliverFillRemaining(
-                    child: _buildEmptyState(),
-                  )
+                  SliverFillRemaining(child: _buildEmptyState())
                 else
                   _buildCuentasListSliver(provider),
 
@@ -133,7 +157,6 @@ class _CuentasPorCobrarListScreenState extends State<CuentasPorCobrarListScreen>
   Widget _buildSearchBar(CuentasPorCobrarProvider provider) {
     return Container(
       padding: const EdgeInsets.all(16),
-      color: context.colorScheme.surface,
       child: TextField(
         controller: _searchController,
         onChanged: (value) => setState(() {}),
@@ -153,9 +176,7 @@ class _CuentasPorCobrarListScreenState extends State<CuentasPorCobrarListScreen>
                   },
                 )
               : null,
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
           contentPadding: const EdgeInsets.symmetric(
             horizontal: 16,
             vertical: 12,
@@ -168,7 +189,6 @@ class _CuentasPorCobrarListScreenState extends State<CuentasPorCobrarListScreen>
   Widget _buildStatsBar(CuentasPorCobrarProvider provider) {
     return Container(
       padding: const EdgeInsets.all(12),
-      color: context.colorScheme.surface,
       child: SingleChildScrollView(
         scrollDirection: Axis.horizontal,
         child: Row(
@@ -197,7 +217,12 @@ class _CuentasPorCobrarListScreenState extends State<CuentasPorCobrarListScreen>
     );
   }
 
-  Widget _buildStatItem(String label, String value, IconData icon, Color color) {
+  Widget _buildStatItem(
+    String label,
+    String value,
+    IconData icon,
+    Color color,
+  ) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 8),
       child: Container(
@@ -213,19 +238,9 @@ class _CuentasPorCobrarListScreenState extends State<CuentasPorCobrarListScreen>
             const SizedBox(height: 4),
             Text(
               value,
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: 14,
-                color: color,
-              ),
+              style: TextStyle(fontWeight: FontWeight.bold, color: color),
             ),
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: 11,
-                color: color.withOpacity(0.7),
-              ),
-            ),
+            Text(label, style: TextStyle(color: color)),
           ],
         ),
       ),
@@ -234,13 +249,10 @@ class _CuentasPorCobrarListScreenState extends State<CuentasPorCobrarListScreen>
 
   Widget _buildCuentasListSliver(CuentasPorCobrarProvider provider) {
     return SliverList(
-      delegate: SliverChildBuilderDelegate(
-        (context, index) {
-          final cuenta = provider.cuentas[index];
-          return _buildCuentaCard(cuenta);
-        },
-        childCount: provider.cuentas.length,
-      ),
+      delegate: SliverChildBuilderDelegate((context, index) {
+        final cuenta = provider.cuentas[index];
+        return _buildCuentaCard(cuenta);
+      }, childCount: provider.cuentas.length),
     );
   }
 
@@ -276,32 +288,60 @@ class _CuentasPorCobrarListScreenState extends State<CuentasPorCobrarListScreen>
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          cuenta.referenciaDocumento ?? 'Sin referencia',
-                          style: const TextStyle(
+                          "Folio CxC: ${cuenta.id}",
+                          style: TextStyle(
                             fontWeight: FontWeight.bold,
                             fontSize: 16,
+                            color: _getColorForCxCEstado(cuenta.estado),
                           ),
                         ),
+                        if (cuenta.referenciaDocumento != null)
+                          Text(
+                            cuenta.referenciaDocumento ?? 'Sin referencia',
+                            style: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16,
+                            ),
+                          ),
                         if (cuenta.venta != null)
                           Text(
-                            'Venta #${cuenta.venta!.numero}',
+                            'Venta Folio #${cuenta.venta!.id}',
                             style: TextStyle(
-                              fontSize: 12,
-                              color: colorScheme.onSurfaceVariant,
+                              color: _getColorForCxCEstado(cuenta.estado),
                             ),
                           ),
                       ],
                     ),
                   ),
-                  Tooltip(
-                    message: 'Monto original',
-                    child: Text(
-                      'Bs. ${montoOriginal.toStringAsFixed(2)}',
-                      style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 15,
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Tooltip(
+                        message: 'Monto original',
+                        child: Text(
+                          'Bs. ${montoOriginal.toStringAsFixed(2)}',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 18,
+                            color: _getColorForCxCEstado(cuenta.estado),
+                          ),
+                        ),
                       ),
-                    ),
+                      // Fecha de Creación
+                      if (cuenta.createdAt != null)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 4),
+                          child: Text(
+                            'Creado: ${DateFormat('dd/MM/yyyy HH:mm').format(cuenta.createdAt!)}',
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: context.colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                        ),
+
+                      _buildEstadoBadge(cuenta),
+                    ],
                   ),
                 ],
               ),
@@ -311,82 +351,81 @@ class _CuentasPorCobrarListScreenState extends State<CuentasPorCobrarListScreen>
               if (cuenta.cliente != null)
                 Text(
                   cuenta.cliente!.nombre,
-                  style: const TextStyle(fontSize: 14),
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w600,
+                    color: _getColorForCxCEstado(cuenta.estado),
+                  ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
 
               const SizedBox(height: 8),
 
-              // Montos y Estado
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Pagado: Bs. ${montoPagado.toStringAsFixed(2)}',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.green,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                      Text(
-                        'Saldo: Bs. ${saldo.toStringAsFixed(2)}',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: saldo > 0 ? Colors.orange : Colors.green,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ],
-                  ),
-                  _buildEstadoBadge(cuenta),
-                ],
-              ),
-
-              const SizedBox(height: 8),
-
-              // Barra de progreso
-              ClipRRect(
-                borderRadius: BorderRadius.circular(4),
-                child: LinearProgressIndicator(
-                  value: porcentaje / 100,
-                  minHeight: 6,
-                  backgroundColor: Colors.grey.withOpacity(0.2),
-                  valueColor: AlwaysStoppedAnimation(
-                    porcentaje >= 100 ? Colors.green : Colors.orange,
-                  ),
-                ),
-              ),
-
-              const SizedBox(height: 8),
-
-              // Vencimiento
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  if (cuenta.fechaVencimiento != null)
+              if (cuenta.estado.toUpperCase() != 'ANULADO') ...[
+                // Montos y Estado
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
                     Text(
-                      'Vence: ${DateFormat('dd/MMM').format(cuenta.fechaVencimiento!)}',
+                      'Pagado: Bs. ${montoPagado.toStringAsFixed(2)}',
                       style: TextStyle(
-                        fontSize: 12,
-                        color: cuenta.estaVencida ? Colors.red : colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                  if (cuenta.diasVencido != null && cuenta.diasVencido! > 0)
-                    Text(
-                      'Vencida hace ${cuenta.diasVencido} días',
-                      style: const TextStyle(
-                        fontSize: 12,
-                        color: Colors.red,
+                        color: Colors.green,
                         fontWeight: FontWeight.w500,
                       ),
                     ),
-                ],
-              ),
+                    Text(
+                      'Saldo: Bs. ${saldo.toStringAsFixed(2)}',
+                      style: TextStyle(
+                        color: saldo > 0 ? Colors.orange : Colors.green,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+
+                const SizedBox(height: 8),
+
+                // Barra de progreso
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(4),
+                  child: LinearProgressIndicator(
+                    value: porcentaje / 100,
+                    minHeight: 6,
+                    backgroundColor: Colors.grey.withOpacity(0.2),
+                    valueColor: AlwaysStoppedAnimation(
+                      porcentaje >= 100 ? Colors.green : Colors.orange,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 8),
+
+                // Vencimiento
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    if (cuenta.fechaVencimiento != null)
+                      Text(
+                        'Vence: ${DateFormat('dd/MMM').format(cuenta.fechaVencimiento!)}',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: cuenta.estaVencida
+                              ? Colors.red
+                              : colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    if (cuenta.diasVencido != null && cuenta.diasVencido! > 0)
+                      Text(
+                        'Vencida hace ${cuenta.diasVencido} días',
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: Colors.red,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                  ],
+                ),
+              ],
             ],
           ),
         ),
@@ -399,11 +438,16 @@ class _CuentasPorCobrarListScreenState extends State<CuentasPorCobrarListScreen>
     IconData badgeIcon;
     String badgeText;
 
-    switch (cuenta.estado) {
+    switch (cuenta.estado.toUpperCase()) {
       case 'PAGADO':
         badgeColor = Colors.green;
         badgeIcon = Icons.check_circle;
         badgeText = 'Pagado';
+        break;
+      case 'ANULADO':
+        badgeColor = Colors.red;
+        badgeIcon = Icons.cancel;
+        badgeText = 'Anulado';
         break;
       case 'PARCIAL':
         badgeColor = Colors.orange;
@@ -431,11 +475,7 @@ class _CuentasPorCobrarListScreenState extends State<CuentasPorCobrarListScreen>
           const SizedBox(width: 4),
           Text(
             badgeText,
-            style: TextStyle(
-              fontSize: 12,
-              color: badgeColor,
-              fontWeight: FontWeight.w500,
-            ),
+            style: TextStyle(color: badgeColor, fontWeight: FontWeight.w500),
           ),
         ],
       ),
@@ -449,10 +489,7 @@ class _CuentasPorCobrarListScreenState extends State<CuentasPorCobrarListScreen>
         children: [
           const Icon(Icons.error_outline, size: 48, color: Colors.red),
           const SizedBox(height: 16),
-          Text(
-            'Error al cargar',
-            style: Theme.of(context).textTheme.bodyLarge,
-          ),
+          Text('Error al cargar', style: Theme.of(context).textTheme.bodyLarge),
           const SizedBox(height: 8),
           Text(
             provider.errorMessage ?? 'Ocurrió un error inesperado',
@@ -475,7 +512,8 @@ class _CuentasPorCobrarListScreenState extends State<CuentasPorCobrarListScreen>
   Widget _buildEmptyState() {
     return Consumer<CuentasPorCobrarProvider>(
       builder: (context, provider, _) {
-        final hasFilters = _searchController.text.isNotEmpty ||
+        final hasFilters =
+            _searchController.text.isNotEmpty ||
             provider.filtroEstado != null ||
             provider.filtroFechaDesde != null ||
             provider.filtroFechaHasta != null ||
@@ -552,7 +590,10 @@ class _CuentasPorCobrarListScreenState extends State<CuentasPorCobrarListScreen>
                     SegmentedButton<String?>(
                       segments: const [
                         ButtonSegment(label: Text('Todos'), value: null),
-                        ButtonSegment(label: Text('Pendiente'), value: 'PENDIENTE'),
+                        ButtonSegment(
+                          label: Text('Pendiente'),
+                          value: 'PENDIENTE',
+                        ),
                         ButtonSegment(label: Text('Parcial'), value: 'PARCIAL'),
                         ButtonSegment(label: Text('Pagado'), value: 'PAGADO'),
                       ],
@@ -588,12 +629,15 @@ class _CuentasPorCobrarListScreenState extends State<CuentasPorCobrarListScreen>
                         Expanded(
                           child: OutlinedButton.icon(
                             onPressed: () async {
-                              final date = await DatePickerUtils.showThemedDatePicker(
-                                context: context,
-                                initialDate: _provider.filtroFechaDesde ?? DateTime.now(),
-                                firstDate: DateTime(2020),
-                                lastDate: DateTime.now(),
-                              );
+                              final date =
+                                  await DatePickerUtils.showThemedDatePicker(
+                                    context: context,
+                                    initialDate:
+                                        _provider.filtroFechaDesde ??
+                                        DateTime.now(),
+                                    firstDate: DateTime(2020),
+                                    lastDate: DateTime.now(),
+                                  );
                               if (date != null) {
                                 setState(() {
                                   _provider.aplicarFiltroFechas(
@@ -606,7 +650,9 @@ class _CuentasPorCobrarListScreenState extends State<CuentasPorCobrarListScreen>
                             icon: const Icon(Icons.calendar_today),
                             label: Text(
                               _provider.filtroFechaDesde != null
-                                  ? DateFormat('dd/MM').format(_provider.filtroFechaDesde!)
+                                  ? DateFormat(
+                                      'dd/MM',
+                                    ).format(_provider.filtroFechaDesde!)
                                   : 'Desde',
                             ),
                           ),
@@ -617,9 +663,13 @@ class _CuentasPorCobrarListScreenState extends State<CuentasPorCobrarListScreen>
                             onPressed: () async {
                               final date = await showDatePicker(
                                 context: context,
-                                initialDate: _provider.filtroFechaHasta ?? DateTime.now(),
+                                initialDate:
+                                    _provider.filtroFechaHasta ??
+                                    DateTime.now(),
                                 firstDate: DateTime(2020),
-                                lastDate: DateTime.now().add(const Duration(days: 365)),
+                                lastDate: DateTime.now().add(
+                                  const Duration(days: 365),
+                                ),
                                 builder: (context, child) {
                                   return Theme(
                                     data: Theme.of(context),
@@ -639,7 +689,9 @@ class _CuentasPorCobrarListScreenState extends State<CuentasPorCobrarListScreen>
                             icon: const Icon(Icons.calendar_today),
                             label: Text(
                               _provider.filtroFechaHasta != null
-                                  ? DateFormat('dd/MM').format(_provider.filtroFechaHasta!)
+                                  ? DateFormat(
+                                      'dd/MM',
+                                    ).format(_provider.filtroFechaHasta!)
                                   : 'Hasta',
                             ),
                           ),

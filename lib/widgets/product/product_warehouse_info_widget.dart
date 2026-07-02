@@ -4,12 +4,9 @@ import '../../utils/date_formatter.dart';
 
 /// Widget que muestra la información de almacén, lote y vencimiento
 class ProductWarehouseInfoWidget extends StatelessWidget {
-  final Product product;
+  final Producto product;
 
-  const ProductWarehouseInfoWidget({
-    super.key,
-    required this.product,
-  });
+  const ProductWarehouseInfoWidget({super.key, required this.product});
 
   @override
   Widget build(BuildContext context) {
@@ -49,10 +46,7 @@ class ProductWarehouseInfoWidget extends StatelessWidget {
         ),
         Text(
           product.stockPrincipal!.almacenNombre ?? 'Principal',
-          style: const TextStyle(
-            fontSize: 12,
-            fontWeight: FontWeight.w600,
-          ),
+          style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
         ),
       ],
     );
@@ -72,10 +66,7 @@ class ProductWarehouseInfoWidget extends StatelessWidget {
         ),
         Text(
           product.stockPrincipal!.lote ?? 'N/A',
-          style: const TextStyle(
-            fontSize: 12,
-            fontWeight: FontWeight.w600,
-          ),
+          style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
         ),
       ],
     );

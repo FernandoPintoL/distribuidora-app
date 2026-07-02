@@ -3,7 +3,7 @@ import '../../models/models.dart';
 import '../../extensions/theme_extension.dart';
 
 class ProductCardImageSection extends StatelessWidget {
-  final Product product;
+  final Producto product;
   final double imageSize;
   final int cantidadDisponible;
   final String? unidadMedida;

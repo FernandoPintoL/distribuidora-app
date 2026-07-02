@@ -41,15 +41,20 @@ class _TabVentasWidgetState extends State<TabVentasWidget> {
     );
   }
 
+  void recargar() {
+    debugPrint('🔄 Recargando Ventas...');
+    setState(() {
+      _cargarVentasResumidas();
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
 
     return RefreshIndicator(
       onRefresh: () async {
-        debugPrint('🔄 Actualizando ventas resumidas...');
         setState(() => _cargarVentasResumidas());
-        debugPrint('✅ Ventas resumidas actualizadas');
       },
       child: FutureBuilder<ApiResponse<Map<String, dynamic>>>(
         future: _futureVentasResumidas,

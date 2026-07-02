@@ -1,3 +1,4 @@
+import 'package:distribuidora/extensions/theme_extension.dart';
 import 'package:flutter/material.dart';
 import '../../../../config/app_text_styles.dart';
 import '../../../../config/app_urls.dart'; // ✅ NUEVO: Para BASE_URL_IMG
@@ -38,13 +39,15 @@ class LocalidadesCard extends StatelessWidget {
           MapLocation(
             latitude: venta.direccionCliente!.latitud!,
             longitude: venta.direccionCliente!.longitud!,
-            title: venta.cliente?.nombre ?? 'Sin nombre', // ✅ Nombre del cliente
+            title:
+                venta.cliente?.nombre ?? 'Sin nombre', // ✅ Nombre del cliente
             subtitle: venta.numero, // ✅ Número de venta
             isSelected: false,
             razonSocial: venta.cliente?.razonSocial, // ✅ Razón social
             telefono: venta.cliente?.telefono, // ✅ Teléfono del cliente
             ventaId: venta.id, // ✅ ID de venta
-            markerColor: venta.estadoLogisticoColor, // ✅ Color según estado logístico
+            markerColor:
+                venta.estadoLogisticoColor, // ✅ Color según estado logístico
             fotoPerfil: fotoPerfil, // ✅ NUEVO: Foto de perfil con URL completa
           ),
         );
@@ -109,13 +112,17 @@ class LocalidadesCard extends StatelessWidget {
       child: ExpansionTile(
         title: Row(
           children: [
-            Icon(Icons.location_on, color: Colors.amber[600], size: 20),
-            const SizedBox(width: 12),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Localidades de Entrega'),
+                  Text(
+                    'Localidades de Entrega',
+                    style: TextStyle(
+                      color: context.colorScheme.secondary,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
                   const SizedBox(height: 4),
                   Text(
                     '📍 $cantidadLocalidades localidad${cantidadLocalidades > 1 ? 'es' : ''} ${esConsolidada ? '(Entrega consolidada)' : ''}',
@@ -130,6 +137,7 @@ class LocalidadesCard extends StatelessWidget {
               onPressed: () => _abrirMapaConUbicaciones(context),
               padding: EdgeInsets.zero,
               constraints: const BoxConstraints(minHeight: 36, minWidth: 36),
+              color: context.colorScheme.secondary,
             ),
           ],
         ),
@@ -159,17 +167,19 @@ class LocalidadesCard extends StatelessWidget {
                             color: Colors.amber,
                           ),
                         ),
-                        backgroundColor: isDarkMode
-                            ? Colors.amber[900]!.withValues(alpha: 0.3)
-                            : Colors.amber[100],
                       ),
                   ],
                 ),
                 const Divider(),
                 // Mostrar resumen de localidades con cantidad de ventas
                 if (localidadesResumen.isNotEmpty) ...[
-                  Text('Resumen por localidad:'),
-                  const SizedBox(height: 8),
+                  Text(
+                    'Resumen por localidad:',
+                    style: TextStyle(
+                      color: context.colorScheme.secondary,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
                   for (var resumen in localidadesResumen)
                     Padding(
                       padding: const EdgeInsets.symmetric(vertical: 6),
@@ -182,6 +192,9 @@ class LocalidadesCard extends StatelessWidget {
                                 Text(
                                   resumen['localidad_nombre'] as String? ??
                                       'Sin nombre',
+                                  style: TextStyle(
+                                    color: context.colorScheme.secondary,
+                                  ),
                                 ),
                                 const SizedBox(height: 2),
                                 Text(

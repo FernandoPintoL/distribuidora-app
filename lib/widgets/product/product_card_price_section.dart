@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import '../../models/models.dart';
 
 class ProductCardPriceSection extends StatelessWidget {
-  final Product product;
+  final Producto product;
   final int quantity;
   final DetalleCarritoConRango? detalleConRango;
 

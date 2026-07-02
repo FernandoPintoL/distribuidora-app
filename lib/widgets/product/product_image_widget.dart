@@ -5,14 +5,10 @@ import '../../extensions/theme_extension.dart';
 /// Widget que muestra la imagen del producto con badge de categoría
 /// Adaptado para modo oscuro, con soporte para imagenes_producto
 class ProductImageWidget extends StatelessWidget {
-  final Product product;
+  final Producto product;
   final double size;
 
-  const ProductImageWidget({
-    super.key,
-    required this.product,
-    this.size = 70,
-  });
+  const ProductImageWidget({super.key, required this.product, this.size = 70});
 
   /// Obtiene la URL de la imagen principal o la primera imagen disponible
   String? _getPrimaryImageUrl() {
@@ -98,7 +94,7 @@ class ProductImageWidget extends StatelessWidget {
                     child: CircularProgressIndicator(
                       value: loadingProgress.expectedTotalBytes != null
                           ? loadingProgress.cumulativeBytesLoaded /
-                              loadingProgress.expectedTotalBytes!
+                                loadingProgress.expectedTotalBytes!
                           : null,
                       valueColor: AlwaysStoppedAnimation<Color>(
                         colorScheme.primary,
@@ -122,10 +118,7 @@ class ProductImageWidget extends StatelessWidget {
               bottom: 0,
               right: 0,
               child: Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 6,
-                  vertical: 3,
-                ),
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
                 decoration: BoxDecoration(
                   color: colorScheme.primary,
                   borderRadius: const BorderRadius.only(

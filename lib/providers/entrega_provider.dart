@@ -979,6 +979,7 @@ class EntregaProvider with ChangeNotifier {
 
   // Confirmar cargo completo (FASE 2)
   Future<bool> confirmarCargoCompleto(int entregaId) async {
+    debugPrint('🔹 [PROVIDER] confirmarCargoCompleto iniciado');
     _isLoading = true;
     _errorMessage = null;
 
@@ -987,9 +988,12 @@ class EntregaProvider with ChangeNotifier {
     });
 
     try {
+      debugPrint('🔹 [PROVIDER] Llamando servicio...');
       final response = await _entregaService.confirmarCargoCompleto(entregaId);
+      debugPrint('🔹 [PROVIDER] Respuesta recibida - success: ${response.success}, message: ${response.message}');
 
       if (response.success && response.data != null) {
+        debugPrint('🟢 [PROVIDER] Éxito - confirmando carga');
         _entregaActual = response.data;
         _actualizarEnListaEntregas(_entregaActual!);
         _errorMessage = null;
@@ -1006,7 +1010,9 @@ class EntregaProvider with ChangeNotifier {
         });
         return true;
       } else {
+        debugPrint('🔴 [PROVIDER] Error - asignando mensaje: ${response.message}');
         _errorMessage = response.message;
+        debugPrint('🔴 [PROVIDER] _errorMessage ahora es: $_errorMessage');
         WidgetsBinding.instance.addPostFrameCallback((_) {
           notifyListeners();
         });
@@ -1451,8 +1457,9 @@ class EntregaProvider with ChangeNotifier {
         });
         return true;
       } else {
-        _errorMessage = errorMessage ?? 'Error al confirmar carga';
-        onError(_errorMessage!);
+        // ✅ El error ya fue asignado en confirmarCargoCompleto()
+        debugPrint('❌ [CONFIRMAR_CARGA_LISTA] Error: $_errorMessage');
+        onError(_errorMessage ?? 'Error al confirmar carga');
         WidgetsBinding.instance.addPostFrameCallback((_) {
           notifyListeners();
         });

@@ -44,54 +44,35 @@ class ConfirmarEntregaVentaScreen extends StatefulWidget {
 
 class _ConfirmarEntregaVentaScreenState
     extends State<ConfirmarEntregaVentaScreen> {
+  // ✅ 2026-07-02: Usar modelo EntregaVentaConfirmacion como fuente única de verdad
+  late EntregaVentaConfirmacion _confirmacion;
+
   // Estados de la pantalla
   int _paso = 1; // 1: Seleccionar tipo + detalles, 2: Confirmación
 
-  // Datos capturados
-  String _tipoEntrega =
-      'COMPLETA'; // ✅ NUEVO 2026-03-05: Inicializar con COMPLETA
-  String? _tipoNovedad; // CLIENTE_CERRADO, DEVOLUCION_PARCIAL, RECHAZADO
-
-  // ✅ NUEVA 2026-03-05: Campos de novedad
-  bool _tiendaAbierta = false;
-  bool _clientePresente = false;
-  String? _motivoRechazo;
-
+  // ✅ Variables locales que no pertenecen al modelo
   final TextEditingController _observacionesController =
       TextEditingController();
   final TextEditingController _montoController = TextEditingController();
   final TextEditingController _referenciaController = TextEditingController();
-  // ✅ NUEVO 2026-03-15: Controladores para 2 inputs fijos
   final TextEditingController _montoEfectivoController =
       TextEditingController();
   final TextEditingController _montoTransferenciaController =
       TextEditingController();
-  // ✅ FIX 2026-03-05: Manejar tanto File (fotos nuevas) como String (URLs/base64 de API)
   List<dynamic> _fotosCapturadas = [];
 
   final ImagePicker _imagePicker = ImagePicker();
-  final EntregaService _entregaService =
-      EntregaService(); // ✅ NUEVO: Para obtener tipos de pago
+  final EntregaService _entregaService = EntregaService();
 
-  // ✅ NUEVO 2026-02-12: Múltiples pagos + Crédito
+  // ✅ Datos de UI que no se persisten en el modelo
   List<Map<String, dynamic>> _tiposPago = [];
   bool _cargandoTiposPago = false;
-  List<PagoEntrega> _pagos = []; // Lista de pagos múltiples
-  bool _esCredito = false; // ✅ CAMBIO: Checkbox en lugar de input de monto
-  String _tipoConfirmacion = 'COMPLETA'; // COMPLETA o CON_NOVEDAD
-  int?
-  _tipoPagoSeleccionado; // ✅ NUEVO: Mantener selección de tipo de pago entre rebuilds
+  List<PagoEntrega> _pagos = [];
+  int? _tipoPagoSeleccionado;
 
-  // ✅ NUEVA 2026-02-15: Productos rechazados en devolución parcial
-  List<tabla_widget.ProductoRechazado> _productosRechazados =
-      []; // Productos marcados como rechazados
+  List<tabla_widget.ProductoRechazado> _productosRechazados = [];
 
-  // ✅ CRITICAL FIX: Map de TextEditingControllers para mantener focus en cantidad rechazada
-  // Keyed by detalleVentaId para reutilizar el mismo controller en cada rebuild
   final Map<int, TextEditingController> _cantidadRechazadaControllers = {};
-
-  // ✅ FIX 2026-02-15: Map de controllers para monto de pagos (evitar focus loss en modal)
-  // Keyed by 'pago_{idx}' para reutilizar el mismo controller en cada rebuild
   final Map<String, TextEditingController> _pagoMontoControllers = {};
 
   final List<Map<String, String>> _tiposNovedad = [
@@ -121,39 +102,27 @@ class _ConfirmarEntregaVentaScreenState
     _montoEfectivoController.addListener(() => setState(() {}));
     _montoTransferenciaController.addListener(() => setState(() {}));
 
-    // ✅ REFACTORIZADO 2026-06-14: Usar datos del objeto confirmacionExistente
+    // ✅ 2026-07-02: Inicializar confirmación desde modelo existente o crear nueva
     if (widget.confirmacionExistente != null) {
-      final confirmacion = widget.confirmacionExistente!;
-
-      _tipoEntrega = confirmacion.tipoEntrega;
-
-      // ✅ NUEVO 2026-06-14: Usar tipoNovedad si existe, sino usar tipoConfirmacion
-      _tipoNovedad = confirmacion.tipoNovedad ?? (confirmacion.tipoConfirmacion == 'COMPLETA' ? null : confirmacion.tipoConfirmacion);
-      _tipoConfirmacion = confirmacion.tipoConfirmacion;
+      _confirmacion = widget.confirmacionExistente!;
 
       // ✅ Cargar fotos existentes
-      if (confirmacion.fotos != null && confirmacion.fotos!.isNotEmpty) {
-        _fotosCapturadas = List<dynamic>.from(confirmacion.fotos!);
+      if (_confirmacion.fotos != null && _confirmacion.fotos!.isNotEmpty) {
+        _fotosCapturadas = List<dynamic>.from(_confirmacion.fotos!);
         debugPrint(
           '📸 [FOTOS CARGADAS] ${_fotosCapturadas.length} fotos existentes',
         );
       }
 
       // ✅ Cargar observaciones existentes
-      if (confirmacion.observacionesLogistica != null &&
-          confirmacion.observacionesLogistica!.isNotEmpty) {
-        _observacionesController.text = confirmacion.observacionesLogistica!;
+      if (_confirmacion.observacionesLogistica != null &&
+          _confirmacion.observacionesLogistica!.isNotEmpty) {
+        _observacionesController.text = _confirmacion.observacionesLogistica!;
       }
 
-      // ✅ Cargar campos de novedad existentes
-      _tiendaAbierta = confirmacion.tiendaAbierta ?? false;
-      _clientePresente = confirmacion.clientePresente ?? false;
-      _motivoRechazo = confirmacion.motivoRechazo;
-
-      // ✅ NUEVO 2026-06-14: Cargar pagos existentes en los controllers
-      if (confirmacion.desglosePageos.isNotEmpty) {
-        for (final desglose in confirmacion.desglosePageos) {
-          // Agregar a la lista de pagos existentes
+      // ✅ Cargar pagos existentes en los controllers
+      if (_confirmacion.desglosePageos.isNotEmpty) {
+        for (final desglose in _confirmacion.desglosePageos) {
           _pagos.add(
             PagoEntrega(
               tipoPagoId: desglose.tipoPagoId,
@@ -162,7 +131,6 @@ class _ConfirmarEntregaVentaScreenState
             ),
           );
 
-          // Cargar en los controllers si es EFECTIVO o TRANSFERENCIA
           if (desglose.tipoPagoNombre.toUpperCase().contains('EFECTIVO')) {
             _montoEfectivoController.text = desglose.monto.toString();
           } else if (desglose.tipoPagoNombre.toUpperCase().contains(
@@ -173,19 +141,24 @@ class _ConfirmarEntregaVentaScreenState
           }
         }
         debugPrint(
-          '💳 [PAGOS CARGADOS] ${confirmacion.desglosePageos.length} desgloses de pago cargados',
+          '💳 [PAGOS CARGADOS] ${_confirmacion.desglosePageos.length} desgloses de pago cargados',
         );
       }
 
       debugPrint(
-        '📝 [EDITAR CONFIRMACIÓN] ID: ${confirmacion.id} | tipo=$_tipoEntrega | novedad=$_tipoNovedad | confirmacion=$_tipoConfirmacion',
+        '📝 [EDITAR CONFIRMACIÓN] ID: ${_confirmacion.id} | tipo=${_confirmacion.tipoEntrega} | novedad=${_confirmacion.tipoNovedad} | confirmacion=${_confirmacion.tipoConfirmacion}',
       );
     } else {
+      // ✅ Crear nueva confirmación inicial
+      _confirmacion = EntregaVentaConfirmacion.inicial(
+        entregaId: widget.entrega.id,
+        ventaId: widget.venta.id,
+      );
+
       // ✅ Detectar si es crédito desde venta.estadoPago
       if (widget.venta.estadoPago == 'CREDITO') {
-        _esCredito = true;
         debugPrint(
-          '💳 [VENTA CRÉDITO] Venta #${widget.venta.numero} es a crédito - no mostrar sección pagos',
+          '💳 [VENTA CRÉDITO] Venta #${widget.venta.numero} es a crédito',
         );
       }
     }
@@ -412,14 +385,14 @@ class _ConfirmarEntregaVentaScreenState
     });
   }
 
-  /// Construir observaciones finales
+  /// ✅ 2026-07-02: Construir observaciones usando el modelo
   String _construirObservacionesFinales() {
-    if (_tipoEntrega == 'COMPLETA') {
+    if (_confirmacion.tipoEntrega == 'COMPLETA') {
       return 'Entrega completa';
     } else {
       final observaciones = _observacionesController.text.trim();
       final tipoLabel = _tiposNovedad.firstWhere(
-        (t) => t['value'] == _tipoNovedad,
+        (t) => t['value'] == _confirmacion.tipoNovedad,
       )['label']!;
 
       return observaciones.isEmpty ? tipoLabel : '$tipoLabel - $observaciones';
@@ -469,10 +442,9 @@ class _ConfirmarEntregaVentaScreenState
     debugPrint('✅ Pagos construidos automáticamente: ${_pagos.length} pagos');
   }
 
-  /// ✅ MODIFICADO 2026-06-14: Validar incluyendo inputs de Efectivo/QR
+  /// ✅ 2026-07-02: Validar usando el modelo EntregaVentaConfirmacion
   bool _validarDatos() {
-    if (_tipoEntrega == 'COMPLETA') {
-      // Para entrega completa: requiere pagos O crédito O valores en inputs
+    if (_confirmacion.tipoEntrega == 'COMPLETA') {
       final esCredito = _esVentaCredito();
       double montoEfectivo =
           double.tryParse(_montoEfectivoController.text) ?? 0;
@@ -483,19 +455,17 @@ class _ConfirmarEntregaVentaScreenState
       if (!esCredito && _pagos.isEmpty && totalEnInputs == 0) {
         return false;
       }
-    } else if (_tipoEntrega == 'CON_NOVEDAD') {
-      // Para novedad: requiere tipo de novedad
-      if (_tipoNovedad == null) return false;
-      // Si es cliente cerrado: requiere fotos
-      if (_tipoNovedad == 'CLIENTE_CERRADO' && _fotosCapturadas.isEmpty)
-        return false;
+    } else if (_confirmacion.tipoEntrega == 'CON_NOVEDAD') {
+      if (_confirmacion.tipoNovedad == null) return false;
+      if (_confirmacion.tipoNovedad == 'CLIENTE_CERRADO' &&
+          _fotosCapturadas.isEmpty) return false;
     }
     return true;
   }
 
-  /// ✅ MODIFICADO 2026-06-14: Obtener razón del error incluyendo inputs
+  /// ✅ 2026-07-02: Obtener razón del error usando el modelo
   String _obtenerRazonError() {
-    if (_tipoEntrega == 'COMPLETA') {
+    if (_confirmacion.tipoEntrega == 'COMPLETA') {
       final esCredito = _esVentaCredito();
       double montoEfectivo =
           double.tryParse(_montoEfectivoController.text) ?? 0;
@@ -506,11 +476,12 @@ class _ConfirmarEntregaVentaScreenState
       if (!esCredito && _pagos.isEmpty && totalEnInputs == 0) {
         return 'Escribe un monto en Efectivo o QR, o marca como crédito';
       }
-    } else if (_tipoEntrega == 'CON_NOVEDAD') {
-      if (_tipoNovedad == null) {
+    } else if (_confirmacion.tipoEntrega == 'CON_NOVEDAD') {
+      if (_confirmacion.tipoNovedad == null) {
         return 'Selecciona un tipo de novedad';
       }
-      if (_tipoNovedad == 'CLIENTE_CERRADO' && _fotosCapturadas.isEmpty) {
+      if (_confirmacion.tipoNovedad == 'CLIENTE_CERRADO' &&
+          _fotosCapturadas.isEmpty) {
         return 'Captura al menos una foto';
       }
     }
@@ -523,7 +494,8 @@ class _ConfirmarEntregaVentaScreenState
     _construirPagosAutomaticamente();
 
     // ✅ NUEVO: Validar que Cliente Cerrado/No Disponible requiere fotos
-    if (_tipoNovedad == 'CLIENTE_CERRADO' && _fotosCapturadas.isEmpty) {
+    if (_confirmacion.tipoNovedad == 'CLIENTE_CERRADO' &&
+        _fotosCapturadas.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text(
@@ -571,9 +543,9 @@ class _ConfirmarEntregaVentaScreenState
 
       // ✅ CAMBIO 2026-02-13: Solo requiere pago si es COMPLETA
       // Si es NOVEDAD, NO se requiere pago (ya se registró la novedad)
-      if (_tipoEntrega == 'COMPLETA' &&
+      if (_confirmacion.tipoEntrega == 'COMPLETA' &&
           totalDineroRecibido == 0 &&
-          !_esCredito) {
+          !_esVentaCredito()) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text(
@@ -587,59 +559,65 @@ class _ConfirmarEntregaVentaScreenState
       }
 
       debugPrint('📤 Confirmando entrega:');
-      debugPrint('   - Tipo: $_tipoEntrega');
-      debugPrint('   - Tipo Novedad: $_tipoNovedad');
+      debugPrint('   - Tipo: ${_confirmacion.tipoEntrega}');
+      debugPrint('   - Tipo Novedad: ${_confirmacion.tipoNovedad}');
       debugPrint('   - Observaciones: $observacionesFinales');
       debugPrint('   - Fotos: ${_fotosCapturadas.length}');
-      debugPrint('   - Pagos múltiples: ${_pagos.length}'); // ✅ NUEVO
-      debugPrint('   - Total dinero recibido: $totalDineroRecibido'); // ✅ NUEVO
-      debugPrint('   - Es Crédito: $_esCredito'); // ✅ CAMBIO
+      debugPrint('   - Pagos múltiples: ${_pagos.length}');
+      debugPrint('   - Total dinero recibido: $totalDineroRecibido');
+      debugPrint('   - Es Crédito: ${_esVentaCredito()}');
 
-      // ✅ NUEVA 2026-02-12: Construir array de pagos en formato backend
-      final pagosArray = _pagos.map((pago) => pago.toJson()).toList();
-
-      // ✅ NUEVA 2026-02-15: Construir array de productos rechazados
-      final productosRechazadosArray = _productosRechazados
-          .map(
-            (prod) => {
-              'detalleVentaId': prod.detalleVentaId,
-              'cantidadRechazada': prod.cantidadRechazada,
-            },
-          )
+      // ✅ 2026-07-02: REFACTORIZADO - Construir modelo completo
+      // Construir lista de desglose de pagos desde _pagos
+      final desglosePageos = _pagos
+          .asMap()
+          .entries
+          .map((entry) {
+            final pago = entry.value;
+            final tipoPago = _tiposPago.firstWhere(
+              (t) => t['id'] == pago.tipoPagoId,
+              orElse: () => {'nombre': 'Desconocido'},
+            );
+            return DesglosePago(
+              tipoPagoId: pago.tipoPagoId,
+              tipoPagoNombre: tipoPago['nombre'] ?? 'Desconocido',
+              monto: pago.monto,
+              referencia: pago.referencia,
+            );
+          })
           .toList();
 
-      // ✅ DEBUG: Ver qué se envía al backend
-      debugPrint('📦 PRODUCTOS RECHAZADOS AL BACKEND:');
-      debugPrint('   - Total: ${productosRechazadosArray.length}');
-      if (productosRechazadosArray.isNotEmpty) {
-        for (var prod in productosRechazadosArray) {
-          debugPrint(
-            '   - ${prod['producto_nombre']}: ${prod['cantidad_rechazada']}/${prod['cantidad_original']}',
-          );
-        }
-      } else {
-        debugPrint(
-          '   ⚠️ ARRAY VACÍO - No hay productos marcados como rechazados',
-        );
-      }
+      // Construir lista de productos devueltos
+      final productos_devueltos = _productosRechazados
+          .map((prod) => {
+                'detalleVentaId': prod.detalleVentaId,
+                'cantidadRechazada': prod.cantidadRechazada,
+              })
+          .toList();
 
-      // ✅ NUEVA 2026-03-05: Limpiar campos según tipo de confirmación
-      String? tipoNovedadFinal = _tipoNovedad;
-      bool? tiendaAbiertaFinal = _tiendaAbierta;
-      bool? clientePresenteFinal = _clientePresente;
-      String? motivoRechazoFinal = _motivoRechazo;
+      // Actualizar el modelo con TODOS los datos
+      _confirmacion = _confirmacion.copyWith(
+        fotos: _fotosCapturadas.whereType<String>().toList(),
+        observacionesLogistica: observacionesFinales,
+        tiendaAbierta: _confirmacion.tiendaAbierta,
+        clientePresente: _confirmacion.clientePresente,
+        motivoRechazo: _confirmacion.motivoRechazo,
+        desglosePageos: desglosePageos,
+        totalDineroRecibido: totalDineroRecibido,
+        montoAceptado: _confirmacion.tipoEntrega == 'COMPLETA'
+            ? widget.venta.total
+            : (widget.venta.total - _productosRechazados.fold(0.0, (sum, prod) => sum + (prod.cantidadRechazada * prod.precioUnitario))),
+        productosDevueltos: productos_devueltos,
+      );
 
-      // Si es COMPLETA, no enviar campos de novedad
-      if (_tipoConfirmacion == 'COMPLETA') {
-        tipoNovedadFinal = null;
-        tiendaAbiertaFinal = null;
-        clientePresenteFinal = null;
-        motivoRechazoFinal = null;
-        debugPrint('✅ COMPLETA: Limpiando campos de novedad');
-      } else {
-        debugPrint('✅ CON_NOVEDAD: Enviando campos de novedad');
-      }
+      debugPrint('📦 CONFIRMACION FINAL:');
+      debugPrint('   - tipoConfirmacion: ${_confirmacion.tipoConfirmacion}');
+      debugPrint('   - tipoNovedad: ${_confirmacion.tipoNovedad}');
+      debugPrint('   - tipoEntrega: ${_confirmacion.tipoEntrega}');
+      debugPrint('   - desglosePageos: ${_confirmacion.desglosePageos.length}');
+      debugPrint('   - productosDevueltos: ${_confirmacion.productosDevueltos}');
 
+      // ✅ 2026-07-02: Enviar usando toJson() del modelo
       final success = await widget.provider.confirmarVentaEntregada(
         widget.entrega.id,
         widget.venta.id,
@@ -651,17 +629,22 @@ class _ConfirmarEntregaVentaScreenState
         },
         fotosBase64: fotosBase64,
         observacionesLogistica: observacionesFinales,
-        // ✅ NUEVA 2026-02-12: Enviar múltiples pagos en lugar de uno solo
-        pagos: pagosArray, // Array de {tipo_pago_id, monto, referencia}
-        esCredito: _esCredito, // ✅ CAMBIO: Enviar si es a crédito
-        tipoConfirmacion: _tipoConfirmacion,
-        // ✅ NUEVA 2026-02-15: Enviar productos rechazados para devolución parcial
-        productosRechazados: productosRechazadosArray,
-        // ✅ NUEVA 2026-03-05: Enviar campos de novedad SOLO si es CON_NOVEDAD
-        tipoNovedad: tipoNovedadFinal,
-        tiendaAbierta: tiendaAbiertaFinal,
-        clientePresente: clientePresenteFinal,
-        motivoRechazo: motivoRechazoFinal,
+        pagos: _confirmacion.desglosePageos.map((d) => d.toJson()).toList(),
+        esCredito: _esVentaCredito(),
+        tipoConfirmacion: _confirmacion.tipoConfirmacion,
+        productosRechazados: productos_devueltos,
+        tipoNovedad: _confirmacion.tipoConfirmacion == 'COMPLETA'
+            ? null
+            : _confirmacion.tipoNovedad,
+        tiendaAbierta: _confirmacion.tipoConfirmacion == 'COMPLETA'
+            ? null
+            : _confirmacion.tiendaAbierta,
+        clientePresente: _confirmacion.tipoConfirmacion == 'COMPLETA'
+            ? null
+            : _confirmacion.clientePresente,
+        motivoRechazo: _confirmacion.tipoConfirmacion == 'COMPLETA'
+            ? null
+            : _confirmacion.motivoRechazo,
       );
 
       if (mounted) {
@@ -717,7 +700,7 @@ class _ConfirmarEntregaVentaScreenState
   Future<void> _guardarCambiosTipoEntrega() async {
     try {
       // Validar que haya seleccionado un tipo
-      if (_tipoEntrega == null) {
+      if (_confirmacion.tipoEntrega == null) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('⚠️ Debes seleccionar un tipo de entrega'),
@@ -728,7 +711,8 @@ class _ConfirmarEntregaVentaScreenState
       }
 
       // Si es CON_NOVEDAD, validar que haya seleccionado tipo de novedad
-      if (_tipoEntrega == 'CON_NOVEDAD' && _tipoNovedad == null) {
+      if (_confirmacion.tipoEntrega == 'CON_NOVEDAD' &&
+          _confirmacion.tipoNovedad == null) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('⚠️ Debes seleccionar un tipo de novedad'),
@@ -749,12 +733,12 @@ class _ConfirmarEntregaVentaScreenState
       }
 
       debugPrint('📝 [EDITAR ENTREGA] Guardando cambios:');
-      debugPrint('   - Tipo: $_tipoEntrega');
-      debugPrint('   - Novedad: $_tipoNovedad');
+      debugPrint('   - Tipo: ${_confirmacion.tipoEntrega}');
+      debugPrint('   - Novedad: ${_confirmacion.tipoNovedad}');
       debugPrint('   - Fotos: ${_fotosCapturadas.length}');
       debugPrint('   - Observaciones: ${_observacionesController.text}');
 
-      // ✅ FIX 2026-03-05: Convertir SOLO fotos nuevas a base64
+      // ✅ 2026-07-02: Convertir fotos nuevas a base64
       List<String>? fotosBase64;
       final fotosNuevas = _fotosCapturadas.whereType<File>().toList();
 
@@ -769,53 +753,75 @@ class _ConfirmarEntregaVentaScreenState
 
       final observacionesFinales = _construirObservacionesFinales();
 
-      // ✅ FIX 2026-03-05: En modo edición, solo enviar pagos si hay nuevos
-      List<Map<String, dynamic>>? pagosArray;
-      if (_pagos.isNotEmpty) {
-        pagosArray = _pagos.map((pago) => pago.toJson()).toList();
-      }
-
-      // ✅ NUEVA 2026-03-05: Construir array de productos rechazados (FALTABA en edición)
-      final productosRechazadosArray = _productosRechazados
-          .map(
-            (prod) => {
-              'detalleVentaId': prod.detalleVentaId,
-              'cantidadRechazada': prod.cantidadRechazada,
-            },
-          )
+      // ✅ 2026-07-02: Construir desglose de pagos desde _pagos
+      final desglosePageos = _pagos
+          .map((pago) {
+            final tipoPago = _tiposPago.firstWhere(
+              (t) => t['id'] == pago.tipoPagoId,
+              orElse: () => {'nombre': 'Desconocido'},
+            );
+            return DesglosePago(
+              tipoPagoId: pago.tipoPagoId,
+              tipoPagoNombre: tipoPago['nombre'] ?? 'Desconocido',
+              monto: pago.monto,
+              referencia: pago.referencia,
+            );
+          })
           .toList();
 
-      debugPrint('📦 PRODUCTOS RECHAZADOS EN EDICIÓN:');
-      debugPrint('   - Total: ${productosRechazadosArray.length}');
-      if (productosRechazadosArray.isNotEmpty) {
-        for (var prod in productosRechazadosArray) {
-          debugPrint(
-            '   - ${prod['producto_nombre']}: ${prod['cantidad_rechazada']}/${prod['cantidad_original']}',
-          );
-        }
-      }
+      // ✅ Construir lista de productos devueltos
+      final productos_devueltos = _productosRechazados
+          .map((prod) => {
+                'detalleVentaId': prod.detalleVentaId,
+                'cantidadRechazada': prod.cantidadRechazada,
+              })
+          .toList();
 
-      // ✅ NUEVA 2026-03-05: Calcular tipo_confirmacion correctamente
-      // tipo_confirmacion debe ser: COMPLETA | CLIENTE_CERRADO | DEVOLUCION_PARCIAL | RECHAZADO
-      final tipoConfirmacionFinal = _tipoEntrega == 'COMPLETA'
-          ? 'COMPLETA'
-          : _tipoNovedad; // ✅ FIX: Enviar el tipo específico de novedad, no 'CON_NOVEDAD'
+      // ✅ 2026-07-02: Actualizar modelo con todos los datos en edición
+      _confirmacion = _confirmacion.copyWith(
+        fotos: _fotosCapturadas.whereType<String>().toList(),
+        observacionesLogistica: observacionesFinales,
+        desglosePageos: desglosePageos,
+        productosDevueltos: productos_devueltos,
+        tipoEntrega: _confirmacion.tipoEntrega,
+        tipoNovedad: _confirmacion.tipoConfirmacion == 'COMPLETA'
+            ? null
+            : _confirmacion.tipoNovedad,
+        tiendaAbierta: _confirmacion.tipoConfirmacion == 'COMPLETA'
+            ? null
+            : _confirmacion.tiendaAbierta,
+        clientePresente: _confirmacion.tipoConfirmacion == 'COMPLETA'
+            ? null
+            : _confirmacion.clientePresente,
+        motivoRechazo: _confirmacion.tipoConfirmacion == 'COMPLETA'
+            ? null
+            : _confirmacion.motivoRechazo,
+      );
 
-      String? tipoNovedadFinal = _tipoNovedad;
-      bool? tiendaAbiertaFinal = _tiendaAbierta;
-      bool? clientePresenteFinal = _clientePresente;
-      String? motivoRechazoFinal = _motivoRechazo;
+      debugPrint('📦 CONFIRMACION ACTUALIZADA EN EDICIÓN:');
+      debugPrint('   - tipoConfirmacion: ${_confirmacion.tipoConfirmacion}');
+      debugPrint('   - desglosePageos: ${_confirmacion.desglosePageos.length}');
+      debugPrint('   - productosDevueltos: ${_confirmacion.productosDevueltos}');
 
-      // Si es COMPLETA, no enviar campos de novedad
-      if (tipoConfirmacionFinal == 'COMPLETA') {
-        tipoNovedadFinal = null;
-        tiendaAbiertaFinal = null;
-        clientePresenteFinal = null;
-        motivoRechazoFinal = null;
-        debugPrint('✅ EDICIÓN COMPLETA: Limpiando campos de novedad');
-      } else {
-        debugPrint('✅ EDICIÓN CON_NOVEDAD: Enviando campos de novedad');
-      }
+      // ✅ 2026-07-02: Calcular valores finales para envío
+      final tipoConfirmacionFinal = _confirmacion.tipoConfirmacion;
+      final tipoNovedadFinal = _confirmacion.tipoConfirmacion == 'COMPLETA'
+          ? null
+          : _confirmacion.tipoNovedad;
+      final tiendaAbiertaFinal = _confirmacion.tipoConfirmacion == 'COMPLETA'
+          ? null
+          : _confirmacion.tiendaAbierta;
+      final clientePresenteFinal = _confirmacion.tipoConfirmacion == 'COMPLETA'
+          ? null
+          : _confirmacion.clientePresente;
+      final motivoRechazoFinal = _confirmacion.tipoConfirmacion == 'COMPLETA'
+          ? null
+          : _confirmacion.motivoRechazo;
+      final pagosArray = _confirmacion.desglosePageos
+          .map((d) => d.toJson())
+          .toList();
+      final productosRechazadosArray =
+          (_confirmacion.productosDevueltos ?? []).cast<Map<String, dynamic>>();
 
       // ✅ 2026-06-14: Detectar si es edición o creación nueva
       bool success;
@@ -852,7 +858,7 @@ class _ConfirmarEntregaVentaScreenState
           fotosBase64: fotosBase64,
           observacionesLogistica: observacionesFinales,
           pagos: pagosArray,
-          esCredito: _esCredito,
+          esCredito: _esVentaCredito(),
           tipoConfirmacion: tipoConfirmacionFinal,
           productosRechazados: productosRechazadosArray,
           tipoNovedad: tipoNovedadFinal,
@@ -870,11 +876,11 @@ class _ConfirmarEntregaVentaScreenState
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(
-                _tipoEntrega == 'COMPLETA'
+                _confirmacion.tipoEntrega == 'COMPLETA'
                     ? '✅ Entrega marcada como completa'
                     : '⚠️ Entrega marcada con novedad',
               ),
-              backgroundColor: _tipoEntrega == 'COMPLETA'
+              backgroundColor: _confirmacion.tipoEntrega == 'COMPLETA'
                   ? Colors.green
                   : Colors.orange,
               duration: const Duration(seconds: 2),
@@ -945,7 +951,11 @@ class _ConfirmarEntregaVentaScreenState
                           color: Colors.orange,
                           borderRadius: BorderRadius.circular(4),
                         ),
-                        child: const Icon(Icons.edit, size: 14, color: Colors.white),
+                        child: const Icon(
+                          Icons.edit,
+                          size: 14,
+                          color: Colors.white,
+                        ),
                       ),
                     ),
                     const SizedBox(width: 12),
@@ -981,42 +991,49 @@ class _ConfirmarEntregaVentaScreenState
                   // ✅ SIMPLIFICADO: SegmentedButton para elegir tipo
                   Flexible(
                     child: SegmentedButton<String>(
-                      selected: {_tipoEntrega},
+                      selected: {_confirmacion.tipoEntrega},
                       onSelectionChanged: (Set<String> newSelection) {
                         setState(() {
-                          _tipoEntrega = newSelection.first;
-                          // ✅ FIX CRÍTICO: Actualizar _tipoConfirmacion cuando cambia _tipoEntrega
-                          if (_tipoEntrega == 'COMPLETA') {
-                            _tipoConfirmacion = 'COMPLETA';
-                            _tipoNovedad = null;
-                            _tiendaAbierta = false;
-                            _clientePresente = false;
-                            _motivoRechazo = null;
+                          final tipoSeleccionado = newSelection.first;
+                          if (tipoSeleccionado == 'COMPLETA') {
+                            // ✅ 2026-07-02: Usar copyWith para actualizar el modelo
+                            _confirmacion = _confirmacion.copyWith(
+                              tipoEntrega: 'COMPLETA',
+                              tipoConfirmacion: 'COMPLETA',
+                              tipoNovedad: null,
+                              tiendaAbierta: false,
+                              clientePresente: false,
+                              motivoRechazo: null,
+                            );
                             _productosRechazados.clear();
                             debugPrint(
-                              '✅ Cambiado a COMPLETA - _tipoConfirmacion: COMPLETA - campos de novedad limpiados',
+                              '✅ [MODELO] Cambiado a COMPLETA - tipos y novedad reseteados',
                             );
                           } else {
-                            _tipoConfirmacion = 'CON_NOVEDAD';
-                          _pagos.clear();
-                          debugPrint(
-                            '✅ Cambiado a CON_NOVEDAD - _tipoConfirmacion: CON_NOVEDAD - pagos limpiados',
-                          );
-                        }
-                      });
-                    },
-                    segments: const [
-                      ButtonSegment(
-                        value: 'COMPLETA',
-                        label: Text('✅ Completa'),
-                        // icon: Icon(Icons.check_circle),
-                      ),
-                      ButtonSegment(
-                        value: 'CON_NOVEDAD',
-                        label: Text('⚠️ Con Novedad'),
-                        // icon: Icon(Icons.warning),
-                      ),
-                    ],
+                            _confirmacion = _confirmacion.copyWith(
+                              tipoEntrega: 'CON_NOVEDAD',
+                              tipoConfirmacion: 'CON_NOVEDAD',
+                              tipoNovedad: null,
+                            );
+                            _pagos.clear();
+                            debugPrint(
+                              '✅ [MODELO] Cambiado a CON_NOVEDAD - pagos limpiados',
+                            );
+                          }
+                        });
+                      },
+                      segments: const [
+                        ButtonSegment(
+                          value: 'COMPLETA',
+                          label: Text('✅ Completa'),
+                          // icon: Icon(Icons.check_circle),
+                        ),
+                        ButtonSegment(
+                          value: 'CON_NOVEDAD',
+                          label: Text('⚠️ Con Novedad'),
+                          // icon: Icon(Icons.warning),
+                        ),
+                      ],
                     ),
                   ),
                 ],
@@ -1037,33 +1054,37 @@ class _ConfirmarEntregaVentaScreenState
               // ✅ NUEVO: Mostrar detalles de la venta en ambos formularios
               VentaDetallesCard(venta: widget.venta, isDarkMode: isDarkMode),
               // ✅ FORMULARIOS: SIEMPRE mostrar el formulario según tipo seleccionado
-              if (_tipoEntrega == 'COMPLETA')
+              if (_confirmacion.tipoEntrega == 'COMPLETA')
                 Expanded(
-                  child: RegistroPagosCompletoWidget(
-                    totalVenta: widget.venta.total,
-                    pagos: _pagos,
-                    tiposPago: _tiposPago,
-                    esCredito: _esVentaCredito(),
-                    montoEfectivoController: _montoEfectivoController,
-                    montoTransferenciaController: _montoTransferenciaController,
-                    onAgregarPago: (tipoPagoId, monto) {
-                      setState(() {
-                        _pagos.add(
-                          PagoEntrega(
-                            tipoPagoId: tipoPagoId,
-                            monto: monto,
-                            referencia: null,
-                          ),
-                        );
-                      });
-                    },
-                    onEliminarPago: (index) {
-                      setState(() {
-                        if (index >= 0 && index < _pagos.length) {
-                          _pagos.removeAt(index);
-                        }
-                      });
-                    },
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                    child: RegistroPagosCompletoWidget(
+                      totalVenta: widget.venta.total,
+                      pagos: _pagos,
+                      tiposPago: _tiposPago,
+                      esCredito: _esVentaCredito(),
+                      montoEfectivoController: _montoEfectivoController,
+                      montoTransferenciaController:
+                          _montoTransferenciaController,
+                      onAgregarPago: (tipoPagoId, monto) {
+                        setState(() {
+                          _pagos.add(
+                            PagoEntrega(
+                              tipoPagoId: tipoPagoId,
+                              monto: monto,
+                              referencia: null,
+                            ),
+                          );
+                        });
+                      },
+                      onEliminarPago: (index) {
+                        setState(() {
+                          if (index >= 0 && index < _pagos.length) {
+                            _pagos.removeAt(index);
+                          }
+                        });
+                      },
+                    ),
                   ),
                 )
               else
@@ -1111,10 +1132,13 @@ class _ConfirmarEntregaVentaScreenState
   /// ✅ Helper para crear FormularioNovedadWidget
   Widget _buildFormularioNovedad(bool isDarkMode) {
     return FormularioNovedadWidget(
+      key: ValueKey(
+        'novedad_${_confirmacion.tipoNovedad ?? "none"}',
+      ),
       screenContext: context,
       isDarkMode: isDarkMode,
-      tipoNovedad: _tipoNovedad,
-      tipoConfirmacion: _tipoConfirmacion, // ✅ NUEVO 2026-06-14: Para verificar ambos campos
+      tipoNovedad: _confirmacion.tipoNovedad,
+      tipoConfirmacion: _confirmacion.tipoConfirmacion,
       tiposNovedad: _tiposNovedad,
       venta: widget.venta,
       observacionesController: _observacionesController,
@@ -1124,6 +1148,9 @@ class _ConfirmarEntregaVentaScreenState
       construirImagenFoto: (foto) => _construirImagenFoto(foto),
       buildTablaProductosRechazados: (ctx, dark) =>
           tabla_widget.TablaProductosRechazadosWidget(
+            key: ValueKey(
+              'tabla_${_confirmacion.tipoNovedad ?? "none"}',
+            ),
             detalles: widget.venta.detalles ?? [],
             productosRechazados: _productosRechazados,
             cantidadRechazadaControllers: _cantidadRechazadaControllers,
@@ -1167,15 +1194,15 @@ class _ConfirmarEntregaVentaScreenState
       registroPagosWidget: _buildRegistroPagosWidget(),
       onTipoNovedadChanged: (value) {
         setState(() {
-          _tipoNovedad = value;
-          // ✅ FIX: Automáticamente actualizar _tipoEntrega a CON_NOVEDAD (siempre, porque value es String)
-          _tipoEntrega = 'CON_NOVEDAD';
-          // ✅ FIX CRÍTICO: También actualizar _tipoConfirmacion para que refleje el cambio
-          _tipoConfirmacion = value;
-          debugPrint(
-            '🔄 [AUTO] _tipoEntrega actualizado a CON_NOVEDAD (tipo: $value)',
+          // ✅ 2026-07-02: Usar copyWith para actualizar el modelo
+          _confirmacion = _confirmacion.copyWith(
+            tipoNovedad: value,
+            tipoEntrega: 'CON_NOVEDAD',
+            tipoConfirmacion: value,
           );
-          debugPrint('🔄 [AUTO] _tipoConfirmacion actualizado a $value');
+          debugPrint(
+            '🔄 [MODELO] Confirmación actualizada: tipoEntrega=CON_NOVEDAD | tipoConfirmacion=$value | tipoNovedad=$value',
+          );
           _productosRechazados.clear();
           _cantidadRechazadaControllers.clear();
         });
@@ -1197,10 +1224,7 @@ class _ConfirmarEntregaVentaScreenState
           icon: const Icon(Icons.save, size: 20),
           color: Colors.blue,
           disabledColor: Colors.grey[400],
-          constraints: const BoxConstraints(
-            minWidth: 32,
-            minHeight: 32,
-          ),
+          constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
         ),
       );
     }

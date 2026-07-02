@@ -126,6 +126,7 @@ class ProductoCardWidget extends StatelessWidget {
                         ),
                         const SizedBox(height: 8),
                         Row(
+                          crossAxisAlignment: CrossAxisAlignment.center,
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             Expanded(
@@ -135,7 +136,7 @@ class ProductoCardWidget extends StatelessWidget {
                                 overflow: TextOverflow.ellipsis,
                               ),
                             ),
-                            Expanded(
+                            Flexible(
                               child: Text(
                                 'Sub.: Bs. ${subtotal.toStringAsFixed(2)}',
                                 style: TextStyle(
@@ -195,13 +196,18 @@ class ProductoCardWidget extends StatelessWidget {
                   ...comboItemsSeleccionados!.asMap().entries.map((entry) {
                     final index = entry.key;
                     final comboItemSel = entry.value;
-                    final comboItem = _obtenerComboItem(comboItemSel.comboItemId);
+                    final comboItem = _obtenerComboItem(
+                      comboItemSel.comboItemId,
+                    );
                     final isLast = index == comboItemsSeleccionados!.length - 1;
-                    final cantidadTotal = comboItemSel.cantidad * cantidad.toInt();
+                    final cantidadTotal =
+                        comboItemSel.cantidad * cantidad.toInt();
 
-                    final nombreProducto = comboItem?.producto?.nombre ?? 'Producto desconocido';
+                    final nombreProducto =
+                        comboItem?.producto?.nombre ?? 'Producto desconocido';
                     final imagenUrl = comboItem?.producto?.imagenPrincipal?.url;
-                    final tieneImagen = imagenUrl != null && imagenUrl.isNotEmpty;
+                    final tieneImagen =
+                        imagenUrl != null && imagenUrl.isNotEmpty;
                     final sku = comboItem?.producto?.sku ?? 'N/A';
 
                     return Column(

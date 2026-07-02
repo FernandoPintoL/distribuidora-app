@@ -16,6 +16,7 @@ class CuentaPorCobrar {
   final Cliente? cliente;
   final CuentaVenta? venta;
   final int pagosCount;
+  final DateTime? createdAt;
 
   CuentaPorCobrar({
     required this.id,
@@ -32,6 +33,7 @@ class CuentaPorCobrar {
     this.cliente,
     this.venta,
     this.pagosCount = 0,
+    this.createdAt,
   });
 
   factory CuentaPorCobrar.fromJson(Map<String, dynamic> json) {
@@ -64,6 +66,9 @@ class CuentaPorCobrar {
       cliente: clienteObj,
       venta: ventaObj,
       pagosCount: json['pagos_count'] as int? ?? 0,
+      createdAt: json['created_at'] != null
+          ? DateTime.tryParse(json['created_at'] as String)
+          : null,
     );
   }
 
@@ -98,6 +103,7 @@ class CuentaPorCobrar {
       'cliente': cliente?.toJson(),
       'venta': venta?.toJson(),
       'pagos_count': pagosCount,
+      'created_at': createdAt?.toIso8601String(),
     };
   }
 

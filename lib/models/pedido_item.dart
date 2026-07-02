@@ -6,7 +6,7 @@ class PedidoItem {
   final int id;
   final int pedidoId;
   final int productoId;
-  final Product? producto;
+  final Producto? producto;
   final int cantidad;
   final double precioUnitario;
   final double subtotal;
@@ -34,7 +34,7 @@ class PedidoItem {
         pedidoId: json['pedido_id'] as int? ?? json['proforma_id'] as int? ?? 0,
         productoId: json['producto_id'] as int,
         producto: json['producto'] != null
-            ? Product.fromJson(json['producto'] as Map<String, dynamic>)
+            ? Producto.fromJson(json['producto'] as Map<String, dynamic>)
             : null,
         cantidad: _parseInt(json['cantidad']),
         precioUnitario: _parseDouble(json['precio_unitario']),
@@ -43,8 +43,12 @@ class PedidoItem {
         descuento: _parseDouble(json['descuento']),
         comboItemsSeleccionados: json['combo_items_seleccionados'] != null
             ? (json['combo_items_seleccionados'] as List)
-                .map((item) => ComboItemSeleccionado.fromJson(item as Map<String, dynamic>))
-                .toList()
+                  .map(
+                    (item) => ComboItemSeleccionado.fromJson(
+                      item as Map<String, dynamic>,
+                    ),
+                  )
+                  .toList()
             : null,
       );
     } catch (e) {
@@ -108,7 +112,7 @@ class PedidoItem {
     int? id,
     int? pedidoId,
     int? productoId,
-    Product? producto,
+    Producto? producto,
     int? cantidad,
     double? precioUnitario,
     double? subtotal,
@@ -126,7 +130,8 @@ class PedidoItem {
       subtotal: subtotal ?? this.subtotal,
       observaciones: observaciones ?? this.observaciones,
       descuento: descuento ?? this.descuento,
-      comboItemsSeleccionados: comboItemsSeleccionados ?? this.comboItemsSeleccionados,
+      comboItemsSeleccionados:
+          comboItemsSeleccionados ?? this.comboItemsSeleccionados,
     );
   }
 }

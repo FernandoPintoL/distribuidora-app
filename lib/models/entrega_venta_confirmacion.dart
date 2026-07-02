@@ -63,6 +63,29 @@ class EntregaVentaConfirmacion {
     this.actualizadoEn,
   });
 
+  /// ✅ Factory para crear una instancia inicial (nueva confirmación)
+  factory EntregaVentaConfirmacion.inicial({
+    required int entregaId,
+    required int ventaId,
+    String tipoEntrega = 'COMPLETA',
+    String tipoConfirmacion = 'COMPLETA',
+  }) {
+    return EntregaVentaConfirmacion(
+      id: 0,
+      entregaId: entregaId,
+      ventaId: ventaId,
+      tipoEntrega: tipoEntrega,
+      tipoConfirmacion: tipoConfirmacion,
+      estadoPago: 'PENDIENTE',
+      montoRecibido: 0,
+      tipoPagoId: 0,
+      tuvoProblema: false,
+      totalDineroRecibido: 0,
+      montoPendiente: 0,
+      montoAceptado: 0,
+    );
+  }
+
   factory EntregaVentaConfirmacion.fromJson(Map<String, dynamic> json) {
     List<DesglosePago> desgloses = [];
 
@@ -110,9 +133,9 @@ class EntregaVentaConfirmacion {
     );
 
     return EntregaVentaConfirmacion(
-      id: json['id'] as int,
-      entregaId: (json['entrega_id'] as int?) ?? 0,
-      ventaId: (json['venta_id'] as int?) ?? 0,
+      id: _parseInt(json['id']),
+      entregaId: _parseInt(json['entrega_id']),
+      ventaId: _parseInt(json['venta_id']),
       firmaDigitalUrl: json['firma_digital_url'] as String?,
       fotos: (json['fotos'] as List<dynamic>?)?.cast<String>(),
       observacionesLogistica: json['observaciones_logistica'] as String?,
@@ -121,7 +144,7 @@ class EntregaVentaConfirmacion {
       motivoRechazo: json['motivo_rechazo'] as String?,
       estadoPago: json['estado'] as String? ?? json['estado_pago'] as String? ?? 'PENDIENTE',
       montoRecibido: _parseDouble(json['monto_recibido']),
-      tipoPagoId: json['tipo_pago_id'] as int? ?? 0,
+      tipoPagoId: _parseInt(json['tipo_pago_id']),
       motivoNoPago: json['motivo_no_pago'] as String?,
       confirmadoPor: _extractIntFromValue(json['confirmado_por']),
       confirmadoEn: json['confirmado_en'] != null
@@ -141,12 +164,27 @@ class EntregaVentaConfirmacion {
       montoPendiente: _parseDouble(json['pendiente'] ?? json['monto_pendiente']),
       tipoConfirmacion: tipoConfirmacionParsed,
       productosDevueltos: productosDevueltos,
-      montoDevuelto: (json['monto_devuelto'] as num?)?.toDouble(),
+      montoDevuelto: _parseDouble(json['monto_devuelto']),
       montoAceptado: _parseDouble(json['monto_aceptado'] ?? json['monto_recibido']),
       actualizadoEn: json['updated_at'] != null
           ? _parseUtcToLocal(json['updated_at'] as String)
           : null,
     );
+  }
+
+  static int _parseInt(dynamic value) {
+    if (value == null) return 0;
+    if (value is int) return value;
+    if (value is double) return value.toInt();
+    if (value is String) {
+      try {
+        return int.parse(value);
+      } catch (e) {
+        return 0;
+      }
+    }
+    if (value is num) return value.toInt();
+    return 0;
   }
 
   static double _parseDouble(dynamic value) {
@@ -167,10 +205,79 @@ class EntregaVentaConfirmacion {
   static int? _extractIntFromValue(dynamic value) {
     if (value == null) return null;
     if (value is int) return value;
+    if (value is String) {
+      try {
+        return int.parse(value);
+      } catch (e) {
+        return null;
+      }
+    }
     if (value is Map<String, dynamic>) {
       return (value['id'] as int?);
     }
     return null;
+  }
+
+  EntregaVentaConfirmacion copyWith({
+    int? id,
+    int? entregaId,
+    int? ventaId,
+    String? firmaDigitalUrl,
+    List<String>? fotos,
+    String? observacionesLogistica,
+    bool? tiendaAbierta,
+    bool? clientePresente,
+    String? motivoRechazo,
+    String? estadoPago,
+    double? montoRecibido,
+    int? tipoPagoId,
+    String? motivoNoPago,
+    int? confirmadoPor,
+    DateTime? confirmadoEn,
+    DateTime? creadoEn,
+    String? fotoComprobante,
+    String? tipoEntrega,
+    String? tipoNovedad,
+    bool? tuvoProblema,
+    List<DesglosePago>? desglosePageos,
+    double? totalDineroRecibido,
+    double? montoPendiente,
+    String? tipoConfirmacion,
+    List<dynamic>? productosDevueltos,
+    double? montoDevuelto,
+    double? montoAceptado,
+    DateTime? actualizadoEn,
+  }) {
+    return EntregaVentaConfirmacion(
+      id: id ?? this.id,
+      entregaId: entregaId ?? this.entregaId,
+      ventaId: ventaId ?? this.ventaId,
+      firmaDigitalUrl: firmaDigitalUrl ?? this.firmaDigitalUrl,
+      fotos: fotos ?? this.fotos,
+      observacionesLogistica: observacionesLogistica ?? this.observacionesLogistica,
+      tiendaAbierta: tiendaAbierta ?? this.tiendaAbierta,
+      clientePresente: clientePresente ?? this.clientePresente,
+      motivoRechazo: motivoRechazo ?? this.motivoRechazo,
+      estadoPago: estadoPago ?? this.estadoPago,
+      montoRecibido: montoRecibido ?? this.montoRecibido,
+      tipoPagoId: tipoPagoId ?? this.tipoPagoId,
+      motivoNoPago: motivoNoPago ?? this.motivoNoPago,
+      confirmadoPor: confirmadoPor ?? this.confirmadoPor,
+      confirmadoEn: confirmadoEn ?? this.confirmadoEn,
+      creadoEn: creadoEn ?? this.creadoEn,
+      fotoComprobante: fotoComprobante ?? this.fotoComprobante,
+      tipoEntrega: tipoEntrega ?? this.tipoEntrega,
+      tipoNovedad: tipoNovedad ?? this.tipoNovedad,
+      tuvoProblema: tuvoProblema ?? this.tuvoProblema,
+      desglosePageos: desglosePageos ?? this.desglosePageos,
+      totalDineroRecibido: totalDineroRecibido ?? this.totalDineroRecibido,
+      montoPendiente: montoPendiente ?? this.montoPendiente,
+      tipoConfirmacion: tipoConfirmacion ?? this.tipoConfirmacion,
+      productosDevueltos: productosDevueltos ?? this.productosDevueltos,
+      montoDevuelto: montoDevuelto ?? this.montoDevuelto,
+      montoAceptado: montoAceptado ?? this.montoAceptado,
+      actualizadoEn: actualizadoEn ?? this.actualizadoEn,
+    );
   }
 
   Map<String, dynamic> toJson() {

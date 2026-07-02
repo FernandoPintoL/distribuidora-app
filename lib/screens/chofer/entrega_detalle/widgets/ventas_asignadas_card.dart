@@ -164,9 +164,21 @@ class _VentasAsignadasCardState extends State<VentasAsignadasCard> {
               itemBuilder: (context, index) {
                 final venta = ventasOrdenadas[index];
                 final isEnRuta = venta.estadoLogisticoCodigo == 'EN_TRANSITO';
-                final borderColor = _getEstadoLogisticoColor(
-                  venta.estadoLogisticoCodigo,
-                );
+
+                // ✅ Usar color del objeto EstadoLogistico
+                Color borderColor = Colors.grey;
+                if (venta.estadoLogisticoObj?.color != null) {
+                  try {
+                    final colorHex = venta.estadoLogisticoObj!.color!
+                        .replaceFirst('#', '');
+                    borderColor = Color(int.parse('FF$colorHex', radix: 16));
+                  } catch (e) {
+                    debugPrint(
+                      '⚠️ Error parseando color: ${venta.estadoLogisticoObj?.color}',
+                    );
+                    borderColor = Colors.grey;
+                  }
+                }
                 final borderWidth = isEnRuta ? 2.0 : 1.0;
 
                 final tipoEntrega = venta.tipoEntregaValue;
@@ -326,85 +338,85 @@ class _VentasAsignadasCardState extends State<VentasAsignadasCard> {
                                     ),
                                     // ✅ NUEVO: Menú popup de acciones (3 puntos)
                                     PopupMenuButton<String>(
-                                    onSelected: (String value) {
-                                      if (value == 'llamar' &&
-                                          venta.cliente?.telefono != null) {
-                                        widget.onLlamarCliente(
-                                          venta.cliente?.telefono,
-                                        );
-                                      } else if (value == 'whatsapp' &&
-                                          venta.cliente?.telefono != null) {
-                                        widget.onEnviarWhatsApp(
-                                          venta.cliente?.telefono,
-                                        );
-                                      } else if (value == 'pdf') {
-                                        _descargarPDFVenta(venta.id);
-                                      } else if (value == 'mapa' &&
-                                          venta.direccionCliente?.latitud !=
-                                              null &&
-                                          venta.direccionCliente?.longitud !=
-                                              null) {
-                                        _abrirMapa(venta);
-                                      }
-                                    },
-                                    itemBuilder: (BuildContext context) => [
-                                      if (venta.cliente?.telefono != null)
+                                      onSelected: (String value) {
+                                        if (value == 'llamar' &&
+                                            venta.cliente?.telefono != null) {
+                                          widget.onLlamarCliente(
+                                            venta.cliente?.telefono,
+                                          );
+                                        } else if (value == 'whatsapp' &&
+                                            venta.cliente?.telefono != null) {
+                                          widget.onEnviarWhatsApp(
+                                            venta.cliente?.telefono,
+                                          );
+                                        } else if (value == 'pdf') {
+                                          _descargarPDFVenta(venta.id);
+                                        } else if (value == 'mapa' &&
+                                            venta.direccionCliente?.latitud !=
+                                                null &&
+                                            venta.direccionCliente?.longitud !=
+                                                null) {
+                                          _abrirMapa(venta);
+                                        }
+                                      },
+                                      itemBuilder: (BuildContext context) => [
+                                        if (venta.cliente?.telefono != null)
+                                          const PopupMenuItem<String>(
+                                            value: 'llamar',
+                                            child: Row(
+                                              children: [
+                                                Icon(Icons.call, size: 20),
+                                                SizedBox(width: 12),
+                                                Text('Llamar'),
+                                              ],
+                                            ),
+                                          ),
+                                        if (venta.cliente?.telefono != null)
+                                          const PopupMenuItem<String>(
+                                            value: 'whatsapp',
+                                            child: Row(
+                                              children: [
+                                                Icon(Icons.chat, size: 20),
+                                                SizedBox(width: 12),
+                                                Text('WhatsApp'),
+                                              ],
+                                            ),
+                                          ),
                                         const PopupMenuItem<String>(
-                                          value: 'llamar',
+                                          value: 'pdf',
                                           child: Row(
                                             children: [
-                                              Icon(Icons.call, size: 20),
+                                              Icon(Icons.download, size: 20),
                                               SizedBox(width: 12),
-                                              Text('Llamar'),
+                                              Text('Descargar PDF'),
                                             ],
                                           ),
                                         ),
-                                      if (venta.cliente?.telefono != null)
-                                        const PopupMenuItem<String>(
-                                          value: 'whatsapp',
-                                          child: Row(
-                                            children: [
-                                              Icon(Icons.chat, size: 20),
-                                              SizedBox(width: 12),
-                                              Text('WhatsApp'),
-                                            ],
+                                        // ✅ NUEVO 2026-06-14: Opción para mostrar mapa
+                                        if (venta.direccionCliente?.latitud !=
+                                                null &&
+                                            venta.direccionCliente?.longitud !=
+                                                null)
+                                          const PopupMenuItem<String>(
+                                            value: 'mapa',
+                                            child: Row(
+                                              children: [
+                                                Icon(Icons.map, size: 20),
+                                                SizedBox(width: 12),
+                                                Text('Mapa'),
+                                              ],
+                                            ),
                                           ),
-                                        ),
-                                      const PopupMenuItem<String>(
-                                        value: 'pdf',
-                                        child: Row(
-                                          children: [
-                                            Icon(Icons.download, size: 20),
-                                            SizedBox(width: 12),
-                                            Text('Descargar PDF'),
-                                          ],
-                                        ),
+                                      ],
+                                      icon: Icon(
+                                        Icons.more_vert,
+                                        color: isDarkMode
+                                            ? Colors.grey[400]
+                                            : Colors.grey[600],
                                       ),
-                                      // ✅ NUEVO 2026-06-14: Opción para mostrar mapa
-                                      if (venta.direccionCliente?.latitud !=
-                                              null &&
-                                          venta.direccionCliente?.longitud !=
-                                              null)
-                                        const PopupMenuItem<String>(
-                                          value: 'mapa',
-                                          child: Row(
-                                            children: [
-                                              Icon(Icons.map, size: 20),
-                                              SizedBox(width: 12),
-                                              Text('Mapa'),
-                                            ],
-                                          ),
-                                        ),
-                                    ],
-                                    icon: Icon(
-                                      Icons.more_vert,
-                                      color: isDarkMode
-                                          ? Colors.grey[400]
-                                          : Colors.grey[600],
                                     ),
-                                  ),
-                                ],
-                              ),
+                                  ],
+                                ),
                               ),
                             ],
                           ),
@@ -415,18 +427,18 @@ class _VentasAsignadasCardState extends State<VentasAsignadasCard> {
                             runSpacing: 8,
                             children: [
                               // Badge Estado Logístico de la venta
-                              if (venta.estadoLogistico != null &&
-                                  venta.estadoLogistico!.isNotEmpty)
+                              if (venta.estadoLogisticoObj != null)
                                 Container(
                                   padding: const EdgeInsets.symmetric(
                                     horizontal: 10,
                                     vertical: 6,
                                   ),
                                   decoration: BoxDecoration(
-                                    color: venta.estadoLogisticoColor != null
+                                    color:
+                                        venta.estadoLogisticoObj?.color != null
                                         ? Color(
                                             int.parse(
-                                              venta.estadoLogisticoColor!
+                                              venta.estadoLogisticoObj!.color!
                                                   .replaceFirst('#', '0xFF'),
                                             ),
                                           ).withValues(alpha: 0.2)
@@ -434,10 +446,12 @@ class _VentasAsignadasCardState extends State<VentasAsignadasCard> {
                                               ? Colors.grey[800]
                                               : Colors.grey[200]),
                                     border: Border.all(
-                                      color: venta.estadoLogisticoColor != null
+                                      color:
+                                          venta.estadoLogisticoObj?.color !=
+                                              null
                                           ? Color(
                                               int.parse(
-                                                venta.estadoLogisticoColor!
+                                                venta.estadoLogisticoObj!.color!
                                                     .replaceFirst('#', '0xFF'),
                                               ),
                                             )
@@ -448,23 +462,48 @@ class _VentasAsignadasCardState extends State<VentasAsignadasCard> {
                                   child: Row(
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
-                                      if (venta.estadoLogisticoIcon != null)
+                                      if (venta.estadoLogisticoObj?.icono !=
+                                          null)
                                         Text(
-                                          venta.estadoLogisticoIcon!,
-                                          style: const TextStyle(fontSize: 14),
+                                          venta.estadoLogisticoObj!.icono!,
+                                          style: TextStyle(
+                                            fontSize: 14,
+                                            color:
+                                                venta
+                                                        .estadoLogisticoObj
+                                                        ?.color !=
+                                                    null
+                                                ? Color(
+                                                    int.parse(
+                                                      venta
+                                                          .estadoLogisticoObj!
+                                                          .color!
+                                                          .replaceFirst(
+                                                            '#',
+                                                            '0xFF',
+                                                          ),
+                                                    ),
+                                                  )
+                                                : Colors.grey[700],
+                                          ),
                                         ),
-                                      if (venta.estadoLogisticoIcon != null)
+                                      if (venta.estadoLogisticoObj?.icono !=
+                                          null)
                                         const SizedBox(width: 6),
                                       Text(
-                                        venta.estadoLogistico!,
+                                        venta.estadoLogisticoObj!.nombre
+                                            .toUpperCase(),
                                         style: TextStyle(
                                           fontSize: 12,
                                           fontWeight: FontWeight.w600,
                                           color:
-                                              venta.estadoLogisticoColor != null
+                                              venta.estadoLogisticoObj?.color !=
+                                                  null
                                               ? Color(
                                                   int.parse(
-                                                    venta.estadoLogisticoColor!
+                                                    venta
+                                                        .estadoLogisticoObj!
+                                                        .color!
                                                         .replaceFirst(
                                                           '#',
                                                           '0xFF',
@@ -644,45 +683,6 @@ class _VentasAsignadasCardState extends State<VentasAsignadasCard> {
                 ),
               ),
             ],
-            /*if (ventasOrdenadas.isNotEmpty) ...[
-              const SizedBox(height: 16),
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: isDarkMode ? Colors.grey[800] : Colors.grey[100],
-                  borderRadius: BorderRadius.circular(6),
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Total a Entregar',
-                          style: TextStyle(fontWeight: FontWeight.bold),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          'BS ${ventasOrdenadas.fold<double>(0, (sum, v) => sum + v.total).toStringAsFixed(2)}',
-                        ),
-                      ],
-                    ),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.end,
-                      children: [
-                        Text(
-                          'Cantidad de Ventas',
-                          style: TextStyle(fontWeight: FontWeight.bold),
-                        ),
-                        const SizedBox(height: 4),
-                        Text('${ventasOrdenadas.length}'),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            ],*/
           ],
         ),
       ),
@@ -693,8 +693,8 @@ class _VentasAsignadasCardState extends State<VentasAsignadasCard> {
     showDialog(
       context: context,
       barrierDismissible: false, // ✅ No permitir cerrar tocando afuera
-      builder: (context) => StatefulBuilder(
-        builder: (context, setState) {
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (dialogContext, setState) {
           bool procesando = false;
 
           return AlertDialog(
@@ -719,67 +719,108 @@ class _VentasAsignadasCardState extends State<VentasAsignadasCard> {
             actions: [
               if (!procesando)
                 TextButton(
-                  onPressed: () => Navigator.pop(context),
+                  onPressed: () => Navigator.pop(dialogContext),
                   child: const Text('Cancelar'),
                 ),
               if (!procesando)
                 ElevatedButton(
-                  onPressed: () async {
+                  onPressed: () {
+                    debugPrint(
+                      '🔹 [DIALOG] Botón confirmar presionado - INICIO',
+                    );
                     setState(() => procesando = true);
-                    final currentContext = context;
 
-                    try {
-                      final exito = await widget.provider
-                          .confirmarCargoCompleto(widget.entrega.id);
+                    Future<void>.microtask(() async {
+                      debugPrint('🔹 [DIALOG] Microtask ejecutado');
 
-                      if (mounted) {
-                        if (exito) {
-                          // ✅ Esperar a que isLoading sea false antes de cerrar
-                          while (widget.provider.isLoading && mounted) {
-                            await Future.delayed(
-                              const Duration(milliseconds: 100),
+                      try {
+                        debugPrint(
+                          '🔹 [DIALOG] Llamando confirmarCargoCompleto...',
+                        );
+                        final exito = await widget.provider
+                            .confirmarCargoCompleto(widget.entrega.id);
+                        debugPrint(
+                          '🔹 [DIALOG] Respuesta recibida - exito: $exito',
+                        );
+
+                        // ✅ Esperar a que isLoading sea false
+                        debugPrint(
+                          '🔹 [DIALOG] Esperando a que isLoading sea false...',
+                        );
+                        int contador = 0;
+                        while (widget.provider.isLoading &&
+                            mounted &&
+                            contador < 50) {
+                          await Future.delayed(
+                            const Duration(milliseconds: 50),
+                          );
+                          contador++;
+                          debugPrint('🔹 [DIALOG] Espera... $contador');
+                        }
+                        debugPrint(
+                          '🔹 [DIALOG] isLoading ahora es: ${widget.provider.isLoading}',
+                        );
+
+                        if (mounted && dialogContext.mounted) {
+                          // ✅ Cerrar dialog PRIMERO
+                          Navigator.pop(dialogContext);
+                          debugPrint('🔹 [DIALOG] Dialog cerrado');
+
+                          if (exito) {
+                            debugPrint(
+                              '🟢 [DIALOG] Éxito - mostrando mensaje positivo',
                             );
-                          }
 
-                          if (mounted && currentContext.mounted) {
-                            Navigator.pop(
-                              currentContext,
-                            ); // ✅ Cerrar diálogo después
-                            ScaffoldMessenger.of(currentContext).showSnackBar(
-                              const SnackBar(
-                                content: Text(
-                                  'Carga confirmada correctamente. Estado: Listo para entrega',
+                            if (mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text(
+                                    'Carga confirmada correctamente. Estado: Listo para entrega',
+                                  ),
+                                  backgroundColor: Colors.green,
+                                  duration: Duration(seconds: 3),
                                 ),
-                                backgroundColor: Colors.green,
-                                duration: Duration(seconds: 3),
-                              ),
+                              );
+                            }
+                          } else {
+                            // ✅ Mostrar error usando el contexto raíz (context)
+                            debugPrint(
+                              '🔴 [DIALOG] Error - errorMessage: ${widget.provider.errorMessage}',
                             );
-                          }
-                        } else {
-                          Navigator.pop(currentContext);
-                          if (mounted && currentContext.mounted) {
-                            ScaffoldMessenger.of(currentContext).showSnackBar(
-                              SnackBar(
-                                content: Text(
-                                  'Error: ${widget.provider.errorMessage ?? 'Error desconocido'}',
+                            if (mounted) {
+                              debugPrint(
+                                '🔴 [DIALOG] Mostrando error: ${widget.provider.errorMessage}',
+                              );
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text(
+                                    widget.provider.errorMessage ??
+                                        'Error desconocido',
+                                  ),
+                                  backgroundColor: Colors.red,
+                                  duration: const Duration(seconds: 5),
                                 ),
-                                backgroundColor: Colors.red,
-                              ),
-                            );
+                              );
+                            }
                           }
                         }
+                      } catch (e) {
+                        debugPrint('🔴 [DIALOG] Excepción: $e');
+                        if (mounted && dialogContext.mounted) {
+                          Navigator.pop(dialogContext);
+                        }
+                        if (mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(
+                                'Error inesperado: ${e.toString()}',
+                              ),
+                              backgroundColor: Colors.red,
+                            ),
+                          );
+                        }
                       }
-                    } catch (e) {
-                      Navigator.pop(currentContext);
-                      if (mounted && currentContext.mounted) {
-                        ScaffoldMessenger.of(currentContext).showSnackBar(
-                          SnackBar(
-                            content: Text('Error inesperado: ${e.toString()}'),
-                            backgroundColor: Colors.red,
-                          ),
-                        );
-                      }
-                    }
+                    });
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.green,

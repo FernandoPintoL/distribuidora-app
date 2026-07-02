@@ -3,6 +3,8 @@ import 'package:intl/intl.dart';
 import '../../../models/models.dart';
 import '../../../config/app_urls.dart';
 import '../../ventas/venta_detalle/cliente_avatar_widget.dart';
+import 'entrega_timeline_widget.dart';
+import '../../../widgets/info_chip_widget.dart';
 
 /// Tarjeta de pedido refactorizada con Timeline unificado
 /// Muestra: Proforma → Venta → Logística en paralelo
@@ -17,6 +19,16 @@ class PedidoCard extends StatelessWidget {
     return DateFormat('dd/MM/yy').format(fecha);
   }
 
+  Color _parseHexColor(String? hexColor) {
+    if (hexColor == null) return Colors.transparent;
+    try {
+      final hex = hexColor.replaceFirst('#', '');
+      return Color(int.parse('FF$hex', radix: 16));
+    } catch (e) {
+      return Colors.transparent;
+    }
+  }
+
   Color _getColorForEstado(String categoria, String codigo) {
     final colors = {
       'proforma:PENDIENTE': Colors.blue,
@@ -29,6 +41,45 @@ class PedidoCard extends StatelessWidget {
       'logistica:CANCELADO': Colors.red,
     };
     return colors['$categoria:$codigo'] ?? Colors.grey;
+  }
+
+  Widget _buildEstadoBadge(EstadoLogistico estado) {
+    // Parsear color hex del backend
+    Color badgeColor = Colors.grey;
+    if (estado.color != null) {
+      try {
+        final hex = estado.color!.replaceFirst('#', '');
+        badgeColor = Color(int.parse('FF$hex', radix: 16));
+      } catch (e) {
+        debugPrint('⚠️ Error al parsear color: ${estado.color}');
+      }
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: badgeColor.withOpacity(0.15),
+        border: Border.all(color: badgeColor.withOpacity(0.5)),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (estado.icono != null) ...[
+            Text(estado.icono!, style: const TextStyle(fontSize: 14)),
+            const SizedBox(width: 6),
+          ],
+          Text(
+            estado.nombre,
+            style: TextStyle(
+              color: badgeColor,
+              fontWeight: FontWeight.w600,
+              fontSize: 12,
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -57,143 +108,198 @@ class PedidoCard extends StatelessWidget {
               Padding(
                 padding: const EdgeInsets.symmetric(
                   horizontal: 12,
-                  vertical: 4,
+                  vertical: 8,
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     // Folio y Button de impresion
                     Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Expanded(
                           child: Text(
-                            "Folio: #${pedido.id}",
+                            "Pedido Folio: #${pedido.id}",
                             style: TextStyle(
                               fontWeight: FontWeight.bold,
                               fontSize: 18,
+                              color: pedido.estadoLogistico?.color != null
+                                  ? _parseHexColor(
+                                      pedido.estadoLogistico?.color,
+                                    )
+                                  : colorScheme.onSurface,
                             ),
                           ),
                         ),
-                        IconButton(
-                          onPressed: () {
-                            final url =
-                                '$baseUrl/proformas/${pedido.id}/imprimir?formato=TICKET_80&accion=download';
-                            if (onPrint != null) {
-                              onPrint!('preview', url, pedido.numero);
-                            }
-                          },
-                          icon: const Icon(Icons.print, size: 18),
-                          padding: EdgeInsets.zero,
-                          constraints: const BoxConstraints(),
-                          tooltip: 'Vista previa',
-                        ),
+                        if (pedido.estadoLogistico != null)
+                          _buildEstadoBadge(pedido.estadoLogistico!),
                       ],
                     ),
+                    // venta y entrega
+                    if (pedido.venta != null) ...[
+                      Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 8.0),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Expanded(
+                              child: InfoChipWidget(
+                                icon: Icons.shopping_cart,
+                                label: 'Folio Venta',
+                                color:
+                                    pedido.venta?.estadoLogisticoObj?.color !=
+                                        null
+                                    ? _parseHexColor(
+                                        pedido.venta!.estadoLogisticoObj!.color,
+                                      )
+                                    : colorScheme.primary,
+                                id: pedido.ventaId?.toString(),
+                                estadoLogistico:
+                                    pedido.venta?.estadoLogisticoObj?.nombre,
+                              ),
+                            ),
+                            if (pedido.venta != null &&
+                                pedido.venta?.entrega != null) ...[
+                              const SizedBox(width: 16),
+                              Expanded(
+                                child: InfoChipWidget(
+                                  icon: Icons.delivery_dining,
+                                  label: 'Folio Entrega',
+                                  color:
+                                      pedido.venta?.estadoLogisticoObj?.color !=
+                                          null
+                                      ? _parseHexColor(
+                                          pedido
+                                              .venta!
+                                              .estadoLogisticoObj!
+                                              .color,
+                                        )
+                                      : colorScheme.secondary,
+                                  id: pedido.venta?.entrega?.id.toString(),
+                                  estadoLogistico:
+                                      pedido.venta?.estadoLogisticoObj?.nombre,
+                                ),
+                              ),
+                            ],
+                          ],
+                        ),
+                      ),
+                    ],
+
                     // Cliente con Avatar
                     Row(
                       crossAxisAlignment: CrossAxisAlignment.center,
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Flexible(
+                        Expanded(
                           child: ClienteAvatarWidget(
                             clienteNombre: pedido.cliente?.nombre,
                             clienteFotoPerfil: pedido.cliente?.fotoPerfil,
                             clienteLocalidad: pedido.cliente?.localidad?.nombre,
                             clienteObservaciones:
-                                pedido.direccionEntrega!.observaciones ?? '',
+                                pedido.direccionEntrega?.observaciones ?? '',
                           ),
                         ),
-                        const Spacer(),
-                        Column(
-                          mainAxisAlignment: MainAxisAlignment.end,
-                          crossAxisAlignment: CrossAxisAlignment.end,
-                          children: [
-                            Text(
-                              'Bs. ${pedido.total.toStringAsFixed(2)}',
-                              style: TextStyle(
-                                fontWeight: FontWeight.bold,
-                                color: colorScheme.secondary,
+                        Flexible(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.end,
+                            crossAxisAlignment: CrossAxisAlignment.end,
+                            children: [
+                              Text(
+                                'Bs. ${pedido.total.toStringAsFixed(2)}',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  color: colorScheme.secondary,
+                                ),
                               ),
-                            ),
-                            Text(
-                              "Creada: ${_formatearFecha(pedido.fechaCreacion)}",
-                              style: TextStyle(
-                                color: colorScheme.onSurfaceVariant,
+                              Text(
+                                _formatearFecha(pedido.fechaCreacion),
+                                style: TextStyle(
+                                  color: colorScheme.tertiary,
+                                  fontSize: 10,
+                                ),
                               ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
                       ],
                     ),
+
+                    // ============================================================
+                    // INFO DETALLADA
+                    // ============================================================
+                    if (pedido.cantidadItems > 0 ||
+                        pedido.direccionEntrega != null ||
+                        pedido.tieneReservasProximasAVencer ||
+                        pedido.fechaVencimiento != null ||
+                        pedido.fechaEntregaSolicitada != null) ...[
+                      Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 4.0),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            if (pedido.fechaEntregaSolicitada != null) ...[
+                              Padding(
+                                padding: const EdgeInsets.only(bottom: 4),
+                                child: Text(
+                                  '🚚 Entrega Solicitada: ${_formatearFecha(pedido.fechaEntregaSolicitada!)}',
+                                  style: TextStyle(color: colorScheme.tertiary),
+                                ),
+                              ),
+                            ],
+                            const SizedBox(width: 4),
+                            if (pedido.fechaVencimiento != null) ...[
+                              Padding(
+                                padding: const EdgeInsets.only(bottom: 4),
+                                child: Text(
+                                  '📅 Vencimiento: ${_formatearFecha(pedido.fechaVencimiento!)}',
+                                  style: TextStyle(
+                                    color: Colors.orange.shade200,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ],
+                        ),
+                      ),
+                    ],
                   ],
                 ),
               ),
-              Divider(height: 1, color: colorScheme.outline.withOpacity(0.2)),
+              // Divider(height: 1, color: colorScheme.outline.withOpacity(0.2)),
 
               // ============================================================
               // TIMELINE DE ESTADOS
               // ============================================================
-              Padding(
-                padding: const EdgeInsets.symmetric(vertical: 12),
-                child: SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: _buildTimelineItems(
-                      pedido,
-                      colorScheme,
-                      isDark,
-                      ctx: context,
-                    ),
-                  ),
-                ),
-              ),
-
-              // ============================================================
-              // INFO DETALLADA
-              // ============================================================
-              if (pedido.cantidadItems > 0 ||
-                  pedido.direccionEntrega != null ||
-                  pedido.tieneReservasProximasAVencer ||
-                  pedido.fechaVencimiento != null ||
-                  pedido.fechaEntregaSolicitada != null) ...[
-                Divider(height: 1, color: colorScheme.outline.withOpacity(0.2)),
+              // Timeline de pedido.venta.estadoLogistica
+              /*if (pedido.venta?.estadoLogistico != null) ...[
                 Padding(
                   padding: const EdgeInsets.symmetric(
+                    vertical: 4.0,
                     horizontal: 12,
-                    vertical: 8,
                   ),
                   child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     crossAxisAlignment: CrossAxisAlignment.center,
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      if (pedido.fechaEntregaSolicitada != null) ...[
-                        Padding(
-                          padding: const EdgeInsets.only(bottom: 4),
-                          child: Text(
-                            '🚚 Entrega Solicitada: ${_formatearFecha(pedido.fechaEntregaSolicitada!)}',
-                            style: TextStyle(
-                              color: colorScheme.onSurfaceVariant,
-                            ),
+                      Expanded(
+                        child: Text(
+                          '📦 Estado Logístico',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: colorScheme.onSurfaceVariant,
                           ),
                         ),
-                      ],
-                      const SizedBox(width: 4),
-                      if (pedido.fechaVencimiento != null) ...[
-                        Padding(
-                          padding: const EdgeInsets.only(bottom: 4),
-                          child: Text(
-                            '📅 Vencimiento: ${_formatearFecha(pedido.fechaVencimiento!)}',
-                            style: TextStyle(
-                              color: colorScheme.onSurfaceVariant,
-                            ),
-                          ),
-                        ),
-                      ],
+                      ),
+                      if (pedido.venta?.estadoLogisticoObj != null)
+                        _buildEstadoBadge(pedido.venta!.estadoLogisticoObj!),
                     ],
                   ),
                 ),
-              ],
+              ],*/
             ],
           ),
         ),
@@ -207,126 +313,66 @@ class PedidoCard extends StatelessWidget {
     bool isDark, {
     required BuildContext ctx,
   }) {
-    final items = <Widget>[];
-
-    // 1. ESTADO DE PROFORMA (solo si no fue convertida a venta)
-    if (!pedido.esVenta) {
-      items.add(
+    return [
+      // 1. Estado del documento: Proforma
+      /*if (!pedido.esVenta) ...[
         _buildTimelineItem(
           ctx,
           '📋 Pedido ->',
           _getProformaStatus(pedido),
           colorScheme,
         ),
-      );
+        if (pedido.tieneEstadoLogistico) _buildTimelineSeparator(colorScheme),
+      ],*/
 
-      // Conector después de proforma
-      if (pedido.esVenta || pedido.tieneEstadoLogistico) {
-        items.add(_buildTimelineSeparator(colorScheme));
-      }
-    }
-
-    // 2. ESTADO DE VENTA Y DOCUMENTO (si aplica)
-    if (pedido.esVenta && pedido.venta != null) {
-      items.add(
+      // 2. Estado del documento: Venta
+      /*if (pedido.esVenta && pedido.venta != null) ...[
         _buildTimelineItem(
           ctx,
           '🛍️ Venta F. #${pedido.ventaId ?? ''}',
-          _getVentaStatus(pedido.venta!),
+          _getVentaStatus(pedido.venta),
           colorScheme,
         ),
-      );
+        if (pedido.tieneEstadoLogistico) _buildTimelineSeparator(colorScheme),
+      ],*/
 
-      // Conector después de venta
-      if (pedido.tieneEstadoLogistico) {
-        items.add(_buildTimelineSeparator(colorScheme));
-      }
-    }
-
-    // 3. ESTADO LOGÍSTICO / ENTREGAS
-    if (pedido.tieneEstadoLogistico ||
-        (pedido.venta?.confirmacionesEntrega.isNotEmpty ?? false)) {
-      items.add(
-        _buildTimelineItem(
-          ctx,
-          '🚚 Entrega',
-          _getLogisticaStatus(pedido),
-          colorScheme,
-        ),
-      );
-
-      // 4. INFORMACIÓN DE ENTREGA ASIGNADA (si hay)
-      /*if (pedido.venta?.entrega != null) {
-        items.add(_buildTimelineSeparator(colorScheme));
-        items.add(
-          _buildEntregaInfoWidget(ctx, pedido.venta!.entrega!, colorScheme),
-        );
-      }*/
-
-      // 5. ÚLTIMA CONFIRMACIÓN DE ENTREGA (solo la más reciente)
-      if (pedido.venta?.confirmacionesEntrega.isNotEmpty ?? false) {
-        final todasLasConfirmaciones = pedido.venta!.confirmacionesEntrega;
-        debugPrint(
-          '🔍 Timeline Pedido #${pedido.numero}: ${todasLasConfirmaciones.length} confirmaciones totales',
-        );
-
-        final confirmacionesFiltradas = todasLasConfirmaciones
-            .where((c) => _debeActualizarConfirmacion(c))
-            .toList();
-
-        debugPrint(
-          '   ✅ ${confirmacionesFiltradas.length} confirmaciones filtradas',
-        );
-
-        // Mostrar solo la última confirmación registrada
-        if (confirmacionesFiltradas.isNotEmpty) {
-          final ultimaConfirmacion = confirmacionesFiltradas.last;
-          debugPrint(
-            '   📍 Última confirmación: tipo_entrega=${ultimaConfirmacion.tipoEntrega}, tipo_confirmacion=${ultimaConfirmacion.tipoConfirmacion}',
-          );
-
-          items.add(_buildTimelineSeparator(colorScheme));
-          items.add(
-            _buildTimelineItem(
-              ctx,
-              '📋 Detalles',
-              _getConfirmacionStatusDetallado(ultimaConfirmacion),
-              colorScheme,
-            ),
-          );
-        }
-      }
-    }
-
-    return items;
+      // 3. Estado logístico: Entrega y confirmación
+      ...EntregaTimelineWidget.buildTimelineItems(
+        pedido,
+        colorScheme,
+        ctx,
+        _buildTimelineSeparator,
+        _buildTimelineItem,
+        _getLogisticaStatus,
+        _getConfirmacionStatusDetallado,
+        _debeActualizarConfirmacion,
+      ),
+    ];
   }
 
   Widget _buildTimelineSeparator(ColorScheme colorScheme) {
     return Container(
-      width: 2,
-      height: 16,
-      margin: const EdgeInsets.symmetric(horizontal: 4),
-      color: colorScheme.outline.withOpacity(0.3),
+      width: double.infinity,
+      height: 1,
+      margin: const EdgeInsets.symmetric(vertical: 8),
+      color: colorScheme.outline.withOpacity(0.2),
     );
   }
 
   Widget _buildTimelineItem(
     BuildContext context,
     String label,
-    Map<String, dynamic> status,
+    ({String subtitle, Color color}) status,
     ColorScheme colorScheme,
   ) {
-    final color = status['color'] as Color;
-    final subtitle = status['subtitle'] as String;
-
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 8),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
         decoration: BoxDecoration(
-          color: color.withOpacity(0.1),
+          color: status.color.withOpacity(0.1),
           borderRadius: BorderRadius.circular(6),
-          border: Border.all(color: color.withOpacity(0.3)),
+          border: Border.all(color: status.color.withOpacity(0.3)),
         ),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.center,
@@ -334,14 +380,17 @@ class PedidoCard extends StatelessWidget {
           children: [
             Text(
               label,
-              style: TextStyle(color: color, fontWeight: FontWeight.w600),
+              style: TextStyle(
+                color: status.color,
+                fontWeight: FontWeight.w600,
+              ),
               maxLines: 1,
             ),
             const SizedBox(width: 4),
             Text(
-              subtitle,
+              status.subtitle,
               style: TextStyle(
-                color: color.withOpacity(0.8),
+                color: status.color.withOpacity(0.8),
                 fontWeight: FontWeight.w400,
               ),
               maxLines: 1,
@@ -352,263 +401,72 @@ class PedidoCard extends StatelessWidget {
     );
   }
 
-  Widget _buildEntregaInfoWidget(
-    BuildContext context,
-    DetalleEntrega entrega,
-    ColorScheme colorScheme,
-  ) {
-    final color = _getEntregaStatusColor(entrega.estado);
-
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 8),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-        decoration: BoxDecoration(
-          color: color.withOpacity(0.1),
-          borderRadius: BorderRadius.circular(6),
-          border: Border.all(color: color.withOpacity(0.3)),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // Número de entrega
-            Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  '🚗 ${entrega.numeroEntrega}',
-                  style: TextStyle(
-                    color: color,
-                    fontWeight: FontWeight.w600,
-                    fontSize: 12,
-                  ),
-                ),
-              ],
-            ),
-            SizedBox(height: 4),
-            // Chofer y Vehículo
-            if (entrega.choferNombre != null || entrega.vehiculoPlaca != null)
-              Text(
-                '👤 ${entrega.choferNombre ?? 'Sin chofer'} • 🚙 ${entrega.vehiculoPlaca ?? 'Sin vehículo'}',
-                style: TextStyle(
-                  color: colorScheme.onSurfaceVariant,
-                  fontSize: 10,
-                ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-            if (entrega.observaciones != null &&
-                entrega.observaciones!.isNotEmpty)
-              Padding(
-                padding: const EdgeInsets.only(top: 4),
-                child: Text(
-                  entrega.observaciones!,
-                  style: TextStyle(
-                    color: colorScheme.onSurfaceVariant,
-                    fontSize: 9,
-                    fontStyle: FontStyle.italic,
-                  ),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-          ],
-        ),
-      ),
-    );
+  ({String subtitle, Color color}) _getProformaStatus(Pedido pedido) {
+    return switch (pedido.estadoCodigo.toUpperCase()) {
+      'RECHAZADA' => (subtitle: '❌ Rechazada', color: Colors.red),
+      _ when pedido.esVenta => (subtitle: '✅ Convertida', color: Colors.green),
+      final estado => (subtitle: estado, color: Colors.blue),
+    };
   }
 
-  Color _getEntregaStatusColor(String estado) {
-    final upperEstado = estado.toUpperCase();
-    switch (upperEstado) {
-      case 'LISTO_PARA_ENTREGA':
-        return Colors.blue;
-      case 'EN_CAMINO':
-      case 'EN_RUTA':
-        return Colors.purple;
-      case 'ENTREGADO':
-      case 'COMPLETADO':
-        return Colors.green;
-      case 'CANCELADA':
-      case 'CANCELADO':
-      case 'FALLIDA':
-        return Colors.red;
-      default:
-        return Colors.grey;
-    }
+  ({String subtitle, Color color}) _getVentaStatus(PedidoVenta venta) {
+    final codigoDoc = venta.estadoDocumento?.codigo?.toUpperCase() ?? '';
+    final nombreDoc = venta.estadoDocumento?.nombre ?? 'SIN ESTADO';
+
+    return switch (codigoDoc) {
+      'ANULADO' => (subtitle: '❌ Anulada', color: Colors.red),
+      'APROBADO' => (subtitle: '✅ Aprobada', color: Colors.green),
+      _ => (subtitle: nombreDoc, color: Colors.orange),
+    };
   }
 
-  Map<String, dynamic> _getProformaStatus(Pedido pedido) {
-    final baseEstado = pedido.estadoCodigo.toUpperCase();
+  ({String subtitle, Color color}) _getLogisticaStatus(Pedido pedido) {
+    final estadoLogistica = pedido.venta?.estadoLogisticoObj;
 
-    String subtitulo;
-    Color color;
-
-    if (pedido.esVenta) {
-      subtitulo = '✅ Convertida';
-      color = Colors.green;
-    } else if (baseEstado == 'RECHAZADA') {
-      subtitulo = '❌ Rechazada';
-      color = Colors.red;
-    } else {
-      subtitulo = baseEstado;
-      color = Colors.blue;
+    if (estadoLogistica != null) {
+      final codigo = estadoLogistica.codigo?.toUpperCase() ?? '';
+      return switch (codigo) {
+        'PENDIENTE' ||
+        'PENDIENTE_ENVIO' => (subtitle: '⏳ Pendiente', color: Colors.blue),
+        'EN_RUTA' ||
+        'EN_CAMINO' => (subtitle: '📍 En Ruta', color: Colors.purple),
+        'ENTREGADO' ||
+        'COMPLETADO' => (subtitle: '✅ Entregado', color: Colors.green),
+        'RECHAZADA' ||
+        'RECHAZADO' ||
+        'FALLIDA' => (subtitle: '❌ Rechazada', color: Colors.red),
+        'CANCELADA' ||
+        'CANCELADO' => (subtitle: '⛔ Cancelada', color: Colors.red),
+        _ => (subtitle: estadoLogistica.nombre, color: Colors.grey),
+      };
     }
 
-    return {'subtitle': subtitulo, 'color': color};
-  }
-
-  Map<String, dynamic> _getVentaStatus(PedidoVenta venta) {
-    final estadoDoc = venta.estadoDocumento?.nombre ?? 'SIN ESTADO';
-    final codigoDoc = venta.estadoDocumento?.codigo ?? '';
-
-    String subtitulo;
-    Color color;
-
-    if (codigoDoc.toUpperCase() == 'ANULADO') {
-      subtitulo = '❌ Anulada';
-      color = Colors.red;
-    } else if (codigoDoc.toUpperCase() == 'APROBADO') {
-      subtitulo = '✅ Aprobada';
-      color = Colors.green;
-    } else {
-      subtitulo = estadoDoc;
-      color = Colors.orange;
+    if (pedido.estadoNombre.isNotEmpty) {
+      return (
+        subtitle: pedido.estadoNombre,
+        color: _getColorForEstado(pedido.estadoCategoria, pedido.estadoCodigo),
+      );
     }
 
-    return {'subtitle': subtitulo, 'color': color};
+    return (subtitle: 'SIN ENTREGA', color: Colors.grey);
   }
 
-  Map<String, dynamic> _getLogisticaStatus(Pedido pedido) {
-    String subtitulo;
-    Color color;
-
-    if (pedido.venta?.estadoLogistica != null) {
-      final estado = pedido.venta!.estadoLogistica!.codigo?.toUpperCase() ?? '';
-      final nombre = pedido.venta!.estadoLogistica!.nombre;
-
-      switch (estado) {
-        case 'PENDIENTE':
-        case 'PENDIENTE_ENVIO':
-          subtitulo = '⏳ Pendiente';
-          color = Colors.blue;
-          break;
-        case 'EN_RUTA':
-        case 'EN_CAMINO':
-          subtitulo = '📍 En Ruta';
-          color = Colors.purple;
-          break;
-        case 'ENTREGADO':
-        case 'COMPLETADO':
-          subtitulo = '✅ Entregado';
-          color = Colors.green;
-          break;
-        case 'RECHAZADA':
-        case 'RECHAZADO':
-        case 'FALLIDA':
-          subtitulo = '❌ Rechazada';
-          color = Colors.red;
-          break;
-        case 'CANCELADA':
-        case 'CANCELADO':
-          subtitulo = '⛔ Cancelada';
-          color = Colors.red;
-          break;
-        default:
-          subtitulo = nombre;
-          color = Colors.grey;
-      }
-    } else if (pedido.estadoNombre.isNotEmpty) {
-      subtitulo = pedido.estadoNombre;
-      color = _getColorForEstado(pedido.estadoCategoria, pedido.estadoCodigo);
-    } else {
-      subtitulo = 'SIN ENTREGA';
-      color = Colors.grey;
-    }
-
-    return {'subtitle': subtitulo, 'color': color};
-  }
-
-  String _getConfirmacionIcon(EntregaVentaConfirmacion confirmacion) {
-    final tipo = confirmacion.tipoConfirmacion.toUpperCase();
-
-    switch (tipo) {
-      case 'COMPLETA':
-        return '✅ Completa';
-      case 'RECHAZADA':
-        return '❌ Rechazada';
-      case 'CLIENTE_CERRADO':
-        return '🔒 Cerrado';
-      case 'DEVOLUCION_PARCIAL':
-        return '↩️ Devolución Parcial';
-      default:
-        return '📦 ${tipo.replaceAll('_', ' ')}';
-    }
-  }
-
-  Map<String, dynamic> _getConfirmacionStatus(
+  ({String subtitle, Color color}) _getConfirmacionStatusDetallado(
     EntregaVentaConfirmacion confirmacion,
   ) {
-    final tipo = confirmacion.tipoConfirmacion.toUpperCase();
-
-    String subtitulo;
-    Color color;
-
-    switch (tipo) {
-      case 'COMPLETA':
-        subtitulo = 'Completada';
-        color = Colors.green;
-        break;
-      case 'RECHAZADA':
-        subtitulo = 'Rechazada';
-        color = Colors.red;
-        break;
-      case 'CLIENTE_CERRADO':
-        subtitulo = 'Cerrada';
-        color = Colors.orange;
-        break;
-      case 'DEVOLUCION_PARCIAL':
-        subtitulo = 'Devolución';
-        color = Colors.amber;
-        break;
-      default:
-        subtitulo = tipo;
-        color = Colors.grey;
-    }
-
-    return {'subtitle': subtitulo, 'color': color};
-  }
-
-  Map<String, dynamic> _getConfirmacionStatusDetallado(
-    EntregaVentaConfirmacion confirmacion,
-  ) {
-    // Mostrar tipo_entrega y tipo_confirmacion
     final tipoEntrega = confirmacion.tipoEntrega.toUpperCase();
     final tipoConfirmacion = confirmacion.tipoConfirmacion.toUpperCase();
-
     final subtitle = '$tipoEntrega - $tipoConfirmacion';
 
-    // Color basado en tipo_confirmacion
-    Color color;
-    switch (tipoConfirmacion) {
-      case 'COMPLETA':
-        color = Colors.green;
-        break;
-      case 'RECHAZADA':
-        color = Colors.red;
-        break;
-      case 'CLIENTE_CERRADO':
-        color = Colors.orange;
-        break;
-      case 'DEVOLUCION_PARCIAL':
-        color = Colors.amber;
-        break;
-      default:
-        color = Colors.grey;
-    }
+    final color = switch (tipoConfirmacion) {
+      'COMPLETA' => Colors.green,
+      'RECHAZADA' => Colors.red,
+      'CLIENTE_CERRADO' => Colors.orange,
+      'DEVOLUCION_PARCIAL' => Colors.amber,
+      _ => Colors.grey,
+    };
 
-    return {'subtitle': subtitle, 'color': color};
+    return (subtitle: subtitle, color: color);
   }
 
   bool _debeActualizarConfirmacion(EntregaVentaConfirmacion confirmacion) {

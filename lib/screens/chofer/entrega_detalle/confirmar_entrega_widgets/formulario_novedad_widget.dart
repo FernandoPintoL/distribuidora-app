@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../../../config/app_text_styles.dart';
 import '../../../../models/venta.dart';
-import 'models.dart';
 
 // ✅ WIDGET: Formulario para Registro de Novedad
 class FormularioNovedadWidget extends StatelessWidget {
@@ -42,8 +40,16 @@ class FormularioNovedadWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final esNovedadSimple =
-        tipoNovedad == 'CLIENTE_CERRADO' || tipoNovedad == 'RECHAZADO';
+    // ✅ SIMPLIFICADO 2026-07-01: Mostrar tabla SOLO para DEVOLUCION_PARCIAL
+    final mostrarTablaProductos =
+        tipoNovedad?.toUpperCase() == 'DEVOLUCION_PARCIAL';
+
+    // ✅ DEBUG: Verificar que se construye correctamente
+    if (mostrarTablaProductos) {
+      debugPrint(
+        '📋 [TABLA PRODUCTOS] Mostrando tabla con ${venta.detalles?.length ?? 0} productos',
+      );
+    }
 
     return Column(
       children: [
@@ -62,13 +68,12 @@ class FormularioNovedadWidget extends StatelessWidget {
                   const SizedBox(height: 12),
                   ..._buildTiposNovedadOptions(context),
                   const SizedBox(height: 8),
-                  // Mostrar tabla y resumen SOLO si NO es novedad simple
-                  if (!esNovedadSimple) ...[
-                    // ✅ Widget consolidado de pagos y resumen
+                  // ✅ SIMPLIFICADO: Mostrar tabla SOLO si es DEVOLUCION_PARCIAL
+                  if (mostrarTablaProductos) ...[
                     buildTablaProductosRechazados(context, isDarkMode),
                     registroPagosWidget,
-                    const SizedBox(height: 8),
                   ],
+                  const SizedBox(height: 8),
                   // Campo de Observaciones
                   Text(
                     'Observaciones',

@@ -4,11 +4,10 @@ import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import '../../models/models.dart';
 import '../../providers/providers.dart';
-import '../../config/app_gradients.dart';
-import '../../config/app_text_styles.dart';
 import '../../extensions/theme_extension.dart';
-import '../../services/estados_helpers.dart';
 import '../../utils/date_picker_utils.dart';
+import 'venta_detalle/cliente_avatar_widget.dart';
+import '../../widgets/info_chip_widget.dart';
 
 /// Pantalla de listado de ventas para preventistas/admins
 class VentasListScreen extends StatefulWidget {
@@ -51,6 +50,16 @@ class _VentasListScreenState extends State<VentasListScreen> {
     }
   }
 
+  Color _parseHexColor(String? hexColor) {
+    if (hexColor == null) return Colors.transparent;
+    try {
+      final hex = hexColor.replaceFirst('#', '');
+      return Color(int.parse('FF$hex', radix: 16));
+    } catch (e) {
+      return Colors.transparent;
+    }
+  }
+
   Future<void> _onRefresh() async {
     await _ventasProvider.loadVentas(
       estado: _ventasProvider.filtroEstado,
@@ -81,8 +90,6 @@ class _VentasListScreenState extends State<VentasListScreen> {
       appBar: AppBar(
         title: const Text('Ventas'),
         elevation: 0,
-        backgroundColor: colorScheme.primary,
-        foregroundColor: Colors.white,
         actions: [
           IconButton(
             icon: const Icon(Icons.tune),
@@ -102,36 +109,42 @@ class _VentasListScreenState extends State<VentasListScreen> {
             return _buildErrorState(ventasProvider);
           }
 
-          return RefreshIndicator(
-            onRefresh: _onRefresh,
-            child: CustomScrollView(
-              controller: _scrollController,
-              physics: const AlwaysScrollableScrollPhysics(),
-              slivers: [
-                // Búsqueda
-                SliverToBoxAdapter(child: _buildSearchBar(ventasProvider)),
+          return Column(
+            children: [
+              // Búsqueda y Estadísticas (siempre visibles)
+              _buildSearchBar(ventasProvider),
+              // _buildStatsBar(ventasProvider),
 
-                // Estadísticas rápidas
-                SliverToBoxAdapter(child: _buildStatsBar(ventasProvider)),
+              // Lista con scroll
+              Expanded(
+                child: RefreshIndicator(
+                  onRefresh: _onRefresh,
+                  child: CustomScrollView(
+                    controller: _scrollController,
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    slivers: [
+                      // Lista de ventas o estado vacío
+                      if (ventasProvider.ventas.isEmpty)
+                        SliverFillRemaining(
+                          child: _buildEmptyState(ventasProvider),
+                        )
+                      else
+                        _buildVentasListSliver(ventasProvider),
 
-                // Lista de ventas o estado vacío
-                if (ventasProvider.ventas.isEmpty)
-                  SliverFillRemaining(
-                    child: _buildEmptyState(ventasProvider),
-                  )
-                else
-                  _buildVentasListSliver(ventasProvider),
-
-                // Indicador de carga
-                if (ventasProvider.isLoadingMore && ventasProvider.ventas.isNotEmpty)
-                  const SliverToBoxAdapter(
-                    child: Padding(
-                      padding: EdgeInsets.all(16),
-                      child: CircularProgressIndicator(),
-                    ),
+                      // Indicador de carga
+                      if (ventasProvider.isLoadingMore &&
+                          ventasProvider.ventas.isNotEmpty)
+                        const SliverToBoxAdapter(
+                          child: Padding(
+                            padding: EdgeInsets.all(16),
+                            child: CircularProgressIndicator(),
+                          ),
+                        ),
+                    ],
                   ),
-              ],
-            ),
+                ),
+              ),
+            ],
           );
         },
       ),
@@ -141,7 +154,6 @@ class _VentasListScreenState extends State<VentasListScreen> {
   Widget _buildSearchBar(VentasProvider provider) {
     return Container(
       padding: const EdgeInsets.all(16),
-      color: context.colorScheme.surface,
       child: TextField(
         controller: _searchController,
         onSubmitted: (value) {
@@ -160,9 +172,7 @@ class _VentasListScreenState extends State<VentasListScreen> {
                   },
                 )
               : null,
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
           contentPadding: const EdgeInsets.symmetric(
             horizontal: 16,
             vertical: 12,
@@ -207,7 +217,7 @@ class _VentasListScreenState extends State<VentasListScreen> {
   Widget _buildStatItem(String label, String value, IconData icon) {
     return Column(
       children: [
-        Icon(icon, size: 24, color: context.colorScheme.primary),
+        Icon(icon, size: 24, color: context.colorScheme.secondary),
         const SizedBox(height: 4),
         Text(
           value,
@@ -226,22 +236,26 @@ class _VentasListScreenState extends State<VentasListScreen> {
 
   Widget _buildVentasListSliver(VentasProvider provider) {
     return SliverList(
-      delegate: SliverChildBuilderDelegate(
-        (context, index) {
-          final venta = provider.ventas[index];
-          return _buildVentaCard(venta);
-        },
-        childCount: provider.ventas.length,
-      ),
+      delegate: SliverChildBuilderDelegate((context, index) {
+        final venta = provider.ventas[index];
+        return _buildVentaCard(venta);
+      }, childCount: provider.ventas.length),
     );
   }
 
   Widget _buildVentaCard(Venta venta) {
     final colorScheme = context.colorScheme;
-    final isDark = context.isDark;
+    final estadoDocColor = venta.estadoDocumentoObj?.color != null
+        ? _parseHexColor(venta.estadoDocumentoObj?.color)
+        : colorScheme.primary;
 
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      color: estadoDocColor.withOpacity(0.08),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(8),
+        side: BorderSide(color: estadoDocColor.withOpacity(0.2), width: 1),
+      ),
       child: InkWell(
         onTap: () => _onVentaTapped(venta),
         child: Padding(
@@ -258,10 +272,11 @@ class _VentasListScreenState extends State<VentasListScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Venta #${venta.numero}',
-                          style: const TextStyle(
+                          'Venta - Folio #${venta.id}',
+                          style: TextStyle(
                             fontWeight: FontWeight.bold,
                             fontSize: 16,
+                            color: estadoDocColor.withOpacity(0.8),
                           ),
                         ),
                         Text(
@@ -276,9 +291,10 @@ class _VentasListScreenState extends State<VentasListScreen> {
                   ),
                   Text(
                     'Bs. ${venta.total.toStringAsFixed(2)}',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontWeight: FontWeight.bold,
-                      fontSize: 16,
+                      fontSize: 18,
+                      color: estadoDocColor,
                     ),
                   ),
                 ],
@@ -287,28 +303,13 @@ class _VentasListScreenState extends State<VentasListScreen> {
 
               // Cliente y Dirección
               if (venta.cliente != null)
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      venta.cliente!.nombre,
-                      style: const TextStyle(fontSize: 14),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    if (venta.direccionCliente?.direccion != null)
-                      Text(
-                        venta.direccionCliente!.direccion,
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: colorScheme.onSurfaceVariant,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    const SizedBox(height: 8),
-                  ],
+                ClienteAvatarWidget(
+                  clienteNombre: venta.cliente?.nombre,
+                  clienteFotoPerfil: venta.cliente?.fotoPerfil,
+                  clienteLocalidad: venta.direccionCliente?.localidad?.nombre,
+                  clienteObservaciones: venta.direccionCliente?.observaciones,
                 ),
+              const SizedBox(height: 8),
 
               // Estados: Documento, Pago y Logístico
               Wrap(
@@ -317,52 +318,72 @@ class _VentasListScreenState extends State<VentasListScreen> {
                   // ✅ NUEVO: Estado del Documento (Aprobado, Anulado, Rechazado, etc)
                   if (venta.estadoDocumentoObj != null)
                     _buildEstadoBadge(
-                      label: venta.estadoDocumentoObj!.codigo ?? venta.estadoDocumentoObj!.nombre,
-                      icon: _getIconForEstadoDocumento(venta.estadoDocumentoObj!.codigo ?? ''),
-                      color: _getColorForEstadoDocumento(venta.estadoDocumentoObj!.codigo ?? ''),
+                      label:
+                          venta.estadoDocumentoObj!.codigo ??
+                          venta.estadoDocumentoObj!.nombre,
+                      icon: _getIconForEstadoDocumento(
+                        venta.estadoDocumentoObj!.codigo ?? '',
+                      ),
+                      color: venta.estadoDocumentoObj!.color != null
+                          ? _parseHexColor(venta.estadoDocumentoObj!.color)
+                          : _getColorForEstadoDocumento(
+                              venta.estadoDocumentoObj!.codigo ?? '',
+                            ),
                       tooltip: venta.estadoDocumentoObj!.nombre,
                     ),
-                  // Estado de pago
-                  _buildEstadoBadge(
-                    label: venta.estadoPago,
-                    icon: _getIconForEstadoPago(venta.estadoPago),
-                    color: _getColorForEstadoPago(venta.estadoPago),
-                  ),
                   // Estado logístico
-                  if (venta.estadoLogistico.isNotEmpty)
+                  if (venta.estadoLogisticoObj != null)
                     _buildEstadoBadge(
-                      label: venta.estadoLogistico,
-                      icon: Icons.local_shipping_outlined,
-                      color: colorScheme.tertiary,
+                      label: venta.estadoLogisticoObj!.nombre,
+                      icon: venta.estadoLogisticoObj!.icono != null
+                          ? _getIconFromString(venta.estadoLogisticoObj!.icono!)
+                          : Icons.local_shipping_outlined,
+                      color: venta.estadoLogisticoObj!.color != null
+                          ? _parseHexColor(venta.estadoLogisticoObj!.color)
+                          : colorScheme.tertiary,
                     ),
                 ],
               ),
 
               // ✅ NUEVO: Información de Entrega y Proforma (con IDs)
-              if (venta.numeroEntrega != null || venta.proforma != null || venta.entregaId != null || venta.proformaId != null) ...[
+              if (venta.numeroEntrega != null ||
+                  venta.proforma != null ||
+                  venta.entregaId != null ||
+                  venta.proformaId != null) ...[
                 const SizedBox(height: 8),
                 Wrap(
                   spacing: 12,
                   children: [
                     // Información de Entrega
                     if (venta.entregaId != null || venta.numeroEntrega != null)
-                      _buildInfoChip(
+                      InfoChipWidget(
                         icon: Icons.local_shipping_outlined,
-                        label: venta.numeroEntrega != null
-                            ? '${venta.numeroEntrega} (#${venta.entregaId ?? '?'})'
-                            : '#${venta.entregaId}',
-                        color: colorScheme.tertiary,
+                        label: venta.entrega != null
+                            ? 'Folio Entrega'
+                            : 'Entrega',
+                        color: venta.estadoLogisticoObj?.color != null
+                            ? _parseHexColor(venta.estadoLogisticoObj!.color)
+                            : colorScheme.tertiary,
                         tooltip: 'Entrega ID: ${venta.entregaId}',
+                        id: venta.numeroEntrega ?? venta.entregaId?.toString(),
+                        estadoLogistico: venta.estadoLogisticoObj?.nombre,
                       ),
                     // Información de Proforma
                     if (venta.proformaId != null || venta.proforma != null)
-                      _buildInfoChip(
+                      InfoChipWidget(
                         icon: Icons.receipt_outlined,
                         label: venta.proforma != null
-                            ? '${venta.proforma!.numero} (#${venta.proformaId ?? '?'})'
-                            : '#${venta.proformaId}',
-                        color: colorScheme.secondary,
+                            ? 'Folio Pedido'
+                            : 'Proforma',
+                        color: venta.proforma?.estadoLogistico?.color != null
+                            ? _parseHexColor(
+                                venta.proforma!.estadoLogistico!.color,
+                              )
+                            : colorScheme.secondary,
                         tooltip: 'Proforma ID: ${venta.proformaId}',
+                        id: venta.proformaId?.toString(),
+                        estadoLogistico:
+                            venta.proforma?.estadoLogistico?.nombre,
                       ),
                   ],
                 ),
@@ -386,48 +407,6 @@ class _VentasListScreenState extends State<VentasListScreen> {
     );
   }
 
-  /// ✅ NUEVO: Widget para mostrar información de entrega/proforma con IDs
-  Widget _buildInfoChip({
-    required IconData icon,
-    required String label,
-    required Color color,
-    String? tooltip,
-  }) {
-    final chip = Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(
-        color: color.withOpacity(0.15),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: color.withOpacity(0.3), width: 0.5),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 13, color: color),
-          const SizedBox(width: 4),
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 10,
-              fontWeight: FontWeight.w500,
-              color: color,
-            ),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
-        ],
-      ),
-    );
-
-    if (tooltip != null && tooltip.isNotEmpty) {
-      return Tooltip(
-        message: tooltip,
-        child: chip,
-      );
-    }
-    return chip;
-  }
-
   Widget _buildEstadoBadge({
     required String label,
     required IconData icon,
@@ -448,11 +427,7 @@ class _VentasListScreenState extends State<VentasListScreen> {
           const SizedBox(width: 4),
           Text(
             label,
-            style: TextStyle(
-              fontSize: 11,
-              fontWeight: FontWeight.w500,
-              color: color,
-            ),
+            style: TextStyle(fontWeight: FontWeight.w500, color: color),
           ),
         ],
       ),
@@ -460,10 +435,7 @@ class _VentasListScreenState extends State<VentasListScreen> {
 
     // Si hay tooltip, envolver en Tooltip
     if (tooltip != null && tooltip.isNotEmpty) {
-      return Tooltip(
-        message: tooltip,
-        child: badge,
-      );
+      return Tooltip(message: tooltip, child: badge);
     }
     return badge;
   }
@@ -493,6 +465,12 @@ class _VentasListScreenState extends State<VentasListScreen> {
   }
 
   // ✅ NUEVO: Métodos para Estado del Documento
+  IconData _getIconFromString(String? iconString) {
+    // Los emojis que vienen del backend no se pueden usar directamente como IconData
+    // Usamos un icono genérico como fallback
+    return Icons.local_shipping_outlined;
+  }
+
   IconData _getIconForEstadoDocumento(String codigo) {
     switch (codigo.toUpperCase()) {
       case 'APROBADO':
@@ -528,11 +506,7 @@ class _VentasListScreenState extends State<VentasListScreen> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(
-            Icons.error_outline,
-            size: 64,
-            color: context.colorScheme.error,
-          ),
+          Icon(Icons.error_outline, size: 64, color: context.colorScheme.error),
           const SizedBox(height: 16),
           Text(
             'Error al cargar ventas',
@@ -556,7 +530,8 @@ class _VentasListScreenState extends State<VentasListScreen> {
   }
 
   Widget _buildEmptyState(VentasProvider provider) {
-    final hasFilters = _searchController.text.isNotEmpty ||
+    final hasFilters =
+        _searchController.text.isNotEmpty ||
         provider.filtroEstado != null ||
         provider.filtroFechaDesde != null ||
         provider.filtroFechaHasta != null;
@@ -571,10 +546,7 @@ class _VentasListScreenState extends State<VentasListScreen> {
             color: context.colorScheme.onSurfaceVariant,
           ),
           const SizedBox(height: 16),
-          Text(
-            'No hay ventas',
-            style: Theme.of(context).textTheme.titleLarge,
-          ),
+          Text('No hay ventas', style: Theme.of(context).textTheme.titleLarge),
           const SizedBox(height: 8),
           Text(
             hasFilters
@@ -682,10 +654,7 @@ class _VentasListScreenState extends State<VentasListScreen> {
                 firstDate: DateTime(2020),
                 lastDate: DateTime.now(),
                 builder: (context, child) {
-                  return Theme(
-                    data: Theme.of(context),
-                    child: child!,
-                  );
+                  return Theme(data: Theme.of(context), child: child!);
                 },
               );
               if (fecha != null) {

@@ -6,7 +6,7 @@ class ComboItemList extends StatelessWidget {
   final List<Map<String, dynamic>> comboItems;
   final int comboCantidad;
   final List<ComboItem>? comboItemsDelProducto;
-  final Map<int, Product>? productosMap;
+  final Map<int, Producto>? productosMap;
 
   const ComboItemList({
     super.key,
@@ -24,11 +24,11 @@ class ComboItemList extends StatelessWidget {
     }
   }
 
-  Product? obtenerProducto(int productoId) {
+  Producto? obtenerProducto(int productoId) {
     return productosMap?[productoId];
   }
 
-  Widget _buildProductImage(Product? producto) {
+  Widget _buildProductImage(Producto? producto) {
     if (producto?.imagenes != null && producto!.imagenes!.isNotEmpty) {
       final imagenPrincipal = producto.imagenes!.firstWhere(
         (img) => img.esPrincipal,
@@ -85,10 +85,10 @@ class ComboItemList extends StatelessWidget {
         final cantidadTotal = cantidad * comboCantidad;
 
         // Obtener producto del objeto si existe, si no, buscar en productosMap
-        Product? producto;
+        Producto? producto;
         if (comboItem['producto'] is Map) {
           try {
-            producto = Product.fromJson(comboItem['producto']);
+            producto = Producto.fromJson(comboItem['producto']);
           } catch (e) {
             debugPrint('Error parseando producto: $e');
           }

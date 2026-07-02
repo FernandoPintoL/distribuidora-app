@@ -631,26 +631,29 @@ class _PedidosHistorialScreenState extends State<PedidosHistorialScreen>
                       }
 
                       final pedido = pedidoProvider.pedidos[index];
-                      return PedidoCard(
-                        pedido: pedido,
-                        onTap: () {
-                          // Si la proforma ya fue convertida a venta, ir a venta-detalle
-                          if (pedido.esVenta && pedido.ventaId != null) {
-                            Navigator.pushNamed(
-                              context,
-                              '/venta-detalle',
-                              arguments: pedido.ventaId,
-                            );
-                          } else {
-                            // Si no está convertida, ir a pedido-detalle
-                            Navigator.pushNamed(
-                              context,
-                              '/pedido-detalle',
-                              arguments: pedido.id,
-                            );
-                          }
-                        },
-                        onPrint: _handlePrintProforma,
+                      return Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 8.0),
+                        child: PedidoCard(
+                          pedido: pedido,
+                          onTap: () {
+                            // Si la proforma ya fue convertida a venta, ir a venta-detalle
+                            if (pedido.esVenta && pedido.ventaId != null) {
+                              Navigator.pushNamed(
+                                context,
+                                '/venta-detalle',
+                                arguments: pedido.ventaId,
+                              );
+                            } else {
+                              // Si no está convertida, ir a pedido-detalle
+                              Navigator.pushNamed(
+                                context,
+                                '/pedido-detalle',
+                                arguments: pedido.id,
+                              );
+                            }
+                          },
+                          onPrint: _handlePrintProforma,
+                        ),
                       );
                       // return Text("no se que esta pasando");
                     },

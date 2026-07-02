@@ -20,41 +20,89 @@ class FechaProgramadaSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.all(16),
-      child: Card(
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Fecha Programada',
-                style: TextStyle(
-                  fontSize: AppTextStyles.headlineSmall(parentContext).fontSize!,
-                  fontWeight: FontWeight.bold,
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return Card(
+      margin: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Fila 1: Fecha y Hora
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Expanded(
+                  child: InfoRowWidget(
+                    icon: Icons.event,
+                    label: 'Entrega Solicitada',
+                    value: _formatearSoloFecha(pedido.fechaEntregaSolicitada!),
+                    parentContext: parentContext,
+                    colorIcon: colorScheme.tertiary,
+                    colorText: colorScheme.tertiary,
+                  ),
                 ),
-              ),
-              const Divider(height: 24),
-              InfoRowWidget(
-                icon: Icons.event,
-                label: 'Fecha',
-                value: _formatearSoloFecha(pedido.fechaProgramada!),
-                parentContext: parentContext,
-              ),
-              if (pedido.horaInicioPreferida != null ||
-                  pedido.horaFinPreferida != null) ...[
-                const SizedBox(height: 12),
-                InfoRowWidget(
-                  icon: Icons.access_time,
-                  label: 'Horario',
-                  value: '${pedido.horaInicioPreferida != null ? DateFormat('HH:mm').format(pedido.horaInicioPreferida!) : '--:--'} - ${pedido.horaFinPreferida != null ? DateFormat('HH:mm').format(pedido.horaFinPreferida!) : '--:--'}',
-                  parentContext: parentContext,
-                ),
+                if (pedido.horaEntregaSolicitada != null) ...[
+                  Flexible(
+                    child: InfoRowWidget(
+                      icon: Icons.access_time,
+                      label: 'Hora Solicitada',
+                      value: pedido.horaEntregaSolicitada ?? '--:--',
+                      parentContext: parentContext,
+                      colorIcon: colorScheme.tertiary,
+                      colorText: colorScheme.tertiary,
+                    ),
+                  ),
+                ],
               ],
-            ],
-          ),
+            ),
+          ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildEstadoBadge(EstadoLogistico estado) {
+    Color badgeColor = Colors.grey;
+    if (estado.color != null) {
+      try {
+        final hex = estado.color!.replaceFirst('#', '');
+        badgeColor = Color(int.parse('FF$hex', radix: 16));
+      } catch (e) {
+        debugPrint('⚠️ Error al parsear color: ${estado.color}');
+      }
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: badgeColor.withOpacity(0.15),
+        border: Border.all(color: badgeColor.withOpacity(0.5)),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Icono del estado (si existe)
+          if (estado.icono != null) ...[
+            Text(estado.icono!, style: const TextStyle(fontSize: 16)),
+            const SizedBox(width: 8),
+          ],
+          // Nombre del estado
+          Flexible(
+            child: Text(
+              estado.nombre,
+              style: TextStyle(
+                color: badgeColor,
+                fontWeight: FontWeight.w600,
+                fontSize: 13,
+              ),
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+        ],
       ),
     );
   }

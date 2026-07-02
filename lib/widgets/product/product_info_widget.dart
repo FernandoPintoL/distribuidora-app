@@ -6,7 +6,7 @@ import '../../extensions/theme_extension.dart';
 /// Widget que muestra la información del producto (nombre, SKU, marca, precio)
 /// Adaptado para modo oscuro y con soporte para rangos de precios
 class ProductInfoWidget extends StatelessWidget {
-  final Product product;
+  final Producto product;
   final bool isGridView;
   final int cantidad;
   final DetalleCarritoConRango? detalleConRango;

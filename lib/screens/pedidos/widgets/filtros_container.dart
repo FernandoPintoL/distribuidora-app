@@ -742,9 +742,10 @@ class FilterContainers {
           duration: const Duration(milliseconds: 200),
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
           decoration: BoxDecoration(
+            color: isSelected ? chipColor : chipColor.withOpacity(0.1),
             borderRadius: BorderRadius.circular(20),
             border: Border.all(
-              color: isSelected ? chipColor : colorScheme.primary,
+              color: chipColor,
               width: isSelected ? 2 : 1,
             ),
             boxShadow: isSelected
@@ -765,7 +766,7 @@ class FilterContainers {
                 size: 16,
                 color: isSelected
                     ? Colors.white
-                    : (isDark ? Colors.white70 : colorScheme.onSurface),
+                    : chipColor,
               ),
               const SizedBox(width: 6),
               Text(
@@ -773,7 +774,7 @@ class FilterContainers {
                 style: TextStyle(
                   color: isSelected
                       ? Colors.white
-                      : (isDark ? Colors.white : colorScheme.onSurface),
+                      : chipColor,
                   fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
                 ),
               ),
@@ -783,13 +784,13 @@ class FilterContainers {
                 decoration: BoxDecoration(
                   color: isSelected
                       ? Colors.white.withOpacity(0.25)
-                      : colorScheme.outline.withOpacity(0.2),
+                      : chipColor.withOpacity(0.2),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Text(
                   '$contador',
                   style: TextStyle(
-                    color: isSelected ? Colors.white : colorScheme.onSurface,
+                    color: isSelected ? Colors.white : chipColor,
                     fontWeight: FontWeight.bold,
                   ),
                 ),

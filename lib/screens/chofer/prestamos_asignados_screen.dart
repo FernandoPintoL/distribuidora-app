@@ -7,7 +7,12 @@ import 'prestamo_detalle_screen.dart';
 
 /// Pantalla que muestra los 3 tipos de préstamos asignados al chofer
 class PrestamosAsignadosScreen extends StatefulWidget {
-  const PrestamosAsignadosScreen({super.key});
+  final bool showAppBar;
+
+  const PrestamosAsignadosScreen({
+    super.key,
+    this.showAppBar = false,
+  });
 
   @override
   State<PrestamosAsignadosScreen> createState() =>
@@ -74,46 +79,76 @@ class _PrestamosAsignadosScreenState extends State<PrestamosAsignadosScreen>
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    return Column(
-      children: [
-        // Tabs con conteo de préstamos
-        Consumer<PrestamosProvider>(
-          builder: (context, provider, _) {
-            return Container(
-              child: TabBar(
-                controller: _tabController,
-                labelColor: Theme.of(context).colorScheme.secondary,
-                indicatorColor: Theme.of(context).colorScheme.secondary,
-                tabs: [
-                  Tab(
-                    text: 'Clientes (${provider.prestamosClientes.length})',
-                    icon: const Icon(Icons.person),
-                  ),
-                  Tab(
-                    text: 'Eventos (${provider.prestamosEventos.length})',
-                    icon: const Icon(Icons.event),
-                  ),
-                  Tab(
-                    text: 'Proveedores (${provider.prestamosProveedores.length})',
-                    icon: const Icon(Icons.business),
-                  ),
-                ],
-              ),
-            );
-          },
-        ),
-        // Contenido de tabs
-        Expanded(
-          child: TabBarView(
-            controller: _tabController,
-            children: [
-              _buildPrestamosList('cliente'),
-              _buildPrestamosList('evento'),
-              _buildPrestamosList('proveedor'),
-            ],
+    return Scaffold(
+      appBar: widget.showAppBar ? _buildAppBar() : null,
+      body: Column(
+        children: [
+          // Tabs con conteo de préstamos
+          Consumer<PrestamosProvider>(
+            builder: (context, provider, _) {
+              return Container(
+                child: TabBar(
+                  controller: _tabController,
+                  labelColor: Theme.of(context).colorScheme.secondary,
+                  indicatorColor: Theme.of(context).colorScheme.secondary,
+                  tabs: [
+                    Tab(
+                      text: 'Clientes (${provider.prestamosClientes.length})',
+                      icon: const Icon(Icons.person),
+                    ),
+                    Tab(
+                      text: 'Eventos (${provider.prestamosEventos.length})',
+                      icon: const Icon(Icons.event),
+                    ),
+                    Tab(
+                      text: 'Proveedores (${provider.prestamosProveedores.length})',
+                      icon: const Icon(Icons.business),
+                    ),
+                  ],
+                ),
+              );
+            },
           ),
-        ),
-      ],
+          // Contenido de tabs
+          Expanded(
+            child: TabBarView(
+              controller: _tabController,
+              children: [
+                _buildPrestamosList('cliente'),
+                _buildPrestamosList('evento'),
+                _buildPrestamosList('proveedor'),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  PreferredSizeWidget _buildAppBar() {
+    return AppBar(
+      title: Consumer2<AuthProvider, PrestamosProvider>(
+        builder: (context, authProvider, prestamosProvider, _) {
+          final totalPrestamos = prestamosProvider.prestamosClientes.length +
+              prestamosProvider.prestamosEventos.length +
+              prestamosProvider.prestamosProveedores.length;
+
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text('Préstamos Asignados'),
+              Text(
+                'Total: $totalPrestamos',
+                style: const TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w400,
+                ),
+              ),
+            ],
+          );
+        },
+      ),
+      elevation: 0,
     );
   }
 

@@ -35,7 +35,7 @@ class DashboardPreventistaWidgets {
             mainAxisAlignment: MainAxisAlignment.center,
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(icon, size: 32, color: Colors.white),
+              Icon(icon, size: 48, color: Colors.white),
               const SizedBox(height: 5),
               Text(
                 title,

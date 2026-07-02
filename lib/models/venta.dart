@@ -11,43 +11,6 @@ import 'combo_item_seleccionado.dart';
 import 'entrega_info.dart';
 import 'estado_documento.dart';
 
-// ✅ NUEVO 2026-06-23: Clase para información de proforma relacionada a una venta
-class Proforma {
-  final int id;
-  final String numero;
-  final String? estado;
-  final DateTime? fecha;
-  final double? total;
-
-  Proforma({
-    required this.id,
-    required this.numero,
-    this.estado,
-    this.fecha,
-    this.total,
-  });
-
-  factory Proforma.fromJson(Map<String, dynamic> json) {
-    return Proforma(
-      id: json['id'] as int,
-      numero: json['numero'] as String,
-      estado: json['estado'] as String?,
-      fecha: json['fecha'] != null ? DateTime.tryParse(json['fecha'] as String) : null,
-      total: (json['total'] as num?)?.toDouble(),
-    );
-  }
-
-  Map<String, dynamic> toJson() {
-    return {
-      'id': id,
-      'numero': numero,
-      'estado': estado,
-      'fecha': fecha?.toIso8601String(),
-      'total': total,
-    };
-  }
-}
-
 class Venta {
   final int id;
   final String numero;
@@ -57,15 +20,18 @@ class Venta {
   final double descuento; // Puede venir del backend o calcularse
   final double impuesto;
   final String? observaciones;
-  final String? observacionesLogistica;  // ✅ NUEVO: Observaciones sobre entrega (completa, incidentes, etc.)
+  final String?
+  observacionesLogistica; // ✅ NUEVO: Observaciones sobre entrega (completa, incidentes, etc.)
   final int? estadoLogisticoId; // ID del estado logístico
   final String?
   estadoLogisticoCodigo; // Código del estado (PENDIENTE_ENVIO, EN_TRANSITO, etc)
   final String estadoLogistico; // Nombre del estado logístico
   final String? estadoLogisticoColor; // Color del estado (hex)
   final String? estadoLogisticoIcon; // Icono del estado
-  final EstadoLogistico? estadoLogisticoObj; // ✅ NUEVO: Objeto EstadoLogistico completo (centralizado)
-  final EstadoDocumento? estadoDocumentoObj; // ✅ NUEVO: Objeto EstadoDocumento (Aprobado, Rechazado, etc)
+  final EstadoLogistico?
+  estadoLogisticoObj; // ✅ NUEVO: Objeto EstadoLogistico completo (centralizado)
+  final EstadoDocumento?
+  estadoDocumentoObj; // ✅ NUEVO: Objeto EstadoDocumento (Aprobado, Rechazado, etc)
   final String estadoPago;
   final DateTime fecha;
   final List<VentaDetalle> detalles;
@@ -81,18 +47,25 @@ class Venta {
   // ✅ NUEVO (2026-02-17): Información de entrega
   final int? entregaId; // ID de la entrega asignada a esta venta
   final String? numeroEntrega; // Número de entrega (ej: ENT-20260217-001)
-  final String? estadoEntrega; // Estado de la entrega (ASIGNADA, EN_CAMINO, ENTREGADO, etc)
-  final String? tipoEntrega; // ✅ NUEVO (2026-03-05): Tipo de entrega (COMPLETA, CON_NOVEDAD)
-  final String? tipoNovedad; // ✅ NUEVO (2026-03-05): Tipo de novedad (CLIENTE_CERRADO, DEVOLUCION_PARCIAL, etc)
-  final List<EntregaVentaConfirmacion> confirmaciones; // ✅ NUEVO (2026-03-05): Confirmaciones de entrega
-  final Map<String, dynamic>? resumenPago; // ✅ NUEVO (2026-06-12): Resumen de pagos (estado, pendiente, fecha)
+  final String?
+  estadoEntrega; // Estado de la entrega (ASIGNADA, EN_CAMINO, ENTREGADO, etc)
+  final String?
+  tipoEntrega; // ✅ NUEVO (2026-03-05): Tipo de entrega (COMPLETA, CON_NOVEDAD)
+  final String?
+  tipoNovedad; // ✅ NUEVO (2026-03-05): Tipo de novedad (CLIENTE_CERRADO, DEVOLUCION_PARCIAL, etc)
+  final List<EntregaVentaConfirmacion>
+  confirmaciones; // ✅ NUEVO (2026-03-05): Confirmaciones de entrega
+  final Map<String, dynamic>?
+  resumenPago; // ✅ NUEVO (2026-06-12): Resumen de pagos (estado, pendiente, fecha)
 
   // ✅ NUEVO (2026-06-23): Información de proforma y entrega relacionadas
   final int? proformaId; // ID de la proforma relacionada
-  final Proforma? proforma; // Proforma relacionada a esta venta (si existe)
+  final Pedido?
+  proforma; // Proforma/Pedido relacionado a esta venta (si existe)
 
   // ✅ NUEVO (2026-06-29): Información completa de la entrega
-  final EntregaInfo? entrega; // Información de entrega (chofer, vehículo, estado, etc)
+  final EntregaInfo?
+  entrega; // Información de entrega (chofer, vehículo, estado, etc)
 
   Venta({
     required this.id,
@@ -103,7 +76,7 @@ class Venta {
     required this.descuento,
     required this.impuesto,
     this.observaciones,
-    this.observacionesLogistica,  // ✅ NUEVO
+    this.observacionesLogistica, // ✅ NUEVO
     this.estadoLogisticoId,
     this.estadoLogisticoCodigo,
     required this.estadoLogistico,
@@ -189,8 +162,9 @@ class Venta {
     EstadoDocumento? estadoDocumentoObjValue;
     if (json['estado_documento'] is Map<String, dynamic>) {
       try {
-        estadoDocumentoObjValue =
-            EstadoDocumento.fromJson(json['estado_documento'] as Map<String, dynamic>);
+        estadoDocumentoObjValue = EstadoDocumento.fromJson(
+          json['estado_documento'] as Map<String, dynamic>,
+        );
       } catch (e) {
         debugPrint('⚠️ Error parseando EstadoDocumento: $e');
       }
@@ -230,12 +204,16 @@ class Venta {
     if (dirClienteJson != null) {
       try {
         direccionClienteObj = DireccionCliente.fromJson(dirClienteJson);
-        debugPrint('✅ [VENTA] DireccionCliente parseada - Venta: ${json['numero']} | Lat: ${direccionClienteObj.latitud}, Lng: ${direccionClienteObj.longitud}');
+        debugPrint(
+          '✅ [VENTA] DireccionCliente parseada - Venta: ${json['numero']} | Lat: ${direccionClienteObj.latitud}, Lng: ${direccionClienteObj.longitud}',
+        );
       } catch (e) {
         debugPrint('⚠️ [VENTA] Error parseando direccionCliente: $e');
       }
     } else {
-      debugPrint('⚠️ [VENTA] No se encontró direccionCliente para venta: ${json['numero']}');
+      debugPrint(
+        '⚠️ [VENTA] No se encontró direccionCliente para venta: ${json['numero']}',
+      );
     }
     // Si no viene la relación direccionCliente, simplemente quedará null (es normal en algunos endpoints)
 
@@ -252,7 +230,9 @@ class Venta {
       debugPrint('✅ [VENTA] Tipo de pago parseado: ${tipoPago.nombre}');
     } else if (json['tipoPago'] is Map<String, dynamic>) {
       tipoPago = TipoPago.fromJson(json['tipoPago'] as Map<String, dynamic>);
-      debugPrint('✅ [VENTA] Tipo de pago parseado (camelCase): ${tipoPago.nombre}');
+      debugPrint(
+        '✅ [VENTA] Tipo de pago parseado (camelCase): ${tipoPago.nombre}',
+      );
     }
     // Si no viene la relación tipoPago, simplemente quedará null (es normal en algunos endpoints)
 
@@ -265,14 +245,17 @@ class Venta {
       descuento: descuentoValue,
       impuesto: _parseDouble(json['impuesto']),
       observaciones: json['observaciones'] as String?,
-      observacionesLogistica: json['observaciones_logistica'] as String?,  // ✅ NUEVO
+      observacionesLogistica:
+          json['observaciones_logistica'] as String?, // ✅ NUEVO
       estadoLogisticoId: estadoLogisticoId,
       estadoLogisticoCodigo: estadoLogisticoCodigo,
       estadoLogistico: estadoLogisticoNombre,
       estadoLogisticoColor: estadoLogisticoColor,
       estadoLogisticoIcon: estadoLogisticoIcon,
-      estadoLogisticoObj: estadoLogisticoObjValue, // ✅ NUEVO: Objeto EstadoLogistico centralizado
-      estadoDocumentoObj: estadoDocumentoObjValue, // ✅ NUEVO: Objeto EstadoDocumento
+      estadoLogisticoObj:
+          estadoLogisticoObjValue, // ✅ NUEVO: Objeto EstadoLogistico centralizado
+      estadoDocumentoObj:
+          estadoDocumentoObjValue, // ✅ NUEVO: Objeto EstadoDocumento
       estadoPago: json['estado_pago'] as String? ?? 'PENDIENTE',
       fecha: json['fecha'] != null
           ? DateTime.parse(json['fecha'] as String)
@@ -287,31 +270,51 @@ class Venta {
       // ✅ CORREGIDO 2026-03-05: Extraer código de estado_entrega (es un objeto, no string)
       estadoEntrega: (() {
         if (json['estado_entrega'] is Map<String, dynamic>) {
-          return (json['estado_entrega'] as Map<String, dynamic>)['codigo'] as String?;
+          return (json['estado_entrega'] as Map<String, dynamic>)['codigo']
+              as String?;
         }
         return json['estado_entrega'] as String?;
       })(),
       // ✅ CORREGIDO 2026-03-05: Extraer tipo_entrega y tipo_novedad de la primera confirmación
       tipoEntrega: (() {
-        final confirmacionesList = (json['entregas_venta_confirmaciones'] as List<dynamic>?)?.cast<Map<String, dynamic>>() ?? (json['confirmaciones'] as List<dynamic>?)?.cast<Map<String, dynamic>>() ?? [];
+        final confirmacionesList =
+            (json['entregas_venta_confirmaciones'] as List<dynamic>?)
+                ?.cast<Map<String, dynamic>>() ??
+            (json['confirmaciones'] as List<dynamic>?)
+                ?.cast<Map<String, dynamic>>() ??
+            [];
         if (confirmacionesList.isNotEmpty) {
           return confirmacionesList.first['tipo_confirmacion'] as String?;
         }
         return json['tipo_entrega'] as String?;
       })(),
       tipoNovedad: (() {
-        final confirmacionesList = (json['entregas_venta_confirmaciones'] as List<dynamic>?)?.cast<Map<String, dynamic>>() ?? (json['confirmaciones'] as List<dynamic>?)?.cast<Map<String, dynamic>>() ?? [];
+        final confirmacionesList =
+            (json['entregas_venta_confirmaciones'] as List<dynamic>?)
+                ?.cast<Map<String, dynamic>>() ??
+            (json['confirmaciones'] as List<dynamic>?)
+                ?.cast<Map<String, dynamic>>() ??
+            [];
         if (confirmacionesList.isNotEmpty) {
           return confirmacionesList.first['tipo_novedad'] as String?;
         }
         return json['tipo_novedad'] as String?;
       })(),
       confirmaciones: (() {
-        final confirmacionesList = (json['entregas_venta_confirmaciones'] as List<dynamic>?)?.cast<Map<String, dynamic>>() ?? (json['confirmaciones'] as List<dynamic>?)?.cast<Map<String, dynamic>>() ?? [];
-        debugPrint('🔍 Venta #${json['numero']} - Confirmaciones parseadas: ${confirmacionesList.length}');
+        final confirmacionesList =
+            (json['entregas_venta_confirmaciones'] as List<dynamic>?)
+                ?.cast<Map<String, dynamic>>() ??
+            (json['confirmaciones'] as List<dynamic>?)
+                ?.cast<Map<String, dynamic>>() ??
+            [];
+        debugPrint(
+          '🔍 Venta #${json['numero']} - Confirmaciones parseadas: ${confirmacionesList.length}',
+        );
         for (var i = 0; i < confirmacionesList.length; i++) {
           final c = confirmacionesList[i];
-          debugPrint('   [$i] tipoEntrega: ${c['tipo_entrega']}, tipoConfirmacion: ${c['tipo_confirmacion']}');
+          debugPrint(
+            '   [$i] tipoEntrega: ${c['tipo_entrega']}, tipoConfirmacion: ${c['tipo_confirmacion']}',
+          );
         }
         return confirmacionesList
             .map((c) => EntregaVentaConfirmacion.fromJson(c))
@@ -320,12 +323,12 @@ class Venta {
       resumenPago: json['resumen_pago'] is Map<String, dynamic>
           ? json['resumen_pago'] as Map<String, dynamic>
           : null, // ✅ NUEVO: Resumen de pagos
-      // ✅ NUEVO 2026-06-23: Parsear proforma relacionada
+      // ✅ NUEVO 2026-06-23: Parsear proforma relacionada (es un Pedido)
       proformaId: json['proforma_id'] as int?,
       proforma: (() {
         try {
           if (json['proforma'] is Map<String, dynamic>) {
-            return Proforma.fromJson(json['proforma'] as Map<String, dynamic>);
+            return Pedido.fromJson(json['proforma'] as Map<String, dynamic>);
           }
         } catch (e) {
           debugPrint('⚠️ Error parseando proforma: $e');
@@ -336,7 +339,9 @@ class Venta {
       entrega: (() {
         try {
           if (json['entrega'] is Map<String, dynamic>) {
-            return EntregaInfo.fromJson(json['entrega'] as Map<String, dynamic>);
+            return EntregaInfo.fromJson(
+              json['entrega'] as Map<String, dynamic>,
+            );
           }
         } catch (e) {
           debugPrint('⚠️ Error parseando entrega: $e');
@@ -401,8 +406,10 @@ class Venta {
       'politica_pago': politicaPago,
       'tipo_pago': tipoPago?.toJson(),
       'proforma_id': proformaId, // ✅ NUEVO 2026-06-23: ID de proforma
-      'proforma': proforma?.toJson(), // ✅ NUEVO 2026-06-23: Proforma relacionada
-      'entrega': entrega?.toJson(), // ✅ NUEVO 2026-06-29: Información de entrega
+      'proforma': proforma
+          ?.toJson(), // ✅ NUEVO 2026-06-23: Proforma relacionada
+      'entrega': entrega
+          ?.toJson(), // ✅ NUEVO 2026-06-29: Información de entrega
     };
   }
 
@@ -449,7 +456,8 @@ class VentaDetalle {
   final double descuento;
   final double subtotal;
   final Producto? producto;
-  final String? nombreProducto; // ✅ NUEVO 2026-02-21: Nombre del producto desde backend
+  final String?
+  nombreProducto; // ✅ NUEVO 2026-02-21: Nombre del producto desde backend
   final List<ComboItemSeleccionado>? comboItemsSeleccionados;
 
   VentaDetalle({
@@ -497,8 +505,12 @@ class VentaDetalle {
       nombreProducto: json['producto_nombre'] as String?,
       comboItemsSeleccionados: json['combo_items_seleccionados'] != null
           ? (json['combo_items_seleccionados'] as List)
-              .map((item) => ComboItemSeleccionado.fromJson(item as Map<String, dynamic>))
-              .toList()
+                .map(
+                  (item) => ComboItemSeleccionado.fromJson(
+                    item as Map<String, dynamic>,
+                  ),
+                )
+                .toList()
           : null,
     );
   }
@@ -547,123 +559,6 @@ class VentaDetalle {
       'producto': producto?.toJson(),
       if (comboItemsSeleccionados != null)
         'combo_items_seleccionados': comboItemsSeleccionados,
-    };
-  }
-}
-
-/// Representa un producto
-class Producto {
-  final int id;
-  final String nombre;
-  final String? descripcion;
-  final double? peso;
-  final List<ImagenProducto>? imagenes;
-  final List<ComboItem>? comboItems; // NUEVO: Items del combo
-
-  Producto({
-    required this.id,
-    required this.nombre,
-    this.descripcion,
-    this.peso,
-    this.imagenes,
-    this.comboItems,
-  });
-
-  /// Obtener la imagen principal (es_principal == true) o la primera imagen
-  ImagenProducto? get imagenPrincipal {
-    if (imagenes == null || imagenes!.isEmpty) return null;
-    // Buscar la imagen principal
-    try {
-      return imagenes!.firstWhere((img) => img.esPrincipal == true);
-    } catch (e) {
-      // Si no hay imagen principal, retornar la primera
-      return imagenes!.isNotEmpty ? imagenes!.first : null;
-    }
-  }
-
-  factory Producto.fromJson(Map<String, dynamic> json) {
-    List<ImagenProducto>? imagenes;
-
-    // Intentar parsear 'imagenes' como array (formato antiguo)
-    if (json['imagenes'] != null && json['imagenes'] is List) {
-      imagenes = (json['imagenes'] as List)
-          .map((img) => ImagenProducto.fromJson(img))
-          .toList();
-    }
-    // Si no, intentar parsear 'imagen' como objeto singular (formato nuevo)
-    else if (json['imagen'] != null && json['imagen'] is Map<String, dynamic>) {
-      try {
-        final imagenObj = ImagenProducto.fromJson(json['imagen'] as Map<String, dynamic>);
-        imagenes = [imagenObj];
-      } catch (e) {
-        debugPrint('⚠️ Error parseando imagen singular: $e');
-        imagenes = null;
-      }
-    }
-
-    // Parsear combo items
-    List<ComboItem>? comboItems;
-    if (json['comboItems'] != null && json['comboItems'] is List) {
-      comboItems = (json['comboItems'] as List)
-          .map((item) => ComboItem.fromJson(item as Map<String, dynamic>))
-          .toList();
-    }
-
-    return Producto(
-      id: json['id'] as int,
-      nombre: json['nombre'] as String,
-      descripcion: json['descripcion'] as String?,
-      peso: (json['peso'] as num?)?.toDouble(),
-      imagenes: imagenes,
-      comboItems: comboItems,
-    );
-  }
-
-  Map<String, dynamic> toJson() {
-    return {
-      'id': id,
-      'nombre': nombre,
-      'descripcion': descripcion,
-      'peso': peso,
-      'imagenes': imagenes?.map((img) => img.toJson()).toList(),
-      if (comboItems != null)
-        'comboItems': comboItems!.map((item) => item.toJson()).toList(),
-    };
-  }
-}
-
-class ImagenProducto {
-  final int? id;
-  final int? productoId;
-  final String url;
-  final bool esPrincipal;
-  final int? orden;
-
-  ImagenProducto({
-    this.id,
-    this.productoId,
-    required this.url,
-    this.esPrincipal = false,
-    this.orden,
-  });
-
-  factory ImagenProducto.fromJson(Map<String, dynamic> json) {
-    return ImagenProducto(
-      id: json['id'] as int?,
-      productoId: json['producto_id'] as int?,
-      url: json['url'] as String,
-      esPrincipal: json['es_principal'] == true || json['es_principal'] == 1,
-      orden: json['orden'] as int?,
-    );
-  }
-
-  Map<String, dynamic> toJson() {
-    return {
-      'id': id,
-      'producto_id': productoId,
-      'url': url,
-      'es_principal': esPrincipal,
-      'orden': orden,
     };
   }
 }

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../../extensions/theme_extension.dart';
 import '../confirmar_entrega_widgets/models.dart';
 
 class RegistroPagosCompletoWidget extends StatelessWidget {
@@ -43,156 +44,127 @@ class RegistroPagosCompletoWidget extends StatelessWidget {
     }
 
     return SingleChildScrollView(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 12),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // RESUMEN VISIBLE
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(
-                  color: esCredito ? Colors.blue[300]! : Colors.grey[300]!,
-                ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // RESUMEN VISIBLE
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(
+                color: esCredito ? Colors.blue[300]! : Colors.grey[300]!,
               ),
-              child: Column(
-                children: [
-                  /*Row(
+            ),
+            child: Column(
+              children: [
+                if (esCredito)
+                  Text(
+                    '💳 Promesa de Pago (Crédito)',
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: Colors.blue[700],
+                      fontWeight: FontWeight.w600,
+                    ),
+                  )
+                else
+                  Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text(
-                        'Total:',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
+                      Expanded(
+                        child: Text(
+                          'Ingresado:',
+                          style: TextStyle(
+                            fontSize: 16,
+                            color: Colors.green[700],
+                            fontWeight: FontWeight.bold,
+                          ),
+                          overflow: TextOverflow.ellipsis,
                         ),
                       ),
-                      Text(
-                        'Bs. ${totalVenta.toStringAsFixed(2)}',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
+                      Expanded(
+                        child: Text(
+                          'Bs. ${totalIngresado.toStringAsFixed(2)}',
+                          style: TextStyle(
+                            fontSize: 16,
+                            color: Colors.green[700],
+                            fontWeight: FontWeight.bold,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                          textAlign: TextAlign.end,
                         ),
                       ),
                     ],
-                  ),*/
-                  if (esCredito)
-                    Text(
-                      '💳 Promesa de Pago (Crédito)',
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: Colors.blue[700],
-                        fontWeight: FontWeight.w600,
-                      ),
-                    )
-                  else
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Expanded(
-                          child: Text(
-                            'Ingresado:',
-                            style: TextStyle(
-                              fontSize: 16,
-                              color: Colors.green[700],
-                              fontWeight: FontWeight.bold,
-                            ),
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                        Expanded(
-                          child: Text(
-                            'Bs. ${totalIngresado.toStringAsFixed(2)}',
-                            style: TextStyle(
-                              fontSize: 16,
-                              color: Colors.green[700],
-                              fontWeight: FontWeight.bold,
-                            ),
-                            overflow: TextOverflow.ellipsis,
-                            textAlign: TextAlign.end,
-                          ),
-                        ),
-                      ],
+                  ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 20),
+          if (!esCredito) ...[
+            // 2 INPUTS GRANDES Y SIMPLES
+            if (idEfectivo != null)
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    '💵 Efectivo',
+                    style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+                  ),
+                  const SizedBox(height: 8),
+                  TextField(
+                    controller: montoEfectivoController,
+                    keyboardType: const TextInputType.numberWithOptions(
+                      decimal: true,
                     ),
+                    style: TextStyle(fontSize: 16),
+                    decoration: InputDecoration(
+                      hintText: 'Ej: 1000',
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 14,
+                      ),
+                    ),
+                    onChanged: (_) {},
+                  ),
+                  const SizedBox(height: 16),
                 ],
               ),
-            ),
-            const SizedBox(height: 20),
-            if (!esCredito) ...[
-              // 2 INPUTS GRANDES Y SIMPLES
-              if (idEfectivo != null)
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Efectivo',
-                      style: TextStyle(
-                        fontWeight: FontWeight.w600,
-                        fontSize: 14,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    TextField(
-                      controller: montoEfectivoController,
-                      keyboardType: const TextInputType.numberWithOptions(
-                        decimal: true,
-                      ),
-                      style: const TextStyle(fontSize: 16),
-                      decoration: InputDecoration(
-                        hintText: 'Ej: 1000',
-                        hintStyle: TextStyle(color: Colors.grey[400]),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 14,
-                        ),
-                      ),
-                      onChanged: (_) {},
-                    ),
-                    const SizedBox(height: 16),
-                  ],
-                ),
 
-              if (idQR != null)
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Transferencia / QR',
-                      style: TextStyle(
-                        fontWeight: FontWeight.w600,
-                        fontSize: 14,
+            if (idQR != null)
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    '💸 Transferencia / QR',
+                    style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+                  ),
+                  const SizedBox(height: 8),
+                  TextField(
+                    controller: montoTransferenciaController,
+                    keyboardType: const TextInputType.numberWithOptions(
+                      decimal: true,
+                    ),
+                    style: const TextStyle(fontSize: 16),
+                    decoration: InputDecoration(
+                      hintText: 'Ej: 500',
+                      hintStyle: TextStyle(color: Colors.grey[400]),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 14,
                       ),
                     ),
-                    const SizedBox(height: 8),
-                    TextField(
-                      controller: montoTransferenciaController,
-                      keyboardType: const TextInputType.numberWithOptions(
-                        decimal: true,
-                      ),
-                      style: const TextStyle(fontSize: 16),
-                      decoration: InputDecoration(
-                        hintText: 'Ej: 500',
-                        hintStyle: TextStyle(color: Colors.grey[400]),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 14,
-                        ),
-                      ),
-                      onChanged: (_) {},
-                    ),
-                  ],
-                ),
-            ],
+                    onChanged: (_) {},
+                  ),
+                ],
+              ),
           ],
-        ),
+        ],
       ),
     );
   }

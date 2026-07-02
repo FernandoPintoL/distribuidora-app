@@ -11,11 +11,13 @@ import 'user.dart';
 import 'pedido_venta.dart';
 import 'pedido_timeline_event.dart';
 import 'venta.dart';
+import 'estado_logistico.dart';
 import '../services/estados_helpers.dart';
 
 class Pedido {
   final int id;
   final String numero;
+  final DateTime? fecha; // Fecha del pedido/proforma
   final int? clienteId;
   final Client? cliente;
   final int? direccionId;
@@ -30,6 +32,8 @@ class Pedido {
   final String estadoCategoria; // Ej: 'proforma', 'venta_logistica'
   final Map<String, dynamic>?
   estadoData; // Datos completos: id, codigo, nombre, color, icono
+  final int? estadoLogisticoId;
+  final EstadoLogistico? estadoLogistico; // Objeto completo de estado logístico
   final DateTime? fechaProgramada;
   final DateTime? horaInicioPreferida;
   final DateTime? horaFinPreferida;
@@ -56,8 +60,8 @@ class Pedido {
   final String? observacionesRechazo;
   final int? monedaId; // ID de la moneda
 
-  // Items del pedido
-  final List<PedidoItem> items;
+  // Detalles del pedido (productos)
+  final List<PedidoItem> detalles;
 
   // Tracking
   final List<PedidoEstadoHistorial> historialEstados;
@@ -81,13 +85,21 @@ class Pedido {
   final User? usuarioCreador; // Usuario que creó el pedido
   final String? comentariosAprobacion;
   final String? comentarioRechazo;
+  final String? aprobadoPor; // Nombre de quien aprobó
 
   // ✅ NUEVO: Fechas de vencimiento y entrega solicitada
   final DateTime? fechaVencimiento;
   final DateTime? fechaEntregaSolicitada;
   final String? horaEntregaSolicitada; // Hora solicitada (HH:MM:SS)
+  final String? horaEntregaSolicitadaFin; // Hora fin solicitada (HH:MM:SS)
   final DateTime? fechaEntregaConfirmada; // Fecha confirmada de entrega
   final String? horaEntregaConfirmada; // Hora confirmada (HH:MM:SS)
+  final String? horaEntregaConfirmadaFin; // Hora fin confirmada (HH:MM:SS)
+
+  // Información de entrega ejecutada
+  final DateTime? entregadoEn;
+  final String? entregadoA;
+  final String? observacionesEntrega;
 
   // Comprobantes de entrega
   final String? firmaDigitalUrl;
@@ -111,6 +123,7 @@ class Pedido {
   Pedido({
     required this.id,
     required this.numero,
+    this.fecha,
     this.clienteId,
     this.cliente,
     this.direccionId,
@@ -122,6 +135,8 @@ class Pedido {
     required this.estadoCodigo,
     required this.estadoCategoria,
     this.estadoData,
+    this.estadoLogisticoId,
+    this.estadoLogistico,
     this.fechaProgramada,
     this.horaInicioPreferida,
     this.horaFinPreferida,
@@ -132,7 +147,7 @@ class Pedido {
     this.monedaId,
     this.observaciones,
     this.observacionesRechazo,
-    this.items = const [],
+    this.detalles = const [],
     this.historialEstados = const [],
     this.reservas = const [],
     this.choferId,
@@ -150,6 +165,7 @@ class Pedido {
     this.usuarioCreador,
     this.comentariosAprobacion,
     this.comentarioRechazo,
+    this.aprobadoPor,
     this.firmaDigitalUrl,
     this.fotoEntregaUrl,
     this.fechaFirmaEntrega,
@@ -157,8 +173,13 @@ class Pedido {
     this.fechaVencimiento,
     this.fechaEntregaSolicitada,
     this.horaEntregaSolicitada,
+    this.horaEntregaSolicitadaFin,
     this.fechaEntregaConfirmada,
     this.horaEntregaConfirmada,
+    this.horaEntregaConfirmadaFin,
+    this.entregadoEn,
+    this.entregadoA,
+    this.observacionesEntrega,
     this.tipoEntrega,
     this.politicaPago,
     this.preventistaId,
@@ -239,6 +260,7 @@ class Pedido {
       return Pedido(
         id: json['id'] as int,
         numero: json['numero'] as String,
+        fecha: json['fecha'] != null ? DateTime.parse(json['fecha'] as String) : null,
         clienteId: json['cliente_id'] as int?,
         cliente: cliente,
         direccionId: json['direccion_id'] as int?,
@@ -256,6 +278,8 @@ class Pedido {
         estadoCodigo: estadoCodigo,
         estadoCategoria: estadoCategoria,
         estadoData: estadoData,
+        estadoLogisticoId: json['estado_logistica']?['id'] as int?,
+        estadoLogistico: _safeParseEstadoLogistico(json['estado_logistica']),
         // Backend can use fecha_programada, fecha_entrega_solicitada, or fecha
         fechaProgramada: json['fecha_programada'] != null
             ? DateTime.parse(json['fecha_programada'] as String)
@@ -280,15 +304,15 @@ class Pedido {
         monedaId: json['moneda_id'] as int?,
         observaciones: json['observaciones'] as String?,
         observacionesRechazo: json['observaciones_rechazo'] as String?,
-        // Backend returns detalles instead of items
-        items: json['items'] != null
-            ? (json['items'] as List)
+        // Backend sends detalles (product items)
+        detalles: json['detalles'] != null
+            ? (json['detalles'] as List)
                   .map(
                     (item) => PedidoItem.fromJson(item as Map<String, dynamic>),
                   )
                   .toList()
-            : (json['detalles'] != null
-                  ? (json['detalles'] as List)
+            : (json['items'] != null
+                  ? (json['items'] as List)
                         .map(
                           (item) =>
                               PedidoItem.fromJson(item as Map<String, dynamic>),
@@ -332,6 +356,7 @@ class Pedido {
         comentarioRechazo:
             json['comentario_rechazo'] as String? ??
             json['observaciones_rechazo'] as String?,
+        aprobadoPor: json['aprobado_por'] as String?,
         firmaDigitalUrl: json['firma_digital_url'] as String?,
         fotoEntregaUrl: json['foto_entrega_url'] as String?,
         fechaFirmaEntrega: json['fecha_firma_entrega'] != null
@@ -346,10 +371,17 @@ class Pedido {
             ? DateTime.parse(json['fecha_entrega_solicitada'] as String)
             : null,
         horaEntregaSolicitada: json['hora_entrega_solicitada'] as String?,
+        horaEntregaSolicitadaFin: json['hora_entrega_solicitada_fin'] as String?,
         fechaEntregaConfirmada: json['fecha_entrega_confirmada'] != null
             ? DateTime.parse(json['fecha_entrega_confirmada'] as String)
             : null,
         horaEntregaConfirmada: json['hora_entrega_confirmada'] as String?,
+        horaEntregaConfirmadaFin: json['hora_entrega_confirmada_fin'] as String?,
+        entregadoEn: json['entregado_en'] != null
+            ? DateTime.parse(json['entregado_en'] as String)
+            : null,
+        entregadoA: json['entregado_a'] as String?,
+        observacionesEntrega: json['observaciones_entrega'] as String?,
         tipoEntrega: json['tipo_entrega'] as String?,
         politicaPago: json['politica_pago'] as String?,
         preventistaId: json['preventista_id'] as int?,
@@ -453,10 +485,22 @@ class Pedido {
     return null;
   }
 
+  static EstadoLogistico? _safeParseEstadoLogistico(dynamic data) {
+    try {
+      if (data != null && data is Map<String, dynamic>) {
+        return EstadoLogistico.fromJson(data);
+      }
+    } catch (e) {
+      debugPrint('⚠️ Error parsing EstadoLogistico: $e');
+    }
+    return null;
+  }
+
   Map<String, dynamic> toJson() {
     return {
       'id': id,
       'numero': numero,
+      'fecha': fecha?.toIso8601String(),
       'cliente_id': clienteId,
       'cliente': cliente?.toJson(),
       'direccion_id': direccionId,
@@ -469,6 +513,8 @@ class Pedido {
       'estado': estadoData ?? estadoCodigo,
       'estado_codigo': estadoCodigo,
       'estado_categoria': estadoCategoria,
+      'estado_logistica_id': estadoLogisticoId,
+      'estado_logistica': estadoLogistico?.toJson(),
       'fecha_programada': fechaProgramada?.toIso8601String(),
       'hora_inicio_preferida': horaInicioPreferida?.toIso8601String(),
       'hora_fin_preferida': horaFinPreferida?.toIso8601String(),
@@ -479,7 +525,7 @@ class Pedido {
       'moneda_id': monedaId,
       'observaciones': observaciones,
       'observaciones_rechazo': observacionesRechazo,
-      'items': items.map((item) => item.toJson()).toList(),
+      'detalles': detalles.map((item) => item.toJson()).toList(),
       'historial_estados': historialEstados.map((h) => h.toJson()).toList(),
       'reservas': reservas.map((r) => r.toJson()).toList(),
       'chofer_id': choferId,
@@ -497,6 +543,7 @@ class Pedido {
       'usuario_creador': usuarioCreador?.toJson(),
       'comentarios_aprobacion': comentariosAprobacion,
       'comentario_rechazo': comentarioRechazo,
+      'aprobado_por': aprobadoPor,
       'firma_digital_url': firmaDigitalUrl,
       'foto_entrega_url': fotoEntregaUrl,
       'fecha_firma_entrega': fechaFirmaEntrega?.toIso8601String(),
@@ -505,8 +552,13 @@ class Pedido {
       'fecha_vencimiento': fechaVencimiento?.toIso8601String(),
       'fecha_entrega_solicitada': fechaEntregaSolicitada?.toIso8601String(),
       'hora_entrega_solicitada': horaEntregaSolicitada,
+      'hora_entrega_solicitada_fin': horaEntregaSolicitadaFin,
       'fecha_entrega_confirmada': fechaEntregaConfirmada?.toIso8601String(),
       'hora_entrega_confirmada': horaEntregaConfirmada,
+      'hora_entrega_confirmada_fin': horaEntregaConfirmadaFin,
+      'entregado_en': entregadoEn?.toIso8601String(),
+      'entregado_a': entregadoA,
+      'observaciones_entrega': observacionesEntrega,
       'direccion_entrega_confirmada': direccionEntregaConfirmada?.toJson(),
       'tipo_entrega': tipoEntrega,
       'politica_pago': politicaPago,
@@ -522,6 +574,7 @@ class Pedido {
   Pedido copyWith({
     int? id,
     String? numero,
+    DateTime? fecha,
     int? clienteId,
     Client? cliente,
     int? direccionId,
@@ -533,6 +586,8 @@ class Pedido {
     String? estadoCodigo,
     String? estadoCategoria,
     Map<String, dynamic>? estadoData,
+    int? estadoLogisticoId,
+    EstadoLogistico? estadoLogistico,
     DateTime? fechaProgramada,
     DateTime? horaInicioPreferida,
     DateTime? horaFinPreferida,
@@ -543,7 +598,7 @@ class Pedido {
     int? monedaId,
     String? observaciones,
     String? observacionesRechazo,
-    List<PedidoItem>? items,
+    List<PedidoItem>? detalles,
     List<PedidoEstadoHistorial>? historialEstados,
     List<ReservaStock>? reservas,
     int? choferId,
@@ -561,6 +616,7 @@ class Pedido {
     User? usuarioCreador,
     String? comentariosAprobacion,
     String? comentarioRechazo,
+    String? aprobadoPor,
     String? firmaDigitalUrl,
     String? fotoEntregaUrl,
     DateTime? fechaFirmaEntrega,
@@ -568,8 +624,13 @@ class Pedido {
     DateTime? fechaVencimiento,
     DateTime? fechaEntregaSolicitada,
     String? horaEntregaSolicitada,
+    String? horaEntregaSolicitadaFin,
     DateTime? fechaEntregaConfirmada,
     String? horaEntregaConfirmada,
+    String? horaEntregaConfirmadaFin,
+    DateTime? entregadoEn,
+    String? entregadoA,
+    String? observacionesEntrega,
     String? tipoEntrega,
     String? politicaPago,
     int? preventistaId,
@@ -581,6 +642,7 @@ class Pedido {
     return Pedido(
       id: id ?? this.id,
       numero: numero ?? this.numero,
+      fecha: fecha ?? this.fecha,
       clienteId: clienteId ?? this.clienteId,
       cliente: cliente ?? this.cliente,
       direccionId: direccionId ?? this.direccionId,
@@ -596,6 +658,8 @@ class Pedido {
       estadoCodigo: estadoCodigo ?? this.estadoCodigo,
       estadoCategoria: estadoCategoria ?? this.estadoCategoria,
       estadoData: estadoData ?? this.estadoData,
+      estadoLogisticoId: estadoLogisticoId ?? this.estadoLogisticoId,
+      estadoLogistico: estadoLogistico ?? this.estadoLogistico,
       fechaProgramada: fechaProgramada ?? this.fechaProgramada,
       horaInicioPreferida: horaInicioPreferida ?? this.horaInicioPreferida,
       horaFinPreferida: horaFinPreferida ?? this.horaFinPreferida,
@@ -606,7 +670,7 @@ class Pedido {
       monedaId: monedaId ?? this.monedaId,
       observaciones: observaciones ?? this.observaciones,
       observacionesRechazo: observacionesRechazo ?? this.observacionesRechazo,
-      items: items ?? this.items,
+      detalles: detalles ?? this.detalles,
       historialEstados: historialEstados ?? this.historialEstados,
       reservas: reservas ?? this.reservas,
       choferId: choferId ?? this.choferId,
@@ -625,6 +689,7 @@ class Pedido {
       comentariosAprobacion:
           comentariosAprobacion ?? this.comentariosAprobacion,
       comentarioRechazo: comentarioRechazo ?? this.comentarioRechazo,
+      aprobadoPor: aprobadoPor ?? this.aprobadoPor,
       firmaDigitalUrl: firmaDigitalUrl ?? this.firmaDigitalUrl,
       fotoEntregaUrl: fotoEntregaUrl ?? this.fotoEntregaUrl,
       fechaFirmaEntrega: fechaFirmaEntrega ?? this.fechaFirmaEntrega,
@@ -634,10 +699,18 @@ class Pedido {
           fechaEntregaSolicitada ?? this.fechaEntregaSolicitada,
       horaEntregaSolicitada:
           horaEntregaSolicitada ?? this.horaEntregaSolicitada,
+      horaEntregaSolicitadaFin:
+          horaEntregaSolicitadaFin ?? this.horaEntregaSolicitadaFin,
       fechaEntregaConfirmada:
           fechaEntregaConfirmada ?? this.fechaEntregaConfirmada,
       horaEntregaConfirmada:
           horaEntregaConfirmada ?? this.horaEntregaConfirmada,
+      horaEntregaConfirmadaFin:
+          horaEntregaConfirmadaFin ?? this.horaEntregaConfirmadaFin,
+      entregadoEn: entregadoEn ?? this.entregadoEn,
+      entregadoA: entregadoA ?? this.entregadoA,
+      observacionesEntrega:
+          observacionesEntrega ?? this.observacionesEntrega,
       tipoEntrega: tipoEntrega ?? this.tipoEntrega,
       politicaPago: politicaPago ?? this.politicaPago,
       preventistaId: preventistaId ?? this.preventistaId,
@@ -679,11 +752,11 @@ class Pedido {
   }
 
   int get cantidadItems {
-    return items.length;
+    return detalles.length;
   }
 
   int get cantidadTotalProductos {
-    return items.fold(0, (sum, item) => sum + item.cantidad.toInt());
+    return detalles.fold(0, (sum, item) => sum + item.cantidad.toInt());
   }
 
   // ✅ NUEVOS HELPERS PARA TIMELINE UNIFICADO

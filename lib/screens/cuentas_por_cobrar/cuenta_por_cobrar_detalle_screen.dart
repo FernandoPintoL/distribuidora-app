@@ -10,16 +10,15 @@ import '../../extensions/theme_extension.dart';
 class CuentaPorCobrarDetalleScreen extends StatefulWidget {
   final int cuentaId;
 
-  const CuentaPorCobrarDetalleScreen({
-    super.key,
-    required this.cuentaId,
-  });
+  const CuentaPorCobrarDetalleScreen({super.key, required this.cuentaId});
 
   @override
-  State<CuentaPorCobrarDetalleScreen> createState() => _CuentaPorCobrarDetalleScreenState();
+  State<CuentaPorCobrarDetalleScreen> createState() =>
+      _CuentaPorCobrarDetalleScreenState();
 }
 
-class _CuentaPorCobrarDetalleScreenState extends State<CuentaPorCobrarDetalleScreen> {
+class _CuentaPorCobrarDetalleScreenState
+    extends State<CuentaPorCobrarDetalleScreen> {
   late CuentaPorCobrarDetalleProvider _provider;
 
   @override
@@ -37,41 +36,78 @@ class _CuentaPorCobrarDetalleScreenState extends State<CuentaPorCobrarDetalleScr
     super.dispose();
   }
 
+  Color _getColorForCxCEstado(String? estado) {
+    if (estado == null) return Colors.grey;
+    switch (estado.toUpperCase()) {
+      case 'PENDIENTE':
+        return Colors.orange;
+      case 'ACTIVO':
+        return Colors.blue;
+      case 'PARCIAL':
+        return Colors.purple;
+      case 'PAGADO':
+        return Colors.green;
+      case 'ANULADO':
+        return Colors.red;
+      default:
+        return Colors.grey;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final colorScheme = context.colorScheme;
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Detalle Cuenta por Cobrar'),
-        elevation: 0,
-        backgroundColor: colorScheme.primary,
-        foregroundColor: Colors.white,
-      ),
-      body: Consumer<CuentaPorCobrarDetalleProvider>(
-        builder: (context, provider, _) {
-          if (provider.isLoading) {
-            return const Center(child: CircularProgressIndicator());
-          }
+    return Consumer<CuentaPorCobrarDetalleProvider>(
+      builder: (context, provider, _) {
+        final cuenta = provider.cuenta;
+        final estadoColor = _getColorForCxCEstado(cuenta?.estado);
 
-          if (provider.errorMessage != null || provider.cuenta == null) {
-            return _buildErrorState(provider);
-          }
-
-          return SingleChildScrollView(
-            child: Column(
+        return Scaffold(
+          appBar: AppBar(
+            title: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _buildCuentaHeader(provider.cuenta!),
-                const SizedBox(height: 16),
-                _buildCuentaInfo(provider.cuenta!),
-                const SizedBox(height: 16),
-                _buildPagosSection(provider.pagos),
-                const SizedBox(height: 16),
+                Text('Cuenta por Cobrar #${widget.cuentaId}'),
+                if (cuenta != null)
+                  Text(
+                    cuenta.estado.toUpperCase(),
+                    style: const TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w400,
+                    ),
+                  ),
               ],
             ),
-          );
-        },
-      ),
+            backgroundColor: estadoColor.withOpacity(0.85),
+            elevation: 0,
+          ),
+          body: Consumer<CuentaPorCobrarDetalleProvider>(
+            builder: (context, provider, _) {
+              if (provider.isLoading) {
+                return const Center(child: CircularProgressIndicator());
+              }
+
+              if (provider.errorMessage != null || provider.cuenta == null) {
+                return _buildErrorState(provider);
+              }
+
+              return SingleChildScrollView(
+                child: Column(
+                  children: [
+                    _buildCuentaHeader(provider.cuenta!),
+                    const SizedBox(height: 16),
+                    _buildCuentaInfo(provider.cuenta!),
+                    const SizedBox(height: 16),
+                    _buildPagosSection(provider.pagos),
+                    const SizedBox(height: 16),
+                  ],
+                ),
+              );
+            },
+          ),
+        );
+      },
     );
   }
 
@@ -89,17 +125,27 @@ class _CuentaPorCobrarDetalleScreenState extends State<CuentaPorCobrarDetalleScr
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    cuenta.referenciaDocumento ?? 'Sin referencia',
+                    'Folio CxC: #${cuenta.id}',
                     style: const TextStyle(
                       fontWeight: FontWeight.bold,
                       fontSize: 18,
                     ),
                   ),
+                  if (cuenta.referenciaDocumento != null)
+                    Text(
+                      cuenta.referenciaDocumento ?? 'Sin referencia',
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 18,
+                      ),
+                    ),
+                  if (cuenta.venta != null)
+                    Text('Venta Folio #${cuenta.venta!.id}'),
                   if (cuenta.cliente != null)
                     Text(
                       cuenta.cliente!.nombre,
                       style: TextStyle(
-                        fontSize: 14,
+                        fontSize: 18,
                         color: context.colorScheme.onSurfaceVariant,
                       ),
                     ),
@@ -119,14 +165,15 @@ class _CuentaPorCobrarDetalleScreenState extends State<CuentaPorCobrarDetalleScr
                     'Monto Original',
                     style: TextStyle(
                       fontSize: 12,
-                      color: context.colorScheme.onSurfaceVariant,
+                      color: context.colorScheme.secondary,
                     ),
                   ),
                   Text(
                     'Bs. ${cuenta.montoOriginal.toStringAsFixed(2)}',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontWeight: FontWeight.bold,
                       fontSize: 16,
+                      color: context.colorScheme.secondary,
                     ),
                   ),
                 ],
@@ -166,7 +213,9 @@ class _CuentaPorCobrarDetalleScreenState extends State<CuentaPorCobrarDetalleScr
                     style: TextStyle(
                       fontWeight: FontWeight.bold,
                       fontSize: 16,
-                      color: cuenta.saldoPendiente > 0 ? Colors.red : Colors.green,
+                      color: cuenta.saldoPendiente > 0
+                          ? Colors.red
+                          : Colors.green,
                     ),
                   ),
                 ],
@@ -189,16 +238,22 @@ class _CuentaPorCobrarDetalleScreenState extends State<CuentaPorCobrarDetalleScr
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _buildInfoRow('Vencimiento', cuenta.fechaVencimiento != null
-              ? DateFormat('dd/MMM/yyyy').format(cuenta.fechaVencimiento!)
-              : 'N/A'),
+          _buildInfoRow(
+            'Vencimiento',
+            cuenta.fechaVencimiento != null
+                ? DateFormat('dd/MMM/yyyy').format(cuenta.fechaVencimiento!)
+                : 'N/A',
+          ),
           if (cuenta.diasVencido != null && cuenta.diasVencido! > 0)
             _buildInfoRow(
               'Vencida hace',
               '${cuenta.diasVencido} días',
               color: Colors.red,
             ),
-          _buildInfoRow('Porcentaje Pagado', '${cuenta.porcentajePagado.toStringAsFixed(1)}%'),
+          _buildInfoRow(
+            'Porcentaje Pagado',
+            '${cuenta.porcentajePagado.toStringAsFixed(1)}%',
+          ),
           if (cuenta.observaciones != null)
             Padding(
               padding: const EdgeInsets.only(top: 8),
@@ -208,8 +263,7 @@ class _CuentaPorCobrarDetalleScreenState extends State<CuentaPorCobrarDetalleScr
                   Text(
                     'Observaciones',
                     style: TextStyle(
-                      fontSize: 12,
-                      color: context.colorScheme.onSurfaceVariant,
+                      color: context.colorScheme.secondary,
                       fontWeight: FontWeight.w500,
                     ),
                   ),
@@ -232,20 +286,10 @@ class _CuentaPorCobrarDetalleScreenState extends State<CuentaPorCobrarDetalleScr
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 13,
-              color: context.colorScheme.onSurfaceVariant,
-            ),
-          ),
+          Text(label, style: TextStyle(color: context.colorScheme.secondary)),
           Text(
             value,
-            style: TextStyle(
-              fontWeight: FontWeight.bold,
-              fontSize: 13,
-              color: color,
-            ),
+            style: TextStyle(fontWeight: FontWeight.bold, color: color),
           ),
         ],
       ),
@@ -256,10 +300,14 @@ class _CuentaPorCobrarDetalleScreenState extends State<CuentaPorCobrarDetalleScr
     Color badgeColor;
     IconData badgeIcon;
 
-    switch (cuenta.estado) {
+    switch (cuenta.estado.toUpperCase()) {
       case 'PAGADO':
         badgeColor = Colors.green;
         badgeIcon = Icons.check_circle;
+        break;
+      case 'ANULADO':
+        badgeColor = Colors.red;
+        badgeIcon = Icons.cancel;
         break;
       case 'PARCIAL':
         badgeColor = Colors.orange;
@@ -284,7 +332,7 @@ class _CuentaPorCobrarDetalleScreenState extends State<CuentaPorCobrarDetalleScr
           Icon(badgeIcon, size: 16, color: badgeColor),
           const SizedBox(width: 6),
           Text(
-            cuenta.estado,
+            cuenta.estado.toUpperCase(),
             style: TextStyle(
               fontSize: 12,
               color: badgeColor,
@@ -307,9 +355,9 @@ class _CuentaPorCobrarDetalleScreenState extends State<CuentaPorCobrarDetalleScr
             children: [
               Text(
                 'Pagos Registrados (${pagos.length})',
-                style: const TextStyle(
+                style: TextStyle(
                   fontWeight: FontWeight.bold,
-                  fontSize: 16,
+                  color: context.colorScheme.secondary,
                 ),
               ),
             ],
@@ -319,7 +367,9 @@ class _CuentaPorCobrarDetalleScreenState extends State<CuentaPorCobrarDetalleScr
             Container(
               padding: const EdgeInsets.all(24),
               decoration: BoxDecoration(
-                border: Border.all(color: context.colorScheme.outline.withOpacity(0.3)),
+                border: Border.all(
+                  color: context.colorScheme.outline.withOpacity(0.3),
+                ),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Center(
@@ -328,7 +378,9 @@ class _CuentaPorCobrarDetalleScreenState extends State<CuentaPorCobrarDetalleScr
                     Icon(
                       Icons.receipt_long_outlined,
                       size: 40,
-                      color: context.colorScheme.onSurfaceVariant.withOpacity(0.5),
+                      color: context.colorScheme.onSurfaceVariant.withOpacity(
+                        0.5,
+                      ),
                     ),
                     const SizedBox(height: 8),
                     Text(
@@ -372,16 +424,12 @@ class _CuentaPorCobrarDetalleScreenState extends State<CuentaPorCobrarDetalleScr
                   children: [
                     Text(
                       'Pago #${pago.id}',
-                      style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 14,
-                      ),
+                      style: const TextStyle(fontWeight: FontWeight.bold),
                     ),
                     if (pago.fechaPago != null)
                       Text(
                         DateFormat('dd/MMM/yyyy').format(pago.fechaPago!),
                         style: TextStyle(
-                          fontSize: 12,
                           color: context.colorScheme.onSurfaceVariant,
                         ),
                       ),
@@ -390,8 +438,8 @@ class _CuentaPorCobrarDetalleScreenState extends State<CuentaPorCobrarDetalleScr
                 Text(
                   'Bs. ${pago.monto.toStringAsFixed(2)}',
                   style: const TextStyle(
+                    fontSize: 18,
                     fontWeight: FontWeight.bold,
-                    fontSize: 14,
                     color: Colors.green,
                   ),
                 ),
@@ -406,7 +454,6 @@ class _CuentaPorCobrarDetalleScreenState extends State<CuentaPorCobrarDetalleScr
                       child: Text(
                         'Tipo: ${pago.tipoPagoNombre}',
                         style: TextStyle(
-                          fontSize: 12,
                           color: context.colorScheme.onSurfaceVariant,
                         ),
                       ),
@@ -416,7 +463,6 @@ class _CuentaPorCobrarDetalleScreenState extends State<CuentaPorCobrarDetalleScr
                       child: Text(
                         'Recibo: ${pago.numeroRecibo}',
                         style: TextStyle(
-                          fontSize: 12,
                           color: context.colorScheme.onSurfaceVariant,
                         ),
                       ),
@@ -429,7 +475,6 @@ class _CuentaPorCobrarDetalleScreenState extends State<CuentaPorCobrarDetalleScr
                 child: Text(
                   'Nota: ${pago.observaciones}',
                   style: TextStyle(
-                    fontSize: 12,
                     fontStyle: FontStyle.italic,
                     color: context.colorScheme.onSurfaceVariant,
                   ),
@@ -448,10 +493,7 @@ class _CuentaPorCobrarDetalleScreenState extends State<CuentaPorCobrarDetalleScr
         children: [
           const Icon(Icons.error_outline, size: 48, color: Colors.red),
           const SizedBox(height: 16),
-          Text(
-            'Error al cargar',
-            style: Theme.of(context).textTheme.bodyLarge,
-          ),
+          Text('Error al cargar', style: Theme.of(context).textTheme.bodyLarge),
           const SizedBox(height: 8),
           Text(
             provider.errorMessage ?? 'Ocurrió un error inesperado',

@@ -30,8 +30,8 @@ class PaginatedResponse<T> {
 
         // Buscar paginación en 'meta' si existe
         Map<String, dynamic>? meta = json['meta'] is Map<String, dynamic>
-          ? json['meta'] as Map<String, dynamic>
-          : null;
+            ? json['meta'] as Map<String, dynamic>
+            : null;
 
         if (meta != null) {
           debugPrint('📊 Detected list with meta: total=${meta['total']}');
@@ -141,7 +141,9 @@ class PaginatedData<T> {
     Map<String, dynamic> paginationSource = {};
     if (json.containsKey('meta') && json['meta'] is Map<String, dynamic>) {
       paginationSource = json['meta'] as Map<String, dynamic>;
-      debugPrint('📊 Paginación encontrada en "meta": total=${paginationSource['total']}, current_page=${paginationSource['current_page']}');
+      debugPrint(
+        '📊 Paginación encontrada en "meta": total=${paginationSource['total']}, current_page=${paginationSource['current_page']}',
+      );
     } else if (json.containsKey('current_page')) {
       paginationSource = json;
       debugPrint('📊 Paginación encontrada en nivel superior');
@@ -155,7 +157,9 @@ class PaginatedData<T> {
       final total = paginationSource['total'] ?? 0;
       final lastPage = paginationSource['last_page'];
 
-      debugPrint('📊 Valores extraídos: currentPage=$currentPage, perPage=$perPage, total=$total, lastPage=$lastPage');
+      debugPrint(
+        '📊 Valores extraídos: currentPage=$currentPage, perPage=$perPage, total=$total, lastPage=$lastPage',
+      );
 
       return PaginatedData(
         currentPage: currentPage,
@@ -244,8 +248,8 @@ class ApiResponse<T> {
               processedData = processedList.cast<Client>().toList();
             } else if (T.toString() == 'List<ClientAddress>') {
               processedData = processedList.cast<ClientAddress>().toList();
-            } else if (T.toString() == 'List<Product>') {
-              processedData = processedList.cast<Product>().toList();
+            } else if (T.toString() == 'List<Producto>') {
+              processedData = processedList.cast<Producto>().toList();
             } else {
               processedData = processedList;
             }

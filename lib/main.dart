@@ -382,21 +382,6 @@ class MyApp extends StatelessWidget {
                   ),
                 );
 
-              /*case '/chofer/iniciar-ruta':
-                final entregaId = settings.arguments as int?;
-                if (entregaId == null) {
-                  return MaterialPageRoute(
-                    builder: (context) => const Scaffold(
-                      body: Center(
-                        child: Text('Error: ID de entrega no encontrado'),
-                      ),
-                    ),
-                  );
-                }
-                return MaterialPageRoute(
-                  builder: (context) => IniciarRutaScreen(entregaId: entregaId),
-                );*/
-
               case '/credito':
                 final args = settings.arguments as Map<String, dynamic>?;
                 if (args == null) {

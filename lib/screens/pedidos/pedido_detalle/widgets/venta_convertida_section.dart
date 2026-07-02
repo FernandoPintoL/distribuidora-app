@@ -105,11 +105,11 @@ class VentaConvertidaSection extends StatelessWidget {
                 const SizedBox(height: 16),
 
                 // Estado del documento
-                if (venta.estadoDocumento != null) ...[
+                if (venta.estadoDocumentoObj != null) ...[
                   EstadoRowWidget(
                     icon: Icons.description,
                     label: 'Estado Documento',
-                    estadoData: venta.estadoDocumento!,
+                    estadoData: venta.estadoDocumentoObj!,
                     colorScheme: colorScheme,
                     parentContext: parentContext,
                   ),
@@ -117,11 +117,11 @@ class VentaConvertidaSection extends StatelessWidget {
                 ],
 
                 // Estado de logística
-                if (venta.estadoLogistica != null) ...[
+                if (venta.estadoLogisticoObj != null) ...[
                   EstadoRowWidget(
                     icon: Icons.local_shipping,
                     label: 'Estado Logística',
-                    estadoData: venta.estadoLogistica!,
+                    estadoData: venta.estadoLogisticoObj!,
                     colorScheme: colorScheme,
                     parentContext: parentContext,
                   ),
@@ -129,7 +129,7 @@ class VentaConvertidaSection extends StatelessWidget {
                 ],
 
                 // Motivo de anulación si está anulada
-                if (venta.estadoDocumento?.codigo == 'ANULADA' &&
+                if (venta.estadoDocumentoObj?.codigo == 'ANULADA' &&
                     venta.observaciones != null &&
                     venta.observaciones!.isNotEmpty) ...[
                   Container(
@@ -179,19 +179,22 @@ class VentaConvertidaSection extends StatelessWidget {
                 ],
 
                 // Confirmaciones de entrega
-                if (venta.confirmacionesEntrega.isNotEmpty) ...[
+                if (venta.confirmaciones.isNotEmpty) ...[
                   Text(
                     'Confirmaciones de Entrega',
                     style: TextStyle(
-                      fontSize: AppTextStyles.bodySmall(parentContext).fontSize!,
+                      fontSize: AppTextStyles.bodySmall(
+                        parentContext,
+                      ).fontSize!,
                       fontWeight: FontWeight.w600,
                       color: colorScheme.onSurfaceVariant,
                     ),
                   ),
                   const SizedBox(height: 8),
-                  ...venta.confirmacionesEntrega.map((confirmacion) {
+                  ...venta.confirmaciones.map((confirmacion) {
                     final isCompleted =
-                        confirmacion.tipoConfirmacion.toUpperCase() == 'COMPLETA';
+                        confirmacion.tipoConfirmacion.toUpperCase() ==
+                        'COMPLETA';
 
                     return Padding(
                       padding: const EdgeInsets.only(bottom: 8),
@@ -247,7 +250,8 @@ class VentaConvertidaSection extends StatelessWidget {
                                       overflow: TextOverflow.ellipsis,
                                     ),
                                   ],
-                                  if (confirmacion.observacionesLogistica != null) ...[
+                                  if (confirmacion.observacionesLogistica !=
+                                      null) ...[
                                     const SizedBox(height: 2),
                                     Text(
                                       'Observaciones: ${confirmacion.observacionesLogistica}',

@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../models/entrega.dart';
 import '../../providers/entrega_provider.dart';
 import '../../widgets/widgets.dart';
-import '../../config/config.dart';
 // ✅ NUEVO: Widgets de pantallas
 import 'entrega_detalle/widgets/tab_general_widget.dart';
 import 'entrega_detalle/widgets/tab_productos_widget.dart';
@@ -32,10 +30,15 @@ class _EntregaDetalleScreenState extends State<EntregaDetalleScreen>
   late TabController _tabController;
   bool _hasInitialized = false;
 
+  final GlobalKey _generalKey = GlobalKey();
+  final GlobalKey _productosKey = GlobalKey();
+  final GlobalKey _ventasKey = GlobalKey();
+
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
+    _tabController.addListener(_handleTabChange);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted && !_hasInitialized) {
         _hasInitialized = true;
@@ -43,6 +46,27 @@ class _EntregaDetalleScreenState extends State<EntregaDetalleScreen>
         context.read<EntregaProvider>().obtenerEntrega(widget.entregaId);
       }
     });
+  }
+
+  void _handleTabChange() {
+    if (!_tabController.indexIsChanging) {
+      final index = _tabController.index;
+      debugPrint('📑 Tab cambió a índice: $index');
+
+      if (index == 0) {
+        // General - recargar entrega completa
+        debugPrint('📑 Recargando General...');
+        (_generalKey.currentState as dynamic)?.recargar();
+      } else if (index == 1) {
+        // Productos - hacer petición propia
+        debugPrint('📑 Recargando Productos...');
+        (_productosKey.currentState as dynamic)?.recargar();
+      } else if (index == 2) {
+        // Ventas - hacer petición propia
+        debugPrint('📑 Recargando Ventas...');
+        (_ventasKey.currentState as dynamic)?.recargar();
+      }
+    }
   }
 
   @override
@@ -63,6 +87,7 @@ class _EntregaDetalleScreenState extends State<EntregaDetalleScreen>
   @override
   void dispose() {
     // ✅ NUEVO: Dispose del TabController
+    _tabController.removeListener(_handleTabChange);
     _tabController.dispose();
     // NOTA: NO desconectamos el WebSocket aquí porque es una conexión global
     // Se mantiene activa para otras pantallas
@@ -129,20 +154,23 @@ class _EntregaDetalleScreenState extends State<EntregaDetalleScreen>
 
     // ✅ NUEVO 2026-06-15: Convertir color hex del estado de entrega a Color
     Color appBarColor = Colors.deepOrange; // fallback
-    if (entrega?.estadoEntregaColor != null) {
+    if (entrega?.estadoEntregaObj?.color != null) {
       try {
-        final colorHex = entrega!.estadoEntregaColor!.replaceFirst('#', '');
+        final colorHex = entrega!.estadoEntregaObj?.color!.replaceFirst(
+          '#',
+          '',
+        );
         appBarColor = Color(int.parse('FF$colorHex', radix: 16));
       } catch (e) {
         debugPrint(
-          '⚠️ Error al parsear color: ${entrega?.estadoEntregaColor} - $e',
+          '⚠️ Error al parsear color: ${entrega!.estadoEntregaObj?.color} - $e',
         );
       }
     }
 
     return Scaffold(
-      appBar: CustomGradientAppBar(
-        title: 'Entrega #${widget.entregaId}',
+      appBar: AppBar(
+        title: Text('Entrega #${widget.entregaId}'),
         backgroundColor: appBarColor,
         actions: [
           // ✅ Botón para actualizar/recargar la pantalla
@@ -218,6 +246,15 @@ class _EntregaDetalleScreenState extends State<EntregaDetalleScreen>
                       ent,
                       prov,
                       onReload: onReload,
+                      onError: (error) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(error),
+                            backgroundColor: Colors.red,
+                            duration: const Duration(seconds: 4),
+                          ),
+                        );
+                      },
                     ),
                 onEntregasTerminadas: (ctx, ent, prov) =>
                     EntregasTerminadasDialog.show(ctx, ent, prov),
@@ -247,12 +284,14 @@ class _EntregaDetalleScreenState extends State<EntregaDetalleScreen>
           : TabBarView(
               controller: _tabController,
               children: [
-                TabGeneralWidget(provider: provider),
+                TabGeneralWidget(key: _generalKey, provider: provider),
                 TabProductosWidget(
+                  key: _productosKey,
                   entrega: provider.entregaActual!,
                   provider: provider,
                 ),
                 TabVentasWidget(
+                  key: _ventasKey,
                   entrega: provider.entregaActual!,
                   provider: provider,
                   context: context,

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../../config/app_text_styles.dart';
+import '../../../../extensions/theme_extension.dart';
 import '../../../../models/entrega.dart';
 import '../../../../providers/entrega_provider.dart';
 
@@ -9,6 +10,7 @@ class ConfirmarCargaListaDialog {
     Entrega entrega,
     EntregaProvider provider, {
     VoidCallback? onReload,
+    Function(String)? onError,
   }) async {
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
     final resultado = await showDialog<bool>(
@@ -18,21 +20,17 @@ class ConfirmarCargaListaDialog {
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(
+            Icon(
               Icons.check_circle_outline,
               size: 48,
-              color: Colors.blue,
+              color: context.colorScheme.secondary,
             ),
             const SizedBox(height: 16),
             const Text('¿Toda la carga está lista para entrega?'),
             const SizedBox(height: 12),
             Text(
               'Se cambiar el estado a LISTO_PARA_ENTREGA y podrás iniciar el viaje.',
-              style: TextStyle(
-                fontSize: AppTextStyles.bodySmall(context).fontSize!,
-                color: isDarkMode ? Colors.grey[400] : Colors.grey[600],
-                fontStyle: FontStyle.italic,
-              ),
+              style: TextStyle(fontStyle: FontStyle.italic),
               textAlign: TextAlign.center,
             ),
             if (entrega.numeroEntrega != null) ...[
@@ -40,32 +38,23 @@ class ConfirmarCargaListaDialog {
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: isDarkMode
-                      ? Colors.blue[900]?.withOpacity(0.3)
-                      : Colors.blue[50],
+                  // color: context.colorScheme.secondary,
                   borderRadius: BorderRadius.circular(8),
-                  border: Border.all(
-                    color: isDarkMode ? Colors.blue[700]! : Colors.blue[200]!,
-                  ),
+                  border: Border.all(color: context.colorScheme.secondary),
                 ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(
                       'Entrega',
-                      style: TextStyle(
-                        fontSize: AppTextStyles.labelSmall(context).fontSize!,
-                        color: isDarkMode ? Colors.grey[400] : Colors.grey[600],
-                        fontWeight: FontWeight.w500,
-                      ),
+                      style: TextStyle(fontWeight: FontWeight.w500),
                     ),
-                    const SizedBox(height: 4),
                     Text(
-                      entrega.numeroEntrega ?? 'N/A',
+                      "#${entrega.id}" ?? 'N/A',
                       style: TextStyle(
-                        fontSize: AppTextStyles.bodySmall(context).fontSize!,
                         fontWeight: FontWeight.bold,
-                        color: isDarkMode ? Colors.grey[100] : Colors.grey[900],
+                        fontSize: 18,
                       ),
                     ),
                   ],
@@ -77,11 +66,17 @@ class ConfirmarCargaListaDialog {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancelar'),
+            style: TextButton.styleFrom(foregroundColor: Colors.black26),
+            child: const Text(
+              'Cancelar',
+              style: TextStyle(color: Colors.white),
+            ),
           ),
           ElevatedButton(
             onPressed: () => Navigator.pop(context, true),
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.blue),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: context.colorScheme.secondary,
+            ),
             child: const Text('Confirmar Carga'),
           ),
         ],
@@ -125,15 +120,10 @@ class ConfirmarCargaListaDialog {
             );
             onReload?.call();
           } else {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(
-                  'Error: ${provider.errorMessage ?? 'Error desconocido'}',
-                ),
-                backgroundColor: Colors.red,
-                duration: const Duration(seconds: 3),
-              ),
-            );
+            // ✅ Usar callback para mostrar error desde contexto válido
+            final errorMsg = provider.errorMessage ?? 'Error desconocido';
+            debugPrint('❌ [DIALOG] Mostrando error: $errorMsg');
+            onError?.call(errorMsg);
           }
         }
       } catch (e) {

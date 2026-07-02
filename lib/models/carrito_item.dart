@@ -1,7 +1,7 @@
 import 'product.dart';
 
 class CarritoItem {
-  final Product producto;
+  final Producto producto;
   final int cantidad;
   final double precioUnitario;
   final String? observaciones;
@@ -50,7 +50,7 @@ class CarritoItem {
 
   // Crear copia con modificaciones
   CarritoItem copyWith({
-    Product? producto,
+    Producto? producto,
     int? cantidad,
     double? precioUnitario,
     String? observaciones,
@@ -61,7 +61,8 @@ class CarritoItem {
       cantidad: cantidad ?? this.cantidad,
       precioUnitario: precioUnitario ?? this.precioUnitario,
       observaciones: observaciones ?? this.observaciones,
-      comboItemsSeleccionados: comboItemsSeleccionados ?? this.comboItemsSeleccionados,
+      comboItemsSeleccionados:
+          comboItemsSeleccionados ?? this.comboItemsSeleccionados,
     );
   }
 
@@ -82,7 +83,7 @@ class CarritoItem {
   // Crear desde JSON (para guardar localmente con Hive en el futuro)
   factory CarritoItem.fromJson(Map<String, dynamic> json) {
     return CarritoItem(
-      producto: Product.fromJson(json['producto']),
+      producto: Producto.fromJson(json['producto']),
       cantidad: _parseInt(json['cantidad']),
       precioUnitario: _parseDouble(json['precio_unitario']),
       observaciones: json['observaciones'],
@@ -133,12 +134,15 @@ class CarritoItem {
     if (other.producto.id != producto.id) return false;
 
     // Comparar comboItemsSeleccionados si es un combo
-    if (comboItemsSeleccionados != null || other.comboItemsSeleccionados != null) {
-      if (comboItemsSeleccionados == null || other.comboItemsSeleccionados == null) {
+    if (comboItemsSeleccionados != null ||
+        other.comboItemsSeleccionados != null) {
+      if (comboItemsSeleccionados == null ||
+          other.comboItemsSeleccionados == null) {
         return false;
       }
       // Comparar contenido de las listas
-      if (comboItemsSeleccionados!.length != other.comboItemsSeleccionados!.length) {
+      if (comboItemsSeleccionados!.length !=
+          other.comboItemsSeleccionados!.length) {
         return false;
       }
       for (int i = 0; i < comboItemsSeleccionados!.length; i++) {

@@ -16,19 +16,13 @@ class ProductosSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'Productos',
-            style: TextStyle(
-              fontSize: AppTextStyles.headlineSmall(parentContext).fontSize!,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          const SizedBox(height: 12),
-          ...pedido.items.map(
+          Text('Productos', style: TextStyle(fontWeight: FontWeight.bold)),
+          const SizedBox(height: 4),
+          ...pedido.detalles.map(
             (item) => ProductoCardWidget(
               imagenUrl: item.producto?.imagenPrincipal?.url,
               nombreProducto: item.producto?.nombre,

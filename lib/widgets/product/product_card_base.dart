@@ -10,7 +10,7 @@ import 'product_card_quantity_controls.dart';
 /// Widget base compartido para mostrar información del producto (imagen, nombre, código, precio)
 /// Se reutiliza en ProductListItem y CarritoItemCard
 class ProductCardBase extends StatefulWidget {
-  final Product product;
+  final Producto product;
   final int quantity;
   final DetalleCarritoConRango? detalleConRango;
   final VoidCallback? onProductTap;

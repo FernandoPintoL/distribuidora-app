@@ -8,7 +8,10 @@ import '../../utils/date_picker_utils.dart';
 import 'entregas_asignadas/widgets/entrega_card.dart';
 
 class EntregasAsignadasScreen extends StatefulWidget {
-  const EntregasAsignadasScreen({Key? key}) : super(key: key);
+  final bool showAppBar;
+
+  const EntregasAsignadasScreen({Key? key, this.showAppBar = false})
+    : super(key: key);
 
   @override
   State<EntregasAsignadasScreen> createState() =>
@@ -185,6 +188,16 @@ class _EntregasAsignadasScreenState extends State<EntregasAsignadasScreen> {
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
+      appBar: widget.showAppBar
+          ? AppBar(
+              title: const Text('Entregas Asignadas'),
+              elevation: 0,
+              leading: IconButton(
+                icon: const Icon(Icons.arrow_back),
+                onPressed: () => Navigator.of(context).pop(),
+              ),
+            )
+          : null,
       body: FutureBuilder<bool>(
         // ✅ CRÍTICO: Usar _futureEntregas que NO se recrea en cada rebuild
         future: _futureEntregas ?? Future.value(true),
@@ -193,9 +206,7 @@ class _EntregasAsignadasScreenState extends State<EntregasAsignadasScreen> {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return Stack(
               children: [
-                Container(
-                  color: isDarkMode ? Colors.grey[900] : Colors.grey[50],
-                ),
+                Container(),
                 Positioned.fill(
                   child: Container(
                     color: Colors.black.withValues(alpha: 0.3),

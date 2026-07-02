@@ -53,7 +53,9 @@ class _ProfilePhotoSelectorState extends State<ProfilePhotoSelector> {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: const Text('Se necesita permiso de cámara para tomar fotos'),
+              content: const Text(
+                'Se necesita permiso de cámara para tomar fotos',
+              ),
               action: SnackBarAction(
                 label: 'Configurar',
                 onPressed: openAppSettings,
@@ -158,10 +160,7 @@ class _ProfilePhotoSelectorState extends State<ProfilePhotoSelector> {
             ? Colors.grey[800]
             : Colors.blue.shade50,
         shape: BoxShape.circle,
-        border: Border.all(
-          color: Theme.of(context).primaryColor,
-          width: 3,
-        ),
+        border: Border.all(color: Theme.of(context).primaryColor, width: 3),
       ),
       child: Icon(
         Icons.person,
@@ -192,9 +191,6 @@ class _ProfilePhotoSelectorState extends State<ProfilePhotoSelector> {
         width: widget.size,
         height: widget.size,
         decoration: BoxDecoration(
-          color: Theme.of(context).brightness == Brightness.dark
-              ? Colors.grey[800]
-              : Colors.green.shade50,
           shape: BoxShape.circle,
           border: Border.all(
             color: Theme.of(context).brightness == Brightness.dark
@@ -254,8 +250,7 @@ class _ProfilePhotoSelectorState extends State<ProfilePhotoSelector> {
     // Si es una URL de red, usar Future para manejar el error de carga
     if (_selectedImage == null) {
       return FutureBuilder<void>(
-        future: precacheImage(NetworkImage(photoUrl), context)
-            .catchError((e) {
+        future: precacheImage(NetworkImage(photoUrl), context).catchError((e) {
           debugPrint('Error al cargar imagen de red: $e');
           // Si hay error, no hacer nada - el errorWidget lo manejará
         }),
@@ -270,7 +265,10 @@ class _ProfilePhotoSelectorState extends State<ProfilePhotoSelector> {
             height: widget.size,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              border: Border.all(color: Theme.of(context).primaryColor, width: 3),
+              border: Border.all(
+                color: Theme.of(context).primaryColor,
+                width: 3,
+              ),
               image: DecorationImage(
                 image: NetworkImage(photoUrl),
                 fit: BoxFit.cover,
@@ -283,8 +281,8 @@ class _ProfilePhotoSelectorState extends State<ProfilePhotoSelector> {
             child: snapshot.connectionState == ConnectionState.waiting
                 ? null // Mostrar la imagen mientras carga
                 : snapshot.hasError
-                    ? _buildProfileIconContent()
-                    : null,
+                ? _buildProfileIconContent()
+                : null,
           );
         },
       );
@@ -327,7 +325,7 @@ class _ProfilePhotoSelectorState extends State<ProfilePhotoSelector> {
             child: Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: theme.primaryColor,
+                color: theme.secondaryHeaderColor,
                 shape: BoxShape.circle,
                 border: Border.all(
                   color: isDarkMode

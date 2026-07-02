@@ -17,10 +17,16 @@ import '../notifications_screen.dart';
 ///
 /// Parámetros opcionales:
 /// - showBackButton: si true, muestra botón de regreso en lugar de menú de usuario
+/// - showOnlyDeliveries: si true, solo muestra entregas (oculta préstamos) y agrega AppBar
 class HomeChoferScreen extends StatefulWidget {
   final bool showBackButton;
+  final bool showOnlyDeliveries;
 
-  const HomeChoferScreen({super.key, this.showBackButton = false});
+  const HomeChoferScreen({
+    super.key,
+    this.showBackButton = false,
+    this.showOnlyDeliveries = false,
+  });
 
   @override
   State<HomeChoferScreen> createState() => _HomeChoferScreenState();
@@ -33,7 +39,10 @@ class _HomeChoferScreenState extends State<HomeChoferScreen>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 2, vsync: this);
+    _tabController = TabController(
+      length: widget.showOnlyDeliveries ? 1 : 2,
+      vsync: this,
+    );
     _tabController.addListener(_onTabChanged);
 
     // Cargar estados logísticos y préstamos DESPUÉS de que termine la construcción
@@ -75,12 +84,15 @@ class _HomeChoferScreenState extends State<HomeChoferScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: _buildAppBar(),
+      appBar: widget.showOnlyDeliveries ? null : _buildAppBar(),
       body: TabBarView(
         controller: _tabController,
-        children: const [EntregasAsignadasScreen(), PrestamosAsignadosScreen()],
+        children: widget.showOnlyDeliveries
+            ? [EntregasAsignadasScreen(showAppBar: widget.showBackButton)]
+            : const [EntregasAsignadasScreen(), PrestamosAsignadosScreen()],
       ),
-      bottomNavigationBar: _buildBottomNavBar(),
+      bottomNavigationBar:
+          widget.showOnlyDeliveries ? null : _buildBottomNavBar(),
     );
   }
 

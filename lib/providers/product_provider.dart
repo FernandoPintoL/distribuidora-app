@@ -5,7 +5,7 @@ import '../services/services.dart';
 class ProductProvider with ChangeNotifier {
   final ProductService _productService = ProductService();
 
-  List<Product> _products = [];
+  List<Producto> _products = [];
   bool _isLoading = false;
   String? _errorMessage;
   int _currentPage = 1;
@@ -14,7 +14,7 @@ class ProductProvider with ChangeNotifier {
   bool _hasMorePages = true;
 
   // Getters
-  List<Product> get products => _products;
+  List<Producto> get products => _products;
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
   int get currentPage => _currentPage;
@@ -168,7 +168,7 @@ class ProductProvider with ChangeNotifier {
     );
   }
 
-  Future<List<Product>> searchProducts(String query, {int limit = 10}) async {
+  Future<List<Producto>> searchProducts(String query, {int limit = 10}) async {
     try {
       final response = await _productService.searchProducts(
         query,
@@ -185,7 +185,7 @@ class ProductProvider with ChangeNotifier {
     }
   }
 
-  Future<Product?> getProduct(int id) async {
+  Future<Producto?> getProduct(int id) async {
     _isLoading = true;
     _errorMessage = null;
 

@@ -36,6 +36,16 @@ class _PedidoDetalleScreenState extends State<PedidoDetalleScreen> {
     });
   }
 
+  Color _parseHexColor(String? hexColor) {
+    if (hexColor == null) return Colors.transparent;
+    try {
+      final hex = hexColor.replaceFirst('#', '');
+      return Color(int.parse('FF$hex', radix: 16));
+    } catch (e) {
+      return Colors.transparent;
+    }
+  }
+
   Future<void> _cargarPedido() async {
     final pedidoProvider = context.read<PedidoProvider>();
     await pedidoProvider.loadPedido(widget.pedidoId);
@@ -234,7 +244,7 @@ class _PedidoDetalleScreenState extends State<PedidoDetalleScreen> {
       }
 
       debugPrint(
-        'ðŸ“¥ Carrito cargado con ${pedido.items.length} items de la proforma',
+        'ðŸ“¥ Carrito cargado con ${pedido.detalles.length} items de la proforma',
       );
 
       // 2. Navegar a ProductListScreen y esperar resultado
@@ -352,421 +362,331 @@ class _PedidoDetalleScreenState extends State<PedidoDetalleScreen> {
     final colorScheme = context.colorScheme;
     final isDark = context.isDark;
 
-    return Scaffold(
-      appBar: CustomGradientAppBar(
-        title: 'Pedido #${widget.pedidoId.toString()}',
-        actions: [RefreshAction(isLoading: false, onRefresh: _onRefresh)],
-      ),
-      bottomNavigationBar: Consumer<PedidoProvider>(
-        builder: (context, pedidoProvider, _) {
-          final pedido = pedidoProvider.pedidoActual;
-          // âœ… ACTUALIZADO: Permitir editar solo si estÃ¡ en PENDIENTE
-          final puedeEditarProductos = pedido?.estadoCodigo == 'PENDIENTE';
+    return Consumer<PedidoProvider>(
+      builder: (context, pedidoProvider, _) {
+        final pedido = pedidoProvider.pedidoActual;
+        final estadoLogisticoColor = pedido?.estadoLogistico?.color != null
+            ? _parseHexColor(pedido?.estadoLogistico?.color)
+            : colorScheme.primary;
 
-          if (pedido == null) {
-            return const SizedBox.shrink();
-          }
-
-          return Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: colorScheme.surface,
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(isDark ? 0.15 : 0.05),
-                  blurRadius: 10,
-                  offset: const Offset(0, -5),
-                ),
+        return Scaffold(
+          appBar: AppBar(
+            title: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Pedido #${widget.pedidoId}'),
+                if (pedido?.estadoLogistico != null)
+                  Text(
+                    pedido!.estadoLogistico!.nombre,
+                    style: const TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w400,
+                    ),
+                  ),
               ],
             ),
-            child: SafeArea(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  // âœ… NUEVO: BotÃ³n para editar productos (solo en PENDIENTE)
-                  if (puedeEditarProductos) ...[
-                    ElevatedButton.icon(
-                      onPressed: _editarProductos,
-                      icon: const Icon(Icons.edit),
-                      label: const Text('Editar Productos'),
-                      style: ElevatedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        backgroundColor: Colors.purple,
-                        minimumSize: const Size(double.infinity, 50),
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                  ],
-                  if (pedido.puedeExtenderReservas)
-                    ElevatedButton.icon(
-                      onPressed: _extenderReserva,
-                      icon: const Icon(Icons.access_time),
-                      label: const Text('Extender Reserva'),
-                      style: ElevatedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        backgroundColor: Colors.orange,
-                        minimumSize: const Size(double.infinity, 50),
-                      ),
-                    ),
-                  // âœ… NUEVO: BotÃ³n para reportar producto daÃ±ado (si es una venta confirmada)
-                  if (pedido.venta != null) ...[
-                    const SizedBox(height: 2),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: ElevatedButton.icon(
-                            onPressed: () =>
-                                _irADetallesVenta(pedido.venta!.id),
-                            icon: const Icon(Icons.receipt_long),
-                            label: const Text('Ver Venta'),
-                            style: ElevatedButton.styleFrom(
-                              padding: const EdgeInsets.symmetric(vertical: 16),
-                              backgroundColor: Colors.blue,
-                              minimumSize: const Size(double.infinity, 50),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 2),
-                        /* Expanded(
-                          child: ElevatedButton.icon(
-                            onPressed: () => _reportarProductoDanado(pedido),
-                            icon: const Icon(Icons.report_problem),
-                            label: const Text('Reportar'),
-                            style: ElevatedButton.styleFrom(
-                              padding: const EdgeInsets.symmetric(vertical: 16),
-                              backgroundColor: Colors.red.shade600,
-                              minimumSize: const Size(double.infinity, 50),
-                            ),
-                          ),
-                        ), */
-                      ],
-                    ),
-                  ],
-                ],
-              ),
-            ),
-          );
-        },
-      ),
-      // DiÃ¡logo de renovaciÃ³n de reservas
-      body: Stack(
-        children: [
-          Consumer<PedidoProvider>(
-            builder: (context, pedidoProvider, child) {
-              if (pedidoProvider.isLoading &&
-                  pedidoProvider.pedidoActual == null) {
-                return const Center(child: CircularProgressIndicator());
-              }
-
-              if (pedidoProvider.errorMessage != null &&
-                  pedidoProvider.pedidoActual == null) {
-                return ErrorStateWidget(
-                  error: pedidoProvider.errorMessage!,
-                  onRetry: _cargarPedido,
-                  parentContext: context,
-                );
-              }
-
+            backgroundColor: estadoLogisticoColor.withOpacity(0.85),
+            elevation: 0,
+            actions: [RefreshAction(isLoading: false, onRefresh: _onRefresh)],
+          ),
+          bottomNavigationBar: Consumer<PedidoProvider>(
+            builder: (context, pedidoProvider, _) {
               final pedido = pedidoProvider.pedidoActual;
+              // âœ… ACTUALIZADO: Permitir editar solo si estÃ¡ en PENDIENTE
+              final puedeEditarProductos = pedido?.estadoCodigo == 'PENDIENTE';
+
               if (pedido == null) {
-                return const Center(child: Text('Pedido no encontrado'));
+                return const SizedBox.shrink();
               }
 
-              return RefreshIndicator(
-                onRefresh: _onRefresh,
-                child: SingleChildScrollView(
-                  physics: const AlwaysScrollableScrollPhysics(),
+              return Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: colorScheme.surface,
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(isDark ? 0.15 : 0.05),
+                      blurRadius: 10,
+                      offset: const Offset(0, -5),
+                    ),
+                  ],
+                ),
+                child: SafeArea(
                   child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
                     children: [
-                      // âœ… CABECERA: Estado, Cliente, DirecciÃ³n y Botones (formato venta_cliente_header_widget)
-                      if (pedido.cliente != null)
-                        Padding(
-                          padding: const EdgeInsets.all(16),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.center,
-                            children: [
-                              // Estado del Pedido
-                              Container(
-                                padding: const EdgeInsets.all(12),
-                                decoration: BoxDecoration(
-                                  color: Colors.blue.withValues(alpha: 0.1),
-                                  border: Border.all(
-                                    color: Colors.blue,
-                                    width: 1.5,
-                                  ),
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                                child: Row(
-                                  children: [
-                                    Icon(
-                                      Icons.receipt,
-                                      size: 20,
-                                      color: Colors.blue,
-                                    ),
-                                    const SizedBox(width: 8),
-                                    Expanded(
-                                      child: Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        children: [
-                                          const Text(
-                                            'Estado',
-                                            style: TextStyle(
-                                              fontSize: 11,
-                                              color: Colors.grey,
-                                            ),
-                                          ),
-                                          Text(
-                                            pedido.estadoNombre ??
-                                                pedido.estadoCodigo ??
-                                                'Desconocido',
-                                            style: const TextStyle(
-                                              fontWeight: FontWeight.bold,
-                                              color: Colors.blue,
-                                            ),
-                                            overflow: TextOverflow.ellipsis,
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              const SizedBox(height: 12),
-                              // Cliente, Dirección y Botones
-                              Padding(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 4,
-                                ),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    // Avatar y Nombre del Cliente
-                                    Row(
-                                      children: [
-                                        ClienteAvatarWidget(
-                                          clienteNombre: pedido.cliente?.nombre,
-                                          clienteFotoPerfil: pedido.cliente?.fotoPerfil,
-                                        ),
-                                        const SizedBox(width: 12),
-                                        Expanded(
-                                          child: Column(
-                                            crossAxisAlignment:
-                                                CrossAxisAlignment.start,
-                                            children: [
-                                              Text(
-                                                pedido.cliente?.nombre ??
-                                                    'Cliente desconocido',
-                                                style: const TextStyle(
-                                                  fontWeight: FontWeight.bold,
-                                                ),
-                                                maxLines: 2,
-                                                overflow: TextOverflow.ellipsis,
-                                              ),
-                                              const SizedBox(height: 2),
-                                              Text(
-                                                pedido.cliente?.razonSocial ??
-                                                    'N/A',
-                                                maxLines: 1,
-                                                overflow: TextOverflow.ellipsis,
-                                                style: const TextStyle(
-                                                  fontSize: 12,
-                                                ),
-                                              ),
-                                              if (pedido.cliente?.localidad !=
-                                                  null) ...[
-                                                const SizedBox(height: 2),
-                                                Text(
-                                                  '📍 ${pedido.cliente?.localidad?.nombre ?? 'Localidad desconocida'}',
-                                                  style: const TextStyle(
-                                                    fontWeight: FontWeight.w500,
-                                                  ),
-                                                  maxLines: 1,
-                                                  overflow:
-                                                      TextOverflow.ellipsis,
-                                                ),
-                                              ],
-                                            ],
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                    const SizedBox(height: 12),
-                                    // Dirección de Entrega
-                                    if (pedido.direccionEntrega != null) ...[
-                                      const Divider(height: 1),
-                                      const SizedBox(height: 12),
-                                      Row(
-                                        children: [
-                                          const Icon(
-                                            Icons.location_on,
-                                            size: 16,
-                                            color: Colors.red,
-                                          ),
-                                          const SizedBox(width: 8),
-                                          Expanded(
-                                            child: Column(
-                                              crossAxisAlignment:
-                                                  CrossAxisAlignment.start,
-                                              children: [
-                                                const Text(
-                                                  'Dirección de Entrega',
-                                                  style: TextStyle(
-                                                    fontWeight: FontWeight.w600,
-                                                    color: Colors.grey,
-                                                  ),
-                                                ),
-                                                const SizedBox(height: 2),
-                                                Text(
-                                                  pedido
-                                                          .direccionEntrega
-                                                          ?.observaciones ??
-                                                      pedido
-                                                          .direccionEntrega
-                                                          ?.direccion ??
-                                                      'Sin dirección',
-                                                  style: const TextStyle(
-                                                    fontWeight: FontWeight.w500,
-                                                  ),
-                                                  maxLines: 2,
-                                                  overflow:
-                                                      TextOverflow.ellipsis,
-                                                ),
-                                              ],
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                      const SizedBox(height: 12),
-                                    ],
-                                    // Botones de Contacto
-                                    if (pedido.cliente?.telefono != null) ...[
-                                      const Divider(height: 1),
-                                      const SizedBox(height: 12),
-                                      Row(
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.spaceEvenly,
-                                        children: [
-                                          Tooltip(
-                                            message: 'Llamar',
-                                            child: IconButton(
-                                              icon: const Icon(Icons.phone),
-                                              color: Colors.green,
-                                              onPressed: () => PhoneUtils.llamarCliente(
-                                                context,
-                                                pedido.cliente?.telefono,
-                                              ),
-                                              constraints: const BoxConstraints(
-                                                minWidth: 40,
-                                                minHeight: 40,
-                                              ),
-                                            ),
-                                          ),
-                                          Tooltip(
-                                            message: 'WhatsApp',
-                                            child: IconButton(
-                                              icon: const Icon(Icons.chat),
-                                              color: Colors.green,
-                                              onPressed: () => PhoneUtils.enviarWhatsApp(
-                                                context,
-                                                pedido.cliente?.telefono,
-                                              ),
-                                              constraints: const BoxConstraints(
-                                                minWidth: 40,
-                                                minHeight: 40,
-                                              ),
-                                            ),
-                                          ),
-                                          // ✅ Botón Mapa (solo si hay dirección con coordenadas)
-                                          if (pedido.direccionEntrega?.latitud != null &&
-                                              pedido.direccionEntrega?.longitud != null)
-                                            Tooltip(
-                                              message: 'Ver en Mapa',
-                                              child: IconButton(
-                                                icon: const Icon(Icons.map),
-                                                color: Colors.lightGreen,
-                                                onPressed: () => _abrirMapa(pedido),
-                                                constraints: const BoxConstraints(
-                                                  minWidth: 40,
-                                                  minHeight: 40,
-                                                ),
-                                              ),
-                                            ),
-                                        ],
-                                      ),
-                                    ],
-                                  ],
-                                ),
-                              ),
-                            ],
+                      // âœ… NUEVO: BotÃ³n para editar productos (solo en PENDIENTE)
+                      if (puedeEditarProductos) ...[
+                        ElevatedButton.icon(
+                          onPressed: _editarProductos,
+                          icon: const Icon(Icons.edit),
+                          label: const Text('Editar Productos'),
+                          style: ElevatedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            backgroundColor: Theme.of(context).primaryColor,
+                            minimumSize: const Size(double.infinity, 50),
                           ),
                         ),
-                      const SizedBox(height: 16),
-
-                      // DirecciÃ³n de entrega
-                      if (pedido.direccionEntrega != null)
-                        DireccionSection(
-                          pedido: pedido,
-                          parentContext: context,
+                        const SizedBox(height: 12),
+                      ],
+                      if (pedido.puedeExtenderReservas)
+                        ElevatedButton.icon(
+                          onPressed: _extenderReserva,
+                          icon: const Icon(Icons.access_time),
+                          label: const Text('Extender Reserva'),
+                          style: ElevatedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            backgroundColor: Colors.orange,
+                            minimumSize: const Size(double.infinity, 50),
+                          ),
                         ),
-
-                      // Fecha programada
-                      if (pedido.fechaProgramada != null)
-                        FechaProgramadaSection(
-                          pedido: pedido,
-                          parentContext: context,
+                      // âœ… NUEVO: BotÃ³n para reportar producto daÃ±ado (si es una venta confirmada)
+                      if (pedido.venta != null) ...[
+                        const SizedBox(height: 2),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: ElevatedButton.icon(
+                                onPressed: () =>
+                                    _irADetallesVenta(pedido.venta!.id),
+                                icon: const Icon(Icons.receipt_long),
+                                label: const Text('Ver Venta'),
+                                style: ElevatedButton.styleFrom(
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 16,
+                                  ),
+                                  backgroundColor: Colors.blue,
+                                  minimumSize: const Size(double.infinity, 50),
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
-
-                      // Productos
-                      ProductosSection(pedido: pedido, parentContext: context),
-
-                      // Reservas de stock
-                      if (pedido.reservas.isNotEmpty)
-                        ReservasSection(pedido: pedido, parentContext: context),
-
-                      // Resumen de montos
-                      ResumenSection(pedido: pedido, parentContext: context),
-
-                      // Observaciones
-                      if (pedido.observaciones != null &&
-                          pedido.observaciones!.isNotEmpty)
-                        ObservacionesSection(
-                          pedido: pedido,
-                          parentContext: context,
-                        ),
-
-                      const SizedBox(height: 100),
+                      ],
                     ],
                   ),
                 ),
               );
             },
           ),
-          // DiÃ¡logo de renovaciÃ³n superpuesto
-          if (_showRenovacionDialog)
-            Consumer<PedidoProvider>(
-              builder: (context, pedidoProvider, _) {
-                final pedido = pedidoProvider.pedidoActual;
-                return Dialog(
-                  child: RenovacionReservasDialog(
-                    proformaNumero: pedido?.numero ?? 'N/A',
-                    reservasExpiradas:
-                        pedidoProvider.errorData?['reservas_expiradas'] ?? 1,
-                    isLoading: pedidoProvider.isRenovandoReservas,
-                    onRenovar: _renovarReservas,
-                    onCancelar: () {
-                      setState(() {
-                        _showRenovacionDialog = false;
-                      });
-                      pedidoProvider.limpiarErrores();
-                    },
-                  ),
-                );
-              },
-            ),
-        ],
-      ),
+          body: Stack(
+            children: [
+              Consumer<PedidoProvider>(
+                builder: (context, pedidoProvider, child) {
+                  if (pedidoProvider.isLoading &&
+                      pedidoProvider.pedidoActual == null) {
+                    return const Center(child: CircularProgressIndicator());
+                  }
+
+                  if (pedidoProvider.errorMessage != null &&
+                      pedidoProvider.pedidoActual == null) {
+                    return ErrorStateWidget(
+                      error: pedidoProvider.errorMessage!,
+                      onRetry: _cargarPedido,
+                      parentContext: context,
+                    );
+                  }
+
+                  final pedido = pedidoProvider.pedidoActual;
+                  if (pedido == null) {
+                    return const Center(child: Text('Pedido no encontrado'));
+                  }
+
+                  return RefreshIndicator(
+                    onRefresh: _onRefresh,
+                    child: SingleChildScrollView(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // âœ… CABECERA: Estado, Cliente, DirecciÃ³n y Botones (formato venta_cliente_header_widget)
+                          if (pedido.cliente != null)
+                            Padding(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                                vertical: 8,
+                              ),
+                              child: Card(
+                                child: Padding(
+                                  padding: const EdgeInsets.all(12),
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      ClienteAvatarWidget(
+                                        clienteNombre: pedido.cliente?.nombre,
+                                        clienteFotoPerfil:
+                                            pedido.cliente?.fotoPerfil,
+                                        clienteLocalidad: pedido
+                                            .direccionEntrega
+                                            ?.localidad
+                                            ?.nombre,
+                                        clienteObservaciones: pedido
+                                            .direccionEntrega
+                                            ?.observaciones,
+                                      ),
+                                      const Divider(),
+                                      // Botones de Contacto
+                                      if (pedido.cliente?.telefono != null) ...[
+                                        Row(
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.spaceEvenly,
+                                          children: [
+                                            Tooltip(
+                                              message: 'Llamar',
+                                              child: IconButton(
+                                                icon: const Icon(Icons.phone),
+                                                color: Colors.green,
+                                                onPressed: () =>
+                                                    PhoneUtils.llamarCliente(
+                                                      context,
+                                                      pedido.cliente?.telefono,
+                                                    ),
+                                                constraints:
+                                                    const BoxConstraints(
+                                                      minWidth: 40,
+                                                      minHeight: 40,
+                                                    ),
+                                              ),
+                                            ),
+                                            Tooltip(
+                                              message: 'WhatsApp',
+                                              child: IconButton(
+                                                icon: const Icon(Icons.chat),
+                                                color: Colors.green,
+                                                onPressed: () =>
+                                                    PhoneUtils.enviarWhatsApp(
+                                                      context,
+                                                      pedido.cliente?.telefono,
+                                                    ),
+                                                constraints:
+                                                    const BoxConstraints(
+                                                      minWidth: 40,
+                                                      minHeight: 40,
+                                                    ),
+                                              ),
+                                            ),
+                                            // ✅ Botón Mapa (solo si hay dirección con coordenadas)
+                                            if (pedido
+                                                        .direccionEntrega
+                                                        ?.latitud !=
+                                                    null &&
+                                                pedido
+                                                        .direccionEntrega
+                                                        ?.longitud !=
+                                                    null)
+                                              Tooltip(
+                                                message: 'Ver en Mapa',
+                                                child: IconButton(
+                                                  icon: const Icon(Icons.map),
+                                                  color: Colors.lightGreen,
+                                                  onPressed: () =>
+                                                      _abrirMapa(pedido),
+                                                  constraints:
+                                                      const BoxConstraints(
+                                                        minWidth: 40,
+                                                        minHeight: 40,
+                                                      ),
+                                                ),
+                                              ),
+                                          ],
+                                        ),
+                                      ],
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ),
+
+                          // Fecha programada
+                          if (pedido.fechaProgramada != null)
+                            FechaProgramadaSection(
+                              pedido: pedido,
+                              parentContext: context,
+                            ),
+
+                          // Observaciones de Rechazo (prioridad) o Observaciones
+                          if (pedido.observacionesRechazo != null &&
+                              pedido.observacionesRechazo!.isNotEmpty)
+                            Padding(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 16.0,
+                              ),
+                              child: ObservacionesSection(
+                                observaciones: pedido.observacionesRechazo!,
+                                parentContext: context,
+                                isRechazo: true,
+                                estadoLogisticoColor:
+                                    pedido.estadoLogistico?.color,
+                              ),
+                            )
+                          else if (pedido.observaciones != null &&
+                              pedido.observaciones!.isNotEmpty)
+                            Padding(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 16.0,
+                              ),
+                              child: ObservacionesSection(
+                                observaciones: pedido.observaciones!,
+                                parentContext: context,
+                                estadoLogisticoColor:
+                                    pedido.estadoLogistico?.color,
+                              ),
+                            ),
+
+                          // Productos
+                          ProductosSection(
+                            pedido: pedido,
+                            parentContext: context,
+                          ),
+
+                          // Reservas de stock
+                          if (pedido.reservas.isNotEmpty)
+                            ReservasSection(
+                              pedido: pedido,
+                              parentContext: context,
+                            ),
+
+                          // Resumen de montos
+                          ResumenSection(
+                            pedido: pedido,
+                            parentContext: context,
+                          ),
+
+                          const SizedBox(height: 100),
+                        ],
+                      ),
+                    ),
+                  );
+                },
+              ),
+              // DiÃ¡logo de renovaciÃ³n superpuesto
+              if (_showRenovacionDialog)
+                Consumer<PedidoProvider>(
+                  builder: (context, pedidoProvider, _) {
+                    final pedido = pedidoProvider.pedidoActual;
+                    return Dialog(
+                      child: RenovacionReservasDialog(
+                        proformaNumero: pedido?.numero ?? 'N/A',
+                        reservasExpiradas:
+                            pedidoProvider.errorData?['reservas_expiradas'] ??
+                            1,
+                        isLoading: pedidoProvider.isRenovandoReservas,
+                        onRenovar: _renovarReservas,
+                        onCancelar: () {
+                          setState(() {
+                            _showRenovacionDialog = false;
+                          });
+                          pedidoProvider.limpiarErrores();
+                        },
+                      ),
+                    );
+                  },
+                ),
+            ],
+          ),
+        );
+      },
     );
   }
 

@@ -8,7 +8,7 @@ import '../product/product_card_base.dart';
 
 /// Widget para mostrar un producto en vista de lista
 class ProductListItem extends StatefulWidget {
-  final Product product;
+  final Producto product;
   final VoidCallback onTap;
 
   const ProductListItem({

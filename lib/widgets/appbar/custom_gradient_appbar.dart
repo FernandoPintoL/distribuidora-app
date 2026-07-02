@@ -61,7 +61,6 @@ class CustomGradientAppBar extends StatelessWidget
     final bgColor = backgroundColor ?? Theme.of(context).primaryColor;
 
     return AppBar(
-      backgroundColor: bgColor,
       title:
           titleWidget ??
           Text(title!, style: const TextStyle(fontWeight: FontWeight.bold)),

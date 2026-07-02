@@ -5,7 +5,7 @@ import '../../../../config/app_text_styles.dart';
 class EstadoRowWidget extends StatelessWidget {
   final IconData icon;
   final String label;
-  final EstadoDocumento estadoData;
+  final dynamic estadoData; // Acepta EstadoDocumento o EstadoLogistico
   final ColorScheme colorScheme;
   final BuildContext parentContext;
 
@@ -18,17 +18,35 @@ class EstadoRowWidget extends StatelessWidget {
     required this.parentContext,
   });
 
+  String get _nombre {
+    if (estadoData is EstadoDocumento) {
+      return (estadoData as EstadoDocumento).nombre;
+    } else if (estadoData is EstadoLogistico) {
+      return (estadoData as EstadoLogistico).nombre;
+    }
+    return 'Desconocido';
+  }
+
+  String? get _color {
+    if (estadoData is EstadoDocumento) {
+      return (estadoData as EstadoDocumento).color;
+    } else if (estadoData is EstadoLogistico) {
+      return (estadoData as EstadoLogistico).color;
+    }
+    return null;
+  }
+
   @override
   Widget build(BuildContext context) {
     Color estadoColor = Colors.grey;
     try {
-      if (estadoData.color != null && estadoData.color!.startsWith('#')) {
+      if (_color != null && _color!.startsWith('#')) {
         estadoColor = Color(
-          int.parse(estadoData.color!.replaceFirst('#', '0xff')),
+          int.parse(_color!.replaceFirst('#', '0xff')),
         );
       }
     } catch (e) {
-      debugPrint('⚠️ Error parsing color: ${estadoData.color}');
+      debugPrint('⚠️ Error parsing color: $_color');
     }
 
     return Row(
@@ -68,7 +86,7 @@ class EstadoRowWidget extends StatelessWidget {
                       border: Border.all(color: estadoColor.withOpacity(0.3)),
                     ),
                     child: Text(
-                      estadoData.nombre,
+                      _nombre,
                       style: TextStyle(
                         fontSize: AppTextStyles.bodySmall(parentContext).fontSize!,
                         fontWeight: FontWeight.w600,

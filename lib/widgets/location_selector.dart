@@ -67,14 +67,13 @@ class _LocationSelectorState extends State<LocationSelector> {
     final isEnabled = await _locationService.isLocationServiceEnabled();
     if (!isEnabled) {
       setState(() {
-        _errorMessage = 'El servicio de ubicación está deshabilitado. Por favor habilítalo en configuración.';
+        _errorMessage =
+            'El servicio de ubicación está deshabilitado. Por favor habilítalo en configuración.';
       });
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: const Text(
-              'El servicio de ubicación está deshabilitado',
-            ),
+            content: const Text('El servicio de ubicación está deshabilitado'),
             action: SnackBarAction(
               label: 'Ir a Configuración',
               onPressed: () => Geolocator.openLocationSettings(),
@@ -94,7 +93,8 @@ class _LocationSelectorState extends State<LocationSelector> {
         final status = await Permission.location.status;
         if (status.isDenied) {
           setState(() {
-            _errorMessage = 'Permiso de ubicación denegado. Por favor concédelo en configuración.';
+            _errorMessage =
+                'Permiso de ubicación denegado. Por favor concédelo en configuración.';
           });
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
@@ -111,7 +111,8 @@ class _LocationSelectorState extends State<LocationSelector> {
           }
         } else if (status.isPermanentlyDenied) {
           setState(() {
-            _errorMessage = 'Permiso de ubicación denegado permanentemente. Abre configuración de la app.';
+            _errorMessage =
+                'Permiso de ubicación denegado permanentemente. Abre configuración de la app.';
           });
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
@@ -167,7 +168,8 @@ class _LocationSelectorState extends State<LocationSelector> {
 
       if (position == null) {
         setState(() {
-          _errorMessage = 'No se pudo obtener la ubicación. Verifica los permisos y que el GPS esté habilitado.';
+          _errorMessage =
+              'No se pudo obtener la ubicación. Verifica los permisos y que el GPS esté habilitado.';
         });
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -253,8 +255,33 @@ class _LocationSelectorState extends State<LocationSelector> {
     );
   }
 
+  /// Obtener color basado en el estado de ubicación
+  Color _getStatusColor(ColorScheme colorScheme) {
+    if (_isLoading) {
+      return colorScheme.tertiary; // Cargando: color terciario (naranja/warning)
+    } else if (_latitude != null && _longitude != null) {
+      return Colors.green; // Con coordenadas: verde (éxito)
+    } else {
+      return colorScheme.outline; // Sin coordenadas: gris (neutral)
+    }
+  }
+
+  /// Obtener ícono basado en el estado de ubicación
+  IconData _getStatusIcon() {
+    if (_isLoading) {
+      return Icons.sync; // Cargando
+    } else if (_latitude != null && _longitude != null) {
+      return Icons.check_circle; // Ubicación confirmada
+    } else {
+      return Icons.location_off; // Sin ubicación
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final statusColor = _getStatusColor(colorScheme);
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -263,84 +290,75 @@ class _LocationSelectorState extends State<LocationSelector> {
             Expanded(
               child: ElevatedButton.icon(
                 onPressed: _isLoading ? null : _getCurrentLocation,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: statusColor.withOpacity(0.2),
+                  foregroundColor: statusColor,
+                  side: BorderSide(color: statusColor, width: 1.5),
+                ),
                 icon: _isLoading
-                    ? const SizedBox(
+                    ? SizedBox(
                         width: 20,
                         height: 20,
-                        child: CircularProgressIndicator(strokeWidth: 2),
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          valueColor: AlwaysStoppedAnimation<Color>(statusColor),
+                        ),
                       )
-                    : const Icon(Icons.my_location),
+                    : Icon(_getStatusIcon()),
                 label: Text(
                   _isLoading
                       ? 'Obteniendo ubicación...'
-                      : 'Obtener ubicación actual',
+                      : (_latitude != null && _longitude != null
+                          ? 'Ubicación confirmada ✓'
+                          : 'Obtener ubicación actual'),
                 ),
               ),
             ),
             const SizedBox(width: 8),
             IconButton(
               onPressed: _openMapSelector,
-              icon: const Icon(Icons.map),
+              icon: Icon(Icons.map, color: statusColor),
               tooltip: 'Seleccionar en mapa',
+              style: IconButton.styleFrom(
+                backgroundColor: statusColor.withOpacity(0.1),
+                foregroundColor: statusColor,
+              ),
             ),
           ],
         ),
+        // Mostrar dirección o estado
+        if (_address != null)
+          Padding(
+            padding: const EdgeInsets.only(top: 8),
+            child: Row(
+              children: [
+                Icon(
+                  Icons.location_on,
+                  size: 16,
+                  color: statusColor,
+                ),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text(
+                    _address!,
+                    style: TextStyle(
+                      color: statusColor,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
+            ),
+          ),
         if (_errorMessage != null)
           Padding(
             padding: const EdgeInsets.only(top: 8),
             child: Text(
               _errorMessage!,
               style: TextStyle(color: Theme.of(context).colorScheme.error),
-            ),
-          ),
-        /* if (_address != null)
-          Padding(
-            padding: const EdgeInsets.only(top: 8),
-            child: Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Theme.of(context).brightness == Brightness.dark
-                    ? Theme.of(context).colorScheme.surfaceContainerHighest
-                    : Colors.grey[100],
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(
-                  color: Theme.of(context).brightness == Brightness.dark
-                      ? Theme.of(context).colorScheme.outline
-                      : Colors.grey[300]!,
-                ),
-              ),
-              child: Row(
-                children: [
-                  Icon(
-                    Icons.location_on,
-                    color: Theme.of(context).brightness == Brightness.dark
-                        ? Theme.of(context).colorScheme.primary
-                        : Colors.green,
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      _address!,
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: Theme.of(context).colorScheme.onSurface,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ), */
-        if (_latitude != null && _longitude != null)
-          Padding(
-            padding: const EdgeInsets.only(top: 8),
-            child: Text(
-              'Coordenadas: ${_latitude!.toStringAsFixed(6)}, ${_longitude!.toStringAsFixed(6)}',
-              style: TextStyle(
-                fontSize: 12,
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
-                fontFamily: 'monospace',
-              ),
             ),
           ),
       ],

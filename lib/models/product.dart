@@ -1,6 +1,6 @@
 import 'package:flutter/foundation.dart';
 
-class Product {
+class Producto {
   final int id;
   final String nombre;
   final String codigo;
@@ -17,7 +17,7 @@ class Product {
   final int? stockMaximo;
   final int? cantidadMinima;
   final int? limiteVenta;
-  final List<ProductImage>? imagenes;
+  final List<ImagenProducto>? imagenes;
   final List<String>? codigosBarra;
   final StockWarehouse? stockPrincipal;
   final List<StockWarehouse>? stockPorAlmacenes;
@@ -33,7 +33,7 @@ class Product {
   final int? tipoPrecioIdRecomendado;
   final String? tipoPrecioNombreRecomendado;
 
-  Product({
+  Producto({
     required this.id,
     required this.nombre,
     required this.codigo,
@@ -64,7 +64,7 @@ class Product {
   });
 
   /// Obtener la imagen principal (es_principal == true) o la primera imagen
-  ProductImage? get imagenPrincipal {
+  ImagenProducto? get imagenPrincipal {
     if (imagenes == null || imagenes!.isEmpty) return null;
     // Buscar la imagen principal
     try {
@@ -120,9 +120,9 @@ class Product {
     return precioVenta ?? 0.0;
   }
 
-  factory Product.fromJson(Map<String, dynamic> json) {
+  factory Producto.fromJson(Map<String, dynamic> json) {
     try {
-      final product = Product(
+      final product = Producto(
         id: json['id'],
         nombre: json['nombre'],
         // Backend sends 'sku', not 'codigo'
@@ -169,11 +169,15 @@ class Product {
         limiteVenta: json['limite_venta'],
         imagenes: json['imagenes'] != null
             ? (json['imagenes'] as List)
-                  .map((i) => ProductImage.fromJson(i))
+                  .map((i) => ImagenProducto.fromJson(i))
                   .toList()
             : (json['imagen'] != null && json['imagen'] is Map<String, dynamic>
-                ? [ProductImage.fromJson(json['imagen'] as Map<String, dynamic>)]
-                : null),
+                  ? [
+                      ImagenProducto.fromJson(
+                        json['imagen'] as Map<String, dynamic>,
+                      ),
+                    ]
+                  : null),
         codigosBarra:
             json['codigos_barra'] != null && json['codigos_barra'] is List
             ? List<String>.from(json['codigos_barra'])
@@ -277,7 +281,7 @@ class Product {
   }
 
   /// ✅ NUEVO: copyWith para modificar propiedades del producto
-  Product copyWith({
+  Producto copyWith({
     int? id,
     String? nombre,
     String? codigo,
@@ -294,7 +298,7 @@ class Product {
     int? stockMaximo,
     int? cantidadMinima,
     int? limiteVenta,
-    List<ProductImage>? imagenes,
+    List<ImagenProducto>? imagenes,
     List<String>? codigosBarra,
     StockWarehouse? stockPrincipal,
     List<StockWarehouse>? stockPorAlmacenes,
@@ -306,7 +310,7 @@ class Product {
     int? tipoPrecioIdRecomendado,
     String? tipoPrecioNombreRecomendado,
   }) {
-    return Product(
+    return Producto(
       id: id ?? this.id,
       nombre: nombre ?? this.nombre,
       codigo: codigo ?? this.codigo,
@@ -405,14 +409,14 @@ class UnitMeasure {
   }
 }
 
-class ProductImage {
+class ImagenProducto {
   final int id;
   final int productoId;
   final String _url; // Almacenar URL sin procesar
   final bool esPrincipal;
   final int orden;
 
-  ProductImage({
+  ImagenProducto({
     required this.id,
     required this.productoId,
     required String url,
@@ -429,8 +433,8 @@ class ProductImage {
     return '/storage/$_url';
   }
 
-  factory ProductImage.fromJson(Map<String, dynamic> json) {
-    return ProductImage(
+  factory ImagenProducto.fromJson(Map<String, dynamic> json) {
+    return ImagenProducto(
       id: json['id'] ?? 0,
       productoId: json['producto_id'] ?? 0,
       url: json['url'] ?? '',
@@ -596,7 +600,7 @@ class ComboItem {
   final int? combosPosibles;
   final int? unidadMedidaId;
   final String? unidadMedidaNombre;
-  final Product? producto;
+  final Producto? producto;
 
   ComboItem({
     required this.id,
@@ -637,7 +641,7 @@ class ComboItem {
       unidadMedidaId: json['unidad_medida_id'],
       unidadMedidaNombre: json['unidad_medida_nombre'],
       producto: json['producto'] != null
-          ? Product.fromJson(json['producto'])
+          ? Producto.fromJson(json['producto'])
           : null,
     );
   }
