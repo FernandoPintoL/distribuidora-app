@@ -747,6 +747,23 @@ class _PrestamoDetalleScreenState extends State<PrestamoDetalleScreen> {
     List<Widget> detalles = [];
     List<Widget> sumatorias = [];
 
+    // Log del modelo cargado
+    print('\n═══════════════════════════════════════════════════════');
+    print('📥 [DEVOLUCIÓN #$numero] Modelo cargado: ${devolucion.runtimeType}');
+    print('═══════════════════════════════════════════════════════');
+    print('  ID: ${devolucion.id}');
+    print('  Fecha: ${devolucion.fechaDevolucion ?? "N/A"}');
+    print('  Cantidad Total: ${(devolucion is DevolucionCliente ? 'N/A' : devolucion.cantidadTotalDevuelta) ?? '0'}');
+    print('  Monto Garantía: ${devolucion.montoGarantiaDevueltaTotal ?? '0.00'}');
+    print('  Detalles: ${devolucion.detalles?.length ?? 0}');
+    if (devolucion.detalles != null && devolucion.detalles!.isNotEmpty) {
+      for (int i = 0; i < devolucion.detalles!.length; i++) {
+        final det = devolucion.detalles![i];
+        print('    ├─ Detalle $i: Devuelto=${det.cantidadDevuelta}, Dañado=${det.cantidadDaniadaTotal ?? 0}');
+      }
+    }
+    print('═══════════════════════════════════════════════════════\n');
+
     if (devolucion is DevolucionCliente) {
       fechaDevolucion = devolucion.fechaDevolucion ?? 'N/A';
       montoGarantia = devolucion.montoGarantiaDevueltaTotal ?? '0.00';
