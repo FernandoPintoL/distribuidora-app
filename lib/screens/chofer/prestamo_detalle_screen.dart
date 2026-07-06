@@ -625,7 +625,9 @@ class _PrestamoDetalleScreenState extends State<PrestamoDetalleScreen> {
 
     if (devolucion.detalles == null) return resultado;
 
-    print('🔍 [SUMATORIA] Iniciando cálculo de sumatorias por tipo para ${devolucion.runtimeType}');
+    print(
+      '🔍 [SUMATORIA] Iniciando cálculo de sumatorias por tipo para ${devolucion.runtimeType}',
+    );
 
     // Cliente
     if (devolucion is DevolucionCliente) {
@@ -644,7 +646,9 @@ class _PrestamoDetalleScreenState extends State<PrestamoDetalleScreen> {
             'devuelto_buen_estado': 0,
             'devuelto_danado': 0,
           };
-          print('  ➕ Nuevo tipo: "$key" - Prestado: ${prestamoDetalle.cantidadPrestada}');
+          print(
+            '  ➕ Nuevo tipo: "$key" - Prestado: ${prestamoDetalle.cantidadPrestada}',
+          );
         }
 
         final devBuen = detalle.cantidadDevuelta;
@@ -653,32 +657,70 @@ class _PrestamoDetalleScreenState extends State<PrestamoDetalleScreen> {
             resultado[key]!['devuelto_buen_estado']! + devBuen;
         resultado[key]!['devuelto_danado'] =
             resultado[key]!['devuelto_danado']! + devDanado;
-        print('  ✓ "$key" actualizado - Buen estado: +$devBuen, Dañado: +$devDanado');
+        print(
+          '  ✓ "$key" actualizado - Buen estado: +$devBuen, Dañado: +$devDanado',
+        );
       }
     }
     // Evento
     else if (devolucion is DevolucionEvento) {
       print('📦 [EVENTO] Procesando ${devolucion.detalles!.length} detalles');
-      for (var detalle in devolucion.detalles!) {
+      for (int i = 0; i < devolucion.detalles!.length; i++) {
+        final detalle = devolucion.detalles![i];
         final prestamoDetalle = detalle.detallePrestamoEvento;
-        if (prestamoDetalle == null || prestamoDetalle is! Map<String, dynamic>)
+
+        print('  📋 Detalle $i: tipo=${prestamoDetalle.runtimeType}');
+
+        if (prestamoDetalle == null) {
+          print('    ⚠️ FALTA: detallePrestamoEvento es NULL');
           continue;
+        }
 
-        final prestable = prestamoDetalle['prestable'];
-        if (prestable == null) continue;
+        // Handle tanto PrestamoEventoDetalle como Map
+        dynamic prestable;
+        dynamic cantidadPrestada;
 
-        final tipo = prestable['tipo'] as String? ?? 'Sin tipo';
-        final nombre = prestable['nombre'] as String? ?? 'Sin nombre';
+        if (prestamoDetalle is Map) {
+          final mapDetalle = prestamoDetalle as Map<String, dynamic>;
+          prestable = mapDetalle['prestable'];
+          cantidadPrestada = mapDetalle['cantidad_prestada'];
+          print('    ✓ Es Map<String, dynamic>');
+          print('      - prestable: $prestable');
+          print('      - cantidadPrestada: $cantidadPrestada');
+        } else {
+          final objDetalle = prestamoDetalle as PrestamoEventoDetalle;
+          prestable = objDetalle.prestable;
+          cantidadPrestada = objDetalle.cantidadPrestada;
+          print('    ✓ Es objeto PrestamoEventoDetalle');
+          print('      - prestable: ${prestable?.runtimeType}');
+          print('      - cantidadPrestada: $cantidadPrestada');
+        }
+
+        if (prestable == null) {
+          print('    ⚠️ FALTA: prestable es NULL - Necesito que el backend envíe objeto prestable completo');
+          continue;
+        }
+
+        String tipo = 'Sin tipo';
+        String nombre = 'Sin nombre';
+
+        if (prestable is Map<String, dynamic>) {
+          tipo = prestable['tipo'] as String? ?? 'Sin tipo';
+          nombre = prestable['nombre'] as String? ?? 'Sin nombre';
+        } else {
+          tipo = prestable.tipo ?? 'Sin tipo';
+          nombre = prestable.nombre ?? 'Sin nombre';
+        }
+
         final key = '$tipo|$nombre';
-        final prestado = prestamoDetalle['cantidad_prestada'] as int? ?? 0;
 
         if (!resultado.containsKey(key)) {
           resultado[key] = {
-            'prestado': prestado,
+            'prestado': cantidadPrestada ?? 0,
             'devuelto_buen_estado': 0,
             'devuelto_danado': 0,
           };
-          print('  ➕ Nuevo tipo: "$key" - Prestado: $prestado');
+          print('  ➕ Nuevo tipo: "$key" - Prestado: ${cantidadPrestada ?? 0}');
         }
 
         final devBuen = detalle.cantidadDevuelta;
@@ -687,24 +729,65 @@ class _PrestamoDetalleScreenState extends State<PrestamoDetalleScreen> {
             resultado[key]!['devuelto_buen_estado']! + devBuen;
         resultado[key]!['devuelto_danado'] =
             resultado[key]!['devuelto_danado']! + devDanado;
-        print('  ✓ "$key" actualizado - Buen estado: +$devBuen, Dañado: +$devDanado');
+        print(
+          '  ✓ "$key" actualizado - Buen estado: +$devBuen, Dañado: +$devDanado',
+        );
       }
     }
     // Proveedor
     else if (devolucion is DevolucionProveedor) {
-      print('📦 [PROVEEDOR] Procesando ${devolucion.detalles!.length} detalles');
-      for (var detalle in devolucion.detalles!) {
+      print(
+        '📦 [PROVEEDOR] Procesando ${devolucion.detalles!.length} detalles',
+      );
+      for (int i = 0; i < devolucion.detalles!.length; i++) {
+        final detalle = devolucion.detalles![i];
         final prestamoDetalle = detalle.detallePrestamoProveedor;
-        if (prestamoDetalle == null || prestamoDetalle is! Map<String, dynamic>)
+
+        print('  📋 Detalle $i: tipo=${prestamoDetalle.runtimeType}');
+
+        if (prestamoDetalle == null) {
+          print('    ⚠️ FALTA: detallePrestamoProveedor es NULL');
           continue;
+        }
 
-        final prestable = prestamoDetalle['prestable'];
-        if (prestable == null) continue;
+        // Handle tanto PrestamoProveedorDetalle como Map
+        dynamic prestable;
+        dynamic cantidadPrestada;
 
-        final tipo = prestable['tipo'] as String? ?? 'Sin tipo';
-        final nombre = prestable['nombre'] as String? ?? 'Sin nombre';
+        if (prestamoDetalle is Map) {
+          final mapDetalle = prestamoDetalle as Map<String, dynamic>;
+          prestable = mapDetalle['prestable'];
+          cantidadPrestada = mapDetalle['cantidad_prestada'];
+          print('    ✓ Es Map<String, dynamic>');
+          print('      - prestable: $prestable');
+          print('      - cantidadPrestada: $cantidadPrestada');
+        } else {
+          final objDetalle = prestamoDetalle as PrestamoProveedorDetalle;
+          prestable = objDetalle.prestable;
+          cantidadPrestada = objDetalle.cantidadPrestada;
+          print('    ✓ Es objeto PrestamoProveedorDetalle');
+          print('      - prestable: ${prestable?.runtimeType}');
+          print('      - cantidadPrestada: $cantidadPrestada');
+        }
+
+        if (prestable == null) {
+          print('    ⚠️ FALTA: prestable es NULL - Necesito que el backend envíe objeto prestable completo');
+          continue;
+        }
+
+        String tipo = 'Sin tipo';
+        String nombre = 'Sin nombre';
+
+        if (prestable is Map<String, dynamic>) {
+          tipo = prestable['tipo'] as String? ?? 'Sin tipo';
+          nombre = prestable['nombre'] as String? ?? 'Sin nombre';
+        } else {
+          tipo = prestable.tipo ?? 'Sin tipo';
+          nombre = prestable.nombre ?? 'Sin nombre';
+        }
+
         final key = '$tipo|$nombre';
-        final prestado = prestamoDetalle['cantidad_prestada'] as int? ?? 0;
+        final prestado = cantidadPrestada ?? 0;
 
         if (!resultado.containsKey(key)) {
           resultado[key] = {
@@ -721,13 +804,19 @@ class _PrestamoDetalleScreenState extends State<PrestamoDetalleScreen> {
             resultado[key]!['devuelto_buen_estado']! + devBuen;
         resultado[key]!['devuelto_danado'] =
             resultado[key]!['devuelto_danado']! + devDanado;
-        print('  ✓ "$key" actualizado - Buen estado: +$devBuen, Dañado: +$devDanado');
+        print(
+          '  ✓ "$key" actualizado - Buen estado: +$devBuen, Dañado: +$devDanado',
+        );
       }
     }
 
-    print('✅ [SUMATORIA] Cálculo completado: ${resultado.length} tipos encontrados\n');
+    print(
+      '✅ [SUMATORIA] Cálculo completado: ${resultado.length} tipos encontrados\n',
+    );
     resultado.forEach((key, stats) {
-      print('  📊 $key: Prestado=${stats['prestado']}, BuenEstado=${stats['devuelto_buen_estado']}, Dañado=${stats['devuelto_danado']}');
+      print(
+        '  📊 $key: Prestado=${stats['prestado']}, BuenEstado=${stats['devuelto_buen_estado']}, Dañado=${stats['devuelto_danado']}',
+      );
     });
 
     return resultado;
@@ -753,13 +842,19 @@ class _PrestamoDetalleScreenState extends State<PrestamoDetalleScreen> {
     print('═══════════════════════════════════════════════════════');
     print('  ID: ${devolucion.id}');
     print('  Fecha: ${devolucion.fechaDevolucion ?? "N/A"}');
-    print('  Cantidad Total: ${(devolucion is DevolucionCliente ? 'N/A' : devolucion.cantidadTotalDevuelta) ?? '0'}');
-    print('  Monto Garantía: ${devolucion.montoGarantiaDevueltaTotal ?? '0.00'}');
+    print(
+      '  Cantidad Total: ${(devolucion is DevolucionCliente ? 'N/A' : devolucion.cantidadTotalDevuelta) ?? '0'}',
+    );
+    print(
+      '  Monto Garantía: ${devolucion.montoGarantiaDevueltaTotal ?? '0.00'}',
+    );
     print('  Detalles: ${devolucion.detalles?.length ?? 0}');
     if (devolucion.detalles != null && devolucion.detalles!.isNotEmpty) {
       for (int i = 0; i < devolucion.detalles!.length; i++) {
         final det = devolucion.detalles![i];
-        print('    ├─ Detalle $i: Devuelto=${det.cantidadDevuelta}, Dañado=${det.cantidadDaniadaTotal ?? 0}');
+        print(
+          '    ├─ Detalle $i: Devuelto=${det.cantidadDevuelta}, Dañado=${det.cantidadDaniadaTotal ?? 0}',
+        );
       }
     }
     print('═══════════════════════════════════════════════════════\n');
@@ -802,7 +897,9 @@ class _PrestamoDetalleScreenState extends State<PrestamoDetalleScreen> {
           final devueltoDanado = stats['devuelto_danado'] ?? 0;
           final faltante = prestado - (devueltoBuenEstado + devueltoDanado);
 
-          print('📋 [MOSTRAR] $tipoPrestable - $nombrePrestable: Prestado=$prestado, BuenEstado=$devueltoBuenEstado, Dañado=$devueltoDanado, Faltante=$faltante');
+          print(
+            '📋 [MOSTRAR] $tipoPrestable - $nombrePrestable: Prestado=$prestado, BuenEstado=$devueltoBuenEstado, Dañado=$devueltoDanado, Faltante=$faltante',
+          );
 
           sumatorias.add(
             Padding(
@@ -919,7 +1016,9 @@ class _PrestamoDetalleScreenState extends State<PrestamoDetalleScreen> {
           final devueltoDanado = stats['devuelto_danado'] ?? 0;
           final faltante = prestado - (devueltoBuenEstado + devueltoDanado);
 
-          print('📋 [MOSTRAR] $tipoPrestable - $nombrePrestable: Prestado=$prestado, BuenEstado=$devueltoBuenEstado, Dañado=$devueltoDanado, Faltante=$faltante');
+          print(
+            '📋 [MOSTRAR] $tipoPrestable - $nombrePrestable: Prestado=$prestado, BuenEstado=$devueltoBuenEstado, Dañado=$devueltoDanado, Faltante=$faltante',
+          );
 
           sumatorias.add(
             Padding(
@@ -1042,7 +1141,9 @@ class _PrestamoDetalleScreenState extends State<PrestamoDetalleScreen> {
           final devueltoDanado = stats['devuelto_danado'] ?? 0;
           final faltante = prestado - (devueltoBuenEstado + devueltoDanado);
 
-          print('📋 [MOSTRAR] $tipoPrestable - $nombrePrestable: Prestado=$prestado, BuenEstado=$devueltoBuenEstado, Dañado=$devueltoDanado, Faltante=$faltante');
+          print(
+            '📋 [MOSTRAR] $tipoPrestable - $nombrePrestable: Prestado=$prestado, BuenEstado=$devueltoBuenEstado, Dañado=$devueltoDanado, Faltante=$faltante',
+          );
 
           sumatorias.add(
             Padding(
