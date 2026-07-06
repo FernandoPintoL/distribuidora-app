@@ -539,6 +539,9 @@ class _PrestamosAsignadosScreenState extends State<PrestamosAsignadosScreen>
     final isSelected = _estadosFiltrados[tipo]!.contains(estado);
     final colorInfo = _getEstadoColorAndIcon(estado);
 
+    // Cambiar label para COMPLETAMENTE_DEVUELTO
+    final label = estado == 'COMPLETAMENTE_DEVUELTO' ? 'TERMINADO' : estado.replaceAll('_', ' ');
+
     return FilterChip(
       label: Row(
         mainAxisSize: MainAxisSize.min,
@@ -550,7 +553,7 @@ class _PrestamosAsignadosScreenState extends State<PrestamosAsignadosScreen>
           ),
           const SizedBox(width: 6),
           Text(
-            estado.replaceAll('_', ' '),
+            label,
             style: TextStyle(
               fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
             ),
