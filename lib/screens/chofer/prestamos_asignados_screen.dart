@@ -478,9 +478,6 @@ class _PrestamosAsignadosScreenState extends State<PrestamosAsignadosScreen>
   Widget _buildFilterSection(String tipo) {
     return Container(
       padding: const EdgeInsets.all(12),
-      color: Theme.of(context).brightness == Brightness.dark
-          ? Colors.grey.shade900
-          : Colors.grey.shade100,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -512,8 +509,7 @@ class _PrestamosAsignadosScreenState extends State<PrestamosAsignadosScreen>
           Wrap(
             spacing: 8,
             children: [
-              _buildEstadoChip(tipo, 'ACTIVO'),
-              _buildEstadoChip(tipo, 'PARCIALMENTE_DEVUELTO'),
+              _buildEstadoChip(tipo, 'ACTIVOS'),
               _buildEstadoChip(tipo, 'COMPLETAMENTE_DEVUELTO'),
               if (_estadosFiltrados[tipo]!.isNotEmpty)
                 TextButton.icon(
@@ -582,15 +578,10 @@ class _PrestamosAsignadosScreenState extends State<PrestamosAsignadosScreen>
 
   Map<String, dynamic> _getEstadoColorAndIcon(String estado) {
     switch (estado) {
-      case 'ACTIVO':
+      case 'ACTIVOS':
         return {
-          'color': Colors.red.shade500,
-          'icon': Icons.assignment_outlined,
-        };
-      case 'PARCIALMENTE_DEVUELTO':
-        return {
-          'color': Colors.amber.shade600,
-          'icon': Icons.schedule_outlined,
+          'color': Colors.orange.shade600,
+          'icon': Icons.hourglass_bottom_outlined,
         };
       case 'COMPLETAMENTE_DEVUELTO':
         return {
@@ -598,10 +589,7 @@ class _PrestamosAsignadosScreenState extends State<PrestamosAsignadosScreen>
           'icon': Icons.check_circle_outline,
         };
       default:
-        return {
-          'color': Colors.grey,
-          'icon': Icons.help_outline,
-        };
+        return {'color': Colors.grey, 'icon': Icons.help_outline};
     }
   }
 
@@ -632,7 +620,13 @@ class _PrestamosAsignadosScreenState extends State<PrestamosAsignadosScreen>
       bool cumpleEstado = true;
       if (estadosFiltrados.isNotEmpty) {
         final estado = prestamo.estado ?? '';
-        cumpleEstado = estadosFiltrados.contains(estado);
+
+        // Si seleccionó "ACTIVOS", incluye tanto ACTIVO como PARCIALMENTE_DEVUELTO
+        if (estadosFiltrados.contains('ACTIVOS')) {
+          cumpleEstado = estado == 'ACTIVO' || estado == 'PARCIALMENTE_DEVUELTO';
+        } else {
+          cumpleEstado = estadosFiltrados.contains(estado);
+        }
       }
 
       return cumpleBusqueda && cumpleEstado;
