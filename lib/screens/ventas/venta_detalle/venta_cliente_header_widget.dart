@@ -86,7 +86,7 @@ class VentaClienteHeaderWidget extends StatelessWidget {
                     clienteNombre: venta.cliente?.nombre,
                     clienteFotoPerfil: venta.cliente?.fotoPerfil,
                     clienteLocalidad: venta.direccionCliente?.localidad?.nombre,
-                    clienteObservaciones: venta.direccionCliente!.observaciones,
+                    clienteObservaciones: venta.direccionCliente?.observaciones,
                   ),
                   // Información del Cliente
                   if (venta.tipoPago != null)

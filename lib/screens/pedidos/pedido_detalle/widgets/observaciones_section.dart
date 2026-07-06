@@ -31,10 +31,11 @@ class ObservacionesSection extends StatelessWidget {
           final hex = estadoLogisticoColor!.replaceFirst('#', '');
           return Color(int.parse('FF$hex', radix: 16)).withOpacity(0.15);
         } catch (e) {
-          return Colors.white;
+          return colorScheme.surface;
         }
+      } else {
+        return colorScheme.surface;
       }
-      return Colors.white;
     }
 
     Color _getBorderColor() {

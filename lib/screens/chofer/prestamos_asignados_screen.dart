@@ -511,6 +511,7 @@ class _PrestamosAsignadosScreenState extends State<PrestamosAsignadosScreen>
             children: [
               _buildEstadoChip(tipo, 'ACTIVOS'),
               _buildEstadoChip(tipo, 'COMPLETAMENTE_DEVUELTO'),
+              _buildEstadoChip(tipo, 'CANCELADO'),
               if (_estadosFiltrados[tipo]!.isNotEmpty)
                 TextButton.icon(
                   onPressed: () {
@@ -540,7 +541,9 @@ class _PrestamosAsignadosScreenState extends State<PrestamosAsignadosScreen>
     final colorInfo = _getEstadoColorAndIcon(estado);
 
     // Cambiar label para COMPLETAMENTE_DEVUELTO
-    final label = estado == 'COMPLETAMENTE_DEVUELTO' ? 'TERMINADO' : estado.replaceAll('_', ' ');
+    final label = estado == 'COMPLETAMENTE_DEVUELTO'
+        ? 'TERMINADO'
+        : estado.replaceAll('_', ' ');
 
     return FilterChip(
       label: Row(
@@ -591,6 +594,8 @@ class _PrestamosAsignadosScreenState extends State<PrestamosAsignadosScreen>
           'color': Colors.green.shade600,
           'icon': Icons.check_circle_outline,
         };
+      case 'CANCELADO':
+        return {'color': Colors.red.shade600, 'icon': Icons.cancel_outlined};
       default:
         return {'color': Colors.grey, 'icon': Icons.help_outline};
     }
@@ -626,7 +631,8 @@ class _PrestamosAsignadosScreenState extends State<PrestamosAsignadosScreen>
 
         // Si seleccionó "ACTIVOS", incluye tanto ACTIVO como PARCIALMENTE_DEVUELTO
         if (estadosFiltrados.contains('ACTIVOS')) {
-          cumpleEstado = estado == 'ACTIVO' || estado == 'PARCIALMENTE_DEVUELTO';
+          cumpleEstado =
+              estado == 'ACTIVO' || estado == 'PARCIALMENTE_DEVUELTO';
         } else {
           cumpleEstado = estadosFiltrados.contains(estado);
         }

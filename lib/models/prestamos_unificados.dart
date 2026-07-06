@@ -1,4 +1,4 @@
-import 'prestamo_completo.dart';
+import 'prestamo_cliente.dart';
 
 /// Respuesta unificada para los 3 tipos de préstamos (cliente, evento, proveedor)
 class PrestamosUnificadosResponse {
@@ -50,7 +50,7 @@ class PrestamosUnificadosData {
   final String? lastPageUrl;
   final String? nextPageUrl;
   final String? prevPageUrl;
-  final List<PrestamoCompleto> prestamos;
+  final List<PrestamoCliente> prestamos;
 
   PrestamosUnificadosData({
     required this.currentPage,
@@ -74,14 +74,12 @@ class PrestamosUnificadosData {
   /// Cantidad de préstamos vencidos
   int get prestamosVencidos {
     final hoy = DateTime.now();
-    return prestamos
-        .where((p) {
-          if (p.estado != 'ACTIVO') return false;
-          if (p.fechaEsperadaDevolucion == null) return false;
-          final fechaVencimiento = DateTime.tryParse(p.fechaEsperadaDevolucion!);
-          return fechaVencimiento != null && fechaVencimiento.isBefore(hoy);
-        })
-        .length;
+    return prestamos.where((p) {
+      if (p.estado != 'ACTIVO') return false;
+      if (p.fechaEsperadaDevolucion == null) return false;
+      final fechaVencimiento = DateTime.tryParse(p.fechaEsperadaDevolucion!);
+      return fechaVencimiento != null && fechaVencimiento.isBefore(hoy);
+    }).length;
   }
 
   /// Cantidad de préstamos devueltos
@@ -101,8 +99,9 @@ class PrestamosUnificadosData {
       lastPageUrl: json['last_page_url'] as String?,
       nextPageUrl: json['next_page_url'] as String?,
       prevPageUrl: json['prev_page_url'] as String?,
-      prestamos: (json['data'] as List?)
-              ?.map((p) => PrestamoCompleto.fromJson(p as Map<String, dynamic>))
+      prestamos:
+          (json['data'] as List?)
+              ?.map((p) => PrestamoCliente.fromJson(p as Map<String, dynamic>))
               .toList() ??
           [],
     );
@@ -179,10 +178,7 @@ class EstadisticasPrestamos {
 
     final montoTotalGarantia = [clienteData, eventoData, proveedorData]
         .expand((data) => data.prestamos)
-        .fold<double>(
-          0,
-          (sum, p) => sum + (p.montoGarantia ?? 0),
-        );
+        .fold<double>(0, (sum, p) => sum + (p.montoGarantia ?? 0));
 
     return EstadisticasPrestamos(
       totalPrestamos: totalPrestamos,
@@ -190,10 +186,11 @@ class EstadisticasPrestamos {
       prestamosVencidos: prestamosVencidos,
       prestamosDevueltos: prestamosDevueltos,
       montoTotalGarantia: montoTotalGarantia,
-      cantidadPrestablesActivos: [clienteData, eventoData, proveedorData]
-          .expand((data) => data.prestamos)
-          .expand((p) => p.detalles ?? [])
-          .length,
+      cantidadPrestablesActivos: [
+        clienteData,
+        eventoData,
+        proveedorData,
+      ].expand((data) => data.prestamos).expand((p) => p.detalles ?? []).length,
     );
   }
 }

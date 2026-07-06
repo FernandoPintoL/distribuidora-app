@@ -1,13 +1,10 @@
-import 'prestamo_completo.dart';
+import 'prestamo_cliente.dart';
 
 class PrestamosClienteResponse {
   final bool success;
   final PrestamosClienteData data;
 
-  PrestamosClienteResponse({
-    required this.success,
-    required this.data,
-  });
+  PrestamosClienteResponse({required this.success, required this.data});
 
   factory PrestamosClienteResponse.fromJson(Map<String, dynamic> json) {
     return PrestamosClienteResponse(
@@ -29,7 +26,7 @@ class PrestamosClienteData {
   final String? lastPageUrl;
   final String? nextPageUrl;
   final String? prevPageUrl;
-  final List<PrestamoCompleto> prestamos;
+  final List<PrestamoCliente> prestamos;
 
   PrestamosClienteData({
     required this.currentPage,
@@ -59,8 +56,9 @@ class PrestamosClienteData {
       lastPageUrl: json['last_page_url'] as String?,
       nextPageUrl: json['next_page_url'] as String?,
       prevPageUrl: json['prev_page_url'] as String?,
-      prestamos: (json['data'] as List?)
-              ?.map((p) => PrestamoCompleto.fromJson(p as Map<String, dynamic>))
+      prestamos:
+          (json['data'] as List?)
+              ?.map((p) => PrestamoCliente.fromJson(p as Map<String, dynamic>))
               .toList() ??
           [],
     );

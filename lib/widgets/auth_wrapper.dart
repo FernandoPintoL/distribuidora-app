@@ -126,7 +126,7 @@ class _AuthWrapperState extends State<AuthWrapper> with WidgetsBindingObserver {
                               child: ClipRRect(
                                 borderRadius: BorderRadius.circular(18),
                                 child: Image.asset(
-                                  'assets/icons/icon.png',
+                                  'assets/icons/icon.jpg',
                                   fit: BoxFit.contain,
                                   errorBuilder: (context, error, stackTrace) {
                                     return Container(

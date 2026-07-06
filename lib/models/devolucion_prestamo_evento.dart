@@ -1,3 +1,5 @@
+import 'prestamo_evento.dart';
+
 class DevolucionEvento {
   final int id;
   final int prestamoEventoId;
@@ -58,7 +60,7 @@ class DevolucionEventoDetalle {
   final String? montoGarantiaDevuelta;
   final String? createdAt;
   final String? updatedAt;
-  final dynamic detallePrestamoEvento;
+  final PrestamoEventoDetalle? detallePrestamoEvento;
   final List<DevolucionEventoDetalleAlmacen>? devolucionesAlmacenes;
 
   DevolucionEventoDetalle({
@@ -88,10 +90,15 @@ class DevolucionEventoDetalle {
       montoGarantiaDevuelta: json['monto_garantia_devuelta'] as String?,
       createdAt: json['created_at'] as String?,
       updatedAt: json['updated_at'] as String?,
-      detallePrestamoEvento:
-          json['detalle_prestamo_evento'] != null ? json['detalle_prestamo_evento'] : null,
+      detallePrestamoEvento: json['prestamo_evento_detalle'] != null
+          ? PrestamoEventoDetalle.fromJson(json['prestamo_evento_detalle'])
+          : null,
       devolucionesAlmacenes: (json['devoluciones_almacenes'] as List?)
-          ?.map((a) => DevolucionEventoDetalleAlmacen.fromJson(a as Map<String, dynamic>))
+          ?.map(
+            (a) => DevolucionEventoDetalleAlmacen.fromJson(
+              a as Map<String, dynamic>,
+            ),
+          )
           .toList(),
     );
   }
@@ -129,7 +136,8 @@ class DevolucionEventoDetalleAlmacen {
   factory DevolucionEventoDetalleAlmacen.fromJson(Map<String, dynamic> json) {
     return DevolucionEventoDetalleAlmacen(
       id: json['id'] as int? ?? 0,
-      devolucionEventoDetalleId: json['devolucion_evento_detalle_id'] as int? ?? 0,
+      devolucionEventoDetalleId:
+          json['devolucion_evento_detalle_id'] as int? ?? 0,
       almacenesPrestablesId: json['almacenes_prestables_id'] as int? ?? 0,
       cantidadDevuelta: json['cantidad_devuelta'] as int? ?? 0,
       cantidadDaniadaParcial: json['cantidad_dañada_parcial'] as int?,

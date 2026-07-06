@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../../extensions/theme_extension.dart';
 import '../../models/producto_agrupado.dart';
 import '../../providers/productos_agrupados_provider.dart';
 
@@ -58,16 +59,18 @@ class _ProductosAgrupadsWidgetState extends State<ProductosAgrupadsWidget> {
         // Estado de carga
         if (provider.isLoading) {
           return Center(
-            child: Padding(
-              padding: const EdgeInsets.all(32),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const CircularProgressIndicator(),
-                  const SizedBox(height: 16),
-                  Text('Cargando productos...'),
-                ],
-              ),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                CircularProgressIndicator(
+                  strokeWidth: 3,
+                  valueColor: AlwaysStoppedAnimation<Color>(
+                    context.colorScheme.secondary,
+                  ),
+                ),
+                const SizedBox(height: 24),
+                const Text('Cargando productos asignados a la entrega...'),
+              ],
             ),
           );
         }
@@ -278,7 +281,10 @@ class _ProductosAgrupadsWidgetState extends State<ProductosAgrupadsWidget> {
                                       producto.nombreProducto,
                                       maxLines: 1,
                                       overflow: TextOverflow.ellipsis,
-                                      style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500),
+                                      style: const TextStyle(
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w500,
+                                      ),
                                     ),
                                     if (producto.codigoProducto.isNotEmpty)
                                       Padding(
@@ -287,7 +293,10 @@ class _ProductosAgrupadsWidgetState extends State<ProductosAgrupadsWidget> {
                                           'Código: ${producto.codigoProducto}',
                                           maxLines: 1,
                                           overflow: TextOverflow.ellipsis,
-                                          style: const TextStyle(fontSize: 11, color: Colors.grey),
+                                          style: const TextStyle(
+                                            fontSize: 11,
+                                            color: Colors.grey,
+                                          ),
                                         ),
                                       ),
                                   ],

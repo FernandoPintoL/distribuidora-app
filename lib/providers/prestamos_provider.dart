@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../models/prestamo_completo.dart';
+import '../models/prestamo_cliente.dart';
 import '../models/prestamo_evento.dart';
 import '../models/prestamo_proveedor.dart';
 import '../models/prestamos_cliente_response.dart';
@@ -10,7 +10,7 @@ import '../services/api_service.dart';
 class PrestamosProvider extends ChangeNotifier {
   final ApiService _apiService = ApiService();
 
-  List<PrestamoCompleto> _prestamosClientes = [];
+  List<PrestamoCliente> _prestamosClientes = [];
   List<PrestamoEvento> _prestamosEventos = [];
   List<PrestamoProveedor> _prestamosProveedores = [];
 
@@ -21,7 +21,7 @@ class PrestamosProvider extends ChangeNotifier {
   String? _error;
 
   // Getters
-  List<PrestamoCompleto> get prestamosClientes => _prestamosClientes;
+  List<PrestamoCliente> get prestamosClientes => _prestamosClientes;
   List<PrestamoEvento> get prestamosEventos => _prestamosEventos;
   List<PrestamoProveedor> get prestamosProveedores => _prestamosProveedores;
 
@@ -29,7 +29,8 @@ class PrestamosProvider extends ChangeNotifier {
   bool get loadingEventos => _loadingEventos;
   bool get loadingProveedores => _loadingProveedores;
 
-  bool get isLoading => _loadingClientes || _loadingEventos || _loadingProveedores;
+  bool get isLoading =>
+      _loadingClientes || _loadingEventos || _loadingProveedores;
   String? get error => _error;
 
   /// Obtener total de préstamos pendientes
@@ -38,7 +39,7 @@ class PrestamosProvider extends ChangeNotifier {
       _prestamosEventos.length +
       _prestamosProveedores.length;
 
-  /// Cargar préstamos de un chofer específico
+  /// Cargar préstamos - Si choferId es 0, obtiene del token JWT
   Future<void> cargarPrestamosDelChofer(int choferId) async {
     _error = null;
     notifyListeners();
@@ -50,7 +51,9 @@ class PrestamosProvider extends ChangeNotifier {
         _cargarPrestamosProveedores(choferId),
       ]);
 
-      debugPrint('✅ Todos los préstamos cargados: C=${_prestamosClientes.length}, E=${_prestamosEventos.length}, P=${_prestamosProveedores.length}');
+      debugPrint(
+        '✅ Todos los préstamos cargados: C=${_prestamosClientes.length}, E=${_prestamosEventos.length}, P=${_prestamosProveedores.length}',
+      );
       notifyListeners();
     } catch (e) {
       _error = 'Error cargando préstamos: $e';
@@ -65,16 +68,20 @@ class PrestamosProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
+      // ✅ REFACTORIZADO: Si choferId es 0, no enviar parámetro (backend obtiene del token)
+      final queryParams = choferId != 0 ? {'chofer_id': choferId} : null;
       final response = await _apiService.get(
         '/prestamos-cliente',
-        queryParameters: {'chofer_id': choferId},
+        queryParameters: queryParams,
       );
 
       if (response.statusCode == 200) {
         try {
           final responseData = PrestamosClienteResponse.fromJson(response.data);
           _prestamosClientes = responseData.data.prestamos;
-          debugPrint('✅ _prestamosClientes cargados: ${_prestamosClientes.length} items');
+          debugPrint(
+            '✅ _prestamosClientes cargados: ${_prestamosClientes.length} items',
+          );
         } catch (e) {
           debugPrint('❌ Error mapeando prestamos clientes: $e');
           _prestamosClientes = [];
@@ -99,16 +106,20 @@ class PrestamosProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
+      // ✅ REFACTORIZADO: Si choferId es 0, no enviar parámetro (backend obtiene del token)
+      final queryParams = choferId != 0 ? {'chofer_id': choferId} : null;
       final response = await _apiService.get(
         '/prestamos-evento',
-        queryParameters: {'chofer_id': choferId},
+        queryParameters: queryParams,
       );
 
       if (response.statusCode == 200) {
         try {
           final responseData = PrestamosEventoResponse.fromJson(response.data);
           _prestamosEventos = responseData.data.prestamos;
-          debugPrint('✅ _prestamosEventos cargados: ${_prestamosEventos.length} items');
+          debugPrint(
+            '✅ _prestamosEventos cargados: ${_prestamosEventos.length} items',
+          );
         } catch (e) {
           debugPrint('❌ Error mapeando prestamos eventos: $e');
           _prestamosEventos = [];
@@ -133,16 +144,22 @@ class PrestamosProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
+      // ✅ REFACTORIZADO: Si choferId es 0, no enviar parámetro (backend obtiene del token)
+      final queryParams = choferId != 0 ? {'chofer_id': choferId} : null;
       final response = await _apiService.get(
         '/prestamos-proveedor',
-        queryParameters: {'chofer_id': choferId},
+        queryParameters: queryParams,
       );
 
       if (response.statusCode == 200) {
         try {
-          final responseData = PrestamosProveedorResponse.fromJson(response.data);
+          final responseData = PrestamosProveedorResponse.fromJson(
+            response.data,
+          );
           _prestamosProveedores = responseData.data.prestamos;
-          debugPrint('✅ _prestamosProveedores cargados: ${_prestamosProveedores.length} items');
+          debugPrint(
+            '✅ _prestamosProveedores cargados: ${_prestamosProveedores.length} items',
+          );
         } catch (e) {
           debugPrint('❌ Error mapeando prestamos proveedores: $e');
           _prestamosProveedores = [];

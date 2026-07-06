@@ -1,9 +1,13 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../../extensions/theme_extension.dart';
 import '../../providers/prestamos_provider.dart';
 import '../../config/app_text_styles.dart';
 import '../../utils/date_picker_utils.dart';
+import '../../models/devolucion_prestamo_cliente.dart';
+import '../../models/devolucion_prestamo_evento.dart';
+import '../../models/devolucion_prestamo_proveedor.dart';
 
 /// Pantalla para registrar devoluciones de préstamos
 class RegistrarDevolucionScreen extends StatefulWidget {
@@ -54,6 +58,87 @@ class _RegistrarDevolucionScreenState extends State<RegistrarDevolucionScreen> {
     }
   }
 
+  // ✅ NUEVO: Calcular cantidad ya devuelta en buen estado para un detalle específico
+  int _calcularYaDevuelto(int detalleId) {
+    final devoluciones = widget.prestamo.devoluciones as List? ?? [];
+    int totalDevuelto = 0;
+
+    for (var devolucion in devoluciones) {
+      if (widget.tipo == 'cliente' && devolucion is DevolucionCliente) {
+        if (devolucion.detalles != null) {
+          for (var det in devolucion.detalles!) {
+            if (det.detallePrestamoCliente?.id == detalleId) {
+              totalDevuelto += det.cantidadDevuelta;
+            }
+          }
+        }
+      } else if (widget.tipo == 'evento' && devolucion is DevolucionEvento) {
+        if (devolucion.detalles != null) {
+          for (var det in devolucion.detalles!) {
+            if (det.prestamoEventoDetalleId == detalleId) {
+              totalDevuelto += det.cantidadDevuelta;
+            }
+          }
+        }
+      } else if (widget.tipo == 'proveedor' &&
+          devolucion is DevolucionProveedor) {
+        if (devolucion.detalles != null) {
+          for (var det in devolucion.detalles!) {
+            if (det.prestamoProveedorDetalleId == detalleId) {
+              totalDevuelto += det.cantidadDevuelta;
+            }
+          }
+        }
+      }
+    }
+
+    return totalDevuelto;
+  }
+
+  // ✅ NUEVO: Calcular cantidad ya dañada para un detalle específico
+  int _calcularYaDanado(int detalleId) {
+    final devoluciones = widget.prestamo.devoluciones as List? ?? [];
+    int totalDanado = 0;
+
+    for (var devolucion in devoluciones) {
+      if (widget.tipo == 'cliente' && devolucion is DevolucionCliente) {
+        if (devolucion.detalles != null) {
+          for (var det in devolucion.detalles!) {
+            if (det.detallePrestamoCliente?.id == detalleId) {
+              totalDanado += (det.cantidadDaniadaTotal ?? 0);
+            }
+          }
+        }
+      } else if (widget.tipo == 'evento' && devolucion is DevolucionEvento) {
+        if (devolucion.detalles != null) {
+          for (var det in devolucion.detalles!) {
+            if (det.prestamoEventoDetalleId == detalleId) {
+              totalDanado += (det.cantidadDaniadaTotal ?? 0);
+            }
+          }
+        }
+      } else if (widget.tipo == 'proveedor' &&
+          devolucion is DevolucionProveedor) {
+        if (devolucion.detalles != null) {
+          for (var det in devolucion.detalles!) {
+            if (det.prestamoProveedorDetalleId == detalleId) {
+              totalDanado += (det.cantidadDaniadaTotal ?? 0);
+            }
+          }
+        }
+      }
+    }
+
+    return totalDanado;
+  }
+
+  // ✅ NUEVO: Calcular faltante para un detalle
+  int _calcularFaltante(int cantidadPrestada, int detalleId) {
+    final yaDevuelto = _calcularYaDevuelto(detalleId);
+    final yaDanado = _calcularYaDanado(detalleId);
+    return cantidadPrestada - (yaDevuelto + yaDanado);
+  }
+
   @override
   void dispose() {
     _observacionesController.dispose();
@@ -71,13 +156,19 @@ class _RegistrarDevolucionScreenState extends State<RegistrarDevolucionScreen> {
     setState(() {
       _cantidadesDevoluciones[detalleId] = cantidad;
     });
-    _actualizarParCanastillaEmbases(detalleId, cantidad, _controladorDevoluciones, _cantidadesDevoluciones);
+    _actualizarParCanastillaEmbases(
+      detalleId,
+      cantidad,
+      _controladorDevoluciones,
+      _cantidadesDevoluciones,
+    );
   }
 
   void _actualizarDanados(int detalleId, String value) {
     final cantidadDanada = int.tryParse(value) ?? 0;
     final cantidadDevueltaActual = _cantidadesDevoluciones[detalleId] ?? 0;
-    final totalAnterior = cantidadDevueltaActual + (_cantidadesDanadas[detalleId] ?? 0);
+    final totalAnterior =
+        cantidadDevueltaActual + (_cantidadesDanadas[detalleId] ?? 0);
 
     // ✅ NUEVO: Ajustar "Devolviendo" automáticamente
     // Si el usuario ingresa dañados, se descuentan del total anterior
@@ -85,13 +176,24 @@ class _RegistrarDevolucionScreenState extends State<RegistrarDevolucionScreen> {
 
     setState(() {
       _cantidadesDanadas[detalleId] = cantidadDanada;
-      _cantidadesDevoluciones[detalleId] = max(0, nuevaCantidadDevuelta); // No puede ser negativo
+      _cantidadesDevoluciones[detalleId] = max(
+        0,
+        nuevaCantidadDevuelta,
+      ); // No puede ser negativo
     });
 
     // Actualizar el controller visual de "Devolviendo"
-    _controladorDevoluciones[detalleId]?.text = max(0, nuevaCantidadDevuelta).toString();
+    _controladorDevoluciones[detalleId]?.text = max(
+      0,
+      nuevaCantidadDevuelta,
+    ).toString();
 
-    _actualizarParCanastillaEmbases(detalleId, cantidadDanada, _controladorDanados, _cantidadesDanadas);
+    _actualizarParCanastillaEmbases(
+      detalleId,
+      cantidadDanada,
+      _controladorDanados,
+      _cantidadesDanadas,
+    );
   }
 
   void _actualizarParCanastillaEmbases(
@@ -154,7 +256,13 @@ class _RegistrarDevolucionScreenState extends State<RegistrarDevolucionScreen> {
               const SizedBox(height: 20),
 
               // Detalles para devolver
-              Text('Items a Devolver'),
+              Text(
+                'Items a Devolver',
+                style: TextStyle(
+                  color: context.colorScheme.secondary,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
               const SizedBox(height: 12),
               _buildDetallesDevolucion(),
               const SizedBox(height: 20),
@@ -192,11 +300,17 @@ class _RegistrarDevolucionScreenState extends State<RegistrarDevolucionScreen> {
     return Card(
       elevation: 1,
       child: Padding(
-        padding: const EdgeInsets.all(12),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Fecha de Devolución'),
+            Text(
+              'Fecha de Devolución',
+              style: TextStyle(
+                color: context.colorScheme.secondary,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
             ListTile(
               leading: Icon(Icons.calendar_today),
               title: Text(
@@ -249,9 +363,98 @@ class _RegistrarDevolucionScreenState extends State<RegistrarDevolucionScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(prestableName),
-                Text('Capacidad: $capacidad_prestable unidades'),
-                Text('Prestado: $cantidadPrestada unidades'),
+                // Encabezado
+                Text(
+                  prestableName,
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: context.colorScheme.secondary,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                // Información de cantidades
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: isDark ? Colors.grey.shade800 : Colors.grey.shade100,
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: Column(
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            'Prestado:',
+                            style: const TextStyle(fontWeight: FontWeight.w500),
+                          ),
+                          Text(
+                            '$cantidadPrestada unidades',
+                            style: const TextStyle(fontWeight: FontWeight.bold),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 6),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            'Devuelto (Buen Estado):',
+                            style: const TextStyle(fontWeight: FontWeight.w500),
+                          ),
+                          Text(
+                            '${_calcularYaDevuelto(detalleId)} unidades',
+                            style: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color: Colors.green,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 6),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            'Devuelto (Dañado):',
+                            style: const TextStyle(fontWeight: FontWeight.w500),
+                          ),
+                          Text(
+                            '${_calcularYaDanado(detalleId)} unidades',
+                            style: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color: Colors.orange,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 6),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            'Faltante:',
+                            style: const TextStyle(fontWeight: FontWeight.w500),
+                          ),
+                          Text(
+                            '${_calcularFaltante(cantidadPrestada, detalleId)} unidades',
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color:
+                                  _calcularFaltante(
+                                        cantidadPrestada,
+                                        detalleId,
+                                      ) >
+                                      0
+                                  ? Colors.red
+                                  : Colors.green,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
                 const SizedBox(height: 12),
                 Row(
                   children: [
@@ -262,16 +465,17 @@ class _RegistrarDevolucionScreenState extends State<RegistrarDevolucionScreen> {
                         keyboardType: TextInputType.number,
                         decoration: InputDecoration(
                           labelText: 'Devolviendo',
+                          labelStyle: TextStyle(
+                            color: context.colorScheme.secondary,
+                          ),
                           hintText: 'Cantidad en buen estado',
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(8),
                           ),
-                          fillColor: isDark
-                              ? Colors.grey.shade800
-                              : Colors.white,
-                          filled: true,
+                          focusColor: context.colorScheme.secondary,
                         ),
-                        onChanged: (value) => _actualizarDevolucion(detalleId, value),
+                        onChanged: (value) =>
+                            _actualizarDevolucion(detalleId, value),
                       ),
                     ),
                     const SizedBox(width: 12),
@@ -282,16 +486,16 @@ class _RegistrarDevolucionScreenState extends State<RegistrarDevolucionScreen> {
                         keyboardType: TextInputType.number,
                         decoration: InputDecoration(
                           labelText: 'Dañados',
+                          labelStyle: TextStyle(
+                            color: context.colorScheme.secondary,
+                          ),
                           hintText: 'Cantidad dañada',
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(8),
                           ),
-                          fillColor: isDark
-                              ? Colors.grey.shade800
-                              : Colors.white,
-                          filled: true,
                         ),
-                        onChanged: (value) => _actualizarDanados(detalleId, value),
+                        onChanged: (value) =>
+                            _actualizarDanados(detalleId, value),
                       ),
                     ),
                   ],
@@ -311,12 +515,9 @@ class _RegistrarDevolucionScreenState extends State<RegistrarDevolucionScreen> {
       maxLines: 3,
       decoration: InputDecoration(
         labelText: 'Observaciones',
+        labelStyle: TextStyle(color: context.colorScheme.secondary),
         hintText: 'Agregar observaciones sobre la devolución (opcional)',
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-        fillColor: isDark
-            ? Colors.grey.shade800
-            : Colors.white, // ✅ Modo oscuro
-        filled: true,
       ),
     );
   }
@@ -340,8 +541,10 @@ class _RegistrarDevolucionScreenState extends State<RegistrarDevolucionScreen> {
         'detalles': detalles.map((detalle) {
           final detalleId = detalle.id;
           final keyName = _getKeyNameForDetalle();
-          final cantidadDevuelta = _cantidadesDevoluciones[detalleId] ?? 0; // Solo los buenos
-          final cantidadDanada = _cantidadesDanadas[detalleId] ?? 0; // Solo los dañados
+          final cantidadDevuelta =
+              _cantidadesDevoluciones[detalleId] ?? 0; // Solo los buenos
+          final cantidadDanada =
+              _cantidadesDanadas[detalleId] ?? 0; // Solo los dañados
 
           // ✅ NUEVO: Enviar almacenes que ya vienen en el modelo
           final almacenesDelDetalle = detalle.almacenes ?? [];
@@ -363,7 +566,7 @@ class _RegistrarDevolucionScreenState extends State<RegistrarDevolucionScreen> {
               devolucionAlmacenes.add({
                 'almacenes_prestables_id': almacen.almacenesPrestasblesId,
                 'cantidad_devuelta': cantidadDeEsteAlmacen,
-                'cantidad_dañada_total': 0,  // Se asignará al último almacén
+                'cantidad_dañada_total': 0, // Se asignará al último almacén
                 'es_proveedor': almacen.esProveedor,
               });
 
@@ -372,7 +575,8 @@ class _RegistrarDevolucionScreenState extends State<RegistrarDevolucionScreen> {
 
             // ✅ Asignar dañadas al ÚLTIMO almacén que recibió devoluciones
             if (cantidadDanada > 0 && devolucionAlmacenes.isNotEmpty) {
-              devolucionAlmacenes.last['cantidad_dañada_total'] = cantidadDanada;
+              devolucionAlmacenes.last['cantidad_dañada_total'] =
+                  cantidadDanada;
             }
           }
 

@@ -524,6 +524,19 @@ class _VentaDetalleScreenState extends State<VentaDetalleScreen> {
   /// Abrir ubicación de entrega en mapa interactivo o Google Maps
   // ✅ ACTUALIZADO: Recibe venta completa para mostrar info del cliente y color del estado
   Future<void> _abrirMapa(Venta venta) async {
+    // ✅ NUEVO: Verificar si direccionCliente existe
+    if (venta.direccionCliente == null ||
+        venta.direccionCliente!.latitud == null ||
+        venta.direccionCliente!.longitud == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('⚠️ No hay ubicación disponible para esta venta'),
+          duration: Duration(seconds: 2),
+        ),
+      );
+      return;
+    }
+
     // Primero intentar abrir el mapa interactivo
     try {
       if (mounted) {
@@ -622,7 +635,7 @@ class _VentaDetalleScreenState extends State<VentaDetalleScreen> {
       final success = await printService.downloadDocument(
         documentoId: ventaId,
         documentType: PrintDocumentType.venta,
-        format: PrintFormat.ticket58,
+        format: PrintFormat.ticket80,
       );
 
       if (!success && mounted) {

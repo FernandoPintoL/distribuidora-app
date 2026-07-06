@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../../extensions/theme_extension.dart';
 import '../../providers/entrega_provider.dart';
 import '../../widgets/widgets.dart';
 // ✅ NUEVO: Widgets de pantallas
@@ -273,7 +274,7 @@ class _EntregaDetalleScreenState extends State<EntregaDetalleScreen>
                   CircularProgressIndicator(
                     strokeWidth: 3,
                     valueColor: AlwaysStoppedAnimation<Color>(
-                      Theme.of(context).primaryColor,
+                      context.colorScheme.secondary,
                     ),
                   ),
                   const SizedBox(height: 24),

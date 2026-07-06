@@ -1,4 +1,10 @@
-import 'prestamo_completo.dart';
+import 'package:distribuidora/models/almacen_prestable.dart';
+import 'cliente.dart';
+import 'devolucion_prestamo_evento.dart';
+import 'prestable.dart';
+import 'prestamo_cliente.dart';
+import 'prestamo_evento_detalle_por_almacen.dart';
+import 'prestamo_ubicacion.dart';
 
 class PrestamoEvento {
   final int id;
@@ -24,11 +30,13 @@ class PrestamoEvento {
 
   // Relaciones
   final Cliente? cliente;
-  final Almacen? almacen;
+  final AlmacenPrestable? almacen;
   final ChoferPrestamo? chofer;
   final List<PrestamoEventoDetalle>? detalles;
   final List<dynamic>? ventas;
   final List<DevolucionEvento>? devoluciones;
+  // ✅ NUEVO: Ubicación del préstamo
+  final List<PrestamoUbicacion>? ubicaciones;
 
   PrestamoEvento({
     required this.id,
@@ -57,6 +65,7 @@ class PrestamoEvento {
     this.detalles,
     this.ventas,
     this.devoluciones,
+    this.ubicaciones,
   });
 
   factory PrestamoEvento.fromJson(Map<String, dynamic> json) {
@@ -92,17 +101,23 @@ class PrestamoEvento {
           ? Cliente.fromJson(json['cliente'] as Map<String, dynamic>)
           : null,
       almacen: json['almacen'] != null
-          ? Almacen.fromJson(json['almacen'] as Map<String, dynamic>)
+          ? AlmacenPrestable.fromJson(json['almacen'] as Map<String, dynamic>)
           : null,
       chofer: json['chofer'] != null
           ? ChoferPrestamo.fromJson(json['chofer'] as Map<String, dynamic>)
           : null,
       detalles: (json['detalles'] as List?)
-          ?.map((d) => PrestamoEventoDetalle.fromJson(d as Map<String, dynamic>))
+          ?.map(
+            (d) => PrestamoEventoDetalle.fromJson(d as Map<String, dynamic>),
+          )
           .toList(),
       ventas: json['ventas'] as List?,
       devoluciones: (json['devoluciones'] as List?)
           ?.map((d) => DevolucionEvento.fromJson(d as Map<String, dynamic>))
+          .toList(),
+      // ✅ NUEVO: Cargar ubicacion
+      ubicaciones: (json['ubicaciones'] as List?)
+          ?.map((u) => PrestamoUbicacion.fromJson(u as Map<String, dynamic>))
           .toList(),
     );
   }
@@ -158,133 +173,18 @@ class PrestamoEventoDetalle {
           ? Prestable.fromJson(json['prestable'] as Map<String, dynamic>)
           : null,
       devoluciones: (json['devoluciones'] as List?)
-          ?.map((d) => DevolucionEventoDetalle.fromJson(d as Map<String, dynamic>))
+          ?.map(
+            (d) => DevolucionEventoDetalle.fromJson(d as Map<String, dynamic>),
+          )
           .toList(),
       // ✅ NUEVO: Parsear almacenes
       almacenes: (json['almacenes'] as List?)
-          ?.map((a) => PrestamoEventoAlmacen.fromJson(a as Map<String, dynamic>))
-          .toList(),
-    );
-  }
-}
-
-class DevolucionEventoDetalle {
-  final int id;
-  final int devolucionEventoId;
-  final int prestamoEventoDetalleId;
-  final int cantidadDevuelta;
-  final int? cantidadDaniadaParcial;
-  final int? cantidadDaniadaTotal;
-  final String? montoCobradoDanio;
-  final String? montoGarantiaDevuelta;
-  final String? createdAt;
-  final String? updatedAt;
-
-  DevolucionEventoDetalle({
-    required this.id,
-    required this.devolucionEventoId,
-    required this.prestamoEventoDetalleId,
-    required this.cantidadDevuelta,
-    this.cantidadDaniadaParcial,
-    this.cantidadDaniadaTotal,
-    this.montoCobradoDanio,
-    this.montoGarantiaDevuelta,
-    this.createdAt,
-    this.updatedAt,
-  });
-
-  factory DevolucionEventoDetalle.fromJson(Map<String, dynamic> json) {
-    return DevolucionEventoDetalle(
-      id: json['id'] as int? ?? 0,
-      devolucionEventoId: json['devolucion_evento_id'] as int? ?? 0,
-      prestamoEventoDetalleId: json['prestamo_evento_detalle_id'] as int? ?? 0,
-      cantidadDevuelta: json['cantidad_devuelta'] as int? ?? 0,
-      cantidadDaniadaParcial: json['cantidad_dañada_parcial'] as int?,
-      cantidadDaniadaTotal: json['cantidad_dañada_total'] as int?,
-      montoCobradoDanio: json['monto_cobrado_daño'] as String?,
-      montoGarantiaDevuelta: json['monto_garantia_devuelta'] as String?,
-      createdAt: json['created_at'] as String?,
-      updatedAt: json['updated_at'] as String?,
-    );
-  }
-}
-
-class DevolucionEvento {
-  final int id;
-  final int prestamoEventoId;
-  final String? fechaDevolucion;
-  final int? cantidadTotalDevuelta;
-  final String? montoCobradoDanioTotal;
-  final String? montoGarantiaDevueltaTotal;
-  final String? observaciones;
-  final int? choferId;
-  final String? createdAt;
-  final String? updatedAt;
-  final List<DevolucionEventoDetalle>? detalles;
-
-  DevolucionEvento({
-    required this.id,
-    required this.prestamoEventoId,
-    this.fechaDevolucion,
-    this.cantidadTotalDevuelta,
-    this.montoCobradoDanioTotal,
-    this.montoGarantiaDevueltaTotal,
-    this.observaciones,
-    this.choferId,
-    this.createdAt,
-    this.updatedAt,
-    this.detalles,
-  });
-
-  factory DevolucionEvento.fromJson(Map<String, dynamic> json) {
-    return DevolucionEvento(
-      id: json['id'] as int? ?? 0,
-      prestamoEventoId: json['prestamo_evento_id'] as int? ?? 0,
-      fechaDevolucion: json['fecha_devolucion'] as String?,
-      cantidadTotalDevuelta: json['cantidad_total_devuelta'] as int?,
-      montoCobradoDanioTotal: json['monto_cobrado_daño_total'] as String?,
-      montoGarantiaDevueltaTotal:
-          json['monto_garantia_devuelta_total'] as String?,
-      observaciones: json['observaciones'] as String?,
-      choferId: json['chofer_id'] as int?,
-      createdAt: json['created_at'] as String?,
-      updatedAt: json['updated_at'] as String?,
-      detalles: (json['detalles'] as List?)
-          ?.map((d) => DevolucionEventoDetalle.fromJson(d as Map<String, dynamic>))
+          ?.map(
+            (a) => PrestamoEventoAlmacen.fromJson(a as Map<String, dynamic>),
+          )
           .toList(),
     );
   }
 }
 
 // ✅ NUEVO: Almacenes en los que se distribuyó un préstamo de evento
-class PrestamoEventoAlmacen {
-  final int id;
-  final int prestamoEventoDetalleId;
-  final int almacenesPrestasblesId;
-  final int cantidad;
-  final bool esProveedor;
-  final String? createdAt;
-  final String? updatedAt;
-
-  PrestamoEventoAlmacen({
-    required this.id,
-    required this.prestamoEventoDetalleId,
-    required this.almacenesPrestasblesId,
-    required this.cantidad,
-    required this.esProveedor,
-    this.createdAt,
-    this.updatedAt,
-  });
-
-  factory PrestamoEventoAlmacen.fromJson(Map<String, dynamic> json) {
-    return PrestamoEventoAlmacen(
-      id: json['id'] as int? ?? 0,
-      prestamoEventoDetalleId: json['prestamo_evento_detalle_id'] as int? ?? 0,
-      almacenesPrestasblesId: json['almacenes_prestables_id'] as int? ?? 0,
-      cantidad: json['cantidad'] as int? ?? 0,
-      esProveedor: json['es_proveedor'] as bool? ?? false,
-      createdAt: json['created_at'] as String?,
-      updatedAt: json['updated_at'] as String?,
-    );
-  }
-}

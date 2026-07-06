@@ -39,7 +39,7 @@ export 'movimiento_caja.dart';
 export 'gasto.dart';
 export 'banner_publicitario.dart';
 export 'prestamo.dart';
-export 'prestamo_completo.dart';
+export 'prestamo_cliente.dart';
 export 'prestamos_cliente_response.dart';
 export 'prestamo_evento.dart';
 export 'prestamos_evento_response.dart';

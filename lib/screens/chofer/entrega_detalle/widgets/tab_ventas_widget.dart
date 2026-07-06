@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../../extensions/theme_extension.dart';
 import '../../../../models/entrega.dart';
 import '../../../../models/venta.dart'; // ✅ NUEVO: Para parsear ventas JSON
 import '../../../../models/api_response.dart';
@@ -60,7 +61,21 @@ class _TabVentasWidgetState extends State<TabVentasWidget> {
         future: _futureVentasResumidas,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  CircularProgressIndicator(
+                    strokeWidth: 3,
+                    valueColor: AlwaysStoppedAnimation<Color>(
+                      context.colorScheme.secondary,
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  const Text('Cargando ventas asignadas...'),
+                ],
+              ),
+            );
           }
 
           if (!snapshot.hasData || !snapshot.data!.success) {

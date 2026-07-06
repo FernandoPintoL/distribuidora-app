@@ -1,6 +1,6 @@
 /// Índice centralizado para todos los modelos de préstamos
 
-export 'prestamo_completo.dart';
+export 'prestamo_cliente.dart';
 export 'prestamo_evento.dart';
 export 'prestamo_proveedor.dart';
 export 'prestamos_cliente_response.dart';
