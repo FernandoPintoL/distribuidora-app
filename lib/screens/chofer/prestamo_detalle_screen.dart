@@ -445,38 +445,6 @@ class _PrestamoDetalleScreenState extends State<PrestamoDetalleScreen> {
     for (int i = 0; i < ubicaciones.length; i++) {
       final ubicacion = ubicaciones[i];
       final items = <Widget>[];
-
-      // Número de ubicación si hay múltiples
-      /*if (ubicaciones.length > 1) {
-        items.add(
-          Padding(
-            padding: const EdgeInsets.symmetric(vertical: 8),
-            child: Row(
-              children: [
-                Container(
-                  width: 24,
-                  height: 24,
-                  decoration: BoxDecoration(shape: BoxShape.circle),
-                  child: Center(
-                    child: Text(
-                      '${i + 1}',
-                      style: const TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    'Ubicación ${i + 1}',
-                    style: TextStyle(fontWeight: FontWeight.w600),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        );
-      }
-*/
       // Localidad
       if (ubicacion.localidad != null) {
         items.add(
@@ -636,70 +604,7 @@ class _PrestamoDetalleScreenState extends State<PrestamoDetalleScreen> {
       }
     }
 
-    int faltante = totalPrestado - totalDevuelto;
-
     List<Widget> items = [];
-
-    // Resumen de totales
-    /*items.add(
-      Padding(
-        padding: const EdgeInsets.symmetric(vertical: 8),
-        child: Row(
-          children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Total Prestado',
-                    style: TextStyle(fontWeight: FontWeight.w500),
-                  ),
-                  Text(
-                    '$totalPrestado unidades',
-                    style: TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                ],
-              ),
-            ),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Total Devuelto',
-                    style: TextStyle(fontWeight: FontWeight.w500),
-                  ),
-                  Text(
-                    '$totalDevuelto unidades',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      color: Colors.green,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Faltante',
-                    style: TextStyle(fontWeight: FontWeight.w500),
-                  ),
-                  Text(
-                    '$faltante unidades',
-                    style: TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );*/
-
-    // items.add(const Divider(height: 16));
 
     // Detalles de cada devolución
     for (int i = 0; i < devoluciones.length; i++) {
@@ -720,8 +625,11 @@ class _PrestamoDetalleScreenState extends State<PrestamoDetalleScreen> {
 
     if (devolucion.detalles == null) return resultado;
 
+    print('🔍 [SUMATORIA] Iniciando cálculo de sumatorias por tipo para ${devolucion.runtimeType}');
+
     // Cliente
     if (devolucion is DevolucionCliente) {
+      print('📦 [CLIENTE] Procesando ${devolucion.detalles!.length} detalles');
       for (var detalle in devolucion.detalles!) {
         final prestamoDetalle = detalle.detallePrestamoCliente;
         if (prestamoDetalle?.prestable == null) continue;
@@ -736,16 +644,21 @@ class _PrestamoDetalleScreenState extends State<PrestamoDetalleScreen> {
             'devuelto_buen_estado': 0,
             'devuelto_danado': 0,
           };
+          print('  ➕ Nuevo tipo: "$key" - Prestado: ${prestamoDetalle.cantidadPrestada}');
         }
 
+        final devBuen = detalle.cantidadDevuelta;
+        final devDanado = detalle.cantidadDaniadaTotal ?? 0;
         resultado[key]!['devuelto_buen_estado'] =
-            resultado[key]!['devuelto_buen_estado']! + detalle.cantidadDevuelta;
+            resultado[key]!['devuelto_buen_estado']! + devBuen;
         resultado[key]!['devuelto_danado'] =
-            resultado[key]!['devuelto_danado']! + (detalle.cantidadDaniadaTotal ?? 0);
+            resultado[key]!['devuelto_danado']! + devDanado;
+        print('  ✓ "$key" actualizado - Buen estado: +$devBuen, Dañado: +$devDanado');
       }
     }
     // Evento
     else if (devolucion is DevolucionEvento) {
+      print('📦 [EVENTO] Procesando ${devolucion.detalles!.length} detalles');
       for (var detalle in devolucion.detalles!) {
         final prestamoDetalle = detalle.detallePrestamoEvento;
         if (prestamoDetalle == null || prestamoDetalle is! Map<String, dynamic>)
@@ -760,18 +673,26 @@ class _PrestamoDetalleScreenState extends State<PrestamoDetalleScreen> {
         final prestado = prestamoDetalle['cantidad_prestada'] as int? ?? 0;
 
         if (!resultado.containsKey(key)) {
-          resultado[key] = {'prestado': prestado, 'devuelto': 0};
+          resultado[key] = {
+            'prestado': prestado,
+            'devuelto_buen_estado': 0,
+            'devuelto_danado': 0,
+          };
+          print('  ➕ Nuevo tipo: "$key" - Prestado: $prestado');
         }
 
-        // Devuelto = cantidad_devuelta + cantidad_dañada_total
-        final totalDevuelto =
-            detalle.cantidadDevuelta + (detalle.cantidadDaniadaTotal ?? 0);
-        resultado[key]!['devuelto'] =
-            resultado[key]!['devuelto']! + totalDevuelto;
+        final devBuen = detalle.cantidadDevuelta;
+        final devDanado = detalle.cantidadDaniadaTotal ?? 0;
+        resultado[key]!['devuelto_buen_estado'] =
+            resultado[key]!['devuelto_buen_estado']! + devBuen;
+        resultado[key]!['devuelto_danado'] =
+            resultado[key]!['devuelto_danado']! + devDanado;
+        print('  ✓ "$key" actualizado - Buen estado: +$devBuen, Dañado: +$devDanado');
       }
     }
     // Proveedor
     else if (devolucion is DevolucionProveedor) {
+      print('📦 [PROVEEDOR] Procesando ${devolucion.detalles!.length} detalles');
       for (var detalle in devolucion.detalles!) {
         final prestamoDetalle = detalle.detallePrestamoProveedor;
         if (prestamoDetalle == null || prestamoDetalle is! Map<String, dynamic>)
@@ -786,16 +707,28 @@ class _PrestamoDetalleScreenState extends State<PrestamoDetalleScreen> {
         final prestado = prestamoDetalle['cantidad_prestada'] as int? ?? 0;
 
         if (!resultado.containsKey(key)) {
-          resultado[key] = {'prestado': prestado, 'devuelto': 0};
+          resultado[key] = {
+            'prestado': prestado,
+            'devuelto_buen_estado': 0,
+            'devuelto_danado': 0,
+          };
+          print('  ➕ Nuevo tipo: "$key" - Prestado: $prestado');
         }
 
-        // Devuelto = cantidad_devuelta + cantidad_dañada_total
-        final totalDevuelto =
-            detalle.cantidadDevuelta + (detalle.cantidadDaniadaTotal ?? 0);
-        resultado[key]!['devuelto'] =
-            resultado[key]!['devuelto']! + totalDevuelto;
+        final devBuen = detalle.cantidadDevuelta;
+        final devDanado = detalle.cantidadDaniadaTotal ?? 0;
+        resultado[key]!['devuelto_buen_estado'] =
+            resultado[key]!['devuelto_buen_estado']! + devBuen;
+        resultado[key]!['devuelto_danado'] =
+            resultado[key]!['devuelto_danado']! + devDanado;
+        print('  ✓ "$key" actualizado - Buen estado: +$devBuen, Dañado: +$devDanado');
       }
     }
+
+    print('✅ [SUMATORIA] Cálculo completado: ${resultado.length} tipos encontrados\n');
+    resultado.forEach((key, stats) {
+      print('  📊 $key: Prestado=${stats['prestado']}, BuenEstado=${stats['devuelto_buen_estado']}, Dañado=${stats['devuelto_danado']}');
+    });
 
     return resultado;
   }
@@ -851,6 +784,8 @@ class _PrestamoDetalleScreenState extends State<PrestamoDetalleScreen> {
           final devueltoBuenEstado = stats['devuelto_buen_estado'] ?? 0;
           final devueltoDanado = stats['devuelto_danado'] ?? 0;
           final faltante = prestado - (devueltoBuenEstado + devueltoDanado);
+
+          print('📋 [MOSTRAR] $tipoPrestable - $nombrePrestable: Prestado=$prestado, BuenEstado=$devueltoBuenEstado, Dañado=$devueltoDanado, Faltante=$faltante');
 
           sumatorias.add(
             Padding(
@@ -952,9 +887,8 @@ class _PrestamoDetalleScreenState extends State<PrestamoDetalleScreen> {
             child: Text(
               'Resumen por Tipo:',
               style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
-                color: isDark ? Colors.grey.shade400 : Colors.grey.shade700,
+                fontWeight: FontWeight.bold,
+                color: context.colorScheme.secondary,
               ),
             ),
           ),
@@ -968,6 +902,8 @@ class _PrestamoDetalleScreenState extends State<PrestamoDetalleScreen> {
           final devueltoDanado = stats['devuelto_danado'] ?? 0;
           final faltante = prestado - (devueltoBuenEstado + devueltoDanado);
 
+          print('📋 [MOSTRAR] $tipoPrestable - $nombrePrestable: Prestado=$prestado, BuenEstado=$devueltoBuenEstado, Dañado=$devueltoDanado, Faltante=$faltante');
+
           sumatorias.add(
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 8),
@@ -977,23 +913,24 @@ class _PrestamoDetalleScreenState extends State<PrestamoDetalleScreen> {
                   Text(
                     '$tipoPrestable - $nombrePrestable',
                     style: TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w600,
-                      color: Theme.of(context).primaryColor,
+                      fontWeight: FontWeight.bold,
+                      color: context.colorScheme.secondary,
                     ),
                   ),
                   const SizedBox(height: 6),
                   Text(
                     'Prestado: $prestado',
-                    style: const TextStyle(fontSize: 10),
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: context.colorScheme.secondary,
+                    ),
                   ),
                   const SizedBox(height: 4),
                   Text(
                     'Devuelto (Buen Estado): $devueltoBuenEstado',
-                    style: const TextStyle(
-                      fontSize: 10,
+                    style: TextStyle(
                       color: Colors.green,
-                      fontWeight: FontWeight.w600,
+                      fontWeight: FontWeight.bold,
                     ),
                   ),
                   const SizedBox(height: 4),
@@ -1001,7 +938,6 @@ class _PrestamoDetalleScreenState extends State<PrestamoDetalleScreen> {
                     Text(
                       'Devuelto (Dañado): $devueltoDanado',
                       style: const TextStyle(
-                        fontSize: 10,
                         color: Colors.orange,
                         fontWeight: FontWeight.w600,
                       ),
@@ -1010,7 +946,6 @@ class _PrestamoDetalleScreenState extends State<PrestamoDetalleScreen> {
                   Text(
                     'Faltante: $faltante',
                     style: TextStyle(
-                      fontSize: 10,
                       color: faltante > 0 ? Colors.red : Colors.green,
                       fontWeight: FontWeight.w600,
                     ),
@@ -1089,6 +1024,8 @@ class _PrestamoDetalleScreenState extends State<PrestamoDetalleScreen> {
           final devueltoBuenEstado = stats['devuelto_buen_estado'] ?? 0;
           final devueltoDanado = stats['devuelto_danado'] ?? 0;
           final faltante = prestado - (devueltoBuenEstado + devueltoDanado);
+
+          print('📋 [MOSTRAR] $tipoPrestable - $nombrePrestable: Prestado=$prestado, BuenEstado=$devueltoBuenEstado, Dañado=$devueltoDanado, Faltante=$faltante');
 
           sumatorias.add(
             Padding(
@@ -1195,35 +1132,8 @@ class _PrestamoDetalleScreenState extends State<PrestamoDetalleScreen> {
             color: context.colorScheme.secondary,
           ),
         ),
-        /*Padding(
-          padding: const EdgeInsets.symmetric(vertical: 8),
-          child: Row(
-            children: [
-              Container(
-                width: 24,
-                height: 24,
-                decoration: BoxDecoration(shape: BoxShape.circle),
-                child: Center(
-                  child: Text(
-                    '$numero',
-                    style: const TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  'Devolución #$numero',
-                  style: TextStyle(fontWeight: FontWeight.w600),
-                ),
-              ),
-            ],
-          ),
-        ),*/
         // Fecha
         _buildItem(context, 'Fecha', _formatearFecha(fechaDevolucion)),
-        // Cantidad devuelta
-        // _buildItem(context, 'Cantidad Devuelta', '$cantidadDevuelta unidades'),
         // Monto garantía
         _buildItem(context, 'Monto Garantía Devuelto', 'Bs $montoGarantia'),
         // Sumatorias por tipo
@@ -1268,7 +1178,10 @@ class _PrestamoDetalleScreenState extends State<PrestamoDetalleScreen> {
             children: [
               Text(
                 'Items Prestados',
-                style: TextStyle(color: context.colorScheme.secondary),
+                style: TextStyle(
+                  color: context.colorScheme.secondary,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
               const SizedBox(height: 12),
               ...detalles.map((detalle) {
