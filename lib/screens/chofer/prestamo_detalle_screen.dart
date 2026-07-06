@@ -9,6 +9,7 @@ import '../../models/prestamo_cliente.dart';
 import '../../models/prestamo_evento.dart';
 import '../../models/prestamo_proveedor.dart';
 import '../../widgets/map_location_selector.dart';
+import '../../services/print_service.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'registrar_devolucion_screen.dart';
 
@@ -45,6 +46,14 @@ class _PrestamoDetalleScreenState extends State<PrestamoDetalleScreen> {
       appBar: AppBar(
         title: Text("${_getTitulo()} #${prestamo.id}"),
         elevation: 0,
+        actions: [
+          // ✅ NUEVO: Botón de impresión
+          IconButton(
+            icon: const Icon(Icons.print),
+            tooltip: 'Imprimir préstamo',
+            onPressed: _imprimirPrestamo,
+          ),
+        ],
       ),
       body: SingleChildScrollView(
         child: Column(
@@ -339,20 +348,13 @@ class _PrestamoDetalleScreenState extends State<PrestamoDetalleScreen> {
           'icon': Icons.hourglass_bottom,
         };
       case 'PARCIALMENTE_DEVUELTO':
-        return {
-          'color': Colors.amber.shade600,
-          'icon': Icons.schedule,
-        };
+        return {'color': Colors.amber.shade600, 'icon': Icons.schedule};
       case 'COMPLETAMENTE_DEVUELTO':
-        return {
-          'color': Colors.green.shade600,
-          'icon': Icons.check_circle,
-        };
+        return {'color': Colors.green.shade600, 'icon': Icons.check_circle};
+      case 'CANCELADO':
+        return {'color': Colors.red.shade600, 'icon': Icons.cancel};
       default:
-        return {
-          'color': Colors.grey.shade600,
-          'icon': Icons.help,
-        };
+        return {'color': Colors.grey.shade600, 'icon': Icons.help};
     }
   }
 
@@ -364,6 +366,8 @@ class _PrestamoDetalleScreenState extends State<PrestamoDetalleScreen> {
         return 'Parcialmente Devuelto';
       case 'COMPLETAMENTE_DEVUELTO':
         return 'Terminado';
+      case 'CANCELADO':
+        return 'Cancelado';
       default:
         return estado;
     }
@@ -1517,6 +1521,71 @@ class _PrestamoDetalleScreenState extends State<PrestamoDetalleScreen> {
         return prestamo.proveedor?.nombre ?? 'Préstamo Proveedor';
       default:
         return 'Préstamo';
+    }
+  }
+
+  // ✅ NUEVO: Imprimir préstamo (cliente, evento o proveedor)
+  Future<void> _imprimirPrestamo() async {
+    try {
+      final printService = PrintService();
+
+      // Determinar tipo de documento según tipo de préstamo
+      PrintDocumentType documentType;
+      switch (tipo) {
+        case 'cliente':
+          documentType = PrintDocumentType.prestamoCliente;
+          break;
+        case 'evento':
+          documentType = PrintDocumentType.prestamoEvento;
+          break;
+        case 'proveedor':
+          documentType = PrintDocumentType.prestamoProveedor;
+          break;
+        default:
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('❌ Tipo de préstamo no reconocido')),
+            );
+          }
+          return;
+      }
+
+      debugPrint('🖨️ Descargando impresión de ${_getTitulo()}...');
+
+      final success = await printService.downloadDocument(
+        documentoId: prestamo.id,
+        documentType: documentType,
+        format: PrintFormat.ticket80,
+      );
+
+      if (!success && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('❌ No se pudo descargar el PDF'),
+            duration: Duration(seconds: 3),
+            backgroundColor: Colors.red,
+          ),
+        );
+      } else if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('✅ ${_getTitulo()} descargado'),
+            duration: const Duration(seconds: 2),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    } catch (e) {
+      debugPrint('❌ Error imprimiendo préstamo: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('❌ Error: $e'),
+            duration: const Duration(seconds: 3),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     }
   }
 }

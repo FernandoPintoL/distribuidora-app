@@ -25,7 +25,10 @@ enum PrintDocumentType {
   venta("ventas"),
   entrega("entregas"),
   proforma("proformas"),
-  envio("envios");
+  envio("envios"),
+  prestamoCliente("prestamos-cliente"),
+  prestamoEvento("prestamos-evento"),
+  prestamoProveedor("prestamos-proveedor");
 
   final String endpoint;
 
