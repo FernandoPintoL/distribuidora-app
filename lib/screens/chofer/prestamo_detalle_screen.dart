@@ -53,7 +53,7 @@ class _PrestamoDetalleScreenState extends State<PrestamoDetalleScreen> {
             // Información general
             _buildSeccion(context, 'Información General', [
               _buildItem(context, 'Folio', '#${prestamo.id}'),
-              _buildItem(context, 'Estado', prestamo.estado ?? 'N/A'),
+              _buildEstadoItem(context, prestamo.estado ?? 'N/A'),
               _buildItem(
                 context,
                 'Fecha Préstamo',
@@ -280,6 +280,93 @@ class _PrestamoDetalleScreenState extends State<PrestamoDetalleScreen> {
         ],
       ),
     );
+  }
+
+  Widget _buildEstadoItem(BuildContext context, String estado) {
+    final colorInfo = _getEstadoColor(estado);
+    final etiqueta = _getEstadoLabel(estado);
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6),
+      child: Row(
+        children: [
+          Expanded(
+            flex: 2,
+            child: Text(
+              'Estado',
+              style: TextStyle(fontWeight: FontWeight.w500),
+            ),
+          ),
+          Expanded(
+            flex: 3,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              decoration: BoxDecoration(
+                color: colorInfo['color'] as Color,
+                borderRadius: BorderRadius.circular(6),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    colorInfo['icon'] as IconData,
+                    size: 18,
+                    color: Colors.white,
+                  ),
+                  const SizedBox(width: 6),
+                  Text(
+                    etiqueta,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 13,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Map<String, dynamic> _getEstadoColor(String estado) {
+    switch (estado) {
+      case 'ACTIVO':
+        return {
+          'color': Colors.orange.shade600,
+          'icon': Icons.hourglass_bottom,
+        };
+      case 'PARCIALMENTE_DEVUELTO':
+        return {
+          'color': Colors.amber.shade600,
+          'icon': Icons.schedule,
+        };
+      case 'COMPLETAMENTE_DEVUELTO':
+        return {
+          'color': Colors.green.shade600,
+          'icon': Icons.check_circle,
+        };
+      default:
+        return {
+          'color': Colors.grey.shade600,
+          'icon': Icons.help,
+        };
+    }
+  }
+
+  String _getEstadoLabel(String estado) {
+    switch (estado) {
+      case 'ACTIVO':
+        return 'Activo';
+      case 'PARCIALMENTE_DEVUELTO':
+        return 'Parcialmente Devuelto';
+      case 'COMPLETAMENTE_DEVUELTO':
+        return 'Terminado';
+      default:
+        return estado;
+    }
   }
 
   // ✅ NUEVO: Sección de cliente con imagen
@@ -697,7 +784,9 @@ class _PrestamoDetalleScreenState extends State<PrestamoDetalleScreen> {
         }
 
         if (prestable == null) {
-          print('    ⚠️ FALTA: prestable es NULL - Necesito que el backend envíe objeto prestable completo');
+          print(
+            '    ⚠️ FALTA: prestable es NULL - Necesito que el backend envíe objeto prestable completo',
+          );
           continue;
         }
 
@@ -771,7 +860,9 @@ class _PrestamoDetalleScreenState extends State<PrestamoDetalleScreen> {
         }
 
         if (prestable == null) {
-          print('    ⚠️ FALTA: prestable es NULL - Necesito que el backend envíe objeto prestable completo');
+          print(
+            '    ⚠️ FALTA: prestable es NULL - Necesito que el backend envíe objeto prestable completo',
+          );
           continue;
         }
 
@@ -1073,7 +1164,7 @@ class _PrestamoDetalleScreenState extends State<PrestamoDetalleScreen> {
         });
       }
 
-      if (devolucion.detalles != null && devolucion.detalles!.isNotEmpty) {
+      /*if (devolucion.detalles != null && devolucion.detalles!.isNotEmpty) {
         for (var detalle in devolucion.detalles!) {
           detalles.add(
             Padding(
@@ -1110,7 +1201,7 @@ class _PrestamoDetalleScreenState extends State<PrestamoDetalleScreen> {
             );
           }
         }
-      }
+      }*/
     } else if (devolucion is DevolucionProveedor) {
       fechaDevolucion = devolucion.fechaDevolucion ?? 'N/A';
       cantidadDevuelta = devolucion.cantidadTotalDevuelta?.toString() ?? '0';
@@ -1125,9 +1216,8 @@ class _PrestamoDetalleScreenState extends State<PrestamoDetalleScreen> {
             child: Text(
               'Resumen por Tipo:',
               style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
-                color: isDark ? Colors.grey.shade400 : Colors.grey.shade700,
+                fontWeight: FontWeight.bold,
+                color: context.colorScheme.secondary,
               ),
             ),
           ),
@@ -1154,21 +1244,16 @@ class _PrestamoDetalleScreenState extends State<PrestamoDetalleScreen> {
                   Text(
                     '$tipoPrestable - $nombrePrestable',
                     style: TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w600,
-                      color: Theme.of(context).primaryColor,
+                      fontWeight: FontWeight.bold,
+                      color: context.colorScheme.secondary,
                     ),
                   ),
                   const SizedBox(height: 6),
-                  Text(
-                    'Prestado: $prestado',
-                    style: const TextStyle(fontSize: 10),
-                  ),
+                  Text('Prestado: $prestado'),
                   const SizedBox(height: 4),
                   Text(
                     'Devuelto (Buen Estado): $devueltoBuenEstado',
                     style: const TextStyle(
-                      fontSize: 10,
                       color: Colors.green,
                       fontWeight: FontWeight.w600,
                     ),
@@ -1178,7 +1263,6 @@ class _PrestamoDetalleScreenState extends State<PrestamoDetalleScreen> {
                     Text(
                       'Devuelto (Dañado): $devueltoDanado',
                       style: const TextStyle(
-                        fontSize: 10,
                         color: Colors.orange,
                         fontWeight: FontWeight.w600,
                       ),
@@ -1187,7 +1271,6 @@ class _PrestamoDetalleScreenState extends State<PrestamoDetalleScreen> {
                   Text(
                     'Faltante: $faltante',
                     style: TextStyle(
-                      fontSize: 10,
                       color: faltante > 0 ? Colors.red : Colors.green,
                       fontWeight: FontWeight.w600,
                     ),
@@ -1199,7 +1282,7 @@ class _PrestamoDetalleScreenState extends State<PrestamoDetalleScreen> {
         });
       }
 
-      if (devolucion.detalles != null && devolucion.detalles!.isNotEmpty) {
+      /*if (devolucion.detalles != null && devolucion.detalles!.isNotEmpty) {
         for (var detalle in devolucion.detalles!) {
           detalles.add(
             Padding(
@@ -1236,7 +1319,7 @@ class _PrestamoDetalleScreenState extends State<PrestamoDetalleScreen> {
             );
           }
         }
-      }
+      }*/
     }
 
     return Column(
@@ -1262,7 +1345,7 @@ class _PrestamoDetalleScreenState extends State<PrestamoDetalleScreen> {
           ...sumatorias,
         ],
         // Detalles
-        if (detalles.isNotEmpty) ...[
+        /*if (detalles.isNotEmpty) ...[
           const SizedBox(height: 8),
           Padding(
             padding: const EdgeInsets.symmetric(vertical: 4),
@@ -1272,7 +1355,7 @@ class _PrestamoDetalleScreenState extends State<PrestamoDetalleScreen> {
             ),
           ),
           ...detalles,
-        ],
+        ],*/
       ],
     );
   }
