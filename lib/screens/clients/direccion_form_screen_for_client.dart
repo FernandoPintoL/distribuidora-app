@@ -1,4 +1,5 @@
-﻿import 'package:flutter/material.dart';
+﻿import 'package:distribuidora/extensions/theme_extension.dart';
+import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../models/models.dart';
 import '../../providers/providers.dart';
@@ -71,7 +72,9 @@ class _DireccionFormScreenForClientState
     bool success;
     if (widget.direccion == null) {
       // Crear nueva direcciÃ³n
-      debugPrint('ðŸ“ Creando nueva direcciÃ³n con localidad_id: $_selectedLocalidadId');
+      debugPrint(
+        'ðŸ“ Creando nueva direcciÃ³n con localidad_id: $_selectedLocalidadId',
+      );
       success = await clientProvider.createClientAddress(
         widget.clientId,
         direccion: _direccionController.text.trim(),
@@ -89,7 +92,9 @@ class _DireccionFormScreenForClientState
       );
     } else {
       // Actualizar direcciÃ³n existente
-      debugPrint('ðŸ“ Actualizando direcciÃ³n con localidad_id: $_selectedLocalidadId');
+      debugPrint(
+        'ðŸ“ Actualizando direcciÃ³n con localidad_id: $_selectedLocalidadId',
+      );
       success = await clientProvider.updateClientAddress(
         widget.clientId,
         widget.direccion!.id!,
@@ -116,8 +121,8 @@ class _DireccionFormScreenForClientState
           SnackBar(
             content: Text(
               widget.direccion == null
-                  ? 'DirecciÃ³n agregada correctamente'
-                  : 'DirecciÃ³n actualizada correctamente',
+                  ? 'Dirección agregada correctamente'
+                  : 'Dirección actualizada correctamente',
             ),
             backgroundColor: Colors.green,
           ),
@@ -127,8 +132,7 @@ class _DireccionFormScreenForClientState
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              clientProvider.errorMessage ??
-                  'Error al guardar la direcciÃ³n',
+              clientProvider.errorMessage ?? 'Error al guardar la dirección',
             ),
             backgroundColor: Colors.red,
           ),
@@ -143,7 +147,7 @@ class _DireccionFormScreenForClientState
 
     return Scaffold(
       appBar: CustomGradientAppBar(
-        title: isEditing ? 'Editar DirecciÃ³n' : 'Nueva DirecciÃ³n',
+        title: isEditing ? 'Editar Dirección' : 'Nueva Dirección',
       ),
       body: Form(
         key: _formKey,
@@ -164,11 +168,8 @@ class _DireccionFormScreenForClientState
                   const SizedBox(width: 12),
                   Expanded(
                     child: Text(
-                      'Esta direcciÃ³n se usarÃ¡ para entregas de pedidos del cliente',
-                      style: TextStyle(
-                        fontSize: AppTextStyles.bodySmall(context).fontSize!,
-                        color: Colors.blue.shade900,
-                      ),
+                      'Esta dirección se usará para entregas de pedidos del cliente',
+                      style: TextStyle(color: Colors.blue.shade900),
                     ),
                   ),
                 ],
@@ -204,12 +205,13 @@ class _DireccionFormScreenForClientState
                 borderRadius: BorderRadius.circular(12),
               ),
               child: SwitchListTile(
+                activeColor: context.colorScheme.secondary,
                 title: const Text(
-                  'Marcar como direcciÃ³n principal',
+                  'Marcar como dirección principal',
                   style: TextStyle(fontWeight: FontWeight.w500),
                 ),
                 subtitle: const Text(
-                  'Esta serÃ¡ la direcciÃ³n predeterminada para entregas',
+                  'Esta será la dirección predeterminada para entregas',
                   style: TextStyle(fontSize: 12),
                 ),
                 value: _esPrincipal,
@@ -219,7 +221,7 @@ class _DireccionFormScreenForClientState
                 secondary: Icon(
                   _esPrincipal ? Icons.home : Icons.home_outlined,
                   color: _esPrincipal
-                      ? Theme.of(context).primaryColor
+                      ? context.colorScheme.secondary
                       : Colors.grey,
                 ),
               ),
@@ -237,8 +239,9 @@ class _DireccionFormScreenForClientState
                         height: 20,
                         child: CircularProgressIndicator(
                           strokeWidth: 2,
-                          valueColor:
-                              AlwaysStoppedAnimation<Color>(Colors.white),
+                          valueColor: AlwaysStoppedAnimation<Color>(
+                            Colors.white,
+                          ),
                         ),
                       )
                     : const Icon(Icons.save),
@@ -246,8 +249,8 @@ class _DireccionFormScreenForClientState
                   _isSaving
                       ? 'Guardando...'
                       : isEditing
-                          ? 'Actualizar DirecciÃ³n'
-                          : 'Guardar DirecciÃ³n',
+                      ? 'Actualizar Dirección'
+                      : 'Guardar Dirección',
                 ),
                 style: ElevatedButton.styleFrom(
                   shape: RoundedRectangleBorder(
@@ -278,4 +281,3 @@ class _DireccionFormScreenForClientState
     );
   }
 }
-

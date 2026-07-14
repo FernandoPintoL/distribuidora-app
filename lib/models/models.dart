@@ -54,3 +54,4 @@ export 'confirmacion_entrega.dart';
 export 'detalle_entrega.dart';
 export 'pedido_venta.dart';
 export 'pedido_timeline_event.dart';
+export 'update_password_response.dart';

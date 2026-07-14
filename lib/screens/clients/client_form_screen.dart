@@ -1,6 +1,7 @@
 ﻿import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+import '../../extensions/theme_extension.dart';
 import '../../models/models.dart';
 import '../../providers/providers.dart';
 import '../../widgets/profile_photo_selector.dart';
@@ -718,6 +719,8 @@ class _ClientFormScreenState extends State<ClientFormScreen> {
                                           'Cat ${cat.id}',
                                     ),
                                     selected: selected,
+                                    selectedColor:
+                                        context.colorScheme.secondary,
                                     onSelected: (val) {
                                       setState(() {
                                         if (val) {

@@ -6,6 +6,7 @@ import '../widgets/widgets.dart';
 import 'base/base_home_screen.dart';
 import 'clients/client_list_screen.dart';
 import 'perfil/perfil_screen.dart';
+import 'perfil/widgets/dialogs/logout_dialog.dart';
 import 'preventista/dashboard_preventista.dart';
 
 /// Pantalla principal para usuarios con rol ADMIN/PREVENTISTA
@@ -31,7 +32,7 @@ class HomeScreenState extends BaseHomeScreenState<HomeScreen> {
   @override
   PreferredSizeWidget get appBar => CustomGradientAppBar(
     title: 'Distribuidora Paucara',
-    actions: [LogoutAction(onLogout: () => _showLogoutDialog(context))],
+    actions: [LogoutAction(onLogout: () => LogoutDialog.show(context))],
   );
 
   @override
@@ -44,7 +45,6 @@ class HomeScreenState extends BaseHomeScreenState<HomeScreen> {
   Future<void> loadInitialData() async {
     // ✅ OPTIMIZADO: Cargar solo estadísticas ligeras para el dashboard
     try {
-      final authProvider = context.read<AuthProvider>();
       final clientProvider = context.read<ClientProvider>();
       final pedidoProvider = context.read<PedidoProvider>();
       await pedidoProvider.loadStats();
@@ -96,28 +96,4 @@ class HomeScreenState extends BaseHomeScreenState<HomeScreen> {
     }
   }
 
-  void _showLogoutDialog(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: const Text('Cerrar Sesión'),
-          content: const Text('¿Está seguro?'),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: const Text('Cancelar'),
-            ),
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-                context.read<AuthProvider>().logout();
-              },
-              child: const Text('Cerrar Sesión'),
-            ),
-          ],
-        );
-      },
-    );
-  }
 }

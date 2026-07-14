@@ -90,12 +90,18 @@ class _DireccionFormWidgetState extends State<DireccionFormWidget> {
       final localidad = _localidades.firstWhere(
         (loc) => loc.id == widget.initialLocalidadId,
         orElse: () {
-          debugPrint('⚠️ No se encontró localidad con ID: ${widget.initialLocalidadId}');
-          debugPrint('📋 Localidades disponibles: ${_localidades.map((l) => '${l.id}: ${l.nombre}').join(', ')}');
+          debugPrint(
+            '⚠️ No se encontró localidad con ID: ${widget.initialLocalidadId}',
+          );
+          debugPrint(
+            '📋 Localidades disponibles: ${_localidades.map((l) => '${l.id}: ${l.nombre}').join(', ')}',
+          );
           throw StateError('Localidad no encontrada');
         },
       );
-      debugPrint('✅ Localidad preseleccionada: ${localidad.nombre} (ID: ${localidad.id})');
+      debugPrint(
+        '✅ Localidad preseleccionada: ${localidad.nombre} (ID: ${localidad.id})',
+      );
       return localidad;
     } catch (e) {
       debugPrint('❌ Error al obtener localidad inicial: $e');
@@ -130,30 +136,21 @@ class _DireccionFormWidgetState extends State<DireccionFormWidget> {
         if (_isLoadingLocalidades)
           const Center(child: CircularProgressIndicator())
         else
-          Container(
-            decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.surface,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                color: Theme.of(context).colorScheme.outline.withOpacity(0.3),
-              ),
-            ),
-            child: SelectSearch<Localidad>(
-              label: 'Localidad',
-              items: _localidades,
-              value: _getInitialLocalidad(),
-              displayString: (localidad) => localidad.nombre,
-              onChanged: (localidad) {
-                widget.onLocalidadChanged(localidad?.id);
-              },
-              hintText: 'Buscar localidad...',
-              prefixIcon: const Icon(Icons.location_city),
-            ),
+          SelectSearch<Localidad>(
+            label: 'Localidad',
+            items: _localidades,
+            value: _getInitialLocalidad(),
+            displayString: (localidad) => localidad.nombre,
+            onChanged: (localidad) {
+              widget.onLocalidadChanged(localidad?.id);
+            },
+            hintText: 'Buscar localidad...',
+            prefixIcon: const Icon(Icons.location_city),
           ),
         const SizedBox(height: 16),
 
         // Campo de dirección
-        TextFormField(
+        /*TextFormField(
           controller: widget.direccionController,
           decoration: const InputDecoration(
             labelText: 'Dirección *',
@@ -170,7 +167,7 @@ class _DireccionFormWidgetState extends State<DireccionFormWidget> {
             }
             return null;
           },
-        ),
+        ),*/
         const SizedBox(height: 16),
 
         // Campo para observaciones del lugar

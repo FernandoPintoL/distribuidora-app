@@ -609,7 +609,7 @@ class FilterContainers {
                     borderRadius: BorderRadius.circular(8),
                   ),
                 ),
-                icon: Icon(Icons.clear_all, size: 22),
+                icon: Icon(Icons.clear_all, size: 22, color: Colors.white),
                 onPressed: onLimpiarFiltros,
                 tooltip: 'Limpiar filtros',
                 padding: EdgeInsets.zero,
@@ -744,10 +744,7 @@ class FilterContainers {
           decoration: BoxDecoration(
             color: isSelected ? chipColor : chipColor.withOpacity(0.1),
             borderRadius: BorderRadius.circular(20),
-            border: Border.all(
-              color: chipColor,
-              width: isSelected ? 2 : 1,
-            ),
+            border: Border.all(color: chipColor, width: isSelected ? 2 : 1),
             boxShadow: isSelected
                 ? [
                     BoxShadow(
@@ -764,17 +761,13 @@ class FilterContainers {
               Icon(
                 icon,
                 size: 16,
-                color: isSelected
-                    ? Colors.white
-                    : chipColor,
+                color: isSelected ? Colors.white : chipColor,
               ),
               const SizedBox(width: 6),
               Text(
                 label,
                 style: TextStyle(
-                  color: isSelected
-                      ? Colors.white
-                      : chipColor,
+                  color: isSelected ? Colors.white : chipColor,
                   fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
                 ),
               ),

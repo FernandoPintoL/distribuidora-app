@@ -9,6 +9,8 @@ import '../../providers/providers.dart';
 import '../../services/gps_service.dart';
 import '../../services/image_compression_service.dart';
 import '../../widgets/widgets.dart';
+import '../../utils/utils.dart';
+import '../clients/widgets/client_image_with_fallback.dart';
 
 class MarcarVisitaScreen extends StatefulWidget {
   final Client cliente;
@@ -163,10 +165,7 @@ class _MarcarVisitaScreenState extends State<MarcarVisitaScreen> {
     final visitaProvider = context.watch<VisitaProvider>();
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Registrar Visita'),
-        backgroundColor: colorScheme.primary,
-      ),
+      appBar: AppBar(title: const Text('Registrar Visita')),
       body: visitaProvider.isLoading
           ? const CustomLoadingWidget(
               mensaje: 'Registrando visita...',
@@ -230,12 +229,7 @@ class _MarcarVisitaScreenState extends State<MarcarVisitaScreen> {
                         ),
                         child: Text(
                           'Registrar Visita',
-                          style: TextStyle(
-                            fontSize: AppTextStyles.bodyLarge(
-                              context,
-                            ).fontSize!,
-                            color: Colors.white,
-                          ),
+                          style: TextStyle(color: Colors.white, fontSize: 14),
                         ),
                       ),
                     ),
@@ -257,69 +251,7 @@ class _MarcarVisitaScreenState extends State<MarcarVisitaScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 // Imagen del cliente
-                if (widget.cliente.fotoPerfil != null &&
-                    widget.cliente.fotoPerfil!.isNotEmpty)
-                  Container(
-                    width: 80,
-                    height: 80,
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(
-                        color: Theme.of(context).colorScheme.primary,
-                        width: 2,
-                      ),
-                    ),
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(6),
-                      child: Image.network(
-                        widget.cliente.fotoPerfil!,
-                        fit: BoxFit.cover,
-                        errorBuilder: (context, error, stackTrace) {
-                          return Container(
-                            color: Colors.grey[300],
-                            child: Icon(
-                              Icons.person,
-                              size: 40,
-                              color: Colors.grey[600],
-                            ),
-                          );
-                        },
-                        loadingBuilder: (context, child, loadingProgress) {
-                          if (loadingProgress == null) return child;
-                          return Container(
-                            color: Colors.grey[300],
-                            child: const Center(
-                              child: SizedBox(
-                                width: 30,
-                                height: 30,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                ),
-                              ),
-                            ),
-                          );
-                        },
-                      ),
-                    ),
-                  )
-                else
-                  Container(
-                    width: 80,
-                    height: 80,
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(8),
-                      color: Colors.grey[300],
-                      border: Border.all(
-                        color: Theme.of(context).colorScheme.primary,
-                        width: 2,
-                      ),
-                    ),
-                    child: Icon(
-                      Icons.person,
-                      size: 40,
-                      color: Colors.grey[600],
-                    ),
-                  ),
+                _buildClientProfileImage(),
                 const SizedBox(width: 16),
                 // Información del cliente
                 Expanded(
@@ -328,20 +260,12 @@ class _MarcarVisitaScreenState extends State<MarcarVisitaScreen> {
                     children: [
                       Text(
                         'Cliente',
-                        style: TextStyle(
-                          fontSize: AppTextStyles.bodySmall(context).fontSize!,
-                          color: Colors.grey[600],
-                        ),
+                        style: TextStyle(color: Colors.grey[600]),
                       ),
                       const SizedBox(height: 4),
                       Text(
                         widget.cliente.nombre,
-                        style: TextStyle(
-                          fontSize: AppTextStyles.headlineSmall(
-                            context,
-                          ).fontSize!,
-                          fontWeight: FontWeight.bold,
-                        ),
+                        style: TextStyle(fontWeight: FontWeight.bold),
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -349,12 +273,7 @@ class _MarcarVisitaScreenState extends State<MarcarVisitaScreen> {
                         const SizedBox(height: 4),
                         Text(
                           'Código: ${widget.cliente.codigoCliente}',
-                          style: TextStyle(
-                            fontSize: AppTextStyles.bodyMedium(
-                              context,
-                            ).fontSize!,
-                            color: Colors.grey[600],
-                          ),
+                          style: TextStyle(color: Colors.grey[600]),
                         ),
                       ],
                       if (widget.cliente.telefono != null &&
@@ -370,12 +289,7 @@ class _MarcarVisitaScreenState extends State<MarcarVisitaScreen> {
                             const SizedBox(width: 4),
                             Text(
                               widget.cliente.telefono!,
-                              style: TextStyle(
-                                fontSize: AppTextStyles.bodyMedium(
-                                  context,
-                                ).fontSize!,
-                                color: Colors.grey[600],
-                              ),
+                              style: TextStyle(color: Colors.grey[600]),
                             ),
                           ],
                         ),
@@ -418,13 +332,7 @@ class _MarcarVisitaScreenState extends State<MarcarVisitaScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          'Tipo de Visita *',
-          style: TextStyle(
-            fontSize: AppTextStyles.bodyLarge(context).fontSize!,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
+        Text('Tipo de Visita *', style: TextStyle(fontWeight: FontWeight.bold)),
         const SizedBox(height: 8),
         DropdownButtonFormField<TipoVisitaPreventista>(
           value: _tipoVisitaSeleccionado,
@@ -451,10 +359,7 @@ class _MarcarVisitaScreenState extends State<MarcarVisitaScreen> {
       children: [
         Text(
           'Estado de Visita *',
-          style: TextStyle(
-            fontSize: AppTextStyles.bodyLarge(context).fontSize!,
-            fontWeight: FontWeight.bold,
-          ),
+          style: TextStyle(fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 8),
         DropdownButtonFormField<EstadoVisitaPreventista>(
@@ -487,10 +392,7 @@ class _MarcarVisitaScreenState extends State<MarcarVisitaScreen> {
       children: [
         Text(
           'Motivo de No Atención *',
-          style: TextStyle(
-            fontSize: AppTextStyles.bodyLarge(context).fontSize!,
-            fontWeight: FontWeight.bold,
-          ),
+          style: TextStyle(fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 8),
         DropdownButtonFormField<MotivoNoAtencionVisita>(
@@ -567,10 +469,7 @@ class _MarcarVisitaScreenState extends State<MarcarVisitaScreen> {
       children: [
         Text(
           'Foto del Local (Opcional)',
-          style: TextStyle(
-            fontSize: AppTextStyles.bodyLarge(context).fontSize!,
-            fontWeight: FontWeight.bold,
-          ),
+          style: TextStyle(fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 8),
         if (_fotoLocal != null)
@@ -616,10 +515,7 @@ class _MarcarVisitaScreenState extends State<MarcarVisitaScreen> {
       children: [
         Text(
           'Observaciones (Opcional)',
-          style: TextStyle(
-            fontSize: AppTextStyles.bodyLarge(context).fontSize!,
-            fontWeight: FontWeight.bold,
-          ),
+          style: TextStyle(fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 8),
         TextFormField(
@@ -632,6 +528,70 @@ class _MarcarVisitaScreenState extends State<MarcarVisitaScreen> {
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildClientProfileImage() {
+    if (widget.cliente.fotoPerfil == null ||
+        widget.cliente.fotoPerfil!.isEmpty) {
+      return Container(
+        width: 80,
+        height: 80,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(8),
+          color: Colors.grey[300],
+          border: Border.all(
+            color: Theme.of(context).colorScheme.primary,
+            width: 2,
+          ),
+        ),
+        child: Icon(Icons.person, size: 40, color: Colors.grey[600]),
+      );
+    }
+
+    final imagePath = widget.cliente.fotoPerfil!;
+    final urls = ImageUtils.buildMultipleImageUrls(imagePath);
+
+    if (urls.isEmpty) {
+      return Container(
+        width: 80,
+        height: 80,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(8),
+          color: Colors.grey[300],
+          border: Border.all(
+            color: Theme.of(context).colorScheme.primary,
+            width: 2,
+          ),
+        ),
+        child: Icon(Icons.person, size: 40, color: Colors.grey[600]),
+      );
+    }
+
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(8),
+      child: ClientImageWithFallback(
+        urls: urls,
+        width: 80,
+        height: 80,
+        fit: BoxFit.cover,
+        fallbackWidget: Icon(Icons.person, size: 40, color: Colors.grey[600]),
+        loadingWidget: Container(
+          width: 80,
+          height: 80,
+          decoration: BoxDecoration(
+            color: Colors.grey[300],
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: const Center(
+            child: SizedBox(
+              width: 30,
+              height: 30,
+              child: CircularProgressIndicator(strokeWidth: 2),
+            ),
+          ),
+        ),
+      ),
     );
   }
 

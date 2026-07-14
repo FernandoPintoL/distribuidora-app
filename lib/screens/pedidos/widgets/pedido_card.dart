@@ -210,15 +210,24 @@ class PedidoCard extends StatelessWidget {
                               Text(
                                 'Bs. ${pedido.total.toStringAsFixed(2)}',
                                 style: TextStyle(
+                                  fontSize: 16,
                                   fontWeight: FontWeight.bold,
-                                  color: colorScheme.secondary,
+                                  color: pedido.estadoLogistico?.color != null
+                                      ? _parseHexColor(
+                                          pedido.estadoLogistico?.color,
+                                        )
+                                      : colorScheme.onSurface,
                                 ),
                               ),
                               Text(
                                 _formatearFecha(pedido.fechaCreacion),
                                 style: TextStyle(
-                                  color: colorScheme.tertiary,
-                                  fontSize: 10,
+                                  color: pedido.estadoLogistico?.color != null
+                                      ? _parseHexColor(
+                                          pedido.estadoLogistico?.color,
+                                        )
+                                      : colorScheme.onSurface,
+                                  fontSize: 12,
                                 ),
                               ),
                             ],
@@ -246,7 +255,13 @@ class PedidoCard extends StatelessWidget {
                                 padding: const EdgeInsets.only(bottom: 4),
                                 child: Text(
                                   '🚚 Entrega Solicitada: ${_formatearFecha(pedido.fechaEntregaSolicitada!)}',
-                                  style: TextStyle(color: colorScheme.tertiary),
+                                  style: TextStyle(
+                                    color: pedido.estadoLogistico?.color != null
+                                        ? _parseHexColor(
+                                            pedido.estadoLogistico?.color,
+                                          )
+                                        : colorScheme.onSurface,
+                                  ),
                                 ),
                               ),
                             ],
@@ -257,7 +272,11 @@ class PedidoCard extends StatelessWidget {
                                 child: Text(
                                   '📅 Vencimiento: ${_formatearFecha(pedido.fechaVencimiento!)}',
                                   style: TextStyle(
-                                    color: Colors.orange.shade200,
+                                    color: pedido.estadoLogistico?.color != null
+                                        ? _parseHexColor(
+                                            pedido.estadoLogistico?.color,
+                                          )
+                                        : colorScheme.onSurface,
                                   ),
                                 ),
                               ),

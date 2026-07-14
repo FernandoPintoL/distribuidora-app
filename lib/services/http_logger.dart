@@ -86,7 +86,7 @@ class HttpLogger {
       } else {
         bodyDisplay = response.data.toString();
       }
-      // debugPrint(bodyDisplay);
+      debugPrint(bodyDisplay);
     }
     debugPrint('═' * 80);
   }

@@ -258,7 +258,8 @@ class _LocationSelectorState extends State<LocationSelector> {
   /// Obtener color basado en el estado de ubicación
   Color _getStatusColor(ColorScheme colorScheme) {
     if (_isLoading) {
-      return colorScheme.tertiary; // Cargando: color terciario (naranja/warning)
+      return colorScheme
+          .tertiary; // Cargando: color terciario (naranja/warning)
     } else if (_latitude != null && _longitude != null) {
       return Colors.green; // Con coordenadas: verde (éxito)
     } else {
@@ -291,7 +292,7 @@ class _LocationSelectorState extends State<LocationSelector> {
               child: ElevatedButton.icon(
                 onPressed: _isLoading ? null : _getCurrentLocation,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: statusColor.withOpacity(0.2),
+                  backgroundColor: statusColor.withOpacity(0.12),
                   foregroundColor: statusColor,
                   side: BorderSide(color: statusColor, width: 1.5),
                 ),
@@ -301,7 +302,9 @@ class _LocationSelectorState extends State<LocationSelector> {
                         height: 20,
                         child: CircularProgressIndicator(
                           strokeWidth: 2,
-                          valueColor: AlwaysStoppedAnimation<Color>(statusColor),
+                          valueColor: AlwaysStoppedAnimation<Color>(
+                            statusColor,
+                          ),
                         ),
                       )
                     : Icon(_getStatusIcon()),
@@ -309,8 +312,9 @@ class _LocationSelectorState extends State<LocationSelector> {
                   _isLoading
                       ? 'Obteniendo ubicación...'
                       : (_latitude != null && _longitude != null
-                          ? 'Ubicación confirmada ✓'
-                          : 'Obtener ubicación actual'),
+                            ? 'Ubicación confirmada ✓'
+                            : 'Obtener ubicación actual'),
+                  style: TextStyle(fontWeight: FontWeight.bold),
                 ),
               ),
             ),
@@ -332,11 +336,7 @@ class _LocationSelectorState extends State<LocationSelector> {
             padding: const EdgeInsets.only(top: 8),
             child: Row(
               children: [
-                Icon(
-                  Icons.location_on,
-                  size: 16,
-                  color: statusColor,
-                ),
+                Icon(Icons.location_on, size: 16, color: statusColor),
                 const SizedBox(width: 6),
                 Expanded(
                   child: Text(

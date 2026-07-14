@@ -1,3 +1,4 @@
+import 'package:distribuidora/extensions/theme_extension.dart';
 import 'package:flutter/material.dart';
 import 'dart:async';
 import 'package:provider/provider.dart';
@@ -13,6 +14,8 @@ import 'client_form_screen.dart';
 import 'client_map_screen.dart';
 import '../login_screen.dart';
 import '../chofer/marcar_visita_screen.dart';
+import 'widgets/client_list_item.dart';
+import 'widgets/filter_chip_widget.dart';
 
 class ClientListScreen extends StatefulWidget {
   final VoidCallback?
@@ -148,7 +151,9 @@ class _ClientListScreenState extends State<ClientListScreen> {
     try {
       debugPrint('🌍 Cargando localidades...');
       await _clientProvider.loadLocalidades();
-      debugPrint('✅ Localidades cargadas: ${_clientProvider.localidades.length}');
+      debugPrint(
+        '✅ Localidades cargadas: ${_clientProvider.localidades.length}',
+      );
     } catch (e) {
       debugPrint('❌ Error al cargar localidades: $e');
     } finally {
@@ -163,17 +168,6 @@ class _ClientListScreenState extends State<ClientListScreen> {
   void _safeLoadClients() {
     if (mounted) {
       _loadClients();
-    }
-  }
-
-  Future<void> _logout() async {
-    final authProvider = context.read<AuthProvider>();
-    await authProvider.logout();
-    if (mounted) {
-      Navigator.of(context).pushAndRemoveUntil(
-        MaterialPageRoute(builder: (context) => const LoginScreen()),
-        (route) => false,
-      );
     }
   }
 
@@ -260,164 +254,98 @@ class _ClientListScreenState extends State<ClientListScreen> {
     final colorScheme = Theme.of(context).colorScheme;
 
     return Scaffold(
-      backgroundColor: colorScheme.surface,
-      // ✅ AppBar con botones de acción
-      appBar: AppBar(
-        title: Consumer<ClientProvider>(
-          builder: (context, clientProvider, _) {
-            final totalClientes = clientProvider.totalItems;
-            final clientesCargados = clientProvider.clients.length;
-            return Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Clientes',
-                  style: TextStyle(
-                    fontWeight: FontWeight.w700,
-                    fontSize: AppTextStyles.headlineMedium(context).fontSize!,
-                    color: colorScheme.onSurface,
-                  ),
-                ),
-                Text(
-                  'Mostrando $clientesCargados de $totalClientes',
-                  style: TextStyle(
-                    fontWeight: FontWeight.w400,
-                    fontSize: 12,
-                    color: colorScheme.onSurfaceVariant,
-                  ),
-                ),
-              ],
-            );
-          },
-        ),
-        backgroundColor: colorScheme.surface,
-        elevation: 0,
-        actions: [
-          // Botón de refrescar
-          IconButton(
-            icon: _isLoadingClients
-                ? SizedBox(
-                    width: 24,
-                    height: 24,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      valueColor: AlwaysStoppedAnimation<Color>(
-                        colorScheme.primary,
-                      ),
-                    ),
-                  )
-                : Icon(Icons.refresh, color: colorScheme.primary),
-            onPressed: _isLoadingClients ? null : _safeLoadClients,
-            tooltip: 'Actualizar',
-          ),
-          // ✅ Botón de nuevo cliente (en AppBar, no flotante)
-          Padding(
-            padding: const EdgeInsets.only(right: 8.0),
-            child: Center(
-              child: Container(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [
-                      colorScheme.primary,
-                      colorScheme.primary.withOpacity(0.8),
-                    ],
-                  ),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Material(
-                  color: Colors.transparent,
-                  child: InkWell(
-                    onTap: _isLoadingClients ? null : _navigateToCreateClient,
-                    borderRadius: BorderRadius.circular(12),
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 8,
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            Icons.add,
-                            color: colorScheme.onPrimary,
-                            size: 20,
-                          ),
-                          const SizedBox(width: 6),
-                          Text(
-                            'Nuevo',
-                            style: TextStyle(
-                              color: colorScheme.onPrimary,
-                              fontWeight: FontWeight.w600,
-                              fontSize: AppTextStyles.bodyMedium(
-                                context,
-                              ).fontSize!,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
       body: Container(
+        padding: EdgeInsets.symmetric(horizontal: 0, vertical: 8),
         color: colorScheme.surface,
         child: Column(
           children: [
             // Barra de búsqueda modernizada
-            Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Container(
-                decoration: BoxDecoration(
-                  color: colorScheme.surface,
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(
-                    color: colorScheme.outline.withOpacity(0.2),
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: colorScheme.shadow.withOpacity(0.08),
-                      blurRadius: 10,
-                      offset: const Offset(0, 4),
+            Row(
+              children: [
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8.0,
+                      vertical: 4.0,
                     ),
-                  ],
+                    child: TextField(
+                      controller: _searchController,
+                      decoration: InputDecoration(
+                        hintText: 'Buscar clientes...',
+                        hintStyle: TextStyle(
+                          color: colorScheme.onSurfaceVariant,
+                        ),
+                        /*prefixIcon: Icon(
+                            Icons.search,
+                            color: colorScheme.primary,
+                          ),*/
+                        suffixIcon: _searchQuery.isNotEmpty
+                            ? IconButton(
+                                icon: Icon(
+                                  Icons.clear,
+                                  color: colorScheme.onSurfaceVariant,
+                                ),
+                                onPressed: _isLoadingClients
+                                    ? null
+                                    : _clearSearch,
+                              )
+                            : null,
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
+                      ),
+                      style: TextStyle(color: colorScheme.onSurface),
+                      onChanged: _onSearchChanged,
+                      textInputAction: TextInputAction.search,
+                      onSubmitted: (_) => _performSearch(),
+                      enabled: !_isLoadingClients,
+                    ),
+                  ),
                 ),
-                child: TextField(
-                  controller: _searchController,
-                  decoration: InputDecoration(
-                    hintText: 'Buscar clientes...',
-                    hintStyle: TextStyle(color: colorScheme.onSurfaceVariant),
-                    prefixIcon: Icon(Icons.search, color: colorScheme.primary),
-                    suffixIcon: _searchQuery.isNotEmpty
-                        ? IconButton(
-                            icon: Icon(
-                              Icons.clear,
-                              color: colorScheme.onSurfaceVariant,
+                Container(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        colorScheme.secondary,
+                        colorScheme.secondary.withOpacity(0.8),
+                      ],
+                    ),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      onTap: _isLoadingClients ? null : _navigateToCreateClient,
+                      borderRadius: BorderRadius.circular(12),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 8,
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.add,
+                              color: colorScheme.onPrimary,
+                              size: 20,
                             ),
-                            onPressed: _isLoadingClients ? null : _clearSearch,
-                          )
-                        : null,
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(16),
-                      borderSide: BorderSide.none,
-                    ),
-                    filled: true,
-                    fillColor: colorScheme.surface,
-                    contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 20,
-                      vertical: 16,
+                            const SizedBox(width: 6),
+                            Text(
+                              'Nuevo',
+                              style: TextStyle(
+                                color: colorScheme.onPrimary,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
                     ),
                   ),
-                  style: TextStyle(color: colorScheme.onSurface),
-                  onChanged: _onSearchChanged,
-                  textInputAction: TextInputAction.search,
-                  onSubmitted: (_) => _performSearch(),
-                  enabled: !_isLoadingClients,
                 ),
-              ),
+              ],
             ),
 
             // Filtros modernizados
@@ -444,7 +372,7 @@ class _ClientListScreenState extends State<ClientListScreen> {
                       scrollDirection: Axis.horizontal,
                       child: Row(
                         children: [
-                          _buildModernFilterChip(
+                          ModernFilterChip(
                             label: 'Todos',
                             isSelected: _statusFilter == 'all',
                             onTap: () {
@@ -454,7 +382,7 @@ class _ClientListScreenState extends State<ClientListScreen> {
                             icon: Icons.people,
                           ),
                           const SizedBox(width: 8),
-                          _buildModernFilterChip(
+                          ModernFilterChip(
                             label: 'Activos',
                             isSelected: _statusFilter == 'active',
                             onTap: () {
@@ -465,7 +393,7 @@ class _ClientListScreenState extends State<ClientListScreen> {
                             color: Colors.green,
                           ),
                           const SizedBox(width: 8),
-                          _buildModernFilterChip(
+                          ModernFilterChip(
                             label: 'Inactivos',
                             isSelected: _statusFilter == 'inactive',
                             onTap: () {
@@ -479,42 +407,28 @@ class _ClientListScreenState extends State<ClientListScreen> {
                       ),
                     ),
                   ),
+                  IconButton(
+                    icon: _isLoadingClients
+                        ? SizedBox(
+                            width: 24,
+                            height: 24,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              valueColor: AlwaysStoppedAnimation<Color>(
+                                // colorScheme.secondary,
+                                Colors.white,
+                              ),
+                            ),
+                          )
+                        : Icon(Icons.refresh, color: colorScheme.secondary),
+                    onPressed: _isLoadingClients ? null : _safeLoadClients,
+                    tooltip: 'Actualizar',
+                    color: colorScheme.secondary,
+                  ),
                 ],
               ),
             ),
             const SizedBox(height: 12),
-
-            // ✅ NUEVO: Filtro por localidad
-            /* Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0),
-              child: Consumer<ClientProvider>(
-                builder: (context, clientProvider, _) {
-                  final localidades = clientProvider.localidades;
-                  return DropdownButton<int?>(
-                    value: _selectedLocalidadId,
-                    isExpanded: true,
-                    hint: const Text('Filtrar por localidad...'),
-                    items: [
-                      DropdownMenuItem<int?>(
-                        value: null,
-                        child: const Text('Todas las localidades'),
-                      ),
-                      ...localidades.map((localidad) {
-                        return DropdownMenuItem<int?>(
-                          value: localidad.id,
-                          child: Text(localidad.nombre),
-                        );
-                      }).toList(),
-                    ],
-                    onChanged: (value) {
-                      setState(() => _selectedLocalidadId = value);
-                      _safeLoadClients();
-                    },
-                  );
-                },
-              ),
-            ),
-            const SizedBox(height: 12), */
 
             // ✅ NUEVO: Mostrar resumen de filtros aplicados
             Padding(
@@ -524,18 +438,23 @@ class _ClientListScreenState extends State<ClientListScreen> {
                   final tieneSearchQuery = _searchQuery.isNotEmpty;
                   final tieneStatusFilter = _statusFilter != 'all';
                   final tieneLocalidadFilter = _selectedLocalidadId != null;
-                  final totalFiltros = (tieneSearchQuery ? 1 : 0) +
+                  final totalFiltros =
+                      (tieneSearchQuery ? 1 : 0) +
                       (tieneStatusFilter ? 1 : 0) +
                       (tieneLocalidadFilter ? 1 : 0);
 
                   final localidadNombre = _selectedLocalidadId != null
                       ? clientProvider.localidades
-                          .firstWhere(
-                            (l) => l.id == _selectedLocalidadId,
-                            orElse: () =>
-                                Localidad(id: -1, nombre: '', codigo: '', activo: true),
-                          )
-                          .nombre
+                            .firstWhere(
+                              (l) => l.id == _selectedLocalidadId,
+                              orElse: () => Localidad(
+                                id: -1,
+                                nombre: '',
+                                codigo: '',
+                                activo: true,
+                              ),
+                            )
+                            .nombre
                       : '';
 
                   return Column(
@@ -543,17 +462,19 @@ class _ClientListScreenState extends State<ClientListScreen> {
                     children: [
                       Row(
                         children: [
-                          Icon(Icons.filter_alt,
-                              size: 16, color: colorScheme.onSurfaceVariant),
+                          Icon(
+                            Icons.filter_alt,
+                            size: 16,
+                            color: colorScheme.onSurfaceVariant,
+                          ),
                           const SizedBox(width: 8),
                           Text(
                             totalFiltros == 0
                                 ? 'Sin filtros activos'
                                 : totalFiltros == 1
-                                    ? '1 filtro activo'
-                                    : '$totalFiltros filtros activos',
+                                ? '1 filtro activo'
+                                : '$totalFiltros filtros activos',
                             style: TextStyle(
-                              fontSize: 12,
                               color: colorScheme.onSurfaceVariant,
                               fontWeight: FontWeight.w500,
                             ),
@@ -562,8 +483,7 @@ class _ClientListScreenState extends State<ClientListScreen> {
                           Text(
                             '${clientProvider.clients.length} resultado${clientProvider.clients.length != 1 ? 's' : ''}',
                             style: TextStyle(
-                              fontSize: 12,
-                              color: colorScheme.primary,
+                              color: colorScheme.secondary,
                               fontWeight: FontWeight.w600,
                             ),
                           ),
@@ -576,8 +496,10 @@ class _ClientListScreenState extends State<ClientListScreen> {
                           children: [
                             if (tieneSearchQuery)
                               Chip(
-                                label: Text('Búsqueda: "$_searchQuery"',
-                                    style: const TextStyle(fontSize: 11)),
+                                label: Text(
+                                  'Búsqueda: "$_searchQuery"',
+                                  style: const TextStyle(fontSize: 11),
+                                ),
                                 onDeleted: () {
                                   _searchController.clear();
                                   setState(() => _searchQuery = '');
@@ -587,8 +509,9 @@ class _ClientListScreenState extends State<ClientListScreen> {
                             if (tieneStatusFilter)
                               Chip(
                                 label: Text(
-                                    'Estado: ${_statusFilter == 'active' ? 'Activos' : 'Inactivos'}',
-                                    style: const TextStyle(fontSize: 11)),
+                                  'Estado: ${_statusFilter == 'active' ? 'Activos' : 'Inactivos'}',
+                                  style: const TextStyle(fontSize: 11),
+                                ),
                                 onDeleted: () {
                                   setState(() => _statusFilter = 'all');
                                   _safeLoadClients();
@@ -596,8 +519,10 @@ class _ClientListScreenState extends State<ClientListScreen> {
                               ),
                             if (tieneLocalidadFilter)
                               Chip(
-                                label: Text('Localidad: $localidadNombre',
-                                    style: const TextStyle(fontSize: 11)),
+                                label: Text(
+                                  'Localidad: $localidadNombre',
+                                  style: const TextStyle(fontSize: 11),
+                                ),
                                 onDeleted: () {
                                   setState(() => _selectedLocalidadId = null);
                                   _safeLoadClients();
@@ -620,12 +545,11 @@ class _ClientListScreenState extends State<ClientListScreen> {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      const CircularProgressIndicator(),
-                      const SizedBox(height: 16),
-                      Text(
-                        'Cargando clientes...',
-                        style: Theme.of(context).textTheme.titleMedium,
+                      CircularProgressIndicator(
+                        color: context.colorScheme.secondary,
                       ),
+                      const SizedBox(height: 16),
+                      Text('Cargando clientes...'),
                     ],
                   ),
                 ),
@@ -683,12 +607,7 @@ class _ClientListScreenState extends State<ClientListScreen> {
                             const SizedBox(height: 16),
                             Text(
                               'No hay clientes',
-                              style: TextStyle(
-                                fontSize: AppTextStyles.headlineSmall(
-                                  context,
-                                ).fontSize!,
-                                color: Colors.grey,
-                              ),
+                              style: TextStyle(color: Colors.grey),
                             ),
                             const SizedBox(height: 16),
                             ElevatedButton(
@@ -736,9 +655,6 @@ class _ClientListScreenState extends State<ClientListScreen> {
                                     Text(
                                       'Página $currentPage de $totalPages',
                                       style: TextStyle(
-                                        fontSize: AppTextStyles.bodySmall(
-                                          context,
-                                        ).fontSize!,
                                         color: Colors.grey.shade600,
                                         fontWeight: FontWeight.w500,
                                       ),
@@ -747,9 +663,6 @@ class _ClientListScreenState extends State<ClientListScreen> {
                                     Text(
                                       '⬇️ Desliza para cargar más clientes',
                                       style: TextStyle(
-                                        fontSize: AppTextStyles.labelSmall(
-                                          context,
-                                        ).fontSize!,
                                         color: Colors.grey.shade500,
                                         fontStyle: FontStyle.italic,
                                       ),
@@ -775,7 +688,7 @@ class _ClientListScreenState extends State<ClientListScreen> {
                                         strokeWidth: 2.5,
                                         valueColor:
                                             AlwaysStoppedAnimation<Color>(
-                                              Colors.blue.shade600,
+                                              context.colorScheme.secondary,
                                             ),
                                       ),
                                     ),
@@ -783,10 +696,7 @@ class _ClientListScreenState extends State<ClientListScreen> {
                                     Text(
                                       'Cargando más clientes...',
                                       style: TextStyle(
-                                        fontSize: AppTextStyles.bodySmall(
-                                          context,
-                                        ).fontSize!,
-                                        color: Colors.grey.shade600,
+                                        color: context.colorScheme.onSurface,
                                       ),
                                     ),
                                   ],
@@ -824,76 +734,6 @@ class _ClientListScreenState extends State<ClientListScreen> {
         ),
       ),
       // ✅ FAB removido, botón "Nuevo Cliente" ahora está en AppBar
-    );
-  }
-
-  Widget _buildModernFilterChip({
-    required String label,
-    required bool isSelected,
-    required VoidCallback onTap,
-    required IconData icon,
-    Color? color,
-  }) {
-    final colorScheme = Theme.of(context).colorScheme;
-    final Color chipColor = color ?? colorScheme.primary;
-    final Color lightColor =
-        Color.lerp(chipColor, colorScheme.surface, 0.3) ?? chipColor;
-    final Color darkColor =
-        Color.lerp(chipColor, colorScheme.onSurface, 0.2) ?? chipColor;
-
-    return GestureDetector(
-      onTap: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        decoration: BoxDecoration(
-          gradient: isSelected
-              ? LinearGradient(colors: [lightColor, darkColor])
-              : null,
-          color: isSelected
-              ? null
-              : colorScheme.primaryContainer.withOpacity(0.3),
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-            color: isSelected
-                ? chipColor
-                : colorScheme.outline.withOpacity(0.3),
-            width: isSelected ? 2 : 1,
-          ),
-          boxShadow: isSelected
-              ? [
-                  BoxShadow(
-                    color: chipColor.withOpacity(0.3),
-                    blurRadius: 8,
-                    offset: const Offset(0, 3),
-                  ),
-                ]
-              : null,
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              icon,
-              size: 16,
-              color: isSelected
-                  ? colorScheme.onPrimary
-                  : colorScheme.onSurfaceVariant,
-            ),
-            const SizedBox(width: 6),
-            Text(
-              label,
-              style: TextStyle(
-                color: isSelected
-                    ? colorScheme.onPrimary
-                    : colorScheme.onSurface,
-                fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-                fontSize: AppTextStyles.bodyMedium(context).fontSize!,
-              ),
-            ),
-          ],
-        ),
-      ),
     );
   }
 
@@ -1062,566 +902,7 @@ class _ClientListScreenState extends State<ClientListScreen> {
       '🗺️ Navegando a ClientMapScreen para cliente: ${client.nombre}',
     );
     Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (context) => ClientMapScreen(client: client),
-      ),
-    );
-  }
-}
-
-class ClientListItem extends StatelessWidget {
-  final Client client;
-  final VoidCallback onTap;
-  final VoidCallback? onCall;
-  final VoidCallback? onWhatsApp;
-  final VoidCallback? onEdit;
-  final VoidCallback? onMarcarVisita;
-  final VoidCallback? onViewMap;
-
-  const ClientListItem({
-    super.key,
-    required this.client,
-    required this.onTap,
-    this.onCall,
-    this.onWhatsApp,
-    this.onEdit,
-    this.onMarcarVisita,
-    this.onViewMap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(16),
-        color: colorScheme.surface,
-        boxShadow: [
-          BoxShadow(
-            color: colorScheme.shadow.withOpacity(0.06),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          borderRadius: BorderRadius.circular(16),
-          onTap: onTap,
-          child: Padding(
-            padding: const EdgeInsets.all(12),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Avatar con gradiente
-                Container(
-                  width: 60,
-                  height: 60,
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [
-                        colorScheme.primary,
-                        colorScheme.primary.withOpacity(0.7),
-                      ],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
-                    borderRadius: BorderRadius.circular(12),
-                    boxShadow: [
-                      BoxShadow(
-                        color: colorScheme.primary.withOpacity(0.3),
-                        blurRadius: 8,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
-                  ),
-                  child: Padding(
-                    padding: const EdgeInsets.all(2),
-                    child: Container(
-                      decoration: BoxDecoration(
-                        color: colorScheme.surface,
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(10),
-                        child:
-                            client.fotoPerfil != null &&
-                                client.fotoPerfil!.isNotEmpty
-                            ? _buildProfileImage(context, client.fotoPerfil!)
-                            : Container(
-                                color: colorScheme.primaryContainer,
-                                child: Icon(
-                                  Icons.person,
-                                  color: colorScheme.onPrimaryContainer,
-                                  size: 32,
-                                ),
-                              ),
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 12),
-
-                // Información del cliente
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [_buildClientInfo(colorScheme)],
-                  ),
-                ),
-
-                // Acciones y estado
-                _buildActionsAndStatus(colorScheme),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildClientInfo(ColorScheme colorScheme) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // Nombre
-        Text(
-          client.nombre,
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-            fontSize: 16,
-            color: colorScheme.onSurface,
-          ),
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-        ),
-        const SizedBox(height: 4),
-
-        // Razón Social
-        if (client.razonSocial != null && client.razonSocial!.isNotEmpty)
-          Padding(
-            padding: const EdgeInsets.only(bottom: 4),
-            child: Text(
-              client.razonSocial!,
-              style: TextStyle(
-                fontSize: 12,
-                color: colorScheme.onSurfaceVariant,
-                fontStyle: FontStyle.italic,
-              ),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ),
-
-        // Teléfono y Email
-        Row(
-          children: [
-            if (client.telefono != null && client.telefono!.isNotEmpty) ...[
-              Icon(Icons.phone, size: 14, color: colorScheme.onSurfaceVariant),
-              const SizedBox(width: 4),
-              Expanded(
-                child: Text(
-                  client.telefono!,
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: colorScheme.onSurfaceVariant,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-              const SizedBox(width: 12),
-            ],
-          ],
-        ),
-
-        if (client.email != null && client.email!.isNotEmpty)
-          Padding(
-            padding: const EdgeInsets.only(top: 4),
-            child: Row(
-              children: [
-                Icon(
-                  Icons.email,
-                  size: 14,
-                  color: colorScheme.onSurfaceVariant,
-                ),
-                const SizedBox(width: 4),
-                Expanded(
-                  child: Text(
-                    client.email!,
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: colorScheme.onSurfaceVariant,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-              ],
-            ),
-          ),
-
-        // Localidad y Código
-        if (client.localidad != null ||
-            (client.codigoCliente != null && client.codigoCliente!.isNotEmpty))
-          Padding(
-            padding: const EdgeInsets.only(top: 4),
-            child: Row(
-              children: [
-                if (client.localidad != null) ...[
-                  Icon(
-                    Icons.location_on,
-                    size: 14,
-                    color: colorScheme.onSurfaceVariant,
-                  ),
-                  const SizedBox(width: 4),
-                  Expanded(
-                    child: Text(
-                      _getLocalidadName(client.localidad),
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: colorScheme.onSurfaceVariant,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                  if (client.codigoCliente != null &&
-                      client.codigoCliente!.isNotEmpty)
-                    const SizedBox(width: 8),
-                ],
-                if (client.codigoCliente != null &&
-                    client.codigoCliente!.isNotEmpty)
-                  Flexible(
-                    child: Text(
-                      'Cód: ${client.codigoCliente}',
-                      style: TextStyle(
-                        fontSize: 10,
-                        color: colorScheme.onSurfaceVariant,
-                        fontWeight: FontWeight.w500,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-              ],
-            ),
-          ),
-
-        // Categorías
-        if (client.categorias != null && client.categorias!.isNotEmpty)
-          Padding(
-            padding: const EdgeInsets.only(top: 6),
-            child: Wrap(
-              spacing: 4,
-              runSpacing: 4,
-              children: client.categorias!
-                  .take(2)
-                  .map(
-                    (c) => Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 3,
-                      ),
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: [
-                            colorScheme.primary,
-                            colorScheme.primary.withOpacity(0.8),
-                          ],
-                        ),
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: Text(
-                        c.nombre ?? c.clave ?? 'Cat',
-                        style: TextStyle(
-                          fontSize: 10,
-                          color: colorScheme.onPrimary,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
-                  )
-                  .toList(),
-            ),
-          ),
-      ],
-    );
-  }
-
-  Widget _buildActionsAndStatus(ColorScheme colorScheme) {
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.start,
-      crossAxisAlignment: CrossAxisAlignment.end,
-      children: [
-        // Estado
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: client.activo
-                  ? [colorScheme.primary, colorScheme.primary.withOpacity(0.8)]
-                  : [colorScheme.error, colorScheme.error.withOpacity(0.8)],
-            ),
-            borderRadius: BorderRadius.circular(12),
-            boxShadow: [
-              BoxShadow(
-                color: (client.activo ? colorScheme.primary : colorScheme.error)
-                    .withOpacity(0.3),
-                blurRadius: 6,
-                offset: const Offset(0, 2),
-              ),
-            ],
-          ),
-          child: Text(
-            client.activo ? 'Activo' : 'Inactivo',
-            style: TextStyle(
-              color: client.activo
-                  ? colorScheme.onPrimary
-                  : colorScheme.onError,
-              fontSize: 10,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-        ),
-
-        const SizedBox(height: 8),
-
-        // Menú de acciones
-        PopupMenuButton<String>(
-          icon: Icon(
-            Icons.more_vert,
-            color: colorScheme.onSurfaceVariant,
-            size: 20,
-          ),
-          offset: const Offset(-100, 0),
-          onSelected: (value) {
-            switch (value) {
-              case 'edit':
-                onEdit?.call();
-                break;
-              case 'map':
-                onViewMap?.call();
-                break;
-              case 'visita':
-                onMarcarVisita?.call();
-                break;
-              case 'call':
-                onCall?.call();
-                break;
-              case 'whatsapp':
-                onWhatsApp?.call();
-                break;
-            }
-          },
-          itemBuilder: (BuildContext context) => [
-            PopupMenuItem(
-              value: 'edit',
-              child: Row(
-                children: [
-                  Icon(Icons.edit, size: 18, color: colorScheme.tertiary),
-                  const SizedBox(width: 12),
-                  Text('Editar'),
-                ],
-              ),
-            ),
-            if (onViewMap != null)
-              PopupMenuItem(
-                value: 'map',
-                child: Row(
-                  children: [
-                    Icon(Icons.location_on, size: 18, color: Colors.green),
-                    const SizedBox(width: 12),
-                    Text('Ver Mapa'),
-                  ],
-                ),
-              ),
-            if (onMarcarVisita != null)
-              PopupMenuItem(
-                value: 'visita',
-                child: Row(
-                  children: [
-                    Icon(Icons.assignment_turned_in, size: 18, color: Colors.purple),
-                    const SizedBox(width: 12),
-                    Text('Marcar Visita'),
-                  ],
-                ),
-              ),
-            if (onCall != null && client.telefono != null && client.telefono!.isNotEmpty)
-              PopupMenuItem(
-                value: 'call',
-                child: Row(
-                  children: [
-                    Icon(Icons.call, size: 18, color: colorScheme.primary),
-                    const SizedBox(width: 12),
-                    Text('Llamar'),
-                  ],
-                ),
-              ),
-            if (onWhatsApp != null && client.telefono != null && client.telefono!.isNotEmpty)
-              PopupMenuItem(
-                value: 'whatsapp',
-                child: Row(
-                  children: [
-                    Icon(Icons.message, size: 18, color: Colors.green),
-                    const SizedBox(width: 12),
-                    Text('WhatsApp'),
-                  ],
-                ),
-              ),
-          ],
-        ),
-      ],
-    );
-  }
-
-  Widget _buildProfileImage(BuildContext context, String imagePath) {
-    // Validar que el imagePath no esté vacío
-    if (imagePath.isEmpty) {
-      debugPrint('⚠️ ImagePath está vacío, mostrando fallback');
-      return _buildFallbackIcon(context);
-    }
-
-    // Usar ImageUtils para construir URLs de manera robusta
-    final urls = ImageUtils.buildMultipleImageUrls(imagePath);
-
-    if (urls.isEmpty) {
-      debugPrint('⚠️ No se pudieron generar URLs para la imagen: $imagePath');
-      return _buildFallbackIcon(context);
-    }
-
-    debugPrint('🔍 Intentando cargar imagen de perfil desde URLs: $urls');
-
-    final colorScheme = Theme.of(context).colorScheme;
-    return _ImageWithFallback(
-      urls: urls,
-      width: 50,
-      height: 50,
-      fit: BoxFit.cover,
-      fallbackWidget: _buildFallbackIcon(context),
-      loadingWidget: Center(
-        child: SizedBox(
-          width: 20,
-          height: 20,
-          child: CircularProgressIndicator(
-            strokeWidth: 2,
-            valueColor: AlwaysStoppedAnimation<Color>(colorScheme.primary),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildFallbackIcon(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-    return Container(
-      width: 50,
-      height: 50,
-      decoration: BoxDecoration(
-        color: colorScheme.primaryContainer,
-        borderRadius: BorderRadius.circular(6),
-      ),
-      child: Icon(
-        Icons.person_outline,
-        color: colorScheme.onPrimaryContainer,
-        size: 28,
-      ),
-    );
-  }
-
-  String _getLocalidadName(dynamic localidad) {
-    if (localidad == null) return '';
-
-    if (localidad is String) {
-      return localidad;
-    }
-
-    if (localidad is Map<String, dynamic>) {
-      return localidad['nombre'] ?? localidad.toString();
-    }
-
-    // Si es un objeto Localidad
-    try {
-      return localidad.nombre ?? '';
-    } catch (e) {
-      return localidad.toString();
-    }
-  }
-}
-
-/// Widget auxiliar que intenta cargar una imagen desde múltiples URLs
-class _ImageWithFallback extends StatefulWidget {
-  final List<String> urls;
-  final double width;
-  final double height;
-  final BoxFit fit;
-  final Widget fallbackWidget;
-  final Widget loadingWidget;
-
-  const _ImageWithFallback({
-    required this.urls,
-    required this.width,
-    required this.height,
-    required this.fit,
-    required this.fallbackWidget,
-    required this.loadingWidget,
-  });
-
-  @override
-  State<_ImageWithFallback> createState() => _ImageWithFallbackState();
-}
-
-class _ImageWithFallbackState extends State<_ImageWithFallback> {
-  int _currentUrlIndex = 0;
-
-  @override
-  Widget build(BuildContext context) {
-    if (_currentUrlIndex >= widget.urls.length) {
-      // Todas las URLs fallaron, mostrar fallback
-      return widget.fallbackWidget;
-    }
-
-    return Image.network(
-      widget.urls[_currentUrlIndex],
-      width: widget.width,
-      height: widget.height,
-      fit: widget.fit,
-      loadingBuilder: (context, child, loadingProgress) {
-        if (loadingProgress == null) {
-          // Imagen cargada exitosamente
-          return child;
-        }
-        return widget.loadingWidget;
-      },
-      errorBuilder: (context, error, stackTrace) {
-        debugPrint(
-          '❌ Error al cargar imagen desde: ${widget.urls[_currentUrlIndex]}',
-        );
-        debugPrint('❌ Error details: $error');
-
-        // Diferir setState para evitar llamar durante build
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (mounted && _currentUrlIndex < widget.urls.length - 1) {
-            setState(() {
-              _currentUrlIndex++;
-            });
-            debugPrint('🔄 Intentando siguiente URL...');
-          } else {
-            debugPrint('⚠️ No hay más URLs disponibles, mostrando fallback');
-          }
-        });
-
-        // Si es la última URL, mostrar fallback inmediatamente
-        if (_currentUrlIndex >= widget.urls.length - 1) {
-          return widget.fallbackWidget;
-        }
-
-        // Retornar loading widget mientras se intenta la siguiente URL
-        return widget.loadingWidget;
-      },
+      MaterialPageRoute(builder: (context) => ClientMapScreen(client: client)),
     );
   }
 }

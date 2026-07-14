@@ -25,20 +25,20 @@ class PaginatedResponse<T> {
         // Formato estándar paginado
         paginatedData = PaginatedData.fromJson(json['data'], fromJson);
       } else if (json['data'] is List) {
-        // ✅ ACTUALIZADO: Buscar 'meta' para obtener el total real
+        // ✅ ACTUALIZADO: Buscar 'pagination' o 'meta' para obtener el total real
         final dataList = json['data'] as List;
 
-        // Buscar paginación en 'meta' si existe
-        Map<String, dynamic>? meta = json['meta'] is Map<String, dynamic>
-            ? json['meta'] as Map<String, dynamic>
-            : null;
+        // Buscar paginación en 'pagination' o 'meta' si existe
+        Map<String, dynamic>? paginationInfo =
+            (json['pagination'] is Map<String, dynamic> ? json['pagination'] : null) as Map<String, dynamic>? ??
+            (json['meta'] is Map<String, dynamic> ? json['meta'] : null) as Map<String, dynamic>?;
 
-        if (meta != null) {
-          debugPrint('📊 Detected list with meta: total=${meta['total']}');
+        if (paginationInfo != null) {
+          debugPrint('📊 Detected list with pagination: total=${paginationInfo['total']}');
         }
 
         paginatedData = PaginatedData(
-          currentPage: meta?['current_page'] ?? 1,
+          currentPage: paginationInfo?['current_page'] ?? 1,
           data: dataList.map((item) {
             if (item is Map<String, dynamic>) {
               return fromJson(item);
@@ -48,9 +48,9 @@ class PaginatedResponse<T> {
               throw Exception('Invalid item type: ${item.runtimeType}');
             }
           }).toList(),
-          perPage: meta?['per_page'] ?? dataList.length,
-          total: meta?['total'] ?? dataList.length,
-          lastPage: meta?['last_page'],
+          perPage: paginationInfo?['per_page'] ?? dataList.length,
+          total: paginationInfo?['total'] ?? dataList.length,
+          lastPage: paginationInfo?['last_page'],
         );
       }
     }
@@ -137,9 +137,14 @@ class PaginatedData<T> {
       );
     }
 
-    // ✅ ACTUALIZADO: Buscar paginación en 'meta' primero, luego en nivel superior
+    // ✅ ACTUALIZADO: Buscar paginación en 'pagination', 'meta' primero, luego en nivel superior
     Map<String, dynamic> paginationSource = {};
-    if (json.containsKey('meta') && json['meta'] is Map<String, dynamic>) {
+    if (json.containsKey('pagination') && json['pagination'] is Map<String, dynamic>) {
+      paginationSource = json['pagination'] as Map<String, dynamic>;
+      debugPrint(
+        '📊 Paginación encontrada en "pagination": total=${paginationSource['total']}, current_page=${paginationSource['current_page']}',
+      );
+    } else if (json.containsKey('meta') && json['meta'] is Map<String, dynamic>) {
       paginationSource = json['meta'] as Map<String, dynamic>;
       debugPrint(
         '📊 Paginación encontrada en "meta": total=${paginationSource['total']}, current_page=${paginationSource['current_page']}',

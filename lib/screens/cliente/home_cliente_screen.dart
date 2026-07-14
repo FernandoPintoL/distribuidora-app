@@ -115,7 +115,10 @@ class _DashboardTab extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Bienvenida
-            _buildWelcomeBanner(context, authProvider.user?.name ?? 'Cliente'),
+            _buildWelcomeBanner(
+              context,
+              authProvider.user?.name.toUpperCase() ?? 'Cliente',
+            ),
             const SizedBox(height: 24),
             // Acciones rápidas
             _buildQuickActions(context),
@@ -124,21 +127,10 @@ class _DashboardTab extends StatelessWidget {
             // ✅ NUEVO: Carrusel de Banners Publicitarios
             _buildBannersCarrusel(context),
             const SizedBox(height: 24),
-            // ✅ NUEVO: Botón de Mis Ventas
-            //_buildMisVentasButton(context),
-
-            // ✅ NUEVO: Widget de Crédito (si aplica)
-            // _buildCreditoResumenSection(context, authProvider),
 
             // Estadísticas de mis pedidos
             _buildProformasStats(context, pedidoProvider),
             const SizedBox(height: 24),
-            // ✅ NUEVO: Botón de Reportes Dañados
-            // _buildReportesButton(context),
-
-            const SizedBox(height: 24),
-            // Enlace a ver todos los pedidos
-            //_buildViewAllPedidosButton(context),
           ],
         ),
       ),
@@ -167,8 +159,8 @@ class _DashboardTab extends StatelessWidget {
             '¡Hola, $userName!',
             style: TextStyle(
               color: Colors.white,
-              fontSize: AppTextStyles.displaySmall(context).fontSize!,
               fontWeight: FontWeight.bold,
+              fontSize: 18,
             ),
           ),
           const SizedBox(height: 8),
@@ -196,10 +188,7 @@ class _DashboardTab extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          'Acciones Rápidas',
-          style: Theme.of(context).textTheme.headlineSmall,
-        ),
+        Text('Acciones Rápidas'),
         const SizedBox(height: 12),
         Row(
           children: [
@@ -238,154 +227,6 @@ class _DashboardTab extends StatelessWidget {
               ),
             ),*/
           ],
-        ),
-      ],
-    );
-  }
-
-  /// ✅ NUEVO: Widget para mostrar botón de Mis Ventas
-  Widget _buildMisVentasButton(BuildContext context) {
-    final ventasProvider = context.watch<VentasProvider>();
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text('Mis Compras', style: Theme.of(context).textTheme.headlineSmall),
-        const SizedBox(height: 12),
-        GestureDetector(
-          onTap: () {
-            Navigator.pushNamed(context, '/mis-ventas');
-          },
-          child: Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [Colors.green.shade600, Colors.green.shade800],
-              ),
-              borderRadius: BorderRadius.circular(12),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.green.withOpacity(0.3),
-                  blurRadius: 8,
-                  offset: const Offset(0, 2),
-                ),
-              ],
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Ver mis compras confirmadas',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: AppTextStyles.bodyLarge(context).fontSize!,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      'Pagos, logística y más',
-                      style: TextStyle(
-                        color: Colors.white.withOpacity(0.8),
-                        fontSize: AppTextStyles.bodySmall(context).fontSize!,
-                      ),
-                    ),
-                  ],
-                ),
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.2),
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(Icons.arrow_forward, color: Colors.white),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  /// ✅ NUEVO: Widget para mostrar botón de reportes dañados
-  Widget _buildReportesButton(BuildContext context) {
-    final reportesProvider = context.watch<ReporteProductoDanadoProvider>();
-    final pendientes = reportesProvider.reportes
-        .where((r) => r.estado == 'pendiente')
-        .length;
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text('Reportes de Productos', style: Theme.of(context).textTheme.headlineSmall),
-        const SizedBox(height: 12),
-        GestureDetector(
-          onTap: () {
-            Navigator.pushNamed(context, '/reportes-productos-danados');
-          },
-          child: Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [Colors.red.shade600, Colors.red.shade800],
-              ),
-              borderRadius: BorderRadius.circular(12),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.red.withOpacity(0.3),
-                  blurRadius: 8,
-                  offset: const Offset(0, 2),
-                ),
-              ],
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Reportes de defectos',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: AppTextStyles.bodyLarge(context).fontSize!,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    if (pendientes > 0)
-                      Text(
-                        '$pendientes pendiente${pendientes != 1 ? 's' : ''}',
-                        style: TextStyle(
-                          color: Colors.white.withOpacity(0.8),
-                          fontSize: AppTextStyles.bodySmall(context).fontSize!,
-                        ),
-                      )
-                    else
-                      Text(
-                        'Ver mis reportes',
-                        style: TextStyle(
-                          color: Colors.white.withOpacity(0.8),
-                          fontSize: AppTextStyles.bodySmall(context).fontSize!,
-                        ),
-                      ),
-                  ],
-                ),
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.2),
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(Icons.arrow_forward, color: Colors.white),
-                ),
-              ],
-            ),
-          ),
         ),
       ],
     );
@@ -450,10 +291,7 @@ class _DashboardTab extends StatelessWidget {
     }
 
     // Mostrar carrusel
-    return BannersCarrusel(
-      banners: bannerProvider.banners,
-      height: 180,
-    );
+    return BannersCarrusel(banners: bannerProvider.banners, height: 180);
   }
 
   /// ✅ NUEVO: Widget para mostrar resumen de crédito
@@ -483,7 +321,7 @@ class _DashboardTab extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Mi Crédito', style: Theme.of(context).textTheme.headlineSmall),
+        Text('Mi Crédito'),
         const SizedBox(height: 12),
         Container(
           decoration: BoxDecoration(
@@ -523,22 +361,12 @@ class _DashboardTab extends StatelessWidget {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text(
-                                'Ver detalles de mi crédito',
-                                style: Theme.of(context).textTheme.bodyLarge
-                                    ?.copyWith(
-                                      color: Colors.white,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                              ),
+                              Text('Ver detalles de mi crédito'),
                               const SizedBox(height: 4),
                               Text(
                                 'Saldo, pagos y cuentas vencidas',
                                 style: TextStyle(
                                   color: Colors.white.withOpacity(0.8),
-                                  fontSize: AppTextStyles.bodySmall(
-                                    context,
-                                  ).fontSize!,
                                 ),
                               ),
                             ],
@@ -563,22 +391,12 @@ class _DashboardTab extends StatelessWidget {
                       children: [
                         Text(
                           'Límite: Bs. ${(clienteActual.limiteCredito ?? 0).toStringAsFixed(2)}',
-                          style: TextStyle(
-                            color: Colors.white70,
-                            fontSize: AppTextStyles.bodySmall(
-                              context,
-                            ).fontSize!,
-                          ),
+                          style: TextStyle(color: Colors.white70),
                         ),
                         if (clienteActual.creditoUtilizado != null)
                           Text(
                             'Utilizado: Bs. ${clienteActual.creditoUtilizado!.toStringAsFixed(2)}',
-                            style: TextStyle(
-                              color: Colors.white70,
-                              fontSize: AppTextStyles.bodySmall(
-                                context,
-                              ).fontSize!,
-                            ),
+                            style: TextStyle(color: Colors.white70),
                           ),
                       ],
                     ),
@@ -671,7 +489,7 @@ class _DashboardTab extends StatelessWidget {
                 ],
               ),
               const SizedBox(height: 12),
-              
+
               // Alerta si hay vencidas o por vencer
               if (stats.alertas.tieneAlertas) ...[
                 const SizedBox(height: 16),
@@ -712,28 +530,6 @@ class _DashboardTab extends StatelessWidget {
             ],
           ),
       ],
-    );
-  }
-
-  Widget _buildViewAllPedidosButton(BuildContext context) {
-    // Obtener acceso al estado del BaseHomeScreen para navegar entre tabs
-    final homeState = context
-        .findAncestorStateOfType<_HomeClienteScreenState>();
-
-    return SizedBox(
-      width: double.infinity,
-      child: ElevatedButton.icon(
-        onPressed: () {
-          // Navegar al tab de Mis Pedidos (índice 2)
-          homeState?.navigateToIndex(2);
-        },
-        icon: const Icon(Icons.receipt_long),
-        label: const Text('Ver Todos Mis Pedidos'),
-        style: ElevatedButton.styleFrom(
-          backgroundColor: Colors.teal,
-          padding: const EdgeInsets.symmetric(vertical: 16),
-        ),
-      ),
     );
   }
 }
@@ -790,9 +586,6 @@ class _QuickActionCard extends StatelessWidget {
                             badgeCount! > 9 ? '9+' : '$badgeCount',
                             style: TextStyle(
                               color: Colors.white,
-                              fontSize: AppTextStyles.labelSmall(
-                                context,
-                              ).fontSize!,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
@@ -805,10 +598,7 @@ class _QuickActionCard extends StatelessWidget {
               Text(
                 title,
                 textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: AppTextStyles.bodySmall(context).fontSize!,
-                  fontWeight: FontWeight.w500,
-                ),
+                style: TextStyle(fontWeight: FontWeight.w500),
               ),
             ],
           ),
@@ -842,15 +632,20 @@ class _StatCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Icon(icon, color: color, size: 20),
                 const SizedBox(width: 8),
-                Text(
-                  label,
-                  style: TextStyle(
-                    fontSize: AppTextStyles.bodySmall(context).fontSize!,
-                    color: Colors.grey,
-                    fontWeight: FontWeight.w500,
+                Expanded(
+                  child: Text(
+                    label,
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: Colors.grey,
+                      fontWeight: FontWeight.w500,
+                      overflow: TextOverflow.ellipsis,
+                    ),
                   ),
                 ),
               ],
@@ -859,9 +654,9 @@ class _StatCard extends StatelessWidget {
             Text(
               value,
               style: TextStyle(
-                fontSize: AppTextStyles.displaySmall(context).fontSize!,
                 fontWeight: FontWeight.bold,
                 color: color,
+                fontSize: 18,
               ),
             ),
           ],
