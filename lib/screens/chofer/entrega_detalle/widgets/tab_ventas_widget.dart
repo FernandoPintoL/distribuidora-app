@@ -187,25 +187,25 @@ class _TabVentasWidgetState extends State<TabVentasWidget> {
                 _buildResumenItemCompacto(
                   label: 'Efectivo',
                   valor:
-                      '\$${(resumen['efectivo_registrado'] as num?)?.toStringAsFixed(2) ?? '0.00'}',
+                      '\ Bs ${(resumen['efectivo_registrado'] as num?)?.toStringAsFixed(2) ?? '0.00'}',
                   color: Colors.green,
                 ),
                 _buildResumenItemCompacto(
                   label: 'QR',
                   valor:
-                      '\$${(resumen['qr_registrado'] as num?)?.toStringAsFixed(2) ?? '0.00'}',
+                      '\ Bs ${(resumen['qr_registrado'] as num?)?.toStringAsFixed(2) ?? '0.00'}',
                   color: Colors.blue,
                 ),
                 _buildResumenItemCompacto(
                   label: 'Pendiente',
                   valor:
-                      '\$${(resumen['total_pendiente'] as num?)?.toStringAsFixed(2) ?? '0.00'}',
+                      '\ Bs ${(resumen['total_pendiente'] as num?)?.toStringAsFixed(2) ?? '0.00'}',
                   color: Colors.orange,
                 ),
                 _buildResumenItemCompacto(
                   label: 'Rechazadas',
                   valor:
-                      '\$${(resumen['total_rechazado'] as num?)?.toStringAsFixed(2) ?? '0.00'}',
+                      '\Bs ${(resumen['total_rechazado'] as num?)?.toStringAsFixed(2) ?? '0.00'}',
                   color: Colors.red,
                 ),
               ],

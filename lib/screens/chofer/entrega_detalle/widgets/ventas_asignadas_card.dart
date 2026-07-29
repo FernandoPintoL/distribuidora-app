@@ -48,14 +48,14 @@ class _VentasAsignadasCardState extends State<VentasAsignadasCard> {
     final entrega = widget.entrega;
 
     // ✅ DEBUG 2026-06-14: Verificar si se están parseando las direcciones
-    for (var venta in entrega.ventas) {
+    /* for (var venta in entrega.ventas) {
       final tieneDir = venta.direccionCliente != null;
       final tieneLat = venta.direccionCliente?.latitud != null;
       final tieneLng = venta.direccionCliente?.longitud != null;
       debugPrint(
         '🗺️ [VENTAS_CARD] Venta ${venta.numero} | DireccionCliente: $tieneDir | Lat: $tieneLat | Lng: $tieneLng | Lat=${venta.direccionCliente?.latitud}, Lng=${venta.direccionCliente?.longitud}',
       );
-    }
+    } */
 
     final esPreparacion = entrega.estado == 'PREPARACION_CARGA';
     final esEnCarga = entrega.estado == 'EN_CARGA';
@@ -516,8 +516,8 @@ class _VentasAsignadasCardState extends State<VentasAsignadasCard> {
                                     ],
                                   ),
                                 ),
-                              // ✅ NUEVO: Badge Tipo de Entrega
-                              if (tipoEntrega != null)
+
+                              /* if (tipoEntrega != null)
                                 Container(
                                   padding: const EdgeInsets.symmetric(
                                     horizontal: 10,
@@ -554,7 +554,7 @@ class _VentasAsignadasCardState extends State<VentasAsignadasCard> {
                                   ),
                                 ),
 
-                              // ✅ NUEVO: Badge Tipo de Confirmación
+                              
                               if (tipoConfirmacion != null)
                                 Container(
                                   padding: const EdgeInsets.symmetric(
@@ -595,6 +595,7 @@ class _VentasAsignadasCardState extends State<VentasAsignadasCard> {
                                     ],
                                   ),
                                 ),
+                               */
                             ],
                           ),
                           // ✅ NUEVO: Mini Resumen de Pago (solo si hay desglose)
