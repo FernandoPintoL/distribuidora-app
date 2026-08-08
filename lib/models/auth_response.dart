@@ -116,7 +116,7 @@ class ClienteBasico {
   final String? localidad;
   final bool activo;
   final double? limiteCredito;
-  final bool puedeAtenerCredito;
+  final bool puedeTenerCredito;
 
   ClienteBasico({
     required this.id,
@@ -127,7 +127,7 @@ class ClienteBasico {
     this.localidad,
     required this.activo,
     this.limiteCredito,
-    this.puedeAtenerCredito = false,
+    this.puedeTenerCredito = false,
   });
 
   factory ClienteBasico.fromJson(Map<String, dynamic> json) {
@@ -143,7 +143,7 @@ class ClienteBasico {
           ? double.tryParse(json['limite_credito'].toString())
           : null,
       // ✅ Aceptar ambas variantes: puede_tener_credito y puede_atener_credito
-      puedeAtenerCredito:
+      puedeTenerCredito:
           json['puede_tener_credito'] ?? json['puede_atener_credito'] ?? false,
     );
   }
@@ -158,7 +158,7 @@ class ClienteBasico {
       'localidad': localidad,
       'activo': activo,
       'limite_credito': limiteCredito,
-      'puede_tener_credito': puedeAtenerCredito,
+      'puede_tener_credito': puedeTenerCredito,
     };
   }
 }

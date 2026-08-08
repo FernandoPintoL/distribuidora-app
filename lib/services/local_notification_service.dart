@@ -119,6 +119,17 @@ class LocalNotificationService {
           enableLights: true,
         );
 
+    // ✅ FASE 3: Canal para notificaciones recurrentes
+    const AndroidNotificationChannel notificacionesRecurrentesChannel =
+        AndroidNotificationChannel(
+          'notificaciones_recurrentes',
+          'Notificaciones Recurrentes',
+          description: 'Anuncios, promociones y ofertas',
+          importance: Importance.defaultImportance,
+          enableVibration: false,
+          enableLights: false,
+        );
+
     await _notificationsPlugin
         .resolvePlatformSpecificImplementation<
           AndroidFlutterLocalNotificationsPlugin
@@ -154,6 +165,12 @@ class LocalNotificationService {
           AndroidFlutterLocalNotificationsPlugin
         >()
         ?.createNotificationChannel(creditosChannel);
+
+    await _notificationsPlugin
+        .resolvePlatformSpecificImplementation<
+          AndroidFlutterLocalNotificationsPlugin
+        >()
+        ?.createNotificationChannel(notificacionesRecurrentesChannel);
   }
 
   /// Solicitar permisos en iOS y Android 13+
@@ -201,13 +218,13 @@ class LocalNotificationService {
   /// Mostrar notificación de nueva entrega
   Future<void> showNewDeliveryNotification({
     required int deliveryId,
-    required String clientName,
-    required String address,
+    String? clientName,
+    String? address,
   }) async {
     await _showNotification(
       id: deliveryId,
       title: '🚚 Nueva Entrega Asignada',
-      body: 'Entrega #$deliveryId para $clientName',
+      body: 'Entrega #$deliveryId',
       channelId: 'entregas_nuevas',
       payload: 'delivery_$deliveryId',
     );
@@ -392,6 +409,8 @@ class LocalNotificationService {
         return 'Entregas Consolidadas';
       case 'creditos': // ✅ NUEVA FASE 3
         return 'Notificaciones de Crédito';
+      case 'notificaciones_recurrentes': // ✅ FASE 3
+        return 'Notificaciones Recurrentes';
       default:
         return 'Notificaciones';
     }
@@ -412,6 +431,8 @@ class LocalNotificationService {
         return 'Notificaciones de entregas creadas, ventas asignadas y reportes de carga';
       case 'creditos': // ✅ NUEVA FASE 3
         return 'Notificaciones de créditos vencidos, críticos y pagos';
+      case 'notificaciones_recurrentes': // ✅ FASE 3
+        return 'Anuncios, promociones y ofertas';
       default:
         return 'Notificaciones de la aplicación';
     }
@@ -644,14 +665,17 @@ class LocalNotificationService {
   Future<void> showVentaEntregadaNotification({
     required String ventaNumero,
     String? clienteNombre,
+    String? tipoConfirmacion,
   }) async {
+    final tituloIcon = _generarTituloIconoConfirmacion(tipoConfirmacion);
+    final titulo = tituloIcon['titulo'] as String;
     final mensaje = clienteNombre != null
-        ? 'Tu venta $ventaNumero ha sido entregada - $clienteNombre'
-        : 'Venta $ventaNumero entregada';
+        ? 'Tu venta $ventaNumero - $clienteNombre'
+        : 'Venta $ventaNumero';
 
     await _showNotification(
       id: ventaNumero.hashCode,
-      title: '✅ Venta Entregada',
+      title: titulo,
       body: mensaje,
       channelId: 'cambio_estados',
       payload: 'venta_$ventaNumero',
@@ -894,6 +918,24 @@ class LocalNotificationService {
     );
   }
 
+  // ✅ FASE 3: Notificaciones Recurrentes
+
+  /// Mostrar notificación recurrente (broadcasts globales desde Scheduler)
+  Future<void> showRecurringNotification({
+    required int notificacionId,
+    required String titulo,
+    required String descripcion,
+    required String tipo,
+  }) async {
+    await _showNotification(
+      id: notificacionId,
+      title: titulo,
+      body: descripcion,
+      channelId: 'notificaciones_recurrentes',
+      payload: 'notificacion_recurrente_$notificacionId',
+    );
+  }
+
   /// Cancelar notificación
   Future<void> cancelNotification(int id) async {
     try {
@@ -959,5 +1001,57 @@ class LocalNotificationService {
     debugPrint('✅ Permisos iOS: Alert, Badge, Sound');
     debugPrint('✅ Permisos Android: POST_NOTIFICATIONS, VIBRATE');
     debugPrint('═══════════════════════════════════════\n');
+  }
+
+  // Generar título e icono basado en tipo_confirmacion
+  Map<String, String> _generarTituloIconoConfirmacion(String? tipoConfirmacion) {
+    return {
+      'COMPLETA': {'titulo': '✅ Venta Entregada', 'icono': '✅'},
+      'RECHAZADO': {'titulo': '❌ Venta Rechazada', 'icono': '❌'},
+      'DEVOLUCION_PARCIAL': {'titulo': '⚠️ Devolución Parcial', 'icono': '⚠️'},
+      'CLIENTE_CERRADO': {'titulo': '🏪 Local Cerrado', 'icono': '🏪'},
+      'NO_CONTACTADO': {'titulo': '📞 No Contactado', 'icono': '📞'},
+    }[tipoConfirmacion ?? 'COMPLETA'] ?? {'titulo': 'ℹ️ Actualización de Entrega', 'icono': 'ℹ️'};
+  }
+
+  /// ✅ NUEVO: Mostrar notificación cuando entrega está lista para entrega
+  Future<void> showEntregaListoNotification({
+    required int entregaId,
+    required String entregaNumero,
+    String? choferNombre,
+    String? vehiculoPlaca,
+    required int ventasCount,
+  }) async {
+    final chofer = choferNombre ?? 'Chofer asignado';
+    final vehiculo = vehiculoPlaca ?? 'Vehículo';
+    final body = '📤 $entregaNumero con $ventasCount ventas. Chofer: $chofer | Vehículo: $vehiculo';
+
+    await _showNotification(
+      id: entregaId,
+      title: '📤 Entrega Lista para Salida',
+      body: body,
+      channelId: 'entregas_nuevas',
+      payload: 'delivery_$entregaId',
+    );
+  }
+
+  /// ✅ NUEVO: Mostrar notificación al cliente que su venta está lista
+  Future<void> showClienteEntregaListoNotification({
+    required String ventaNumero,
+    required String entregaNumero,
+    String? vehiculoPlaca,
+    String? choferNombre,
+  }) async {
+    final vehiculo = vehiculoPlaca ?? 'Vehículo';
+    final chofer = choferNombre ?? 'Chofer';
+    final body = '📤 Tu pedido #$ventaNumero está en $vehiculo. Chofer: $chofer';
+
+    await _showNotification(
+      id: ventaNumero.hashCode,
+      title: '📤 Tu Pedido Salió a Entrega',
+      body: body,
+      channelId: 'cambio_estados',
+      payload: 'venta_$ventaNumero',
+    );
   }
 }

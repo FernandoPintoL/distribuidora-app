@@ -395,18 +395,18 @@ class ClientListItem extends StatelessWidget {
 
   Widget _buildProfileImage(BuildContext context, String imagePath) {
     if (imagePath.isEmpty) {
-      debugPrint('⚠️ ImagePath está vacío, mostrando fallback');
+      // debugPrint('⚠️ ImagePath está vacío, mostrando fallback');
       return _buildFallbackIcon(context);
     }
 
     final urls = ImageUtils.buildMultipleImageUrls(imagePath);
 
     if (urls.isEmpty) {
-      debugPrint('⚠️ No se pudieron generar URLs para la imagen: $imagePath');
+      // debugPrint('⚠️ No se pudieron generar URLs para la imagen: $imagePath');
       return _buildFallbackIcon(context);
     }
 
-    debugPrint('🔍 Intentando cargar imagen de perfil desde URLs: $urls');
+    // debugPrint('🔍 Intentando cargar imagen de perfil desde URLs: $urls');
 
     final colorScheme = Theme.of(context).colorScheme;
     return ImageWithFallback(

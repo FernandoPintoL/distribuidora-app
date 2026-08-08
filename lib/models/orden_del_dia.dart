@@ -62,7 +62,7 @@ class ClienteOrdenDelDia {
   final String? tipoVisitaRealizada;
   final String? estadoVisita;
   final double? limiteCredito;
-  final bool puedeAtenerCredito;
+  final bool puedeTenerCredito;
   final Localidad? localidad;
 
   ClienteOrdenDelDia({
@@ -79,7 +79,7 @@ class ClienteOrdenDelDia {
     this.tipoVisitaRealizada,
     this.estadoVisita,
     this.limiteCredito,
-    required this.puedeAtenerCredito,
+    required this.puedeTenerCredito,
     this.localidad,
   });
 
@@ -102,7 +102,7 @@ class ClienteOrdenDelDia {
       limiteCredito: json['limite_credito'] != null
           ? double.tryParse(json['limite_credito'].toString())
           : null,
-      puedeAtenerCredito: json['puede_tener_credito'] ?? false,
+      puedeTenerCredito: json['puede_tener_credito'] ?? false,
       localidad: json['localidad'] != null
           ? Localidad.fromJson(json['localidad'])
           : null,

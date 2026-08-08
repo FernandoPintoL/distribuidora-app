@@ -292,7 +292,7 @@ class _LocationSelectorState extends State<LocationSelector> {
               child: ElevatedButton.icon(
                 onPressed: _isLoading ? null : _getCurrentLocation,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: statusColor.withOpacity(0.12),
+                  backgroundColor: statusColor,
                   foregroundColor: statusColor,
                   side: BorderSide(color: statusColor, width: 1.5),
                 ),
@@ -307,14 +307,17 @@ class _LocationSelectorState extends State<LocationSelector> {
                           ),
                         ),
                       )
-                    : Icon(_getStatusIcon()),
+                    : Icon(_getStatusIcon(), color: Colors.white),
                 label: Text(
                   _isLoading
                       ? 'Obteniendo ubicación...'
                       : (_latitude != null && _longitude != null
                             ? 'Ubicación confirmada ✓'
                             : 'Obtener ubicación actual'),
-                  style: TextStyle(fontWeight: FontWeight.bold),
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
                 ),
               ),
             ),

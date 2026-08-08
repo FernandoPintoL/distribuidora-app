@@ -3,6 +3,7 @@ import 'package:flutter/widgets.dart';
 import 'localidad.dart';
 import 'ventana_entrega_cliente.dart';
 import 'categoria_cliente.dart';
+import 'user.dart'; // ✅ NUEVO: Importar modelo User
 
 class Client {
   final int id;
@@ -21,7 +22,7 @@ class Client {
   final double? cuentasPorCobrarPorAprobar;
   final double? creditoTotalComprometido;
   final double? creditoDisponible;
-  final bool puedeAtenerCredito;
+  final bool puedeTenerCredito;
   final int? localidadId;
   final double? latitud;
   final double? longitud;
@@ -36,6 +37,7 @@ class Client {
   final dynamic localidad;
   final List<VentanaEntregaCliente>? ventanasEntrega;
   final List<CategoriaCliente>? categorias;
+  final User? user; // ✅ NUEVO: Usuario del cliente (contiene usernick)
 
   Client({
     required this.id,
@@ -55,7 +57,7 @@ class Client {
     this.cuentasPorCobrarPorAprobar,
     this.creditoTotalComprometido,
     this.creditoDisponible,
-    this.puedeAtenerCredito = false,
+    this.puedeTenerCredito = false,
     this.localidadId,
     this.latitud,
     this.longitud,
@@ -70,6 +72,7 @@ class Client {
     this.localidad,
     this.ventanasEntrega,
     this.categorias,
+    this.user, // ✅ NUEVO: Usuario del cliente
   });
 
   factory Client.fromJson(Map<String, dynamic> json) {
@@ -114,7 +117,7 @@ class Client {
           ? double.tryParse(json['credito_disponible'].toString())
           : null,
       // ✅ Aceptar ambas variantes: puede_tener_credito y puede_atener_credito
-      puedeAtenerCredito:
+      puedeTenerCredito:
           json['puede_tener_credito'] ?? json['puede_atener_credito'] ?? false,
       localidadId: json['localidad_id'] != null
           ? (json['localidad_id'] is int
@@ -156,6 +159,9 @@ class Client {
                 .map((c) => CategoriaCliente.fromJson(c))
                 .toList()
           : null,
+      user: json['user'] is Map<String, dynamic> // ✅ NUEVO: Parsear usuario
+          ? User.fromJson(json['user'])
+          : null,
     );
   }
 
@@ -178,7 +184,7 @@ class Client {
       'cuentas_por_cobrar_por_aprobar': cuentasPorCobrarPorAprobar,
       'credito_total_comprometido': creditoTotalComprometido,
       'credito_disponible': creditoDisponible,
-      'puede_tener_credito': puedeAtenerCredito,
+      'puede_tener_credito': puedeTenerCredito,
       'localidad_id': localidadId,
       'latitud': latitud,
       'longitud': longitud,
@@ -193,6 +199,7 @@ class Client {
       'localidad': localidad,
       'ventanas_entrega': ventanasEntrega?.map((v) => v.toJson()).toList(),
       'categorias': categorias?.map((c) => c.toJson()).toList(),
+      'user': user, // ✅ NUEVO: Usuario del cliente
     };
   }
 }

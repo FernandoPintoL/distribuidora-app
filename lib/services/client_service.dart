@@ -173,7 +173,7 @@ class ClientService {
     String? email,
     String? telefono,
     double? limiteCredito,
-    bool puedeAtenerCredito = false,
+    bool puedeTenerCredito = false,
     int? localidadId,
     double? latitud,
     double? longitud,
@@ -196,7 +196,7 @@ class ClientService {
         'email': email,
         'telefono': telefono,
         'limite_credito': limiteCredito,
-        'puede_atener_credito': puedeAtenerCredito,
+        'puede_tener_credito': puedeTenerCredito,
         'localidad_id': localidadId,
         // Solo enviar coordenadas en nivel principal si NO hay direcciones con coordenadas
         'latitud':
@@ -486,7 +486,7 @@ class ClientService {
     String? email,
     String? telefono,
     double? limiteCredito,
-    bool? puedeAtenerCredito,
+    bool? puedeTenerCredito,
     int? localidadId,
     double? latitud,
     double? longitud,
@@ -537,7 +537,7 @@ class ClientService {
       if (email != null) data['email'] = email;
       if (telefono != null) data['telefono'] = telefono;
       if (limiteCredito != null) data['limite_credito'] = limiteCredito;
-      if (puedeAtenerCredito != null) data['puede_atener_credito'] = puedeAtenerCredito;
+      if (puedeTenerCredito != null) data['puede_tener_credito'] = puedeTenerCredito;
       if (localidadId != null) data['localidad_id'] = localidadId;
 
       // Solo enviar coordenadas en nivel principal si NO hay direcciones con coordenadas

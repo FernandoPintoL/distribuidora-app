@@ -36,6 +36,7 @@ class _RealtimeNotificationsListenerState
   StreamSubscription? _cargoSubscription; // ✅ NUEVO para reportes de carga
   StreamSubscription? _ventaSubscription; // ✅ NUEVO para eventos de ventas
   StreamSubscription? _creditoSubscription; // ✅ NUEVA FASE 3 para créditos
+  StreamSubscription? _notificacionRecurrenteSubscription; // ✅ NUEVA FASE 3 para notificaciones recurrentes
 
   @override
   void initState() {
@@ -54,6 +55,7 @@ class _RealtimeNotificationsListenerState
     _cargoSubscription?.cancel(); // ✅ Cancelar suscripción de carga
     _ventaSubscription?.cancel(); // ✅ Cancelar suscripción de ventas
     _creditoSubscription?.cancel(); // ✅ Cancelar suscripción de créditos
+    _notificacionRecurrenteSubscription?.cancel(); // ✅ Cancelar suscripción de notificaciones recurrentes
     super.dispose();
   }
 
@@ -140,6 +142,11 @@ class _RealtimeNotificationsListenerState
           debugPrint('📦 Venta asignada a entrega - Mostrando notificación');
           _mostrarNotificacionVentaAsignadaAEntrega(data);
           break;
+        case 'listo':
+          // ✅ NUEVO: Mostrar notificación cuando entrega está lista para partir
+          debugPrint('📤 Entrega lista para entrega - Mostrando notificación');
+          _mostrarNotificacionEntregaListo(data);
+          break;
       }
     });
 
@@ -174,6 +181,11 @@ class _RealtimeNotificationsListenerState
         case 'entregada':
           _mostrarNotificacionVentaEntregada(data);
           break;
+        case 'listo':
+          // ✅ NUEVO: Cliente recibe notificación que su venta está lista para entrega
+          debugPrint('📤 Venta lista - Cliente notificado');
+          _mostrarNotificacionClienteEntregaListo(data);
+          break;
         case 'preparacion_carga':
           _mostrarNotificacionVentaPreparacionCarga(data);
           break;
@@ -197,6 +209,18 @@ class _RealtimeNotificationsListenerState
           break;
         case 'pago_registrado':
           _mostrarNotificacionCreditoPagoRegistrado(data);
+          break;
+      }
+    });
+
+    // ✅ FASE 3: Escuchar notificaciones recurrentes (broadcasts globales)
+    _notificacionRecurrenteSubscription = _webSocketService.notificacionRecurrenteStream.listen((event) {
+      final type = event['type'] as String;
+      final data = event['data'] as Map<String, dynamic>;
+
+      switch (type) {
+        case 'recurrente':
+          _mostrarNotificacionRecurrente(data);
           break;
       }
     });
@@ -553,22 +577,15 @@ class _RealtimeNotificationsListenerState
   /// ✅ NUEVO: Mostrar notificación de entrega consolidada asignada al chofer
   void _mostrarNotificacionEntregaAsignada(Map<String, dynamic> data) {
     final entregaId = data['entrega_id'] as int?;
-    final numeroEntrega = data['numero_entrega'] as String?;
-    final pesoKg = data['peso_kg'] as num?;
-    final vehiculoPlaca = data['vehiculo']?['placa'] as String?;
 
     if (!mounted) return;
 
-    // ✅ Mostrar notificación NATIVA del sistema
-    if (entregaId != null && numeroEntrega != null) {
+    if (entregaId != null) {
       _notificationService.showNewDeliveryNotification(
         deliveryId: entregaId,
-        clientName: numeroEntrega,
-        address: vehiculoPlaca ?? 'Vehículo asignado',
       );
     }
 
-    // ✅ Recargar estadísticas
     context.read<NotificationProvider>().loadStats();
   }
 
@@ -925,6 +942,7 @@ class _RealtimeNotificationsListenerState
   void _mostrarNotificacionVentaEntregada(Map<String, dynamic> data) {
     final ventaNumero = data['venta_numero'] as String?;
     final clienteNombre = data['cliente_nombre'] as String?;
+    final tipoConfirmacion = data['tipo_confirmacion'] as String?;
 
     if (!mounted) return;
 
@@ -933,6 +951,7 @@ class _RealtimeNotificationsListenerState
       _notificationService.showVentaEntregadaNotification(
         ventaNumero: ventaNumero,
         clienteNombre: clienteNombre,
+        tipoConfirmacion: tipoConfirmacion,
       );
     }
 
@@ -998,6 +1017,137 @@ class _RealtimeNotificationsListenerState
       default:
         return '📊';
     }
+  }
+
+  /// ✅ FASE 3: Mostrar notificación recurrente (broadcast global)
+  void _mostrarNotificacionRecurrente(Map<String, dynamic> data) {
+    final notificacionId = data['id'] as int?;
+    final titulo = data['titulo'] as String?;
+    final descripcion = data['descripcion'] as String?;
+    final tipo = data['tipo'] as String?;
+    final enviadaEn = data['enviada_en'] as String?;
+
+    if (!mounted) return;
+
+    // ✅ Determinar color según tipo
+    Color colorFondo = Colors.blue;
+    String icono = '📢';
+
+    switch (tipo) {
+      case 'promocion':
+        colorFondo = Colors.orange;
+        icono = '🎉';
+        break;
+      case 'evento':
+        colorFondo = Colors.purple;
+        icono = '📅';
+        break;
+      case 'oferta':
+        colorFondo = Colors.red;
+        icono = '🏷️';
+        break;
+      case 'informativo':
+      default:
+        colorFondo = Colors.blue;
+        icono = '📢';
+        break;
+    }
+
+    // ✅ Mostrar notificación NATIVA del sistema
+    if (notificacionId != null && titulo != null) {
+      _notificationService.showRecurringNotification(
+        notificacionId: notificacionId,
+        titulo: titulo,
+        descripcion: descripcion ?? '',
+        tipo: tipo ?? 'informativo',
+      );
+    }
+
+    // ✅ Mostrar snackbar visual
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            Text(icono, style: const TextStyle(fontSize: 24)),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (titulo != null)
+                    Text(
+                      titulo,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 15,
+                        color: Colors.white,
+                      ),
+                    ),
+                  if (descripcion != null)
+                    Text(
+                      descripcion,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontSize: 13,
+                        color: Colors.white70,
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        backgroundColor: colorFondo,
+        duration: const Duration(seconds: 8),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
+
+  /// ✅ NUEVO: Mostrar notificación cuando entrega está lista para partir
+  void _mostrarNotificacionEntregaListo(Map<String, dynamic> data) {
+    final entregaId = data['entrega_id'] as int?;
+    final entregaNumero = data['numero_entrega'] as String?;
+    final choferNombre = data['chofer_nombre'] as String?;
+    final vehiculoPlaca = data['vehiculo_placa'] as String?;
+    final ventasCount = data['ventas_count'] as int?;
+
+    if (!mounted) return;
+
+    if (entregaId != null && entregaNumero != null) {
+      _notificationService.showEntregaListoNotification(
+        entregaId: entregaId,
+        entregaNumero: entregaNumero,
+        choferNombre: choferNombre,
+        vehiculoPlaca: vehiculoPlaca,
+        ventasCount: ventasCount ?? 0,
+      );
+    }
+
+    context.read<NotificationProvider>().loadStats();
+  }
+
+  /// ✅ NUEVO: Mostrar notificación cliente cuando su entrega está lista
+  void _mostrarNotificacionClienteEntregaListo(Map<String, dynamic> data) {
+    final ventaNumero = data['venta_numero'] as String?;
+    final entregaNumero = data['entrega_numero'] as String?;
+    final vehiculoPlaca = data['vehiculo_placa'] as String?;
+    final choferNombre = data['chofer_nombre'] as String?;
+
+    if (!mounted) return;
+
+    if (ventaNumero != null && entregaNumero != null) {
+      _notificationService.showClienteEntregaListoNotification(
+        ventaNumero: ventaNumero,
+        entregaNumero: entregaNumero,
+        vehiculoPlaca: vehiculoPlaca,
+        choferNombre: choferNombre,
+      );
+    }
+
+    context.read<NotificationProvider>().loadStats();
   }
 
   @override

@@ -117,7 +117,7 @@ class ClienteSection extends StatelessWidget {
                   ],
                 ),
                 // Fila 2: Estado y Crédito
-                if (cliente.puedeAtenerCredito || !cliente.activo) ...[
+                if (cliente.puedeTenerCredito || !cliente.activo) ...[
                   const SizedBox(height: 12),
                   Row(
                     children: [

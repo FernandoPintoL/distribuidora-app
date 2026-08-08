@@ -161,8 +161,9 @@ class InfoTabWidget extends StatelessWidget {
                 padding: const EdgeInsets.all(2),
                 child: CircleAvatar(
                   radius: 58,
-                  backgroundColor:
-                      Theme.of(context).colorScheme.secondaryContainer,
+                  backgroundColor: Theme.of(
+                    context,
+                  ).colorScheme.secondaryContainer,
                   child: _buildProfileImage(context),
                 ),
               ),
@@ -345,7 +346,7 @@ class _ContactRowWidget extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           SizedBox(
             width: 120,

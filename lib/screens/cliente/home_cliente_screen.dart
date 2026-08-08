@@ -309,7 +309,7 @@ class _DashboardTab extends StatelessWidget {
     }
 
     // Solo mostrar si el cliente tiene crédito habilitado
-    if (!clienteActual.puedeAtenerCredito) {
+    if (!clienteActual.puedeTenerCredito) {
       debugPrint('❌ [Crédito] Cliente no puede tener crédito');
       return const SizedBox.shrink();
     }

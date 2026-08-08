@@ -285,7 +285,11 @@ class _ClientDetailScreenState extends State<ClientDetailScreen> {
               if (value == 1) {
                 showDialog(
                   context: context,
-                  builder: (context) => ChangePasswordModal(client: _client!),
+                  builder: (context) => ChangePasswordModal(
+                    client: _client!,
+                    currentUsernick:
+                        _client?.user?.usernick, // ✅ Pasar el usernick actual
+                  ),
                 );
               }
             },
@@ -300,7 +304,7 @@ class _ClientDetailScreenState extends State<ClientDetailScreen> {
                       color: context.colorScheme.secondary,
                     ),
                     const SizedBox(width: 12),
-                    const Text('Cambiar Contraseña'),
+                    const Text('Actualizar Usuario'),
                   ],
                 ),
               ),

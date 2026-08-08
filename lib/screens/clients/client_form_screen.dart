@@ -35,7 +35,7 @@ class _ClientFormScreenState extends State<ClientFormScreen> {
   int? _selectedLocationId;
   bool _isActive = true;
   bool _createUser = true;
-  bool _puedeAtenerCredito = false;
+  bool _puedeTenerCredito = false;
   double _limiteCredito = 0.0;
   List<ClientAddress> _addresses = [];
   List<Localidad> _localidades = [];
@@ -110,7 +110,7 @@ class _ClientFormScreenState extends State<ClientFormScreen> {
         _isActive = clientCompleto.activo;
         // ✅ SEGURIDAD: En modo edición, NUNCA crear usuario (cambiar contraseña requiere admin)
         _createUser = false;
-        _puedeAtenerCredito = clientCompleto.puedeAtenerCredito;
+        _puedeTenerCredito = clientCompleto.puedeTenerCredito;
         _limiteCredito = clientCompleto.limiteCredito ?? 0.0;
         _observationsController.text = clientCompleto.observaciones ?? '';
 
@@ -819,7 +819,81 @@ class _ClientFormScreenState extends State<ClientFormScreen> {
                               ),
                             ),
                             const SizedBox(height: 16),
-                            if (_puedeAtenerCredito) ...[
+                            // ✅ NUEVO: Campo "Puede tener crédito" solo en edición
+                            if (_isEditing) ...[
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                  vertical: 8,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: Theme.of(context)
+                                      .colorScheme
+                                      .secondary
+                                      .withOpacity(0.1),
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .secondary
+                                        .withOpacity(0.3),
+                                  ),
+                                ),
+                                child: Row(
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            'Puede tener crédito',
+                                            style: TextStyle(
+                                              fontWeight: FontWeight.w600,
+                                              color: Theme.of(context)
+                                                  .colorScheme
+                                                  .onSurface,
+                                              fontSize: 14,
+                                            ),
+                                          ),
+                                          const SizedBox(height: 4),
+                                          Text(
+                                            'Permitir que este cliente use crédito en compras',
+                                            style: TextStyle(
+                                              color: Theme.of(context)
+                                                  .colorScheme
+                                                  .onSurface
+                                                  .withOpacity(0.6),
+                                              fontSize: 12,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    Switch(
+                                      value: _puedeTenerCredito,
+                                      onChanged: (value) {
+                                        setState(() {
+                                          _puedeTenerCredito = value;
+                                          // Si se desactiva, limpiar límite de crédito
+                                          if (!value) {
+                                            _limiteCredito = 0.0;
+                                          }
+                                        });
+                                      },
+                                      activeColor:
+                                          Colors.green.shade600,
+                                      inactiveThumbColor:
+                                          Colors.red.shade400,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(height: 16),
+                            ],
+                            if (_puedeTenerCredito) ...[
                               const SizedBox(height: 16),
                               TextFormField(
                                 initialValue: _limiteCredito > 0
@@ -1024,8 +1098,8 @@ class _ClientFormScreenState extends State<ClientFormScreen> {
               ? null
               : _observationsController.text,
           fotoPerfil: _selectedProfilePhoto,
-          limiteCredito: _puedeAtenerCredito ? _limiteCredito : 0.0,
-          puedeAtenerCredito: _puedeAtenerCredito,
+          limiteCredito: _puedeTenerCredito ? _limiteCredito : 0.0,
+          puedeTenerCredito: _puedeTenerCredito,
           latitud: _latitude,
           longitud: _longitude,
           localidadId: _selectedLocationId,
@@ -1080,7 +1154,7 @@ class _ClientFormScreenState extends State<ClientFormScreen> {
           observaciones: _observationsController.text.isEmpty
               ? null
               : _observationsController.text,
-          puedeAtenerCredito: false,
+          puedeTenerCredito: false,
           limiteCredito: 0.0,
           latitud: _latitude,
           longitud: _longitude,

@@ -457,7 +457,7 @@ class _OrdenDelDiaScreenState extends State<OrdenDelDiaScreen> {
                       ),
 
                       // Información de crédito si aplica
-                      if (cliente.puedeAtenerCredito) ...[
+                      if (cliente.puedeTenerCredito) ...[
                         const SizedBox(height: 12),
                         Row(
                           crossAxisAlignment: CrossAxisAlignment.start,

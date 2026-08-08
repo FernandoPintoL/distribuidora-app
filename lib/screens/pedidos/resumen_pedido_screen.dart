@@ -378,7 +378,7 @@ class _ResumenPedidoScreenState extends State<ResumenPedidoScreen> {
         debugPrint('ðŸ’³ PolÃ­tica de pago seleccionada: $_politicaPago');
 
         if (_politicaPago == POLITICA_CREDITO) {
-          if (!clienteSeleccionado.puedeAtenerCredito) {
+          if (!clienteSeleccionado.puedeTenerCredito) {
             debugPrint('âš ï¸  Cliente NO tiene permisos de crÃ©dito');
 
             if (!mounted) return;
@@ -564,7 +564,7 @@ class _ResumenPedidoScreenState extends State<ResumenPedidoScreen> {
                           }
 
                           final puedeUsarCredito =
-                              clienteSeleccionado.puedeAtenerCredito;
+                              clienteSeleccionado.puedeTenerCredito;
 
                           return Column(
                             crossAxisAlignment: CrossAxisAlignment.start,

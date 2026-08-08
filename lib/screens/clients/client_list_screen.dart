@@ -81,9 +81,9 @@ class _ClientListScreenState extends State<ClientListScreen> {
     // Trigger cuando estamos a menos de SCROLL_THRESHOLD del final
     if (distanceFromBottom <= SCROLL_THRESHOLD) {
       if (!_isLoadingMore && _clientProvider.hasMorePages) {
-        debugPrint(
+        /* debugPrint(
           '📍 Scroll trigger: ${distanceFromBottom.toStringAsFixed(0)}px del final',
-        );
+        ); */
         _loadMoreClientes();
       }
     }
@@ -114,7 +114,7 @@ class _ClientListScreenState extends State<ClientListScreen> {
     setState(() {
       _isLoadingClients = true;
     });
-    debugPrint(' Iniciando carga de clientes...');
+    /* debugPrint(' Iniciando carga de clientes...'); */
 
     try {
       await _clientProvider.loadClients(
@@ -123,9 +123,9 @@ class _ClientListScreenState extends State<ClientListScreen> {
         active: _activeFilterValue(),
         localidadId: _selectedLocalidadId, // ✅ NUEVO: Filtro por localidad
       );
-      debugPrint(
+      /* debugPrint(
         '✅ Clientes cargados: ${_clientProvider.clients.length} de ${_clientProvider.totalItems}',
-      );
+      ); */
       _logPaginationInfo();
     } catch (e) {
       debugPrint('❌ Error al cargar clientes: $e');
@@ -149,11 +149,11 @@ class _ClientListScreenState extends State<ClientListScreen> {
     });
 
     try {
-      debugPrint('🌍 Cargando localidades...');
+      // debugPrint('🌍 Cargando localidades...');
       await _clientProvider.loadLocalidades();
-      debugPrint(
+      /* debugPrint(
         '✅ Localidades cargadas: ${_clientProvider.localidades.length}',
-      );
+      ); */
     } catch (e) {
       debugPrint('❌ Error al cargar localidades: $e');
     } finally {
@@ -220,9 +220,9 @@ class _ClientListScreenState extends State<ClientListScreen> {
         localidadId: _selectedLocalidadId, // ✅ NUEVO: Filtro por localidad
       );
       _logPaginationInfo();
-      debugPrint(
+      /* debugPrint(
         '✅ Más clientes cargados: ${_clientProvider.clients.length} de ${_clientProvider.totalItems}',
-      );
+      ); */
     } catch (e) {
       debugPrint('❌ Error al cargar más clientes: $e');
       // El error será manejado por el provider y mostrado en la UI

@@ -71,7 +71,7 @@ class _DireccionEntregaSeleccionScreenState
         carritoProvider.setClienteSeleccionado(cliente);
         debugPrint('âœ… Cliente cargado: ${cliente?.nombre}');
         debugPrint('ðŸ”„ Cliente ID: ${cliente?.id}');
-        debugPrint('puede tener credito ?: ${cliente?.puedeAtenerCredito}');
+        debugPrint('puede tener credito ?: ${cliente?.puedeTenerCredito}');
         debugPrint(
           'ðŸ”„ Cliente direcciones: ${cliente?.direcciones?.length ?? 0}',
         );

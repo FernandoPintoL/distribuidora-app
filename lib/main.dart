@@ -143,6 +143,7 @@ void main() async {
           ChangeNotifierProvider(create: (_) => EntregaProvider()),
           ChangeNotifierProvider(create: (_) => EntregaEstadosProvider()),
           ChangeNotifierProvider(create: (_) => NotificationProvider()),
+          ChangeNotifierProvider(create: (_) => RecurringNotificationProvider()), // ✅ NUEVO: Notificaciones recurrentes
           ChangeNotifierProvider(create: (_) => EstadosProvider()),
           ChangeNotifierProvider(create: (_) => VisitaProvider()),
           ChangeNotifierProvider(create: (_) => ClienteCreditoProvider()),

@@ -10,6 +10,7 @@ export 'tracking_service.dart';
 export 'websocket_service.dart';
 export 'biometric_auth_service.dart';
 export 'notification_service.dart';
+export 'recurring_notification_service.dart';
 export 'visita_service.dart';
 export 'reporte_producto_danado_service.dart';
 export 'banner_publicitario_service.dart';

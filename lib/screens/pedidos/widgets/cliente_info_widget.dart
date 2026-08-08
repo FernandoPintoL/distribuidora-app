@@ -68,7 +68,7 @@ class ClienteInfoWidget extends StatelessWidget {
                     ),
                 ],
               ),
-              if (cliente.puedeAtenerCredito == true) ...[
+              if (cliente.puedeTenerCredito == true) ...[
                 Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(

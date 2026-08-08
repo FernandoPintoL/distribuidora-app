@@ -92,6 +92,10 @@ class WebSocketConfig {
   static const String eventCreditoCritico = 'notify/credito-critico';
   static const String eventCreditoPagoRegistrado = 'notify/credito-pago-registrado';
 
+  // Eventos de Notificaciones Recurrentes (FASE 3)
+  // ✅ Sincronizados con Laravel Broadcasting + Socket.IO
+  static const String eventNotificacionRecurrente = 'notificacion-recurrente-emitida';
+
   // Eventos del Sistema
   static const String eventConnect = 'connect';
   static const String eventDisconnect = 'disconnect';

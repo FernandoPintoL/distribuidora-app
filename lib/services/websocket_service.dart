@@ -26,6 +26,7 @@ class WebSocketService {
   final _cargoController = StreamController<Map<String, dynamic>>.broadcast(); // NUEVO para cargas
   final _ventaController = StreamController<Map<String, dynamic>>.broadcast(); // ✅ NUEVO para ventas
   final _creditoController = StreamController<Map<String, dynamic>>.broadcast(); // ✅ NUEVO para créditos FASE 3
+  final _notificacionRecurrenteController = StreamController<Map<String, dynamic>>.broadcast(); // ✅ NUEVO para notificaciones recurrentes FASE 3
   final _connectionController = StreamController<bool>.broadcast();
 
   // Getters de streams
@@ -39,6 +40,7 @@ class WebSocketService {
   Stream<Map<String, dynamic>> get cargoStream => _cargoController.stream; // NUEVO para cargas
   Stream<Map<String, dynamic>> get ventaStream => _ventaController.stream; // ✅ NUEVO para ventas
   Stream<Map<String, dynamic>> get creditoStream => _creditoController.stream; // ✅ NUEVO para créditos FASE 3
+  Stream<Map<String, dynamic>> get notificacionRecurrenteStream => _notificacionRecurrenteController.stream; // ✅ NUEVO para notificaciones recurrentes FASE 3
   Stream<bool> get connectionStream => _connectionController.stream;
 
   bool get isConnected => _isConnected;
@@ -686,6 +688,22 @@ class WebSocketService {
       });
       _handleEvent(WebSocketConfig.eventCreditoPagoRegistrado, data);
     });
+
+    // ✅ FASE 3: Notificaciones Recurrentes (desde Scheduler + Socket.IO)
+    // Evento global para TODOS los clientes
+    _socket!.on(WebSocketConfig.eventNotificacionRecurrente, (data) {
+      debugPrint('📢 NOTIFICACIÓN RECURRENTE RECIBIDA');
+      debugPrint('   ID: ${data['id']}');
+      debugPrint('   Título: ${data['titulo']}');
+      debugPrint('   Descripción: ${data['descripcion']}');
+      debugPrint('   Tipo: ${data['tipo']}');
+      debugPrint('   Enviada en: ${data['enviada_en']}');
+      _notificacionRecurrenteController.add({
+        'type': 'recurrente',
+        'data': data,
+      });
+      _handleEvent(WebSocketConfig.eventNotificacionRecurrente, data);
+    });
   }
 
   /// Registrar callback para evento específico
@@ -729,6 +747,7 @@ class WebSocketService {
     _cargoController.close();
     _ventaController.close();
     _creditoController.close();
+    _notificacionRecurrenteController.close();
     _connectionController.close();
     _eventHandlers.clear();
   }

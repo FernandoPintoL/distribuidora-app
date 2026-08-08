@@ -409,7 +409,7 @@ class _CarritoClienteSelectorState extends State<CarritoClienteSelector> {
                           ),
                           itemBuilder: (context, index) {
                             final client = clientProvider.clients[index];
-                            final creditBadge = client.puedeAtenerCredito
+                            final creditBadge = client.puedeTenerCredito
                                 ? ' ✅ Crédito'
                                 : ' ❌ Sin crédito';
                             return Material(

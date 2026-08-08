@@ -284,7 +284,7 @@ class _TipoEntregaSeleccionScreenState
                 ),
 
               // InformaciÃ³n de crÃ©dito (si existe)
-              if (cliente.puedeAtenerCredito == true) ...[
+              if (cliente.puedeTenerCredito == true) ...[
                 const SizedBox(height: 12),
                 Container(
                   padding: const EdgeInsets.all(8),

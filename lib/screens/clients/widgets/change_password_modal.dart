@@ -6,8 +6,13 @@ import '../../../services/api_service.dart';
 
 class ChangePasswordModal extends StatefulWidget {
   final Client client;
+  final String? currentUsernick; // ✅ NUEVO: Usernick actual del usuario
 
-  const ChangePasswordModal({super.key, required this.client});
+  const ChangePasswordModal({
+    super.key,
+    required this.client,
+    this.currentUsernick, // ✅ Parámetro opcional
+  });
 
   @override
   State<ChangePasswordModal> createState() => _ChangePasswordModalState();
@@ -15,6 +20,7 @@ class ChangePasswordModal extends StatefulWidget {
 
 class _ChangePasswordModalState extends State<ChangePasswordModal> {
   final _formKey = GlobalKey<FormState>();
+  final _usernickController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
   bool _isLoading = false;
@@ -23,7 +29,17 @@ class _ChangePasswordModalState extends State<ChangePasswordModal> {
   String? _errorMessage;
 
   @override
+  void initState() {
+    super.initState();
+    // ✅ Pre-llenar el usernick actual si está disponible
+    if (widget.currentUsernick != null) {
+      _usernickController.text = widget.currentUsernick!;
+    }
+  }
+
+  @override
   void dispose() {
+    _usernickController.dispose();
     _passwordController.dispose();
     _confirmPasswordController.dispose();
     super.dispose();
@@ -41,12 +57,21 @@ class _ChangePasswordModalState extends State<ChangePasswordModal> {
 
     try {
       final apiService = ApiService();
+      final payload = {
+        'password': _passwordController.text,
+        'password_confirmation': _confirmPasswordController.text,
+      };
+
+      // Agregar usernick solo si cambió o si es nuevo
+      final usernickActual = widget.currentUsernick ?? '';
+      if (_usernickController.text.isNotEmpty &&
+          _usernickController.text != usernickActual) {
+        payload['usernick'] = _usernickController.text;
+      }
+
       final response = await apiService.post(
         '/clientes/${widget.client.id}/actualizar-password',
-        data: {
-          'password': _passwordController.text,
-          'password_confirmation': _confirmPasswordController.text,
-        },
+        data: payload,
       );
 
       if (!mounted) return;
@@ -115,7 +140,7 @@ class _ChangePasswordModalState extends State<ChangePasswordModal> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Cambiar Contraseña',
+                'Actualizar Usuario',
                 style: TextStyle(fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 8),
@@ -164,6 +189,25 @@ class _ChangePasswordModalState extends State<ChangePasswordModal> {
                       ),
                       const SizedBox(height: 16),
                     ],
+                    TextFormField(
+                      controller: _usernickController,
+                      enabled: !_isLoading,
+                      decoration: InputDecoration(
+                        labelText: 'Nombre de Usuario',
+                        hintText: widget.currentUsernick != null
+                            ? 'Actual: ${widget.currentUsernick}'
+                            : 'Ingresa un nombre de usuario',
+                        prefixIcon: const Icon(Icons.person),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      onChanged: (value) {
+                        // Validación en tiempo real
+                        setState(() {});
+                      },
+                    ),
+                    const SizedBox(height: 16),
                     TextFormField(
                       controller: _passwordController,
                       obscureText: !_showPassword,
@@ -240,7 +284,7 @@ class _ChangePasswordModalState extends State<ChangePasswordModal> {
                                 ),
                               )
                             : const Text(
-                                'Actualizar Contraseña',
+                                'Actualizar Usuario',
                                 style: TextStyle(
                                   fontWeight: FontWeight.bold,
                                   color: Colors.white,

@@ -8,7 +8,8 @@ class ClientProvider with ChangeNotifier {
   final ClientService _clientService = ClientService();
 
   List<Client> _clients = [];
-  Client? _clientePerfil; // ✅ NUEVO: Almacenar el perfil del cliente autenticado
+  Client?
+  _clientePerfil; // ✅ NUEVO: Almacenar el perfil del cliente autenticado
   bool _isLoading = false;
   String? _errorMessage;
   int _currentPage = 1;
@@ -25,7 +26,8 @@ class ClientProvider with ChangeNotifier {
 
   // Getters
   List<Client> get clients => _clients;
-  Client? get clientePerfil => _clientePerfil; // ✅ NUEVO: Getter para acceder al perfil del cliente
+  Client? get clientePerfil =>
+      _clientePerfil; // ✅ NUEVO: Getter para acceder al perfil del cliente
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
   int get currentPage => _currentPage;
@@ -38,7 +40,8 @@ class ClientProvider with ChangeNotifier {
   int? get dashboardClientesActivos => _dashboardClientesActivos;
   int? get dashboardClientesInactivos => _dashboardClientesInactivos;
   int? get dashboardTotalPedidosPendientes => _dashboardTotalPedidosPendientes;
-  int? get dashboardTotalPedidosConfirmados => _dashboardTotalPedidosConfirmados;
+  int? get dashboardTotalPedidosConfirmados =>
+      _dashboardTotalPedidosConfirmados;
 
   // Helper method for safe _safeNotifyListeners
   void _safeNotifyListeners() {
@@ -82,7 +85,7 @@ class ClientProvider with ChangeNotifier {
         localidadId: localidadId,
       );
 
-      debugPrint('🔄 loadClients ${response.data}');
+      // debugPrint('🔄 loadClients ${response.data}');
 
       if (response.success && response.data != null) {
         if (append) {
@@ -97,8 +100,8 @@ class ClientProvider with ChangeNotifier {
         _hasMorePages = _currentPage < _totalPages;
         _errorMessage = null;
 
-        print('📋 Clientes cargados: ${_clients.length}');
-        print('📋 Página actual: $_currentPage, Total páginas: $_totalPages');
+        // print('📋 Clientes cargados: ${_clients.length}');
+        // print('📋 Página actual: $_currentPage, Total páginas: $_totalPages');
 
         // Solo notificar una vez al final
         return true;
@@ -139,23 +142,36 @@ class ClientProvider with ChangeNotifier {
       debugPrint('📊 [ClientProvider] Iniciando carga de dashboard stats...');
       final response = await _clientService.getDashboardStats();
 
-      debugPrint('📊 [ClientProvider] Respuesta: success=${response.success}, data=${ response.data}');
+      debugPrint(
+        '📊 [ClientProvider] Respuesta: success=${response.success}, data=${response.data}',
+      );
 
       if (response.success && response.data != null) {
         // Extraer valores con casteo seguro
-        _dashboardTotalClientes = (response.data!['total_clientes'] ?? 0) as int;
-        _dashboardClientesActivos = (response.data!['clientes_activos'] ?? 0) as int;
-        _dashboardClientesInactivos = (response.data!['clientes_inactivos'] ?? 0) as int;
-        _dashboardTotalPedidosPendientes = (response.data!['total_pedidos_pendientes'] ?? 0) as int;
-        _dashboardTotalPedidosConfirmados = (response.data!['total_pedidos_confirmados'] ?? 0) as int;
+        _dashboardTotalClientes =
+            (response.data!['total_clientes'] ?? 0) as int;
+        _dashboardClientesActivos =
+            (response.data!['clientes_activos'] ?? 0) as int;
+        _dashboardClientesInactivos =
+            (response.data!['clientes_inactivos'] ?? 0) as int;
+        _dashboardTotalPedidosPendientes =
+            (response.data!['total_pedidos_pendientes'] ?? 0) as int;
+        _dashboardTotalPedidosConfirmados =
+            (response.data!['total_pedidos_confirmados'] ?? 0) as int;
 
         _errorMessage = null;
-        debugPrint('✅ [ClientProvider] Dashboard stats cargados correctamente:');
+        debugPrint(
+          '✅ [ClientProvider] Dashboard stats cargados correctamente:',
+        );
         debugPrint('   - Total clientes: $_dashboardTotalClientes');
         debugPrint('   - Clientes activos: $_dashboardClientesActivos');
         debugPrint('   - Clientes inactivos: $_dashboardClientesInactivos');
-        debugPrint('   - Pedidos pendientes: $_dashboardTotalPedidosPendientes');
-        debugPrint('   - Pedidos confirmados: $_dashboardTotalPedidosConfirmados');
+        debugPrint(
+          '   - Pedidos pendientes: $_dashboardTotalPedidosPendientes',
+        );
+        debugPrint(
+          '   - Pedidos confirmados: $_dashboardTotalPedidosConfirmados',
+        );
         return true;
       } else {
         _errorMessage = response.message;
@@ -228,7 +244,9 @@ class ClientProvider with ChangeNotifier {
       if (response.success && response.data != null) {
         _clientePerfil = response.data; // ✅ NUEVO: Guardar en _clientePerfil
         _errorMessage = null;
-        debugPrint('✅ [ClientProvider] Perfil del cliente cargado: ${response.data!.nombre}');
+        debugPrint(
+          '✅ [ClientProvider] Perfil del cliente cargado: ${response.data!.nombre}',
+        );
         return response.data;
       } else {
         _errorMessage = response.message;
@@ -276,7 +294,7 @@ class ClientProvider with ChangeNotifier {
     String? email,
     String? telefono,
     double? limiteCredito,
-    bool puedeAtenerCredito = false,
+    bool puedeTenerCredito = false,
     int? localidadId,
     double? latitud,
     double? longitud,
@@ -307,7 +325,7 @@ class ClientProvider with ChangeNotifier {
         email: email,
         telefono: telefono,
         limiteCredito: limiteCredito,
-        puedeAtenerCredito: puedeAtenerCredito,
+        puedeTenerCredito: puedeTenerCredito,
         localidadId: localidadId,
         latitud: latitud,
         longitud: longitud,
@@ -360,7 +378,7 @@ class ClientProvider with ChangeNotifier {
     String? email,
     String? telefono,
     double? limiteCredito,
-    bool? puedeAtenerCredito,
+    bool? puedeTenerCredito,
     int? localidadId,
     double? latitud,
     double? longitud,
@@ -388,7 +406,7 @@ class ClientProvider with ChangeNotifier {
         email: email,
         telefono: telefono,
         limiteCredito: limiteCredito,
-        puedeAtenerCredito: puedeAtenerCredito,
+        puedeTenerCredito: puedeTenerCredito,
         localidadId: localidadId,
         latitud: latitud,
         longitud: longitud,

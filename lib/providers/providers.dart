@@ -9,6 +9,7 @@ export 'tracking_provider.dart';
 export 'entrega_provider.dart';
 export 'entrega_estados_provider.dart';
 export 'notification_provider.dart';
+export 'recurring_notification_provider.dart';  // ✅ NUEVO: Notificaciones recurrentes
 export 'ruta_provider.dart';
 export 'estados_provider.dart';
 export 'visita_provider.dart';

@@ -23,20 +23,13 @@ class NotificationService {
     }
   }
 
-  /// Obtener todas las notificaciones (con límite)
+  /// Obtener todas las notificaciones regulares (legacy - retorna lista vacía)
+  /// ✅ NOTA: Para notificaciones recurrentes, usa RecurringNotificationService
   Future<List<AppNotification>> getAllNotifications({int limit = 50}) async {
     try {
-      final response = await _apiService.get(
-        '/notificaciones',
-        queryParameters: {'limit': limit},
-      );
-
-      if (response.statusCode == 200 && response.data['success'] == true) {
-        final List data = response.data['data'] as List;
-        return data.map((n) => AppNotification.fromJson(n as Map<String, dynamic>)).toList();
-      }
-
-      throw Exception('Error al obtener notificaciones');
+      // No hay endpoint público para notificaciones regulares
+      // Las notificaciones recurrentes están en RecurringNotificationService
+      return [];
     } catch (e) {
       debugPrint('❌ Error en getAllNotifications: $e');
       rethrow;
