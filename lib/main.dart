@@ -32,30 +32,45 @@ void main() async {
     debugPrint('⚠️ Error initializing SharedPreferences: $e');
   }
 
-  // ✅ FIX: Cargar .env desde assets (funciona en Debug Y Release/Play Store)
+  // ✅ NUEVO: Cargar .env con manejo robusto
+  debugPrint('🔄 Iniciando cargamento de .env...');
+
+  // Intento 1: Usar flutter_dotenv.load() (el método recomendado)
   try {
-    final envString = await rootBundle.loadString('.env');
-    // Parsear manualmente el contenido del .env
-    final lines = envString.split('\n');
-    for (var line in lines) {
-      line = line.trim();
-      if (line.isEmpty || line.startsWith('#')) continue;
-      final parts = line.split('=');
-      if (parts.length == 2) {
-        final key = parts[0].trim();
-        final value = parts[1].trim().replaceAll('"', '');
-        dotenv.env[key] = value;
-      }
-    }
-    // debugPrint('✅ .env cargado desde assets');
+    await dotenv.load(fileName: ".env");
+    debugPrint('✅ .env cargado correctamente con flutter_dotenv');
+    debugPrint('   BASE_URL=${dotenv.env['BASE_URL']}');
+    debugPrint('   BASE_URL_WEB=${dotenv.env['BASE_URL_WEB']}');
+    debugPrint('   WEBSOCKET_URL=${dotenv.env['WEBSOCKET_URL']}');
+    debugPrint('   NODE_WEBSOCKET_URL=${dotenv.env['NODE_WEBSOCKET_URL']}');
   } catch (e) {
-    debugPrint('⚠️ Error cargando .env desde assets: $e');
-    // Intenta fallback al método antiguo (solo funciona en debug)
+    debugPrint('⚠️ Error con flutter_dotenv.load(): $e');
+    debugPrint('   Intentando fallback: cargar desde assets...');
+
+    // Intento 2: Cargar desde assets como fallback
     try {
-      await dotenv.load(fileName: ".env");
-      // debugPrint('✅ .env cargado desde archivo (fallback)');
+      final envString = await rootBundle.loadString('.env');
+      final lines = envString.split('\n');
+      int loadedVars = 0;
+      for (var line in lines) {
+        line = line.trim();
+        if (line.isEmpty || line.startsWith('#')) continue;
+        final parts = line.split('=');
+        if (parts.length >= 2) {
+          final key = parts[0].trim();
+          final value = parts.sublist(1).join('=').trim().replaceAll('"', '');
+          dotenv.env[key] = value;
+          loadedVars++;
+        }
+      }
+      debugPrint('✅ .env cargado desde assets ($loadedVars variables)');
+      debugPrint('   BASE_URL=${dotenv.env['BASE_URL']}');
+      debugPrint('   BASE_URL_WEB=${dotenv.env['BASE_URL_WEB']}');
+      debugPrint('   WEBSOCKET_URL=${dotenv.env['WEBSOCKET_URL']}');
+      debugPrint('   NODE_WEBSOCKET_URL=${dotenv.env['NODE_WEBSOCKET_URL']}');
     } catch (e2) {
-      debugPrint('❌ CRÍTICO: No se pudo cargar .env: $e2');
+      debugPrint('❌ CRÍTICO: No se pudo cargar .env por ningún método: $e2');
+      debugPrint('   Se usarán valores por defecto (fallbacks)');
     }
   }
 
