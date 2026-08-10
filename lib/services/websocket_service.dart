@@ -651,6 +651,79 @@ class WebSocketService {
       _handleEvent(WebSocketConfig.eventVentaListoParaEntrega, data);
     });
 
+    // ✅ NUEVO: Evento venta confirmada como entregada (para admin/manager)
+    _socket!.on(WebSocketConfig.eventVentaConfirmadaEntrega, (data) {
+      debugPrint('✅ VENTA CONFIRMADA COMO ENTREGADA (Admin/Manager)');
+      debugPrint('   Venta: #${data['venta_numero']}');
+      debugPrint('   Entrega: #${data['entrega_numero']}');
+      debugPrint('   Cliente: ${data['cliente_nombre']}');
+      debugPrint('   Tipo Confirmación: ${data['tipo_confirmacion']}');
+      debugPrint('   Chofer: ${data['chofer_nombre']}');
+      debugPrint('   Total: Bs. ${data['total']}');
+      _ventaController.add({
+        'type': 'confirmada_entrega',
+        'data': data,
+      });
+      _handleEvent(WebSocketConfig.eventVentaConfirmadaEntrega, data);
+    });
+
+    // ✅ NUEVO: Evento cliente venta confirmada como entregada (para cliente)
+    _socket!.on(WebSocketConfig.eventClienteVentaConfirmada, (data) {
+      debugPrint('✅ TU VENTA FUE CONFIRMADA');
+      debugPrint('   Venta: #${data['venta_numero']}');
+      debugPrint('   Entrega: #${data['entrega_numero']}');
+      debugPrint('   Tipo Confirmación: ${data['tipo_confirmacion']}');
+      debugPrint('   Chofer: ${data['chofer_nombre']}');
+      _ventaController.add({
+        'type': 'cliente_venta_confirmada',
+        'data': data,
+      });
+      _handleEvent(WebSocketConfig.eventClienteVentaConfirmada, data);
+    });
+
+    // ✅ NUEVO: Evento preventista venta confirmada como entregada (para preventista)
+    _socket!.on(WebSocketConfig.eventPreventistaVentaConfirmada, (data) {
+      debugPrint('✅ TU VENTA FUE CONFIRMADA (PREVENTISTA)');
+      debugPrint('   Venta: #${data['venta_numero']}');
+      debugPrint('   Entrega: #${data['entrega_numero']}');
+      debugPrint('   Cliente: ${data['cliente_nombre']}');
+      debugPrint('   Tipo Confirmación: ${data['tipo_confirmacion']}');
+      debugPrint('   Chofer: ${data['chofer_nombre']}');
+      _ventaController.add({
+        'type': 'preventista_venta_confirmada',
+        'data': data,
+      });
+      _handleEvent(WebSocketConfig.eventPreventistaVentaConfirmada, data);
+    });
+
+    // ✅ NUEVO: Evento cuando entrega salió a entrega (para cliente)
+    _socket!.on(WebSocketConfig.eventEntregaSalidoAEntrega, (data) {
+      debugPrint('🚚 TU PEDIDO SALIÓ A ENTREGA (CLIENTE)');
+      debugPrint('   Venta: #${data['venta_numero']}');
+      debugPrint('   Entrega: #${data['entrega_numero']}');
+      debugPrint('   Chofer: ${data['chofer_nombre']}');
+      debugPrint('   Vehículo: ${data['vehiculo_placa']}');
+      _ventaController.add({
+        'type': 'entrega_salido_cliente',
+        'data': data,
+      });
+      _handleEvent(WebSocketConfig.eventEntregaSalidoAEntrega, data);
+    });
+
+    // ✅ NUEVO: Evento cuando entrega salió a entrega (para preventista)
+    _socket!.on(WebSocketConfig.eventEntregaSalidoPreventistaEntrega, (data) {
+      debugPrint('🚚 VENTA SALIÓ A ENTREGA (PREVENTISTA)');
+      debugPrint('   Venta: #${data['venta_numero']}');
+      debugPrint('   Entrega: #${data['entrega_numero']}');
+      debugPrint('   Cliente: ${data['cliente_nombre']}');
+      debugPrint('   Chofer: ${data['chofer_nombre']}');
+      _ventaController.add({
+        'type': 'entrega_salido_preventista',
+        'data': data,
+      });
+      _handleEvent(WebSocketConfig.eventEntregaSalidoPreventistaEntrega, data);
+    });
+
     // ✅ NUEVA FASE 3: Eventos de Créditos
     // Notificación de crédito vencido
     _socket!.on(WebSocketConfig.eventCreditoVencido, (data) {

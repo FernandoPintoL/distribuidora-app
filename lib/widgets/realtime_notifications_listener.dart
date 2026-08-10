@@ -192,6 +192,31 @@ class _RealtimeNotificationsListenerState
         case 'listo_para_entrega':
           _mostrarNotificacionVentaListoParaEntrega(data);
           break;
+        case 'confirmada_entrega':
+          // ✅ Admin/Manager: venta confirmada como entregada
+          debugPrint('✅ Venta confirmada como entregada - Mostrando notificación');
+          _mostrarNotificacionVentaConfirmadaEntrega(data);
+          break;
+        case 'cliente_venta_confirmada':
+          // ✅ Cliente: su venta fue confirmada como entregada
+          debugPrint('✅ Tu venta fue confirmada - Mostrando notificación');
+          _mostrarNotificacionClienteVentaConfirmada(data);
+          break;
+        case 'preventista_venta_confirmada':
+          // ✅ Preventista: su venta fue confirmada como entregada
+          debugPrint('✅ Tu venta fue confirmada (Preventista) - Mostrando notificación');
+          _mostrarNotificacionPreventistaVentaConfirmada(data);
+          break;
+        case 'entrega_salido_cliente':
+          // ✅ Cliente: su pedido salió a entrega
+          debugPrint('🚚 Tu pedido salió a entrega - Mostrando notificación');
+          _mostrarNotificacionClienteEntregaSalidoAEntrega(data);
+          break;
+        case 'entrega_salido_preventista':
+          // ✅ Preventista: su venta salió a entrega
+          debugPrint('🚚 Tu venta salió a entrega - Mostrando notificación');
+          _mostrarNotificacionPreventistaEntregaSalidoAEntrega(data);
+          break;
       }
     });
 
@@ -1144,6 +1169,117 @@ class _RealtimeNotificationsListenerState
         entregaNumero: entregaNumero,
         vehiculoPlaca: vehiculoPlaca,
         choferNombre: choferNombre,
+      );
+    }
+
+    context.read<NotificationProvider>().loadStats();
+  }
+
+  /// ✅ NUEVO: Mostrar notificación venta confirmada como entregada (para admin/manager)
+  void _mostrarNotificacionVentaConfirmadaEntrega(Map<String, dynamic> data) {
+    final ventaNumero = data['venta_numero'] as String?;
+    final entregaNumero = data['entrega_numero'] as String?;
+    final clienteNombre = data['cliente_nombre'] as String?;
+    final choferNombre = data['chofer_nombre'] as String?;
+    final tipoConfirmacion = data['tipo_confirmacion'] as String?;
+
+    if (!mounted) return;
+
+    if (ventaNumero != null && entregaNumero != null) {
+      _notificationService.showVentaConfirmadaEntregaNotification(
+        ventaNumero: ventaNumero,
+        entregaNumero: entregaNumero,
+        clienteNombre: clienteNombre,
+        choferNombre: choferNombre,
+        tipoConfirmacion: tipoConfirmacion,
+      );
+    }
+
+    context.read<NotificationProvider>().loadStats();
+  }
+
+  /// ✅ NUEVO: Mostrar notificación cliente venta confirmada (para cliente)
+  void _mostrarNotificacionClienteVentaConfirmada(Map<String, dynamic> data) {
+    final ventaNumero = data['venta_numero'] as String?;
+    final entregaNumero = data['entrega_numero'] as String?;
+    final choferNombre = data['chofer_nombre'] as String?;
+    final tipoConfirmacion = data['tipo_confirmacion'] as String?;
+
+    if (!mounted) return;
+
+    if (ventaNumero != null) {
+      _notificationService.showClienteVentaConfirmadaNotification(
+        ventaNumero: ventaNumero,
+        entregaNumero: entregaNumero,
+        choferNombre: choferNombre,
+        tipoConfirmacion: tipoConfirmacion,
+      );
+    }
+
+    context.read<NotificationProvider>().loadStats();
+  }
+
+  /// ✅ NUEVO: Mostrar notificación preventista venta confirmada (para preventista)
+  void _mostrarNotificacionPreventistaVentaConfirmada(Map<String, dynamic> data) {
+    final ventaNumero = data['venta_numero'] as String?;
+    final entregaNumero = data['entrega_numero'] as String?;
+    final clienteNombre = data['cliente_nombre'] as String?;
+    final choferNombre = data['chofer_nombre'] as String?;
+    final tipoConfirmacion = data['tipo_confirmacion'] as String?;
+
+    if (!mounted) return;
+
+    if (ventaNumero != null) {
+      _notificationService.showPreventistaVentaConfirmadaNotification(
+        ventaNumero: ventaNumero,
+        entregaNumero: entregaNumero,
+        clienteNombre: clienteNombre,
+        choferNombre: choferNombre,
+        tipoConfirmacion: tipoConfirmacion,
+      );
+    }
+
+    context.read<NotificationProvider>().loadStats();
+  }
+
+  /// ✅ NUEVO: Mostrar notificación cliente entrega salió a entrega (para cliente)
+  void _mostrarNotificacionClienteEntregaSalidoAEntrega(Map<String, dynamic> data) {
+    final ventaNumero = data['venta_numero'] as String?;
+    final entregaNumero = data['entrega_numero'] as String?;
+    final choferNombre = data['chofer_nombre'] as String?;
+    final vehiculoPlaca = data['vehiculo_placa'] as String?;
+
+    if (!mounted) return;
+
+    if (ventaNumero != null) {
+      _notificationService.showClienteEntregaSalidoAEntregaNotification(
+        ventaNumero: ventaNumero,
+        entregaNumero: entregaNumero,
+        choferNombre: choferNombre,
+        vehiculoPlaca: vehiculoPlaca,
+      );
+    }
+
+    context.read<NotificationProvider>().loadStats();
+  }
+
+  /// ✅ NUEVO: Mostrar notificación preventista entrega salió a entrega (para preventista)
+  void _mostrarNotificacionPreventistaEntregaSalidoAEntrega(Map<String, dynamic> data) {
+    final ventaNumero = data['venta_numero'] as String?;
+    final entregaNumero = data['entrega_numero'] as String?;
+    final clienteNombre = data['cliente_nombre'] as String?;
+    final choferNombre = data['chofer_nombre'] as String?;
+    final vehiculoPlaca = data['vehiculo_placa'] as String?;
+
+    if (!mounted) return;
+
+    if (ventaNumero != null) {
+      _notificationService.showPreventistaEntregaSalidoAEntregaNotification(
+        ventaNumero: ventaNumero,
+        entregaNumero: entregaNumero,
+        clienteNombre: clienteNombre,
+        choferNombre: choferNombre,
+        vehiculoPlaca: vehiculoPlaca,
       );
     }
 

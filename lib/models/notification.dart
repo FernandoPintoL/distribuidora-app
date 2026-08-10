@@ -69,6 +69,8 @@ class AppNotification {
         return 'Proforma Rechazada';
       case 'proforma.convertida':
         return '¡Pedido Confirmado!';
+      case 'venta.en-transito':
+        return '🚚 En Tránsito';
       // ✅ NUEVA FASE 3: Créditos
       case 'creditos.vencido':
         return '⚠️ Crédito Vencido';
@@ -112,6 +114,17 @@ class AppNotification {
         return ventaNumero != null
             ? 'Pedido $ventaNumero confirmado exitosamente'
             : 'Tu pedido ha sido confirmado';
+
+      case 'venta.en-transito':
+        final ventaNumero = data['venta_numero'] as String?;
+        final choferNombre = data['chofer_nombre'] as String?;
+        String msg = ventaNumero != null
+            ? '🚚 Venta #$ventaNumero está EN_TRANSITO'
+            : '🚚 Tu venta está EN_TRANSITO';
+        if (choferNombre != null && choferNombre.isNotEmpty) {
+          msg += ' - Chofer: $choferNombre';
+        }
+        return msg;
 
       // ✅ NUEVA FASE 3: Créditos
       case 'creditos.vencido':
@@ -160,6 +173,8 @@ class AppNotification {
         return Icons.cancel;
       case 'proforma.convertida':
         return Icons.shopping_cart;
+      case 'venta.en-transito':
+        return Icons.local_shipping;
       // ✅ NUEVA FASE 3: Créditos
       case 'creditos.vencido':
         return Icons.warning;
@@ -183,6 +198,8 @@ class AppNotification {
         return Colors.blue;
       case 'proforma.creada':
         return Colors.orange;
+      case 'venta.en-transito':
+        return Colors.blue;
       // ✅ NUEVA FASE 3: Créditos
       case 'creditos.vencido':
         return Colors.orange;

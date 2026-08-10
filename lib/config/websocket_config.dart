@@ -37,8 +37,8 @@ class WebSocketConfig {
 
   // Eventos de Ventas (Tracking de estado logístico)
   // ✅ Cliente recibe notificación de cambios en su venta
-  static const String eventVentaEstadoCambio = 'venta.estado-cambio'; // Cambio: venta.estado_cambio → venta.estado-cambio
-  static const String eventVentaEnTransito = 'venta.en-transito'; // Cambio: venta.en_transito → venta.en-transito
+  static const String eventVentaEstadoCambio = 'venta.estado-cambio';
+  static const String eventVentaEnTransito = 'venta.en_transito'; // Socket emite con guion bajo
   static const String eventVentaEntregada = 'venta.entregada';
   static const String eventVentaProblema = 'venta.problema';
   static const String eventVentaPreparacionCarga = 'venta.preparacion-carga'; // Cambio: venta:preparacion-carga → venta.preparacion-carga
@@ -74,11 +74,16 @@ class WebSocketConfig {
   static const String eventEntregaCompletada = 'entrega.completada';
   static const String eventEntregaNovedad = 'entrega.novedad';
   static const String eventEntregaCancelada = 'entrega.cancelada';
+  static const String eventEntregaSalidoAEntrega = 'entrega.salido-a-entrega'; // ✅ Cliente: Tu pedido salió a entrega
+  static const String eventEntregaSalidoPreventistaEntrega = 'entrega.salido-a-entrega-preventista'; // ✅ Preventista: tu venta salió
 
-  // Eventos de Confirmación de Cargas (venta confirmada como cargada)
+  // Eventos de Confirmación de Entregas/Cargas (venta confirmada como entregada)
   static const String eventVentaCargada = 'venta.cargada';
   static const String eventCargoProgreso = 'cargo.progreso'; // { confirmadas, total, porcentaje }
   static const String eventCargoConfirmado = 'cargo.confirmado';
+  static const String eventVentaConfirmadaEntrega = 'venta.confirmada.entrega'; // Admin/Manager venta entregada
+  static const String eventClienteVentaConfirmada = 'cliente.venta.confirmada'; // ✅ Cliente: su venta fue entregada
+  static const String eventPreventistaVentaConfirmada = 'preventista.venta.confirmada'; // ✅ Preventista: su venta fue entregada
 
   // Eventos de Rutas (nuevos para planificación de entregas)
   // ✅ Sincronizados con Laravel Broadcast (RutaPlanificada, RutaModificada, RutaDetalleActualizado)

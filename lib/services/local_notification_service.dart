@@ -1054,4 +1054,154 @@ class LocalNotificationService {
       payload: 'venta_$ventaNumero',
     );
   }
+
+  /// ✅ NUEVO: Mostrar notificación venta confirmada como entregada (para admin/manager)
+  Future<void> showVentaConfirmadaEntregaNotification({
+    required String ventaNumero,
+    required String entregaNumero,
+    String? clienteNombre,
+    String? choferNombre,
+    String? tipoConfirmacion,
+  }) async {
+    final cliente = clienteNombre ?? 'Cliente';
+    final chofer = choferNombre ?? 'Chofer';
+    final tipo = tipoConfirmacion ?? 'COMPLETA';
+    final body = '✅ Venta #$ventaNumero de $cliente confirmada por $chofer - $tipo';
+
+    await _showNotification(
+      id: ventaNumero.hashCode,
+      title: '✅ Venta Confirmada como Entregada',
+      body: body,
+      channelId: 'cambio_estados',
+      payload: 'venta_confirmada_$ventaNumero',
+    );
+  }
+
+  /// ✅ NUEVO: Mostrar notificación cliente venta confirmada (para cliente)
+  Future<void> showClienteVentaConfirmadaNotification({
+    required String ventaNumero,
+    String? entregaNumero,
+    String? choferNombre,
+    String? tipoConfirmacion,
+  }) async {
+    final chofer = choferNombre ?? 'Chofer';
+    String titulo = '✅ Tu Pedido Fue Confirmado';
+    String body = '✅ Tu pedido #$ventaNumero ha sido confirmado y entregado';
+
+    // Ajustar mensaje según tipo de confirmación
+    switch (tipoConfirmacion) {
+      case 'RECHAZADO':
+        titulo = '❌ Tu Pedido Fue Rechazado';
+        body = '❌ Tu pedido #$ventaNumero fue rechazado';
+        break;
+      case 'DEVOLUCION_PARCIAL':
+        titulo = '⚠️ Devolución Parcial';
+        body = '⚠️ Tu pedido #$ventaNumero tiene devolución parcial';
+        break;
+      case 'CLIENTE_CERRADO':
+        titulo = '🏪 Local Cerrado';
+        body = '🏪 Tu local estaba cerrado - Pedido #$ventaNumero';
+        break;
+      case 'NO_CONTACTADO':
+        titulo = '📞 No Contactado';
+        body = '📞 No pudimos contactarte para pedido #$ventaNumero';
+        break;
+      default:
+        body = '✅ Tu pedido #$ventaNumero ha sido confirmado por $chofer';
+    }
+
+    await _showNotification(
+      id: ventaNumero.hashCode,
+      title: titulo,
+      body: body,
+      channelId: 'cambio_estados',
+      payload: 'cliente_venta_confirmada_$ventaNumero',
+    );
+  }
+
+  /// ✅ NUEVO: Mostrar notificación preventista venta confirmada (para preventista)
+  Future<void> showPreventistaVentaConfirmadaNotification({
+    required String ventaNumero,
+    String? entregaNumero,
+    String? clienteNombre,
+    String? choferNombre,
+    String? tipoConfirmacion,
+  }) async {
+    final cliente = clienteNombre ?? 'Cliente';
+    final chofer = choferNombre ?? 'Chofer';
+    String titulo = '✅ Tu Venta Fue Confirmada';
+    String body = '✅ Tu venta #$ventaNumero a $cliente fue confirmada y entregada';
+
+    // Ajustar mensaje según tipo de confirmación
+    switch (tipoConfirmacion) {
+      case 'RECHAZADO':
+        titulo = '❌ Tu Venta Fue Rechazada';
+        body = '❌ Tu venta #$ventaNumero a $cliente fue rechazada';
+        break;
+      case 'DEVOLUCION_PARCIAL':
+        titulo = '⚠️ Devolución Parcial';
+        body = '⚠️ Tu venta #$ventaNumero a $cliente tiene devolución parcial';
+        break;
+      case 'CLIENTE_CERRADO':
+        titulo = '🏪 Local Cerrado';
+        body = '🏪 Tu venta #$ventaNumero - local de $cliente estaba cerrado';
+        break;
+      case 'NO_CONTACTADO':
+        titulo = '📞 No Contactado';
+        body = '📞 Tu venta #$ventaNumero a $cliente - no contactado';
+        break;
+      default:
+        body = '✅ Tu venta #$ventaNumero a $cliente ha sido confirmada por $chofer';
+    }
+
+    await _showNotification(
+      id: ventaNumero.hashCode,
+      title: titulo,
+      body: body,
+      channelId: 'cambio_estados',
+      payload: 'preventista_venta_confirmada_$ventaNumero',
+    );
+  }
+
+  /// ✅ NUEVO: Mostrar notificación cliente entrega salió a entrega
+  Future<void> showClienteEntregaSalidoAEntregaNotification({
+    required String ventaNumero,
+    String? entregaNumero,
+    String? choferNombre,
+    String? vehiculoPlaca,
+  }) async {
+    final chofer = choferNombre ?? 'Chofer';
+    final vehiculo = vehiculoPlaca ?? 'Vehículo';
+    final body = '🚚 Tu pedido #$ventaNumero está en $vehiculo. Chofer: $chofer';
+
+    await _showNotification(
+      id: ventaNumero.hashCode,
+      title: '🚚 Tu Pedido Salió a Entrega',
+      body: body,
+      channelId: 'cambio_estados',
+      payload: 'entrega_salido_cliente_$ventaNumero',
+    );
+  }
+
+  /// ✅ NUEVO: Mostrar notificación preventista entrega salió a entrega
+  Future<void> showPreventistaEntregaSalidoAEntregaNotification({
+    required String ventaNumero,
+    String? entregaNumero,
+    String? clienteNombre,
+    String? choferNombre,
+    String? vehiculoPlaca,
+  }) async {
+    final cliente = clienteNombre ?? 'Cliente';
+    final chofer = choferNombre ?? 'Chofer';
+    final vehiculo = vehiculoPlaca ?? 'Vehículo';
+    final body = '🚚 Tu venta #$ventaNumero a $cliente está en $vehiculo. Chofer: $chofer';
+
+    await _showNotification(
+      id: ventaNumero.hashCode,
+      title: '🚚 Tu Venta Salió a Entrega',
+      body: body,
+      channelId: 'cambio_estados',
+      payload: 'entrega_salido_preventista_$ventaNumero',
+    );
+  }
 }
