@@ -541,6 +541,84 @@ class _CrearPrestamoClienteScreenState extends State<CrearPrestamoClienteScreen>
     );
   }
 
+  /// Card de dirección del cliente
+  Widget _buildDireccionCard() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final direccion = _ventaBuscada != null ? _obtenerDireccionCliente(_ventaBuscada!) : null;
+
+    if (direccion == null) {
+      return const SizedBox.shrink();
+    }
+
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: isDark
+            ? context.colorScheme.tertiary.withOpacity(0.15)
+            : context.colorScheme.tertiary.withOpacity(0.1),
+        border: Border.all(
+          color: isDark
+              ? context.colorScheme.tertiary.withOpacity(0.5)
+              : context.colorScheme.tertiary,
+        ),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                Icons.location_on,
+                color: context.colorScheme.tertiary,
+                size: 20,
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  'Dirección de Entrega',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                    color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            direccion.direccion,
+            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+          ),
+          if (direccion.localidad != null) ...[
+            const SizedBox(height: 4),
+            Chip(
+              label: Text(
+                direccion.localidad!.nombre,
+                style: const TextStyle(fontSize: 11),
+              ),
+              avatar: CircleAvatar(
+                backgroundColor: context.colorScheme.tertiary.withOpacity(0.3),
+                radius: 12,
+                child: Icon(
+                  Icons.location_city,
+                  size: 12,
+                  color: context.colorScheme.tertiary,
+                ),
+              ),
+              backgroundColor: isDark
+                  ? context.colorScheme.tertiary.withOpacity(0.2)
+                  : context.colorScheme.tertiary.withOpacity(0.15),
+              padding: const EdgeInsets.symmetric(horizontal: 6),
+              materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
   /// Sección de búsqueda de venta (opcional)
   Widget _buildBusquedaVentaSection() {
     return Column(
@@ -590,6 +668,8 @@ class _CrearPrestamoClienteScreenState extends State<CrearPrestamoClienteScreen>
         if (_ventaBuscada != null) ...[
           const SizedBox(height: 12),
           _buildVentaBuscadaCard(),
+          const SizedBox(height: 12),
+          _buildDireccionCard(),
         ],
       ],
     );
