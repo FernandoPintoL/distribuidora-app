@@ -346,6 +346,17 @@ class _CrearPrestamoClienteScreenState extends State<CrearPrestamoClienteScreen>
       return;
     }
 
+    // Validar que todas las cantidades sean > 0
+    for (int i = 0; i < _items.length; i++) {
+      final item = _items[i];
+      final cantidad = item['cantidad'] as int?;
+      if (cantidad == null || cantidad <= 0) {
+        final nombre = item['prestable_nombre'] as String;
+        _mostrarError('La cantidad de "$nombre" debe ser mayor a 0');
+        return;
+      }
+    }
+
     if (_almacenSeleccionado == null) {
       _mostrarError('Error: Almacén no disponible. Intenta recargando la pantalla.');
       return;
@@ -1245,49 +1256,55 @@ class _CrearPrestamoClienteScreenState extends State<CrearPrestamoClienteScreen>
                                   ),
                                   keyboardType: TextInputType.number,
                                   onChanged: (value) {
-                                    // Permitir edición libre del campo
+                                    // Permitir cualquier edición sin restricciones
                                     setState(() {
-                                      // Solo procesar si hay un valor válido
-                                      if (value.isNotEmpty) {
-                                        final cantidad = int.tryParse(value);
-                                        if (cantidad != null && cantidad > 0) {
-                                          _items[index]['cantidad'] = cantidad;
+                                      if (value.isEmpty) {
+                                        // Permitir campo vacío
+                                        return;
+                                      }
 
-                                          // Actualizar almacenes
-                                          if (item['almacenes'] is List && (item['almacenes'] as List).isNotEmpty) {
-                                            final almacenes = item['almacenes'] as List;
-                                            for (var almacen in almacenes) {
-                                              almacen['cantidad'] = cantidad;
-                                            }
-                                          }
+                                      final cantidad = int.tryParse(value);
+                                      if (cantidad == null) {
+                                        // Ignorar si no es número válido
+                                        return;
+                                      }
 
-                                          // Si es CANASTILLA, recalcular embase
-                                          if (item['tipo'] == 'CANASTILLA' &&
-                                              item['capacidad'] != null &&
-                                              item['capacidad'] > 0) {
-                                            final capacidad = item['capacidad'] as int;
-                                            final cantidadEmbase = cantidad * capacidad;
+                                      // Guardar cualquier cantidad, incluso 0
+                                      _items[index]['cantidad'] = cantidad;
 
-                                            // Buscar el embase relacionado (debe estar al lado)
-                                            if (index + 1 < _items.length) {
-                                              final itemEmbase = _items[index + 1];
-                                              if (itemEmbase['tipo'] == 'EMBASE') {
-                                                itemEmbase['cantidad'] = cantidadEmbase;
+                                      // Actualizar almacenes
+                                      if (item['almacenes'] is List && (item['almacenes'] as List).isNotEmpty) {
+                                        final almacenes = item['almacenes'] as List;
+                                        for (var almacen in almacenes) {
+                                          almacen['cantidad'] = cantidad;
+                                        }
+                                      }
 
-                                                // Actualizar almacenes del embase
-                                                if (itemEmbase['almacenes'] is List &&
-                                                    (itemEmbase['almacenes'] as List).isNotEmpty) {
-                                                  final almacenesEmbase = itemEmbase['almacenes'] as List;
-                                                  for (var almacen in almacenesEmbase) {
-                                                    almacen['cantidad'] = cantidadEmbase;
-                                                  }
-                                                }
+                                      // Si es CANASTILLA, recalcular embase (incluso con cantidad 0)
+                                      if (item['tipo'] == 'CANASTILLA' &&
+                                          item['capacidad'] != null &&
+                                          item['capacidad'] > 0) {
+                                        final capacidad = item['capacidad'] as int;
+                                        final cantidadEmbase = cantidad * capacidad;
 
-                                                debugPrint(
-                                                  '🔄 Canastilla: $cantidad → Embase: $cantidadEmbase (capacidad: $capacidad)',
-                                                );
+                                        // Buscar el embase relacionado (debe estar al lado)
+                                        if (index + 1 < _items.length) {
+                                          final itemEmbase = _items[index + 1];
+                                          if (itemEmbase['tipo'] == 'EMBASE') {
+                                            itemEmbase['cantidad'] = cantidadEmbase;
+
+                                            // Actualizar almacenes del embase
+                                            if (itemEmbase['almacenes'] is List &&
+                                                (itemEmbase['almacenes'] as List).isNotEmpty) {
+                                              final almacenesEmbase = itemEmbase['almacenes'] as List;
+                                              for (var almacen in almacenesEmbase) {
+                                                almacen['cantidad'] = cantidadEmbase;
                                               }
                                             }
+
+                                            debugPrint(
+                                              '🔄 Canastilla: $cantidad → Embase: $cantidadEmbase (capacidad: $capacidad)',
+                                            );
                                           }
                                         }
                                       }
