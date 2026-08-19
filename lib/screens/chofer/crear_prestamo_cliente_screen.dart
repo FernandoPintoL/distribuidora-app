@@ -2,7 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../extensions/theme_extension.dart';
 import '../../providers/prestamos_provider.dart';
+import '../../providers/client_provider.dart';
+import '../../providers/ventas_provider.dart';
 import '../../services/api_service.dart';
+import '../../models/models.dart';
 
 /// Pantalla para crear nuevo préstamo a cliente
 class CrearPrestamoClienteScreen extends StatefulWidget {
@@ -13,92 +16,179 @@ class CrearPrestamoClienteScreen extends StatefulWidget {
       _CrearPrestamoClienteScreenState();
 }
 
-class _CrearPrestamoClienteScreenState extends State<CrearPrestamoClienteScreen> {
+class _CrearPrestamoClienteScreenState extends State<CrearPrestamoClienteScreen>
+    with SingleTickerProviderStateMixin {
   // Form key
   final _formKey = GlobalKey<FormState>();
   final _apiService = ApiService();
+  late TabController _tabController;
 
   // Datos del préstamo
-  Map<String, dynamic>? _clienteSeleccionado;
+  Client? _clienteSeleccionado;
   DateTime _fechaPrestamo = DateTime.now();
   DateTime? _fechaEsperadaDevolucion;
   int? _almacenSeleccionado;
   String _observaciones = '';
   double _montoGarantia = 0;
 
-  // Listas de datos
-  List<Map<String, dynamic>> _clientes = [];
-  List<Map<String, dynamic>> _prestables = [];
-  final List<Map<String, dynamic>> _almacenes = [
-    {'id': 1, 'nombre': 'Almacén Central'},
-    {'id': 2, 'nombre': 'Almacén Distribuidora'},
-    {'id': 3, 'nombre': 'Almacén Regional'},
-  ];
+  // Búsqueda
+  List<Producto> _prestables = [];
+  Venta? _ventaBuscada;
 
   // Items agregados
   final List<Map<String, dynamic>> _items = [];
 
   // Estados
   bool _cargando = false;
-  bool _cargandoDatos = true;
+  bool _cargandoPrestables = false;
+  int _ventaIdBusqueda = 0;
+
+  // Almacenes (actualmente hardcodeados, puede ser dinámico)
+  final List<Map<String, dynamic>> _almacenes = [
+    {'id': 1, 'nombre': 'Almacén Central'},
+    {'id': 2, 'nombre': 'Almacén Distribuidora'},
+    {'id': 3, 'nombre': 'Almacén Regional'},
+  ];
 
   // Controladores
   late TextEditingController _observacionesController;
-  late TextEditingController _busquedaClienteController;
-  late TextEditingController _busquedaPrestableController;
+  late TextEditingController _ventaIdController;
+  late TextEditingController _cantidadController;
 
   @override
   void initState() {
     super.initState();
+    _tabController = TabController(length: 2, vsync: this);
     _observacionesController = TextEditingController();
-    _busquedaClienteController = TextEditingController();
-    _busquedaPrestableController = TextEditingController();
-    _cargarDatos();
+    _ventaIdController = TextEditingController();
+    _cantidadController = TextEditingController();
+    _cargarPrestables();
   }
 
-  /// Cargar clientes y prestables
-  Future<void> _cargarDatos() async {
+  /// Cargar prestables desde API
+  Future<void> _cargarPrestables() async {
     setState(() {
-      _cargandoDatos = true;
+      _cargandoPrestables = true;
     });
 
     try {
-      // Cargar clientes
-      final clientesResponse = await _apiService.get('/clientes?per_page=100');
-      if (clientesResponse.statusCode == 200) {
-        final data = clientesResponse.data as Map<String, dynamic>;
-        final clientesData = data['data'] as Map<String, dynamic>;
-        final clientesList = clientesData['data'] as List;
-        setState(() {
-          _clientes = clientesList.cast<Map<String, dynamic>>();
-        });
-      }
-
-      // Cargar prestables
-      final prestablesResponse = await _apiService.get('/prestables?per_page=100');
-      if (prestablesResponse.statusCode == 200) {
-        final data = prestablesResponse.data as Map<String, dynamic>;
+      final response = await _apiService.get('/prestables?per_page=200');
+      if (response.statusCode == 200) {
+        final data = response.data as Map<String, dynamic>;
         final prestablesData = data['data'] as Map<String, dynamic>;
         final prestablesList = prestablesData['data'] as List;
         setState(() {
-          _prestables = prestablesList.cast<Map<String, dynamic>>();
+          _prestables = prestablesList
+              .map((p) => Producto.fromJson(p as Map<String, dynamic>))
+              .toList();
         });
       }
     } catch (e) {
-      debugPrint('❌ Error cargando datos: $e');
-      _mostrarError('Error cargando datos');
+      debugPrint('❌ Error cargando prestables: $e');
+      _mostrarError('Error cargando prestables');
     } finally {
       setState(() {
-        _cargandoDatos = false;
+        _cargandoPrestables = false;
       });
     }
   }
 
+  /// Buscar venta por ID y cargar cliente y detalles
+  Future<void> _buscarVenta(int ventaId) async {
+    setState(() {
+      _cargando = true;
+    });
+
+    try {
+      final ventasProvider = context.read<VentasProvider>();
+      await ventasProvider.loadVentaDetalle(ventaId);
+
+      final venta = ventasProvider.ventaDetalle;
+      if (venta != null && venta.cliente != null) {
+        setState(() {
+          _ventaBuscada = venta;
+          _clienteSeleccionado = venta.cliente;
+          // Auto-calcular cantidades de prestables basado en venta
+          _autoFillPrestablesDesdeVenta(venta);
+        });
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('✅ Venta #${venta.numero} cargada'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      } else {
+        _mostrarError('Venta no encontrada o sin cliente');
+      }
+    } catch (e) {
+      _mostrarError('Error buscando venta: $e');
+      debugPrint('❌ Error buscando venta: $e');
+    } finally {
+      setState(() {
+        _cargando = false;
+      });
+    }
+  }
+
+  /// Auto-llenar prestables desde los detalles de la venta
+  /// Fórmula: embase = capacidad_canastilla * venta.cantidad
+  void _autoFillPrestablesDesdeVenta(Venta venta) {
+    _items.clear();
+
+    for (var detalle in venta.detalles) {
+      if (detalle.producto == null) continue;
+
+      final producto = detalle.producto!;
+
+      // Buscar si tiene campo canastilla o similar
+      // Si es prestable, agregar con cantidad calculada
+      if (producto.tipoPrestable != null) {
+        // Canastilla: cantidad del detalle de venta
+        _items.add({
+          'prestable_id': producto.id,
+          'prestable_nombre': producto.nombre,
+          'cantidad': (detalle.cantidad).toInt(),
+          'almacenes': [
+            {
+              'almacenes_prestables_id': _almacenSeleccionado ?? 1,
+              'cantidad': (detalle.cantidad).toInt(),
+            }
+          ],
+          'tipo': 'canastilla',
+        });
+
+        // Embase: capacidad_canastilla * venta.cantidad
+        final capacidadCanastilla = producto.capacidadCanastilla ?? 1;
+        final cantidadEmbase = (capacidadCanastilla * detalle.cantidad).toInt();
+
+        // Si hay cantidad de embase, agregarlo como item separado
+        if (cantidadEmbase > 0) {
+          _items.add({
+            'prestable_id': producto.id,
+            'prestable_nombre': '${producto.nombre} (Embase)',
+            'cantidad': cantidadEmbase,
+            'almacenes': [
+              {
+                'almacenes_prestables_id': _almacenSeleccionado ?? 1,
+                'cantidad': cantidadEmbase,
+              }
+            ],
+            'tipo': 'embase',
+          });
+        }
+      }
+    }
+
+    debugPrint('📦 Agregados ${_items.length} items desde venta ${venta.numero}');
+  }
+
   @override
   void dispose() {
+    _tabController.dispose();
     _observacionesController.dispose();
-    _busquedaClienteController.dispose();
-    _busquedaPrestableController.dispose();
+    _ventaIdController.dispose();
+    _cantidadController.dispose();
     super.dispose();
   }
 
@@ -167,7 +257,7 @@ class _CrearPrestamoClienteScreenState extends State<CrearPrestamoClienteScreen>
 
       // Preparar payload
       final payload = {
-        'cliente_id': _clienteSeleccionado!['id'],
+        'cliente_id': _clienteSeleccionado!.id,
         'almacenes_prestables_id': _almacenSeleccionado,
         'fecha_prestamo': _fechaPrestamo.toIso8601String().split('T')[0],
         'fecha_esperada_devolucion': _fechaEsperadaDevolucion?.toIso8601String().split('T')[0],
@@ -220,146 +310,395 @@ class _CrearPrestamoClienteScreenState extends State<CrearPrestamoClienteScreen>
       appBar: AppBar(
         title: const Text('Crear Préstamo a Cliente'),
         elevation: 0,
+        bottom: TabBar(
+          controller: _tabController,
+          tabs: const [
+            Tab(icon: Icon(Icons.search), text: 'Por Cliente'),
+            Tab(icon: Icon(Icons.receipt), text: 'Por Venta ID'),
+          ],
+        ),
       ),
-      body: _cargandoDatos
+      body: _cargando
           ? const Center(child: CircularProgressIndicator())
-          : _cargando
-              ? const Center(child: CircularProgressIndicator())
-              : SingleChildScrollView(
-              padding: const EdgeInsets.all(16),
-              child: Form(
-                key: _formKey,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Sección: Datos básicos
-                    Text(
-                      '📋 Datos del Préstamo',
-                      style: Theme.of(context)
-                          .textTheme
-                          .bodyMedium!
-                          .copyWith(fontSize: 16, fontWeight: FontWeight.bold),
-                    ),
-                    const SizedBox(height: 16),
-
-                    // Cliente
-                    _buildClienteField(),
-                    const SizedBox(height: 16),
-
-                    // Fecha préstamo
-                    _buildFechaPrestamo(),
-                    const SizedBox(height: 16),
-
-                    // Fecha esperada devolución
-                    _buildFechaDevolucion(),
-                    const SizedBox(height: 16),
-
-                    // Almacén
-                    _buildAlmacenField(),
-                    const SizedBox(height: 16),
-
-                    // Monto garantía
-                    _buildMontoGarantia(),
-                    const SizedBox(height: 24),
-
-                    // Sección: Items
-                    Text(
-                      '📦 Artículos',
-                      style: Theme.of(context)
-                          .textTheme
-                          .bodyMedium!
-                          .copyWith(fontSize: 16, fontWeight: FontWeight.bold),
-                    ),
-                    const SizedBox(height: 16),
-
-                    // Botón agregar item
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton.icon(
-                        onPressed: () => _mostrarDialogoAgregarItem(),
-                        icon: const Icon(Icons.add),
-                        label: const Text('Agregar Artículo'),
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-
-                    // Lista de items
-                    if (_items.isNotEmpty)
-                      _buildListaItems()
-                    else
-                      Center(
-                        child: Text(
-                          'Sin artículos agregados',
-                          style: Theme.of(context).textTheme.bodyMedium,
-                        ),
-                      ),
-                    const SizedBox(height: 24),
-
-                    // Sección: Observaciones
-                    Text(
-                      '📝 Observaciones',
-                      style: Theme.of(context)
-                          .textTheme
-                          .bodyMedium!
-                          .copyWith(fontSize: 16, fontWeight: FontWeight.bold),
-                    ),
-                    const SizedBox(height: 8),
-                    TextFormField(
-                      controller: _observacionesController,
-                      decoration: InputDecoration(
-                        hintText: 'Agregar observaciones (opcional)',
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        filled: true,
-                        fillColor: context.colorScheme.surface,
-                      ),
-                      maxLines: 3,
-                      onChanged: (value) {
-                        _observaciones = value;
-                      },
-                    ),
-                    const SizedBox(height: 24),
-
-                    // Botón crear
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton(
-                        onPressed: _cargando ? null : _crearPrestamo,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: context.colorScheme.primary,
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                        ),
-                        child: _cargando
-                            ? const SizedBox(
-                                width: 20,
-                                height: 20,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                ),
-                              )
-                            : const Text(
-                                'Crear Préstamo',
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+          : TabBarView(
+              controller: _tabController,
+              children: [
+                // TAB 1: Búsqueda por Cliente
+                _buildBusquedaClienteTab(),
+                // TAB 2: Búsqueda por Venta ID
+                _buildBusquedaVentaTab(),
+              ],
             ),
     );
   }
 
-  /// Widget para seleccionar cliente
-  Widget _buildClienteField() {
-    final clienteNombre = _clienteSeleccionado != null
-        ? '${_clienteSeleccionado!['nombre']} ${_clienteSeleccionado!['apellido'] ?? ''}'
-        : 'Seleccionar cliente';
+  /// TAB 1: Búsqueda manual de cliente
+  Widget _buildBusquedaClienteTab() {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16),
+      child: Form(
+        key: _formKey,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildClienteSearchField(),
+            const SizedBox(height: 24),
+            _buildFormularioBasico(),
+            const SizedBox(height: 24),
+            _buildSeccionItems(),
+            const SizedBox(height: 24),
+            _buildObservacionesField(),
+            const SizedBox(height: 24),
+            _buildBotonesAccion(),
+          ],
+        ),
+      ),
+    );
+  }
 
+  /// TAB 2: Búsqueda por ID de venta
+  Widget _buildBusquedaVentaTab() {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Búsqueda por ID de venta
+          Text(
+            '🔍 Buscar Venta por ID',
+            style: Theme.of(context).textTheme.bodyMedium!
+                .copyWith(fontSize: 16, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: TextFormField(
+                  controller: _ventaIdController,
+                  decoration: InputDecoration(
+                    hintText: 'Ingresa ID de venta',
+                    prefixIcon: const Icon(Icons.receipt),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    filled: true,
+                    fillColor: context.colorScheme.surface,
+                  ),
+                  keyboardType: TextInputType.number,
+                ),
+              ),
+              const SizedBox(width: 8),
+              ElevatedButton(
+                onPressed: _cargando
+                    ? null
+                    : () {
+                        final ventaId =
+                            int.tryParse(_ventaIdController.text);
+                        if (ventaId != null) {
+                          _buscarVenta(ventaId);
+                        } else {
+                          _mostrarError('ID de venta inválido');
+                        }
+                      },
+                child: const Icon(Icons.search),
+              ),
+            ],
+          ),
+          const SizedBox(height: 24),
+
+          // Mostrar info de venta buscada
+          if (_ventaBuscada != null) ...[
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                border: Border.all(color: Colors.green),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    '✅ Venta #${_ventaBuscada!.numero}',
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: Colors.green,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Cliente: ${_clienteSeleccionado?.nombre ?? 'N/A'}',
+                  ),
+                  Text(
+                    'Items: ${_items.length}',
+                  ),
+                  Text(
+                    'Total: Bs. ${_ventaBuscada!.total.toStringAsFixed(2)}',
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 24),
+          ],
+
+          // Formulario básico
+          _buildFormularioBasico(),
+          const SizedBox(height: 24),
+
+          // Items agregados automáticamente
+          _buildSeccionItems(),
+          const SizedBox(height: 24),
+
+          // Observaciones
+          _buildObservacionesField(),
+          const SizedBox(height: 24),
+
+          // Botones
+          _buildBotonesAccion(),
+        ],
+      ),
+    );
+  }
+
+  /// Construcción del formulario básico (reutilizable en ambos tabs)
+  Widget _buildFormularioBasico() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          '📋 Datos del Préstamo',
+          style: Theme.of(context).textTheme.bodyMedium!
+              .copyWith(fontSize: 16, fontWeight: FontWeight.bold),
+        ),
+        const SizedBox(height: 16),
+        _buildClienteField(),
+        const SizedBox(height: 16),
+        _buildFechaPrestamo(),
+        const SizedBox(height: 16),
+        _buildFechaDevolucion(),
+        const SizedBox(height: 16),
+        _buildAlmacenField(),
+        const SizedBox(height: 16),
+        _buildMontoGarantia(),
+      ],
+    );
+  }
+
+  /// Sección de items
+  Widget _buildSeccionItems() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          '📦 Artículos',
+          style: Theme.of(context).textTheme.bodyMedium!
+              .copyWith(fontSize: 16, fontWeight: FontWeight.bold),
+        ),
+        const SizedBox(height: 16),
+        SizedBox(
+          width: double.infinity,
+          child: ElevatedButton.icon(
+            onPressed: () => _mostrarDialogoAgregarItem(),
+            icon: const Icon(Icons.add),
+            label: const Text('Agregar Artículo'),
+          ),
+        ),
+        const SizedBox(height: 16),
+        if (_items.isNotEmpty)
+          _buildListaItems()
+        else
+          Center(
+            child: Text(
+              'Sin artículos agregados',
+              style: Theme.of(context).textTheme.bodyMedium,
+            ),
+          ),
+      ],
+    );
+  }
+
+  /// Observaciones
+  Widget _buildObservacionesField() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          '📝 Observaciones',
+          style: Theme.of(context).textTheme.bodyMedium!
+              .copyWith(fontSize: 16, fontWeight: FontWeight.bold),
+        ),
+        const SizedBox(height: 8),
+        TextFormField(
+          controller: _observacionesController,
+          decoration: InputDecoration(
+            hintText: 'Agregar observaciones (opcional)',
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(8),
+            ),
+            filled: true,
+            fillColor: context.colorScheme.surface,
+          ),
+          maxLines: 3,
+          onChanged: (value) {
+            _observaciones = value;
+          },
+        ),
+      ],
+    );
+  }
+
+  /// Botones de acción
+  Widget _buildBotonesAccion() {
+    return SizedBox(
+      width: double.infinity,
+      child: ElevatedButton(
+        onPressed: _cargando ? null : _crearPrestamo,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: context.colorScheme.primary,
+          padding: const EdgeInsets.symmetric(vertical: 16),
+        ),
+        child: _cargando
+            ? const SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                ),
+              )
+            : const Text(
+                'Crear Préstamo',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+      ),
+    );
+  }
+
+  /// Widget para buscar cliente (con búsqueda en tiempo real)
+  Widget _buildClienteSearchField() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          '👤 Selecciona Cliente',
+          style: Theme.of(context).textTheme.bodyMedium!
+              .copyWith(fontSize: 16, fontWeight: FontWeight.bold),
+        ),
+        const SizedBox(height: 12),
+        Consumer<ClientProvider>(
+          builder: (context, clientProvider, _) {
+            return Autocomplete<Client>(
+              optionsBuilder: (TextEditingValue textEditingValue) async {
+                if (textEditingValue.text.isEmpty) {
+                  return const Iterable<Client>.empty();
+                }
+                final results = await clientProvider.searchClients(
+                  textEditingValue.text,
+                  limit: 10,
+                );
+                return results;
+              },
+              onSelected: (Client selection) {
+                setState(() {
+                  _clienteSeleccionado = selection;
+                });
+              },
+              fieldViewBuilder: (context, textEditingController, focusNode,
+                  onFieldSubmitted) {
+                return TextField(
+                  controller: textEditingController,
+                  focusNode: focusNode,
+                  onSubmitted: (String value) {
+                    onFieldSubmitted();
+                  },
+                  decoration: InputDecoration(
+                    hintText: 'Buscar cliente por nombre...',
+                    prefixIcon: const Icon(Icons.search),
+                    suffixIcon: _clienteSeleccionado != null
+                        ? IconButton(
+                            icon: const Icon(Icons.clear),
+                            onPressed: () {
+                              textEditingController.clear();
+                              setState(() {
+                                _clienteSeleccionado = null;
+                              });
+                            },
+                          )
+                        : null,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    filled: true,
+                    fillColor: context.colorScheme.surface,
+                  ),
+                );
+              },
+              optionsViewBuilder: (context, onSelected, options) {
+                return Align(
+                  alignment: Alignment.topLeft,
+                  child: Material(
+                    child: SizedBox(
+                      width: 300,
+                      child: ListView.builder(
+                        padding: EdgeInsets.zero,
+                        itemCount: options.length,
+                        itemBuilder: (BuildContext context, int index) {
+                          final Client option = options.elementAt(index);
+                          return ListTile(
+                            title: Text(option.nombre),
+                            subtitle: Text(option.email ?? ''),
+                            onTap: () {
+                              onSelected(option);
+                            },
+                          );
+                        },
+                      ),
+                    ),
+                  ),
+                );
+              },
+            );
+          },
+        ),
+        if (_clienteSeleccionado != null) ...[
+          const SizedBox(height: 12),
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.green.shade50,
+              border: Border.all(color: Colors.green),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Row(
+              children: [
+                const Icon(Icons.check_circle, color: Colors.green),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        _clienteSeleccionado!.nombre,
+                        style: const TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                      Text(
+                        _clienteSeleccionado!.email ?? '',
+                        style: const TextStyle(fontSize: 12),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+
+  /// Widget para seleccionar cliente (simple)
+  Widget _buildClienteField() {
     return GestureDetector(
       onTap: () => _mostrarDialogoSeleccionarCliente(),
       child: Container(
@@ -385,7 +724,7 @@ class _CrearPrestamoClienteScreenState extends State<CrearPrestamoClienteScreen>
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    clienteNombre,
+                    _clienteSeleccionado?.nombre ?? 'Seleccionar cliente',
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(fontSize: 16),
@@ -582,7 +921,8 @@ class _CrearPrestamoClienteScreenState extends State<CrearPrestamoClienteScreen>
 
   /// Mostrar diálogo para seleccionar cliente
   void _mostrarDialogoSeleccionarCliente() {
-    List<Map<String, dynamic>> clientesFiltrados = _clientes;
+    final busquedaController = TextEditingController();
+    List<Client> clientesFiltrados = [];
 
     showDialog(
       context: context,
@@ -595,7 +935,7 @@ class _CrearPrestamoClienteScreenState extends State<CrearPrestamoClienteScreen>
               mainAxisSize: MainAxisSize.min,
               children: [
                 TextField(
-                  controller: _busquedaClienteController,
+                  controller: busquedaController,
                   decoration: InputDecoration(
                     hintText: 'Buscar cliente...',
                     prefixIcon: const Icon(Icons.search),
@@ -603,26 +943,34 @@ class _CrearPrestamoClienteScreenState extends State<CrearPrestamoClienteScreen>
                       borderRadius: BorderRadius.circular(8),
                     ),
                   ),
-                  onChanged: (value) {
-                    setState(() {
-                      clientesFiltrados = _clientes.where((cliente) {
-                        final nombre = (cliente['nombre'] as String?)
-                                ?.toLowerCase() ??
-                            '';
-                        final apellido = (cliente['apellido'] as String?)
-                                ?.toLowerCase() ??
-                            '';
-                        return nombre.contains(value.toLowerCase()) ||
-                            apellido.contains(value.toLowerCase());
-                      }).toList();
-                    });
+                  onChanged: (value) async {
+                    if (value.isEmpty) {
+                      setState(() {
+                        clientesFiltrados = [];
+                      });
+                      return;
+                    }
+
+                    try {
+                      final clientProvider =
+                          context.read<ClientProvider>();
+                      final resultados = await clientProvider.searchClients(
+                        value,
+                        limit: 20,
+                      );
+                      setState(() {
+                        clientesFiltrados = resultados;
+                      });
+                    } catch (e) {
+                      debugPrint('Error buscando clientes: $e');
+                    }
                   },
                 ),
                 const SizedBox(height: 16),
                 Expanded(
                   child: clientesFiltrados.isEmpty
                       ? const Center(
-                          child: Text('No hay clientes encontrados'),
+                          child: Text('Escribe para buscar clientes'),
                         )
                       : ListView.builder(
                           shrinkWrap: true,
@@ -630,10 +978,8 @@ class _CrearPrestamoClienteScreenState extends State<CrearPrestamoClienteScreen>
                           itemBuilder: (context, index) {
                             final cliente = clientesFiltrados[index];
                             return ListTile(
-                              title: Text(
-                                '${cliente['nombre']} ${cliente['apellido'] ?? ''}',
-                              ),
-                              subtitle: Text(cliente['email'] ?? ''),
+                              title: Text(cliente.nombre),
+                              subtitle: Text(cliente.email ?? ''),
                               onTap: () {
                                 setState(() {
                                   _clienteSeleccionado = cliente;
@@ -654,11 +1000,15 @@ class _CrearPrestamoClienteScreenState extends State<CrearPrestamoClienteScreen>
 
   /// Mostrar diálogo para agregar item
   void _mostrarDialogoAgregarItem() {
-    int? prestableSeleccionado;
-    String? prestableNombre;
+    Producto? prestableSeleccionado;
     int cantidad = 1;
     int? almacenSeleccionado;
     final cantidadController = TextEditingController(text: '1');
+
+    if (_prestables.isEmpty) {
+      _mostrarError('Cargando prestables...');
+      return;
+    }
 
     showDialog(
       context: context,
@@ -670,24 +1020,19 @@ class _CrearPrestamoClienteScreenState extends State<CrearPrestamoClienteScreen>
               mainAxisSize: MainAxisSize.min,
               children: [
                 // Selector de prestables
-                DropdownButton<int>(
+                DropdownButton<Producto>(
                   isExpanded: true,
                   hint: const Text('Seleccionar Prestable'),
                   value: prestableSeleccionado,
                   items: _prestables.map((prestable) {
-                    return DropdownMenuItem<int>(
-                      value: prestable['id'] as int,
-                      child: Text(prestable['nombre'] as String),
+                    return DropdownMenuItem<Producto>(
+                      value: prestable,
+                      child: Text(prestable.nombre),
                     );
                   }).toList(),
                   onChanged: (value) {
                     setState(() {
                       prestableSeleccionado = value;
-                      if (value != null) {
-                        final prestable =
-                            _prestables.firstWhere((p) => p['id'] == value);
-                        prestableNombre = prestable['nombre'] as String;
-                      }
                     });
                   },
                 ),
@@ -733,12 +1078,11 @@ class _CrearPrestamoClienteScreenState extends State<CrearPrestamoClienteScreen>
             ),
             ElevatedButton(
               onPressed: prestableSeleccionado != null &&
-                      almacenSeleccionado != null &&
-                      prestableNombre != null
+                      almacenSeleccionado != null
                   ? () {
                       _agregarItem(
-                        prestableSeleccionado!,
-                        prestableNombre!,
+                        prestableSeleccionado!.id,
+                        prestableSeleccionado!.nombre,
                         cantidad,
                         almacenSeleccionado!,
                       );
