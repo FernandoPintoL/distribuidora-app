@@ -27,13 +27,14 @@ class _CrearPrestamoClienteScreenState extends State<CrearPrestamoClienteScreen>
   Cliente? _clienteSeleccionado;
   DateTime _fechaPrestamo = DateTime.now();
   DateTime? _fechaEsperadaDevolucion;
-  int _almacenSeleccionado = 2; // Distribuidora preseleccionada
+  int? _almacenSeleccionado; // Se cargará desde backend
   String _observaciones = '';
   double _montoGarantia = 0;
 
   // Búsqueda y datos
   List<Producto> _prestables = [];
   Venta? _ventaBuscada;
+  List<Map<String, dynamic>> _almacenes = []; // Se cargará del backend
 
   // Items agregados
   final List<Map<String, dynamic>> _items = [];
@@ -41,13 +42,6 @@ class _CrearPrestamoClienteScreenState extends State<CrearPrestamoClienteScreen>
   // Estados
   bool _cargando = false;
   bool _cargandoPrestables = false;
-
-  // Almacenes
-  final List<Map<String, dynamic>> _almacenes = [
-    {'id': 1, 'nombre': 'Almacén Central'},
-    {'id': 2, 'nombre': 'Almacén Distribuidora'},
-    {'id': 3, 'nombre': 'Almacén Regional'},
-  ];
 
   // Controladores
   late TextEditingController _observacionesController;
@@ -60,7 +54,48 @@ class _CrearPrestamoClienteScreenState extends State<CrearPrestamoClienteScreen>
     _observacionesController = TextEditingController();
     _ventaIdController = TextEditingController();
     _cantidadController = TextEditingController();
+    _cargarAlmacenes();
     _cargarPrestables();
+  }
+
+  /// Cargar almacenes desde API y preseleccionar "Distribuidora"
+  Future<void> _cargarAlmacenes() async {
+    try {
+      final response = await _apiService.get('/almacenes-prestables/index-json?per_page=100');
+      if (response.statusCode == 200) {
+        final data = response.data as Map<String, dynamic>;
+        final almacenesList = data['data'] as List;
+
+        setState(() {
+          _almacenes = almacenesList
+              .map((a) => {
+                    'id': a['id'] as int,
+                    'nombre': a['nombre'] as String,
+                  })
+              .toList();
+
+          // Buscar y preseleccionar "Distribuidora"
+          final distribuidora = _almacenes.firstWhere(
+            (a) => a['nombre'].toLowerCase().contains('distribuidora'),
+            orElse: () => _almacenes.isNotEmpty ? _almacenes.first : {},
+          );
+
+          if (distribuidora.isNotEmpty) {
+            _almacenSeleccionado = distribuidora['id'] as int;
+            debugPrint('✅ Almacén Distribuidora preseleccionado: ${distribuidora['nombre']} (id=${distribuidora['id']})');
+          }
+        });
+      }
+    } catch (e) {
+      debugPrint('❌ Error cargando almacenes: $e');
+      // No mostrar error, continuar con fallback
+      setState(() {
+        _almacenes = [
+          {'id': 2, 'nombre': 'Distribuidora'},
+        ];
+        _almacenSeleccionado = 2;
+      });
+    }
   }
 
   /// Cargar prestables desde API
@@ -231,6 +266,11 @@ class _CrearPrestamoClienteScreenState extends State<CrearPrestamoClienteScreen>
 
     if (_items.isEmpty) {
       _mostrarError('Debes agregar al menos un artículo');
+      return;
+    }
+
+    if (_almacenSeleccionado == null) {
+      _mostrarError('Error: Almacén no disponible. Intenta recargando la pantalla.');
       return;
     }
 
@@ -805,6 +845,14 @@ class _CrearPrestamoClienteScreenState extends State<CrearPrestamoClienteScreen>
 
   /// Widget para mostrar almacén preseleccionado
   Widget _buildAlmacenField() {
+    final almacenNombre = _almacenSeleccionado != null
+        ? _almacenes
+            .firstWhere(
+              (a) => a['id'] == _almacenSeleccionado,
+              orElse: () => {'nombre': 'Cargando...'},
+            )['nombre']
+        : 'Cargando almacenes...';
+
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
@@ -821,16 +869,16 @@ class _CrearPrestamoClienteScreenState extends State<CrearPrestamoClienteScreen>
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Almacén',
+                  'Almacén (Preseleccionado)',
                   style: TextStyle(
                     fontSize: 12,
                     color: Colors.grey.shade600,
                   ),
                 ),
                 const SizedBox(height: 4),
-                const Text(
-                  'Almacén Distribuidora',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                Text(
+                  almacenNombre,
+                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                 ),
               ],
             ),
