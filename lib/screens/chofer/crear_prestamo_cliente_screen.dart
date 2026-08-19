@@ -1195,7 +1195,7 @@ class _CrearPrestamoClienteScreenState extends State<CrearPrestamoClienteScreen>
     );
   }
 
-  /// Widget para mostrar lista de items
+  /// Widget para mostrar lista de items (editable)
   Widget _buildListaItems() {
     return ListView.builder(
       shrinkWrap: true,
@@ -1203,14 +1203,70 @@ class _CrearPrestamoClienteScreenState extends State<CrearPrestamoClienteScreen>
       itemCount: _items.length,
       itemBuilder: (context, index) {
         final item = _items[index];
+        final cantidadController = TextEditingController(text: item['cantidad'].toString());
+
         return Card(
           margin: const EdgeInsets.only(bottom: 8),
-          child: ListTile(
-            title: Text(item['prestable_nombre']),
-            subtitle: Text('Cantidad: ${item['cantidad']}'),
-            trailing: IconButton(
-              icon: const Icon(Icons.delete, color: Colors.red),
-              onPressed: () => _removerItem(index),
+          child: Padding(
+            padding: const EdgeInsets.all(12),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            item['prestable_nombre'] as String,
+                            style: const TextStyle(fontWeight: FontWeight.bold),
+                          ),
+                          const SizedBox(height: 8),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: TextField(
+                                  controller: cantidadController,
+                                  decoration: InputDecoration(
+                                    labelText: 'Cantidad',
+                                    border: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    isDense: true,
+                                    contentPadding: const EdgeInsets.symmetric(
+                                      horizontal: 12,
+                                      vertical: 8,
+                                    ),
+                                  ),
+                                  keyboardType: TextInputType.number,
+                                  onChanged: (value) {
+                                    final cantidad = int.tryParse(value) ?? item['cantidad'];
+                                    _items[index]['cantidad'] = cantidad;
+
+                                    // Actualizar almacenes si existe
+                                    if (item['almacenes'] is List && (item['almacenes'] as List).isNotEmpty) {
+                                      final almacenes = item['almacenes'] as List;
+                                      for (var almacen in almacenes) {
+                                        almacen['cantidad'] = cantidad;
+                                      }
+                                    }
+                                  },
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              IconButton(
+                                icon: const Icon(Icons.delete, color: Colors.red),
+                                onPressed: () => _removerItem(index),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ],
             ),
           ),
         );
