@@ -182,27 +182,18 @@ class _CrearPrestamoClienteScreenState extends State<CrearPrestamoClienteScreen>
     }
   }
 
-  /// Obtener dirección del cliente: preferir dirección de venta, sino usar principal del cliente
-  DireccionCliente? _obtenerDireccionCliente(Venta venta) {
-    // Si la venta tiene dirección cliente, usar esa
+  /// Obtener dirección del cliente desde la venta
+  Map<String, dynamic>? _obtenerDireccionCliente(Venta venta) {
+    // Si la venta tiene dirección cliente con datos, usar esa
     if (venta.direccionCliente != null) {
-      return venta.direccionCliente;
+      return {
+        'direccion': venta.direccionCliente!.direccion ?? 'Sin dirección',
+        'localidad_id': venta.direccionCliente!.localidad?.id,
+        'localidad_nombre': venta.direccionCliente!.localidad?.nombre,
+      };
     }
 
-    // Si no, buscar dirección principal en el cliente
-    if (venta.cliente != null && venta.cliente!.direcciones != null && venta.cliente!.direcciones!.isNotEmpty) {
-      try {
-        // Buscar dirección principal (es_principal == true)
-        return venta.cliente!.direcciones!.firstWhere(
-          (d) => d.esPrincipal == true,
-          orElse: () => venta.cliente!.direcciones!.first,
-        );
-      } catch (e) {
-        debugPrint('❌ Error obteniendo dirección del cliente: $e');
-        return null;
-      }
-    }
-
+    // Si no hay dirección en venta, retornar null
     return null;
   }
 
@@ -348,11 +339,11 @@ class _CrearPrestamoClienteScreenState extends State<CrearPrestamoClienteScreen>
       // Obtener dirección del cliente si existe venta
       Map<String, dynamic>? ubicacionData;
       if (_ventaBuscada != null) {
-        final direccion = _obtenerDireccionCliente(_ventaBuscada!);
-        if (direccion != null) {
+        final direccionData = _obtenerDireccionCliente(_ventaBuscada!);
+        if (direccionData != null) {
           ubicacionData = {
-            'direccion': direccion.direccion,
-            'localidad_id': direccion.localidad?.id,
+            'direccion': direccionData['direccion'],
+            'localidad_id': direccionData['localidad_id'],
             'es_ubicacion_manual': false,
           };
         }
@@ -544,11 +535,14 @@ class _CrearPrestamoClienteScreenState extends State<CrearPrestamoClienteScreen>
   /// Card de dirección del cliente
   Widget _buildDireccionCard() {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final direccion = _ventaBuscada != null ? _obtenerDireccionCliente(_ventaBuscada!) : null;
+    final direccionData = _ventaBuscada != null ? _obtenerDireccionCliente(_ventaBuscada!) : null;
 
-    if (direccion == null) {
+    if (direccionData == null) {
       return const SizedBox.shrink();
     }
+
+    final direccion = direccionData['direccion'] as String?;
+    final localidadNombre = direccionData['localidad_nombre'] as String?;
 
     return Container(
       padding: const EdgeInsets.all(12),
@@ -588,14 +582,14 @@ class _CrearPrestamoClienteScreenState extends State<CrearPrestamoClienteScreen>
           ),
           const SizedBox(height: 8),
           Text(
-            direccion.direccion,
+            direccion ?? 'Sin dirección',
             style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
           ),
-          if (direccion.localidad != null) ...[
+          if (localidadNombre != null) ...[
             const SizedBox(height: 4),
             Chip(
               label: Text(
-                direccion.localidad!.nombre,
+                localidadNombre,
                 style: const TextStyle(fontSize: 11),
               ),
               avatar: CircleAvatar(
