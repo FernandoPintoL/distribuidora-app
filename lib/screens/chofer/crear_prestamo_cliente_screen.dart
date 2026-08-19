@@ -352,13 +352,20 @@ class _CrearPrestamoClienteScreenState extends State<CrearPrestamoClienteScreen>
       ),
       body: _cargando
           ? const Center(child: CircularProgressIndicator())
-          : SingleChildScrollView(
-              padding: const EdgeInsets.all(16),
-              child: Form(
-                key: _formKey,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
+          : _buildFormContent(),
+    );
+  }
+
+  Widget _buildFormContent() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16),
+      child: Form(
+        key: _formKey,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
                     // Búsqueda de cliente
                     _buildClienteSearchField(),
                     const SizedBox(height: 24),
@@ -385,6 +392,84 @@ class _CrearPrestamoClienteScreenState extends State<CrearPrestamoClienteScreen>
                 ),
               ),
             ),
+    );
+  }
+
+  /// Card de venta buscada con soporte dark mode
+  Widget _buildVentaBuscadaCard(bool isDark) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: isDark
+            ? context.colorScheme.primary.withOpacity(0.15)
+            : context.colorScheme.primary.withOpacity(0.1),
+        border: Border.all(
+          color: isDark
+              ? context.colorScheme.primary.withOpacity(0.5)
+              : context.colorScheme.primary,
+        ),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            '✅ Venta #${_ventaBuscada!.numero}',
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              color: context.colorScheme.primary,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text('Cliente: ${_clienteSeleccionado?.nombre ?? 'N/A'}'),
+          Text('Items cargados: ${_items.length}'),
+          Text(
+            'Total: Bs. ${_ventaBuscada!.total.toStringAsFixed(2)}',
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Card de cliente seleccionado con soporte dark mode
+  Widget _buildClienteSeleccionadoCard(bool isDark) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: isDark
+            ? context.colorScheme.primary.withOpacity(0.15)
+            : context.colorScheme.primary.withOpacity(0.1),
+        border: Border.all(
+          color: isDark
+              ? context.colorScheme.primary.withOpacity(0.5)
+              : context.colorScheme.primary,
+        ),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Row(
+        children: [
+          Icon(
+            Icons.check_circle,
+            color: context.colorScheme.primary,
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  _clienteSeleccionado!.nombre,
+                  style: const TextStyle(fontWeight: FontWeight.bold),
+                ),
+                Text(
+                  _clienteSeleccionado!.telefono ?? '',
+                  style: const TextStyle(fontSize: 12),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -436,32 +521,7 @@ class _CrearPrestamoClienteScreenState extends State<CrearPrestamoClienteScreen>
         ),
         if (_ventaBuscada != null) ...[
           const SizedBox(height: 12),
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: Colors.green.shade50,
-              border: Border.all(color: Colors.green),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  '✅ Venta #${_ventaBuscada!.numero}',
-                  style: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                    color: Colors.green,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text('Cliente: ${_clienteSeleccionado?.nombre ?? 'N/A'}'),
-                Text('Items cargados: ${_items.length}'),
-                Text(
-                  'Total: Bs. ${_ventaBuscada!.total.toStringAsFixed(2)}',
-                ),
-              ],
-            ),
-          ),
+          _buildVentaBuscadaCard(isDark),
         ],
       ],
     );
@@ -680,35 +740,7 @@ class _CrearPrestamoClienteScreenState extends State<CrearPrestamoClienteScreen>
         ),
         if (_clienteSeleccionado != null) ...[
           const SizedBox(height: 12),
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: Colors.green.shade50,
-              border: Border.all(color: Colors.green),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Row(
-              children: [
-                const Icon(Icons.check_circle, color: Colors.green),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        _clienteSeleccionado!.nombre,
-                        style: const TextStyle(fontWeight: FontWeight.bold),
-                      ),
-                      Text(
-                        _clienteSeleccionado!.telefono ?? '',
-                        style: const TextStyle(fontSize: 12),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
+          _buildClienteSeleccionadoCard(isDark),
         ],
       ],
     );
@@ -716,12 +748,16 @@ class _CrearPrestamoClienteScreenState extends State<CrearPrestamoClienteScreen>
 
   /// Widget para seleccionar cliente (simple)
   Widget _buildClienteField() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return GestureDetector(
       onTap: () => _mostrarDialogoSeleccionarCliente(),
       child: Container(
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          border: Border.all(color: Colors.grey.shade400),
+          border: Border.all(
+            color: isDark ? Colors.grey.shade700 : Colors.grey.shade400,
+          ),
           borderRadius: BorderRadius.circular(8),
         ),
         child: Row(
@@ -736,7 +772,7 @@ class _CrearPrestamoClienteScreenState extends State<CrearPrestamoClienteScreen>
                     'Cliente',
                     style: TextStyle(
                       fontSize: 12,
-                      color: Colors.grey.shade600,
+                      color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
                     ),
                   ),
                   const SizedBox(height: 4),
@@ -758,6 +794,8 @@ class _CrearPrestamoClienteScreenState extends State<CrearPrestamoClienteScreen>
 
   /// Widget para seleccionar fecha del préstamo
   Widget _buildFechaPrestamo() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return GestureDetector(
       onTap: () => _seleccionarFecha(
         titulo: 'Fecha del Préstamo',
@@ -771,7 +809,9 @@ class _CrearPrestamoClienteScreenState extends State<CrearPrestamoClienteScreen>
       child: Container(
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          border: Border.all(color: Colors.grey.shade400),
+          border: Border.all(
+            color: isDark ? Colors.grey.shade700 : Colors.grey.shade400,
+          ),
           borderRadius: BorderRadius.circular(8),
         ),
         child: Row(
@@ -786,7 +826,7 @@ class _CrearPrestamoClienteScreenState extends State<CrearPrestamoClienteScreen>
                     'Fecha del Préstamo',
                     style: TextStyle(
                       fontSize: 12,
-                      color: Colors.grey.shade600,
+                      color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
                     ),
                   ),
                   const SizedBox(height: 4),
@@ -806,6 +846,8 @@ class _CrearPrestamoClienteScreenState extends State<CrearPrestamoClienteScreen>
 
   /// Widget para seleccionar fecha esperada de devolución
   Widget _buildFechaDevolucion() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return GestureDetector(
       onTap: () => _seleccionarFecha(
         titulo: 'Fecha Esperada de Devolución',
@@ -819,7 +861,9 @@ class _CrearPrestamoClienteScreenState extends State<CrearPrestamoClienteScreen>
       child: Container(
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          border: Border.all(color: Colors.grey.shade400),
+          border: Border.all(
+            color: isDark ? Colors.grey.shade700 : Colors.grey.shade400,
+          ),
           borderRadius: BorderRadius.circular(8),
         ),
         child: Row(
@@ -834,7 +878,7 @@ class _CrearPrestamoClienteScreenState extends State<CrearPrestamoClienteScreen>
                     'Fecha Esperada Devolución',
                     style: TextStyle(
                       fontSize: 12,
-                      color: Colors.grey.shade600,
+                      color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
                     ),
                   ),
                   const SizedBox(height: 4),
@@ -856,6 +900,7 @@ class _CrearPrestamoClienteScreenState extends State<CrearPrestamoClienteScreen>
 
   /// Widget para mostrar almacén preseleccionado
   Widget _buildAlmacenField() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final almacenNombre = _almacenSeleccionado != null
         ? _almacenes
             .firstWhere(
@@ -867,13 +912,21 @@ class _CrearPrestamoClienteScreenState extends State<CrearPrestamoClienteScreen>
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        border: Border.all(color: Colors.grey.shade400),
+        border: Border.all(
+          color: isDark ? Colors.grey.shade700 : Colors.grey.shade400,
+        ),
         borderRadius: BorderRadius.circular(8),
-        color: Colors.blue.shade50,
+        color: isDark
+            ? context.colorScheme.primary.withOpacity(0.2)
+            : context.colorScheme.primary.withOpacity(0.1),
       ),
       child: Row(
         children: [
-          const Icon(Icons.warehouse, size: 20, color: Colors.blue),
+          Icon(
+            Icons.warehouse,
+            size: 20,
+            color: context.colorScheme.primary,
+          ),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
@@ -883,7 +936,7 @@ class _CrearPrestamoClienteScreenState extends State<CrearPrestamoClienteScreen>
                   'Almacén (Preseleccionado)',
                   style: TextStyle(
                     fontSize: 12,
-                    color: Colors.grey.shade600,
+                    color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
                   ),
                 ),
                 const SizedBox(height: 4),
@@ -894,7 +947,10 @@ class _CrearPrestamoClienteScreenState extends State<CrearPrestamoClienteScreen>
               ],
             ),
           ),
-          const Icon(Icons.check_circle, color: Colors.green),
+          Icon(
+            Icons.check_circle,
+            color: context.colorScheme.primary,
+          ),
         ],
       ),
     );
