@@ -159,6 +159,10 @@ class _CrearPrestamoClienteScreenState extends State<CrearPrestamoClienteScreen>
           _autoFillPrestablesDesdeVenta(venta);
         });
 
+        // Log para debugging
+        final direccion = _obtenerDireccionCliente(venta);
+        debugPrint('📍 Dirección del cliente: ${direccion?.direccion ?? "No disponible"}');
+
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('✅ Venta #${venta.numero} cargada'),
@@ -176,6 +180,30 @@ class _CrearPrestamoClienteScreenState extends State<CrearPrestamoClienteScreen>
         _cargando = false;
       });
     }
+  }
+
+  /// Obtener dirección del cliente: preferir dirección de venta, sino usar principal del cliente
+  DireccionCliente? _obtenerDireccionCliente(Venta venta) {
+    // Si la venta tiene dirección cliente, usar esa
+    if (venta.direccionCliente != null) {
+      return venta.direccionCliente;
+    }
+
+    // Si no, buscar dirección principal en el cliente
+    if (venta.cliente != null && venta.cliente!.direcciones != null && venta.cliente!.direcciones!.isNotEmpty) {
+      try {
+        // Buscar dirección principal (es_principal == true)
+        return venta.cliente!.direcciones!.firstWhere(
+          (d) => d.esPrincipal == true,
+          orElse: () => venta.cliente!.direcciones!.first,
+        );
+      } catch (e) {
+        debugPrint('❌ Error obteniendo dirección del cliente: $e');
+        return null;
+      }
+    }
+
+    return null;
   }
 
   /// Auto-llenar prestables desde los detalles de la venta
@@ -317,6 +345,19 @@ class _CrearPrestamoClienteScreenState extends State<CrearPrestamoClienteScreen>
     try {
       final prestamosProvider = context.read<PrestamosProvider>();
 
+      // Obtener dirección del cliente si existe venta
+      Map<String, dynamic>? ubicacionData;
+      if (_ventaBuscada != null) {
+        final direccion = _obtenerDireccionCliente(_ventaBuscada!);
+        if (direccion != null) {
+          ubicacionData = {
+            'direccion': direccion.direccion,
+            'localidad_id': direccion.localidad?.id,
+            'es_ubicacion_manual': false,
+          };
+        }
+      }
+
       // Preparar payload
       final payload = {
         'cliente_id': _clienteSeleccionado!.id,
@@ -326,6 +367,7 @@ class _CrearPrestamoClienteScreenState extends State<CrearPrestamoClienteScreen>
         'observaciones': _observaciones.isNotEmpty ? _observaciones : null,
         'monto_garantia': _montoGarantia > 0 ? _montoGarantia : null,
         'detalles': _items,
+        if (ubicacionData != null) 'ubicacion': ubicacionData,
       };
 
       debugPrint('📤 Enviando préstamo: $payload');
