@@ -253,6 +253,8 @@ class _CrearPrestamoClienteScreenState extends State<CrearPrestamoClienteScreen>
           'prestable_id': canastilla.id,
           'prestable_nombre': canastilla.nombre,
           'cantidad': cantidadDetalle,
+          'capacidad': canastilla.capacidad ?? 0, // ✅ Guardar capacidad para recálculos
+          'tipo': 'CANASTILLA',
           'almacenes': [
             {
               'almacenes_prestables_id': _almacenSeleccionado,
@@ -270,6 +272,8 @@ class _CrearPrestamoClienteScreenState extends State<CrearPrestamoClienteScreen>
               'prestable_id': embase.id,
               'prestable_nombre': embase.nombre,
               'cantidad': cantidadEmbase,
+              'tipo': 'EMBASE',
+              'canastilla_index': _items.length - 1, // ✅ Guardar índice de la canastilla relacionada
               'almacenes': [
                 {
                   'almacenes_prestables_id': _almacenSeleccionado,
@@ -1242,11 +1246,19 @@ class _CrearPrestamoClienteScreenState extends State<CrearPrestamoClienteScreen>
                                   keyboardType: TextInputType.number,
                                   onChanged: (value) {
                                     setState(() {
-                                      final cantidad = int.tryParse(value) ?? item['cantidad'];
-                                      final nombreItem = item['prestable_nombre'] as String;
+                                      // Permitir que se vacíe temporalmente mientras digita
+                                      if (value.isEmpty) {
+                                        return;
+                                      }
+
+                                      final cantidad = int.tryParse(value);
+                                      if (cantidad == null || cantidad <= 0) {
+                                        return;
+                                      }
+
                                       _items[index]['cantidad'] = cantidad;
 
-                                      // Actualizar almacenes si existe
+                                      // Actualizar almacenes
                                       if (item['almacenes'] is List && (item['almacenes'] as List).isNotEmpty) {
                                         final almacenes = item['almacenes'] as List;
                                         for (var almacen in almacenes) {
@@ -1255,47 +1267,28 @@ class _CrearPrestamoClienteScreenState extends State<CrearPrestamoClienteScreen>
                                       }
 
                                       // Si es CANASTILLA, recalcular embase
-                                      if (nombreItem.toUpperCase().contains('CANASTILLA') ||
-                                          nombreItem.toUpperCase().contains('CANT')) {
-                                        // Buscar el embase de esta canastilla
-                                        for (int i = 0; i < _items.length; i++) {
-                                          final itemActual = _items[i];
-                                          final nombreActual = itemActual['prestable_nombre'] as String;
+                                      if (item['tipo'] == 'CANASTILLA' && item['capacidad'] != null && item['capacidad'] > 0) {
+                                        final capacidad = item['capacidad'] as int;
+                                        final cantidadEmbase = cantidad * capacidad;
 
-                                          // Si es embase y está después de la canastilla
-                                          if ((nombreActual.toUpperCase().contains('EMBASE') ||
-                                                  nombreActual.toUpperCase().contains('EMB')) &&
-                                              i > index) {
-                                            // Obtener la venta original para sacar la capacidad
-                                            if (_ventaBuscada != null && _ventaBuscada!.detalles.isNotEmpty) {
-                                              final detalle = _ventaBuscada!.detalles.first;
-                                              if (detalle.producto?.prestables != null) {
-                                                final canastilla = detalle.producto!.prestables!.firstWhere(
-                                                  (p) => p.tipo.toUpperCase() == 'CANASTILLA',
-                                                  orElse: () =>
-                                                      Prestable(id: 0, nombre: '', codigo: '', tipo: ''),
-                                                );
+                                        // Buscar el embase relacionado (debe estar al lado)
+                                        if (index + 1 < _items.length) {
+                                          final itemEmbase = _items[index + 1];
+                                          if (itemEmbase['tipo'] == 'EMBASE') {
+                                            itemEmbase['cantidad'] = cantidadEmbase;
 
-                                                if (canastilla.id != 0 && canastilla.capacidad != null) {
-                                                  final cantidadEmbase = cantidad * canastilla.capacidad!;
-                                                  _items[i]['cantidad'] = cantidadEmbase;
-
-                                                  // Actualizar almacenes del embase
-                                                  if (itemActual['almacenes'] is List &&
-                                                      (itemActual['almacenes'] as List).isNotEmpty) {
-                                                    final almacenesEmbase = itemActual['almacenes'] as List;
-                                                    for (var almacen in almacenesEmbase) {
-                                                      almacen['cantidad'] = cantidadEmbase;
-                                                    }
-                                                  }
-
-                                                  debugPrint(
-                                                    '🔄 Canastilla actualizada: $cantidad → Embase: $cantidadEmbase (capacidad: ${canastilla.capacidad})',
-                                                  );
-                                                }
+                                            // Actualizar almacenes del embase
+                                            if (itemEmbase['almacenes'] is List &&
+                                                (itemEmbase['almacenes'] as List).isNotEmpty) {
+                                              final almacenesEmbase = itemEmbase['almacenes'] as List;
+                                              for (var almacen in almacenesEmbase) {
+                                                almacen['cantidad'] = cantidadEmbase;
                                               }
                                             }
-                                            break;
+
+                                            debugPrint(
+                                              '🔄 Canastilla: $cantidad → Embase: $cantidadEmbase (capacidad: $capacidad)',
+                                            );
                                           }
                                         }
                                       }
