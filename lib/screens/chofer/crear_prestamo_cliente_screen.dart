@@ -421,6 +421,8 @@ class _CrearPrestamoClienteScreenState extends State<CrearPrestamoClienteScreen>
         'observaciones': _observaciones.isNotEmpty ? _observaciones : null,
         'monto_garantia': _montoGarantia > 0 ? _montoGarantia : null,
         'detalles': _items,
+        'es_venta': false, // ✅ Préstamo a cliente sin venta específica
+        'es_evento': false, // ✅ No es préstamo de evento
         if (ubicacionData != null) 'ubicacion': ubicacionData,
       };
 
