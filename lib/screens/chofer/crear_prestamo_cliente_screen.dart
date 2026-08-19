@@ -162,20 +162,28 @@ class _CrearPrestamoClienteScreenState extends State<CrearPrestamoClienteScreen>
     }
   }
 
-  /// Cargar choferes desde API
+  /// Cargar choferes desde API (usuarios con rol chofer)
   Future<void> _cargarChoferes() async {
     try {
-      final response = await _apiService.get('/choferes?per_page=100');
+      final response = await _apiService.get('/usuarios?per_page=100');
       if (response.statusCode == 200) {
         final data = response.data as Map<String, dynamic>;
-        final choferesList = data['data'] as List;
+        final usuariosList = data['data'] as List;
 
         setState(() {
-          _choferes = choferesList
+          // Filtrar solo usuarios con rol chofer
+          _choferes = usuariosList
+              .where((u) {
+                final roles = u['roles'] as List? ?? [];
+                return roles.any((r) =>
+                  (r is Map && (r['name']?.toString().toLowerCase().contains('chofer') ?? false)) ||
+                  (r is String && r.toLowerCase().contains('chofer'))
+                );
+              })
               .map((c) => {
                     'id': c['id'] as int,
-                    'nombre': c['nombre'] as String? ?? '',
-                    'apellido': c['apellido'] as String? ?? '',
+                    'nombre': c['name'] as String? ?? '',
+                    'apellido': '',
                   })
               .toList();
 
