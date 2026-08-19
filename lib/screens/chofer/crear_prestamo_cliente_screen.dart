@@ -176,7 +176,7 @@ class _CrearPrestamoClienteScreenState extends State<CrearPrestamoClienteScreen>
   }
 
   /// Auto-llenar prestables desde los detalles de la venta
-  /// Fórmula: embase = capacidad_producto * venta.cantidad
+  /// Fórmula: embase = capacidad_canastilla * venta.cantidad
   void _autoFillPrestablesDesdeVenta(Venta venta) {
     _items.clear();
 
@@ -186,36 +186,56 @@ class _CrearPrestamoClienteScreenState extends State<CrearPrestamoClienteScreen>
       final producto = detalle.producto!;
       final cantidadDetalle = detalle.cantidad.toInt();
 
-      // Agregar item principal con cantidad del detalle
-      _items.add({
-        'prestable_id': producto.id,
-        'prestable_nombre': producto.nombre,
-        'cantidad': cantidadDetalle,
-        'almacenes': [
-          {
-            'almacenes_prestables_id': _almacenSeleccionado,
-            'cantidad': cantidadDetalle,
+      // Buscar la canastilla en los prestables relacionados
+      Prestable? canastilla;
+      Prestable? embase;
+
+      if (producto.prestables != null && producto.prestables!.isNotEmpty) {
+        canastilla = producto.prestables!.firstWhere(
+          (p) => p.tipo.toUpperCase() == 'CANASTILLA',
+          orElse: () => Prestable(id: 0, nombre: '', codigo: '', tipo: ''),
+        );
+
+        // Buscar el embase asociado a la canastilla
+        if (canastilla.id != 0) {
+          embase = producto.prestables!.firstWhere(
+            (p) => p.tipo.toUpperCase() == 'EMBASES',
+            orElse: () => Prestable(id: 0, nombre: '', codigo: '', tipo: ''),
+          );
+        }
+      }
+
+      // Si encontramos la canastilla, agregarla como item
+      if (canastilla != null && canastilla.id != 0) {
+        _items.add({
+          'prestable_id': canastilla.id,
+          'prestable_nombre': canastilla.nombre,
+          'cantidad': cantidadDetalle,
+          'almacenes': [
+            {
+              'almacenes_prestables_id': _almacenSeleccionado,
+              'cantidad': cantidadDetalle,
+            }
+          ],
+        });
+
+        // Si existe embase y canastilla tiene capacidad, calcular cantidad de embase
+        if (embase != null && embase.id != 0 && canastilla.capacidad != null && canastilla.capacidad! > 0) {
+          final cantidadEmbase = (canastilla.capacidad! * cantidadDetalle).toInt();
+
+          if (cantidadEmbase > 0) {
+            _items.add({
+              'prestable_id': embase.id,
+              'prestable_nombre': embase.nombre,
+              'cantidad': cantidadEmbase,
+              'almacenes': [
+                {
+                  'almacenes_prestables_id': _almacenSeleccionado,
+                  'cantidad': cantidadEmbase,
+                }
+              ],
+            });
           }
-        ],
-      });
-
-      // Si el producto tiene capacidad, calcular embase
-      // Fórmula: embase = capacidad * cantidad_venta
-      if (producto.capacidad != null && producto.capacidad! > 0) {
-        final cantidadEmbase = (producto.capacidad! * cantidadDetalle).toInt();
-
-        if (cantidadEmbase > 0) {
-          _items.add({
-            'prestable_id': producto.id,
-            'prestable_nombre': '${producto.nombre} - Embase',
-            'cantidad': cantidadEmbase,
-            'almacenes': [
-              {
-                'almacenes_prestables_id': _almacenSeleccionado,
-                'cantidad': cantidadEmbase,
-              }
-            ],
-          });
         }
       }
     }

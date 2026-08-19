@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'prestable.dart';
 
 class Producto {
   final int id;
@@ -28,6 +29,9 @@ class Producto {
   final List<ComboItem>? comboItems;
   final List<ComboGrupo>? comboGrupos;
   final int? capacidad;
+
+  // ✅ CAMPOS DE PRESTABLES RELACIONADOS
+  final List<Prestable>? prestables;
 
   // ✅ CAMPOS DE PRECIOS RECOMENDADOS
   final int? tipoPrecioIdRecomendado;
@@ -59,6 +63,7 @@ class Producto {
     this.comboItems, // ✅ NUEVO: Items del combo
     this.comboGrupos, // ✅ NUEVO: Grupos opcionales
     this.capacidad, // ✅ NUEVO: Capacidad de combos
+    this.prestables, // ✅ NUEVO: Prestables relacionados
     this.tipoPrecioIdRecomendado, // ✅ NUEVO: ID del tipo de precio recomendado
     this.tipoPrecioNombreRecomendado, // ✅ NUEVO: Nombre del tipo de precio recomendado
   });
@@ -229,6 +234,12 @@ class Producto {
                   .toList()
             : null,
         capacidad: json['capacidad'],
+        // ✅ NUEVO: Prestables relacionados
+        prestables: json['prestables'] != null
+            ? (json['prestables'] as List)
+                  .map((i) => Prestable.fromJson(i))
+                  .toList()
+            : null,
         // ✅ NUEVO: Campos de precios recomendados
         tipoPrecioIdRecomendado: json['tipo_precio_id_recomendado'],
         tipoPrecioNombreRecomendado: json['tipo_precio_nombre_recomendado'],
