@@ -689,7 +689,7 @@ class _CrearPrestamoClienteScreenState extends State<CrearPrestamoClienteScreen>
                         style: const TextStyle(fontWeight: FontWeight.bold),
                       ),
                       Text(
-                        _clienteSeleccionado!.email ?? '',
+                        _clienteSeleccionado!.telefono ?? '',
                         style: const TextStyle(fontSize: 12),
                       ),
                     ],
