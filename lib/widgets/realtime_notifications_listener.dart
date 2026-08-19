@@ -37,6 +37,7 @@ class _RealtimeNotificationsListenerState
   StreamSubscription? _ventaSubscription; // ✅ NUEVO para eventos de ventas
   StreamSubscription? _creditoSubscription; // ✅ NUEVA FASE 3 para créditos
   StreamSubscription? _notificacionRecurrenteSubscription; // ✅ NUEVA FASE 3 para notificaciones recurrentes
+  StreamSubscription? _prestamoSubscription; // ✅ NUEVO para préstamos
 
   @override
   void initState() {
@@ -56,6 +57,7 @@ class _RealtimeNotificationsListenerState
     _ventaSubscription?.cancel(); // ✅ Cancelar suscripción de ventas
     _creditoSubscription?.cancel(); // ✅ Cancelar suscripción de créditos
     _notificacionRecurrenteSubscription?.cancel(); // ✅ Cancelar suscripción de notificaciones recurrentes
+    _prestamoSubscription?.cancel(); // ✅ Cancelar suscripción de préstamos
     super.dispose();
   }
 
@@ -246,6 +248,25 @@ class _RealtimeNotificationsListenerState
       switch (type) {
         case 'recurrente':
           _mostrarNotificacionRecurrente(data);
+          break;
+      }
+    });
+
+    // ✅ NUEVO: Escuchar eventos de préstamos
+    _prestamoSubscription = _webSocketService.prestamoStream.listen((event) {
+      final type = event['type'] as String;
+      final data = event['data'] as Map<String, dynamic>;
+
+      switch (type) {
+        case 'cliente_creado':
+          // ✅ Mostrar notificación cuando se crea un préstamo a cliente
+          debugPrint('🎁 Préstamo a cliente creado - Mostrando notificación');
+          _mostrarNotificacionPrestamoClienteCreado(data);
+          break;
+        case 'evento_creado':
+          // ✅ Mostrar notificación cuando se crea un préstamo a evento
+          debugPrint('🎁 Préstamo a evento creado - Mostrando notificación');
+          _mostrarNotificacionPrestamoEventoCreado(data);
           break;
       }
     });
@@ -1283,6 +1304,50 @@ class _RealtimeNotificationsListenerState
       );
     }
 
+    context.read<NotificationProvider>().loadStats();
+  }
+
+  /// ✅ NUEVO: Mostrar notificación cuando se crea un préstamo a cliente
+  void _mostrarNotificacionPrestamoClienteCreado(Map<String, dynamic> data) {
+    final prestamoId = data['id'] as int?;
+    final clienteNombre = data['cliente_nombre'] as String? ?? data['cliente']?['nombre'] as String?;
+    final cantidad = data['cantidad'] as int?;
+    final creadorNombre = data['creador']?['name'] as String?;
+
+    if (!mounted) return;
+
+    if (prestamoId != null && clienteNombre != null) {
+      _notificationService.showPrestamoClienteCreatedNotification(
+        prestamoId: prestamoId,
+        clienteNombre: clienteNombre,
+        cantidad: cantidad ?? 0,
+        creadorNombre: creadorNombre,
+      );
+    }
+
+    // ✅ Recargar estadísticas
+    context.read<NotificationProvider>().loadStats();
+  }
+
+  /// ✅ NUEVO: Mostrar notificación cuando se crea un préstamo a evento
+  void _mostrarNotificacionPrestamoEventoCreado(Map<String, dynamic> data) {
+    final prestamoId = data['id'] as int?;
+    final nombreEvento = data['nombre_evento'] as String?;
+    final cantidad = data['cantidad'] as int?;
+    final creadorNombre = data['creador']?['name'] as String?;
+
+    if (!mounted) return;
+
+    if (prestamoId != null && nombreEvento != null) {
+      _notificationService.showPrestamoEventoCreatedNotification(
+        prestamoId: prestamoId,
+        nombreEvento: nombreEvento,
+        cantidad: cantidad ?? 0,
+        creadorNombre: creadorNombre,
+      );
+    }
+
+    // ✅ Recargar estadísticas
     context.read<NotificationProvider>().loadStats();
   }
 

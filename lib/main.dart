@@ -33,19 +33,19 @@ void main() async {
   }
 
   // ✅ NUEVO: Cargar .env con manejo robusto
-  debugPrint('🔄 Iniciando cargamento de .env...');
+  print('🔄 Iniciando cargamento de .env...');
 
   // Intento 1: Usar flutter_dotenv.load() (el método recomendado)
   try {
     await dotenv.load(fileName: ".env");
-    debugPrint('✅ .env cargado correctamente con flutter_dotenv');
-    debugPrint('   BASE_URL=${dotenv.env['BASE_URL']}');
-    debugPrint('   BASE_URL_WEB=${dotenv.env['BASE_URL_WEB']}');
-    debugPrint('   WEBSOCKET_URL=${dotenv.env['WEBSOCKET_URL']}');
-    debugPrint('   NODE_WEBSOCKET_URL=${dotenv.env['NODE_WEBSOCKET_URL']}');
+    print('✅ .env cargado correctamente con flutter_dotenv');
+    print('   BASE_URL=${dotenv.env['BASE_URL']}');
+    print('   BASE_URL_WEB=${dotenv.env['BASE_URL_WEB']}');
+    print('   WEBSOCKET_URL=${dotenv.env['WEBSOCKET_URL']}');
+    print('   NODE_WEBSOCKET_URL=${dotenv.env['NODE_WEBSOCKET_URL']}');
   } catch (e) {
-    debugPrint('⚠️ Error con flutter_dotenv.load(): $e');
-    debugPrint('   Intentando fallback: cargar desde assets...');
+    print('⚠️ Error con flutter_dotenv.load(): $e');
+    print('   Intentando fallback: cargar desde assets...');
 
     // Intento 2: Cargar desde assets como fallback
     try {
@@ -63,14 +63,14 @@ void main() async {
           loadedVars++;
         }
       }
-      debugPrint('✅ .env cargado desde assets ($loadedVars variables)');
-      debugPrint('   BASE_URL=${dotenv.env['BASE_URL']}');
-      debugPrint('   BASE_URL_WEB=${dotenv.env['BASE_URL_WEB']}');
-      debugPrint('   WEBSOCKET_URL=${dotenv.env['WEBSOCKET_URL']}');
-      debugPrint('   NODE_WEBSOCKET_URL=${dotenv.env['NODE_WEBSOCKET_URL']}');
+      print('✅ .env cargado desde assets ($loadedVars variables)');
+      print('   BASE_URL=${dotenv.env['BASE_URL']}');
+      print('   BASE_URL_WEB=${dotenv.env['BASE_URL_WEB']}');
+      print('   WEBSOCKET_URL=${dotenv.env['WEBSOCKET_URL']}');
+      print('   NODE_WEBSOCKET_URL=${dotenv.env['NODE_WEBSOCKET_URL']}');
     } catch (e2) {
-      debugPrint('❌ CRÍTICO: No se pudo cargar .env por ningún método: $e2');
-      debugPrint('   Se usarán valores por defecto (fallbacks)');
+      print('❌ CRÍTICO: No se pudo cargar .env por ningún método: $e2');
+      print('   Se usarán valores por defecto (fallbacks)');
     }
   }
 

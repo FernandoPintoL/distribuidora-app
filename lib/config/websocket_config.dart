@@ -1,13 +1,26 @@
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:flutter/foundation.dart';
 
 class WebSocketConfig {
   // URL del WebSocket desde variables de entorno
   static String get currentUrl {
     // Intenta obtener NODE_WEBSOCKET_URL primero, si no está disponible usa WEBSOCKET_URL
-    final url = dotenv.env['NODE_WEBSOCKET_URL'] ??
-                dotenv.env['WEBSOCKET_URL'] ??
-                'http://localhost:3000';
-    return url;
+    final envUrl = dotenv.env['NODE_WEBSOCKET_URL'] ??
+                   dotenv.env['WEBSOCKET_URL'];
+
+    // En release mode, si la URL no está disponible, usar la URL de producción
+    if (envUrl != null && envUrl.isNotEmpty) {
+      return envUrl;
+    }
+
+    // Fallback según modo
+    if (kReleaseMode) {
+      // En release, usar URL segura de producción
+      return 'https://socketpaucara.up.railway.app';
+    } else {
+      // En debug/development, usar localhost
+      return 'http://localhost:3000';
+    }
   }
 
   // Timeouts

@@ -130,6 +130,17 @@ class LocalNotificationService {
           enableLights: false,
         );
 
+    // ✅ NUEVO: Canal para notificaciones de préstamos
+    const AndroidNotificationChannel prestamosChannel =
+        AndroidNotificationChannel(
+          'prestamos',
+          'Notificaciones de Préstamos',
+          description: 'Préstamos a clientes y eventos',
+          importance: Importance.high,
+          enableVibration: true,
+          enableLights: true,
+        );
+
     await _notificationsPlugin
         .resolvePlatformSpecificImplementation<
           AndroidFlutterLocalNotificationsPlugin
@@ -171,6 +182,12 @@ class LocalNotificationService {
           AndroidFlutterLocalNotificationsPlugin
         >()
         ?.createNotificationChannel(notificacionesRecurrentesChannel);
+
+    await _notificationsPlugin
+        .resolvePlatformSpecificImplementation<
+          AndroidFlutterLocalNotificationsPlugin
+        >()
+        ?.createNotificationChannel(prestamosChannel);
   }
 
   /// Solicitar permisos en iOS y Android 13+
@@ -301,8 +318,6 @@ class LocalNotificationService {
             priority: priority,
             enableVibration: _shouldVibrate(channelId),
             playSound: true,
-            // ✅ Usar null para que Android use el ícono de launcher por defecto
-            // Evita problemas de drawable no encontrado
             // Mostrar cuerpo completo en notificaciones grandes
             styleInformation: BigTextStyleInformation(
               body,
@@ -325,22 +340,32 @@ class LocalNotificationService {
         iOS: iOSDetails,
       );
 
-      await _notificationsPlugin.show(
-        id,
-        title,
-        body,
-        details,
-        payload: payload,
-      );
+      try {
+        await _notificationsPlugin.show(
+          id,
+          title,
+          body,
+          details,
+          payload: payload,
+        );
 
-      debugPrint('\n═══════════════════════════════════════');
-      debugPrint('✅ NOTIFICACIÓN MOSTRADA EXITOSAMENTE');
-      debugPrint('   Title: $title');
-      debugPrint('   Canal: $channelId');
-      debugPrint('═══════════════════════════════════════\n');
+        debugPrint('\n═══════════════════════════════════════');
+        debugPrint('✅ NOTIFICACIÓN MOSTRADA EXITOSAMENTE');
+        debugPrint('   Title: $title');
+        debugPrint('   Canal: $channelId');
+        debugPrint('═══════════════════════════════════════\n');
+      } catch (platformException) {
+        // En algunos dispositivos/versiones, flutter_local_notifications falla
+        // Pero el snackbar ya se muestra desde el listener, así que es aceptable
+        debugPrint('\n═══════════════════════════════════════');
+        debugPrint('⚠️ NOTIFICACIÓN NATIVA FALLÓ (pero snackbar se mostró)');
+        debugPrint('   Title: $title');
+        debugPrint('   Error: $platformException');
+        debugPrint('═══════════════════════════════════════\n');
+      }
     } catch (e) {
       debugPrint('\n═══════════════════════════════════════');
-      debugPrint('❌ ERROR MOSTRANDO NOTIFICACIÓN');
+      debugPrint('❌ ERROR CRÍTICO EN NOTIFICACIÓN');
       debugPrint('   Title: $title');
       debugPrint('   Error: $e');
       debugPrint('═══════════════════════════════════════\n');
@@ -1202,6 +1227,44 @@ class LocalNotificationService {
       body: body,
       channelId: 'cambio_estados',
       payload: 'entrega_salido_preventista_$ventaNumero',
+    );
+  }
+
+  /// ✅ NUEVO: Mostrar notificación cuando se crea un préstamo a cliente
+  Future<void> showPrestamoClienteCreatedNotification({
+    required int prestamoId,
+    required String clienteNombre,
+    required int cantidad,
+    String? creadorNombre,
+  }) async {
+    final creator = creadorNombre ?? 'Sistema';
+    final body = '🎁 Se creó un préstamo a $clienteNombre con $cantidad artículos. Creador: $creator';
+
+    await _showNotification(
+      id: prestamoId,
+      title: '🎁 Nuevo Préstamo a Cliente',
+      body: body,
+      channelId: 'prestamos',
+      payload: 'prestamo_cliente_$prestamoId',
+    );
+  }
+
+  /// ✅ NUEVO: Mostrar notificación cuando se crea un préstamo a evento
+  Future<void> showPrestamoEventoCreatedNotification({
+    required int prestamoId,
+    required String nombreEvento,
+    required int cantidad,
+    String? creadorNombre,
+  }) async {
+    final creator = creadorNombre ?? 'Sistema';
+    final body = '🎁 Se creó un préstamo para el evento $nombreEvento con $cantidad artículos. Creador: $creator';
+
+    await _showNotification(
+      id: prestamoId,
+      title: '🎁 Nuevo Préstamo a Evento',
+      body: body,
+      channelId: 'prestamos',
+      payload: 'prestamo_evento_$prestamoId',
     );
   }
 }

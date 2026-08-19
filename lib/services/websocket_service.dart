@@ -27,6 +27,7 @@ class WebSocketService {
   final _ventaController = StreamController<Map<String, dynamic>>.broadcast(); // ✅ NUEVO para ventas
   final _creditoController = StreamController<Map<String, dynamic>>.broadcast(); // ✅ NUEVO para créditos FASE 3
   final _notificacionRecurrenteController = StreamController<Map<String, dynamic>>.broadcast(); // ✅ NUEVO para notificaciones recurrentes FASE 3
+  final _prestamoController = StreamController<Map<String, dynamic>>.broadcast(); // ✅ NUEVO para préstamos
   final _connectionController = StreamController<bool>.broadcast();
 
   // Getters de streams
@@ -41,6 +42,7 @@ class WebSocketService {
   Stream<Map<String, dynamic>> get ventaStream => _ventaController.stream; // ✅ NUEVO para ventas
   Stream<Map<String, dynamic>> get creditoStream => _creditoController.stream; // ✅ NUEVO para créditos FASE 3
   Stream<Map<String, dynamic>> get notificacionRecurrenteStream => _notificacionRecurrenteController.stream; // ✅ NUEVO para notificaciones recurrentes FASE 3
+  Stream<Map<String, dynamic>> get prestamoStream => _prestamoController.stream; // ✅ NUEVO para préstamos
   Stream<bool> get connectionStream => _connectionController.stream;
 
   bool get isConnected => _isConnected;
@@ -777,6 +779,35 @@ class WebSocketService {
       });
       _handleEvent(WebSocketConfig.eventNotificacionRecurrente, data);
     });
+
+    // ✅ NUEVO: Eventos de Préstamos
+    // Notificación cuando se crea un préstamo a cliente
+    _socket!.on('prestamo:cliente:creado', (data) {
+      debugPrint('🎁 PRÉSTAMO A CLIENTE CREADO');
+      debugPrint('   ID: ${data['id']}');
+      debugPrint('   Cliente: ${data['cliente_nombre']}');
+      debugPrint('   Cantidad: ${data['cantidad']}');
+      debugPrint('   Creador: ${data['creador']?['name']}');
+      _prestamoController.add({
+        'type': 'cliente_creado',
+        'data': data,
+      });
+      _handleEvent('prestamo:cliente:creado', data);
+    });
+
+    // Notificación cuando se crea un préstamo a evento
+    _socket!.on('prestamo:evento:creado', (data) {
+      debugPrint('🎁 PRÉSTAMO A EVENTO CREADO');
+      debugPrint('   ID: ${data['id']}');
+      debugPrint('   Evento: ${data['nombre_evento']}');
+      debugPrint('   Cantidad: ${data['cantidad']}');
+      debugPrint('   Creador: ${data['creador']?['name']}');
+      _prestamoController.add({
+        'type': 'evento_creado',
+        'data': data,
+      });
+      _handleEvent('prestamo:evento:creado', data);
+    });
   }
 
   /// Registrar callback para evento específico
@@ -821,6 +852,7 @@ class WebSocketService {
     _ventaController.close();
     _creditoController.close();
     _notificacionRecurrenteController.close();
+    _prestamoController.close();
     _connectionController.close();
     _eventHandlers.clear();
   }
