@@ -8,6 +8,8 @@ import '../../services/api_service.dart';
 import '../../models/models.dart';
 import '../../models/cliente.dart';
 import '../../models/prestable.dart';
+import '../map/map_location_selector.dart';
+import '../../models/map_location.dart';
 
 /// Pantalla para crear nuevo préstamo a cliente
 /// Formulario unificado con búsqueda de cliente y venta
@@ -597,6 +599,21 @@ class _CrearPrestamoClienteScreenState extends State<CrearPrestamoClienteScreen>
                   ),
                 ),
               ),
+              // Botón para ver en mapa
+              Tooltip(
+                message: 'Ver en mapa',
+                child: IconButton(
+                  icon: const Icon(Icons.map),
+                  color: context.colorScheme.tertiary,
+                  iconSize: 20,
+                  padding: const EdgeInsets.all(4),
+                  constraints: const BoxConstraints(
+                    minWidth: 32,
+                    minHeight: 32,
+                  ),
+                  onPressed: () => _abrirMapaDireccion(),
+                ),
+              ),
             ],
           ),
           const SizedBox(height: 8),
@@ -628,6 +645,48 @@ class _CrearPrestamoClienteScreenState extends State<CrearPrestamoClienteScreen>
             ),
           ],
         ],
+      ),
+    );
+  }
+
+  /// Abrir mapa con la dirección del cliente
+  void _abrirMapaDireccion() {
+    if (_ventaBuscada == null) return;
+
+    final direccionCliente = _ventaBuscada!.direccionCliente ??
+        (_ventaBuscada!.cliente?.direcciones?.firstWhere(
+          (d) => d.esPrincipal == true,
+          orElse: () => _ventaBuscada!.cliente!.direcciones!.first,
+        ));
+
+    if (direccionCliente == null ||
+        direccionCliente.latitud == null ||
+        direccionCliente.longitud == null) {
+      _mostrarError('❌ No hay coordenadas disponibles para esta dirección');
+      return;
+    }
+
+    // Crear ubicación para el mapa
+    final mapLocation = MapLocation(
+      latitude: direccionCliente.latitud!,
+      longitude: direccionCliente.longitud!,
+      title: _clienteSeleccionado?.nombre ?? 'Cliente',
+      subtitle: direccionCliente.direccion ?? 'Dirección',
+      isSelected: false,
+      razonSocial: _clienteSeleccionado?.razonSocial,
+      telefono: _clienteSeleccionado?.telefono,
+    );
+
+    // Abrir mapa
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => MapLocationSelector(
+          onLocationSelected: (latitude, longitude, address) {
+            Navigator.pop(context);
+          },
+          additionalLocations: [mapLocation],
+        ),
       ),
     );
   }
