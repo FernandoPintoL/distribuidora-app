@@ -75,14 +75,14 @@ class _CrearPrestamoClienteScreenState extends State<CrearPrestamoClienteScreen>
               .toList();
 
           // Buscar y preseleccionar "Distribuidora"
-          final distribuidora = _almacenes.firstWhere(
-            (a) => a['nombre'].toLowerCase().contains('distribuidora'),
-            orElse: () => _almacenes.isNotEmpty ? _almacenes.first : {},
-          );
+          if (_almacenes.isNotEmpty) {
+            final distribuidora = _almacenes.firstWhere(
+              (a) => (a['nombre'] as String).toLowerCase().contains('distribuidora'),
+              orElse: () => _almacenes.first,
+            );
 
-          if (distribuidora.isNotEmpty) {
             _almacenSeleccionado = distribuidora['id'] as int;
-            debugPrint('✅ Almacén Distribuidora preseleccionado: ${distribuidora['nombre']} (id=${distribuidora['id']})');
+            debugPrint('✅ Almacén preseleccionado: ${distribuidora['nombre']} (id=${distribuidora['id']})');
           }
         });
       }
