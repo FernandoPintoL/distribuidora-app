@@ -49,6 +49,7 @@ class _CrearPrestamoClienteScreenState extends State<CrearPrestamoClienteScreen>
   late TextEditingController _observacionesController;
   late TextEditingController _ventaIdController;
   late TextEditingController _cantidadController;
+  final Map<int, TextEditingController> _cantidadControllers = {};
 
   @override
   void initState() {
@@ -249,6 +250,7 @@ class _CrearPrestamoClienteScreenState extends State<CrearPrestamoClienteScreen>
 
       // Si encontramos la canastilla, agregarla como item
       if (canastilla != null && canastilla.id != 0) {
+        final itemIndex = _items.length;
         _items.add({
           'prestable_id': canastilla.id,
           'prestable_nombre': canastilla.nombre,
@@ -262,12 +264,15 @@ class _CrearPrestamoClienteScreenState extends State<CrearPrestamoClienteScreen>
             }
           ],
         });
+        // ✅ Crear controller para esta cantidad
+        _cantidadControllers[itemIndex] = TextEditingController(text: cantidadDetalle.toString());
 
         // Si existe embase y canastilla tiene capacidad, calcular cantidad de embase
         if (embase != null && embase.id != 0 && canastilla.capacidad != null && canastilla.capacidad! > 0) {
           final cantidadEmbase = (canastilla.capacidad! * cantidadDetalle).toInt();
 
           if (cantidadEmbase > 0) {
+            final embaseIndex = _items.length;
             _items.add({
               'prestable_id': embase.id,
               'prestable_nombre': embase.nombre,
@@ -281,6 +286,8 @@ class _CrearPrestamoClienteScreenState extends State<CrearPrestamoClienteScreen>
                 }
               ],
             });
+            // ✅ Crear controller para el embase
+            _cantidadControllers[embaseIndex] = TextEditingController(text: cantidadEmbase.toString());
           }
         }
       }
@@ -294,6 +301,9 @@ class _CrearPrestamoClienteScreenState extends State<CrearPrestamoClienteScreen>
     _observacionesController.dispose();
     _ventaIdController.dispose();
     _cantidadController.dispose();
+    for (var controller in _cantidadControllers.values) {
+      controller.dispose();
+    }
     super.dispose();
   }
 
@@ -306,8 +316,10 @@ class _CrearPrestamoClienteScreenState extends State<CrearPrestamoClienteScreen>
       if (index >= 0) {
         // Actualizar cantidad si ya existe
         _items[index]['cantidad'] = cantidad;
+        _cantidadControllers[index]?.text = cantidad.toString();
       } else {
         // Agregar nuevo item
+        final newIndex = _items.length;
         _items.add({
           'prestable_id': prestableId,
           'prestable_nombre': prestableNombre,
@@ -319,6 +331,8 @@ class _CrearPrestamoClienteScreenState extends State<CrearPrestamoClienteScreen>
             }
           ],
         });
+        // ✅ Crear controller para esta cantidad
+        _cantidadControllers[newIndex] = TextEditingController(text: cantidad.toString());
       }
     });
   }
@@ -327,6 +341,20 @@ class _CrearPrestamoClienteScreenState extends State<CrearPrestamoClienteScreen>
   void _removerItem(int index) {
     setState(() {
       _items.removeAt(index);
+      // ✅ Limpiar y reindexar los controllers
+      _cantidadControllers[index]?.dispose();
+      _cantidadControllers.remove(index);
+      // Reindexar controllers después del índice removido
+      final newControllers = <int, TextEditingController>{};
+      _cantidadControllers.forEach((key, controller) {
+        if (key > index) {
+          newControllers[key - 1] = controller;
+        } else {
+          newControllers[key] = controller;
+        }
+      });
+      _cantidadControllers.clear();
+      _cantidadControllers.addAll(newControllers);
     });
   }
 
@@ -1241,7 +1269,7 @@ class _CrearPrestamoClienteScreenState extends State<CrearPrestamoClienteScreen>
                             children: [
                               Expanded(
                                 child: TextFormField(
-                                  initialValue: item['cantidad'].toString(),
+                                  controller: _cantidadControllers[index],
                                   decoration: InputDecoration(
                                     labelText: 'Cantidad',
                                     border: OutlineInputBorder(
@@ -1265,47 +1293,47 @@ class _CrearPrestamoClienteScreenState extends State<CrearPrestamoClienteScreen>
                                       return;
                                     }
 
-                                    setState(() {
-                                      // Actualizar cantidad
-                                      _items[index]['cantidad'] = cantidad;
+                                    // Actualizar cantidad
+                                    _items[index]['cantidad'] = cantidad;
 
-                                      // Actualizar almacenes
-                                      if (item['almacenes'] is List && (item['almacenes'] as List).isNotEmpty) {
-                                        final almacenes = item['almacenes'] as List;
-                                        for (var almacen in almacenes) {
-                                          almacen['cantidad'] = cantidad;
-                                        }
+                                    // Actualizar almacenes
+                                    if (item['almacenes'] is List && (item['almacenes'] as List).isNotEmpty) {
+                                      final almacenes = item['almacenes'] as List;
+                                      for (var almacen in almacenes) {
+                                        almacen['cantidad'] = cantidad;
                                       }
+                                    }
 
-                                      // Si es CANASTILLA, recalcular embase
-                                      if (item['tipo'] == 'CANASTILLA' &&
-                                          item['capacidad'] != null &&
-                                          item['capacidad'] > 0) {
-                                        final capacidad = item['capacidad'] as int;
-                                        final cantidadEmbase = cantidad * capacidad;
+                                    // Si es CANASTILLA, recalcular embase
+                                    if (item['tipo'] == 'CANASTILLA' &&
+                                        item['capacidad'] != null &&
+                                        item['capacidad'] > 0) {
+                                      final capacidad = item['capacidad'] as int;
+                                      final cantidadEmbase = cantidad * capacidad;
 
-                                        // Buscar el embase relacionado
-                                        if (index + 1 < _items.length) {
-                                          final itemEmbase = _items[index + 1];
-                                          if (itemEmbase['tipo'] == 'EMBASE') {
-                                            itemEmbase['cantidad'] = cantidadEmbase;
+                                      // Buscar el embase relacionado
+                                      if (index + 1 < _items.length) {
+                                        final itemEmbase = _items[index + 1];
+                                        if (itemEmbase['tipo'] == 'EMBASE') {
+                                          _items[index + 1]['cantidad'] = cantidadEmbase;
+                                          // ✅ Actualizar el controller del embase directamente
+                                          _cantidadControllers[index + 1]?.text = cantidadEmbase.toString();
 
-                                            // Actualizar almacenes del embase
-                                            if (itemEmbase['almacenes'] is List &&
-                                                (itemEmbase['almacenes'] as List).isNotEmpty) {
-                                              final almacenesEmbase = itemEmbase['almacenes'] as List;
-                                              for (var almacen in almacenesEmbase) {
-                                                almacen['cantidad'] = cantidadEmbase;
-                                              }
+                                          // Actualizar almacenes del embase
+                                          if (itemEmbase['almacenes'] is List &&
+                                              (itemEmbase['almacenes'] as List).isNotEmpty) {
+                                            final almacenesEmbase = itemEmbase['almacenes'] as List;
+                                            for (var almacen in almacenesEmbase) {
+                                              almacen['cantidad'] = cantidadEmbase;
                                             }
-
-                                            debugPrint(
-                                              '🔄 Canastilla: $cantidad → Embase: $cantidadEmbase (capacidad: $capacidad)',
-                                            );
                                           }
+
+                                          debugPrint(
+                                            '🔄 Canastilla: $cantidad → Embase: $cantidadEmbase (capacidad: $capacidad)',
+                                          );
                                         }
                                       }
-                                    });
+                                    }
                                   },
                                 ),
                               ),
