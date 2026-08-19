@@ -6,6 +6,7 @@ import '../../providers/client_provider.dart';
 import '../../providers/ventas_provider.dart';
 import '../../services/api_service.dart';
 import '../../models/models.dart';
+import '../../models/cliente.dart' as cliente_model;
 
 /// Pantalla para crear nuevo préstamo a cliente
 class CrearPrestamoClienteScreen extends StatefulWidget {
@@ -24,7 +25,7 @@ class _CrearPrestamoClienteScreenState extends State<CrearPrestamoClienteScreen>
   late TabController _tabController;
 
   // Datos del préstamo
-  Client? _clienteSeleccionado;
+  cliente_model.Cliente? _clienteSeleccionado;
   DateTime _fechaPrestamo = DateTime.now();
   DateTime? _fechaEsperadaDevolucion;
   int? _almacenSeleccionado;
@@ -132,7 +133,7 @@ class _CrearPrestamoClienteScreenState extends State<CrearPrestamoClienteScreen>
   }
 
   /// Auto-llenar prestables desde los detalles de la venta
-  /// Fórmula: embase = capacidad_canastilla * venta.cantidad
+  /// Fórmula: embase = capacidad_producto * venta.cantidad
   void _autoFillPrestablesDesdeVenta(Venta venta) {
     _items.clear();
 
@@ -140,33 +141,30 @@ class _CrearPrestamoClienteScreenState extends State<CrearPrestamoClienteScreen>
       if (detalle.producto == null) continue;
 
       final producto = detalle.producto!;
+      final cantidadDetalle = detalle.cantidad.toInt();
 
-      // Buscar si tiene campo canastilla o similar
-      // Si es prestable, agregar con cantidad calculada
-      if (producto.tipoPrestable != null) {
-        // Canastilla: cantidad del detalle de venta
-        _items.add({
-          'prestable_id': producto.id,
-          'prestable_nombre': producto.nombre,
-          'cantidad': (detalle.cantidad).toInt(),
-          'almacenes': [
-            {
-              'almacenes_prestables_id': _almacenSeleccionado ?? 1,
-              'cantidad': (detalle.cantidad).toInt(),
-            }
-          ],
-          'tipo': 'canastilla',
-        });
+      // Agregar item principal con cantidad del detalle
+      _items.add({
+        'prestable_id': producto.id,
+        'prestable_nombre': producto.nombre,
+        'cantidad': cantidadDetalle,
+        'almacenes': [
+          {
+            'almacenes_prestables_id': _almacenSeleccionado ?? 1,
+            'cantidad': cantidadDetalle,
+          }
+        ],
+      });
 
-        // Embase: capacidad_canastilla * venta.cantidad
-        final capacidadCanastilla = producto.capacidadCanastilla ?? 1;
-        final cantidadEmbase = (capacidadCanastilla * detalle.cantidad).toInt();
+      // Si el producto tiene capacidad, calcular embase
+      // Fórmula: embase = capacidad * cantidad_venta
+      if (producto.capacidad != null && producto.capacidad! > 0) {
+        final cantidadEmbase = (producto.capacidad! * cantidadDetalle).toInt();
 
-        // Si hay cantidad de embase, agregarlo como item separado
         if (cantidadEmbase > 0) {
           _items.add({
             'prestable_id': producto.id,
-            'prestable_nombre': '${producto.nombre} (Embase)',
+            'prestable_nombre': '${producto.nombre} - Embase',
             'cantidad': cantidadEmbase,
             'almacenes': [
               {
@@ -174,7 +172,6 @@ class _CrearPrestamoClienteScreenState extends State<CrearPrestamoClienteScreen>
                 'cantidad': cantidadEmbase,
               }
             ],
-            'tipo': 'embase',
           });
         }
       }
@@ -588,10 +585,10 @@ class _CrearPrestamoClienteScreenState extends State<CrearPrestamoClienteScreen>
         const SizedBox(height: 12),
         Consumer<ClientProvider>(
           builder: (context, clientProvider, _) {
-            return Autocomplete<Client>(
+            return Autocomplete<cliente_model.Cliente>(
               optionsBuilder: (TextEditingValue textEditingValue) async {
                 if (textEditingValue.text.isEmpty) {
-                  return const Iterable<Client>.empty();
+                  return const Iterable<cliente_model.Cliente>.empty();
                 }
                 final results = await clientProvider.searchClients(
                   textEditingValue.text,
@@ -599,7 +596,7 @@ class _CrearPrestamoClienteScreenState extends State<CrearPrestamoClienteScreen>
                 );
                 return results;
               },
-              onSelected: (Client selection) {
+              onSelected: (cliente_model.Cliente selection) {
                 setState(() {
                   _clienteSeleccionado = selection;
                 });
@@ -644,10 +641,11 @@ class _CrearPrestamoClienteScreenState extends State<CrearPrestamoClienteScreen>
                         padding: EdgeInsets.zero,
                         itemCount: options.length,
                         itemBuilder: (BuildContext context, int index) {
-                          final Client option = options.elementAt(index);
+                          final cliente_model.Cliente option =
+                              options.elementAt(index);
                           return ListTile(
                             title: Text(option.nombre),
-                            subtitle: Text(option.email ?? ''),
+                            subtitle: Text(option.telefono ?? ''),
                             onTap: () {
                               onSelected(option);
                             },
@@ -683,7 +681,7 @@ class _CrearPrestamoClienteScreenState extends State<CrearPrestamoClienteScreen>
                         style: const TextStyle(fontWeight: FontWeight.bold),
                       ),
                       Text(
-                        _clienteSeleccionado!.email ?? '',
+                        _clienteSeleccionado!.telefono ?? '',
                         style: const TextStyle(fontSize: 12),
                       ),
                     ],
@@ -922,7 +920,7 @@ class _CrearPrestamoClienteScreenState extends State<CrearPrestamoClienteScreen>
   /// Mostrar diálogo para seleccionar cliente
   void _mostrarDialogoSeleccionarCliente() {
     final busquedaController = TextEditingController();
-    List<Client> clientesFiltrados = [];
+    List<cliente_model.Cliente> clientesFiltrados = [];
 
     showDialog(
       context: context,
@@ -979,7 +977,7 @@ class _CrearPrestamoClienteScreenState extends State<CrearPrestamoClienteScreen>
                             final cliente = clientesFiltrados[index];
                             return ListTile(
                               title: Text(cliente.nombre),
-                              subtitle: Text(cliente.email ?? ''),
+                              subtitle: Text(cliente.telefono ?? ''),
                               onTap: () {
                                 setState(() {
                                   _clienteSeleccionado = cliente;
