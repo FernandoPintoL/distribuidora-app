@@ -162,28 +162,21 @@ class _CrearPrestamoClienteScreenState extends State<CrearPrestamoClienteScreen>
     }
   }
 
-  /// Cargar choferes desde API (usuarios con rol chofer)
+  /// Cargar choferes desde API
   Future<void> _cargarChoferes() async {
     try {
-      final response = await _apiService.get('/usuarios?per_page=100');
+      // Intentar cargar del endpoint público de choferes
+      final response = await _apiService.get('/api/choferes/lista');
       if (response.statusCode == 200) {
         final data = response.data as Map<String, dynamic>;
-        final usuariosList = data['data'] as List;
+        final choferesList = data['data'] as List? ?? [];
 
         setState(() {
-          // Filtrar solo usuarios con rol chofer
-          _choferes = usuariosList
-              .where((u) {
-                final roles = u['roles'] as List? ?? [];
-                return roles.any((r) =>
-                  (r is Map && (r['name']?.toString().toLowerCase().contains('chofer') ?? false)) ||
-                  (r is String && r.toLowerCase().contains('chofer'))
-                );
-              })
+          _choferes = choferesList
               .map((c) => {
                     'id': c['id'] as int,
-                    'nombre': c['name'] as String? ?? '',
-                    'apellido': '',
+                    'nombre': c['nombre'] as String? ?? c['name'] as String? ?? '',
+                    'apellido': c['apellido'] as String? ?? '',
                   })
               .toList();
 
@@ -198,7 +191,11 @@ class _CrearPrestamoClienteScreenState extends State<CrearPrestamoClienteScreen>
         });
       }
     } catch (e) {
-      debugPrint('❌ Error cargando choferes: $e');
+      debugPrint('⚠️ No se pudo cargar choferes (opcional): $e');
+      // Campo opcional, no mostrar error si falla la carga
+      setState(() {
+        _choferes = [];
+      });
     }
   }
 
