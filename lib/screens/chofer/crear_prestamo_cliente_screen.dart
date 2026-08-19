@@ -366,32 +366,31 @@ class _CrearPrestamoClienteScreenState extends State<CrearPrestamoClienteScreen>
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-                    // Búsqueda de cliente
-                    _buildClienteSearchField(),
-                    const SizedBox(height: 24),
+            // Búsqueda de cliente
+            _buildClienteSearchField(),
+            const SizedBox(height: 24),
 
-                    // Búsqueda por ID de venta (opcional)
-                    _buildBusquedaVentaSection(),
-                    const SizedBox(height: 24),
+            // Búsqueda por ID de venta (opcional)
+            _buildBusquedaVentaSection(),
+            const SizedBox(height: 24),
 
-                    // Formulario básico
-                    _buildFormularioBasico(),
-                    const SizedBox(height: 24),
+            // Formulario básico
+            _buildFormularioBasico(),
+            const SizedBox(height: 24),
 
-                    // Items
-                    _buildSeccionItems(),
-                    const SizedBox(height: 24),
+            // Items
+            _buildSeccionItems(),
+            const SizedBox(height: 24),
 
-                    // Observaciones
-                    _buildObservacionesField(),
-                    const SizedBox(height: 24),
+            // Observaciones
+            _buildObservacionesField(),
+            const SizedBox(height: 24),
 
-                    // Botón crear
-                    _buildBotonesAccion(),
-                  ],
-                ),
-              ),
-            ),
+            // Botón crear
+            _buildBotonesAccion(),
+          ],
+        ),
+      ),
     );
   }
 
