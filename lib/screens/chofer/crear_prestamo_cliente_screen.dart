@@ -160,7 +160,6 @@ class _CrearPrestamoClienteScreenState extends State<CrearPrestamoClienteScreen>
 
     setState(() {
       _cargando = true;
-      _mensajeError = null;
     });
 
     try {
@@ -207,9 +206,6 @@ class _CrearPrestamoClienteScreenState extends State<CrearPrestamoClienteScreen>
 
   /// Mostrar error
   void _mostrarError(String mensaje) {
-    setState(() {
-      _mensajeError = mensaje;
-    });
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(mensaje),
