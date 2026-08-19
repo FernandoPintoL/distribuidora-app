@@ -27,7 +27,7 @@ class _CrearPrestamoClienteScreenState extends State<CrearPrestamoClienteScreen>
   Cliente? _clienteSeleccionado;
   DateTime _fechaPrestamo = DateTime.now();
   DateTime? _fechaEsperadaDevolucion;
-  int? _almacenSeleccionado;
+  int _almacenSeleccionado = 2; // Distribuidora preseleccionada
   String _observaciones = '';
   double _montoGarantia = 0;
 
@@ -147,7 +147,7 @@ class _CrearPrestamoClienteScreenState extends State<CrearPrestamoClienteScreen>
         'cantidad': cantidadDetalle,
         'almacenes': [
           {
-            'almacenes_prestables_id': _almacenSeleccionado ?? 1,
+            'almacenes_prestables_id': _almacenSeleccionado,
             'cantidad': cantidadDetalle,
           }
         ],
@@ -165,7 +165,7 @@ class _CrearPrestamoClienteScreenState extends State<CrearPrestamoClienteScreen>
             'cantidad': cantidadEmbase,
             'almacenes': [
               {
-                'almacenes_prestables_id': _almacenSeleccionado ?? 1,
+                'almacenes_prestables_id': _almacenSeleccionado,
                 'cantidad': cantidadEmbase,
               }
             ],
@@ -231,11 +231,6 @@ class _CrearPrestamoClienteScreenState extends State<CrearPrestamoClienteScreen>
 
     if (_items.isEmpty) {
       _mostrarError('Debes agregar al menos un artículo');
-      return;
-    }
-
-    if (_almacenSeleccionado == null) {
-      _mostrarError('Debes seleccionar un almacén');
       return;
     }
 
@@ -808,43 +803,41 @@ class _CrearPrestamoClienteScreenState extends State<CrearPrestamoClienteScreen>
     );
   }
 
-  /// Widget para seleccionar almacén
+  /// Widget para mostrar almacén preseleccionado
   Widget _buildAlmacenField() {
-    // TODO: Cargar almacenes desde API o provider
-    const List<Map<String, dynamic>> almacenes = [
-      {'id': 1, 'nombre': 'Almacén Central'},
-      {'id': 2, 'nombre': 'Almacén Distribuidora'},
-      {'id': 3, 'nombre': 'Almacén Regional'},
-    ];
-
-    return DropdownButtonFormField<int>(
-      value: _almacenSeleccionado,
-      decoration: InputDecoration(
-        labelText: 'Almacén',
-        prefixIcon: const Icon(Icons.warehouse),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8),
-        ),
-        filled: true,
-        fillColor: context.colorScheme.surface,
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        border: Border.all(color: Colors.grey.shade400),
+        borderRadius: BorderRadius.circular(8),
+        color: Colors.blue.shade50,
       ),
-      items: almacenes.map((almacen) {
-        return DropdownMenuItem<int>(
-          value: almacen['id'] as int,
-          child: Text(almacen['nombre'] as String),
-        );
-      }).toList(),
-      onChanged: (value) {
-        setState(() {
-          _almacenSeleccionado = value;
-        });
-      },
-      validator: (value) {
-        if (value == null) {
-          return 'Debes seleccionar un almacén';
-        }
-        return null;
-      },
+      child: Row(
+        children: [
+          const Icon(Icons.warehouse, size: 20, color: Colors.blue),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Almacén',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Colors.grey.shade600,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                const Text(
+                  'Almacén Distribuidora',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                ),
+              ],
+            ),
+          ),
+          const Icon(Icons.check_circle, color: Colors.green),
+        ],
+      ),
     );
   }
 
