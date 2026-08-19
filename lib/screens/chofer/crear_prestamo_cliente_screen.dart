@@ -55,6 +55,8 @@ class _CrearPrestamoClienteScreenState extends State<CrearPrestamoClienteScreen>
     _observacionesController = TextEditingController();
     _ventaIdController = TextEditingController();
     _cantidadController = TextEditingController();
+    // ✅ Preseleccionar fecha de devolución 7 días después del préstamo
+    _fechaEsperadaDevolucion = _fechaPrestamo.add(const Duration(days: 7));
     _cargarAlmacenes();
     _cargarPrestables();
   }
