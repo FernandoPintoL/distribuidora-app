@@ -1240,7 +1240,7 @@ class _CrearPrestamoClienteScreenState extends State<CrearPrestamoClienteScreen>
                           Row(
                             children: [
                               Expanded(
-                                child: TextField(
+                                child: TextFormField(
                                   initialValue: item['cantidad'].toString(),
                                   decoration: InputDecoration(
                                     labelText: 'Cantidad',
