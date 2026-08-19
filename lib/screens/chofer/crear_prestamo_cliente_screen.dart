@@ -9,6 +9,7 @@ import '../../models/models.dart';
 import '../../models/cliente.dart';
 
 /// Pantalla para crear nuevo préstamo a cliente
+/// Formulario unificado con búsqueda de cliente y venta
 class CrearPrestamoClienteScreen extends StatefulWidget {
   const CrearPrestamoClienteScreen({super.key});
 
@@ -17,12 +18,10 @@ class CrearPrestamoClienteScreen extends StatefulWidget {
       _CrearPrestamoClienteScreenState();
 }
 
-class _CrearPrestamoClienteScreenState extends State<CrearPrestamoClienteScreen>
-    with SingleTickerProviderStateMixin {
+class _CrearPrestamoClienteScreenState extends State<CrearPrestamoClienteScreen> {
   // Form key
   final _formKey = GlobalKey<FormState>();
   final _apiService = ApiService();
-  late TabController _tabController;
 
   // Datos del préstamo
   Cliente? _clienteSeleccionado;
@@ -32,7 +31,7 @@ class _CrearPrestamoClienteScreenState extends State<CrearPrestamoClienteScreen>
   String _observaciones = '';
   double _montoGarantia = 0;
 
-  // Búsqueda
+  // Búsqueda y datos
   List<Producto> _prestables = [];
   Venta? _ventaBuscada;
 
@@ -42,9 +41,8 @@ class _CrearPrestamoClienteScreenState extends State<CrearPrestamoClienteScreen>
   // Estados
   bool _cargando = false;
   bool _cargandoPrestables = false;
-  int _ventaIdBusqueda = 0;
 
-  // Almacenes (actualmente hardcodeados, puede ser dinámico)
+  // Almacenes
   final List<Map<String, dynamic>> _almacenes = [
     {'id': 1, 'nombre': 'Almacén Central'},
     {'id': 2, 'nombre': 'Almacén Distribuidora'},
@@ -59,7 +57,6 @@ class _CrearPrestamoClienteScreenState extends State<CrearPrestamoClienteScreen>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 2, vsync: this);
     _observacionesController = TextEditingController();
     _ventaIdController = TextEditingController();
     _cantidadController = TextEditingController();
@@ -182,7 +179,6 @@ class _CrearPrestamoClienteScreenState extends State<CrearPrestamoClienteScreen>
 
   @override
   void dispose() {
-    _tabController.dispose();
     _observacionesController.dispose();
     _ventaIdController.dispose();
     _cantidadController.dispose();
@@ -307,152 +303,121 @@ class _CrearPrestamoClienteScreenState extends State<CrearPrestamoClienteScreen>
       appBar: AppBar(
         title: const Text('Crear Préstamo a Cliente'),
         elevation: 0,
-        bottom: TabBar(
-          controller: _tabController,
-          tabs: const [
-            Tab(icon: Icon(Icons.search), text: 'Por Cliente'),
-            Tab(icon: Icon(Icons.receipt), text: 'Por Venta ID'),
-          ],
-        ),
       ),
       body: _cargando
           ? const Center(child: CircularProgressIndicator())
-          : TabBarView(
-              controller: _tabController,
-              children: [
-                // TAB 1: Búsqueda por Cliente
-                _buildBusquedaClienteTab(),
-                // TAB 2: Búsqueda por Venta ID
-                _buildBusquedaVentaTab(),
-              ],
-            ),
-    );
-  }
+          : SingleChildScrollView(
+              padding: const EdgeInsets.all(16),
+              child: Form(
+                key: _formKey,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Búsqueda de cliente
+                    _buildClienteSearchField(),
+                    const SizedBox(height: 24),
 
-  /// TAB 1: Búsqueda manual de cliente
-  Widget _buildBusquedaClienteTab() {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
-      child: Form(
-        key: _formKey,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildClienteSearchField(),
-            const SizedBox(height: 24),
-            _buildFormularioBasico(),
-            const SizedBox(height: 24),
-            _buildSeccionItems(),
-            const SizedBox(height: 24),
-            _buildObservacionesField(),
-            const SizedBox(height: 24),
-            _buildBotonesAccion(),
-          ],
-        ),
-      ),
-    );
-  }
+                    // Búsqueda por ID de venta (opcional)
+                    _buildBusquedaVentaSection(),
+                    const SizedBox(height: 24),
 
-  /// TAB 2: Búsqueda por ID de venta
-  Widget _buildBusquedaVentaTab() {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Búsqueda por ID de venta
-          Text(
-            '🔍 Buscar Venta por ID',
-            style: Theme.of(context).textTheme.bodyMedium!
-                .copyWith(fontSize: 16, fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              Expanded(
-                child: TextFormField(
-                  controller: _ventaIdController,
-                  decoration: InputDecoration(
-                    hintText: 'Ingresa ID de venta',
-                    prefixIcon: const Icon(Icons.receipt),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    filled: true,
-                    fillColor: context.colorScheme.surface,
-                  ),
-                  keyboardType: TextInputType.number,
+                    // Formulario básico
+                    _buildFormularioBasico(),
+                    const SizedBox(height: 24),
+
+                    // Items
+                    _buildSeccionItems(),
+                    const SizedBox(height: 24),
+
+                    // Observaciones
+                    _buildObservacionesField(),
+                    const SizedBox(height: 24),
+
+                    // Botón crear
+                    _buildBotonesAccion(),
+                  ],
                 ),
               ),
-              const SizedBox(width: 8),
-              ElevatedButton(
-                onPressed: _cargando
-                    ? null
-                    : () {
-                        final ventaId =
-                            int.tryParse(_ventaIdController.text);
-                        if (ventaId != null) {
-                          _buscarVenta(ventaId);
-                        } else {
-                          _mostrarError('ID de venta inválido');
-                        }
-                      },
-                child: const Icon(Icons.search),
-              ),
-            ],
-          ),
-          const SizedBox(height: 24),
+            ),
+    );
+  }
 
-          // Mostrar info de venta buscada
-          if (_ventaBuscada != null) ...[
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                border: Border.all(color: Colors.green),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    '✅ Venta #${_ventaBuscada!.numero}',
-                    style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                      color: Colors.green,
-                    ),
+  /// Sección de búsqueda de venta (opcional)
+  Widget _buildBusquedaVentaSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          '🔍 Buscar Venta (Opcional)',
+          style: Theme.of(context)
+              .textTheme
+              .bodyMedium!
+              .copyWith(fontSize: 16, fontWeight: FontWeight.bold),
+        ),
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            Expanded(
+              child: TextField(
+                controller: _ventaIdController,
+                decoration: InputDecoration(
+                  hintText: 'ID de venta para auto-llenar...',
+                  prefixIcon: const Icon(Icons.receipt),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
                   ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Cliente: ${_clienteSeleccionado?.nombre ?? 'N/A'}',
-                  ),
-                  Text(
-                    'Items: ${_items.length}',
-                  ),
-                  Text(
-                    'Total: Bs. ${_ventaBuscada!.total.toStringAsFixed(2)}',
-                  ),
-                ],
+                  filled: true,
+                  fillColor: context.colorScheme.surface,
+                ),
+                keyboardType: TextInputType.number,
               ),
             ),
-            const SizedBox(height: 24),
+            const SizedBox(width: 8),
+            ElevatedButton(
+              onPressed: _cargando
+                  ? null
+                  : () {
+                      final ventaId = int.tryParse(_ventaIdController.text);
+                      if (ventaId != null) {
+                        _buscarVenta(ventaId);
+                      } else if (_ventaIdController.text.isNotEmpty) {
+                        _mostrarError('ID de venta inválido');
+                      }
+                    },
+              child: const Icon(Icons.search),
+            ),
           ],
-
-          // Formulario básico
-          _buildFormularioBasico(),
-          const SizedBox(height: 24),
-
-          // Items agregados automáticamente
-          _buildSeccionItems(),
-          const SizedBox(height: 24),
-
-          // Observaciones
-          _buildObservacionesField(),
-          const SizedBox(height: 24),
-
-          // Botones
-          _buildBotonesAccion(),
+        ),
+        if (_ventaBuscada != null) ...[
+          const SizedBox(height: 12),
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.green.shade50,
+              border: Border.all(color: Colors.green),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  '✅ Venta #${_ventaBuscada!.numero}',
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: Colors.green,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text('Cliente: ${_clienteSeleccionado?.nombre ?? 'N/A'}'),
+                Text('Items cargados: ${_items.length}'),
+                Text(
+                  'Total: Bs. ${_ventaBuscada!.total.toStringAsFixed(2)}',
+                ),
+              ],
+            ),
+          ),
         ],
-      ),
+      ],
     );
   }
 
