@@ -6,7 +6,6 @@ import '../../providers/client_provider.dart';
 import '../../providers/ventas_provider.dart';
 import '../../services/api_service.dart';
 import '../../models/models.dart';
-import '../../models/cliente.dart' as cliente_model;
 
 /// Pantalla para crear nuevo préstamo a cliente
 class CrearPrestamoClienteScreen extends StatefulWidget {
@@ -25,7 +24,7 @@ class _CrearPrestamoClienteScreenState extends State<CrearPrestamoClienteScreen>
   late TabController _tabController;
 
   // Datos del préstamo
-  cliente_model.Cliente? _clienteSeleccionado;
+  Client? _clienteSeleccionado;
   DateTime _fechaPrestamo = DateTime.now();
   DateTime? _fechaEsperadaDevolucion;
   int? _almacenSeleccionado;
@@ -585,10 +584,10 @@ class _CrearPrestamoClienteScreenState extends State<CrearPrestamoClienteScreen>
         const SizedBox(height: 12),
         Consumer<ClientProvider>(
           builder: (context, clientProvider, _) {
-            return Autocomplete<cliente_model.Cliente>(
+            return Autocomplete<Client>(
               optionsBuilder: (TextEditingValue textEditingValue) async {
                 if (textEditingValue.text.isEmpty) {
-                  return const Iterable<cliente_model.Cliente>.empty();
+                  return const Iterable<Client>.empty();
                 }
                 final results = await clientProvider.searchClients(
                   textEditingValue.text,
@@ -596,7 +595,7 @@ class _CrearPrestamoClienteScreenState extends State<CrearPrestamoClienteScreen>
                 );
                 return results;
               },
-              onSelected: (cliente_model.Cliente selection) {
+              onSelected: (Client selection) {
                 setState(() {
                   _clienteSeleccionado = selection;
                 });
@@ -641,11 +640,10 @@ class _CrearPrestamoClienteScreenState extends State<CrearPrestamoClienteScreen>
                         padding: EdgeInsets.zero,
                         itemCount: options.length,
                         itemBuilder: (BuildContext context, int index) {
-                          final cliente_model.Cliente option =
-                              options.elementAt(index);
+                          final Client option = options.elementAt(index);
                           return ListTile(
                             title: Text(option.nombre),
-                            subtitle: Text(option.telefono ?? ''),
+                            subtitle: Text(option.email ?? ''),
                             onTap: () {
                               onSelected(option);
                             },
@@ -681,7 +679,7 @@ class _CrearPrestamoClienteScreenState extends State<CrearPrestamoClienteScreen>
                         style: const TextStyle(fontWeight: FontWeight.bold),
                       ),
                       Text(
-                        _clienteSeleccionado!.telefono ?? '',
+                        _clienteSeleccionado!.email ?? '',
                         style: const TextStyle(fontSize: 12),
                       ),
                     ],
@@ -920,7 +918,7 @@ class _CrearPrestamoClienteScreenState extends State<CrearPrestamoClienteScreen>
   /// Mostrar diálogo para seleccionar cliente
   void _mostrarDialogoSeleccionarCliente() {
     final busquedaController = TextEditingController();
-    List<cliente_model.Cliente> clientesFiltrados = [];
+    List<Client> clientesFiltrados = [];
 
     showDialog(
       context: context,
@@ -977,7 +975,7 @@ class _CrearPrestamoClienteScreenState extends State<CrearPrestamoClienteScreen>
                             final cliente = clientesFiltrados[index];
                             return ListTile(
                               title: Text(cliente.nombre),
-                              subtitle: Text(cliente.telefono ?? ''),
+                              subtitle: Text(cliente.email ?? ''),
                               onTap: () {
                                 setState(() {
                                   _clienteSeleccionado = cliente;
