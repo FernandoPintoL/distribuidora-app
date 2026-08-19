@@ -6,6 +6,7 @@ import '../../providers/client_provider.dart';
 import '../../providers/ventas_provider.dart';
 import '../../services/api_service.dart';
 import '../../models/models.dart';
+import '../../models/cliente.dart';
 
 /// Pantalla para crear nuevo préstamo a cliente
 class CrearPrestamoClienteScreen extends StatefulWidget {
@@ -24,7 +25,7 @@ class _CrearPrestamoClienteScreenState extends State<CrearPrestamoClienteScreen>
   late TabController _tabController;
 
   // Datos del préstamo
-  Client? _clienteSeleccionado;
+  Cliente? _clienteSeleccionado;
   DateTime _fechaPrestamo = DateTime.now();
   DateTime? _fechaEsperadaDevolucion;
   int? _almacenSeleccionado;
@@ -584,18 +585,27 @@ class _CrearPrestamoClienteScreenState extends State<CrearPrestamoClienteScreen>
         const SizedBox(height: 12),
         Consumer<ClientProvider>(
           builder: (context, clientProvider, _) {
-            return Autocomplete<Client>(
+            return Autocomplete<Cliente>(
               optionsBuilder: (TextEditingValue textEditingValue) async {
                 if (textEditingValue.text.isEmpty) {
-                  return const Iterable<Client>.empty();
+                  return const Iterable<Cliente>.empty();
                 }
                 final results = await clientProvider.searchClients(
                   textEditingValue.text,
                   limit: 10,
                 );
-                return results;
+                // Convertir Client a Cliente
+                return results.map((c) => Cliente(
+                  id: c.id,
+                  nombre: c.nombre,
+                  telefono: c.telefono,
+                  fotoPerfil: c.fotoPerfil,
+                  razonSocial: c.razonSocial,
+                  nit: c.nit,
+                  localidadId: 0, // No available from Client
+                )).toList();
               },
-              onSelected: (Client selection) {
+              onSelected: (Cliente selection) {
                 setState(() {
                   _clienteSeleccionado = selection;
                 });
@@ -640,10 +650,10 @@ class _CrearPrestamoClienteScreenState extends State<CrearPrestamoClienteScreen>
                         padding: EdgeInsets.zero,
                         itemCount: options.length,
                         itemBuilder: (BuildContext context, int index) {
-                          final Client option = options.elementAt(index);
+                          final Cliente option = options.elementAt(index);
                           return ListTile(
                             title: Text(option.nombre),
-                            subtitle: Text(option.email ?? ''),
+                            subtitle: Text(option.telefono ?? ''),
                             onTap: () {
                               onSelected(option);
                             },
@@ -918,7 +928,7 @@ class _CrearPrestamoClienteScreenState extends State<CrearPrestamoClienteScreen>
   /// Mostrar diálogo para seleccionar cliente
   void _mostrarDialogoSeleccionarCliente() {
     final busquedaController = TextEditingController();
-    List<Client> clientesFiltrados = [];
+    List<Cliente> clientesFiltrados = [];
 
     showDialog(
       context: context,
@@ -954,8 +964,19 @@ class _CrearPrestamoClienteScreenState extends State<CrearPrestamoClienteScreen>
                         value,
                         limit: 20,
                       );
+                      // Convertir Client a Cliente
                       setState(() {
-                        clientesFiltrados = resultados;
+                        clientesFiltrados = resultados
+                            .map((c) => Cliente(
+                              id: c.id,
+                              nombre: c.nombre,
+                              telefono: c.telefono,
+                              fotoPerfil: c.fotoPerfil,
+                              razonSocial: c.razonSocial,
+                              nit: c.nit,
+                              localidadId: 0,
+                            ))
+                            .toList();
                       });
                     } catch (e) {
                       debugPrint('Error buscando clientes: $e');
@@ -975,7 +996,7 @@ class _CrearPrestamoClienteScreenState extends State<CrearPrestamoClienteScreen>
                             final cliente = clientesFiltrados[index];
                             return ListTile(
                               title: Text(cliente.nombre),
-                              subtitle: Text(cliente.email ?? ''),
+                              subtitle: Text(cliente.telefono ?? ''),
                               onTap: () {
                                 setState(() {
                                   _clienteSeleccionado = cliente;
