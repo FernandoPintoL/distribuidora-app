@@ -396,7 +396,9 @@ class _CrearPrestamoClienteScreenState extends State<CrearPrestamoClienteScreen>
   }
 
   /// Card de venta buscada con soporte dark mode
-  Widget _buildVentaBuscadaCard(bool isDark) {
+  Widget _buildVentaBuscadaCard() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
@@ -432,7 +434,9 @@ class _CrearPrestamoClienteScreenState extends State<CrearPrestamoClienteScreen>
   }
 
   /// Card de cliente seleccionado con soporte dark mode
-  Widget _buildClienteSeleccionadoCard(bool isDark) {
+  Widget _buildClienteSeleccionadoCard() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
@@ -521,7 +525,7 @@ class _CrearPrestamoClienteScreenState extends State<CrearPrestamoClienteScreen>
         ),
         if (_ventaBuscada != null) ...[
           const SizedBox(height: 12),
-          _buildVentaBuscadaCard(isDark),
+          _buildVentaBuscadaCard(),
         ],
       ],
     );
@@ -740,7 +744,7 @@ class _CrearPrestamoClienteScreenState extends State<CrearPrestamoClienteScreen>
         ),
         if (_clienteSeleccionado != null) ...[
           const SizedBox(height: 12),
-          _buildClienteSeleccionadoCard(isDark),
+          _buildClienteSeleccionadoCard(),
         ],
       ],
     );
