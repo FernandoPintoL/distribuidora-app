@@ -8,8 +8,7 @@ import '../../services/api_service.dart';
 import '../../models/models.dart';
 import '../../models/cliente.dart';
 import '../../models/prestable.dart';
-import '../map/map_location_selector.dart';
-import '../../models/map_location.dart';
+import '../../widgets/map_location_selector.dart';
 
 /// Pantalla para crear nuevo préstamo a cliente
 /// Formulario unificado con búsqueda de cliente y venta
