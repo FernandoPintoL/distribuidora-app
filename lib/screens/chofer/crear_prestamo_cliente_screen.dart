@@ -7,6 +7,7 @@ import '../../providers/ventas_provider.dart';
 import '../../services/api_service.dart';
 import '../../models/models.dart';
 import '../../models/cliente.dart';
+import '../../models/prestable.dart';
 
 /// Pantalla para crear nuevo préstamo a cliente
 /// Formulario unificado con búsqueda de cliente y venta
