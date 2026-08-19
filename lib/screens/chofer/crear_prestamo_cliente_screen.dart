@@ -30,6 +30,8 @@ class _CrearPrestamoClienteScreenState extends State<CrearPrestamoClienteScreen>
   DateTime _fechaPrestamo = DateTime.now();
   DateTime? _fechaEsperadaDevolucion;
   int? _almacenSeleccionado; // Se cargará desde backend
+  int? _choferSeleccionado; // Se cargará desde backend
+  int? _vehiculoSeleccionado; // Se cargará desde backend
   String _observaciones = '';
   double _montoGarantia = 0;
 
@@ -37,6 +39,8 @@ class _CrearPrestamoClienteScreenState extends State<CrearPrestamoClienteScreen>
   List<Producto> _prestables = [];
   Venta? _ventaBuscada;
   List<Map<String, dynamic>> _almacenes = []; // Se cargará del backend
+  List<Map<String, dynamic>> _choferes = []; // Se cargará del backend
+  List<Map<String, dynamic>> _vehiculos = []; // Se cargará del backend
 
   // Items agregados
   final List<Map<String, dynamic>> _items = [];
@@ -44,6 +48,7 @@ class _CrearPrestamoClienteScreenState extends State<CrearPrestamoClienteScreen>
   // Estados
   bool _cargando = false;
   bool _cargandoPrestables = false;
+  int? _usuarioActualId; // ID del usuario logueado
 
   // Controladores
   late TextEditingController _observacionesController;
@@ -59,8 +64,23 @@ class _CrearPrestamoClienteScreenState extends State<CrearPrestamoClienteScreen>
     _cantidadController = TextEditingController();
     // ✅ Preseleccionar fecha de devolución 7 días después del préstamo
     _fechaEsperadaDevolucion = _fechaPrestamo.add(const Duration(days: 7));
+    // ✅ Obtener usuario actual del provider
+    _obtenerUsuarioActual();
     _cargarAlmacenes();
     _cargarPrestables();
+    _cargarChoferes();
+    _cargarVehiculos();
+  }
+
+  /// Obtener usuario actual del provider
+  void _obtenerUsuarioActual() {
+    try {
+      final clientProvider = Provider.of<ClientProvider>(context, listen: false);
+      _usuarioActualId = clientProvider.usuario?.id;
+      debugPrint('👤 Usuario actual: $_usuarioActualId');
+    } catch (e) {
+      debugPrint('❌ Error obteniendo usuario actual: $e');
+    }
   }
 
   /// Cargar almacenes desde API y preseleccionar "Distribuidora"
@@ -139,6 +159,61 @@ class _CrearPrestamoClienteScreenState extends State<CrearPrestamoClienteScreen>
       setState(() {
         _cargandoPrestables = false;
       });
+    }
+  }
+
+  /// Cargar choferes desde API
+  Future<void> _cargarChoferes() async {
+    try {
+      final response = await _apiService.get('/choferes?per_page=100');
+      if (response.statusCode == 200) {
+        final data = response.data as Map<String, dynamic>;
+        final choféresList = data['data'] as List;
+
+        setState(() {
+          _choferes = choféresList
+              .map((c) => {
+                    'id': c['id'] as int,
+                    'nombre': c['nombre'] as String? ?? '',
+                    'apellido': c['apellido'] as String? ?? '',
+                  })
+              .toList();
+
+          // ✅ Preseleccionar al usuario actual si es chofer
+          if (_usuarioActualId != null) {
+            final esChoferActual = _choferes.any((c) => c['id'] == _usuarioActualId);
+            if (esChoferActual) {
+              _choferSeleccionado = _usuarioActualId;
+              debugPrint('✅ Chofer preseleccionado: $_choferSeleccionado');
+            }
+          }
+        });
+      }
+    } catch (e) {
+      debugPrint('❌ Error cargando choferes: $e');
+    }
+  }
+
+  /// Cargar vehículos desde API
+  Future<void> _cargarVehiculos() async {
+    try {
+      final response = await _apiService.get('/vehiculos?per_page=100');
+      if (response.statusCode == 200) {
+        final data = response.data as Map<String, dynamic>;
+        final vehiculosList = data['data'] as List;
+
+        setState(() {
+          _vehiculos = vehiculosList
+              .map((v) => {
+                    'id': v['id'] as int,
+                    'placa': v['placa'] as String? ?? '',
+                    'modelo': v['modelo'] as String? ?? '',
+                  })
+              .toList();
+        });
+      }
+    } catch (e) {
+      debugPrint('❌ Error cargando vehículos: $e');
     }
   }
 
@@ -423,6 +498,8 @@ class _CrearPrestamoClienteScreenState extends State<CrearPrestamoClienteScreen>
         'detalles': _items,
         'es_venta': false, // ✅ Préstamo a cliente sin venta específica
         'es_evento': false, // ✅ No es préstamo de evento
+        if (_choferSeleccionado != null) 'chofer_id': _choferSeleccionado,
+        if (_vehiculoSeleccionado != null) 'vehiculo_id': _vehiculoSeleccionado,
         if (ubicacionData != null) 'ubicacion': ubicacionData,
       };
 
@@ -810,6 +887,10 @@ class _CrearPrestamoClienteScreenState extends State<CrearPrestamoClienteScreen>
         _buildFechaDevolucion(),
         const SizedBox(height: 16),
         _buildAlmacenField(),
+        const SizedBox(height: 16),
+        _buildChoferField(),
+        const SizedBox(height: 16),
+        _buildVehiculoField(),
         const SizedBox(height: 16),
         _buildMontoGarantia(),
       ],
@@ -1236,6 +1317,86 @@ class _CrearPrestamoClienteScreenState extends State<CrearPrestamoClienteScreen>
       keyboardType: TextInputType.number,
       onChanged: (value) {
         _montoGarantia = double.tryParse(value) ?? 0;
+      },
+    );
+  }
+
+  /// Selector de chofer
+  Widget _buildChoferField() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return DropdownButtonFormField<int>(
+      value: _choferSeleccionado,
+      decoration: InputDecoration(
+        labelText: 'Chofer (Opcional)',
+        prefixIcon: const Icon(Icons.person_outline),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8),
+        ),
+        filled: true,
+        fillColor: context.colorScheme.surface,
+      ),
+      items: [
+        DropdownMenuItem<int>(
+          value: null,
+          child: Text(
+            'Seleccionar chofer',
+            style: TextStyle(
+              color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
+            ),
+          ),
+        ),
+        ..._choferes.map((chofer) {
+          return DropdownMenuItem<int>(
+            value: chofer['id'] as int,
+            child: Text('${chofer['nombre']} ${chofer['apellido']}'),
+          );
+        }).toList(),
+      ],
+      onChanged: (value) {
+        setState(() {
+          _choferSeleccionado = value;
+        });
+      },
+    );
+  }
+
+  /// Selector de vehículo
+  Widget _buildVehiculoField() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return DropdownButtonFormField<int>(
+      value: _vehiculoSeleccionado,
+      decoration: InputDecoration(
+        labelText: 'Vehículo (Opcional)',
+        prefixIcon: const Icon(Icons.directions_car_outlined),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8),
+        ),
+        filled: true,
+        fillColor: context.colorScheme.surface,
+      ),
+      items: [
+        DropdownMenuItem<int>(
+          value: null,
+          child: Text(
+            'Seleccionar vehículo',
+            style: TextStyle(
+              color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
+            ),
+          ),
+        ),
+        ..._vehiculos.map((vehiculo) {
+          return DropdownMenuItem<int>(
+            value: vehiculo['id'] as int,
+            child: Text('${vehiculo['placa']} - ${vehiculo['modelo']}'),
+          );
+        }).toList(),
+      ],
+      onChanged: (value) {
+        setState(() {
+          _vehiculoSeleccionado = value;
+        });
       },
     );
   }
