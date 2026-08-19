@@ -66,29 +66,40 @@ class _CrearPrestamoClienteScreenState extends State<CrearPrestamoClienteScreen>
         final data = response.data as Map<String, dynamic>;
         final almacenesList = data['data'] as List;
 
+        List<Map<String, dynamic>> almacenesFormateados = [];
+        int? distribuidoraId;
+
+        for (var almacen in almacenesList) {
+          final nombre = almacen['nombre'] as String;
+          final id = almacen['id'] as int;
+
+          almacenesFormateados.add({
+            'id': id,
+            'nombre': nombre,
+          });
+
+          // Buscar Distribuidora
+          if (nombre.toLowerCase().contains('distribuidora')) {
+            distribuidoraId = id;
+          }
+        }
+
         setState(() {
-          _almacenes = almacenesList
-              .map((a) => {
-                    'id': a['id'] as int,
-                    'nombre': a['nombre'] as String,
-                  })
-              .toList();
+          _almacenes = almacenesFormateados;
+          // Preseleccionar Distribuidora si existe, sino el primero
+          _almacenSeleccionado = distribuidoraId ?? (_almacenes.isNotEmpty ? _almacenes.first['id'] as int : null);
 
-          // Buscar y preseleccionar "Distribuidora"
-          if (_almacenes.isNotEmpty) {
-            final distribuidora = _almacenes.firstWhere(
-              (a) => (a['nombre'] as String).toLowerCase().contains('distribuidora'),
-              orElse: () => _almacenes.first,
-            );
-
-            _almacenSeleccionado = distribuidora['id'] as int;
-            debugPrint('✅ Almacén preseleccionado: ${distribuidora['nombre']} (id=${distribuidora['id']})');
+          if (_almacenSeleccionado != null) {
+            final nombre = _almacenes.firstWhere(
+              (a) => a['id'] == _almacenSeleccionado,
+            )['nombre'];
+            debugPrint('✅ Almacén preseleccionado: $nombre (id=$_almacenSeleccionado)');
           }
         });
       }
     } catch (e) {
       debugPrint('❌ Error cargando almacenes: $e');
-      // No mostrar error, continuar con fallback
+      // Fallback: usar Distribuidora con id=2
       setState(() {
         _almacenes = [
           {'id': 2, 'nombre': 'Distribuidora'},
