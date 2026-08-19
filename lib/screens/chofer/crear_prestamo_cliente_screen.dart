@@ -674,6 +674,7 @@ class _CrearPrestamoClienteScreenState extends State<CrearPrestamoClienteScreen>
       isSelected: false,
       razonSocial: _clienteSeleccionado?.razonSocial,
       telefono: _clienteSeleccionado?.telefono,
+      fotoPerfil: _clienteSeleccionado?.fotoPerfil,
     );
 
     // Abrir mapa
