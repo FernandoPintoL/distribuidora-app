@@ -160,8 +160,8 @@ class _CrearPrestamoClienteScreenState extends State<CrearPrestamoClienteScreen>
         });
 
         // Log para debugging
-        final direccion = _obtenerDireccionCliente(venta);
-        debugPrint('📍 Dirección del cliente: ${direccion?.direccion ?? "No disponible"}');
+        final direccionData = _obtenerDireccionCliente(venta);
+        debugPrint('📍 Dirección del cliente: ${direccionData?['direccion'] ?? "No disponible"}');
 
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
