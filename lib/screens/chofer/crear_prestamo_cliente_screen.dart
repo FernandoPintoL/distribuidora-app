@@ -182,7 +182,7 @@ class _CrearPrestamoClienteScreenState extends State<CrearPrestamoClienteScreen>
     }
   }
 
-  /// Obtener dirección del cliente desde la venta
+  /// Obtener dirección del cliente desde la venta o cliente
   Map<String, dynamic>? _obtenerDireccionCliente(Venta venta) {
     // Si la venta tiene dirección cliente con datos, usar esa
     if (venta.direccionCliente != null) {
@@ -193,7 +193,26 @@ class _CrearPrestamoClienteScreenState extends State<CrearPrestamoClienteScreen>
       };
     }
 
-    // Si no hay dirección en venta, retornar null
+    // Si no, buscar en las direcciones del cliente
+    if (venta.cliente != null && venta.cliente!.direcciones != null && venta.cliente!.direcciones!.isNotEmpty) {
+      try {
+        // Buscar dirección principal o usar la primera
+        final direccion = venta.cliente!.direcciones!.firstWhere(
+          (d) => d.esPrincipal == true,
+          orElse: () => venta.cliente!.direcciones!.first,
+        );
+
+        return {
+          'direccion': direccion.direccion ?? 'Sin dirección',
+          'localidad_id': direccion.localidad?.id,
+          'localidad_nombre': direccion.localidad?.nombre,
+        };
+      } catch (e) {
+        debugPrint('❌ Error obteniendo dirección del cliente: $e');
+        return null;
+      }
+    }
+
     return null;
   }
 

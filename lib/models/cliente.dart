@@ -1,4 +1,5 @@
 import 'localidad.dart';
+import 'direccion_cliente.dart';
 
 class Cliente {
   final int id;
@@ -11,6 +12,7 @@ class Cliente {
   final double creditoUtilizado;
   final List<int> categoriasIds;
   final Localidad? localidad;
+  final List<DireccionCliente>? direcciones;
 
   Cliente({
     required this.id,
@@ -23,6 +25,7 @@ class Cliente {
     this.creditoUtilizado = 0,
     this.categoriasIds = const [],
     this.localidad,
+    this.direcciones,
   });
 
   factory Cliente.fromJson(Map<String, dynamic> json) {
@@ -38,6 +41,13 @@ class Cliente {
           .toList();
     }
 
+    List<DireccionCliente>? direccionesList;
+    if (json['direcciones'] is List) {
+      direccionesList = (json['direcciones'] as List)
+          .map((d) => DireccionCliente.fromJson(d as Map<String, dynamic>))
+          .toList();
+    }
+
     return Cliente(
       id: json['id'] as int,
       nombre: json['nombre'] as String,
@@ -49,6 +59,7 @@ class Cliente {
       creditoUtilizado: (json['credito_utilizado'] as num?)?.toDouble() ?? 0,
       categoriasIds: categoriasIdsList,
       localidad: localidadObj,
+      direcciones: direccionesList,
     );
   }
 
