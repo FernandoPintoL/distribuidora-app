@@ -1257,19 +1257,22 @@ class _CrearPrestamoClienteScreenState extends State<CrearPrestamoClienteScreen>
                                   keyboardType: TextInputType.number,
                                   onChanged: (value) {
                                     // Permitir cualquier edición sin restricciones
+                                    if (value.isEmpty) {
+                                      // Campo vacío - solo actualizar UI sin lógica
+                                      setState(() {
+                                        // Permitir que el campo se vacíe
+                                      });
+                                      return;
+                                    }
+
+                                    final cantidad = int.tryParse(value);
+                                    if (cantidad == null) {
+                                      // No es número, ignorar pero permitir que Flutter lo maneje
+                                      return;
+                                    }
+
+                                    // Guardar cantidad y recalcular
                                     setState(() {
-                                      if (value.isEmpty) {
-                                        // Permitir campo vacío
-                                        return;
-                                      }
-
-                                      final cantidad = int.tryParse(value);
-                                      if (cantidad == null) {
-                                        // Ignorar si no es número válido
-                                        return;
-                                      }
-
-                                      // Guardar cualquier cantidad, incluso 0
                                       _items[index]['cantidad'] = cantidad;
 
                                       // Actualizar almacenes
