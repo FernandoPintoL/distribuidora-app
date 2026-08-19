@@ -76,7 +76,7 @@ class _CrearPrestamoClienteScreenState extends State<CrearPrestamoClienteScreen>
   void _obtenerUsuarioActual() {
     try {
       final clientProvider = Provider.of<ClientProvider>(context, listen: false);
-      _usuarioActualId = clientProvider.usuario?.id;
+      _usuarioActualId = clientProvider.clientePerfil?.id;
       debugPrint('👤 Usuario actual: $_usuarioActualId');
     } catch (e) {
       debugPrint('❌ Error obteniendo usuario actual: $e');
@@ -168,10 +168,10 @@ class _CrearPrestamoClienteScreenState extends State<CrearPrestamoClienteScreen>
       final response = await _apiService.get('/choferes?per_page=100');
       if (response.statusCode == 200) {
         final data = response.data as Map<String, dynamic>;
-        final choféresList = data['data'] as List;
+        final choferesList = data['data'] as List;
 
         setState(() {
-          _choferes = choféresList
+          _choferes = choferesList
               .map((c) => {
                     'id': c['id'] as int,
                     'nombre': c['nombre'] as String? ?? '',
