@@ -250,6 +250,102 @@ class PrestamosProvider extends ChangeNotifier {
     }
   }
 
+  /// Crear nuevo préstamo a cliente
+  /// POST /api/prestamos-cliente
+  Future<bool> crearPrestamoCliente(Map<String, dynamic> payload) async {
+    try {
+      debugPrint('📤 Creando préstamo a cliente con payload: $payload');
+
+      final response = await _apiService.post(
+        '/prestamos-cliente',
+        data: payload,
+      );
+
+      if (response.statusCode == 201 || response.statusCode == 200) {
+        debugPrint('✅ Préstamo a cliente creado exitosamente');
+
+        // Recargar préstamos del chofer
+        await _cargarPrestamosClientes(0);
+
+        return true;
+      } else {
+        _error = 'Error creando préstamo: ${response.statusCode}';
+        debugPrint('❌ Error status: ${response.statusCode}');
+        notifyListeners();
+        return false;
+      }
+    } catch (e) {
+      _error = 'Error: $e';
+      debugPrint('❌ Exception: $e');
+      notifyListeners();
+      return false;
+    }
+  }
+
+  /// Crear nuevo préstamo a evento
+  /// POST /api/prestamos-evento
+  Future<bool> crearPrestamoEvento(Map<String, dynamic> payload) async {
+    try {
+      debugPrint('📤 Creando préstamo a evento con payload: $payload');
+
+      final response = await _apiService.post(
+        '/prestamos-evento',
+        data: payload,
+      );
+
+      if (response.statusCode == 201 || response.statusCode == 200) {
+        debugPrint('✅ Préstamo a evento creado exitosamente');
+
+        // Recargar préstamos del chofer
+        await _cargarPrestamosEventos(0);
+
+        return true;
+      } else {
+        _error = 'Error creando préstamo: ${response.statusCode}';
+        debugPrint('❌ Error status: ${response.statusCode}');
+        notifyListeners();
+        return false;
+      }
+    } catch (e) {
+      _error = 'Error: $e';
+      debugPrint('❌ Exception: $e');
+      notifyListeners();
+      return false;
+    }
+  }
+
+  /// Crear nuevo préstamo a proveedor
+  /// POST /api/prestamos-proveedor
+  Future<bool> crearPrestamoProveedor(Map<String, dynamic> payload) async {
+    try {
+      debugPrint('📤 Creando préstamo a proveedor con payload: $payload');
+
+      final response = await _apiService.post(
+        '/prestamos-proveedor',
+        data: payload,
+      );
+
+      if (response.statusCode == 201 || response.statusCode == 200) {
+        debugPrint('✅ Préstamo a proveedor creado exitosamente');
+
+        // Recargar préstamos del chofer
+        await _cargarPrestamosProveedores(0);
+
+        return true;
+      } else {
+        _error = 'Error creando préstamo: ${response.statusCode}';
+        debugPrint('❌ Error status: ${response.statusCode}');
+        notifyListeners();
+        return false;
+      }
+    } catch (e) {
+      _error = 'Error: $e';
+      debugPrint('❌ Exception: $e');
+      notifyListeners();
+      return false;
+    }
+  }
+
   /// Limpiar errores
   void limpiarError() {
     _error = null;

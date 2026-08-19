@@ -6,6 +6,7 @@ import '../../providers/auth_provider.dart';
 import '../../config/app_text_styles.dart';
 import '../../config/app_urls.dart';
 import 'prestamo_detalle_screen.dart';
+import 'crear_prestamo_cliente_screen.dart';
 
 /// Pantalla que muestra los 3 tipos de préstamos asignados al chofer
 class PrestamosAsignadosScreen extends StatefulWidget {
@@ -118,6 +119,27 @@ class _PrestamosAsignadosScreenState extends State<PrestamosAsignadosScreen>
             ),
           ),
         ],
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () async {
+          final resultado = await Navigator.push<bool>(
+            context,
+            MaterialPageRoute(
+              builder: (context) => const CrearPrestamoClienteScreen(),
+            ),
+          );
+
+          if (resultado == true && mounted) {
+            _cargarPrestamos();
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('✅ Préstamo creado exitosamente'),
+                backgroundColor: Colors.green,
+              ),
+            );
+          }
+        },
+        child: const Icon(Icons.add),
       ),
     );
   }
