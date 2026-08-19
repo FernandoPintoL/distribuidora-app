@@ -1,10 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../extensions/theme_extension.dart';
-import '../../config/app_text_styles.dart';
 import '../../providers/prestamos_provider.dart';
-import '../../providers/client_provider.dart';
-import '../../providers/auth_provider.dart';
 import '../../services/api_service.dart';
 
 /// Pantalla para crear nuevo préstamo a cliente
@@ -32,7 +29,7 @@ class _CrearPrestamoClienteScreenState extends State<CrearPrestamoClienteScreen>
   // Listas de datos
   List<Map<String, dynamic>> _clientes = [];
   List<Map<String, dynamic>> _prestables = [];
-  List<Map<String, dynamic>> _almacenes = [
+  final List<Map<String, dynamic>> _almacenes = [
     {'id': 1, 'nombre': 'Almacén Central'},
     {'id': 2, 'nombre': 'Almacén Distribuidora'},
     {'id': 3, 'nombre': 'Almacén Regional'},
@@ -44,7 +41,6 @@ class _CrearPrestamoClienteScreenState extends State<CrearPrestamoClienteScreen>
   // Estados
   bool _cargando = false;
   bool _cargandoDatos = true;
-  String? _mensajeError;
 
   // Controladores
   late TextEditingController _observacionesController;
@@ -172,7 +168,7 @@ class _CrearPrestamoClienteScreenState extends State<CrearPrestamoClienteScreen>
 
       // Preparar payload
       final payload = {
-        'cliente_id': _clienteSeleccionado!.id,
+        'cliente_id': _clienteSeleccionado!['id'],
         'almacenes_prestables_id': _almacenSeleccionado,
         'fecha_prestamo': _fechaPrestamo.toIso8601String().split('T')[0],
         'fecha_esperada_devolucion': _fechaEsperadaDevolucion?.toIso8601String().split('T')[0],
@@ -224,8 +220,6 @@ class _CrearPrestamoClienteScreenState extends State<CrearPrestamoClienteScreen>
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
     return Scaffold(
       appBar: AppBar(
         title: const Text('Crear Préstamo a Cliente'),
@@ -245,7 +239,10 @@ class _CrearPrestamoClienteScreenState extends State<CrearPrestamoClienteScreen>
                     // Sección: Datos básicos
                     Text(
                       '📋 Datos del Préstamo',
-                      style: AppTextStyles.bodyBold.copyWith(fontSize: 16),
+                      style: Theme.of(context)
+                          .textTheme
+                          .bodyMedium!
+                          .copyWith(fontSize: 16, fontWeight: FontWeight.bold),
                     ),
                     const SizedBox(height: 16),
 
@@ -272,7 +269,10 @@ class _CrearPrestamoClienteScreenState extends State<CrearPrestamoClienteScreen>
                     // Sección: Items
                     Text(
                       '📦 Artículos',
-                      style: AppTextStyles.bodyBold.copyWith(fontSize: 16),
+                      style: Theme.of(context)
+                          .textTheme
+                          .bodyMedium!
+                          .copyWith(fontSize: 16, fontWeight: FontWeight.bold),
                     ),
                     const SizedBox(height: 16),
 
@@ -302,7 +302,10 @@ class _CrearPrestamoClienteScreenState extends State<CrearPrestamoClienteScreen>
                     // Sección: Observaciones
                     Text(
                       '📝 Observaciones',
-                      style: AppTextStyles.bodyBold.copyWith(fontSize: 16),
+                      style: Theme.of(context)
+                          .textTheme
+                          .bodyMedium!
+                          .copyWith(fontSize: 16, fontWeight: FontWeight.bold),
                     ),
                     const SizedBox(height: 8),
                     TextFormField(
@@ -606,16 +609,16 @@ class _CrearPrestamoClienteScreenState extends State<CrearPrestamoClienteScreen>
                   ),
                   onChanged: (value) {
                     setState(() {
-                      clientesFiltrados = _clientes
-                          .where((cliente) =>
-                              (cliente['nombre'] as String)
-                                  .toLowerCase()
-                                  .contains(value.toLowerCase()) ||
-                              (cliente['apellido'] as String?)
-                                  ?.toLowerCase()
-                                  .contains(value.toLowerCase()) ??
-                              false)
-                          .toList();
+                      clientesFiltrados = _clientes.where((cliente) {
+                        final nombre = (cliente['nombre'] as String?)
+                                ?.toLowerCase() ??
+                            '';
+                        final apellido = (cliente['apellido'] as String?)
+                                ?.toLowerCase() ??
+                            '';
+                        return nombre.contains(value.toLowerCase()) ||
+                            apellido.contains(value.toLowerCase());
+                      }).toList();
                     });
                   },
                 ),
@@ -659,6 +662,7 @@ class _CrearPrestamoClienteScreenState extends State<CrearPrestamoClienteScreen>
     String? prestableNombre;
     int cantidad = 1;
     int? almacenSeleccionado;
+    final cantidadController = TextEditingController(text: '1');
 
     showDialog(
       context: context,
@@ -692,13 +696,13 @@ class _CrearPrestamoClienteScreenState extends State<CrearPrestamoClienteScreen>
                   },
                 ),
                 const SizedBox(height: 16),
-                TextField(
+                TextFormField(
+                  controller: cantidadController,
                   decoration: const InputDecoration(
                     labelText: 'Cantidad',
                     border: OutlineInputBorder(),
                   ),
                   keyboardType: TextInputType.number,
-                  initialValue: '1',
                   onChanged: (value) {
                     cantidad = int.tryParse(value) ?? 1;
                   },
@@ -725,7 +729,10 @@ class _CrearPrestamoClienteScreenState extends State<CrearPrestamoClienteScreen>
           ),
           actions: [
             TextButton(
-              onPressed: () => Navigator.pop(context),
+              onPressed: () {
+                cantidadController.dispose();
+                Navigator.pop(context);
+              },
               child: const Text('Cancelar'),
             ),
             ElevatedButton(
@@ -739,6 +746,7 @@ class _CrearPrestamoClienteScreenState extends State<CrearPrestamoClienteScreen>
                         cantidad,
                         almacenSeleccionado!,
                       );
+                      cantidadController.dispose();
                       Navigator.pop(context);
                     }
                   : null,
