@@ -481,7 +481,7 @@ class _CrearPrestamoEventoScreenState
             setState(() {
               _latitud = latitude;
               _longitud = longitude;
-              if (_direccionEvento.isEmpty) {
+              if (_direccionEvento.isEmpty && address != null && address.isNotEmpty) {
                 _direccionEventoController.text = address;
                 _direccionEvento = address;
               }
