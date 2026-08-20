@@ -116,11 +116,11 @@ class _CrearPrestamoEventoScreenState
   /// Auto-seleccionar chofer si el usuario actual es un chofer
   void _autoSeleccionarChoferSiEsNecesario() {
     if (_usuarioActualId != null && _choferes.isNotEmpty) {
-      final choferActual = _choferes.firstWhere(
-        (c) => c['id'] == _usuarioActualId,
-        orElse: () => {},
-      );
-      if (choferActual.isNotEmpty) {
+      final choferActual = _choferes
+          .where((c) => c['id'] == _usuarioActualId)
+          .firstOrNull;
+
+      if (choferActual != null) {
         setState(() {
           _choferSeleccionado = choferActual['id'] as int;
           _esChoferActual = true;
