@@ -871,6 +871,25 @@ class _CrearPrestamoEventoScreenState
                   if (cantidad != null && cantidad > 0) {
                     setState(() {
                       _items[index]['cantidad'] = cantidad;
+
+                      // ✅ Si es canastilla, recalcular embase automáticamente
+                      if (item['tipo'] == 'CANASTILLA') {
+                        final capacidad = item['capacidad'] as int? ?? 0;
+                        final cantidadEmbase = capacidad * cantidad;
+
+                        // Buscar embase asociado (siguiente item)
+                        if (index + 1 < _items.length) {
+                          final siguienteItem = _items[index + 1];
+                          if (siguienteItem['tipo'] == 'EMBASE') {
+                            siguienteItem['cantidad'] = cantidadEmbase;
+                            // Actualizar controller del embase
+                            if (_cantidadControllers[index + 1] != null) {
+                              _cantidadControllers[index + 1]!.text = cantidadEmbase.toString();
+                            }
+                            debugPrint('✅ Embase recalculado: $cantidadEmbase');
+                          }
+                        }
+                      }
                     });
                   }
                 },
