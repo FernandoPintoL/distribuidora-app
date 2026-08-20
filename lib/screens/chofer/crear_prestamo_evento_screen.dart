@@ -873,6 +873,13 @@ class _CrearPrestamoEventoScreenState
                     setState(() {
                       _items[index]['cantidad'] = cantidad;
 
+                      // ✅ Actualizar cantidad en almacenes también
+                      if (_items[index]['almacenes'] is List) {
+                        for (var almacen in _items[index]['almacenes']) {
+                          almacen['cantidad'] = cantidad;
+                        }
+                      }
+
                       // ✅ Si es canastilla, recalcular embase automáticamente
                       if (item['tipo'] == 'CANASTILLA') {
                         final capacidad = item['capacidad'] as int? ?? 0;
@@ -883,6 +890,14 @@ class _CrearPrestamoEventoScreenState
                           final siguienteItem = _items[index + 1];
                           if (siguienteItem['tipo'] == 'EMBASE') {
                             siguienteItem['cantidad'] = cantidadEmbase;
+
+                            // ✅ Actualizar cantidad en almacenes del embase también
+                            if (siguienteItem['almacenes'] is List) {
+                              for (var almacen in siguienteItem['almacenes']) {
+                                almacen['cantidad'] = cantidadEmbase;
+                              }
+                            }
+
                             // Actualizar controller del embase
                             if (_cantidadControllers[index + 1] != null) {
                               _cantidadControllers[index + 1]!.text = cantidadEmbase.toString();
