@@ -20,7 +20,8 @@ class CrearPrestamoClienteScreen extends StatefulWidget {
       _CrearPrestamoClienteScreenState();
 }
 
-class _CrearPrestamoClienteScreenState extends State<CrearPrestamoClienteScreen> {
+class _CrearPrestamoClienteScreenState
+    extends State<CrearPrestamoClienteScreen> {
   // Form key
   final _formKey = GlobalKey<FormState>();
   final _apiService = ApiService();
@@ -76,23 +77,30 @@ class _CrearPrestamoClienteScreenState extends State<CrearPrestamoClienteScreen>
   /// Obtener usuario actual desde API
   void _obtenerUsuarioActual() {
     try {
-      _apiService.get('/user').then((response) {
-        if (response.statusCode == 200) {
-          final data = response.data as Map<String, dynamic>;
-          debugPrint('🔍 Respuesta /user: $data');
+      _apiService
+          .get('/user')
+          .then((response) {
+            if (response.statusCode == 200) {
+              final data = response.data as Map<String, dynamic>;
+              debugPrint('🔍 Respuesta /user: $data');
 
-          // Intentar obtener id de diferentes ubicaciones
-          final id = data['id'] ?? data['data']?['id'] ?? data['user']?['id'];
-          final name = data['name'] ?? data['data']?['name'] ?? data['user']?['name'];
+              // Intentar obtener id de diferentes ubicaciones
+              final id =
+                  data['id'] ?? data['data']?['id'] ?? data['user']?['id'];
+              final name =
+                  data['name'] ??
+                  data['data']?['name'] ??
+                  data['user']?['name'];
 
-          setState(() {
-            _usuarioActualId = id as int?;
-            debugPrint('👤 Usuario actual: $_usuarioActualId ($name)');
+              setState(() {
+                _usuarioActualId = id as int?;
+                debugPrint('👤 Usuario actual: $_usuarioActualId ($name)');
+              });
+            }
+          })
+          .catchError((e) {
+            debugPrint('❌ Error obteniendo usuario actual: $e');
           });
-        }
-      }).catchError((e) {
-        debugPrint('❌ Error obteniendo usuario actual: $e');
-      });
     } catch (e) {
       debugPrint('❌ Error iniciando obtención de usuario: $e');
     }
@@ -101,7 +109,9 @@ class _CrearPrestamoClienteScreenState extends State<CrearPrestamoClienteScreen>
   /// Cargar almacenes desde API y preseleccionar "Distribuidora"
   Future<void> _cargarAlmacenes() async {
     try {
-      final response = await _apiService.get('/almacenes-prestables/index-json?per_page=100');
+      final response = await _apiService.get(
+        '/almacenes-prestables/index-json?per_page=100',
+      );
       if (response.statusCode == 200) {
         final data = response.data as Map<String, dynamic>;
         final almacenesList = data['data'] as List;
@@ -113,10 +123,7 @@ class _CrearPrestamoClienteScreenState extends State<CrearPrestamoClienteScreen>
           final nombre = almacen['nombre'] as String;
           final id = almacen['id'] as int;
 
-          almacenesFormateados.add({
-            'id': id,
-            'nombre': nombre,
-          });
+          almacenesFormateados.add({'id': id, 'nombre': nombre});
 
           // Buscar Distribuidora
           if (nombre.toLowerCase().contains('distribuidora')) {
@@ -127,13 +134,17 @@ class _CrearPrestamoClienteScreenState extends State<CrearPrestamoClienteScreen>
         setState(() {
           _almacenes = almacenesFormateados;
           // Preseleccionar Distribuidora si existe, sino el primero
-          _almacenSeleccionado = distribuidoraId ?? (_almacenes.isNotEmpty ? _almacenes.first['id'] as int : null);
+          _almacenSeleccionado =
+              distribuidoraId ??
+              (_almacenes.isNotEmpty ? _almacenes.first['id'] as int : null);
 
           if (_almacenSeleccionado != null) {
             final nombre = _almacenes.firstWhere(
               (a) => a['id'] == _almacenSeleccionado,
             )['nombre'];
-            debugPrint('✅ Almacén preseleccionado: $nombre (id=$_almacenSeleccionado)');
+            debugPrint(
+              '✅ Almacén preseleccionado: $nombre (id=$_almacenSeleccionado)',
+            );
           }
         });
       }
@@ -188,20 +199,27 @@ class _CrearPrestamoClienteScreenState extends State<CrearPrestamoClienteScreen>
 
         setState(() {
           _choferes = choferesList
-              .map((c) => {
-                    'id': c['id'] as int,
-                    'nombre': c['nombre'] as String? ?? c['name'] as String? ?? '',
-                    'apellido': c['apellido'] as String? ?? '',
-                  })
+              .map(
+                (c) => {
+                  'id': c['id'] as int,
+                  'nombre':
+                      c['nombre'] as String? ?? c['name'] as String? ?? '',
+                  'apellido': c['apellido'] as String? ?? '',
+                },
+              )
               .toList();
 
           // ✅ Preseleccionar al usuario actual si es chofer
           if (_usuarioActualId != null) {
-            final esChoferActual = _choferes.any((c) => c['id'] == _usuarioActualId);
+            final esChoferActual = _choferes.any(
+              (c) => c['id'] == _usuarioActualId,
+            );
             if (esChoferActual) {
               _esChoferActual = true; // ✅ Marcar que es chofer
               _choferSeleccionado = _usuarioActualId;
-              debugPrint('✅ Usuario actual es chofer: $_choferSeleccionado (sin permitir cambio)');
+              debugPrint(
+                '✅ Usuario actual es chofer: $_choferSeleccionado (sin permitir cambio)',
+              );
             } else {
               _esChoferActual = false;
             }
@@ -227,11 +245,13 @@ class _CrearPrestamoClienteScreenState extends State<CrearPrestamoClienteScreen>
 
         setState(() {
           _vehiculos = vehiculosList
-              .map((v) => {
-                    'id': v['id'] as int,
-                    'placa': v['placa'] as String? ?? '',
-                    'modelo': v['modelo'] as String? ?? '',
-                  })
+              .map(
+                (v) => {
+                  'id': v['id'] as int,
+                  'placa': v['placa'] as String? ?? '',
+                  'modelo': v['modelo'] as String? ?? '',
+                },
+              )
               .toList();
         });
       }
@@ -261,7 +281,9 @@ class _CrearPrestamoClienteScreenState extends State<CrearPrestamoClienteScreen>
 
         // Log para debugging
         final direccionData = _obtenerDireccionCliente(venta);
-        debugPrint('📍 Dirección del cliente: ${direccionData?['direccion'] ?? "No disponible"}');
+        debugPrint(
+          '📍 Dirección del cliente: ${direccionData?['direccion'] ?? "No disponible"}',
+        );
 
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -294,7 +316,9 @@ class _CrearPrestamoClienteScreenState extends State<CrearPrestamoClienteScreen>
     }
 
     // Si no, buscar en las direcciones del cliente
-    if (venta.cliente != null && venta.cliente!.direcciones != null && venta.cliente!.direcciones!.isNotEmpty) {
+    if (venta.cliente != null &&
+        venta.cliente!.direcciones != null &&
+        venta.cliente!.direcciones!.isNotEmpty) {
       try {
         // Buscar dirección principal o usar la primera
         final direccion = venta.cliente!.direcciones!.firstWhere(
@@ -353,21 +377,28 @@ class _CrearPrestamoClienteScreenState extends State<CrearPrestamoClienteScreen>
           'prestable_id': canastilla.id,
           'prestable_nombre': canastilla.nombre,
           'cantidad': cantidadDetalle,
-          'capacidad': canastilla.capacidad ?? 0, // ✅ Guardar capacidad para recálculos
+          'capacidad':
+              canastilla.capacidad ?? 0, // ✅ Guardar capacidad para recálculos
           'tipo': 'CANASTILLA',
           'almacenes': [
             {
               'almacenes_prestables_id': _almacenSeleccionado,
               'cantidad': cantidadDetalle,
-            }
+            },
           ],
         });
         // ✅ Crear controller para esta cantidad
-        _cantidadControllers[itemIndex] = TextEditingController(text: cantidadDetalle.toString());
+        _cantidadControllers[itemIndex] = TextEditingController(
+          text: cantidadDetalle.toString(),
+        );
 
         // Si existe embase y canastilla tiene capacidad, calcular cantidad de embase
-        if (embase != null && embase.id != 0 && canastilla.capacidad != null && canastilla.capacidad! > 0) {
-          final cantidadEmbase = (canastilla.capacidad! * cantidadDetalle).toInt();
+        if (embase != null &&
+            embase.id != 0 &&
+            canastilla.capacidad != null &&
+            canastilla.capacidad! > 0) {
+          final cantidadEmbase = (canastilla.capacidad! * cantidadDetalle)
+              .toInt();
 
           if (cantidadEmbase > 0) {
             final embaseIndex = _items.length;
@@ -376,22 +407,28 @@ class _CrearPrestamoClienteScreenState extends State<CrearPrestamoClienteScreen>
               'prestable_nombre': embase.nombre,
               'cantidad': cantidadEmbase,
               'tipo': 'EMBASE',
-              'canastilla_index': _items.length - 1, // ✅ Guardar índice de la canastilla relacionada
+              'canastilla_index':
+                  _items.length -
+                  1, // ✅ Guardar índice de la canastilla relacionada
               'almacenes': [
                 {
                   'almacenes_prestables_id': _almacenSeleccionado,
                   'cantidad': cantidadEmbase,
-                }
+                },
               ],
             });
             // ✅ Crear controller para el embase
-            _cantidadControllers[embaseIndex] = TextEditingController(text: cantidadEmbase.toString());
+            _cantidadControllers[embaseIndex] = TextEditingController(
+              text: cantidadEmbase.toString(),
+            );
           }
         }
       }
     }
 
-    debugPrint('📦 Agregados ${_items.length} items desde venta ${venta.numero}');
+    debugPrint(
+      '📦 Agregados ${_items.length} items desde venta ${venta.numero}',
+    );
   }
 
   @override
@@ -406,10 +443,17 @@ class _CrearPrestamoClienteScreenState extends State<CrearPrestamoClienteScreen>
   }
 
   /// Agregar un prestable a la lista de items
-  void _agregarItem(int prestableId, String prestableNombre, int cantidad, int almacen) {
+  void _agregarItem(
+    int prestableId,
+    String prestableNombre,
+    int cantidad,
+    int almacen,
+  ) {
     setState(() {
       // Verificar si el prestable ya existe
-      final index = _items.indexWhere((item) => item['prestable_id'] == prestableId);
+      final index = _items.indexWhere(
+        (item) => item['prestable_id'] == prestableId,
+      );
 
       if (index >= 0) {
         // Actualizar cantidad si ya existe
@@ -423,14 +467,13 @@ class _CrearPrestamoClienteScreenState extends State<CrearPrestamoClienteScreen>
           'prestable_nombre': prestableNombre,
           'cantidad': cantidad,
           'almacenes': [
-            {
-              'almacenes_prestables_id': almacen,
-              'cantidad': cantidad,
-            }
+            {'almacenes_prestables_id': almacen, 'cantidad': cantidad},
           ],
         });
         // ✅ Crear controller para esta cantidad
-        _cantidadControllers[newIndex] = TextEditingController(text: cantidad.toString());
+        _cantidadControllers[newIndex] = TextEditingController(
+          text: cantidad.toString(),
+        );
       }
     });
   }
@@ -484,7 +527,9 @@ class _CrearPrestamoClienteScreenState extends State<CrearPrestamoClienteScreen>
     }
 
     if (_almacenSeleccionado == null) {
-      _mostrarError('Error: Almacén no disponible. Intenta recargando la pantalla.');
+      _mostrarError(
+        'Error: Almacén no disponible. Intenta recargando la pantalla.',
+      );
       return;
     }
 
@@ -515,7 +560,9 @@ class _CrearPrestamoClienteScreenState extends State<CrearPrestamoClienteScreen>
         'cliente_id': _clienteSeleccionado!.id,
         'almacenes_prestables_id': _almacenSeleccionado,
         'fecha_prestamo': _fechaPrestamo.toIso8601String().split('T')[0],
-        'fecha_esperada_devolucion': _fechaEsperadaDevolucion?.toIso8601String().split('T')[0],
+        'fecha_esperada_devolucion': _fechaEsperadaDevolucion
+            ?.toIso8601String()
+            .split('T')[0],
         'observaciones': _observaciones.isNotEmpty ? _observaciones : null,
         'monto_garantia': _montoGarantia > 0 ? _montoGarantia : null,
         'detalles': _items,
@@ -557,10 +604,7 @@ class _CrearPrestamoClienteScreenState extends State<CrearPrestamoClienteScreen>
   /// Mostrar error
   void _mostrarError(String mensaje) {
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(mensaje),
-        backgroundColor: Colors.red,
-      ),
+      SnackBar(content: Text(mensaje), backgroundColor: Colors.red),
     );
   }
 
@@ -647,9 +691,7 @@ class _CrearPrestamoClienteScreenState extends State<CrearPrestamoClienteScreen>
           const SizedBox(height: 8),
           Text('Cliente: ${_clienteSeleccionado?.nombre ?? 'N/A'}'),
           Text('Items cargados: ${_items.length}'),
-          Text(
-            'Total: Bs. ${_ventaBuscada!.total.toStringAsFixed(2)}',
-          ),
+          Text('Total: Bs. ${_ventaBuscada!.total.toStringAsFixed(2)}'),
         ],
       ),
     );
@@ -674,10 +716,7 @@ class _CrearPrestamoClienteScreenState extends State<CrearPrestamoClienteScreen>
       ),
       child: Row(
         children: [
-          Icon(
-            Icons.check_circle,
-            color: context.colorScheme.primary,
-          ),
+          Icon(Icons.check_circle, color: context.colorScheme.primary),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
@@ -699,17 +738,16 @@ class _CrearPrestamoClienteScreenState extends State<CrearPrestamoClienteScreen>
     );
   }
 
-  /// Card de dirección del cliente
+  /// Card de observaciones de la venta
   Widget _buildDireccionCard() {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final direccionData = _ventaBuscada != null ? _obtenerDireccionCliente(_ventaBuscada!) : null;
 
-    if (direccionData == null) {
+    if (_ventaBuscada == null) {
       return const SizedBox.shrink();
     }
 
-    final direccion = direccionData['direccion'] as String?;
-    final localidadNombre = direccionData['localidad_nombre'] as String?;
+    final observaciones = _ventaBuscada!.observaciones;
+    final tieneObservaciones = observaciones != null && observaciones.isNotEmpty;
 
     return Container(
       padding: const EdgeInsets.all(12),
@@ -730,14 +768,14 @@ class _CrearPrestamoClienteScreenState extends State<CrearPrestamoClienteScreen>
           Row(
             children: [
               Icon(
-                Icons.location_on,
+                Icons.notes,
                 color: context.colorScheme.tertiary,
                 size: 20,
               ),
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
-                  'Dirección de Entrega',
+                  'Observaciones de Venta',
                   style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.bold,
@@ -745,51 +783,22 @@ class _CrearPrestamoClienteScreenState extends State<CrearPrestamoClienteScreen>
                   ),
                 ),
               ),
-              // Botón para ver en mapa
-              Tooltip(
-                message: 'Ver en mapa',
-                child: IconButton(
-                  icon: const Icon(Icons.map),
-                  color: context.colorScheme.tertiary,
-                  iconSize: 20,
-                  padding: const EdgeInsets.all(4),
-                  constraints: const BoxConstraints(
-                    minWidth: 32,
-                    minHeight: 32,
-                  ),
-                  onPressed: () => _abrirMapaDireccion(),
-                ),
-              ),
             ],
           ),
           const SizedBox(height: 8),
           Text(
-            direccion ?? 'Sin dirección',
-            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
-          ),
-          if (localidadNombre != null) ...[
-            const SizedBox(height: 4),
-            Chip(
-              label: Text(
-                localidadNombre,
-                style: const TextStyle(fontSize: 11),
-              ),
-              avatar: CircleAvatar(
-                backgroundColor: context.colorScheme.tertiary.withOpacity(0.3),
-                radius: 12,
-                child: Icon(
-                  Icons.location_city,
-                  size: 12,
-                  color: context.colorScheme.tertiary,
-                ),
-              ),
-              backgroundColor: isDark
-                  ? context.colorScheme.tertiary.withOpacity(0.2)
-                  : context.colorScheme.tertiary.withOpacity(0.15),
-              padding: const EdgeInsets.symmetric(horizontal: 6),
-              materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            tieneObservaciones
+                ? observaciones
+                : '(Sin observaciones)',
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
+              fontStyle: tieneObservaciones ? FontStyle.normal : FontStyle.italic,
+              color: tieneObservaciones
+                  ? null
+                  : (isDark ? Colors.grey.shade500 : Colors.grey.shade500),
             ),
-          ],
+          ),
         ],
       ),
     );
@@ -799,7 +808,8 @@ class _CrearPrestamoClienteScreenState extends State<CrearPrestamoClienteScreen>
   void _abrirMapaDireccion() {
     if (_ventaBuscada == null) return;
 
-    final direccionCliente = _ventaBuscada!.direccionCliente ??
+    final direccionCliente =
+        _ventaBuscada!.direccionCliente ??
         (_ventaBuscada!.cliente?.direcciones?.firstWhere(
           (d) => d.esPrincipal == true,
           orElse: () => _ventaBuscada!.cliente!.direcciones!.first,
@@ -845,10 +855,10 @@ class _CrearPrestamoClienteScreenState extends State<CrearPrestamoClienteScreen>
       children: [
         Text(
           '🔍 Buscar Venta (Opcional)',
-          style: Theme.of(context)
-              .textTheme
-              .bodyMedium!
-              .copyWith(fontSize: 16, fontWeight: FontWeight.bold),
+          style: Theme.of(context).textTheme.bodyMedium!.copyWith(
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+          ),
         ),
         const SizedBox(height: 12),
         Row(
@@ -901,8 +911,10 @@ class _CrearPrestamoClienteScreenState extends State<CrearPrestamoClienteScreen>
       children: [
         Text(
           '📋 Datos del Préstamo',
-          style: Theme.of(context).textTheme.bodyMedium!
-              .copyWith(fontSize: 16, fontWeight: FontWeight.bold),
+          style: Theme.of(context).textTheme.bodyMedium!.copyWith(
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+          ),
         ),
         const SizedBox(height: 16),
         _buildClienteField(),
@@ -929,8 +941,10 @@ class _CrearPrestamoClienteScreenState extends State<CrearPrestamoClienteScreen>
       children: [
         Text(
           '📦 Artículos',
-          style: Theme.of(context).textTheme.bodyMedium!
-              .copyWith(fontSize: 16, fontWeight: FontWeight.bold),
+          style: Theme.of(context).textTheme.bodyMedium!.copyWith(
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+          ),
         ),
         const SizedBox(height: 16),
         SizedBox(
@@ -962,17 +976,17 @@ class _CrearPrestamoClienteScreenState extends State<CrearPrestamoClienteScreen>
       children: [
         Text(
           '📝 Observaciones',
-          style: Theme.of(context).textTheme.bodyMedium!
-              .copyWith(fontSize: 16, fontWeight: FontWeight.bold),
+          style: Theme.of(context).textTheme.bodyMedium!.copyWith(
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+          ),
         ),
         const SizedBox(height: 8),
         TextFormField(
           controller: _observacionesController,
           decoration: InputDecoration(
             hintText: 'Agregar observaciones (opcional)',
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
-            ),
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
             filled: true,
             fillColor: context.colorScheme.surface,
           ),
@@ -999,16 +1013,11 @@ class _CrearPrestamoClienteScreenState extends State<CrearPrestamoClienteScreen>
             ? const SizedBox(
                 width: 20,
                 height: 20,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                ),
+                child: CircularProgressIndicator(strokeWidth: 2),
               )
             : const Text(
                 'Crear Préstamo',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                ),
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
               ),
       ),
     );
@@ -1021,8 +1030,10 @@ class _CrearPrestamoClienteScreenState extends State<CrearPrestamoClienteScreen>
       children: [
         Text(
           '👤 Selecciona Cliente',
-          style: Theme.of(context).textTheme.bodyMedium!
-              .copyWith(fontSize: 16, fontWeight: FontWeight.bold),
+          style: Theme.of(context).textTheme.bodyMedium!.copyWith(
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+          ),
         ),
         const SizedBox(height: 12),
         Consumer<ClientProvider>(
@@ -1037,51 +1048,60 @@ class _CrearPrestamoClienteScreenState extends State<CrearPrestamoClienteScreen>
                   limit: 10,
                 );
                 // Convertir Client a Cliente
-                return results.map((c) => Cliente(
-                  id: c.id,
-                  nombre: c.nombre,
-                  telefono: c.telefono,
-                  fotoPerfil: c.fotoPerfil,
-                  razonSocial: c.razonSocial,
-                  nit: c.nit,
-                  localidadId: 0, // No available from Client
-                )).toList();
+                return results
+                    .map(
+                      (c) => Cliente(
+                        id: c.id,
+                        nombre: c.nombre,
+                        telefono: c.telefono,
+                        fotoPerfil: c.fotoPerfil,
+                        razonSocial: c.razonSocial,
+                        nit: c.nit,
+                        localidadId: 0, // No available from Client
+                      ),
+                    )
+                    .toList();
               },
               onSelected: (Cliente selection) {
                 setState(() {
                   _clienteSeleccionado = selection;
                 });
               },
-              fieldViewBuilder: (context, textEditingController, focusNode,
-                  onFieldSubmitted) {
-                return TextField(
-                  controller: textEditingController,
-                  focusNode: focusNode,
-                  onSubmitted: (String value) {
-                    onFieldSubmitted();
+              fieldViewBuilder:
+                  (
+                    context,
+                    textEditingController,
+                    focusNode,
+                    onFieldSubmitted,
+                  ) {
+                    return TextField(
+                      controller: textEditingController,
+                      focusNode: focusNode,
+                      onSubmitted: (String value) {
+                        onFieldSubmitted();
+                      },
+                      decoration: InputDecoration(
+                        hintText: 'Buscar cliente por nombre...',
+                        prefixIcon: const Icon(Icons.search),
+                        suffixIcon: _clienteSeleccionado != null
+                            ? IconButton(
+                                icon: const Icon(Icons.clear),
+                                onPressed: () {
+                                  textEditingController.clear();
+                                  setState(() {
+                                    _clienteSeleccionado = null;
+                                  });
+                                },
+                              )
+                            : null,
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        filled: true,
+                        fillColor: context.colorScheme.surface,
+                      ),
+                    );
                   },
-                  decoration: InputDecoration(
-                    hintText: 'Buscar cliente por nombre...',
-                    prefixIcon: const Icon(Icons.search),
-                    suffixIcon: _clienteSeleccionado != null
-                        ? IconButton(
-                            icon: const Icon(Icons.clear),
-                            onPressed: () {
-                              textEditingController.clear();
-                              setState(() {
-                                _clienteSeleccionado = null;
-                              });
-                            },
-                          )
-                        : null,
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    filled: true,
-                    fillColor: context.colorScheme.surface,
-                  ),
-                );
-              },
               optionsViewBuilder: (context, onSelected, options) {
                 return Align(
                   alignment: Alignment.topLeft,
@@ -1143,7 +1163,9 @@ class _CrearPrestamoClienteScreenState extends State<CrearPrestamoClienteScreen>
                     'Cliente',
                     style: TextStyle(
                       fontSize: 12,
-                      color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
+                      color: isDark
+                          ? Colors.grey.shade400
+                          : Colors.grey.shade600,
                     ),
                   ),
                   const SizedBox(height: 4),
@@ -1197,7 +1219,9 @@ class _CrearPrestamoClienteScreenState extends State<CrearPrestamoClienteScreen>
                     'Fecha del Préstamo',
                     style: TextStyle(
                       fontSize: 12,
-                      color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
+                      color: isDark
+                          ? Colors.grey.shade400
+                          : Colors.grey.shade600,
                     ),
                   ),
                   const SizedBox(height: 4),
@@ -1222,7 +1246,9 @@ class _CrearPrestamoClienteScreenState extends State<CrearPrestamoClienteScreen>
     return GestureDetector(
       onTap: () => _seleccionarFecha(
         titulo: 'Fecha Esperada de Devolución',
-        fechaInicial: _fechaEsperadaDevolucion ?? _fechaPrestamo.add(const Duration(days: 7)),
+        fechaInicial:
+            _fechaEsperadaDevolucion ??
+            _fechaPrestamo.add(const Duration(days: 7)),
         onSeleccionar: (fecha) {
           setState(() {
             _fechaEsperadaDevolucion = fecha;
@@ -1249,7 +1275,9 @@ class _CrearPrestamoClienteScreenState extends State<CrearPrestamoClienteScreen>
                     'Fecha Esperada Devolución',
                     style: TextStyle(
                       fontSize: 12,
-                      color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
+                      color: isDark
+                          ? Colors.grey.shade400
+                          : Colors.grey.shade600,
                     ),
                   ),
                   const SizedBox(height: 4),
@@ -1273,11 +1301,10 @@ class _CrearPrestamoClienteScreenState extends State<CrearPrestamoClienteScreen>
   Widget _buildAlmacenField() {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final almacenNombre = _almacenSeleccionado != null
-        ? _almacenes
-            .firstWhere(
-              (a) => a['id'] == _almacenSeleccionado,
-              orElse: () => {'nombre': 'Cargando...'},
-            )['nombre']
+        ? _almacenes.firstWhere(
+            (a) => a['id'] == _almacenSeleccionado,
+            orElse: () => {'nombre': 'Cargando...'},
+          )['nombre']
         : 'Cargando almacenes...';
 
     return Container(
@@ -1293,11 +1320,7 @@ class _CrearPrestamoClienteScreenState extends State<CrearPrestamoClienteScreen>
       ),
       child: Row(
         children: [
-          Icon(
-            Icons.warehouse,
-            size: 20,
-            color: context.colorScheme.primary,
-          ),
+          Icon(Icons.warehouse, size: 20, color: context.colorScheme.primary),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
@@ -1313,15 +1336,15 @@ class _CrearPrestamoClienteScreenState extends State<CrearPrestamoClienteScreen>
                 const SizedBox(height: 4),
                 Text(
                   almacenNombre,
-                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ],
             ),
           ),
-          Icon(
-            Icons.check_circle,
-            color: context.colorScheme.primary,
-          ),
+          Icon(Icons.check_circle, color: context.colorScheme.primary),
         ],
       ),
     );
@@ -1333,9 +1356,7 @@ class _CrearPrestamoClienteScreenState extends State<CrearPrestamoClienteScreen>
       decoration: InputDecoration(
         labelText: 'Monto de Garantía (Opcional)',
         prefixIcon: const Icon(Icons.attach_money),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8),
-        ),
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
         filled: true,
         fillColor: context.colorScheme.surface,
       ),
@@ -1352,9 +1373,15 @@ class _CrearPrestamoClienteScreenState extends State<CrearPrestamoClienteScreen>
 
     // Si es chofer actual, mostrar solo lectura sin permitir cambio
     if (_esChoferActual) {
-      Map<String, dynamic> choferActual = {'id': 0, 'nombre': 'No encontrado', 'apellido': ''};
+      Map<String, dynamic> choferActual = {
+        'id': 0,
+        'nombre': 'No encontrado',
+        'apellido': '',
+      };
       if (_choferes.isNotEmpty && _choferSeleccionado != null) {
-        final found = _choferes.where((c) => c['id'] == _choferSeleccionado).firstOrNull;
+        final found = _choferes
+            .where((c) => c['id'] == _choferSeleccionado)
+            .firstOrNull;
         if (found != null) {
           choferActual = found;
         }
@@ -1381,12 +1408,15 @@ class _CrearPrestamoClienteScreenState extends State<CrearPrestamoClienteScreen>
                     'Chofer',
                     style: TextStyle(
                       fontSize: 12,
-                      color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
+                      color: isDark
+                          ? Colors.grey.shade400
+                          : Colors.grey.shade600,
                     ),
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    '${choferActual['nombre']} ${choferActual['apellido']}'.trim(),
+                    '${choferActual['nombre']} ${choferActual['apellido']}'
+                        .trim(),
                     style: const TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w500,
@@ -1415,9 +1445,7 @@ class _CrearPrestamoClienteScreenState extends State<CrearPrestamoClienteScreen>
       decoration: InputDecoration(
         labelText: 'Chofer (Opcional)',
         prefixIcon: const Icon(Icons.person_outline),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8),
-        ),
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
         filled: true,
         fillColor: context.colorScheme.surface,
       ),
@@ -1455,9 +1483,7 @@ class _CrearPrestamoClienteScreenState extends State<CrearPrestamoClienteScreen>
       decoration: InputDecoration(
         labelText: 'Vehículo (Opcional)',
         prefixIcon: const Icon(Icons.directions_car_outlined),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8),
-        ),
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
         filled: true,
         fillColor: context.colorScheme.surface,
       ),
@@ -1545,8 +1571,11 @@ class _CrearPrestamoClienteScreenState extends State<CrearPrestamoClienteScreen>
                                     _items[index]['cantidad'] = cantidad;
 
                                     // Actualizar almacenes
-                                    if (item['almacenes'] is List && (item['almacenes'] as List).isNotEmpty) {
-                                      final almacenes = item['almacenes'] as List;
+                                    if (item['almacenes'] is List &&
+                                        (item['almacenes'] as List)
+                                            .isNotEmpty) {
+                                      final almacenes =
+                                          item['almacenes'] as List;
                                       for (var almacen in almacenes) {
                                         almacen['cantidad'] = cantidad;
                                       }
@@ -1556,23 +1585,32 @@ class _CrearPrestamoClienteScreenState extends State<CrearPrestamoClienteScreen>
                                     if (item['tipo'] == 'CANASTILLA' &&
                                         item['capacidad'] != null &&
                                         item['capacidad'] > 0) {
-                                      final capacidad = item['capacidad'] as int;
-                                      final cantidadEmbase = cantidad * capacidad;
+                                      final capacidad =
+                                          item['capacidad'] as int;
+                                      final cantidadEmbase =
+                                          cantidad * capacidad;
 
                                       // Buscar el embase relacionado
                                       if (index + 1 < _items.length) {
                                         final itemEmbase = _items[index + 1];
                                         if (itemEmbase['tipo'] == 'EMBASE') {
-                                          _items[index + 1]['cantidad'] = cantidadEmbase;
+                                          _items[index + 1]['cantidad'] =
+                                              cantidadEmbase;
                                           // ✅ Actualizar el controller del embase directamente
-                                          _cantidadControllers[index + 1]?.text = cantidadEmbase.toString();
+                                          _cantidadControllers[index + 1]
+                                              ?.text = cantidadEmbase
+                                              .toString();
 
                                           // Actualizar almacenes del embase
                                           if (itemEmbase['almacenes'] is List &&
-                                              (itemEmbase['almacenes'] as List).isNotEmpty) {
-                                            final almacenesEmbase = itemEmbase['almacenes'] as List;
-                                            for (var almacen in almacenesEmbase) {
-                                              almacen['cantidad'] = cantidadEmbase;
+                                              (itemEmbase['almacenes'] as List)
+                                                  .isNotEmpty) {
+                                            final almacenesEmbase =
+                                                itemEmbase['almacenes'] as List;
+                                            for (var almacen
+                                                in almacenesEmbase) {
+                                              almacen['cantidad'] =
+                                                  cantidadEmbase;
                                             }
                                           }
 
@@ -1587,7 +1625,10 @@ class _CrearPrestamoClienteScreenState extends State<CrearPrestamoClienteScreen>
                               ),
                               const SizedBox(width: 8),
                               IconButton(
-                                icon: const Icon(Icons.delete, color: Colors.red),
+                                icon: const Icon(
+                                  Icons.delete,
+                                  color: Colors.red,
+                                ),
                                 onPressed: () => _removerItem(index),
                               ),
                             ],
@@ -1638,8 +1679,7 @@ class _CrearPrestamoClienteScreenState extends State<CrearPrestamoClienteScreen>
                     }
 
                     try {
-                      final clientProvider =
-                          context.read<ClientProvider>();
+                      final clientProvider = context.read<ClientProvider>();
                       final resultados = await clientProvider.searchClients(
                         value,
                         limit: 20,
@@ -1647,15 +1687,17 @@ class _CrearPrestamoClienteScreenState extends State<CrearPrestamoClienteScreen>
                       // Convertir Client a Cliente
                       setState(() {
                         clientesFiltrados = resultados
-                            .map((c) => Cliente(
-                              id: c.id,
-                              nombre: c.nombre,
-                              telefono: c.telefono,
-                              fotoPerfil: c.fotoPerfil,
-                              razonSocial: c.razonSocial,
-                              nit: c.nit,
-                              localidadId: 0,
-                            ))
+                            .map(
+                              (c) => Cliente(
+                                id: c.id,
+                                nombre: c.nombre,
+                                telefono: c.telefono,
+                                fotoPerfil: c.fotoPerfil,
+                                razonSocial: c.razonSocial,
+                                nit: c.nit,
+                                localidadId: 0,
+                              ),
+                            )
                             .toList();
                       });
                     } catch (e) {
@@ -1774,8 +1816,8 @@ class _CrearPrestamoClienteScreenState extends State<CrearPrestamoClienteScreen>
               child: const Text('Cancelar'),
             ),
             ElevatedButton(
-              onPressed: prestableSeleccionado != null &&
-                      almacenSeleccionado != null
+              onPressed:
+                  prestableSeleccionado != null && almacenSeleccionado != null
                   ? () {
                       _agregarItem(
                         prestableSeleccionado!.id,
