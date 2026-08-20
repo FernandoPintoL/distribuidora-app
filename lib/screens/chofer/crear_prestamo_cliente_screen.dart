@@ -795,6 +795,21 @@ class _CrearPrestamoClienteScreenState
                   ),
                 ),
               ),
+              // Botón para ver en mapa
+              Tooltip(
+                message: 'Ver en mapa',
+                child: IconButton(
+                  icon: const Icon(Icons.map),
+                  color: context.colorScheme.tertiary,
+                  iconSize: 20,
+                  padding: const EdgeInsets.all(4),
+                  constraints: const BoxConstraints(
+                    minWidth: 32,
+                    minHeight: 32,
+                  ),
+                  onPressed: () => _abrirMapaDireccion(),
+                ),
+              ),
             ],
           ),
           const SizedBox(height: 8),
