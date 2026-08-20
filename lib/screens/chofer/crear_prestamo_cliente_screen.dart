@@ -73,14 +73,23 @@ class _CrearPrestamoClienteScreenState extends State<CrearPrestamoClienteScreen>
     _cargarVehiculos();
   }
 
-  /// Obtener usuario actual del provider
+  /// Obtener usuario actual desde API
   void _obtenerUsuarioActual() {
     try {
-      final clientProvider = Provider.of<ClientProvider>(context, listen: false);
-      _usuarioActualId = clientProvider.clientePerfil?.id;
-      debugPrint('👤 Usuario actual: $_usuarioActualId');
+      _apiService.get('/user').then((response) {
+        if (response.statusCode == 200) {
+          final data = response.data as Map<String, dynamic>;
+          final user = data['data'] as Map<String, dynamic>?;
+          setState(() {
+            _usuarioActualId = user?['id'] as int?;
+            debugPrint('👤 Usuario actual: $_usuarioActualId (${user?['name']})');
+          });
+        }
+      }).catchError((e) {
+        debugPrint('❌ Error obteniendo usuario actual: $e');
+      });
     } catch (e) {
-      debugPrint('❌ Error obteniendo usuario actual: $e');
+      debugPrint('❌ Error iniciando obtención de usuario: $e');
     }
   }
 
