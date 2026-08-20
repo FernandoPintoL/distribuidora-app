@@ -79,10 +79,15 @@ class _CrearPrestamoClienteScreenState extends State<CrearPrestamoClienteScreen>
       _apiService.get('/user').then((response) {
         if (response.statusCode == 200) {
           final data = response.data as Map<String, dynamic>;
-          final user = data['data'] as Map<String, dynamic>?;
+          debugPrint('🔍 Respuesta /user: $data');
+
+          // Intentar obtener id de diferentes ubicaciones
+          final id = data['id'] ?? data['data']?['id'] ?? data['user']?['id'];
+          final name = data['name'] ?? data['data']?['name'] ?? data['user']?['name'];
+
           setState(() {
-            _usuarioActualId = user?['id'] as int?;
-            debugPrint('👤 Usuario actual: $_usuarioActualId (${user?['name']})');
+            _usuarioActualId = id as int?;
+            debugPrint('👤 Usuario actual: $_usuarioActualId ($name)');
           });
         }
       }).catchError((e) {
