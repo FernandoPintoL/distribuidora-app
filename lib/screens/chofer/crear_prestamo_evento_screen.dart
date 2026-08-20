@@ -99,10 +99,34 @@ class _CrearPrestamoEventoScreenState
             _usuarioActualId = id as int?;
             debugPrint('👤 Usuario actual: $_usuarioActualId ($name)');
           });
+
+          // ✅ Después de obtener el usuario, recargar choferes para auto-seleccionar
+          if (_usuarioActualId != null) {
+            Future.delayed(const Duration(milliseconds: 100), () {
+              _autoSeleccionarChoferSiEsNecesario();
+            });
+          }
         }
       });
     } catch (e) {
       debugPrint('❌ Error obteniendo usuario: $e');
+    }
+  }
+
+  /// Auto-seleccionar chofer si el usuario actual es un chofer
+  void _autoSeleccionarChoferSiEsNecesario() {
+    if (_usuarioActualId != null && _choferes.isNotEmpty) {
+      final choferActual = _choferes.firstWhere(
+        (c) => c['id'] == _usuarioActualId,
+        orElse: () => {},
+      );
+      if (choferActual.isNotEmpty) {
+        setState(() {
+          _choferSeleccionado = choferActual['id'] as int;
+          _esChoferActual = true;
+          debugPrint('✅ Chofer auto-seleccionado: $_choferSeleccionado');
+        });
+      }
     }
   }
 
@@ -163,19 +187,11 @@ class _CrearPrestamoEventoScreenState
                     })
                 .toList();
 
-            // Auto-seleccionar si es chofer
-            if (_usuarioActualId != null) {
-              final choferActual = _choferes.firstWhere(
-                (c) => c['id'] == _usuarioActualId,
-                orElse: () => {},
-              );
-              if (choferActual.isNotEmpty) {
-                _choferSeleccionado = choferActual['id'] as int;
-                _esChoferActual = true;
-                debugPrint('✅ Chofer auto-seleccionado: $_choferSeleccionado');
-              }
-            }
+            debugPrint('✅ Choferes cargados: ${_choferes.length}');
           });
+
+          // ✅ Auto-seleccionar después de cargar si el usuario actual es chofer
+          _autoSeleccionarChoferSiEsNecesario();
         }
       });
     } catch (e) {
@@ -186,20 +202,28 @@ class _CrearPrestamoEventoScreenState
   /// Cargar vehículos del backend
   void _cargarVehiculos() {
     try {
-      _apiService.get('/api/vehiculos').then((response) {
+      // Usar endpoint específico que retorna solo vehículos activos
+      _apiService.get('/api/vehiculos?activo=1').then((response) {
         if (response.statusCode == 200) {
           final data = response.data;
-          final vehiculosData = data is List ? data : data['data'] as List;
+          final vehiculosData = data is List
+              ? data
+              : (data['data'] is List ? data['data'] : []) as List;
 
           setState(() {
             _vehiculos = vehiculosData
                 .map((v) => {
                       'id': v['id'] as int,
                       'placa': v['placa'] as String? ?? '',
+                      'marca': v['marca'] as String? ?? '',
                       'modelo': v['modelo'] as String? ?? '',
                     })
                 .toList();
+
+            debugPrint('✅ Vehículos cargados: ${_vehiculos.length}');
           });
+        } else {
+          debugPrint('⚠️ Status code: ${response.statusCode}');
         }
       });
     } catch (e) {
