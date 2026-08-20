@@ -869,8 +869,12 @@ class _CrearPrestamoEventoScreenState
                 keyboardType: TextInputType.number,
                 onChanged: (value) {
                   final cantidad = int.tryParse(value);
+                  debugPrint('📝 Editando item $index: $value → $cantidad');
+
                   if (cantidad != null && cantidad > 0) {
                     setState(() {
+                      debugPrint('   Antes: cantidad=${_items[index]['cantidad']}, almacenes=${_items[index]['almacenes']}');
+
                       _items[index]['cantidad'] = cantidad;
 
                       // ✅ Actualizar cantidad en almacenes también
@@ -879,6 +883,8 @@ class _CrearPrestamoEventoScreenState
                           almacen['cantidad'] = cantidad;
                         }
                       }
+
+                      debugPrint('   Después: cantidad=${_items[index]['cantidad']}, almacenes=${_items[index]['almacenes']}');
 
                       // ✅ Si es canastilla, recalcular embase automáticamente
                       if (item['tipo'] == 'CANASTILLA') {
