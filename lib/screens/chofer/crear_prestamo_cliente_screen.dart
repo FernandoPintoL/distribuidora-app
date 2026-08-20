@@ -312,6 +312,8 @@ class _CrearPrestamoClienteScreenState
         'direccion': venta.direccionCliente!.direccion ?? 'Sin dirección',
         'localidad_id': venta.direccionCliente!.localidad?.id,
         'localidad_nombre': venta.direccionCliente!.localidad?.nombre,
+        'latitud': venta.direccionCliente!.latitud,
+        'longitud': venta.direccionCliente!.longitud,
       };
     }
 
@@ -330,6 +332,8 @@ class _CrearPrestamoClienteScreenState
           'direccion': direccion.direccion ?? 'Sin dirección',
           'localidad_id': direccion.localidad?.id,
           'localidad_nombre': direccion.localidad?.nombre,
+          'latitud': direccion.latitud,
+          'longitud': direccion.longitud,
         };
       } catch (e) {
         debugPrint('❌ Error obteniendo dirección del cliente: $e');
@@ -551,6 +555,8 @@ class _CrearPrestamoClienteScreenState
             'direccion': direccionData['direccion'],
             'localidad_id': direccionData['localidad_id'],
             'es_ubicacion_manual': false,
+            if (direccionData['latitud'] != null) 'latitud': direccionData['latitud'],
+            if (direccionData['longitud'] != null) 'longitud': direccionData['longitud'],
           };
         }
       }
