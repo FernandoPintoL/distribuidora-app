@@ -587,13 +587,15 @@ class _CrearPrestamoClienteScreenState extends State<CrearPrestamoClienteScreen>
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Búsqueda de cliente
-            _buildClienteSearchField(),
-            const SizedBox(height: 24),
-
-            // Búsqueda por ID de venta (opcional)
+            // ✅ Búsqueda por ID de venta - esto carga automáticamente el cliente
             _buildBusquedaVentaSection(),
             const SizedBox(height: 24),
+
+            // Mostrar cliente seleccionado (desde la venta)
+            if (_clienteSeleccionado != null) ...[
+              _buildClienteSeleccionadoCard(),
+              const SizedBox(height: 24),
+            ],
 
             // Formulario básico
             _buildFormularioBasico(),
