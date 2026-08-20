@@ -427,6 +427,7 @@ class _CrearPrestamoEventoScreenState
         if (_latitud != null && _longitud != null)
           'ubicacion': {
             'direccion': _direccionEvento,
+            'observaciones': _direccionEvento, // ✅ Observaciones = Dirección del Evento
             'latitud': _latitud,
             'longitud': _longitud,
             'es_ubicacion_manual': true,

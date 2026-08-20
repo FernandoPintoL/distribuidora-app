@@ -58,7 +58,7 @@ class HttpLogger {
       } else {
         bodyDisplay = options.data.toString();
       }
-      // debugPrint(bodyDisplay);
+      debugPrint(bodyDisplay);
     }
     debugPrint('═' * 80);
   }
@@ -86,7 +86,7 @@ class HttpLogger {
       } else {
         bodyDisplay = response.data.toString();
       }
-      debugPrint(bodyDisplay);
+      // debugPrint(bodyDisplay);
     }
     debugPrint('═' * 80);
   }
