@@ -369,6 +369,9 @@ class _CrearPrestamoEventoScreenState
       return;
     }
 
+    // ✅ Guardar valores del formulario primero
+    _formKey.currentState!.save();
+
     if (_nombreEvento.isEmpty) {
       _mostrarError('El nombre del evento es requerido');
       return;
@@ -392,8 +395,6 @@ class _CrearPrestamoEventoScreenState
       _mostrarError('Debes seleccionar un almacén');
       return;
     }
-
-    _formKey.currentState!.save();
 
     setState(() {
       _cargando = true;
