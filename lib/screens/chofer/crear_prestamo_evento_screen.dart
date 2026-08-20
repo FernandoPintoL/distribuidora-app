@@ -134,7 +134,7 @@ class _CrearPrestamoEventoScreenState
   void _cargarAlmacenes() {
     try {
       _apiService
-          .get('/api/almacenes-prestables/index-json')
+          .get('/almacenes-prestables/index-json')
           .then((response) {
         if (response.statusCode == 200) {
           final data = response.data;
@@ -203,7 +203,7 @@ class _CrearPrestamoEventoScreenState
   void _cargarVehiculos() {
     try {
       // Usar endpoint específico que retorna solo vehículos activos
-      _apiService.get('/api/vehiculos?activo=1').then((response) {
+      _apiService.get('/vehiculos?activo=1').then((response) {
         if (response.statusCode == 200) {
           final data = response.data;
           final vehiculosData = data is List
