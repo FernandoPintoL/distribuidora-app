@@ -6,6 +6,7 @@ import '../../providers/ventas_provider.dart';
 import '../../services/api_service.dart';
 import '../../models/venta.dart';
 import '../../models/prestable.dart';
+import '../../widgets/map_location_selector.dart';
 
 /// Pantalla para crear nuevo préstamo a evento
 /// Formulario unificado con búsqueda de ventas múltiples
@@ -52,6 +53,10 @@ class _CrearPrestamoEventoScreenState
   bool _cargando = false;
   int? _usuarioActualId;
   bool _esChoferActual = false;
+
+  // Ubicación del evento (desde mapa)
+  double? _latitud;
+  double? _longitud;
 
   // Controladores
   late TextEditingController _ventaIdController;
@@ -418,6 +423,14 @@ class _CrearPrestamoEventoScreenState
         'es_venta': false,
         'es_evento': true,
         'ventas_ids': _ventasSeleccionadas.map((v) => v.id).toList(),
+        // ✅ Agregar ubicación si se seleccionó en el mapa
+        if (_latitud != null && _longitud != null)
+          'ubicacion': {
+            'direccion': _direccionEvento,
+            'latitud': _latitud,
+            'longitud': _longitud,
+            'es_ubicacion_manual': true,
+          },
       };
 
       debugPrint('📤 Enviando préstamo a evento: $payload');
@@ -454,6 +467,28 @@ class _CrearPrestamoEventoScreenState
       SnackBar(
         content: Text('❌ $mensaje'),
         backgroundColor: Colors.red,
+      ),
+    );
+  }
+
+  /// Abrir mapa para seleccionar ubicación del evento
+  void _abrirMapaDireccion() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => MapLocationSelector(
+          onLocationSelected: (latitude, longitude, address) {
+            setState(() {
+              _latitud = latitude;
+              _longitud = longitude;
+              if (_direccionEvento.isEmpty) {
+                _direccionEventoController.text = address;
+                _direccionEvento = address;
+              }
+            });
+            Navigator.pop(context);
+          },
+        ),
       ),
     );
   }
@@ -514,15 +549,33 @@ class _CrearPrestamoEventoScreenState
                           _encargadoEvento = value?.trim() ?? '',
                     ),
                     const SizedBox(height: 12),
-                    TextFormField(
-                      controller: _direccionEventoController,
-                      decoration: const InputDecoration(
-                        labelText: 'Dirección del Evento',
-                        border: OutlineInputBorder(),
-                      ),
-                      maxLines: 2,
-                      onSaved: (value) =>
-                          _direccionEvento = value?.trim() ?? '',
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(
+                          child: TextFormField(
+                            controller: _direccionEventoController,
+                            decoration: const InputDecoration(
+                              labelText: 'Dirección del Evento',
+                              border: OutlineInputBorder(),
+                            ),
+                            maxLines: 2,
+                            onSaved: (value) =>
+                                _direccionEvento = value?.trim() ?? '',
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Padding(
+                          padding: const EdgeInsets.only(top: 8),
+                          child: Tooltip(
+                            message: 'Seleccionar en mapa',
+                            child: FilledButton(
+                              onPressed: _abrirMapaDireccion,
+                              child: const Icon(Icons.location_on),
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                     const SizedBox(height: 12),
                     Row(
