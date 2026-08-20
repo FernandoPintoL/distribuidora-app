@@ -486,7 +486,7 @@ class _CrearPrestamoEventoScreenState
                 _direccionEvento = address;
               }
             });
-            Navigator.pop(context);
+            // ✅ No hacer pop aquí, MapLocationSelector ya lo hace
           },
         ),
       ),
