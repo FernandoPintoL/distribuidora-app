@@ -34,7 +34,6 @@ class _CrearPrestamoEventoScreenState
   // Datos del evento
   String _nombreEvento = '';
   String _encargadoEvento = '';
-  String _vehiculoAsignado = '';
   String _direccionEvento = '';
   String _telefonoUno = '';
   String _telefonoDos = '';
@@ -58,7 +57,6 @@ class _CrearPrestamoEventoScreenState
   late TextEditingController _ventaIdController;
   late TextEditingController _nombreEventoController;
   late TextEditingController _encargadoEventoController;
-  late TextEditingController _vehiculoAsignadoController;
   late TextEditingController _direccionEventoController;
   late TextEditingController _telefonoUnoController;
   late TextEditingController _telefonoDosController;
@@ -71,7 +69,6 @@ class _CrearPrestamoEventoScreenState
     _ventaIdController = TextEditingController();
     _nombreEventoController = TextEditingController();
     _encargadoEventoController = TextEditingController();
-    _vehiculoAsignadoController = TextEditingController();
     _direccionEventoController = TextEditingController();
     _telefonoUnoController = TextEditingController();
     _telefonoDosController = TextEditingController();
@@ -404,7 +401,6 @@ class _CrearPrestamoEventoScreenState
       final payload = {
         'nombre_evento': _nombreEvento,
         'encargado_evento': _encargadoEvento.isNotEmpty ? _encargadoEvento : null,
-        'vehiculo_asignado': _vehiculoAsignado.isNotEmpty ? _vehiculoAsignado : null,
         'direccion_evento': _direccionEvento.isNotEmpty ? _direccionEvento : null,
         'telefono_uno': _telefonoUno.isNotEmpty ? _telefonoUno : null,
         'telefono_dos': _telefonoDos.isNotEmpty ? _telefonoDos : null,
@@ -467,7 +463,6 @@ class _CrearPrestamoEventoScreenState
     _ventaIdController.dispose();
     _nombreEventoController.dispose();
     _encargadoEventoController.dispose();
-    _vehiculoAsignadoController.dispose();
     _direccionEventoController.dispose();
     _telefonoUnoController.dispose();
     _telefonoDosController.dispose();
@@ -517,16 +512,6 @@ class _CrearPrestamoEventoScreenState
                       ),
                       onSaved: (value) =>
                           _encargadoEvento = value?.trim() ?? '',
-                    ),
-                    const SizedBox(height: 12),
-                    TextFormField(
-                      controller: _vehiculoAsignadoController,
-                      decoration: const InputDecoration(
-                        labelText: 'Vehículo Asignado',
-                        border: OutlineInputBorder(),
-                      ),
-                      onSaved: (value) =>
-                          _vehiculoAsignado = value?.trim() ?? '',
                     ),
                     const SizedBox(height: 12),
                     TextFormField(
