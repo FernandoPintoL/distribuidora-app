@@ -7,6 +7,7 @@ import '../../config/app_text_styles.dart';
 import '../../config/app_urls.dart';
 import 'prestamo_detalle_screen.dart';
 import 'crear_prestamo_cliente_screen.dart';
+import 'crear_prestamo_evento_screen.dart';
 
 /// Pantalla que muestra los 3 tipos de préstamos asignados al chofer
 class PrestamosAsignadosScreen extends StatefulWidget {
@@ -65,6 +66,85 @@ class _PrestamosAsignadosScreenState extends State<PrestamosAsignadosScreen>
     }
   }
 
+  /// Mostrar menú para crear préstamo a cliente o evento
+  void _mostrarMenuCrearPrestamo() {
+    showModalBottomSheet(
+      context: context,
+      builder: (context) {
+        return Container(
+          padding: const EdgeInsets.symmetric(vertical: 16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Padding(
+                padding: const EdgeInsets.only(bottom: 16),
+                child: Text(
+                  'Crear Préstamo',
+                  style: Theme.of(context).textTheme.titleLarge,
+                ),
+              ),
+              ListTile(
+                leading: const Icon(Icons.person),
+                title: const Text('Préstamo a Cliente'),
+                onTap: () async {
+                  Navigator.pop(context);
+                  final resultado = await Navigator.push<bool>(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) =>
+                          const CrearPrestamoClienteScreen(),
+                    ),
+                  );
+
+                  if (resultado == true && mounted) {
+                    _cargarPrestamos();
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content:
+                            Text('✅ Préstamo a cliente creado exitosamente'),
+                        backgroundColor: Colors.green,
+                      ),
+                    );
+                  }
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.event),
+                title: const Text('Préstamo a Evento'),
+                onTap: () async {
+                  Navigator.pop(context);
+                  final resultado = await Navigator.push<bool>(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) =>
+                          const CrearPrestamoEventoScreen(),
+                    ),
+                  );
+
+                  if (resultado == true && mounted) {
+                    _cargarPrestamos();
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content:
+                            Text('✅ Préstamo a evento creado exitosamente'),
+                        backgroundColor: Colors.green,
+                      ),
+                    );
+                  }
+                },
+              ),
+              const Divider(),
+              ListTile(
+                title: const Text('Cancelar'),
+                onTap: () => Navigator.pop(context),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
   @override
   void dispose() {
     _tabController.dispose();
@@ -121,23 +201,8 @@ class _PrestamosAsignadosScreenState extends State<PrestamosAsignadosScreen>
         ],
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () async {
-          final resultado = await Navigator.push<bool>(
-            context,
-            MaterialPageRoute(
-              builder: (context) => const CrearPrestamoClienteScreen(),
-            ),
-          );
-
-          if (resultado == true && mounted) {
-            _cargarPrestamos();
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('✅ Préstamo creado exitosamente'),
-                backgroundColor: Colors.green,
-              ),
-            );
-          }
+        onPressed: () {
+          _mostrarMenuCrearPrestamo();
         },
         child: const Icon(Icons.add),
       ),
