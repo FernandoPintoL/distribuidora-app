@@ -1350,10 +1350,12 @@ class _CrearPrestamoClienteScreenState extends State<CrearPrestamoClienteScreen>
 
     // Si es chofer actual, mostrar solo lectura sin permitir cambio
     if (_esChoferActual) {
-      final choferActual = _choferes.firstWhere(
-        (c) => c['id'] == _choferSeleccionado,
-        orElse: () => {'id': 0, 'nombre': 'No encontrado', 'apellido': ''},
-      );
+      final choferActual = _choferes.isNotEmpty
+          ? _choferes.firstWhere(
+              (c) => c['id'] == _choferSeleccionado,
+              orElse: () => <String, dynamic>{'id': 0, 'nombre': 'No encontrado', 'apellido': ''},
+            )
+          : <String, dynamic>{'id': 0, 'nombre': 'No encontrado', 'apellido': ''};
 
       return Container(
         padding: const EdgeInsets.all(12),
