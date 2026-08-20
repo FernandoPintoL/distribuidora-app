@@ -166,7 +166,7 @@ class _CrearPrestamoClienteScreenState extends State<CrearPrestamoClienteScreen>
   Future<void> _cargarChoferes() async {
     try {
       // Intentar cargar del endpoint público de choferes
-      final response = await _apiService.get('/api/choferes/lista');
+      final response = await _apiService.get('/choferes/lista');
       if (response.statusCode == 200) {
         final data = response.data as Map<String, dynamic>;
         final choferesList = data['data'] as List? ?? [];
