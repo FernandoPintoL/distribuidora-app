@@ -738,15 +738,27 @@ class _CrearPrestamoClienteScreenState
     );
   }
 
-  /// Card de observaciones de la venta
+  /// Card de observaciones de la dirección del cliente
   Widget _buildDireccionCard() {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    if (_ventaBuscada == null) {
+    if (_ventaBuscada == null || _clienteSeleccionado == null) {
       return const SizedBox.shrink();
     }
 
-    final observaciones = _ventaBuscada!.observaciones;
+    // Obtener observaciones de la dirección del cliente (no de la venta)
+    final direcciones = _clienteSeleccionado!.direcciones ?? [];
+    String? observaciones;
+
+    if (direcciones.isNotEmpty) {
+      // Buscar la dirección principal o usar la primera
+      final direccionPrincipal = direcciones.firstWhere(
+        (d) => d.esPrincipal == true,
+        orElse: () => direcciones.first,
+      );
+      observaciones = direccionPrincipal.observaciones;
+    }
+
     final tieneObservaciones = observaciones != null && observaciones.isNotEmpty;
 
     return Container(
@@ -775,7 +787,7 @@ class _CrearPrestamoClienteScreenState
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
-                  'Observaciones de Venta',
+                  'Observaciones de Dirección',
                   style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.bold,
