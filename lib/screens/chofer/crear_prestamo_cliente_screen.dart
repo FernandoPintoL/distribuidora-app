@@ -49,6 +49,7 @@ class _CrearPrestamoClienteScreenState extends State<CrearPrestamoClienteScreen>
   bool _cargando = false;
   bool _cargandoPrestables = false;
   int? _usuarioActualId; // ID del usuario logueado
+  bool _esChoferActual = false; // Si el usuario actual es chofer
 
   // Controladores
   late TextEditingController _observacionesController;
@@ -184,8 +185,11 @@ class _CrearPrestamoClienteScreenState extends State<CrearPrestamoClienteScreen>
           if (_usuarioActualId != null) {
             final esChoferActual = _choferes.any((c) => c['id'] == _usuarioActualId);
             if (esChoferActual) {
+              _esChoferActual = true; // ✅ Marcar que es chofer
               _choferSeleccionado = _usuarioActualId;
-              debugPrint('✅ Chofer preseleccionado: $_choferSeleccionado');
+              debugPrint('✅ Usuario actual es chofer: $_choferSeleccionado (sin permitir cambio)');
+            } else {
+              _esChoferActual = false;
             }
           }
         });
@@ -1330,6 +1334,63 @@ class _CrearPrestamoClienteScreenState extends State<CrearPrestamoClienteScreen>
   Widget _buildChoferField() {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
+    // Si es chofer actual, mostrar solo lectura sin permitir cambio
+    if (_esChoferActual) {
+      final choferActual = _choferes.firstWhere(
+        (c) => c['id'] == _choferSeleccionado,
+        orElse: () => {'id': 0, 'nombre': 'No encontrado', 'apellido': ''},
+      );
+
+      return Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          border: Border.all(
+            color: isDark ? Colors.grey.shade700 : Colors.grey.shade400,
+          ),
+          borderRadius: BorderRadius.circular(8),
+          color: context.colorScheme.primary.withOpacity(0.1),
+        ),
+        child: Row(
+          children: [
+            Icon(Icons.person, color: context.colorScheme.primary),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Chofer',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    '${choferActual['nombre']} ${choferActual['apellido']}'.trim(),
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    '✓ Tu mismo (sin cambio permitido)',
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: Colors.green,
+                      fontStyle: FontStyle.italic,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    // Si no es chofer, mostrar dropdown normal
     return DropdownButtonFormField<int>(
       value: _choferSeleccionado,
       decoration: InputDecoration(
