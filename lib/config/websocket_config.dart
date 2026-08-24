@@ -25,8 +25,8 @@ class WebSocketConfig {
 
   // Timeouts
   static const Duration connectionTimeout = Duration(seconds: 10);
-  static const Duration reconnectionDelay = Duration(seconds: 2);
-  static const int maxReconnectionAttempts = 5;
+  static const Duration reconnectionDelay = Duration(seconds: 1);
+  static const int maxReconnectionAttempts = 30;
 
   // Eventos
   static const String eventAuthenticate = 'authenticate';

@@ -141,6 +141,16 @@ class LocalNotificationService {
           enableLights: true,
         );
 
+    const AndroidNotificationChannel devolucionesChannel =
+        AndroidNotificationChannel(
+          'devoluciones',
+          'Notificaciones de Devoluciones',
+          description: 'Devoluciones de préstamos registradas',
+          importance: Importance.high,
+          enableVibration: true,
+          enableLights: true,
+        );
+
     await _notificationsPlugin
         .resolvePlatformSpecificImplementation<
           AndroidFlutterLocalNotificationsPlugin
@@ -188,6 +198,12 @@ class LocalNotificationService {
           AndroidFlutterLocalNotificationsPlugin
         >()
         ?.createNotificationChannel(prestamosChannel);
+
+    await _notificationsPlugin
+        .resolvePlatformSpecificImplementation<
+          AndroidFlutterLocalNotificationsPlugin
+        >()
+        ?.createNotificationChannel(devolucionesChannel);
   }
 
   /// Solicitar permisos en iOS y Android 13+
@@ -1265,6 +1281,27 @@ class LocalNotificationService {
       body: body,
       channelId: 'prestamos',
       payload: 'prestamo_evento_$prestamoId',
+    );
+  }
+
+  /// ✅ NUEVO: Mostrar notificación cuando se registra una devolución de préstamo
+  Future<void> showDevolucionRegistradaNotification({
+    required int devolucionId,
+    required String prestamoNumero,
+    String? clienteNombre,
+    String? choferNombre,
+    int? totalDevuelto,
+  }) async {
+    final cliente = clienteNombre ?? 'Cliente';
+    final chofer = choferNombre ?? 'Chofer';
+    final body = '🔄 Devolución registrada: $prestamoNumero - $cliente ($totalDevuelto items). Chofer: $chofer';
+
+    await _showNotification(
+      id: devolucionId,
+      title: '🔄 Devolución Registrada',
+      body: body,
+      channelId: 'devoluciones',
+      payload: 'devolucion_$devolucionId',
     );
   }
 }

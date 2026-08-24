@@ -38,14 +38,54 @@ class _RealtimeNotificationsListenerState
   StreamSubscription? _creditoSubscription; // ✅ NUEVA FASE 3 para créditos
   StreamSubscription? _notificacionRecurrenteSubscription; // ✅ NUEVA FASE 3 para notificaciones recurrentes
   StreamSubscription? _prestamoSubscription; // ✅ NUEVO para préstamos
+  StreamSubscription? _devolucionSubscription; // ✅ NUEVO para devoluciones
+  StreamSubscription? _connectionSubscription; // ✅ NUEVO para monitorear estado de conexión
+  Timer? _connectionWatchdog; // ✅ NUEVO para verificar conexión periódicamente
 
   @override
   void initState() {
     super.initState();
-    // ✅ NUEVO: Log de inicialización
-    debugPrint('🔌 [RealtimeNotificationsListener] initState - Iniciando escucha de WebSocket');
-    debugPrint('   WebSocket conectado: ${_webSocketService.isConnected}');
-    _iniciarEscucha();
+    debugPrint('🔌 [RealtimeNotificationsListener] initState - Conectando WebSocket');
+    _conectarWebSocket();
+    _startConnectionWatchdog();
+  }
+
+  Future<void> _conectarWebSocket() async {
+    try {
+      final authProvider = Provider.of<AuthProvider>(context, listen: false);
+      final user = authProvider.user;
+
+      if (user == null) {
+        debugPrint('❌ [RealtimeNotificationsListener] No hay usuario autenticado');
+        return;
+      }
+
+      // ✅ Iniciar la escucha de eventos
+      _iniciarEscucha();
+
+      debugPrint('🔌 [RealtimeNotificationsListener] Escucha iniciada para usuario: ${user.id}');
+      debugPrint('   Estado actual WebSocket: ${_webSocketService.isConnected ? "✅ Conectado" : "❌ No conectado"}');
+
+      // Si el WebSocket no está conectado, no hacer nada
+      // El WebSocket se conectará automáticamente en AuthProvider después del login
+      // Si el usuario ya está autenticado, el WebSocket debería estar conectado en AuthProvider._connectWebSocket()
+      if (!_webSocketService.isConnected) {
+        debugPrint('⚠️ [RealtimeNotificationsListener] WebSocket no está conectado. Se conectará automáticamente...');
+      }
+    } catch (e) {
+      debugPrint('❌ [RealtimeNotificationsListener] Error: $e');
+    }
+  }
+
+  void _startConnectionWatchdog() {
+    // ✅ Verificar conexión WebSocket cada 10 segundos
+    _connectionWatchdog = Timer.periodic(const Duration(seconds: 10), (_) {
+      if (!_webSocketService.isConnected) {
+        debugPrint('⚠️ [Watchdog] WebSocket no conectado. Intentando reconectar...');
+      } else {
+        debugPrint('✅ [Watchdog] WebSocket conectado correctamente');
+      }
+    });
   }
 
   @override
@@ -58,11 +98,19 @@ class _RealtimeNotificationsListenerState
     _creditoSubscription?.cancel(); // ✅ Cancelar suscripción de créditos
     _notificacionRecurrenteSubscription?.cancel(); // ✅ Cancelar suscripción de notificaciones recurrentes
     _prestamoSubscription?.cancel(); // ✅ Cancelar suscripción de préstamos
+    _devolucionSubscription?.cancel(); // ✅ Cancelar suscripción de devoluciones
+    _connectionSubscription?.cancel(); // ✅ Cancelar suscripción de estado de conexión
+    _connectionWatchdog?.cancel(); // ✅ Cancelar watchdog de conexión
     super.dispose();
   }
 
   void _iniciarEscucha() {
     debugPrint('🔔 [RealtimeNotificationsListener] Iniciando escucha de eventos de WebSocket');
+
+    // ✅ NUEVO: Monitorear estado de conexión WebSocket
+    _connectionSubscription = _webSocketService.connectionStream.listen((isConnected) {
+      debugPrint('🔌 [RealtimeNotificationsListener] Estado de conexión: ${isConnected ? "✅ CONECTADO" : "❌ DESCONECTADO"}');
+    });
 
     // Escuchar eventos de proformas
     _proformaSubscription = _webSocketService.proformaStream.listen((event) {
@@ -267,6 +315,30 @@ class _RealtimeNotificationsListenerState
           // ✅ Mostrar notificación cuando se crea un préstamo a evento
           debugPrint('🎁 Préstamo a evento creado - Mostrando notificación');
           _mostrarNotificacionPrestamoEventoCreado(data);
+          break;
+      }
+    });
+
+    // ✅ NUEVO: Escuchar eventos de devoluciones de préstamos
+    _devolucionSubscription = _webSocketService.devolucionStream.listen((event) {
+      final type = event['type'] as String;
+      final data = event['data'] as Map<String, dynamic>;
+
+      switch (type) {
+        case 'registrada':
+          // ✅ Mostrar notificación cuando se registra una devolución a cliente
+          debugPrint('🔄 Devolución de cliente registrada - Mostrando notificación');
+          _mostrarNotificacionDevolucionRegistrada(data);
+          break;
+        case 'evento_registrada':
+          // ✅ Mostrar notificación cuando se registra una devolución a evento
+          debugPrint('🔄 Devolución de evento registrada - Mostrando notificación');
+          _mostrarNotificacionDevolucionRegistrada(data);
+          break;
+        case 'proveedor_registrada':
+          // ✅ Mostrar notificación cuando se registra una devolución a proveedor
+          debugPrint('🔄 Devolución de proveedor registrada - Mostrando notificación');
+          _mostrarNotificacionDevolucionRegistrada(data);
           break;
       }
     });
@@ -1346,6 +1418,73 @@ class _RealtimeNotificationsListenerState
         creadorNombre: creadorNombre,
       );
     }
+
+    // ✅ Recargar estadísticas
+    context.read<NotificationProvider>().loadStats();
+  }
+
+  /// ✅ NUEVO: Mostrar notificación cuando se registra una devolución de préstamo
+  void _mostrarNotificacionDevolucionRegistrada(Map<String, dynamic> data) {
+    final devolucionId = data['devolucion_id'] as int?;
+    final prestamoId = data['prestamo_id'] as int?;
+    final clienteNombre = data['cliente']?['nombre'] as String? ?? data['cliente_nombre'] as String?;
+    final choferNombre = data['chofer']?['nombre'] as String? ?? data['chofer_nombre'] as String?;
+    final totalDevuelto = data['total_devuelto'] as int?;
+    final cantidadItems = data['cantidad_items'] as int?;
+    final montoGarantia = data['monto_garantia_devuelta'] as num?;
+
+    if (!mounted) return;
+
+    if (devolucionId != null && prestamoId != null) {
+      // Mostrar notificación NATIVA del sistema
+      _notificationService.showDevolucionRegistradaNotification(
+        devolucionId: devolucionId,
+        prestamoNumero: 'Folio #$prestamoId',
+        clienteNombre: clienteNombre,
+        choferNombre: choferNombre,
+        totalDevuelto: totalDevuelto ?? 0,
+      );
+    }
+
+    // Mostrar snackbar visual
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            const Icon(Icons.check_circle, color: Colors.white, size: 24),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Text(
+                    '🔄 Devolución Registrada',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                    ),
+                  ),
+                  if (prestamoId != null)
+                    Text('Folio: #$prestamoId'),
+                  if (clienteNombre != null)
+                    Text('Cliente: $clienteNombre'),
+                  if (choferNombre != null)
+                    Text('Chofer: $choferNombre'),
+                  if (cantidadItems != null)
+                    Text('Items devueltos: $cantidadItems'),
+                  if (montoGarantia != null)
+                    Text('Garantía devuelta: Bs. ${montoGarantia.toStringAsFixed(2)}'),
+                ],
+              ),
+            ),
+          ],
+        ),
+        backgroundColor: Colors.green,
+        duration: const Duration(seconds: 6),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
 
     // ✅ Recargar estadísticas
     context.read<NotificationProvider>().loadStats();

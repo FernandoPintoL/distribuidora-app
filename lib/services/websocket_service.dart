@@ -28,6 +28,7 @@ class WebSocketService {
   final _creditoController = StreamController<Map<String, dynamic>>.broadcast(); // ✅ NUEVO para créditos FASE 3
   final _notificacionRecurrenteController = StreamController<Map<String, dynamic>>.broadcast(); // ✅ NUEVO para notificaciones recurrentes FASE 3
   final _prestamoController = StreamController<Map<String, dynamic>>.broadcast(); // ✅ NUEVO para préstamos
+  final _devolucionController = StreamController<Map<String, dynamic>>.broadcast(); // ✅ NUEVO para devoluciones
   final _connectionController = StreamController<bool>.broadcast();
 
   // Getters de streams
@@ -43,6 +44,7 @@ class WebSocketService {
   Stream<Map<String, dynamic>> get creditoStream => _creditoController.stream; // ✅ NUEVO para créditos FASE 3
   Stream<Map<String, dynamic>> get notificacionRecurrenteStream => _notificacionRecurrenteController.stream; // ✅ NUEVO para notificaciones recurrentes FASE 3
   Stream<Map<String, dynamic>> get prestamoStream => _prestamoController.stream; // ✅ NUEVO para préstamos
+  Stream<Map<String, dynamic>> get devolucionStream => _devolucionController.stream; // ✅ NUEVO para devoluciones
   Stream<bool> get connectionStream => _connectionController.stream;
 
   bool get isConnected => _isConnected;
@@ -782,7 +784,7 @@ class WebSocketService {
 
     // ✅ NUEVO: Eventos de Préstamos
     // Notificación cuando se crea un préstamo a cliente
-    _socket!.on('prestamo:cliente:creado', (data) {
+    _socket!.on('prestamo.cliente.creado', (data) {
       debugPrint('🎁 PRÉSTAMO A CLIENTE CREADO');
       debugPrint('   ID: ${data['id']}');
       debugPrint('   Cliente: ${data['cliente_nombre']}');
@@ -792,11 +794,11 @@ class WebSocketService {
         'type': 'cliente_creado',
         'data': data,
       });
-      _handleEvent('prestamo:cliente:creado', data);
+      _handleEvent('prestamo.cliente.creado', data);
     });
 
     // Notificación cuando se crea un préstamo a evento
-    _socket!.on('prestamo:evento:creado', (data) {
+    _socket!.on('prestamo.evento.creado', (data) {
       debugPrint('🎁 PRÉSTAMO A EVENTO CREADO');
       debugPrint('   ID: ${data['id']}');
       debugPrint('   Evento: ${data['nombre_evento']}');
@@ -806,7 +808,60 @@ class WebSocketService {
         'type': 'evento_creado',
         'data': data,
       });
-      _handleEvent('prestamo:evento:creado', data);
+      _handleEvent('prestamo.evento.creado', data);
+    });
+
+    // ✅ NUEVO: Eventos de Devoluciones de Préstamos
+    // Notificación cuando se registra una devolución a cliente
+    _socket!.on('devolucion.registrada', (data) {
+      debugPrint('🔄 DEVOLUCIÓN DE PRÉSTAMO A CLIENTE REGISTRADA');
+      debugPrint('   Devolución ID: ${data['devolucion_id']}');
+      debugPrint('   Préstamo: ${data['prestamo_numero']}');
+      debugPrint('   Cliente: ${data['cliente']?['nombre']}');
+      debugPrint('   Total Devuelto: ${data['total_devuelto']}');
+      debugPrint('   Chofer: ${data['chofer']?['nombre']}');
+      _devolucionController.add({
+        'type': 'registrada',
+        'data': data,
+      });
+      _handleEvent('devolucion.registrada', data);
+    });
+
+    // ✅ NUEVO: Notificación cuando se registra una devolución a evento
+    debugPrint('📡 Registrando listener para: devolucion_evento.registrada');
+    _socket!.on('devolucion_evento.registrada', (data) {
+      debugPrint('🔄🔄🔄 ¡¡¡LISTENER DISPARADO!!! DEVOLUCIÓN DE PRÉSTAMO A EVENTO REGISTRADA');
+      debugPrint('   Devolución ID: ${data['devolucion_id']}');
+      debugPrint('   Prestamo ID: ${data['prestamo_id']}');
+      debugPrint('   Evento: ${data['nombre_evento']}');
+      debugPrint('   Cliente: ${data['cliente']?['nombre']}');
+      debugPrint('   Total Devuelto: ${data['total_devuelto']}');
+      debugPrint('   Chofer: ${data['chofer']?['nombre']}');
+      debugPrint('🔄🔄🔄 Agregando a _devolucionController');
+      _devolucionController.add({
+        'type': 'evento_registrada',
+        'data': data,
+      });
+      _handleEvent('devolucion_evento.registrada', data);
+      debugPrint('🔄🔄🔄 Evento manejado correctamente');
+    });
+
+    // ✅ NUEVO: Notificación cuando se registra una devolución a proveedor
+    debugPrint('📡 Registrando listener para: devolucion_proveedor.registrada');
+    _socket!.on('devolucion_proveedor.registrada', (data) {
+      debugPrint('🔄🔄🔄 ¡¡¡LISTENER DISPARADO!!! DEVOLUCIÓN DE PRÉSTAMO A PROVEEDOR REGISTRADA');
+      debugPrint('   Devolución ID: ${data['devolucion_id']}');
+      debugPrint('   Prestamo ID: ${data['prestamo_id']}');
+      debugPrint('   Proveedor: ${data['proveedor']?['nombre']}');
+      debugPrint('   Total Devuelto: ${data['total_devuelto']}');
+      debugPrint('   Chofer: ${data['chofer']?['nombre']}');
+      debugPrint('🔄🔄🔄 Agregando a _devolucionController');
+      _devolucionController.add({
+        'type': 'proveedor_registrada',
+        'data': data,
+      });
+      _handleEvent('devolucion_proveedor.registrada', data);
+      debugPrint('🔄🔄🔄 Evento manejado correctamente');
     });
   }
 
@@ -853,6 +908,7 @@ class WebSocketService {
     _creditoController.close();
     _notificacionRecurrenteController.close();
     _prestamoController.close();
+    _devolucionController.close();
     _connectionController.close();
     _eventHandlers.clear();
   }

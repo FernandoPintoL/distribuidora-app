@@ -547,7 +547,10 @@ class _RegistrarDevolucionScreenState extends State<RegistrarDevolucionScreen> {
               _cantidadesDanadas[detalleId] ?? 0; // Solo los dañados
 
           // ✅ NUEVO: Enviar almacenes que ya vienen en el modelo
-          final almacenesDelDetalle = detalle.almacenes ?? [];
+          // ✅ CORREGIDO: Para cliente usa prestamoPorAlmacenes, para evento usa almacenes
+          final almacenesDelDetalle = (widget.tipo == 'evento')
+              ? (detalle.almacenes ?? [])
+              : (detalle.prestamoPorAlmacenes ?? []);
 
           // Distribuir cantidad a devolver SECUENCIALMENTE entre almacenes (FIFO)
           // Se completa un almacén antes de pasar al siguiente

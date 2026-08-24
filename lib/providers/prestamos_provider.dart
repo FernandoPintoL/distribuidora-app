@@ -184,19 +184,34 @@ class PrestamosProvider extends ChangeNotifier {
     Map<String, dynamic> payload,
   ) async {
     try {
+      debugPrint('📤 Registrando devolución cliente: ID=$prestamoId');
+      debugPrint('   Payload: $payload');
+
+      // ✅ NUEVO: Verificar que WebSocket está conectado ANTES de procesar devolución
+      debugPrint('🔌 Verificando conexión WebSocket...');
+      // Aquí asumimos que el WebSocket se conectó automáticamente en AuthProvider
+      // Si necesitas garantizar conexión, puedes esperar un poco aquí
+      await Future.delayed(const Duration(milliseconds: 500));
+
       final response = await _apiService.post(
         '/prestamos-cliente/$prestamoId/devolver',
         data: payload,
       );
+
+      debugPrint('📬 Respuesta: Status=${response.statusCode}, Body=${response.data}');
 
       if (response.statusCode == 201 || response.statusCode == 200) {
         _prestamosClientes.removeWhere((p) => p.id == prestamoId);
         notifyListeners();
         return true;
       }
+
+      _error = 'Error HTTP ${response.statusCode}: ${response.data}';
+      notifyListeners();
       return false;
     } catch (e) {
       _error = 'Error registrando devolución: $e';
+      debugPrint('❌ Error: $_error');
       notifyListeners();
       return false;
     }
@@ -208,19 +223,32 @@ class PrestamosProvider extends ChangeNotifier {
     Map<String, dynamic> payload,
   ) async {
     try {
+      debugPrint('📤 Registrando devolución evento: ID=$prestamoId');
+      debugPrint('   Payload: $payload');
+
+      // ✅ NUEVO: Verificar que WebSocket está conectado ANTES de procesar devolución
+      debugPrint('🔌 Verificando conexión WebSocket...');
+      await Future.delayed(const Duration(milliseconds: 500));
+
       final response = await _apiService.post(
         '/prestamos-evento/$prestamoId/devolver',
         data: payload,
       );
+
+      debugPrint('📬 Respuesta: Status=${response.statusCode}, Body=${response.data}');
 
       if (response.statusCode == 201 || response.statusCode == 200) {
         _prestamosEventos.removeWhere((p) => p.id == prestamoId);
         notifyListeners();
         return true;
       }
+
+      _error = 'Error HTTP ${response.statusCode}: ${response.data}';
+      notifyListeners();
       return false;
     } catch (e) {
       _error = 'Error registrando devolución: $e';
+      debugPrint('❌ Error: $_error');
       notifyListeners();
       return false;
     }

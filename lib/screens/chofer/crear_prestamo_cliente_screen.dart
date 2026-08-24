@@ -572,8 +572,9 @@ class _CrearPrestamoClienteScreenState
         'observaciones': _observaciones.isNotEmpty ? _observaciones : null,
         'monto_garantia': _montoGarantia > 0 ? _montoGarantia : null,
         'detalles': _items,
-        'es_venta': false, // ✅ Préstamo a cliente sin venta específica
+        'es_venta': _ventaBuscada != null, // ✅ true si hay venta, false si no
         'es_evento': false, // ✅ No es préstamo de evento
+        if (_ventaBuscada != null) 'venta_id': _ventaBuscada!.id, // ✅ Incluir venta_id si existe
         if (_choferSeleccionado != null) 'chofer_id': _choferSeleccionado,
         if (_vehiculoSeleccionado != null) 'vehiculo_id': _vehiculoSeleccionado,
         if (ubicacionData != null) 'ubicacion': ubicacionData,
