@@ -16,10 +16,7 @@ import '../providers/providers.dart';
 class RealtimeNotificationsListener extends StatefulWidget {
   final Widget child;
 
-  const RealtimeNotificationsListener({
-    super.key,
-    required this.child,
-  });
+  const RealtimeNotificationsListener({super.key, required this.child});
 
   @override
   State<RealtimeNotificationsListener> createState() =>
@@ -29,23 +26,29 @@ class RealtimeNotificationsListener extends StatefulWidget {
 class _RealtimeNotificationsListenerState
     extends State<RealtimeNotificationsListener> {
   final WebSocketService _webSocketService = WebSocketService();
-  final LocalNotificationService _notificationService = LocalNotificationService();
+  final LocalNotificationService _notificationService =
+      LocalNotificationService();
   StreamSubscription? _proformaSubscription;
   StreamSubscription? _envioSubscription;
-  StreamSubscription? _entregaSubscription; // ✅ NUEVO para entregas consolidadas
+  StreamSubscription?
+  _entregaSubscription; // ✅ NUEVO para entregas consolidadas
   StreamSubscription? _cargoSubscription; // ✅ NUEVO para reportes de carga
   StreamSubscription? _ventaSubscription; // ✅ NUEVO para eventos de ventas
   StreamSubscription? _creditoSubscription; // ✅ NUEVA FASE 3 para créditos
-  StreamSubscription? _notificacionRecurrenteSubscription; // ✅ NUEVA FASE 3 para notificaciones recurrentes
+  StreamSubscription?
+  _notificacionRecurrenteSubscription; // ✅ NUEVA FASE 3 para notificaciones recurrentes
   StreamSubscription? _prestamoSubscription; // ✅ NUEVO para préstamos
   StreamSubscription? _devolucionSubscription; // ✅ NUEVO para devoluciones
-  StreamSubscription? _connectionSubscription; // ✅ NUEVO para monitorear estado de conexión
+  StreamSubscription?
+  _connectionSubscription; // ✅ NUEVO para monitorear estado de conexión
   Timer? _connectionWatchdog; // ✅ NUEVO para verificar conexión periódicamente
 
   @override
   void initState() {
     super.initState();
-    debugPrint('🔌 [RealtimeNotificationsListener] initState - Conectando WebSocket');
+    debugPrint(
+      '🔌 [RealtimeNotificationsListener] initState - Conectando WebSocket',
+    );
     _conectarWebSocket();
     _startConnectionWatchdog();
   }
@@ -56,21 +59,29 @@ class _RealtimeNotificationsListenerState
       final user = authProvider.user;
 
       if (user == null) {
-        debugPrint('❌ [RealtimeNotificationsListener] No hay usuario autenticado');
+        debugPrint(
+          '❌ [RealtimeNotificationsListener] No hay usuario autenticado',
+        );
         return;
       }
 
       // ✅ Iniciar la escucha de eventos
       _iniciarEscucha();
 
-      debugPrint('🔌 [RealtimeNotificationsListener] Escucha iniciada para usuario: ${user.id}');
-      debugPrint('   Estado actual WebSocket: ${_webSocketService.isConnected ? "✅ Conectado" : "❌ No conectado"}');
+      debugPrint(
+        '🔌 [RealtimeNotificationsListener] Escucha iniciada para usuario: ${user.id}',
+      );
+      debugPrint(
+        '   Estado actual WebSocket: ${_webSocketService.isConnected ? "✅ Conectado" : "❌ No conectado"}',
+      );
 
       // Si el WebSocket no está conectado, no hacer nada
       // El WebSocket se conectará automáticamente en AuthProvider después del login
       // Si el usuario ya está autenticado, el WebSocket debería estar conectado en AuthProvider._connectWebSocket()
       if (!_webSocketService.isConnected) {
-        debugPrint('⚠️ [RealtimeNotificationsListener] WebSocket no está conectado. Se conectará automáticamente...');
+        debugPrint(
+          '⚠️ [RealtimeNotificationsListener] WebSocket no está conectado. Se conectará automáticamente...',
+        );
       }
     } catch (e) {
       debugPrint('❌ [RealtimeNotificationsListener] Error: $e');
@@ -81,7 +92,9 @@ class _RealtimeNotificationsListenerState
     // ✅ Verificar conexión WebSocket cada 10 segundos
     _connectionWatchdog = Timer.periodic(const Duration(seconds: 10), (_) {
       if (!_webSocketService.isConnected) {
-        debugPrint('⚠️ [Watchdog] WebSocket no conectado. Intentando reconectar...');
+        debugPrint(
+          '⚠️ [Watchdog] WebSocket no conectado. Intentando reconectar...',
+        );
       } else {
         debugPrint('✅ [Watchdog] WebSocket conectado correctamente');
       }
@@ -96,20 +109,28 @@ class _RealtimeNotificationsListenerState
     _cargoSubscription?.cancel(); // ✅ Cancelar suscripción de carga
     _ventaSubscription?.cancel(); // ✅ Cancelar suscripción de ventas
     _creditoSubscription?.cancel(); // ✅ Cancelar suscripción de créditos
-    _notificacionRecurrenteSubscription?.cancel(); // ✅ Cancelar suscripción de notificaciones recurrentes
+    _notificacionRecurrenteSubscription
+        ?.cancel(); // ✅ Cancelar suscripción de notificaciones recurrentes
     _prestamoSubscription?.cancel(); // ✅ Cancelar suscripción de préstamos
     _devolucionSubscription?.cancel(); // ✅ Cancelar suscripción de devoluciones
-    _connectionSubscription?.cancel(); // ✅ Cancelar suscripción de estado de conexión
+    _connectionSubscription
+        ?.cancel(); // ✅ Cancelar suscripción de estado de conexión
     _connectionWatchdog?.cancel(); // ✅ Cancelar watchdog de conexión
     super.dispose();
   }
 
   void _iniciarEscucha() {
-    debugPrint('🔔 [RealtimeNotificationsListener] Iniciando escucha de eventos de WebSocket');
+    debugPrint(
+      '🔔 [RealtimeNotificationsListener] Iniciando escucha de eventos de WebSocket',
+    );
 
     // ✅ NUEVO: Monitorear estado de conexión WebSocket
-    _connectionSubscription = _webSocketService.connectionStream.listen((isConnected) {
-      debugPrint('🔌 [RealtimeNotificationsListener] Estado de conexión: ${isConnected ? "✅ CONECTADO" : "❌ DESCONECTADO"}');
+    _connectionSubscription = _webSocketService.connectionStream.listen((
+      isConnected,
+    ) {
+      debugPrint(
+        '🔌 [RealtimeNotificationsListener] Estado de conexión: ${isConnected ? "✅ CONECTADO" : "❌ DESCONECTADO"}',
+      );
     });
 
     // Escuchar eventos de proformas
@@ -117,7 +138,9 @@ class _RealtimeNotificationsListenerState
       final type = event['type'] as String;
       final data = event['data'] as Map<String, dynamic>;
 
-      debugPrint('📬 [RealtimeNotificationsListener] Evento recibido: type=$type');
+      debugPrint(
+        '📬 [RealtimeNotificationsListener] Evento recibido: type=$type',
+      );
       debugPrint('   Data: $data');
 
       switch (type) {
@@ -244,7 +267,9 @@ class _RealtimeNotificationsListenerState
           break;
         case 'confirmada_entrega':
           // ✅ Admin/Manager: venta confirmada como entregada
-          debugPrint('✅ Venta confirmada como entregada - Mostrando notificación');
+          debugPrint(
+            '✅ Venta confirmada como entregada - Mostrando notificación',
+          );
           _mostrarNotificacionVentaConfirmadaEntrega(data);
           break;
         case 'cliente_venta_confirmada':
@@ -254,7 +279,9 @@ class _RealtimeNotificationsListenerState
           break;
         case 'preventista_venta_confirmada':
           // ✅ Preventista: su venta fue confirmada como entregada
-          debugPrint('✅ Tu venta fue confirmada (Preventista) - Mostrando notificación');
+          debugPrint(
+            '✅ Tu venta fue confirmada (Preventista) - Mostrando notificación',
+          );
           _mostrarNotificacionPreventistaVentaConfirmada(data);
           break;
         case 'entrega_salido_cliente':
@@ -289,16 +316,18 @@ class _RealtimeNotificationsListenerState
     });
 
     // ✅ FASE 3: Escuchar notificaciones recurrentes (broadcasts globales)
-    _notificacionRecurrenteSubscription = _webSocketService.notificacionRecurrenteStream.listen((event) {
-      final type = event['type'] as String;
-      final data = event['data'] as Map<String, dynamic>;
+    _notificacionRecurrenteSubscription = _webSocketService
+        .notificacionRecurrenteStream
+        .listen((event) {
+          final type = event['type'] as String;
+          final data = event['data'] as Map<String, dynamic>;
 
-      switch (type) {
-        case 'recurrente':
-          _mostrarNotificacionRecurrente(data);
-          break;
-      }
-    });
+          switch (type) {
+            case 'recurrente':
+              _mostrarNotificacionRecurrente(data);
+              break;
+          }
+        });
 
     // ✅ NUEVO: Escuchar eventos de préstamos
     _prestamoSubscription = _webSocketService.prestamoStream.listen((event) {
@@ -320,24 +349,32 @@ class _RealtimeNotificationsListenerState
     });
 
     // ✅ NUEVO: Escuchar eventos de devoluciones de préstamos
-    _devolucionSubscription = _webSocketService.devolucionStream.listen((event) {
+    _devolucionSubscription = _webSocketService.devolucionStream.listen((
+      event,
+    ) {
       final type = event['type'] as String;
       final data = event['data'] as Map<String, dynamic>;
 
       switch (type) {
         case 'registrada':
           // ✅ Mostrar notificación cuando se registra una devolución a cliente
-          debugPrint('🔄 Devolución de cliente registrada - Mostrando notificación');
+          debugPrint(
+            '🔄 Devolución de cliente registrada - Mostrando notificación',
+          );
           _mostrarNotificacionDevolucionRegistrada(data);
           break;
         case 'evento_registrada':
           // ✅ Mostrar notificación cuando se registra una devolución a evento
-          debugPrint('🔄 Devolución de evento registrada - Mostrando notificación');
+          debugPrint(
+            '🔄 Devolución de evento registrada - Mostrando notificación',
+          );
           _mostrarNotificacionDevolucionRegistrada(data);
           break;
         case 'proveedor_registrada':
           // ✅ Mostrar notificación cuando se registra una devolución a proveedor
-          debugPrint('🔄 Devolución de proveedor registrada - Mostrando notificación');
+          debugPrint(
+            '🔄 Devolución de proveedor registrada - Mostrando notificación',
+          );
           _mostrarNotificacionDevolucionRegistrada(data);
           break;
       }
@@ -349,7 +386,8 @@ class _RealtimeNotificationsListenerState
   void _mostrarNotificacionProformaCreada(Map<String, dynamic> data) {
     final numero = data['numero'] as String?;
     final proformaNumero = data['proforma_numero'] as String? ?? numero;
-    final clientName = data['cliente']?['nombre'] as String? ??
+    final clientName =
+        data['cliente']?['nombre'] as String? ??
         data['cliente_nombre'] as String?;
     final total = data['total'] as num?;
 
@@ -372,7 +410,8 @@ class _RealtimeNotificationsListenerState
   void _mostrarNotificacionProformaActualizada(Map<String, dynamic> data) {
     final numero = data['numero'] as String?;
     final proformaNumero = data['proforma_numero'] as String? ?? numero;
-    final clientName = data['cliente']?['nombre'] as String? ??
+    final clientName =
+        data['cliente']?['nombre'] as String? ??
         data['cliente_nombre'] as String?;
     final total = data['total'] as num?;
 
@@ -479,10 +518,7 @@ class _RealtimeNotificationsListenerState
                 children: [
                   const Text(
                     'Envío Programado',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16,
-                    ),
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                   ),
                   if (fechaProgramada != null)
                     Text('Entrega programada para $fechaProgramada'),
@@ -525,10 +561,7 @@ class _RealtimeNotificationsListenerState
                 children: [
                   Text(
                     '¡Tu pedido está en camino!',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16,
-                    ),
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                   ),
                   Text('El chofer ha salido a entregar tu pedido'),
                 ],
@@ -579,10 +612,7 @@ class _RealtimeNotificationsListenerState
                 children: [
                   const Text(
                     '¡Tu pedido está próximo!',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16,
-                    ),
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                   ),
                   if (tiempoEstimado != null)
                     Text('Llegará en aproximadamente $tiempoEstimado minutos'),
@@ -618,8 +648,11 @@ class _RealtimeNotificationsListenerState
       SnackBar(
         content: Row(
           children: [
-            const Icon(Icons.check_circle_outline,
-                color: Colors.white, size: 24),
+            const Icon(
+              Icons.check_circle_outline,
+              color: Colors.white,
+              size: 24,
+            ),
             const SizedBox(width: 12),
             const Expanded(
               child: Column(
@@ -628,10 +661,7 @@ class _RealtimeNotificationsListenerState
                 children: [
                   Text(
                     '¡Pedido Entregado!',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16,
-                    ),
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                   ),
                   Text('Tu pedido ha sido entregado exitosamente'),
                 ],
@@ -673,10 +703,7 @@ class _RealtimeNotificationsListenerState
                 children: [
                   const Text(
                     'Problema con la entrega',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16,
-                    ),
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                   ),
                   if (motivo != null) Text(motivo),
                   const Text('Nos pondremos en contacto contigo pronto'),
@@ -699,9 +726,7 @@ class _RealtimeNotificationsListenerState
     if (!mounted) return;
 
     if (entregaId != null) {
-      _notificationService.showNewDeliveryNotification(
-        deliveryId: entregaId,
-      );
+      _notificationService.showNewDeliveryNotification(deliveryId: entregaId);
     }
 
     context.read<NotificationProvider>().loadStats();
@@ -800,15 +825,10 @@ class _RealtimeNotificationsListenerState
                 children: [
                   const Text(
                     '📋 Reporte de Carga Generado',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16,
-                    ),
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                   ),
-                  if (reporteNumero != null)
-                    Text('Reporte: $reporteNumero'),
-                  if (entregaNumero != null)
-                    Text('Entrega: $entregaNumero'),
+                  if (reporteNumero != null) Text('Reporte: $reporteNumero'),
+                  if (entregaNumero != null) Text('Entrega: $entregaNumero'),
                   if (ventasCount != null)
                     Text('Ventas cargadas: $ventasCount'),
                 ],
@@ -860,13 +880,9 @@ class _RealtimeNotificationsListenerState
                 children: [
                   const Text(
                     '⚠️ Crédito Vencido',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16,
-                    ),
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                   ),
-                  if (clienteNombre != null)
-                    Text('Cliente: $clienteNombre'),
+                  if (clienteNombre != null) Text('Cliente: $clienteNombre'),
                   if (saldoPendiente != null)
                     Text('Deuda: Bs. ${saldoPendiente.toStringAsFixed(2)}'),
                   if (diasVencido != null)
@@ -918,17 +934,17 @@ class _RealtimeNotificationsListenerState
                 children: [
                   const Text(
                     '🔴 Crédito Crítico',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16,
-                    ),
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                   ),
-                  if (clienteNombre != null)
-                    Text('Cliente: $clienteNombre'),
+                  if (clienteNombre != null) Text('Cliente: $clienteNombre'),
                   if (porcentajeUtilizado != null)
-                    Text('Utilización: ${porcentajeUtilizado.toStringAsFixed(0)}%'),
+                    Text(
+                      'Utilización: ${porcentajeUtilizado.toStringAsFixed(0)}%',
+                    ),
                   if (saldoDisponible != null)
-                    Text('Disponible: Bs. ${saldoDisponible.toStringAsFixed(2)}'),
+                    Text(
+                      'Disponible: Bs. ${saldoDisponible.toStringAsFixed(2)}',
+                    ),
                 ],
               ),
             ),
@@ -978,19 +994,14 @@ class _RealtimeNotificationsListenerState
                 children: [
                   const Text(
                     '✅ Pago Registrado',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16,
-                    ),
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                   ),
-                  if (clienteNombre != null)
-                    Text('Cliente: $clienteNombre'),
+                  if (clienteNombre != null) Text('Cliente: $clienteNombre'),
                   if (monto != null)
                     Text('Pagó: Bs. ${monto.toStringAsFixed(2)}'),
                   if (saldoRestante != null)
                     Text('Saldo: Bs. ${saldoRestante.toStringAsFixed(2)}'),
-                  if (metodoPago != null)
-                    Text('Método: $metodoPago'),
+                  if (metodoPago != null) Text('Método: $metodoPago'),
                 ],
               ),
             ),
@@ -1025,11 +1036,11 @@ class _RealtimeNotificationsListenerState
     if (ventaNumero != null) {
       _notificationService.showVentaEstadoCambioNotification(
         ventaNumero: ventaNumero,
-        ventaId: ventaId ?? 0,  // Usar 0 como fallback si no viene el ID
+        ventaId: ventaId ?? 0, // Usar 0 como fallback si no viene el ID
         nuevoEstado: estadoLabel,
         clienteNombre: clienteNombre,
-        entregaId: entregaId,  // ✅ NUEVO: Pasar ID de entrega
-        entregaNumero: entregaNumero,  // ✅ NUEVO: Pasar número de entrega
+        entregaId: entregaId, // ✅ NUEVO: Pasar ID de entrega
+        entregaNumero: entregaNumero, // ✅ NUEVO: Pasar número de entrega
       );
     }
 
@@ -1181,47 +1192,92 @@ class _RealtimeNotificationsListenerState
       );
     }
 
-    // ✅ Mostrar snackbar visual
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Row(
-          children: [
-            Text(icono, style: const TextStyle(fontSize: 24)),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  if (titulo != null)
-                    Text(
-                      titulo,
-                      style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 15,
-                        color: Colors.white,
-                      ),
-                    ),
-                  if (descripcion != null)
-                    Text(
-                      descripcion,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        fontSize: 13,
-                        color: Colors.white70,
-                      ),
-                    ),
-                ],
-              ),
+    // ✅ Mostrar notificación en la PARTE SUPERIOR usando Overlay
+    _mostrarNotificacionEnParteSuperior(
+      icono: icono,
+      titulo: titulo,
+      descripcion: descripcion,
+      colorFondo: colorFondo,
+    );
+  }
+
+  /// ✅ Mostrar notificación en la parte superior usando Overlay con imagen
+  void _mostrarNotificacionEnParteSuperior({
+    required String icono,
+    required String? titulo,
+    required String? descripcion,
+    required Color colorFondo,
+  }) {
+    final overlayEntry = OverlayEntry(
+      builder: (context) => Positioned(
+        top: 60,
+        left: 16,
+        right: 16,
+        child: Material(
+          color: Colors.transparent,
+          child: Container(
+            decoration: BoxDecoration(
+              color: colorFondo,
+              borderRadius: BorderRadius.circular(8),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.3),
+                  blurRadius: 8,
+                  offset: const Offset(0, 4),
+                ),
+              ],
             ),
-          ],
+            padding: const EdgeInsets.all(12),
+            child: Row(
+              children: [
+                // ✅ Icono imagen
+                Image.asset(
+                  'assets/icons/ic_not_snackbar_dark.png',
+                  width: 56,
+                  height: 56,
+                  fit: BoxFit.scaleDown,
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (titulo != null)
+                        Text(
+                          titulo,
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 15,
+                            color: Colors.white,
+                          ),
+                        ),
+                      if (descripcion != null)
+                        Text(
+                          descripcion,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            fontSize: 13,
+                            color: Colors.white70,
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
         ),
-        backgroundColor: colorFondo,
-        duration: const Duration(seconds: 8),
-        behavior: SnackBarBehavior.floating,
       ),
     );
+
+    Overlay.of(context).insert(overlayEntry);
+
+    // Remover después de 8 segundos
+    Future.delayed(const Duration(seconds: 8), () {
+      overlayEntry.remove();
+    });
   }
 
   /// ✅ NUEVO: Mostrar notificación cuando entrega está lista para partir
@@ -1313,7 +1369,9 @@ class _RealtimeNotificationsListenerState
   }
 
   /// ✅ NUEVO: Mostrar notificación preventista venta confirmada (para preventista)
-  void _mostrarNotificacionPreventistaVentaConfirmada(Map<String, dynamic> data) {
+  void _mostrarNotificacionPreventistaVentaConfirmada(
+    Map<String, dynamic> data,
+  ) {
     final ventaNumero = data['venta_numero'] as String?;
     final entregaNumero = data['entrega_numero'] as String?;
     final clienteNombre = data['cliente_nombre'] as String?;
@@ -1336,7 +1394,9 @@ class _RealtimeNotificationsListenerState
   }
 
   /// ✅ NUEVO: Mostrar notificación cliente entrega salió a entrega (para cliente)
-  void _mostrarNotificacionClienteEntregaSalidoAEntrega(Map<String, dynamic> data) {
+  void _mostrarNotificacionClienteEntregaSalidoAEntrega(
+    Map<String, dynamic> data,
+  ) {
     final ventaNumero = data['venta_numero'] as String?;
     final entregaNumero = data['entrega_numero'] as String?;
     final choferNombre = data['chofer_nombre'] as String?;
@@ -1357,7 +1417,9 @@ class _RealtimeNotificationsListenerState
   }
 
   /// ✅ NUEVO: Mostrar notificación preventista entrega salió a entrega (para preventista)
-  void _mostrarNotificacionPreventistaEntregaSalidoAEntrega(Map<String, dynamic> data) {
+  void _mostrarNotificacionPreventistaEntregaSalidoAEntrega(
+    Map<String, dynamic> data,
+  ) {
     final ventaNumero = data['venta_numero'] as String?;
     final entregaNumero = data['entrega_numero'] as String?;
     final clienteNombre = data['cliente_nombre'] as String?;
@@ -1382,7 +1444,9 @@ class _RealtimeNotificationsListenerState
   /// ✅ NUEVO: Mostrar notificación cuando se crea un préstamo a cliente
   void _mostrarNotificacionPrestamoClienteCreado(Map<String, dynamic> data) {
     final prestamoId = data['id'] as int?;
-    final clienteNombre = data['cliente_nombre'] as String? ?? data['cliente']?['nombre'] as String?;
+    final clienteNombre =
+        data['cliente_nombre'] as String? ??
+        data['cliente']?['nombre'] as String?;
     final cantidad = data['cantidad'] as int?;
     final creadorNombre = data['creador']?['name'] as String?;
 
@@ -1427,8 +1491,12 @@ class _RealtimeNotificationsListenerState
   void _mostrarNotificacionDevolucionRegistrada(Map<String, dynamic> data) {
     final devolucionId = data['devolucion_id'] as int?;
     final prestamoId = data['prestamo_id'] as int?;
-    final clienteNombre = data['cliente']?['nombre'] as String? ?? data['cliente_nombre'] as String?;
-    final choferNombre = data['chofer']?['nombre'] as String? ?? data['chofer_nombre'] as String?;
+    final clienteNombre =
+        data['cliente']?['nombre'] as String? ??
+        data['cliente_nombre'] as String?;
+    final choferNombre =
+        data['chofer']?['nombre'] as String? ??
+        data['chofer_nombre'] as String?;
     final totalDevuelto = data['total_devuelto'] as int?;
     final cantidadItems = data['cantidad_items'] as int?;
     final montoGarantia = data['monto_garantia_devuelta'] as num?;
@@ -1460,21 +1528,17 @@ class _RealtimeNotificationsListenerState
                 children: [
                   const Text(
                     '🔄 Devolución Registrada',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16,
-                    ),
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                   ),
-                  if (prestamoId != null)
-                    Text('Folio: #$prestamoId'),
-                  if (clienteNombre != null)
-                    Text('Cliente: $clienteNombre'),
-                  if (choferNombre != null)
-                    Text('Chofer: $choferNombre'),
+                  if (prestamoId != null) Text('Folio: #$prestamoId'),
+                  if (clienteNombre != null) Text('Cliente: $clienteNombre'),
+                  if (choferNombre != null) Text('Chofer: $choferNombre'),
                   if (cantidadItems != null)
                     Text('Items devueltos: $cantidadItems'),
                   if (montoGarantia != null)
-                    Text('Garantía devuelta: Bs. ${montoGarantia.toStringAsFixed(2)}'),
+                    Text(
+                      'Garantía devuelta: Bs. ${montoGarantia.toStringAsFixed(2)}',
+                    ),
                 ],
               ),
             ),

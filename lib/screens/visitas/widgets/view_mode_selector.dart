@@ -74,6 +74,22 @@ class ViewModeSelector extends StatelessWidget {
                     ],
                   ),
                 ),
+                PopupMenuItem<ViewMode>(
+                  value: ViewMode.localidades,
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.location_on,
+                        size: 20,
+                        color: visitaProvider.viewMode == ViewMode.localidades
+                            ? Theme.of(context).colorScheme.primary
+                            : inactiveIconColor,
+                      ),
+                      const SizedBox(width: 12),
+                      const Text('Localidades'),
+                    ],
+                  ),
+                ),
               ],
               child: Container(
                 padding:
@@ -90,7 +106,9 @@ class ViewModeSelector extends StatelessWidget {
                           ? Icons.today
                           : visitaProvider.viewMode == ViewMode.week
                               ? Icons.date_range
-                              : Icons.schedule,
+                              : visitaProvider.viewMode == ViewMode.horarios
+                                  ? Icons.schedule
+                                  : Icons.location_on,
                       size: 20,
                       color: Theme.of(context).colorScheme.onPrimaryContainer,
                     ),
@@ -100,7 +118,9 @@ class ViewModeSelector extends StatelessWidget {
                           ? 'Día'
                           : visitaProvider.viewMode == ViewMode.week
                               ? 'Semana'
-                              : 'Horarios',
+                              : visitaProvider.viewMode == ViewMode.horarios
+                                  ? 'Horarios'
+                                  : 'Localidades',
                       style: AppTextStyles.labelLarge(context).copyWith(
                         color: Theme.of(context)
                             .colorScheme

@@ -16,6 +16,7 @@ class PreventistStats {
   final int ventasAprobadas;
   final int ventasAnuladas;
   final int totalVentas;
+  final Map<String, dynamic>? visitasPorLocalidad;
 
   PreventistStats({
     required this.totalClientesBd,
@@ -34,6 +35,7 @@ class PreventistStats {
     required this.ventasAprobadas,
     required this.ventasAnuladas,
     required this.totalVentas,
+    this.visitasPorLocalidad,
   });
 
   factory PreventistStats.fromJson(Map<String, dynamic> json) {
@@ -50,14 +52,21 @@ class PreventistStats {
       cantidadTotalItemsVendidos: json['cantidad_total_items_vendidos'] ?? 0,
       precioPromedioVendido: (json['precio_promedio_vendido'] ?? 0).toDouble(),
       proformasCredasHoy: ProformasHoy.fromJson(
-        json['proformas_creadas_hoy'] ?? {},
+        json['proformas_creadas_hoy'] is Map<String, dynamic>
+          ? json['proformas_creadas_hoy']
+          : {},
       ),
       proformasEntregaSolicitadaHoy: ProformasHoy.fromJson(
-        json['proformas_entrega_solicitada_hoy'] ?? {},
+        json['proformas_entrega_solicitada_hoy'] is Map<String, dynamic>
+          ? json['proformas_entrega_solicitada_hoy']
+          : {},
       ),
       ventasAprobadas: json['ventas_aprobadas'] ?? 0,
       ventasAnuladas: json['ventas_anuladas'] ?? 0,
       totalVentas: json['total_ventas'] ?? 0,
+      visitasPorLocalidad: json['visitas_por_localidad'] is Map<String, dynamic>
+        ? json['visitas_por_localidad']
+        : null,
     );
   }
 
@@ -79,6 +88,7 @@ class PreventistStats {
       'ventas_aprobadas': ventasAprobadas,
       'ventas_anuladas': ventasAnuladas,
       'total_ventas': totalVentas,
+      'visitas_por_localidad': visitasPorLocalidad,
     };
   }
 }
@@ -97,6 +107,11 @@ class ProformasHoy {
   });
 
   factory ProformasHoy.fromJson(Map<String, dynamic> json) {
+    // ✅ Validar que json es un Map antes de procesarlo
+    if (json is! Map<String, dynamic>) {
+      return ProformasHoy(pendientes: 0, convertidas: 0, rechazadas: 0, total: 0);
+    }
+
     return ProformasHoy(
       pendientes: json['pendientes'] ?? 0,
       convertidas: json['convertidas'] ?? 0,

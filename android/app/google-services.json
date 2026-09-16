@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "79244036680",
+    "project_id": "distribuidora-paucara",
+    "storage_bucket": "distribuidora-paucara.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:79244036680:android:fbf66803d4143ecfa9667d",
+        "android_client_info": {
+          "package_name": "com.distribuidora.paucara.distribuidora"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyA_0r2JootXCgRBQO-YWEka-tsAR9qGPrE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

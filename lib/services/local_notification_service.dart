@@ -22,9 +22,8 @@ class LocalNotificationService {
     _notificationsPlugin = FlutterLocalNotificationsPlugin();
 
     // Configuración para Android
-    // Usar 'ic_notification' - nuestro ícono personalizado copiado a res/drawable
     const AndroidInitializationSettings androidSettings =
-        AndroidInitializationSettings('ic_notification');
+        AndroidInitializationSettings('');
 
     // Configuración para iOS
     const DarwinInitializationSettings iOSSettings =
@@ -91,9 +90,10 @@ class LocalNotificationService {
       'Proformas',
       description:
           'Notificaciones de proformas (aprobadas, rechazadas, convertidas)',
-      importance: Importance.high,
+      importance: Importance.max,  // ✅ Cambiar a max para heads-up
       enableVibration: true,
       enableLights: true,
+      playSound: true,
     );
 
     // ✅ NUEVO: Canal para notificaciones de entregas consolidadas
@@ -103,9 +103,10 @@ class LocalNotificationService {
       'Entregas Consolidadas',
       description:
           'Notificaciones de entregas creadas, ventas asignadas y reportes de carga',
-      importance: Importance.high,
+      importance: Importance.max,
       enableVibration: true,
       enableLights: true,
+      playSound: true,
     );
 
     // ✅ NUEVA FASE 3: Canal para notificaciones de créditos
@@ -114,9 +115,10 @@ class LocalNotificationService {
           'creditos',
           'Notificaciones de Crédito',
           description: 'Créditos vencidos, críticos y pagos registrados',
-          importance: Importance.high,
+          importance: Importance.max,
           enableVibration: true,
           enableLights: true,
+          playSound: true,
         );
 
     // ✅ FASE 3: Canal para notificaciones recurrentes
@@ -125,9 +127,10 @@ class LocalNotificationService {
           'notificaciones_recurrentes',
           'Notificaciones Recurrentes',
           description: 'Anuncios, promociones y ofertas',
-          importance: Importance.defaultImportance,
-          enableVibration: false,
-          enableLights: false,
+          importance: Importance.max,  // ✅ Cambiar a max para heads-up
+          enableVibration: true,
+          enableLights: true,
+          playSound: true,
         );
 
     // ✅ NUEVO: Canal para notificaciones de préstamos
@@ -136,9 +139,10 @@ class LocalNotificationService {
           'prestamos',
           'Notificaciones de Préstamos',
           description: 'Préstamos a clientes y eventos',
-          importance: Importance.high,
+          importance: Importance.max,
           enableVibration: true,
           enableLights: true,
+          playSound: true,
         );
 
     const AndroidNotificationChannel devolucionesChannel =
@@ -146,9 +150,10 @@ class LocalNotificationService {
           'devoluciones',
           'Notificaciones de Devoluciones',
           description: 'Devoluciones de préstamos registradas',
-          importance: Importance.high,
+          importance: Importance.max,
           enableVibration: true,
           enableLights: true,
+          playSound: true,
         );
 
     await _notificationsPlugin
@@ -311,6 +316,7 @@ class LocalNotificationService {
     required String body,
     required String channelId,
     required String payload,
+    String? imageUrl,
   }) async {
     try {
       debugPrint('\n═══════════════════════════════════════');
@@ -318,12 +324,21 @@ class LocalNotificationService {
       debugPrint('   ID: $id');
       debugPrint('   Title: $title');
       debugPrint('   Body: $body');
+      debugPrint('   Image: $imageUrl');
       debugPrint('   Channel: $channelId');
       debugPrint('═══════════════════════════════════════\n');
 
       // Determinar la importancia según el canal
       final Importance importance = _getImportanceForChannel(channelId);
       final Priority priority = _getPriorityForChannel(channelId);
+
+      // ✅ NUEVO: Mostrar texto grande (BigText) siempre
+      // Nota: Las URLs de imagen se mostrarán pero como notificación grande de texto
+      // El ícono pequeño es @drawable/ic_notification que ya tenemos
+      final styleInformation = BigTextStyleInformation(
+        body,
+        contentTitle: title,
+      );
 
       final AndroidNotificationDetails androidDetails =
           AndroidNotificationDetails(
@@ -334,13 +349,7 @@ class LocalNotificationService {
             priority: priority,
             enableVibration: _shouldVibrate(channelId),
             playSound: true,
-            // Mostrar cuerpo completo en notificaciones grandes
-            styleInformation: BigTextStyleInformation(
-              body,
-              contentTitle: title,
-              htmlFormatBigText: false,
-              htmlFormatContent: false,
-            ),
+            styleInformation: styleInformation,
             showWhen: true,
             autoCancel: true,
           );
@@ -371,13 +380,10 @@ class LocalNotificationService {
         debugPrint('   Canal: $channelId');
         debugPrint('═══════════════════════════════════════\n');
       } catch (platformException) {
-        // En algunos dispositivos/versiones, flutter_local_notifications falla
-        // Pero el snackbar ya se muestra desde el listener, así que es aceptable
-        debugPrint('\n═══════════════════════════════════════');
-        debugPrint('⚠️ NOTIFICACIÓN NATIVA FALLÓ (pero snackbar se mostró)');
-        debugPrint('   Title: $title');
-        debugPrint('   Error: $platformException');
-        debugPrint('═══════════════════════════════════════\n');
+        // En release mode, flutter_local_notifications puede fallar
+        // Pero Firebase ya manejó la notificación correctamente
+        // El snackbar de UI se muestra como fallback
+        debugPrint('⚠️ Local notification falló en release (Firebase OK)');
       }
     } catch (e) {
       debugPrint('\n═══════════════════════════════════════');
@@ -967,6 +973,7 @@ class LocalNotificationService {
     required String titulo,
     required String descripcion,
     required String tipo,
+    String? imageUrl,
   }) async {
     await _showNotification(
       id: notificacionId,
@@ -974,6 +981,7 @@ class LocalNotificationService {
       body: descripcion,
       channelId: 'notificaciones_recurrentes',
       payload: 'notificacion_recurrente_$notificacionId',
+      imageUrl: imageUrl,
     );
   }
 

@@ -15,6 +15,7 @@ import 'widgets/horario_view.dart';
 import 'widgets/localidad_filter.dart';
 import 'widgets/filtros_avanzados.dart';
 import 'widgets/visita_estado_filter.dart';
+import 'widgets/localidades_view.dart';
 
 class OrdenDelDiaScreen extends StatefulWidget {
   const OrdenDelDiaScreen({super.key});
@@ -26,7 +27,10 @@ class OrdenDelDiaScreen extends StatefulWidget {
 class _OrdenDelDiaScreenState extends State<OrdenDelDiaScreen> {
   late Future<OrdenDelDia?> _ordenDelDiaFuture;
   int _reloadCounter = 0; // ✅ NUEVO: Contador para forzar recarga
-  OrdenDelDia? _ordenDelDiaData; // ✅ NUEVO: Almacena los datos cargados para navegación
+  OrdenDelDia?
+  _ordenDelDiaData; // ✅ NUEVO: Almacena los datos cargados para navegación
+  Future<Map<String, dynamic>?>?
+  _estadisticasLocalidadesFuture; // ✅ NUEVO: Future para estadísticas
 
   @override
   void initState() {
@@ -46,19 +50,25 @@ class _OrdenDelDiaScreenState extends State<OrdenDelDiaScreen> {
 
     // ✅ CRÍTICO: Ejecutar el Future manualmente para asegurar que se solicita al backend
     // Usar forceRefresh: true para ignorar el cache y hacer una solicitud real
-    _ordenDelDiaFuture = visitaProvider.obtenerOrdenDelDia(
-      fecha: visitaProvider.fechaSeleccionada,
-      forceRefresh: true, // ✅ NUEVO: Ignora cache y fuerza solicitud al backend
-    ).then((resultado) {
-      debugPrint('✅ Respuesta recibida del backend: ${resultado?.clientes.length ?? 0} clientes');
-      if (resultado != null && mounted) {
-        setState(() => _ordenDelDiaData = resultado);
-      }
-      return resultado;
-    }).catchError((error) {
-      debugPrint('❌ Error al obtener orden del día: $error');
-      throw error;
-    });
+    _ordenDelDiaFuture = visitaProvider
+        .obtenerOrdenDelDia(
+          fecha: visitaProvider.fechaSeleccionada,
+          forceRefresh:
+              true, // ✅ NUEVO: Ignora cache y fuerza solicitud al backend
+        )
+        .then((resultado) {
+          debugPrint(
+            '✅ Respuesta recibida del backend: ${resultado?.clientes.length ?? 0} clientes',
+          );
+          if (resultado != null && mounted) {
+            setState(() => _ordenDelDiaData = resultado);
+          }
+          return resultado;
+        })
+        .catchError((error) {
+          debugPrint('❌ Error al obtener orden del día: $error');
+          throw error;
+        });
 
     // ✅ NUEVO: Mostrar mensaje si se solicita
     if (mostrarToast && mounted) {
@@ -185,9 +195,8 @@ class _OrdenDelDiaScreenState extends State<OrdenDelDiaScreen> {
 
     Navigator.of(context).push(
       MaterialPageRoute(
-        builder: (context) => MapaOrdenDelDiaScreen(
-          clientes: _ordenDelDiaData!.clientes,
-        ),
+        builder: (context) =>
+            MapaOrdenDelDiaScreen(clientes: _ordenDelDiaData!.clientes),
       ),
     );
   }
@@ -198,9 +207,15 @@ class _OrdenDelDiaScreenState extends State<OrdenDelDiaScreen> {
       context: context,
       builder: (BuildContext context) {
         final isDark = Theme.of(context).brightness == Brightness.dark;
-        final dividerColor = isDark ? Colors.grey.shade700 : Colors.grey.shade200;
-        final bgErrorImage = isDark ? Colors.grey.shade800 : Colors.grey.shade200;
-        final iconErrorImage = isDark ? Colors.grey.shade400 : Colors.grey.shade600;
+        final dividerColor = isDark
+            ? Colors.grey.shade700
+            : Colors.grey.shade200;
+        final bgErrorImage = isDark
+            ? Colors.grey.shade800
+            : Colors.grey.shade200;
+        final iconErrorImage = isDark
+            ? Colors.grey.shade400
+            : Colors.grey.shade600;
         final iconColor = Theme.of(context).colorScheme.primary;
 
         return Container(
@@ -236,21 +251,18 @@ class _OrdenDelDiaScreenState extends State<OrdenDelDiaScreen> {
                               vertical: 2,
                             ),
                             decoration: BoxDecoration(
-                              color: Theme.of(context)
-                                  .colorScheme
-                                  .primaryContainer
-                                  .withOpacity(0.5),
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.primaryContainer.withOpacity(0.5),
                               borderRadius: BorderRadius.circular(4),
                             ),
                             child: Text(
                               cliente.localidad!.nombre,
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .labelSmall
+                              style: Theme.of(context).textTheme.labelSmall
                                   ?.copyWith(
-                                    color: Theme.of(context)
-                                        .colorScheme
-                                        .onPrimaryContainer,
+                                    color: Theme.of(
+                                      context,
+                                    ).colorScheme.onPrimaryContainer,
                                     fontSize: 11,
                                   ),
                               maxLines: 1,
@@ -395,11 +407,7 @@ class _OrdenDelDiaScreenState extends State<OrdenDelDiaScreen> {
                         Row(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Icon(
-                              Icons.location_on,
-                              size: 18,
-                              color: iconColor,
-                            ),
+                            Icon(Icons.location_on, size: 18, color: iconColor),
                             const SizedBox(width: 12),
                             Expanded(
                               child: Column(
@@ -462,11 +470,7 @@ class _OrdenDelDiaScreenState extends State<OrdenDelDiaScreen> {
                         Row(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Icon(
-                              Icons.credit_card,
-                              size: 18,
-                              color: iconColor,
-                            ),
+                            Icon(Icons.credit_card, size: 18, color: iconColor),
                             const SizedBox(width: 12),
                             Expanded(
                               child: Column(
@@ -568,8 +572,12 @@ class _OrdenDelDiaScreenState extends State<OrdenDelDiaScreen> {
     final statusIcon = estadoVisitado ? Icons.check_circle : Icons.schedule;
     final statusText = estadoVisitado ? 'Visitado' : 'Pendiente';
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final secondaryTextColor = isDark ? Colors.grey.shade400 : Colors.grey.shade700;
-    final tertiaryTextColor = isDark ? Colors.grey.shade500 : Colors.grey.shade600;
+    final secondaryTextColor = isDark
+        ? Colors.grey.shade400
+        : Colors.grey.shade700;
+    final tertiaryTextColor = isDark
+        ? Colors.grey.shade500
+        : Colors.grey.shade600;
     final bgErrorImage = isDark ? Colors.grey.shade800 : Colors.grey.shade200;
     final iconErrorImage = isDark ? Colors.grey.shade400 : Colors.grey.shade600;
 
@@ -715,16 +723,17 @@ class _OrdenDelDiaScreenState extends State<OrdenDelDiaScreen> {
                                               .colorScheme
                                               .primaryContainer
                                               .withOpacity(0.5),
-                                          borderRadius:
-                                              BorderRadius.circular(3),
+                                          borderRadius: BorderRadius.circular(
+                                            3,
+                                          ),
                                         ),
                                         child: Text(
                                           cliente.localidad!.nombre,
                                           style: TextStyle(
                                             fontSize: 10,
-                                            color: Theme.of(context)
-                                                .colorScheme
-                                                .onPrimaryContainer,
+                                            color: Theme.of(
+                                              context,
+                                            ).colorScheme.onPrimaryContainer,
                                             fontWeight: FontWeight.w500,
                                           ),
                                           maxLines: 1,
@@ -779,11 +788,7 @@ class _OrdenDelDiaScreenState extends State<OrdenDelDiaScreen> {
                     padding: const EdgeInsets.only(bottom: 8),
                     child: Row(
                       children: [
-                        Icon(
-                          Icons.phone,
-                          size: 16,
-                          color: tertiaryTextColor,
-                        ),
+                        Icon(Icons.phone, size: 16, color: tertiaryTextColor),
                         const SizedBox(width: 8),
                         Expanded(
                           child: Text(
@@ -853,8 +858,7 @@ class _OrdenDelDiaScreenState extends State<OrdenDelDiaScreen> {
                         child: Material(
                           color: Colors.transparent,
                           child: InkWell(
-                            onTap: () =>
-                                _navigateToClientLocationMap(cliente),
+                            onTap: () => _navigateToClientLocationMap(cliente),
                             borderRadius: BorderRadius.circular(8),
                             child: Container(
                               padding: const EdgeInsets.symmetric(
@@ -987,7 +991,9 @@ class _OrdenDelDiaScreenState extends State<OrdenDelDiaScreen> {
         ],
       ),
       body: FutureBuilder<OrdenDelDia?>(
-        key: ValueKey(_reloadCounter), // ✅ NUEVO: Fuerza reconstrucción del FutureBuilder
+        key: ValueKey(
+          _reloadCounter,
+        ), // ✅ NUEVO: Fuerza reconstrucción del FutureBuilder
         future: _ordenDelDiaFuture,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
@@ -1085,7 +1091,8 @@ class _OrdenDelDiaScreenState extends State<OrdenDelDiaScreen> {
             child: Consumer<VisitaProvider>(
               builder: (context, visitaProvider, _) {
                 // Cargar localidades desde la orden del día (fuera del build)
-                if (visitaProvider.localidades.isEmpty && ordenDelDia.clientes.isNotEmpty) {
+                if (visitaProvider.localidades.isEmpty &&
+                    ordenDelDia.clientes.isNotEmpty) {
                   WidgetsBinding.instance.addPostFrameCallback((_) {
                     visitaProvider.cargarLocalidadesDesdeOrden(ordenDelDia);
                   });
@@ -1188,8 +1195,8 @@ class _OrdenDelDiaScreenState extends State<OrdenDelDiaScreen> {
                               builder: (context) {
                                 final clientesFiltrados = visitaProvider
                                     .obtenerClientesFiltrados(
-                                  daySnapshot.data!.clientes,
-                                );
+                                      daySnapshot.data!.clientes,
+                                    );
 
                                 final ordenFiltrada = OrdenDelDia(
                                   fecha: daySnapshot.data!.fecha,
@@ -1211,6 +1218,38 @@ class _OrdenDelDiaScreenState extends State<OrdenDelDiaScreen> {
                         ),
                       );
                     },
+                  );
+                }
+
+                // Si modo localidades: mostrar vista agrupada por localidades
+                if (visitaProvider.viewMode == ViewMode.localidades) {
+                  return SingleChildScrollView(
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    child: Padding(
+                      padding: const EdgeInsets.all(20),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // ✅ Tarjeta de Resumen
+                          _buildResumenCard(ordenDelDia.resumen),
+                          const SizedBox(height: 24),
+
+                          // ✅ Vista de Localidades
+                          Text(
+                            'Clientes por Localidad',
+                            style: Theme.of(context).textTheme.titleLarge,
+                          ),
+                          const SizedBox(height: 16),
+                          LocalidadesView(
+                            ordenDelDia: ordenDelDia,
+                            onClienteTap: _showClienteDetail,
+                            onMapTap: _navigateToClientLocationMap,
+                            onMarcarVisitaTap: _navigateToMarcarVisita,
+                            onPedidoTap: _navigateToCarrito,
+                          ),
+                        ],
+                      ),
+                    ),
                   );
                 }
 
@@ -1274,14 +1313,251 @@ class _OrdenDelDiaScreenState extends State<OrdenDelDiaScreen> {
                           ],
                         ),
                       ),
+                      // ✅ NUEVO: Card de Estadísticas de Visitas por Localidad
+                      FutureBuilder<Map<String, dynamic>?>(
+                        future: _estadisticasLocalidadesFuture ??=
+                            visitaProvider.obtenerEstadisticasLocalidades(),
+                        builder: (context, snapshot) {
+                          if (snapshot.connectionState ==
+                              ConnectionState.waiting) {
+                            return Container(
+                              margin: const EdgeInsets.all(20),
+                              padding: const EdgeInsets.all(16),
+                              decoration: BoxDecoration(
+                                color: Colors.grey.shade100,
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: const Center(
+                                child: SizedBox(
+                                  width: 20,
+                                  height: 20,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                  ),
+                                ),
+                              ),
+                            );
+                          }
+
+                          if (snapshot.hasData && snapshot.data != null) {
+                            // ✅ CORREGIDO: Usar datos de la orden del día en lugar de estadísticas globales
+                            final clientesDelDia = ordenDelDia.clientes;
+                            final statsLocalidades = <String, Map<String, int>>{};
+
+                            for (var cliente in clientesDelDia) {
+                              final localidad = cliente.localidad?.nombre ?? 'Sin localidad';
+                              if (!statsLocalidades.containsKey(localidad)) {
+                                statsLocalidades[localidad] = {'total': 0, 'completadas': 0};
+                              }
+                              statsLocalidades[localidad]!['total'] = (statsLocalidades[localidad]!['total'] ?? 0) + 1;
+                              if (cliente.visitado) {
+                                statsLocalidades[localidad]!['completadas'] = (statsLocalidades[localidad]!['completadas'] ?? 0) + 1;
+                              }
+                            }
+
+                            final stats = statsLocalidades.map((k, v) => MapEntry(k, {
+                              'total': v['total'] ?? 0,
+                              'completadas': v['completadas'] ?? 0,
+                              'pendientes': (v['total'] ?? 0) - (v['completadas'] ?? 0),
+                            }));
+
+                            final sortedEntries = stats.entries.toList()
+                              ..sort((a, b) => (b.value['total'] as int).compareTo(a.value['total'] as int));
+
+                            return Container(
+                              margin: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 12,
+                              ),
+                              padding: const EdgeInsets.all(16),
+                              decoration: BoxDecoration(
+                                color: Colors.blue.shade50,
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(
+                                  color: Colors.blue.shade200,
+                                  width: 1,
+                                ),
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Row(
+                                        children: [
+                                          Icon(
+                                            Icons.location_on,
+                                            size: 20,
+                                            color: Colors.blue.shade700,
+                                          ),
+                                          const SizedBox(width: 8),
+                                          Text(
+                                            'Resumen por Localidades',
+                                            style: TextStyle(
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: 14,
+                                              color: Colors.blue.shade700,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 8,
+                                          vertical: 4,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          color: Colors.blue.shade700,
+                                          borderRadius: BorderRadius.circular(12),
+                                        ),
+                                        child: Text(
+                                          '${stats.length} localidades',
+                                          style: const TextStyle(
+                                            color: Colors.white,
+                                            fontSize: 11,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 16),
+                                  // ✅ Tabla de localidades
+                                  Container(
+                                    decoration: BoxDecoration(
+                                      color: Colors.white,
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    child: DataTable(
+                                      columnSpacing: 12,
+                                      dataRowHeight: 48,
+                                      headingRowHeight: 40,
+                                      columns: [
+                                        DataColumn(
+                                          label: Text(
+                                            'Localidad',
+                                            style: TextStyle(
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: 12,
+                                              color: Colors.blue.shade700,
+                                            ),
+                                          ),
+                                        ),
+                                        DataColumn(
+                                          label: Center(
+                                            child: Text(
+                                              'Total',
+                                              style: TextStyle(
+                                                fontWeight: FontWeight.bold,
+                                                fontSize: 12,
+                                                color: Colors.blue.shade700,
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                        DataColumn(
+                                          label: Center(
+                                            child: Text(
+                                              'Completadas',
+                                              style: TextStyle(
+                                                fontWeight: FontWeight.bold,
+                                                fontSize: 12,
+                                                color: Colors.green.shade700,
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                        DataColumn(
+                                          label: Center(
+                                            child: Text(
+                                              'Pendientes',
+                                              style: TextStyle(
+                                                fontWeight: FontWeight.bold,
+                                                fontSize: 12,
+                                                color: Colors.orange.shade700,
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                      rows: sortedEntries.map((entry) {
+                                        final localidad = entry.key;
+                                        final data = entry.value as Map<String, dynamic>;
+                                        final total = data['total'] ?? 0;
+                                        final completadas = data['completadas'] ?? 0;
+                                        final pendientes = data['pendientes'] ?? 0;
+
+                                        return DataRow(
+                                          cells: [
+                                            DataCell(
+                                              SizedBox(
+                                                width: 120,
+                                                child: Text(
+                                                  localidad,
+                                                  style: const TextStyle(fontSize: 12),
+                                                  maxLines: 2,
+                                                  overflow: TextOverflow.ellipsis,
+                                                ),
+                                              ),
+                                            ),
+                                            DataCell(
+                                              Center(
+                                                child: Text(
+                                                  total.toString(),
+                                                  style: const TextStyle(
+                                                    fontWeight: FontWeight.bold,
+                                                    fontSize: 12,
+                                                  ),
+                                                ),
+                                              ),
+                                            ),
+                                            DataCell(
+                                              Center(
+                                                child: Text(
+                                                  completadas.toString(),
+                                                  style: TextStyle(
+                                                    fontWeight: FontWeight.bold,
+                                                    fontSize: 12,
+                                                    color: Colors.green.shade700,
+                                                  ),
+                                                ),
+                                              ),
+                                            ),
+                                            DataCell(
+                                              Center(
+                                                child: Text(
+                                                  pendientes.toString(),
+                                                  style: TextStyle(
+                                                    fontWeight: FontWeight.bold,
+                                                    fontSize: 12,
+                                                    color: Colors.orange.shade700,
+                                                  ),
+                                                ),
+                                              ),
+                                            ),
+                                          ],
+                                        );
+                                      }).toList(),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            );
+                          }
+
+                          return const SizedBox.shrink();
+                        },
+                      ),
+
                       Padding(
-                        padding: const EdgeInsets.all(20),
+                        padding: const EdgeInsets.symmetric(horizontal: 8),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             // ✅ Tarjeta de Resumen
-                            _buildResumenCard(ordenDelDia.resumen),
-                            const SizedBox(height: 24),
+                            // _buildResumenCard(ordenDelDia.resumen),
+                            // const SizedBox(height: 24),
 
                             // ✅ Filtro de Localidades
                             if (visitaProvider.localidades.isNotEmpty)
@@ -1297,26 +1573,31 @@ class _OrdenDelDiaScreenState extends State<OrdenDelDiaScreen> {
                             const SizedBox(height: 12),
 
                             // ✅ Filtros Avanzados (Cliente, Horario)
-                            FiltrosAvanzados(
-                              clientes: ordenDelDia.clientes,
-                            ),
+                            FiltrosAvanzados(clientes: ordenDelDia.clientes),
                             const SizedBox(height: 16),
 
                             // ✅ Lista de Clientes
                             Builder(
                               builder: (context) {
-                                final isDark = Theme.of(context).brightness == Brightness.dark;
-                                final clientesFiltrados =
-                                    visitaProvider.obtenerClientesFiltrados(
-                                  ordenDelDia.clientes,
-                                );
-                                final primaryColor = Theme.of(context).colorScheme.primary;
+                                final isDark =
+                                    Theme.of(context).brightness ==
+                                    Brightness.dark;
+                                final clientesFiltrados = visitaProvider
+                                    .obtenerClientesFiltrados(
+                                      ordenDelDia.clientes,
+                                    );
+                                final primaryColor = Theme.of(
+                                  context,
+                                ).colorScheme.primary;
                                 return Row(
-                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
                                   children: [
                                     Text(
                                       'Clientes a Visitar (${clientesFiltrados.length})',
-                                      style: Theme.of(context).textTheme.titleLarge,
+                                      style: Theme.of(
+                                        context,
+                                      ).textTheme.titleLarge,
                                     ),
                                     Container(
                                       padding: const EdgeInsets.symmetric(
@@ -1325,8 +1606,7 @@ class _OrdenDelDiaScreenState extends State<OrdenDelDiaScreen> {
                                       ),
                                       decoration: BoxDecoration(
                                         color: primaryColor.withOpacity(0.1),
-                                        borderRadius:
-                                            BorderRadius.circular(12),
+                                        borderRadius: BorderRadius.circular(12),
                                       ),
                                       child: Text(
                                         '${clientesFiltrados.length} clientes',
@@ -1373,10 +1653,10 @@ class _OrdenDelDiaScreenState extends State<OrdenDelDiaScreen> {
                             else
                               Builder(
                                 builder: (context) {
-                                  final clientesFiltrados =
-                                      visitaProvider.obtenerClientesFiltrados(
-                                    ordenDelDia.clientes,
-                                  );
+                                  final clientesFiltrados = visitaProvider
+                                      .obtenerClientesFiltrados(
+                                        ordenDelDia.clientes,
+                                      );
 
                                   if (clientesFiltrados.isEmpty) {
                                     return Center(

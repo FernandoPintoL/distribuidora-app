@@ -148,6 +148,8 @@ class _TabVentasWidgetState extends State<TabVentasWidget> {
                     PhoneUtils.llamarCliente(widget.context, tel),
                 onEnviarWhatsApp: (tel) =>
                     PhoneUtils.enviarWhatsApp(widget.context, tel),
+                // ✅ NUEVO: Callback para recargar ventas cuando se confirma una
+                onVentaConfirmada: () => recargar(),
               ),
             ],
           );

@@ -417,6 +417,26 @@ class VisitaProvider with ChangeNotifier {
     return clientesFiltrados;
   }
 
+  /// ✅ NUEVO: Obtener estadísticas de visitas por localidad del día
+  Future<Map<String, dynamic>?> obtenerEstadisticasLocalidades() async {
+    try {
+      debugPrint('📊 Cargando estadísticas de visitas por localidades...');
+
+      final response = await _visitaService.obtenerEstadisticasLocalidades();
+
+      if (response.success && response.data != null) {
+        debugPrint('✅ Estadísticas cargadas: ${response.data}');
+        return response.data;
+      } else {
+        debugPrint('⚠️ Error: ${response.message}');
+        return null;
+      }
+    } catch (e) {
+      debugPrint('❌ Error al cargar estadísticas de localidades: $e');
+      return null;
+    }
+  }
+
   /// Limpiar error
   void clearError() {
     _errorMessage = null;
@@ -425,4 +445,4 @@ class VisitaProvider with ChangeNotifier {
 }
 
 /// ✅ NUEVO: Enum para modo de vista
-enum ViewMode { day, week, horarios }
+enum ViewMode { day, week, horarios, localidades }

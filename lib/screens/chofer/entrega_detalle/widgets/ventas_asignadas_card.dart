@@ -13,6 +13,7 @@ class VentasAsignadasCard extends StatefulWidget {
   final EntregaProvider provider;
   final Function(String?) onLlamarCliente;
   final Function(String?) onEnviarWhatsApp;
+  final VoidCallback? onVentaConfirmada; // ✅ NUEVO: Callback cuando se confirma venta
 
   const VentasAsignadasCard({
     Key? key,
@@ -20,6 +21,7 @@ class VentasAsignadasCard extends StatefulWidget {
     required this.provider,
     required this.onLlamarCliente,
     required this.onEnviarWhatsApp,
+    this.onVentaConfirmada,
   }) : super(key: key);
 
   @override
@@ -641,6 +643,14 @@ class _VentasAsignadasCardState extends State<VentasAsignadasCard> {
                                             setState(
                                               () {},
                                             ); // Forzar rebuild para mostrar cambios
+
+                                            // ✅ NUEVO: Ejecutar callback para recargar tab de ventas
+                                            if (widget.onVentaConfirmada != null) {
+                                              debugPrint(
+                                                '✅ [VENTAS_CARD] Ejecutando callback onVentaConfirmada',
+                                              );
+                                              widget.onVentaConfirmada!();
+                                            }
                                           });
                                     }
                                   });

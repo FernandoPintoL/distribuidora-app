@@ -458,7 +458,8 @@ class _ConfirmarEntregaVentaScreenState
     } else if (_confirmacion.tipoEntrega == 'CON_NOVEDAD') {
       if (_confirmacion.tipoNovedad == null) return false;
       if (_confirmacion.tipoNovedad == 'CLIENTE_CERRADO' &&
-          _fotosCapturadas.isEmpty) return false;
+          _fotosCapturadas.isEmpty)
+        return false;
     }
     return true;
   }
@@ -569,30 +570,28 @@ class _ConfirmarEntregaVentaScreenState
 
       // ✅ 2026-07-02: REFACTORIZADO - Construir modelo completo
       // Construir lista de desglose de pagos desde _pagos
-      final desglosePageos = _pagos
-          .asMap()
-          .entries
-          .map((entry) {
-            final pago = entry.value;
-            final tipoPago = _tiposPago.firstWhere(
-              (t) => t['id'] == pago.tipoPagoId,
-              orElse: () => {'nombre': 'Desconocido'},
-            );
-            return DesglosePago(
-              tipoPagoId: pago.tipoPagoId,
-              tipoPagoNombre: tipoPago['nombre'] ?? 'Desconocido',
-              monto: pago.monto,
-              referencia: pago.referencia,
-            );
-          })
-          .toList();
+      final desglosePageos = _pagos.asMap().entries.map((entry) {
+        final pago = entry.value;
+        final tipoPago = _tiposPago.firstWhere(
+          (t) => t['id'] == pago.tipoPagoId,
+          orElse: () => {'nombre': 'Desconocido'},
+        );
+        return DesglosePago(
+          tipoPagoId: pago.tipoPagoId,
+          tipoPagoNombre: tipoPago['nombre'] ?? 'Desconocido',
+          monto: pago.monto,
+          referencia: pago.referencia,
+        );
+      }).toList();
 
       // Construir lista de productos devueltos
       final productos_devueltos = _productosRechazados
-          .map((prod) => {
-                'detalleVentaId': prod.detalleVentaId,
-                'cantidadRechazada': prod.cantidadRechazada,
-              })
+          .map(
+            (prod) => {
+              'detalleVentaId': prod.detalleVentaId,
+              'cantidadRechazada': prod.cantidadRechazada,
+            },
+          )
           .toList();
 
       // Actualizar el modelo con TODOS los datos
@@ -606,7 +605,12 @@ class _ConfirmarEntregaVentaScreenState
         totalDineroRecibido: totalDineroRecibido,
         montoAceptado: _confirmacion.tipoEntrega == 'COMPLETA'
             ? widget.venta.total
-            : (widget.venta.total - _productosRechazados.fold(0.0, (sum, prod) => sum + (prod.cantidadRechazada * prod.precioUnitario))),
+            : (widget.venta.total -
+                  _productosRechazados.fold(
+                    0.0,
+                    (sum, prod) =>
+                        sum + (prod.cantidadRechazada * prod.precioUnitario),
+                  )),
         productosDevueltos: productos_devueltos,
       );
 
@@ -615,7 +619,9 @@ class _ConfirmarEntregaVentaScreenState
       debugPrint('   - tipoNovedad: ${_confirmacion.tipoNovedad}');
       debugPrint('   - tipoEntrega: ${_confirmacion.tipoEntrega}');
       debugPrint('   - desglosePageos: ${_confirmacion.desglosePageos.length}');
-      debugPrint('   - productosDevueltos: ${_confirmacion.productosDevueltos}');
+      debugPrint(
+        '   - productosDevueltos: ${_confirmacion.productosDevueltos}',
+      );
 
       // ✅ 2026-07-02: Enviar usando toJson() del modelo
       final success = await widget.provider.confirmarVentaEntregada(
@@ -754,27 +760,27 @@ class _ConfirmarEntregaVentaScreenState
       final observacionesFinales = _construirObservacionesFinales();
 
       // ✅ 2026-07-02: Construir desglose de pagos desde _pagos
-      final desglosePageos = _pagos
-          .map((pago) {
-            final tipoPago = _tiposPago.firstWhere(
-              (t) => t['id'] == pago.tipoPagoId,
-              orElse: () => {'nombre': 'Desconocido'},
-            );
-            return DesglosePago(
-              tipoPagoId: pago.tipoPagoId,
-              tipoPagoNombre: tipoPago['nombre'] ?? 'Desconocido',
-              monto: pago.monto,
-              referencia: pago.referencia,
-            );
-          })
-          .toList();
+      final desglosePageos = _pagos.map((pago) {
+        final tipoPago = _tiposPago.firstWhere(
+          (t) => t['id'] == pago.tipoPagoId,
+          orElse: () => {'nombre': 'Desconocido'},
+        );
+        return DesglosePago(
+          tipoPagoId: pago.tipoPagoId,
+          tipoPagoNombre: tipoPago['nombre'] ?? 'Desconocido',
+          monto: pago.monto,
+          referencia: pago.referencia,
+        );
+      }).toList();
 
       // ✅ Construir lista de productos devueltos
       final productos_devueltos = _productosRechazados
-          .map((prod) => {
-                'detalleVentaId': prod.detalleVentaId,
-                'cantidadRechazada': prod.cantidadRechazada,
-              })
+          .map(
+            (prod) => {
+              'detalleVentaId': prod.detalleVentaId,
+              'cantidadRechazada': prod.cantidadRechazada,
+            },
+          )
           .toList();
 
       // ✅ 2026-07-02: Actualizar modelo con todos los datos en edición
@@ -801,7 +807,9 @@ class _ConfirmarEntregaVentaScreenState
       debugPrint('📦 CONFIRMACION ACTUALIZADA EN EDICIÓN:');
       debugPrint('   - tipoConfirmacion: ${_confirmacion.tipoConfirmacion}');
       debugPrint('   - desglosePageos: ${_confirmacion.desglosePageos.length}');
-      debugPrint('   - productosDevueltos: ${_confirmacion.productosDevueltos}');
+      debugPrint(
+        '   - productosDevueltos: ${_confirmacion.productosDevueltos}',
+      );
 
       // ✅ 2026-07-02: Calcular valores finales para envío
       final tipoConfirmacionFinal = _confirmacion.tipoConfirmacion;
@@ -820,8 +828,8 @@ class _ConfirmarEntregaVentaScreenState
       final pagosArray = _confirmacion.desglosePageos
           .map((d) => d.toJson())
           .toList();
-      final productosRechazadosArray =
-          (_confirmacion.productosDevueltos ?? []).cast<Map<String, dynamic>>();
+      final productosRechazadosArray = (_confirmacion.productosDevueltos ?? [])
+          .cast<Map<String, dynamic>>();
 
       // ✅ 2026-06-14: Detectar si es edición o creación nueva
       bool success;
@@ -969,7 +977,7 @@ class _ConfirmarEntregaVentaScreenState
                   ],
                 )
               : Text(
-                  'Entrega del Folio #${widget.venta.id}',
+                  'Entrega del Folios #${widget.venta.id}',
                   style: const TextStyle(fontSize: 16),
                 ),
           centerTitle: true,
@@ -1132,9 +1140,7 @@ class _ConfirmarEntregaVentaScreenState
   /// ✅ Helper para crear FormularioNovedadWidget
   Widget _buildFormularioNovedad(bool isDarkMode) {
     return FormularioNovedadWidget(
-      key: ValueKey(
-        'novedad_${_confirmacion.tipoNovedad ?? "none"}',
-      ),
+      key: ValueKey('novedad_${_confirmacion.tipoNovedad ?? "none"}'),
       screenContext: context,
       isDarkMode: isDarkMode,
       tipoNovedad: _confirmacion.tipoNovedad,
@@ -1148,9 +1154,7 @@ class _ConfirmarEntregaVentaScreenState
       construirImagenFoto: (foto) => _construirImagenFoto(foto),
       buildTablaProductosRechazados: (ctx, dark) =>
           tabla_widget.TablaProductosRechazadosWidget(
-            key: ValueKey(
-              'tabla_${_confirmacion.tipoNovedad ?? "none"}',
-            ),
+            key: ValueKey('tabla_${_confirmacion.tipoNovedad ?? "none"}'),
             detalles: widget.venta.detalles ?? [],
             productosRechazados: _productosRechazados,
             cantidadRechazadaControllers: _cantidadRechazadaControllers,

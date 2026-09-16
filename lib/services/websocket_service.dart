@@ -145,6 +145,10 @@ class WebSocketService {
       _isConnected = true;
       _reconnectionAttempts = 0;
       _connectionController.add(true);
+
+      // ✅ NUEVO: Suscribirse a canales según el rol del usuario
+      _subscribeToRoleChannels(userType);
+
       completer.complete();
     });
 
@@ -891,6 +895,61 @@ class WebSocketService {
     _isConnected = false;
     _reconnectionAttempts = 0;
     _connectionController.add(false);
+  }
+
+  /// ✅ NUEVO: Suscribirse a canales de rol después de autenticarse
+  /// Emite evento 'subscribe' para unirse a las salas según el rol del usuario
+  void _subscribeToRoleChannels(String userType) {
+    final normalizedType = userType.toLowerCase().trim();
+    final channelsToSubscribe = <String>[];
+
+    // Mapear userType a canales de Socket.IO
+    // Debe coincidir con los canales en auth.service.js del servidor
+    switch (normalizedType) {
+      case 'admin':
+      case 'super admin':
+        channelsToSubscribe.addAll(['admins', 'managers', 'cobradores']);
+        break;
+      case 'manager':
+        channelsToSubscribe.addAll(['managers', 'admins']);
+        break;
+      case 'cajero':
+        channelsToSubscribe.add('cajeros');
+        channelsToSubscribe.add('admins'); // Cajeros también ven notificaciones admin
+        break;
+      case 'preventista':
+        channelsToSubscribe.add('preventistas');
+        break;
+      case 'chofer':
+      case 'driver':
+        channelsToSubscribe.add('choferes');
+        break;
+      case 'cliente':
+      case 'client':
+        channelsToSubscribe.add('clients');
+        break;
+      case 'logistica':
+      case 'logístico':
+        channelsToSubscribe.add('logisticas');
+        break;
+      case 'cobrador':
+        channelsToSubscribe.add('cobradores');
+        break;
+      default:
+        if (normalizedType.isNotEmpty) {
+          channelsToSubscribe.add('${normalizedType}s');
+        }
+    }
+
+    // Emitir evento subscribe para cada canal
+    debugPrint('\n📡 [NUEVO] Suscribiendo a ${channelsToSubscribe.length} canales de rol:');
+    for (final channel in channelsToSubscribe) {
+      _socket!.emit('subscribe', {
+        'channel': channel,
+      });
+      debugPrint('   ✅ Suscripto a: $channel');
+    }
+    debugPrint('');
   }
 
   /// Limpiar recursos

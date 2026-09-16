@@ -32,13 +32,8 @@ class LocalidadFilter extends StatelessWidget {
         return Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.surface,
-            border: Border(
-              bottom: BorderSide(
-                color: borderColor,
-                width: 1,
-              ),
-            ),
+            // color: Theme.of(context).colorScheme.surface,
+            border: Border(bottom: BorderSide(color: borderColor, width: 1)),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -59,16 +54,19 @@ class LocalidadFilter extends StatelessWidget {
                     Container(
                       margin: const EdgeInsets.only(right: 8),
                       child: FilterChip(
-                        label: Text('Todas (${clientes.length})'),
+                        label: Text(
+                          'Todas (${clientes.length})',
+                          style: TextStyle(
+                            color: Theme.of(context).colorScheme.onSurface,
+                          ),
+                        ),
                         selected: visitaProvider.localidadSeleccionada == null,
                         onSelected: (selected) {
                           visitaProvider.cambiarLocalidad(null);
                         },
                         showCheckmark: false,
-                        backgroundColor:
-                            Theme.of(context).colorScheme.surface,
-                        selectedColor:
-                            Theme.of(context).colorScheme.primaryContainer,
+                        // backgroundColor: Colors.,
+                        selectedColor: Theme.of(context).colorScheme.secondary,
                         side: BorderSide(
                           color: visitaProvider.localidadSeleccionada == null
                               ? Theme.of(context).colorScheme.primary
@@ -85,7 +83,12 @@ class LocalidadFilter extends StatelessWidget {
                       return Container(
                         margin: const EdgeInsets.only(right: 8),
                         child: FilterChip(
-                          label: Text('${localidad.nombre} ($conteo)'),
+                          label: Text(
+                            '${localidad.nombre} ($conteo)',
+                            style: TextStyle(
+                              color: Theme.of(context).colorScheme.onSurface,
+                            ),
+                          ),
                           selected: isSelected,
                           onSelected: (selected) {
                             visitaProvider.cambiarLocalidad(
@@ -93,10 +96,12 @@ class LocalidadFilter extends StatelessWidget {
                             );
                           },
                           showCheckmark: false,
-                          backgroundColor:
-                              Theme.of(context).colorScheme.surface,
-                          selectedColor:
-                              Theme.of(context).colorScheme.primaryContainer,
+                          backgroundColor: Theme.of(
+                            context,
+                          ).colorScheme.surface,
+                          selectedColor: Theme.of(
+                            context,
+                          ).colorScheme.secondary,
                           side: BorderSide(
                             color: isSelected
                                 ? Theme.of(context).colorScheme.primary

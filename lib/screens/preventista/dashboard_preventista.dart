@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../config/app_gradients.dart';
-import '../../models/orden_del_dia.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/visita_provider.dart';
 import '../home_screen.dart';
@@ -22,7 +21,7 @@ class DashboardPreventista extends StatefulWidget {
 class _DashboardPreventistaState extends State<DashboardPreventista>
     with SingleTickerProviderStateMixin {
   late AnimationController _animationController;
-  // Future<OrdenDelDia?>? _ordenDelDiaFuture;
+  Future<Map<String, dynamic>?>? _estadisticasLocalidadesFuture;
 
   @override
   void initState() {
@@ -202,15 +201,50 @@ class _DashboardPreventistaState extends State<DashboardPreventista>
       ),
     );
 
+    // ✅ NUEVO: Card de Visitas por Localidad con FutureBuilder
     cards.add(
-      DashboardPreventistaWidgets.buildGradientCard(
-        context,
-        title: 'Orden del Día',
-        subtitle: 'Clientes Hoy',
-        icon: Icons.checklist_rtl,
-        gradient: AppGradients.teal,
-        onTap: () {
-          Navigator.pushNamed(context, '/orden-del-dia');
+      Consumer<VisitaProvider>(
+        builder: (context, visitaProvider, _) {
+          return FutureBuilder<Map<String, dynamic>?>(
+            future: _estadisticasLocalidadesFuture ??= visitaProvider.obtenerEstadisticasLocalidades(),
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return DashboardPreventistaWidgets.buildGradientCard(
+                  context,
+                  title: 'Orden del Día',
+                  subtitle: 'Cargando...',
+                  icon: Icons.checklist_rtl,
+                  gradient: AppGradients.teal,
+                  onTap: () {
+                    Navigator.pushNamed(context, '/orden-del-dia');
+                  },
+                );
+              }
+
+              if (snapshot.hasData && snapshot.data != null) {
+                return DashboardPreventistaWidgets.buildVisitasLocalidadesCard(
+                  context,
+                  visitasPorLocalidad: snapshot.data!,
+                  gradient: AppGradients.teal,
+                  onTap: () {
+                    Navigator.pushNamed(context, '/orden-del-dia');
+                  },
+                );
+              }
+
+              // Fallback si hay error
+              return DashboardPreventistaWidgets.buildGradientCard(
+                context,
+                title: 'Orden del Día',
+                subtitle: 'Clientes Hoy',
+                icon: Icons.checklist_rtl,
+                gradient: AppGradients.teal,
+                onTap: () {
+                  Navigator.pushNamed(context, '/orden-del-dia');
+                },
+              );
+            },
+          );
         },
       ),
     );

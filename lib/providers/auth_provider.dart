@@ -6,6 +6,7 @@ import '../models/models.dart';
 import '../models/permissions_response.dart';
 import '../services/services.dart';
 import '../services/background_notification_service.dart';
+import '../services/firebase_messaging_service.dart';
 
 class AuthProvider with ChangeNotifier {
   final AuthService _authService = AuthService();
@@ -137,6 +138,16 @@ class AuthProvider with ChangeNotifier {
             _user!.roles!.contains('chofer')) {
           /* debugPrint('👷 Chofer detectado, iniciando servicio de background');*/
           await BackgroundNotificationService.startForChofer();
+        }
+
+        // ✅ NUEVO: Registrar token FCM después de login exitoso
+        try {
+          final firebaseService = FirebaseMessagingService();
+          await firebaseService.registerDeviceToken();
+          debugPrint('✅ Token FCM registrado después de login');
+        } catch (e) {
+          debugPrint('⚠️ Error registrando token FCM: $e');
+          // No lanzar excepción, continuar con el login
         }
 
         _isLoading = false;
@@ -322,6 +333,16 @@ class AuthProvider with ChangeNotifier {
 
       // ✅ NUEVO: Detener servicio de background si está activo
       await BackgroundNotificationService.stop();
+
+      // ✅ NUEVO: Desactivar token FCM al logout
+      try {
+        final firebaseService = FirebaseMessagingService();
+        await firebaseService.deactivateDeviceToken();
+        debugPrint('✅ Token FCM desactivado');
+      } catch (e) {
+        debugPrint('⚠️ Error desactivando token FCM: $e');
+        // Continuar con logout aunque falle
+      }
 
       await _authService.logout();
     } catch (e) {

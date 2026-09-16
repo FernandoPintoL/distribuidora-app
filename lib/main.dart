@@ -19,6 +19,7 @@ import 'config/app_themes.dart';
 import 'config/app_urls.dart';
 import 'services/local_notification_service.dart';
 import 'services/background_notification_service.dart';
+import 'services/firebase_messaging_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -118,11 +119,10 @@ void main() async {
     final notificationService = LocalNotificationService();
     await notificationService.initialize();
     debugPrint('✅ LocalNotificationService inicializado');
-
-    // Print service status for debugging
     await notificationService.printServiceStatus();
   } catch (e) {
-    debugPrint('⚠️ Error inicializando LocalNotificationService: $e');
+    debugPrint('⚠️ Error inicializando LocalNotificationService (no crítico): $e');
+    // Continuar aunque falle - Firebase seguirá funcionando
   }
 
   // Inicializar background notification service
@@ -131,6 +131,15 @@ void main() async {
     // debugPrint('✅ BackgroundNotificationService inicializado');
   } catch (e) {
     debugPrint('⚠️ Error inicializando BackgroundNotificationService: $e');
+  }
+
+  // ✅ NUEVO: Inicializar Firebase Cloud Messaging
+  try {
+    final firebaseService = FirebaseMessagingService();
+    await firebaseService.initialize();
+    debugPrint('✅ Firebase Cloud Messaging inicializado');
+  } catch (e) {
+    debugPrint('⚠️ Error inicializando Firebase Cloud Messaging: $e');
   }
 
   // ✅ SEGURIDAD: Envolver en ErrorBoundary en caso de crash

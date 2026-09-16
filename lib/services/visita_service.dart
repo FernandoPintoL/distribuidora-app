@@ -209,6 +209,32 @@ class VisitaService {
     }
   }
 
+  /// ✅ NUEVO: Obtener estadísticas de visitas por localidad del día
+  Future<ApiResponse<Map<String, dynamic>>> obtenerEstadisticasLocalidades() async {
+    try {
+      final response = await _apiService.get(
+        '/visitas/estadisticas-localidades',
+      );
+
+      return ApiResponse<Map<String, dynamic>>.fromJson(
+        response.data,
+        (data) => data,
+      );
+    } on DioException catch (e) {
+      return ApiResponse<Map<String, dynamic>>(
+        success: false,
+        message: _getErrorMessage(e),
+        data: null,
+      );
+    } catch (e) {
+      return ApiResponse<Map<String, dynamic>>(
+        success: false,
+        message: 'Error inesperado: ${e.toString()}',
+        data: null,
+      );
+    }
+  }
+
   /// Validar si cliente tiene horario disponible ahora
   Future<ApiResponse<Map<String, dynamic>>> validarHorario(
     int clienteId,
